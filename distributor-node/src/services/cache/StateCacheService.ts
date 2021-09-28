@@ -35,15 +35,14 @@ export class StateCacheService {
   private saveInterval: NodeJS.Timeout
 
   private memoryState = {
-    pendingDownloadsByContentHash: new Map<string, PendingDownloadData>(),
-    contentHashByObjectId: new Map<string, string>(),
+    pendingDownloadsByObjectId: new Map<string, PendingDownloadData>(),
     storageNodeEndpointDataByEndpoint: new Map<string, StorageNodeEndpointData>(),
-    groupNumberByContentHash: new Map<string, number>(),
+    groupNumberByObjectId: new Map<string, number>(),
   }
 
   private storedState = {
     lruCacheGroups: Array.from({ length: CACHE_GROUPS_COUNT }).map(() => new Map<string, CacheItemData>()),
-    mimeTypeByContentHash: new Map<string, string>(),
+    mimeTypeByObjectId: new Map<string, string>(),
   }
 
   public constructor(config: ReadonlyConfig, logging: LoggingService, saveIntervalMs = 60 * 1000) {
@@ -53,20 +52,12 @@ export class StateCacheService {
     this.saveInterval = setInterval(() => this.save(), saveIntervalMs)
   }
 
-  public setContentMimeType(contentHash: string, mimeType: string): void {
-    this.storedState.mimeTypeByContentHash.set(contentHash, mimeType)
+  public setContentMimeType(objectId: string, mimeType: string): void {
+    this.storedState.mimeTypeByObjectId.set(objectId, mimeType)
   }
 
-  public getContentMimeType(contentHash: string): string | undefined {
-    return this.storedState.mimeTypeByContentHash.get(contentHash)
-  }
-
-  public setObjectContentHash(objectId: string, hash: string): void {
-    this.memoryState.contentHashByObjectId.set(objectId, hash)
-  }
-
-  public getObjectContentHash(objectId: string): string | undefined {
-    return this.memoryState.contentHashByObjectId.get(objectId)
+  public getContentMimeType(objectId: string): string | undefined {
+    return this.storedState.mimeTypeByObjectId.get(objectId)
   }
 
   private calcCacheGroup({ sizeKB, popularity }: CacheItemData) {
@@ -76,23 +67,23 @@ export class StateCacheService {
     )
   }
 
-  public getCachedContentHashes(): string[] {
-    let hashes: string[] = []
+  public getCachedObjectsIds(): string[] {
+    let objectIds: string[] = []
     for (const [, group] of this.storedState.lruCacheGroups.entries()) {
-      hashes = hashes.concat(Array.from(group.keys()))
+      objectIds = objectIds.concat(Array.from(group.keys()))
     }
-    return hashes
+    return objectIds
   }
 
-  public getCachedContentLength(): number {
+  public getCachedObjectsCount(): number {
     return this.storedState.lruCacheGroups.reduce((a, b) => a + b.size, 0)
   }
 
-  public newContent(contentHash: string, sizeInBytes: number): void {
-    const { groupNumberByContentHash } = this.memoryState
+  public newContent(objectId: string, sizeInBytes: number): void {
+    const { groupNumberByObjectId } = this.memoryState
     const { lruCacheGroups } = this.storedState
-    if (groupNumberByContentHash.get(contentHash)) {
-      this.logger.warn('newContent was called for content that already exists, ignoring the call', { contentHash })
+    if (groupNumberByObjectId.get(objectId)) {
+      this.logger.warn('newContent was called for content that already exists, ignoring the call', { objectId })
       return
     }
     const cacheItemData: CacheItemData = {
@@ -101,33 +92,33 @@ export class StateCacheService {
       sizeKB: Math.ceil(sizeInBytes / 1024),
     }
     const groupNumber = this.calcCacheGroup(cacheItemData)
-    groupNumberByContentHash.set(contentHash, groupNumber)
-    lruCacheGroups[groupNumber].set(contentHash, cacheItemData)
+    groupNumberByObjectId.set(objectId, groupNumber)
+    lruCacheGroups[groupNumber].set(objectId, cacheItemData)
   }
 
-  public peekContent(contentHash: string): CacheItemData | undefined {
-    const groupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
+  public peekContent(objectId: string): CacheItemData | undefined {
+    const groupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
     if (groupNumber !== undefined) {
-      return this.storedState.lruCacheGroups[groupNumber].get(contentHash)
+      return this.storedState.lruCacheGroups[groupNumber].get(objectId)
     }
   }
 
-  public useContent(contentHash: string): void {
-    const { groupNumberByContentHash } = this.memoryState
+  public useContent(objectId: string): void {
+    const { groupNumberByObjectId } = this.memoryState
     const { lruCacheGroups } = this.storedState
-    const groupNumber = groupNumberByContentHash.get(contentHash)
+    const groupNumber = groupNumberByObjectId.get(objectId)
     if (groupNumber === undefined) {
-      this.logger.warn('groupNumberByContentHash missing when trying to update LRU of content', { contentHash })
+      this.logger.warn('groupNumberByObjectId missing when trying to update LRU of content', { objectId })
       return
     }
     const group = lruCacheGroups[groupNumber]
-    const cacheItemData = group.get(contentHash)
+    const cacheItemData = group.get(objectId)
     if (!cacheItemData) {
-      this.logger.warn('Cache inconsistency: item missing in group retrieved from by groupNumberByContentHash map!', {
-        contentHash,
+      this.logger.warn('Cache inconsistency: item missing in group retrieved from by groupNumberByObjectId map!', {
+        objectId,
         groupNumber,
       })
-      groupNumberByContentHash.delete(contentHash)
+      groupNumberByObjectId.delete(objectId)
       return
     }
     cacheItemData.lastAccessTime = Date.now()
@@ -135,25 +126,25 @@ export class StateCacheService {
     // Move object to the top of the current group / new group
     const targetGroupNumber = this.calcCacheGroup(cacheItemData)
     const targetGroup = lruCacheGroups[targetGroupNumber]
-    group.delete(contentHash)
-    targetGroup.set(contentHash, cacheItemData)
+    group.delete(objectId)
+    targetGroup.set(objectId, cacheItemData)
     if (targetGroupNumber !== groupNumber) {
-      groupNumberByContentHash.set(contentHash, targetGroupNumber)
+      groupNumberByObjectId.set(objectId, targetGroupNumber)
     }
   }
 
-  public getCacheEvictCandidateHash(): string | null {
+  public getCacheEvictCandidateObjectId(): string | null {
     let highestCost = 0
     let bestCandidate: string | null = null
     for (const group of this.storedState.lruCacheGroups) {
       const lastItemInGroup = Array.from(group.entries())[0]
       if (lastItemInGroup) {
-        const [contentHash, objectData] = lastItemInGroup
+        const [objectId, objectData] = lastItemInGroup
         const elapsedSinceLastAccessed = Math.ceil((Date.now() - objectData.lastAccessTime) / 60_000)
         const itemCost = (elapsedSinceLastAccessed * objectData.sizeKB) / objectData.popularity
         if (itemCost >= highestCost) {
           highestCost = itemCost
-          bestCandidate = contentHash
+          bestCandidate = objectId
         }
       }
     }
@@ -161,7 +152,7 @@ export class StateCacheService {
   }
 
   public newPendingDownload(
-    contentHash: string,
+    objectId: string,
     objectSize: number,
     promise: Promise<StorageNodeDownloadResponse>
   ): PendingDownloadData {
@@ -170,31 +161,31 @@ export class StateCacheService {
       objectSize,
       promise,
     }
-    this.memoryState.pendingDownloadsByContentHash.set(contentHash, pendingDownload)
+    this.memoryState.pendingDownloadsByObjectId.set(objectId, pendingDownload)
     return pendingDownload
   }
 
   public getPendingDownloadsCount(): number {
-    return this.memoryState.pendingDownloadsByContentHash.size
+    return this.memoryState.pendingDownloadsByObjectId.size
   }
 
-  public getPendingDownload(contentHash: string): PendingDownloadData | undefined {
-    return this.memoryState.pendingDownloadsByContentHash.get(contentHash)
+  public getPendingDownload(objectId: string): PendingDownloadData | undefined {
+    return this.memoryState.pendingDownloadsByObjectId.get(objectId)
   }
 
-  public dropPendingDownload(contentHash: string): void {
-    this.memoryState.pendingDownloadsByContentHash.delete(contentHash)
+  public dropPendingDownload(objectId: string): void {
+    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
   }
 
-  public dropByHash(contentHash: string): void {
-    this.logger.debug('Dropping all state by content hash', contentHash)
-    this.storedState.mimeTypeByContentHash.delete(contentHash)
-    this.memoryState.pendingDownloadsByContentHash.delete(contentHash)
-    const cacheGroupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
-    this.logger.debug('Cache group by hash established', { contentHash, cacheGroupNumber })
+  public dropById(objectId: string): void {
+    this.logger.debug('Dropping all state by object id', { objectId })
+    this.storedState.mimeTypeByObjectId.delete(objectId)
+    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    const cacheGroupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
+    this.logger.debug('Cache group by object id established', { objectId, cacheGroupNumber })
     if (cacheGroupNumber) {
-      this.memoryState.groupNumberByContentHash.delete(contentHash)
-      this.storedState.lruCacheGroups[cacheGroupNumber].delete(contentHash)
+      this.memoryState.groupNumberByObjectId.delete(objectId)
+      this.storedState.lruCacheGroups[cacheGroupNumber].delete(objectId)
     }
   }
 
@@ -222,11 +213,11 @@ export class StateCacheService {
   }
 
   private serializeData() {
-    const { lruCacheGroups, mimeTypeByContentHash } = this.storedState
+    const { lruCacheGroups, mimeTypeByObjectId } = this.storedState
     return JSON.stringify(
       {
         lruCacheGroups: lruCacheGroups.map((g) => Array.from(g.entries())),
-        mimeTypeByContentHash: Array.from(mimeTypeByContentHash.entries()),
+        mimeTypeByObjectId: Array.from(mimeTypeByObjectId.entries()),
       },
       null,
       2 // TODO: Only for debugging
@@ -255,23 +246,23 @@ export class StateCacheService {
     fs.writeFileSync(this.cacheFilePath, serialized)
   }
 
-  private loadGroupNumberByContentHashMap() {
-    const contentHashes = _.uniq(this.getCachedContentHashes())
+  private loadGroupNumberByObjectIdMap() {
+    const objectIds = _.uniq(this.getCachedObjectsIds())
     const { lruCacheGroups: groups } = this.storedState
-    const { groupNumberByContentHash } = this.memoryState
+    const { groupNumberByObjectId } = this.memoryState
 
-    contentHashes.forEach((contentHash) => {
+    objectIds.forEach((objectId) => {
       groups.forEach((group, groupNumber) => {
-        if (group.has(contentHash)) {
-          if (!groupNumberByContentHash.has(contentHash)) {
-            groupNumberByContentHash.set(contentHash, groupNumber)
+        if (group.has(objectId)) {
+          if (!groupNumberByObjectId.has(objectId)) {
+            groupNumberByObjectId.set(objectId, groupNumber)
           } else {
             // Content duplicated in multiple groups - remove!
             this.logger.warn(
-              `Content hash ${contentHash} was found in in multiple lru cache groups. Removing from group ${groupNumber}...`,
-              { firstGroup: groupNumberByContentHash.get(contentHash), currentGroup: groupNumber }
+              `Object id ${objectId} was found in in multiple lru cache groups. Removing from group ${groupNumber}...`,
+              { firstGroup: groupNumberByObjectId.get(objectId), currentGroup: groupNumber }
             )
-            group.delete(contentHash)
+            group.delete(objectId)
           }
         }
       })
@@ -286,8 +277,8 @@ export class StateCacheService {
         ;((fileContent.lruCacheGroups || []) as Array<Array<[string, CacheItemData]>>).forEach((group, groupIndex) => {
           this.storedState.lruCacheGroups[groupIndex] = new Map<string, CacheItemData>(group)
         })
-        this.storedState.mimeTypeByContentHash = new Map<string, string>(fileContent.mimeTypeByContentHash || [])
-        this.loadGroupNumberByContentHashMap()
+        this.storedState.mimeTypeByObjectId = new Map<string, string>(fileContent.mimeTypeByObjectId || [])
+        this.loadGroupNumberByObjectIdMap()
       } catch (err) {
         this.logger.error('Error while trying to load data from cache file! Will start from scratch', {
           file: this.cacheFilePath,

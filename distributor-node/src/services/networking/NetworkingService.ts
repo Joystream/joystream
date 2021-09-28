@@ -5,7 +5,7 @@ import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
 import { PendingDownloadData, StateCacheService } from '../cache/StateCacheService'
 import { DataObjectDetailsFragment } from './query-node/generated/queries'
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import {
   StorageNodeEndpointData,
   DataObjectAccessPoints,
@@ -118,9 +118,6 @@ export class NetworkingService {
 
   public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
     const details = await this.queryNodeApi.getDataObjectDetails(objectId)
-    if (details) {
-      this.stateCache.setObjectContentHash(objectId, details.ipfsHash)
-    }
     return {
       exists: !!details,
       isSupported:
@@ -163,7 +160,7 @@ export class NetworkingService {
     onFinished?: () => void
   ): Promise<void> {
     const {
-      objectData: { contentHash, accessPoints },
+      objectData: { objectId, accessPoints },
       startAt,
     } = downloadData
 
@@ -172,13 +169,13 @@ export class NetworkingService {
     return new Promise<void>((resolve, reject) => {
       // Handlers:
       const fail = (message: string) => {
-        this.stateCache.dropPendingDownload(contentHash)
+        this.stateCache.dropPendingDownload(objectId)
         onError(new Error(message))
         reject(new Error(message))
       }
 
       const sourceFound = (response: StorageNodeDownloadResponse) => {
-        this.logger.info('Download source chosen', { contentHash, source: response.config.url })
+        this.logger.info('Download source chosen', { objectId, source: response.config.url })
         pendingDownload.status = 'Downloading'
         onSourceFound(response)
       }
@@ -193,7 +190,7 @@ export class NetworkingService {
       )
 
       this.logger.info('Downloading new data object', {
-        contentHash,
+        objectId,
         possibleSources: storageEndpoints.map((e) => ({
           endpoint: e,
           meanResponseTime: this.stateCache.getStorageNodeEndpointMeanResponseTime(e),
@@ -212,7 +209,7 @@ export class NetworkingService {
       storageEndpoints.forEach(async (endpoint) => {
         availabilityQueue.push(async () => {
           const api = new StorageNodeApi(endpoint, this.logging)
-          const available = await api.isObjectAvailable(contentHash)
+          const available = await api.isObjectAvailable(objectId)
           if (!available) {
             throw new Error('Not avilable')
           }
@@ -224,7 +221,7 @@ export class NetworkingService {
         availabilityQueue.stop()
         const job = async () => {
           const api = new StorageNodeApi(endpoint, this.logging)
-          const response = await api.downloadObject(contentHash, startAt)
+          const response = await api.downloadObject(objectId, startAt)
           return response
         }
         objectDownloadQueue.push(job)
@@ -266,10 +263,10 @@ export class NetworkingService {
 
   public downloadDataObject(downloadData: DownloadData): Promise<StorageNodeDownloadResponse> | null {
     const {
-      objectData: { contentHash, size },
+      objectData: { objectId, size },
     } = downloadData
 
-    if (this.stateCache.getPendingDownload(contentHash)) {
+    if (this.stateCache.getPendingDownload(objectId)) {
       // Already downloading
       return null
     }
@@ -281,7 +278,7 @@ export class NetworkingService {
     })
 
     // Queue the download
-    const pendingDownload = this.stateCache.newPendingDownload(contentHash, size, downloadPromise)
+    const pendingDownload = this.stateCache.newPendingDownload(objectId, size, downloadPromise)
     this.downloadQueue.push(() => this.downloadJob(pendingDownload, downloadData, resolveDownload, rejectDownload))
 
     return downloadPromise
@@ -330,25 +327,23 @@ export class NetworkingService {
     const start = Date.now()
     this.logger.debug(`Sending storage node response-time check request to: ${endpoint}`, { endpoint })
     try {
-      // TODO: Use a status endpoint once available?
-      await axios.get(endpoint, {
-        headers: {
-          connection: 'close',
-        },
-      })
-      throw new Error('Unexpected status 200')
+      const api = new StorageNodeApi(endpoint, this.logging)
+      const reqConfig: AxiosRequestConfig = { headers: { connection: 'close' } }
+      await api.stateApi.stateApiGetVersion(reqConfig)
+      const responseTime = Date.now() - start
+      this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
+      this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 404) {
-        // This is the expected outcome currently
-        const responseTime = Date.now() - start
-        this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
-        this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
-      } else {
-        this.logger.warn(`${endpoint} check request unexpected response`, {
+      if (axios.isAxiosError(err)) {
+        const parsedErr = parseAxiosError(err)
+        this.logger.warn(`${endpoint} check request error: ${parsedErr.message}`, {
           endpoint,
-          err: axios.isAxiosError(err) ? parseAxiosError(err) : err,
+          err: parsedErr,
           '@pauseFor': 900,
         })
+      } else {
+        const message = err instanceof Error ? err.message : 'Unknown'
+        this.logger.error(`${endpoint} check unexpected error: ${message}`, { endpoint, err, '@pauseFor': 900 })
       }
     }
   }

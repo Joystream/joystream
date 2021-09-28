@@ -24,6 +24,37 @@ import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } fr
 /**
  * 
  * @export
+ * @interface DataStatsResponse
+ */
+export interface DataStatsResponse {
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    totalSize: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    objectNumber: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    tempDirSize?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    tempDownloads?: number;
+}
+/**
+ * 
+ * @export
  * @interface ErrorResponse
  */
 export interface ErrorResponse {
@@ -122,12 +153,31 @@ export interface TokenRequestData {
      */
     bagId: string;
 }
+/**
+ * 
+ * @export
+ * @interface VersionResponse
+ */
+export interface VersionResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof VersionResponse
+     */
+    version: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof VersionResponse
+     */
+    userAgent?: string;
+}
 
 /**
- * PublicApi - axios parameter creator
+ * FilesApi - axios parameter creator
  * @export
  */
-export const PublicApiAxiosParamCreator = function (configuration?: Configuration) {
+export const FilesApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
          * Get auth token from a server.
@@ -164,15 +214,15 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
         },
         /**
          * Returns a media file.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicApiGetFile: async (cid: string, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'cid' is not null or undefined
-            assertParamExists('publicApiGetFile', 'cid', cid)
-            const localVarPath = `/files/{cid}`
-                .replace(`{${"cid"}}`, encodeURIComponent(String(cid)));
+        publicApiGetFile: async (id: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('publicApiGetFile', 'id', id)
+            const localVarPath = `/files/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -197,15 +247,15 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
         },
         /**
          * Returns a media file headers.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicApiGetFileHeaders: async (cid: string, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'cid' is not null or undefined
-            assertParamExists('publicApiGetFileHeaders', 'cid', cid)
-            const localVarPath = `/files/{cid}`
-                .replace(`{${"cid"}}`, encodeURIComponent(String(cid)));
+        publicApiGetFileHeaders: async (id: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('publicApiGetFileHeaders', 'id', id)
+            const localVarPath = `/files/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -294,11 +344,11 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
 };
 
 /**
- * PublicApi - functional programming interface
+ * FilesApi - functional programming interface
  * @export
  */
-export const PublicApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = PublicApiAxiosParamCreator(configuration)
+export const FilesApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = FilesApiAxiosParamCreator(configuration)
     return {
         /**
          * Get auth token from a server.
@@ -312,22 +362,22 @@ export const PublicApiFp = function(configuration?: Configuration) {
         },
         /**
          * Returns a media file.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async publicApiGetFile(cid: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFile(cid, options);
+        async publicApiGetFile(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFile(id, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * Returns a media file headers.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async publicApiGetFileHeaders(cid: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFileHeaders(cid, options);
+        async publicApiGetFileHeaders(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFileHeaders(id, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -347,11 +397,11 @@ export const PublicApiFp = function(configuration?: Configuration) {
 };
 
 /**
- * PublicApi - factory interface
+ * FilesApi - factory interface
  * @export
  */
-export const PublicApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = PublicApiFp(configuration)
+export const FilesApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = FilesApiFp(configuration)
     return {
         /**
          * Get auth token from a server.
@@ -364,21 +414,21 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
         },
         /**
          * Returns a media file.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicApiGetFile(cid: string, options?: any): AxiosPromise<any> {
-            return localVarFp.publicApiGetFile(cid, options).then((request) => request(axios, basePath));
+        publicApiGetFile(id: string, options?: any): AxiosPromise<any> {
+            return localVarFp.publicApiGetFile(id, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns a media file headers.
-         * @param {string} cid Content ID
+         * @param {string} id Data object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicApiGetFileHeaders(cid: string, options?: any): AxiosPromise<void> {
-            return localVarFp.publicApiGetFileHeaders(cid, options).then((request) => request(axios, basePath));
+        publicApiGetFileHeaders(id: string, options?: any): AxiosPromise<void> {
+            return localVarFp.publicApiGetFileHeaders(id, options).then((request) => request(axios, basePath));
         },
         /**
          * Upload data
@@ -396,43 +446,43 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
 };
 
 /**
- * PublicApi - object-oriented interface
+ * FilesApi - object-oriented interface
  * @export
- * @class PublicApi
+ * @class FilesApi
  * @extends {BaseAPI}
  */
-export class PublicApi extends BaseAPI {
+export class FilesApi extends BaseAPI {
     /**
      * Get auth token from a server.
      * @param {TokenRequest} [tokenRequest] Token request parameters,
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof PublicApi
+     * @memberof FilesApi
      */
     public publicApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any) {
-        return PublicApiFp(this.configuration).publicApiAuthTokenForUploading(tokenRequest, options).then((request) => request(this.axios, this.basePath));
+        return FilesApiFp(this.configuration).publicApiAuthTokenForUploading(tokenRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * Returns a media file.
-     * @param {string} cid Content ID
+     * @param {string} id Data object ID
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof PublicApi
+     * @memberof FilesApi
      */
-    public publicApiGetFile(cid: string, options?: any) {
-        return PublicApiFp(this.configuration).publicApiGetFile(cid, options).then((request) => request(this.axios, this.basePath));
+    public publicApiGetFile(id: string, options?: any) {
+        return FilesApiFp(this.configuration).publicApiGetFile(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * Returns a media file headers.
-     * @param {string} cid Content ID
+     * @param {string} id Data object ID
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof PublicApi
+     * @memberof FilesApi
      */
-    public publicApiGetFileHeaders(cid: string, options?: any) {
-        return PublicApiFp(this.configuration).publicApiGetFileHeaders(cid, options).then((request) => request(this.axios, this.basePath));
+    public publicApiGetFileHeaders(id: string, options?: any) {
+        return FilesApiFp(this.configuration).publicApiGetFileHeaders(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -443,10 +493,279 @@ export class PublicApi extends BaseAPI {
      * @param {any} [file] Data file
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof PublicApi
+     * @memberof FilesApi
      */
     public publicApiUploadFile(dataObjectId: string, storageBucketId: string, bagId: string, file?: any, options?: any) {
-        return PublicApiFp(this.configuration).publicApiUploadFile(dataObjectId, storageBucketId, bagId, file, options).then((request) => request(this.axios, this.basePath));
+        return FilesApiFp(this.configuration).publicApiUploadFile(dataObjectId, storageBucketId, bagId, file, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * StateApi - axios parameter creator
+ * @export
+ */
+export const StateApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Returns all local data objects.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetAllLocalDataObjects: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/state/data-objects`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns local data objects for the bag.
+         * @param {string} bagId Bag ID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetLocalDataObjectsByBagId: async (bagId: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bagId' is not null or undefined
+            assertParamExists('stateApiGetLocalDataObjectsByBagId', 'bagId', bagId)
+            const localVarPath = `/state/bags/{bagId}/data-objects`
+                .replace(`{${"bagId"}}`, encodeURIComponent(String(bagId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns local uploading directory stats.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetLocalDataStats: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/state/data`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns server version.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetVersion: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/version`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * StateApi - functional programming interface
+ * @export
+ */
+export const StateApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = StateApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Returns all local data objects.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async stateApiGetAllLocalDataObjects(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetAllLocalDataObjects(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Returns local data objects for the bag.
+         * @param {string} bagId Bag ID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async stateApiGetLocalDataObjectsByBagId(bagId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetLocalDataObjectsByBagId(bagId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Returns local uploading directory stats.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async stateApiGetLocalDataStats(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DataStatsResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetLocalDataStats(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Returns server version.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async stateApiGetVersion(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<VersionResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetVersion(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * StateApi - factory interface
+ * @export
+ */
+export const StateApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = StateApiFp(configuration)
+    return {
+        /**
+         * Returns all local data objects.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetAllLocalDataObjects(options?: any): AxiosPromise<Array<string>> {
+            return localVarFp.stateApiGetAllLocalDataObjects(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns local data objects for the bag.
+         * @param {string} bagId Bag ID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetLocalDataObjectsByBagId(bagId: string, options?: any): AxiosPromise<Array<string>> {
+            return localVarFp.stateApiGetLocalDataObjectsByBagId(bagId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns local uploading directory stats.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetLocalDataStats(options?: any): AxiosPromise<DataStatsResponse> {
+            return localVarFp.stateApiGetLocalDataStats(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns server version.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetVersion(options?: any): AxiosPromise<VersionResponse> {
+            return localVarFp.stateApiGetVersion(options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * StateApi - object-oriented interface
+ * @export
+ * @class StateApi
+ * @extends {BaseAPI}
+ */
+export class StateApi extends BaseAPI {
+    /**
+     * Returns all local data objects.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof StateApi
+     */
+    public stateApiGetAllLocalDataObjects(options?: any) {
+        return StateApiFp(this.configuration).stateApiGetAllLocalDataObjects(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns local data objects for the bag.
+     * @param {string} bagId Bag ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof StateApi
+     */
+    public stateApiGetLocalDataObjectsByBagId(bagId: string, options?: any) {
+        return StateApiFp(this.configuration).stateApiGetLocalDataObjectsByBagId(bagId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns local uploading directory stats.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof StateApi
+     */
+    public stateApiGetLocalDataStats(options?: any) {
+        return StateApiFp(this.configuration).stateApiGetLocalDataStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns server version.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof StateApi
+     */
+    public stateApiGetVersion(options?: any) {
+        return StateApiFp(this.configuration).stateApiGetVersion(options).then((request) => request(this.axios, this.basePath));
     }
 }
 

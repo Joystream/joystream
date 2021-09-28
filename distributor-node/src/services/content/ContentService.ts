@@ -34,57 +34,52 @@ export class ContentService {
   }
 
   public async startupInit(supportedObjects: DataObjectData[]): Promise<void> {
-    const dataObjectsByHash = _.groupBy(supportedObjects, (o) => o.contentHash)
+    const dataObjectsById = _.groupBy(supportedObjects, (o) => o.objectId)
     const dataDirFiles = fs.readdirSync(this.dataDir)
     const filesCountOnStartup = dataDirFiles.length
-    const cachedContentHashes = this.stateCache.getCachedContentHashes()
-    const cacheItemsOnStartup = cachedContentHashes.length
+    const cachedObjectsIds = this.stateCache.getCachedObjectsIds()
+    const cacheItemsCountOnStartup = cachedObjectsIds.length
 
     this.logger.info('ContentService initializing...', {
       supportedObjects: supportedObjects.length,
       filesCountOnStartup,
-      cacheItemsOnStartup,
+      cacheItemsCountOnStartup,
     })
     let filesDropped = 0
-    for (const contentHash of dataDirFiles) {
-      this.logger.debug('Checking content file', { contentHash })
+    for (const objectId of dataDirFiles) {
+      this.logger.debug('Checking content file', { objectId })
       // Add fileSize to contentSizeSum for each file. If the file ends up dropped - contentSizeSum will be reduced by this.drop().
-      const fileSize = this.fileSize(contentHash)
+      const fileSize = this.fileSize(objectId)
       this.contentSizeSum += fileSize
 
       // Drop files that are not part of current chain assignment
-      const objectsByHash = dataObjectsByHash[contentHash] || []
-      if (!objectsByHash.length) {
-        this.drop(contentHash, 'Not supported')
+      const [objectById] = dataObjectsById[objectId] || []
+      if (!objectById) {
+        this.drop(objectId, 'Not supported')
         continue
       }
 
       // Compare file size to expected one
-      const { size: dataObjectSize } = objectsByHash[0]
+      const { size: dataObjectSize } = objectById
       if (fileSize !== dataObjectSize) {
         // Existing file size does not match the expected one
         const msg = `Unexpected file size. Expected: ${dataObjectSize}, actual: ${fileSize}`
         this.logger.warn(msg, { fileSize, dataObjectSize })
-        this.drop(contentHash, msg)
+        this.drop(objectId, msg)
         ++filesDropped
       } else {
         // Existing file size is OK - detect mimeType if missing
-        if (!this.stateCache.getContentMimeType(contentHash)) {
-          this.stateCache.setContentMimeType(contentHash, await this.guessMimeType(contentHash))
+        if (!this.stateCache.getContentMimeType(objectId)) {
+          this.stateCache.setContentMimeType(objectId, await this.detectMimeType(objectId))
         }
       }
-
-      // Recreate contentHashByObjectId map for all supported data objects
-      objectsByHash.forEach(({ contentHash, objectId }) => {
-        this.stateCache.setObjectContentHash(objectId, contentHash)
-      })
     }
 
     let cacheItemsDropped = 0
-    for (const contentHash of cachedContentHashes) {
-      if (!this.exists(contentHash)) {
+    for (const objectId of cachedObjectsIds) {
+      if (!this.exists(objectId)) {
         // Content is part of cache data, but does not exist in filesystem - drop from cache
-        this.stateCache.dropByHash(contentHash)
+        this.stateCache.dropById(objectId)
         ++cacheItemsDropped
       }
     }
@@ -96,57 +91,54 @@ export class ContentService {
     })
   }
 
-  public drop(contentHash: string, reason?: string): void {
-    if (this.exists(contentHash)) {
-      const size = this.fileSize(contentHash)
-      fs.unlinkSync(this.path(contentHash))
+  public drop(objectId: string, reason?: string): void {
+    if (this.exists(objectId)) {
+      const size = this.fileSize(objectId)
+      fs.unlinkSync(this.path(objectId))
       this.contentSizeSum -= size
-      this.logger.debug('Dropping content', { contentHash, reason, size, contentSizeSum: this.contentSizeSum })
+      this.logger.debug('Dropping content', { objectId, reason, size, contentSizeSum: this.contentSizeSum })
     } else {
-      this.logger.warn('Trying to drop content that no loger exists', { contentHash, reason })
+      this.logger.warn('Trying to drop content that no loger exists', { objectId, reason })
     }
-    this.stateCache.dropByHash(contentHash)
+    this.stateCache.dropById(objectId)
   }
 
-  public fileSize(contentHash: string): number {
-    return fs.statSync(this.path(contentHash)).size
+  public fileSize(objectId: string): number {
+    return fs.statSync(this.path(objectId)).size
   }
 
-  public path(contentHash: string): string {
-    return `${this.dataDir}/${contentHash}`
+  public path(objectId: string): string {
+    return `${this.dataDir}/${objectId}`
   }
 
-  public exists(contentHash: string): boolean {
-    return fs.existsSync(this.path(contentHash))
+  public exists(objectId: string): boolean {
+    return fs.existsSync(this.path(objectId))
   }
 
-  public createReadStream(contentHash: string): fs.ReadStream {
-    return fs.createReadStream(this.path(contentHash))
+  public createReadStream(objectId: string): fs.ReadStream {
+    return fs.createReadStream(this.path(objectId))
   }
 
-  public createWriteStream(contentHash: string): fs.WriteStream {
-    return fs.createWriteStream(this.path(contentHash), { autoClose: true, emitClose: true })
+  public createWriteStream(objectId: string): fs.WriteStream {
+    return fs.createWriteStream(this.path(objectId), { autoClose: true, emitClose: true })
   }
 
-  public createContinousReadStream(
-    contentHash: string,
-    options: FileContinousReadStreamOptions
-  ): FileContinousReadStream {
-    return new FileContinousReadStream(this.path(contentHash), options)
+  public createContinousReadStream(objectId: string, options: FileContinousReadStreamOptions): FileContinousReadStream {
+    return new FileContinousReadStream(this.path(objectId), options)
   }
 
-  public async guessMimeType(contentHash: string): Promise<string> {
-    const guessResult = await FileType.fromFile(this.path(contentHash))
-    return guessResult?.mime || DEFAULT_CONTENT_TYPE
+  public async detectMimeType(objectId: string): Promise<string> {
+    const result = await FileType.fromFile(this.path(objectId))
+    return result?.mime || DEFAULT_CONTENT_TYPE
   }
 
   private async evictCacheUntilFreeSpaceReached(targetFreeSpace: number): Promise<void> {
     this.logger.verbose('Cache eviction triggered.', { targetFreeSpace, currentFreeSpace: this.freeSpace })
     let itemsDropped = 0
     while (this.freeSpace < targetFreeSpace) {
-      const evictCandidateHash = this.stateCache.getCacheEvictCandidateHash()
-      if (evictCandidateHash) {
-        this.drop(evictCandidateHash, 'Cache eviction')
+      const evictCandidateId = this.stateCache.getCacheEvictCandidateObjectId()
+      if (evictCandidateId) {
+        this.drop(evictCandidateId, 'Cache eviction')
         ++itemsDropped
       } else {
         this.logger.verbose('Nothing to drop from cache, waiting...', { freeSpace: this.freeSpace, targetFreeSpace })
@@ -156,9 +148,9 @@ export class ContentService {
     this.logger.verbose('Cache eviction finalized.', { currentfreeSpace: this.freeSpace, itemsDropped })
   }
 
-  public async handleNewContent(contentHash: string, expectedSize: number, dataStream: Readable): Promise<void> {
+  public async handleNewContent(objectId: string, expectedSize: number, dataStream: Readable): Promise<void> {
     this.logger.verbose('Handling new content', {
-      contentHash,
+      objectId,
       expectedSize,
     })
 
@@ -170,21 +162,21 @@ export class ContentService {
     // Reserve space for the new object
     this.contentSizeSum += expectedSize
     this.logger.verbose('Reserved space for new data object', {
-      contentHash,
+      objectId,
       expectedSize,
       newContentSizeSum: this.contentSizeSum,
     })
 
     // Return a promise that resolves when the new file is created
     return new Promise<void>((resolve, reject) => {
-      const fileStream = this.createWriteStream(contentHash)
+      const fileStream = this.createWriteStream(objectId)
 
       let bytesRecieved = 0
 
       pipeline(dataStream, fileStream, async (err) => {
         const { bytesWritten } = fileStream
         const logMetadata = {
-          contentHash,
+          objectId,
           expectedSize,
           bytesRecieved,
           bytesWritten,
@@ -194,20 +186,20 @@ export class ContentService {
             err,
             ...logMetadata,
           })
-          this.drop(contentHash)
+          this.drop(objectId)
           reject(err)
         } else {
           if (bytesWritten === bytesRecieved && bytesWritten === expectedSize) {
-            const mimeType = await this.guessMimeType(contentHash)
+            const mimeType = await this.detectMimeType(objectId)
             this.logger.info('New content accepted', { ...logMetadata })
-            this.stateCache.dropPendingDownload(contentHash)
-            this.stateCache.newContent(contentHash, expectedSize)
-            this.stateCache.setContentMimeType(contentHash, mimeType)
+            this.stateCache.dropPendingDownload(objectId)
+            this.stateCache.newContent(objectId, expectedSize)
+            this.stateCache.setContentMimeType(objectId, mimeType)
           } else {
             this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
               ...logMetadata,
             })
-            this.drop(contentHash)
+            this.drop(objectId)
           }
         }
       })
