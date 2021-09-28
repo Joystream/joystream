@@ -25,7 +25,7 @@ services:
       context: .
       dockerfile: colossus.Dockerfile
     depends_on:
-      - graphql-server-mnt
+      - graphql-server
     volumes:
       - /data
       - /keystore
@@ -43,7 +43,7 @@ services:
       - .env
     environment:
       - COLOSSUS_PORT=3333
-      - QUERY_NODE_HOST=graphql-server-mnt:4002
+      - QUERY_NODE_HOST=graphql-server:4002
       - WORKER_ID=0
       - ACCOUNT_URI=//Alice
 
@@ -54,16 +54,16 @@ services:
       context: .
       dockerfile: distributor-node.Dockerfile
     depends_on:
-      - graphql-server-mnt
+      - graphql-server
     volumes:
       - /data
       - /cache
     ports:
       - 127.0.0.1:3334:3334
     # Node configuration can be overriden via env, for exampe:
-    # environment:
-    #   JOYSTREAM_DISTRIBUTOR__ID: node-id
-    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: qn-endpoint
+    environment:
+      # JOYSTREAM_DISTRIBUTOR__ID: node-id
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server:4002/graphql
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__SUBSTRATE_NODE: sn-endpoint
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__DATA: data-dir

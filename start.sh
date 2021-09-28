@@ -41,8 +41,8 @@ yarn workspace query-node-root db:migrate
 export DB_HOST=db
 
 # Start processor and graphql server
-docker-compose up -d processor-mnt
-docker-compose up -d graphql-server-mnt
+docker-compose up -d processor
+docker-compose up -d graphql-server
 
 ## Storage Infrastructure
 docker-compose up -d colossus
