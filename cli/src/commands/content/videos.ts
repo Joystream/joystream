@@ -16,9 +16,9 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
   async run() {
     const { channelId } = this.parse(VideosCommand).args
 
-    const videos: [VideoId, Video][] = await this.getApi().availableVideos()
+    let videos: [VideoId, Video][] = await this.getApi().availableVideos()
     if (channelId) {
-      videos.filter(([, v]) => v.in_channel.eqn(parseInt(channelId)))
+      videos = videos.filter(([, v]) => v.in_channel.eqn(parseInt(channelId)))
     }
 
     if (videos.length > 0) {
