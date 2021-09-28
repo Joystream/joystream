@@ -64,6 +64,9 @@ decl_error! {
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels,
 
+        /// Actor not channel owner
+        ActorNotChannelOwner,
+
         /// No assets to be removed have been specified
         NoAssetsSpecified,
 

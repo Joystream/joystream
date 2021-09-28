@@ -17,6 +17,7 @@ fn create_member_channel() -> ChannelId {
             assets: NewAssets::<Test>::Urls(vec![]),
             meta: vec![],
             reward_account: None,
+            collaborators: BTreeSet::<MemberId>::new(),
         }
     ));
 
@@ -43,6 +44,7 @@ fn video_creation_successful() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -97,6 +99,7 @@ fn video_update_successful() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );

@@ -4,6 +4,7 @@ use super::curators;
 use super::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use core::array;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
@@ -47,6 +48,7 @@ fn successful_channel_deletion() {
                 assets: assets,
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -124,6 +126,7 @@ fn successful_channel_assets_deletion() {
                 assets: assets,
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -192,6 +195,7 @@ fn succesful_channel_update() {
                 assets: assets,
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -205,6 +209,7 @@ fn succesful_channel_update() {
                 assets: Some(new_assets),
                 new_meta: None,
                 reward_account: None,
+                new_collaborators: None,
             },
             Ok(()),
         );
@@ -218,6 +223,7 @@ fn succesful_channel_update() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                new_collaborators: None,
             },
             Ok(()),
         );
@@ -263,6 +269,7 @@ fn succesful_channel_creation() {
                 assets: assets,
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -280,6 +287,7 @@ fn lead_cannot_create_channel() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -302,6 +310,7 @@ fn curator_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -319,6 +328,7 @@ fn curator_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -333,6 +343,7 @@ fn curator_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -348,6 +359,7 @@ fn curator_owned_channels() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -360,6 +372,7 @@ fn curator_owned_channels() {
                     owner: ChannelOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                     deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
@@ -368,6 +381,7 @@ fn curator_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ))
         );
@@ -381,6 +395,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                new_collaborators: None,
             }
         ));
 
@@ -393,6 +408,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                new_collaborators: None,
             }
         ));
     })
@@ -413,6 +429,7 @@ fn member_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -428,6 +445,7 @@ fn member_owned_channels() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -440,6 +458,7 @@ fn member_owned_channels() {
                     owner: ChannelOwner::Member(FIRST_MEMBER_ID),
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
@@ -448,11 +467,15 @@ fn member_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ))
         );
 
         let channel_id_2 = Content::next_channel_id();
+
+        let mut collaborators = BTreeSet::new();
+        collaborators.insert(COLLABORATOR_MEMBER_ID);
 
         // Member can create the channel
         assert_ok!(Content::create_channel(
@@ -462,6 +485,7 @@ fn member_owned_channels() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: collaborators.clone(),
             }
         ));
 
@@ -474,6 +498,8 @@ fn member_owned_channels() {
                     owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                     is_censored: false,
                     reward_account: None,
+                    collaborators: collaborators.clone(),
+
                     deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
@@ -482,6 +508,7 @@ fn member_owned_channels() {
                     assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
+                    collaborators: collaborators.clone(),
                 }
             ))
         );
@@ -495,7 +522,8 @@ fn member_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
-            }
+                new_collaborators: None,
+            },
         ));
 
         assert_eq!(
@@ -507,6 +535,7 @@ fn member_owned_channels() {
                     owner: ChannelOwner::Member(FIRST_MEMBER_ID),
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
@@ -515,6 +544,97 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    new_collaborators: None,
+                }
+            ))
+        );
+
+        // Valid collaborator should be able to update channel assets
+        let assets = Some(NewAssets::<Test>::Urls(vec![vec![b"test".to_vec()]]));
+
+        // Update channel fails because channel_id_1 has no collabs
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_1,
+                ChannelUpdateParametersRecord {
+                    assets: assets.clone(),
+                    new_meta: None,
+                    reward_account: None,
+                    new_collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized
+        );
+
+        // Attempt from a collaborator to update reward account should fail
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelUpdateParametersRecord {
+                    assets: None,
+                    new_meta: None,
+                    reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                    new_collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        // Attempt from a collaborator to update collaboratorSet should fail
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelUpdateParametersRecord {
+                    assets: None,
+                    new_meta: None,
+                    reward_account: None,
+                    new_collaborators: Some(
+                        array::IntoIter::new([COLLABORATOR_MEMBER_ID]).collect()
+                    ),
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        // Update channel assets succeeds because channel_id_2 has collabs
+        assert_ok!(Content::update_channel(
+            Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_id_2,
+            ChannelUpdateParametersRecord {
+                assets: assets.clone(),
+                new_meta: None,
+                reward_account: None,
+                new_collaborators: None,
+            },
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelUpdated(
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelRecord {
+                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
+                    is_censored: false,
+                    reward_account: None,
+                    collaborators: collaborators.clone(),
+                    // channel 2 owner account
+                    deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
+                },
+                ChannelUpdateParametersRecord {
+                    assets: assets,
+                    new_meta: None,
+                    reward_account: None,
+                    new_collaborators: None,
                 }
             ))
         );
@@ -529,6 +649,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    new_collaborators: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -550,6 +671,7 @@ fn channel_censoring() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -626,6 +748,7 @@ fn channel_censoring() {
                 assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 

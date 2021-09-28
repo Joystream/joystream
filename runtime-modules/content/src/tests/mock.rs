@@ -46,6 +46,10 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
 
+// members that act as collaborators
+pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 20;
+pub const COLLABORATOR_MEMBER_ID: MemberId = 21;
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -465,6 +469,7 @@ pub fn create_channel_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: num_assets,
                     num_videos: 0,
+                    collaborators: BTreeSet::new(),
                 },
                 params.clone(),
             ))
@@ -508,6 +513,7 @@ pub fn update_channel_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: channel_pre.num_assets + maybe_num_assets.unwrap_or(0),
                     num_videos: channel_pre.num_videos,
+                    collaborators: BTreeSet::new(),
                 },
                 params.clone(),
             ))
@@ -549,6 +555,7 @@ pub fn delete_channel_assets_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: channel_pre.num_assets - (num_assets_removed as u64),
                     num_videos: channel_pre.num_videos,
+                    collaborators: BTreeSet::new(),
                 },
             ))
         );

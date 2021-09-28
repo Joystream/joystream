@@ -33,7 +33,8 @@ pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Tr
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + Ord;
 
     type PaidTermId: Parameter
         + Member
