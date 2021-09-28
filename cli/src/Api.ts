@@ -61,6 +61,7 @@ import {
 import ExitCodes from './ExitCodes'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
+import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -630,6 +631,10 @@ export default class Api {
     }
 
     return video
+  }
+
+  async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
+    return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
   }
 
   async channelCategoryIds(): Promise<ChannelCategoryId[]> {
