@@ -52,8 +52,6 @@ export async function processChannelMetadata(
     channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
   }
 
-  channel.coverPhoto = new AssetNone()
-  channel.avatarPhoto = new AssetNone()
   // prepare cover photo asset if needed
   if (isSet(meta.coverPhoto)) {
     const asset = findAssetByIndex(processedAssets, meta.coverPhoto, 'channel cover photo')
@@ -105,8 +103,6 @@ export async function processVideoMetadata(
     await updateVideoLicense(ctx, video, meta.license)
   }
 
-  video.thumbnailPhoto = new AssetNone()
-  video.media = new AssetNone()
   // prepare thumbnail photo asset if needed
   if (isSet(meta.thumbnailPhoto)) {
     const asset = findAssetByIndex(processedAssets, meta.thumbnailPhoto, 'thumbnail photo')
@@ -478,14 +474,14 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   // is allowed to be associated only with one channel/video in runtime
   const channel = await store.get(Channel, {
     where: channelAssets.map((assetName) => ({
-      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+      [assetName]: Raw((alias) => `${alias} ->> 'dataObjectId' = :id`, {
         id: dataObject.id,
       }),
     })),
   })
   const video = await store.get(Video, {
     where: videoAssets.map((assetName) => ({
-      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+      [assetName]: Raw((alias) => `${alias} ->> 'dataObjectId' = :id`, {
         id: dataObject.id,
       }),
     })),
