@@ -141,11 +141,8 @@ export async function members_MembershipBought({ store, event }: EventContext & 
 }
 
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId] = new Members.MemberProfileUpdatedEvent(event).params
-  const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event).args
-  const metadata = metadataBytesOpt.isSome
-    ? deserializeMetadata(MembershipMetadata, metadataBytesOpt.unwrap())
-    : undefined
+  const [memberId, newHandle, newMetadata] = new Members.MemberProfileUpdatedEvent(event).params
+  const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
   const member = await getMemberById(store, memberId)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -159,8 +156,8 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     member.metadata.updatedAt = eventTime
   }
   // TODO: avatar
-  if (handle.isSome) {
-    member.handle = bytesToString(handle.unwrap())
+  if (newHandle.isSome) {
+    member.handle = bytesToString(newHandle.unwrap())
     member.updatedAt = eventTime
   }
 
@@ -182,8 +179,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
 }
 
 export async function members_MemberAccountsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId] = new Members.MemberAccountsUpdatedEvent(event).params
-  const { newRootAccount, newControllerAccount } = new Members.UpdateAccountsCall(event).args
+  const [memberId, newRootAccount, newControllerAccount] = new Members.MemberAccountsUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
   const eventTime = new Date(event.blockTimestamp)
 

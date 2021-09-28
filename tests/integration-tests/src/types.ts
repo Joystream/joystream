@@ -109,12 +109,23 @@ export interface ProposalCreatedEventDetails extends EventDetails {
 }
 
 export type ProposalsEngineEventName =
-  | 'ProposalCreated'
   | 'ProposalStatusUpdated'
   | 'ProposalDecisionMade'
   | 'ProposalExecuted'
   | 'Voted'
   | 'ProposalCancelled'
+
+export type ProposalsCodexEventName = 'ProposalCreated'
+export type ProposalsDiscussionEventName =
+  | 'ThreadCreated'
+  | 'PostCreated'
+  | 'PostUpdated'
+  | 'ThreadModeChanged'
+  | 'PostDeleted'
+
+export interface ProposalDiscussionPostCreatedEventDetails extends EventDetails {
+  postId: PostId
+}
 
 export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
 export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<
@@ -139,6 +150,7 @@ export interface CategoryCreatedEventDetails extends EventDetails {
 
 export interface ThreadCreatedEventDetails extends EventDetails {
   threadId: ThreadId
+  postId: PostId
 }
 
 export interface PostAddedEventDetails extends EventDetails {
@@ -152,7 +164,7 @@ export type ForumEventName =
   | 'ThreadCreated'
   | 'ThreadModerated'
   | 'ThreadUpdated'
-  | 'ThreadTitleUpdated'
+  | 'ThreadMetadataUpdated'
   | 'ThreadDeleted'
   | 'ThreadMoved'
   | 'PostAdded'

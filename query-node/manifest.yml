@@ -51,7 +51,6 @@ typegen:
     - storageWorkingGroup.NewMissedRewardLevelReached
     # Proposals
     - proposalsCodex.ProposalCreated
-    - proposalsEngine.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
     - proposalsEngine.ProposalDecisionMade
     - proposalsEngine.ProposalExecuted
@@ -69,8 +68,7 @@ typegen:
     - forum.CategoryDeleted
     - forum.ThreadCreated
     - forum.ThreadModerated
-    # - forum.ThreadUpdated FIXME: Not emitted by the runtime
-    - forum.ThreadTitleUpdated
+    - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
     - forum.VoteOnPoll
@@ -136,10 +134,6 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
   calls:
-    # Memberships
-    - members.updateProfile
-    - members.updateAccounts
-    - forum.createThread
     # Content directory
     - content.create_curator_group
     - content.set_curator_group_status
@@ -172,6 +166,8 @@ typegen:
     - data_directory.remove_content
     - data_directory.accept_content
     - data_directory.update_content_uploading_status
+    # Proposals discussion
+    - proposalsDiscussion.addPost
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
@@ -486,8 +482,6 @@ mappings:
     # Proposals
     - event: proposalsCodex.ProposalCreated
       handler: proposalsCodex_ProposalCreated
-    - event: proposalsEngine.ProposalCreated
-      handler: proposalsEngine_ProposalCreated
     - event: proposalsEngine.ProposalStatusUpdated
       handler: proposalsEngine_ProposalStatusUpdated
     - event: proposalsEngine.ProposalDecisionMade
@@ -520,8 +514,8 @@ mappings:
       handler: forum_ThreadCreated
     - event: forum.ThreadModerated
       handler: forum_ThreadModerated
-    - event: forum.ThreadTitleUpdated
-      handler: forum_ThreadTitleUpdated
+    - event: forum.ThreadMetadataUpdated
+      handler: forum_ThreadMetadataUpdated
     - event: forum.ThreadDeleted
       handler: forum_ThreadDeleted
     - event: forum.ThreadMoved

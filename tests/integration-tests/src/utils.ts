@@ -95,6 +95,10 @@ export class Utils {
     )
   }
 
+  public static asText(textOrHex: string): string {
+    return Utils.bytesToString(createType('Bytes', textOrHex))
+  }
+
   public static assert(condition: any, msg?: string): asserts condition {
     if (!condition) {
       throw new Error(msg || 'Assertion failed')

@@ -143,22 +143,7 @@ type ThreadModeratedEvent @entity {
   actor: Worker!
 }
 
-# FIXME: Not emitted by the runtime
-# type ThreadUpdatedEvent @entity {
-#   "Generic event data"
-#   event: Event!
-
-#   "The thread beeing updated"
-#   thread: ForumThread!
-
-#   "The new archival status of the thread (true = archived)"
-#   newArchivalStatus: Boolean!
-
-#   "Actor responsible for the update"
-#   actor: Worker!
-# }
-
-type ThreadTitleUpdatedEvent @entity {
+type ThreadMetadataUpdatedEvent @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -182,7 +167,7 @@ type ThreadTitleUpdatedEvent @entity {
   thread: ForumThread!
 
   "New title of the thread"
-  newTitle: String!
+  newTitle: String
 
   # Only author can update the thread title, so no actor information required
 }
