@@ -4,12 +4,12 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '9.8.0'
+version = '9.9.0'
 
 [dependencies]
 # Third-party dependencies
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
-codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
+serde = { version = "1.0.101", optional = true }
+codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
 
 # Substrate primitives
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -58,6 +58,7 @@ frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev 
 frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', default-features = false, optional = true }
 pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', default-features = false, optional = true }
 pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', default-features = false, optional = true }
+hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
@@ -80,7 +81,7 @@ content = { package = 'pallet-content', default-features = false, path = '../run
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 strum = {version = "0.19", default-features = false}
 [build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
+wasm-builder-runner = { version = "1.0.5", package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 
 [features]
 default = ['std']
@@ -150,19 +151,21 @@ std = [
     'content/std',
 ]
 runtime-benchmarks = [
-    "frame-system/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
-	"pallet-collective/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
-    "frame-benchmarking",
-    "frame-system-benchmarking",
-    "pallet-offences-benchmarking",
-	"pallet-session-benchmarking",
-    "substrate-utility/runtime-benchmarks",
+    'frame-system/runtime-benchmarks',
+	'frame-support/runtime-benchmarks',
+	'sp-runtime/runtime-benchmarks',
+	'pallet-balances/runtime-benchmarks',
+	'pallet-collective/runtime-benchmarks',
+	'pallet-im-online/runtime-benchmarks',
+	'pallet-staking/runtime-benchmarks',
+	'pallet-timestamp/runtime-benchmarks',
+    'frame-benchmarking',
+    'frame-system-benchmarking',
+    'pallet-offences-benchmarking',
+	'pallet-session-benchmarking',
+    'substrate-utility/runtime-benchmarks',
+    'storage/runtime-benchmarks',
+    "hex-literal",
 ]
 
 

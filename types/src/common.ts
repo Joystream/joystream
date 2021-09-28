@@ -1,4 +1,4 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt } from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt, u128 } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
 import { u8aConcat, u8aToHex, compactToU8a } from '@polkadot/util'
@@ -107,10 +107,12 @@ export class InputValidationLengthConstraint
 }
 
 export const WorkingGroupDef = {
+  // TODO: Forum: Null,
   Storage: Null,
   Content: Null,
   Operations: Null,
   Gateway: Null,
+  // TODO: Distribution
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
@@ -141,6 +143,7 @@ export class MemoText extends Text {}
 // see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
+export class BalanceOf extends u128 {}
 
 export const commonTypes: RegistryTypes = {
   BlockAndTime,

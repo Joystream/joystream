@@ -1,0 +1,258 @@
+"Global storage system parameters"
+type StorageSystemParameters @entity {
+  "Blacklisted content hashes"
+  blacklist: [String!]
+
+  "How many buckets can be assigned to store a bag"
+  storageBucketsPerBagLimit: Int!
+
+  "How many buckets can be assigned to distribute a bag"
+  distributionBucketsPerBagLimit: Int!
+
+  "Whether the uploading is globally blocked"
+  uploadingBlocked: Boolean!
+
+  "Additional fee for storing 1 MB of data"
+  dataObjectFeePerMB: BigInt!
+
+  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsCountLimit: BigInt!
+
+  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsSizeLimit: BigInt!
+}
+
+type StorageBucketOperatorStatusMissing @variant {
+  _phantom: Int
+}
+
+type StorageBucketOperatorStatusInvited @variant {
+  workerId: Int!
+}
+
+type StorageBucketOperatorStatusActive @variant {
+  workerId: Int!
+}
+
+union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
+
+type GeoCoordinates @entity {
+  latitude: Float!
+  longitude: Float!
+
+  "Optional DistributionBucketFamilyMetadata reference in case the coordinates are part of a region boundary"
+  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadata
+}
+
+type NodeLocationMetadata @entity {
+  "ISO 3166-1 alpha-2 country code (2 letters)"
+  countryCode: String
+
+  "City name"
+  city: String
+
+  "Geographic coordinates"
+  coordinates: GeoCoordinates
+}
+
+type StorageBucketOperatorMetadata @entity {
+  "Root node endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+type StorageBucket @entity {
+  "Runtime bucket id"
+  id: ID!
+
+  "Current bucket operator status"
+  operatorStatus: StorageBucketOperatorStatus!
+
+  "Storage bucket operator metadata"
+  operatorMetadata: StorageBucketOperatorMetadata
+
+  "Whether the bucket is accepting any new storage bags"
+  acceptingNewBags: Boolean!
+
+  "Assignments to store a bag"
+  bagAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBucket")
+
+  "Bucket's data object size limit in bytes"
+  dataObjectsSizeLimit: BigInt!
+
+  "Bucket's data object count limit"
+  dataObjectCountLimit: BigInt!
+
+  "Number of assigned data objects"
+  dataObjectsCount: BigInt!
+
+  "Total size of assigned data objects"
+  dataObjectsSize: BigInt!
+}
+
+type StorageBagOwnerCouncil @variant {
+  _phantom: Int
+}
+
+type StorageBagOwnerWorkingGroup @variant {
+  workingGroupId: String
+}
+
+type StorageBagOwnerMember @variant {
+  memberId: Int
+}
+
+type StorageBagOwnerChannel @variant {
+  channelId: Int
+}
+
+# Note: Not supported by runtime yet
+type StorageBagOwnerDAO @variant {
+  daoId: Int
+}
+
+union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
+
+type StorageBag @entity {
+  "Storage bag id"
+  id: ID!
+
+  "Data objects in the bag"
+  objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
+
+  "Assignments to a storage bucket"
+  storageAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBag")
+
+  "Assignments to a distribution bucket"
+  distirbutionAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "storageBag")
+
+  "Owner of the storage bag"
+  owner: StorageBagOwner!
+}
+
+type StorageBagStorageAssignment @entity {
+  "{storageBagId-storageBucketId}"
+  id: ID!
+
+  "Storage bag to be stored"
+  storageBag: StorageBag!
+
+  "Storage bucket that should store the bag"
+  storageBucket: StorageBucket!
+
+  # Relationship filtering workaround
+  storageBagId: ID
+  storageBucketId: ID
+}
+
+type StorageBagDistributionAssignment @entity {
+  "{storageBagId-distributionBucketId}"
+  id: ID!
+
+  "Storage bag to be distributed"
+  storageBag: StorageBag!
+
+  "Distribution bucket that should distribute the bag"
+  distributionBucket: DistributionBucket!
+
+  # Relationship filtering workaround
+  storageBagId: ID
+  distributionBucketId: ID
+}
+
+type StorageDataObject @entity {
+  "Data object runtime id"
+  id: ID!
+
+  "Whether the data object was uploaded and accepted by the storage provider"
+  isAccepted: Boolean!
+
+  "Data object size in bytes"
+  size: BigInt!
+
+  "Storage bag the data object is part of"
+  storageBag: StorageBag!
+
+  "IPFS content hash"
+  ipfsHash: String!
+}
+
+type DistributionBucketFamilyMetadata @entity {
+  "Name of the geographical region covered by the family (ie.: us-east-1)"
+  region: String
+
+  "Optional, more specific description of the region covered by the family"
+  description: String
+
+  "Optional region boundary as geocoordiantes polygon"
+  boundary: [GeoCoordinates!] @derivedFrom(field: "boundarySourceBucketFamilyMeta")
+}
+
+type DistributionBucketOperatorMetadata @entity {
+  "Root distributor node api endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+enum DistributionBucketOperatorStatus {
+  INVITED,
+  ACTIVE
+}
+
+type DistributionBucketOperator @entity {
+  "{bucketId}-{workerId}"
+  id: ID!
+
+  "Related distirbution bucket"
+  distributionBucket: DistributionBucket!
+
+  "ID of the distribution group worker"
+  workerId: Int!
+
+  "Current operator status"
+  status: DistributionBucketOperatorStatus!
+
+  "Operator metadata"
+  metadata: DistributionBucketOperatorMetadata
+}
+
+type DistributionBucket @entity {
+  "Runtime bucket id"
+  id: ID!
+
+  "Distribution family the bucket is part of"
+  family: DistributionBucketFamily!
+
+  "Distribution bucket operators (either active or invited)"
+  operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
+
+  "Whether the bucket is accepting any new bags"
+  acceptingNewBags: Boolean!
+
+  "Whether the bucket is currently distributing content"
+  distributing: Boolean!
+
+  "Assignments to distribute a bag"
+  bagAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "distributionBucket")
+}
+
+type DistributionBucketFamily @entity {
+  "Runtime bucket family id"
+  id: ID!
+
+  "Current bucket family metadata"
+  metadata: DistributionBucketFamilyMetadata
+
+  "Distribution buckets belonging to the family"
+  buckets: [DistributionBucket!] @derivedFrom(field: "family")
+}

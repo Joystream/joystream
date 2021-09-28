@@ -5,7 +5,6 @@ pub use curator_group::*;
 pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
-pub use common::MembershipTypes;
 use core::fmt::Debug;
 use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]
@@ -15,7 +14,7 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 // use frame_system::ensure_root;
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
+pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
     /// Curator identifier
     type CuratorId: Parameter
         + Member
@@ -122,7 +121,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 
 pub fn ensure_lead_can_update_assets<T: Trait>(
     origin: T::Origin,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&sender)?;
@@ -137,7 +136,7 @@ pub fn ensure_curator_group_is_channel_owner<T: Trait>(
     origin: T::Origin,
     curator_group_id: &T::CuratorGroupId,
     curator_id: &T::CuratorId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
 
@@ -156,7 +155,7 @@ pub fn ensure_curator_group_is_channel_owner<T: Trait>(
 pub fn ensure_member_is_channel_owner<T: Trait>(
     origin: T::Origin,
     member_id: &T::MemberId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
 
@@ -187,7 +186,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
     // Only lead can censor curator group owned channels and videos

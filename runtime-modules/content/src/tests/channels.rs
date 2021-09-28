@@ -2,9 +2,279 @@
 
 use super::curators;
 use super::mock::*;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
 use core::array;
 use frame_support::{assert_err, assert_ok};
+
+#[test]
+fn successful_channel_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 3 assets
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"third".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let channel_id = NextChannelId::<Test>::get();
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // attempt to delete channel with non zero assets
+        delete_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            Err(Error::<Test>::ChannelContainsAssets.into()),
+        );
+
+        // delete assets
+        let assets_to_delete = [0u64, 1u64, 2u64]
+            .iter()
+            .map(|&x| x)
+            .collect::<BTreeSet<_>>();
+
+        // delete channel assets
+        delete_channel_assets_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            assets_to_delete,
+            Ok(()),
+        );
+
+        // successful deletion
+        delete_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn successful_channel_assets_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 3 assets
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"third".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let channel_id = NextChannelId::<Test>::get();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // delete assets
+        let assets_to_delete = [0u64, 1u64].iter().map(|&x| x).collect::<BTreeSet<_>>();
+
+        // delete channel assets
+        delete_channel_assets_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            assets_to_delete,
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn succesful_channel_update() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 2 + 1 assets to be uploaded
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let new_assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let channel_id = NextChannelId::<Test>::get();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // update channel
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            ChannelUpdateParametersRecord {
+                assets: Some(new_assets),
+                new_meta: None,
+                reward_account: None,
+                new_collaborators: None,
+            },
+            Ok(()),
+        );
+
+        // update with 0 assets
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            ChannelUpdateParametersRecord {
+                assets: None,
+                new_meta: None,
+                reward_account: None,
+                new_collaborators: None,
+            },
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn succesful_channel_creation() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 3 assets to be uploaded
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"third".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+    })
+}
 
 #[test]
 fn lead_cannot_create_channel() {
@@ -14,7 +284,7 @@ fn lead_cannot_create_channel() {
                 Origin::signed(LEAD_ORIGIN),
                 ContentActor::Lead,
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -37,7 +307,7 @@ fn curator_owned_channels() {
                 Origin::signed(FIRST_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -55,7 +325,7 @@ fn curator_owned_channels() {
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -70,7 +340,7 @@ fn curator_owned_channels() {
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -86,7 +356,7 @@ fn curator_owned_channels() {
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
-                assets: vec![],
+                assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
                 collaborators: BTreeSet::<MemberId>::new(),
@@ -100,15 +370,15 @@ fn curator_owned_channels() {
                 channel_id,
                 ChannelRecord {
                     owner: ChannelOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
+                    deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
                 },
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -156,7 +426,7 @@ fn member_owned_channels() {
                 Origin::signed(UNKNOWN_ORIGIN),
                 ContentActor::Member(MEMBERS_COUNT + 1),
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -172,7 +442,7 @@ fn member_owned_channels() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: vec![],
+                assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
                 collaborators: BTreeSet::<MemberId>::new(),
@@ -186,15 +456,15 @@ fn member_owned_channels() {
                 channel_id_1,
                 ChannelRecord {
                     owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
+                    deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
                 },
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
@@ -212,7 +482,7 @@ fn member_owned_channels() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: vec![],
+                assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
                 collaborators: collaborators.clone(),
@@ -226,15 +496,16 @@ fn member_owned_channels() {
                 channel_id_2,
                 ChannelRecord {
                     owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: collaborators.clone(),
+
+                    deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
                 },
                 ChannelCreationParametersRecord {
-                    assets: vec![],
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                     reward_account: None,
                     collaborators: collaborators.clone(),
@@ -262,12 +533,12 @@ fn member_owned_channels() {
                 channel_id_1,
                 ChannelRecord {
                     owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
+                    deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
                 },
                 ChannelUpdateParametersRecord {
                     assets: None,
@@ -279,7 +550,7 @@ fn member_owned_channels() {
         );
 
         // Valid collaborator should be able to update channel assets
-        let assets = Some(vec![NewAsset::Urls(vec![b"test".to_vec()])]);
+        let assets = Some(NewAssets::<Test>::Urls(vec![vec![b"test".to_vec()]]));
 
         // Update channel fails because channel_id_1 has no collabs
         assert_err!(
@@ -351,12 +622,13 @@ fn member_owned_channels() {
                 channel_id_2,
                 ChannelRecord {
                     owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: collaborators.clone(),
+                    // channel 2 owner account
+                    deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
+                    num_assets: 0,
+                    num_videos: 0,
                 },
                 ChannelUpdateParametersRecord {
                     assets: assets,
@@ -396,7 +668,7 @@ fn channel_censoring() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: vec![],
+                assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
                 collaborators: BTreeSet::<MemberId>::new(),
@@ -473,7 +745,7 @@ fn channel_censoring() {
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
-                assets: vec![],
+                assets: NewAssets::<Test>::Urls(vec![]),
                 meta: vec![],
                 reward_account: None,
                 collaborators: BTreeSet::<MemberId>::new(),

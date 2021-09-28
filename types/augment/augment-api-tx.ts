@@ -1,9 +1,9 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
 import type { AnyNumber } from '@polkadot/types/types';
-import type { ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, ElectionParameters, FillOpeningParameters, MemberId, MemoText, ObjectOwner, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, RewardPolicy, SeriesId, SeriesParameters, StorageProviderId, TerminateRoleParameters, ThreadId, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, ContentId, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, ElectionParameters, FillOpeningParameters, MemberId, MemoText, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, RewardPolicy, SeriesId, SeriesParameters, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
 import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -146,7 +146,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Remove assets of a channel from storage
        **/
-      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, Vec<ContentId>]>;
+      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<ContentId> | (ContentId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, Vec<ContentId>]>;
       /**
        * Remove curator from a given curator group
        **/
@@ -168,7 +168,7 @@ declare module '@polkadot/api/types/submittable' {
       updateVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array, params: VideoCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId, VideoCategoryUpdateParameters]>;
       updateVideoCensorshipStatus: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, isCensored: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, bool, Bytes]>;
     };
-    contentDirectoryWorkingGroup: {
+    contentWorkingGroup: {
       /**
        * Begin accepting worker applications to an opening that is active.
        * Require signed leader origin or the root (to accept applications for the leader position).
@@ -302,93 +302,86 @@ declare module '@polkadot/api/types/submittable' {
       setStageVoting: AugmentedSubmittable<(endsAt: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BlockNumber]>;
       vote: AugmentedSubmittable<(commitment: Hash | string | Uint8Array, stake: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Hash, BalanceOf]>;
     };
-    dataDirectory: {
+    distributionWorkingGroup: {
       /**
-       * Storage provider accepts a content. Requires signed storage provider account and its id.
-       * The LiaisonJudgement can only be updated once from Pending to Accepted.
-       * Subsequent calls are a no-op.
+       * Begin accepting worker applications to an opening that is active.
+       * Require signed leader origin or the root (to accept applications for the leader position).
        **/
-      acceptContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageProviderId, ContentId]>;
+      acceptApplications: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
       /**
-       * Adds the content to the frame_system. The created DataObject
-       * awaits liaison to accept it.
+       * Add an opening for a worker role.
+       * Require signed leader origin or the root (to add opening for the leader position).
        **/
-      addContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ObjectOwner, Vec<ContentParameters>]>;
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
       /**
-       * Remove the content from the frame_system.
+       * Apply on a worker opening.
        **/
-      removeContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, contentIds: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ObjectOwner, Vec<ContentId>]>;
+      applyOnOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, roleAccountId: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, OpeningId, AccountId, Option<BalanceOf>, Option<BalanceOf>, Bytes]>;
       /**
-       * Set the default owner voucher
+       * Begin reviewing, and therefore not accepting new applications.
+       * Require signed leader origin or the root (to begin review applications for the leader position).
        **/
-      setDefaultVoucher: AugmentedSubmittable<(sizeLimit: u64 | AnyNumber | Uint8Array, objectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
+      beginApplicantReview: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
       /**
-       * Sets global voucher objects limit. Requires root privileges.
-       * New limit cannot be less that used value.
+       * Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
+       * Can be decreased to zero, no actions on zero stake.
+       * Require signed leader origin or the root (to decrease the leader stake).
        **/
-      setGlobalVoucherObjectsLimit: AugmentedSubmittable<(newObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
       /**
-       * Sets global voucher size limit. Requires root privileges.
-       * New limit cannot be less that used value.
+       * Fill opening for worker/lead.
+       * Require signed leader origin or the root (to fill opening for the leader position).
        **/
-      setGlobalVoucherSizeLimit: AugmentedSubmittable<(newSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: ApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId, ApplicationIdSet, Option<RewardPolicy>]>;
       /**
-       * Sets VoucherObjectsLimitUpperBound. Requires root privileges.
+       * Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
+       * role_account_id to the stake. No limits on the stake.
        **/
-      setVoucherObjectsLimitUpperBound: AugmentedSubmittable<(newUpperBound: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
       /**
-       * Sets VoucherSizeLimitUpperBound. Requires root privileges.
+       * Leave the role by the active worker.
        **/
-      setVoucherSizeLimitUpperBound: AugmentedSubmittable<(newUpperBound: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
       /**
-       * Locks / unlocks content uploading
+       * Sets the capacity to enable working group budget. Requires root origin.
        **/
-      updateContentUploadingStatus: AugmentedSubmittable<(isBlocked: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
+      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
       /**
-       * Updates storage object owner voucher objects limit. Requires leader privileges.
-       * New limit cannot be less that used value.
+       * Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Require signed leader origin or the root (to slash the leader stake).
        **/
-      updateStorageObjectOwnerVoucherObjectsLimit: AugmentedSubmittable<(objectOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ObjectOwner, u64]>;
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
       /**
-       * Updates storage object owner voucher size limit. Requires leader privileges.
-       * New limit cannot be less that used value.
+       * Terminate the worker application. Can be done by the lead only.
        **/
-      updateStorageObjectOwnerVoucherSizeLimit: AugmentedSubmittable<(objectOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ObjectOwner, u64]>;
-    };
-    dataObjectStorageRegistry: {
+      terminateApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
       /**
-       * Add storage provider-to-content relationship. The storage provider should be registered
-       * in the storage working group.
+       * Terminate the active worker by the lead.
+       * Require signed leader origin or the root (to terminate the leader role).
        **/
-      addRelationship: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, cid: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageProviderId, ContentId]>;
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array, slashStake: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes, bool]>;
       /**
-       * Activates storage provider-to-content relationship. The storage provider should be registered
-       * in the storage working group. A storage provider may flip their own ready state, but nobody else.
+       * Update the reward account associated with a set reward relationship for the active worker.
        **/
-      setRelationshipReady: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, id: DataObjectStorageRelationshipId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageProviderId, DataObjectStorageRelationshipId]>;
+      updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
       /**
-       * Deactivates storage provider-to-content relationship. The storage provider should be registered
-       * in the storage working group. A storage provider may flip their own ready state, but nobody else.
+       * Update the reward amount associated with a set reward relationship for the active worker.
+       * Require signed leader origin or the root (to update leader reward amount).
        **/
-      unsetRelationshipReady: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, id: DataObjectStorageRelationshipId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageProviderId, DataObjectStorageRelationshipId]>;
-    };
-    dataObjectTypeRegistry: {
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newAmount: BalanceOfMint | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOfMint]>;
       /**
-       * Activates existing data object type. Requires leader privileges.
+       * Update the associated role account of the active worker/lead.
        **/
-      activateDataObjectType: AugmentedSubmittable<(id: DataObjectTypeId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DataObjectTypeId]>;
+      updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
       /**
-       * Deactivates existing data object type. Requires leader privileges.
+       * Update the associated role storage.
        **/
-      deactivateDataObjectType: AugmentedSubmittable<(id: DataObjectTypeId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DataObjectTypeId]>;
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
       /**
-       * Registers the new data object type. Requires leader privileges.
+       * Withdraw the worker application. Can be done by the worker itself only.
        **/
-      registerDataObjectType: AugmentedSubmittable<(dataObjectType: DataObjectType | { description?: any; active?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DataObjectType]>;
-      /**
-       * Updates existing data object type. Requires leader privileges.
-       **/
-      updateDataObjectType: AugmentedSubmittable<(id: DataObjectTypeId | AnyNumber | Uint8Array, dataObjectType: DataObjectType | { description?: any; active?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DataObjectTypeId, DataObjectType]>;
+      withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
     };
     finalityTracker: {
       /**
@@ -1287,6 +1280,144 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       withdrawUnbonded: AugmentedSubmittable<(numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
+    };
+    storage: {
+      /**
+       * Accept pending invite.
+       **/
+      acceptDistributionBucketInvitation: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * A storage provider signals that the data object was successfully uploaded to its storage.
+       **/
+      acceptPendingDataObjects: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array, bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, dataObjects: BTreeSet<DataObjectId>) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId, BagId, BTreeSet<DataObjectId>]>;
+      /**
+       * Accept the storage bucket invitation. An invitation must match the worker_id parameter.
+       **/
+      acceptStorageBucketInvitation: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId]>;
+      /**
+       * Cancel pending invite. Must be pending.
+       **/
+      cancelDistributionBucketOperatorInvite: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, operatorWorkerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Cancel pending storage bucket invite. An invitation must be pending.
+       **/
+      cancelStorageBucketOperatorInvite: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId]>;
+      /**
+       * Create a distribution bucket.
+       **/
+      createDistributionBucket: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, bool]>;
+      /**
+       * Create a distribution bucket family.
+       **/
+      createDistributionBucketFamily: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      /**
+       * Create storage bucket.
+       **/
+      createStorageBucket: AugmentedSubmittable<(inviteWorker: Option<WorkerId> | null | object | string | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array, sizeLimit: u64 | AnyNumber | Uint8Array, objectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<WorkerId>, bool, u64, u64]>;
+      /**
+       * Delete distribution bucket. Must be empty.
+       **/
+      deleteDistributionBucket: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * Deletes a distribution bucket family.
+       **/
+      deleteDistributionBucketFamily: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId]>;
+      /**
+       * Delete storage bucket. Must be empty. Storage operator must be missing.
+       **/
+      deleteStorageBucket: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId]>;
+      /**
+       * Invite an operator. Must be missing.
+       **/
+      inviteDistributionBucketOperator: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, operatorWorkerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Invite storage bucket operator. Must be missing.
+       **/
+      inviteStorageBucketOperator: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, operatorId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, WorkerId]>;
+      /**
+       * Removes distribution bucket operator.
+       **/
+      removeDistributionBucketOperator: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, operatorWorkerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Removes storage bucket operator.
+       **/
+      removeStorageBucketOperator: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId]>;
+      /**
+       * Set distribution bucket family metadata.
+       **/
+      setDistributionBucketFamilyMetadata: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, Bytes]>;
+      /**
+       * Set distribution operator metadata for the distribution bucket.
+       **/
+      setDistributionOperatorMetadata: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, DistributionBucketFamilyId, DistributionBucketId, Bytes]>;
+      /**
+       * Sets storage bucket voucher limits.
+       **/
+      setStorageBucketVoucherLimits: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, newObjectsSizeLimit: u64 | AnyNumber | Uint8Array, newObjectsNumberLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, u64, u64]>;
+      /**
+       * Sets storage operator metadata (eg.: storage node URL).
+       **/
+      setStorageOperatorMetadata: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId, Bytes]>;
+      /**
+       * Create a dynamic bag. Development mode.
+       **/
+      sudoCreateDynamicBag: AugmentedSubmittable<(bagId: DynamicBagId | { Member: any } | { Channel: any } | string | Uint8Array, deletionPrize: Option<DynamicBagDeletionPrize> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagId, Option<DynamicBagDeletionPrize>]>;
+      /**
+       * Upload new data objects. Development mode.
+       **/
+      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any; expectedDataSizeFee?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
+      /**
+       * Add and remove hashes to the current blacklist.
+       **/
+      updateBlacklist: AugmentedSubmittable<(removeHashes: BTreeSet<Cid>, addHashes: BTreeSet<Cid>) => SubmittableExtrinsic<ApiType>, [BTreeSet<Cid>, BTreeSet<Cid>]>;
+      /**
+       * Updates size-based pricing of new objects uploaded.
+       **/
+      updateDataSizeFee: AugmentedSubmittable<(newDataSizeFee: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
+      /**
+       * Updates 'distributing' flag for the distributing flag.
+       **/
+      updateDistributionBucketMode: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, distributing: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Updates a distribution bucket 'accepts new bags' flag.
+       **/
+      updateDistributionBucketStatus: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Updates distribution buckets for a bag.
+       **/
+      updateDistributionBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, addBuckets: BTreeSet<DistributionBucketId>, removeBuckets: BTreeSet<DistributionBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, DistributionBucketFamilyId, BTreeSet<DistributionBucketId>, BTreeSet<DistributionBucketId>]>;
+      /**
+       * Updates "Distribution buckets per bag" number limit.
+       **/
+      updateDistributionBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Update number of distributed buckets used in given dynamic bag creation policy.
+       **/
+      updateFamiliesInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array, families: BTreeMap<DistributionBucketFamilyId, u32>) => SubmittableExtrinsic<ApiType>, [DynamicBagType, BTreeMap<DistributionBucketFamilyId, u32>]>;
+      /**
+       * Update number of storage buckets used in given dynamic bag creation policy.
+       **/
+      updateNumberOfStorageBucketsInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array, numberOfStorageBuckets: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagType, u64]>;
+      /**
+       * Update whether new bags are being accepted for storage.
+       **/
+      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
+      /**
+       * Updates storage buckets for a bag..
+       **/
+      updateStorageBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, addBuckets: BTreeSet<StorageBucketId>, removeBuckets: BTreeSet<StorageBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, BTreeSet<StorageBucketId>, BTreeSet<StorageBucketId>]>;
+      /**
+       * Updates "Storage buckets per bag" number limit.
+       **/
+      updateStorageBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Updates "Storage buckets voucher max limits".
+       **/
+      updateStorageBucketsVoucherMaxLimits: AugmentedSubmittable<(newObjectsSize: u64 | AnyNumber | Uint8Array, newObjectsNumber: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
+      /**
+       * Updates global uploading flag.
+       **/
+      updateUploadingBlockedStatus: AugmentedSubmittable<(newStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
     };
     storageWorkingGroup: {
       /**

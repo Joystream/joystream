@@ -2,6 +2,7 @@
 
 use super::curators;
 use super::mock::*;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
@@ -13,7 +14,7 @@ fn create_member_channel() -> ChannelId {
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
         ChannelCreationParametersRecord {
-            assets: vec![],
+            assets: NewAssets::<Test>::Urls(vec![]),
             meta: vec![],
             reward_account: None,
             collaborators: BTreeSet::<MemberId>::new(),
@@ -21,6 +22,138 @@ fn create_member_channel() -> ChannelId {
     ));
 
     channel_id
+}
+
+#[test]
+fn video_creation_successful() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // depositi initial balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        let channel_id = NextChannelId::<Test>::get();
+
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![]),
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        let params = VideoCreationParametersRecord {
+            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
+                object_creation_list: vec![
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"first".to_vec(),
+                    },
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"second".to_vec(),
+                    },
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"third".to_vec(),
+                    },
+                ],
+                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+            }),
+            meta: b"test".to_vec(),
+        };
+
+        create_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            params,
+            Ok(()),
+        )
+    })
+}
+
+#[test]
+fn video_update_successful() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        let channel_id = NextChannelId::<Test>::get();
+
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![]),
+                meta: vec![],
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        let params = VideoCreationParametersRecord {
+            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
+                object_creation_list: vec![
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"first".to_vec(),
+                    },
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"second".to_vec(),
+                    },
+                    DataObjectCreationParameters {
+                        size: 3,
+                        ipfs_content_id: b"third".to_vec(),
+                    },
+                ],
+                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+            }),
+            meta: b"test".to_vec(),
+        };
+
+        let video_id = Content::next_video_id();
+
+        create_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            params,
+            Ok(()),
+        );
+
+        let update_params = VideoUpdateParametersRecord {
+            assets: Some(NewAssets::<Test>::Upload(CreationUploadParameters {
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                }],
+                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+            })),
+            new_meta: None,
+        };
+
+        update_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            update_params,
+            Ok(()),
+        );
+    })
 }
 
 #[test]
@@ -35,8 +168,8 @@ fn member_can_create_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            VideoCreationParameters {
-                assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+            VideoCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                 meta: b"metablob".to_vec(),
             }
         ));
@@ -47,8 +180,8 @@ fn member_can_create_videos() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id,
                 video_id,
-                VideoCreationParameters {
-                    assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+                VideoCreationParametersRecord {
+                    assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                     meta: b"metablob".to_vec(),
                 }
             ))
@@ -63,10 +196,10 @@ fn member_can_create_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            VideoUpdateParameters {
-                assets: Some(vec![NewAsset::Urls(vec![
+            VideoUpdateParametersRecord {
+                assets: Some(NewAssets::<Test>::Urls(vec![vec![
                     b"https://somewhere-else.com/".to_vec()
-                ])]),
+                ]])),
                 new_meta: Some(b"newmetablob".to_vec()),
             }
         ));
@@ -76,10 +209,10 @@ fn member_can_create_videos() {
             MetaEvent::content(RawEvent::VideoUpdated(
                 ContentActor::Member(FIRST_MEMBER_ID),
                 video_id,
-                VideoUpdateParameters {
-                    assets: Some(vec![NewAsset::Urls(vec![
+                VideoUpdateParametersRecord {
+                    assets: Some(NewAssets::<Test>::Urls(vec![vec![
                         b"https://somewhere-else.com/".to_vec()
-                    ])]),
+                    ]])),
                     new_meta: Some(b"newmetablob".to_vec()),
                 }
             ))
@@ -91,8 +224,8 @@ fn member_can_create_videos() {
                 Origin::signed(SECOND_MEMBER_ORIGIN),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 channel_id,
-                VideoCreationParameters {
-                    assets: vec![],
+                VideoCreationParametersRecord {
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                 }
             ),
@@ -105,7 +238,7 @@ fn member_can_create_videos() {
                 Origin::signed(SECOND_MEMBER_ORIGIN),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
-                VideoUpdateParameters {
+                VideoUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                 }
@@ -152,8 +285,8 @@ fn curators_can_censor_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            VideoCreationParameters {
-                assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+            VideoCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                 meta: b"metablob".to_vec(),
             }
         ));

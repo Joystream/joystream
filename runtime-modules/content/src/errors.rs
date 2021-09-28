@@ -66,5 +66,18 @@ decl_error! {
 
         /// Actor not channel owner
         ActorNotChannelOwner,
+
+        /// No assets to be removed have been specified
+        NoAssetsSpecified,
+
+        /// Channel assets feasibility
+        InvalidAssetsProvided,
+
+        /// Channel Contains Video
+        ChannelContainsVideos,
+
+        /// Channel Contains Assets
+        ChannelContainsAssets,
+
     }
 }
