@@ -220,9 +220,9 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParametersRecord<NewAssets, AccountId> {
     /// Asset collection for the channel, referenced by metadata
-    assets: NewAssets,
+    assets: Option<NewAssets>,
     /// Metadata about the channel.
-    meta: Vec<u8>,
+    meta: Option<Vec<u8>>,
     /// optional reward account
     reward_account: Option<AccountId>,
 }
@@ -656,14 +656,16 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             // get uploading parameters if assets have to be saved on storage
-            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                &params.assets,
-                &channel_id,
-                &sender,
-            );
+            let maybe_upload_parameters = &params.assets
+                .as_ref()
+                .and_then(
+                    |assets|
+                    Self::pick_upload_parameters_from_assets(&assets, &channel_id,&sender)
+                );
 
             // number of assets succesfully uploaded
             let num_assets = maybe_upload_parameters
+                .as_ref()
                 .map_or(Ok(0u64), |upload_parameters| {
                 Storage::<T>::upload_data_objects(upload_parameters.clone())
                     .map(|_| {
