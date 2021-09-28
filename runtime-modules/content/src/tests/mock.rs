@@ -447,28 +447,30 @@ pub fn create_channel_mock(
     );
 
     if result.is_ok() {
-        let num_assets = match params.assets.clone() {
-            NewAssets::<Test>::Urls(v) => v.len() as u64,
-            NewAssets::<Test>::Upload(c) => c.object_creation_list.len() as u64,
-        };
-        let owner = Content::actor_to_channel_owner(&actor).unwrap();
+        if let Some(assets) = params.assets.as_ref() {
+            let num_assets = match &assets {
+                NewAssets::<Test>::Urls(v) => v.len() as u64,
+                NewAssets::<Test>::Upload(c) => c.object_creation_list.len() as u64,
+            };
+            let owner = Content::actor_to_channel_owner(&actor).unwrap();
 
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                actor.clone(),
-                channel_id,
-                ChannelRecord {
-                    owner: owner,
-                    is_censored: false,
-                    reward_account: params.reward_account,
-                    deletion_prize_source_account_id: sender,
-                    num_assets: num_assets,
-                    num_videos: 0,
-                },
-                params.clone(),
-            ))
-        );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelCreated(
+                    actor.clone(),
+                    channel_id,
+                    ChannelRecord {
+                        owner: owner,
+                        is_censored: false,
+                        reward_account: params.reward_account,
+                        deletion_prize_source_account_id: sender,
+                        num_assets: num_assets,
+                        num_videos: 0,
+                    },
+                    params.clone(),
+                ))
+            );
+        }
     }
 }
 

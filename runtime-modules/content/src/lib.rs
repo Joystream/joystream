@@ -1107,7 +1107,6 @@ decl_module! {
                 // The channel owner will be..
                 &channel.owner,
             )?;
-
             Self::ensure_video_can_be_removed(&video)?;
 
             // If video is on storage, remove it

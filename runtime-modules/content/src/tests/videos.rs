@@ -14,8 +14,8 @@ fn create_member_channel() -> ChannelId {
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
         ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
+            assets: Some(NewAssets::<Test>::Urls(vec![])),
+            meta: Some(vec![]),
             reward_account: None,
         }
     ));
@@ -40,8 +40,8 @@ fn video_creation_successful() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![]),
-                meta: vec![],
+                assets: Some(NewAssets::<Test>::Urls(vec![])),
+                meta: Some(vec![]),
                 reward_account: None,
             },
             Ok(()),
@@ -94,8 +94,8 @@ fn video_update_successful() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![]),
-                meta: vec![],
+                assets: Some(NewAssets::<Test>::Urls(vec![])),
+                meta: Some(vec![]),
                 reward_account: None,
             },
             Ok(()),
