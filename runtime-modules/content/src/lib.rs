@@ -1235,37 +1235,37 @@ decl_module! {
                 T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
             }
 
-            // Make auction bid & update auction data
-            match (auction.buy_now_price, owner_account_id) {
-                // Complete auction immediately
-                (Some(buy_now_price), Some(owner_account_id)) => {
-                    // Do not charge more then buy now
-                    let auction = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
-                    let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
-                    let video = video.set_nft_status(nft);
+            // Complete auction immediately
+            if let (Some(buy_now_price), Some(owner_account_id)) = (auction.buy_now_price, owner_account_id) {
 
-                    // Update the video
-                    VideoById::<T>::insert(video_id, video);
+                // Do not charge more then buy now
+                let auction = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
-                    // Trigger event
-                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
-                },
-                _ => {
-                    // Reseve balance for current bid
-                    // Can not fail, needed check made
-                    T::Currency::reserve(&participant_account_id, bid)?;
+                let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
+                let video = video.set_nft_status(nft);
 
-                    let auction = auction.make_bid(participant_id, participant_account_id, bid, current_block);
-                    let nft = nft.set_auction_transactional_status(auction);
-                    let video = video.set_nft_status(nft);
+                // Update the video
+                VideoById::<T>::insert(video_id, video);
 
-                    VideoById::<T>::insert(video_id, video);
+                // Trigger event
+                Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
+            } else {
+                // Make auction bid & update auction data
 
-                    // Trigger event
-                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
-                },
-            };
+                // Reseve balance for current bid
+                // Can not fail, needed check made
+                T::Currency::reserve(&participant_account_id, bid)?;
+
+                let auction = auction.make_bid(participant_id, participant_account_id, bid, current_block);
+                let nft = nft.set_auction_transactional_status(auction);
+                let video = video.set_nft_status(nft);
+
+                VideoById::<T>::insert(video_id, video);
+
+                // Trigger event
+                Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+            }
         }
 
         /// Cancel open auction bid
