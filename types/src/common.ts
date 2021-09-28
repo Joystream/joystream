@@ -106,7 +106,10 @@ export class InputValidationLengthConstraint
   }
 }
 
+// Reserved keys are not part of the exported definition const, since they are not intented to be used
 export const WorkingGroupDef = {
+  // _Reserved0
+  // _Reserved1
   Storage: Null,
   Content: Null,
   Operations: Null,

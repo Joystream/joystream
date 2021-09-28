@@ -17,6 +17,9 @@ docker-compose up -d joystream-node
 # Bring up db
 docker-compose up -d db
 
+# Override DB_HOST for db setup
+export DB_HOST=localhost
+
 # Make sure we use dev config for db migrations (prevents "Cannot create database..." and some other errors)
 yarn workspace query-node config:dev
 
@@ -24,7 +27,10 @@ yarn workspace query-node config:dev
 yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
+# Set DB_HOST back to docker-service one
+export DB_HOST=db
+
+# Start processor and graphql server
+docker-compose up -d processor-mnt
 docker-compose up -d graphql-server-mnt
 
-# Starting up processor will bring up all services it depends on
-docker-compose up -d processor-mnt
