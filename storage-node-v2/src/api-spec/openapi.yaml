@@ -203,6 +203,13 @@ paths:
       description: Returns local data objects for the bag.
       tags:
         - state
+      parameters:
+        - name: bagId
+          required: true
+          in: path
+          description: Bag ID
+          schema:
+            type: string
       responses:
         200:
           description: Ok
