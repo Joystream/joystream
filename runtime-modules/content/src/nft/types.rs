@@ -118,20 +118,26 @@ impl<
         self
     }
 
-    /// Whether pending tansfer exist
-    pub fn is_initiated_offer_to_member_transactional_status(&self) -> bool {
-        matches!(
-            self.transactional_status,
-            TransactionalStatus::InitiatedOfferToMember(..),
-        )
-    }
-
     /// Ensure NFT has pending offer
     pub fn ensure_pending_offer_exists<T: Trait>(&self) -> DispatchResult {
         ensure!(
-            self.is_initiated_offer_to_member_transactional_status(),
+            matches!(
+                self.transactional_status,
+                TransactionalStatus::InitiatedOfferToMember(..),
+            ),
             Error::<T>::PendingTransferDoesNotExist
         );
+
+        Ok(())
+    }
+
+    /// Ensure NFT transactional status is set to buy now.
+    pub fn ensure_buy_now_transactional_status<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(self.transactional_status, TransactionalStatus::BuyNow(..),),
+            Error::<T>::NFTNotInBuyNowState
+        );
+
         Ok(())
     }
 }
