@@ -279,7 +279,9 @@ async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAss
       resultAsset.urls = JSON.stringify(assetUrls.map((u) => u.toString()))
       return resultAsset
     })
-  } else if (assets.isUpload) {
+  }
+
+  if (assets.isUpload) {
     const assetsUploaded = assets.asUpload.object_creation_list.length
     // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
     const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
@@ -288,9 +290,9 @@ async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAss
       resultAsset.dataObjectId = o.id
       return resultAsset
     })
-  } else {
-    unexpectedData('Unrecognized assets type', assets.type)
   }
+
+  unexpectedData('Unrecognized assets type', assets.type)
 }
 
 function extractVideoSize(assets: NewAssets | undefined, assetIndex: number | null | undefined): number | undefined {
