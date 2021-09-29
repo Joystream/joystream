@@ -337,6 +337,8 @@ pub struct VideoRecord<ChannelId, SeriesId, DataObjectId: Ord> {
     pub is_censored: bool,
     /// storage parameters used during deletion
     pub maybe_data_objects_id_set: Option<BTreeSet<DataObjectId>>,
+    /// assets held by the video both URL and Storage assets
+    pub num_assets: u64,
 }
 
 type Video<T> = VideoRecord<
@@ -1041,6 +1043,10 @@ decl_module! {
                 in_series: None,
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
+                /// num assets
+                num_assets: maybe_data_objects_ids
+                            .as_ref()
+                            .map_or(0u64, |assets| assets.len() as u64),
                 /// storage parameters for later storage deletion
                 maybe_data_objects_id_set: maybe_data_objects_ids,
             };
@@ -1177,14 +1183,12 @@ decl_module! {
             let deletion_prize_source_account_id = ChannelById::<T>::get(&channel_id)
                 .deletion_prize_source_account_id;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
+            // remove storage object id from video list
             let mut video = video;
             let bag_id = Self::bag_id_for_channel(&channel_id);
             let objects_ids_to_remove = assets.iter()
                 .filter_map(|&maybe_asset| {
+                // if asset is Some(_) it indicates a storage asset, else URL asset
                     maybe_asset.and_then(|data_object_id| {
                         if let Some(mut video_assets) = video.maybe_data_objects_id_set.clone() {
 
@@ -1194,17 +1198,22 @@ decl_module! {
                          return Some(data_object_id);
                     })
                 })
-//                .map(|&x| x.clone())
                 .collect::<BTreeSet<_>>();
 
-            let _ = Storage::<T>::delete_data_objects (
+            Storage::<T>::delete_data_objects (
                  deletion_prize_source_account_id,
                  bag_id,
                  objects_ids_to_remove,
-            );
+            )?;
+
+            video.num_assets = video.num_assets.saturating_sub(assets.len() as u64);
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Remove video
-            VideoById::<T>::remove(video_id);
+            VideoById::<T>::insert(video_id, video);
 
 //            Self::deposit_event(RawEvent::VideoAssetsDeleted(actor, video_id, assets));
         }
