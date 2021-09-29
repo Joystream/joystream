@@ -356,10 +356,10 @@ pub struct VideoRecord<
     ChannelId,
     SeriesId,
     DataObjectId: Ord,
-    BlockNumber: BaseArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
-    Balance: Default + Clone,
+    Balance: Default + Clone + BaseArithmetic,
 > {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
@@ -377,10 +377,10 @@ impl<
         ChannelId: Clone,
         SeriesId: Clone,
         DataObjectId: Ord,
-        BlockNumber: BaseArithmetic + Copy,
+        BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + PartialEq + Ord,
         AccountId: Default + Clone + PartialEq + Ord,
-        Balance: Clone + Default,
+        Balance: Clone + Default + BaseArithmetic,
     > VideoRecord<ChannelId, SeriesId, DataObjectId, BlockNumber, MemberId, AccountId, Balance>
 {
     /// Ensure nft is not issued
