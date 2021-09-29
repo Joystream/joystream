@@ -950,8 +950,10 @@ declare module '@polkadot/api/types/events' {
        * Params
        * - dynamic bag ID
        * - optional DynamicBagDeletionPrize instance
+       * - assigned storage buckets' IDs
+       * - assigned distribution buckets' IDs
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>, BTreeSet<StorageBucketId>, BTreeSet<DistributionBucketId>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params
