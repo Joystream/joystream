@@ -1,17 +1,25 @@
+FROM mikefarah/yq as manifest-maker
+# Change metadata.source in manifest file. It's not possible to override it via flag/env.
+USER root
+ARG WS_PROVIDER_ENDPOINT_URI
+COPY ./query-node/manifest.yml /joystream/qn-manifest.yml
+RUN yq e -i ".typegen.metadata.source = \"$WS_PROVIDER_ENDPOINT_URI\"" /joystream/qn-manifest.yml
+
 FROM --platform=linux/x86-64 node:14 as builder
 
 WORKDIR /joystream
 COPY . /joystream
-RUN  rm -fr /joystream/pioneer
+COPY --from=manifest-maker /joystream/qn-manifest.yml /joystream/query-node/manifest.yml
+
+RUN rm -fr /joystream/pioneer
 
 # Do not set NODE_ENV=production until after running yarn install
 # to ensure dev dependencies are installed.
 RUN yarn --forzen-lockfile
 
 RUN yarn workspace @joystream/types build
-RUN yarn workspace @joystream/content-metadata-protobuf build:ts
+RUN yarn workspace @joystream/metadata-protobuf build
 RUN yarn workspace query-node-root build
-RUN yarn workspace storage-node build
 
 # Second stage to reduce image size, enable it when
 # all packages have correctly identified what is a devDependency and what is not.

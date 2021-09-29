@@ -28,10 +28,10 @@
     "typegen:configure": "NODE_URL=${NODE_URL:-ws://localhost:9000} envsub typegen.template.yml typegen.yml",
     "typegen": "rm -rf ./mappings/generated && hydra-typegen typegen manifest.yml --debug",
     "mappings:build": "yarn workspace query-node-mappings build",
-    "docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
-    "docker:db:up": "(cd ../ && docker-compose up -d db)",
-    "docker:db:migrate": "docker run --env-file .env --env DB_HOST=db --env TYPEORM_HOST=db --network container:${PWD##*/}_db_1 hydra-kit:latest yarn db:migrate",
-    "docker:up": "docker-compose up -d"
+    "start:dev": "./start.sh",
+    "start": "./start-img.sh",
+    "kill:dev": "./kill.sh",
+    "kill": "./kill-img.sh"
   },
   "author": "",
   "license": "ISC",
