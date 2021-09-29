@@ -917,7 +917,7 @@ decl_module! {
 
             let category_id = Self::next_channel_category_id();
             NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
-
+c
             let category = ChannelCategory {};
             ChannelCategoryById::<T>::insert(category_id, category.clone());
 
@@ -1014,7 +1014,7 @@ decl_module! {
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
                 &channel_id,
-        &sender,
+                &sender,
             );
 
             // if storaged uploading is required save t he object id for the video
@@ -1075,8 +1075,11 @@ decl_module! {
         ) {
             let sender = ensure_signed(origin.clone())?;
 
+
+
             // check that video exists, retrieve corresponding channel id.
-            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
+            let video = Self::ensure_video_exists(&video_id)?;
+        let channel_id = video.in_channel;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -1084,8 +1087,10 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
+            let mut video = video;
             // Pick the assets to be uploaded to storage frame_system out
             if let Some(assets) = &params.assets {
+
                 // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
@@ -1093,9 +1098,25 @@ decl_module! {
                    &sender,
                );
 
-              if let Some(upload_parameters) = maybe_upload_parameters{
-                 Storage::<T>::upload_data_objects(upload_parameters)?;
-              }
+             // if there are Storage (upload) assets add them to the collection
+             if let Some(upload_parameters) = maybe_upload_parameters{
+                 // taking first and last object data id
+                 let beg = Storage::<T>::next_data_object_id();
+                    Storage::<T>::upload_data_objects(upload_parameters)?;
+                let end = Storage::<T>::next_data_object_id();
+
+                // creating the new collection
+                let mut obj_id_collection = video
+                    .maybe_data_objects_id_set
+                    .unwrap_or_default()
+                    .clone();
+                for e in beg..end {
+                    obj_id_collection.insert(e);
+                }
+                // updating the video collection
+                video.maybe_data_objects_id_set = Some(obj_id_collection);
+
+                }
             }
 
             //
@@ -1514,13 +1535,16 @@ impl<T: Trait> Module<T> {
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
 
+        // number of total assets
+        let num_assets = 0u64;
+
         if let NewAssets::<T>::Upload(creation_upload_params) = assets {
             Some(UploadParametersRecord {
                 bag_id,
                 object_creation_list: creation_upload_params.object_creation_list.clone(),
                 deletion_prize_source_account_id: sender.clone(),
                 expected_data_size_fee: creation_upload_params.expected_data_size_fee,
-            })
+              })
         } else {
             None
         }
