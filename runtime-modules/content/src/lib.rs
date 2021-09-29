@@ -113,6 +113,27 @@ pub enum NewAssetsRecord<Balance> {
 
 type NewAssets<T> = NewAssetsRecord<<T as balances::Trait>::Balance>;
 
+/// Boolean in order to distinguish between url and storage assets to be removed from
+/// videos / channels
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum AssetsToBeRemovedRecord<DataObjectId> {
+    /// Upload to the storage frame_system
+    Upload(DataObjectId),
+    /// Multiple url strings pointing at an asset
+    Urls,
+}
+
+impl<DataObjectId: Encode + Decode + Default + Clone + Copy> Default
+    for AssetsToBeRemovedRecord<DataObjectId>
+{
+    fn default() -> Self {
+        Self::Urls
+    }
+}
+
+type AssetsToBeRemoved<T> = AssetsToBeRemovedRecord<<T as storage::Trait>::DataObjectId>;
+
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -651,7 +672,6 @@ decl_module! {
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
@@ -720,11 +740,12 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let maybe_upload_parameters = params.assets.clone()
-                .and_then(|assets| {Self::pick_upload_parameters_from_assets(
+            let maybe_upload_parameters = params.assets.as_ref()
+                .and_then(|assets| {
+                Self::pick_upload_parameters_from_assets(
                    &assets,
-                    &channel_id,
-            &sender,
+                   &channel_id,
+                   &sender,
             )});
 
             // number of assets succesfully uploaded
@@ -735,7 +756,7 @@ decl_module! {
                         Storage::<T>::upload_data_objects(upload_parameters.clone())
                      .map(|_| {
                         Some(upload_parameters.object_creation_list.len() as u64)
-             })
+            })
             })?;
             //
             // == MUTATION SAFE ==
@@ -775,9 +796,6 @@ decl_module! {
                 &actor,
                 &channel.owner,
             )?;
-
-            // check that channel assets are 0
-            ensure!(channel.num_assets == 0, Error::<T>::ChannelContainsAssets);
 
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
@@ -1131,6 +1149,64 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video_assets(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            assets: BTreeSet<Option<<T as storage::Trait>::DataObjectId>>,
+        ) {
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            let channel_owner = ChannelById::<T>::get(video.in_channel).owner;
+
+            // ensure actor can update channel
+            ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &channel_owner,
+            )?;
+
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let deletion_prize_source_account_id = ChannelById::<T>::get(&channel_id)
+                .deletion_prize_source_account_id;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut video = video;
+            let bag_id = Self::bag_id_for_channel(&channel_id);
+            let objects_ids_to_remove = assets.iter()
+                .filter_map(|&maybe_asset| {
+                    maybe_asset.and_then(|data_object_id| {
+                        if let Some(mut video_assets) = video.maybe_data_objects_id_set.clone() {
+
+                            let _ = video_assets.remove(&data_object_id);
+                            video.maybe_data_objects_id_set = Some(video_assets.clone());
+                        }
+                         return Some(data_object_id);
+                    })
+                })
+//                .map(|&x| x.clone())
+                .collect::<BTreeSet<_>>();
+
+            let _ = Storage::<T>::delete_data_objects (
+                 deletion_prize_source_account_id,
+                 bag_id,
+                 objects_ids_to_remove,
+            );
+
+            // Remove video
+            VideoById::<T>::remove(video_id);
+
+//            Self::deposit_event(RawEvent::VideoAssetsDeleted(actor, video_id, assets));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1500,6 +1576,7 @@ decl_event!(
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
         NewAssets = NewAssets<T>,
+        AssetsToBeRemoved = AssetsToBeRemoved<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1601,5 +1678,6 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ChannelDeleted(ContentActor, ChannelId),
+        VideoAssetsDeleted(ContentActor, VideoId, BTreeSet<AssetsToBeRemoved>),
     }
 );
