@@ -452,10 +452,10 @@ pub type Cid = Vec<u8>;
 type Balances<T> = balances::Module<T>;
 
 /// Alias for the member id.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
