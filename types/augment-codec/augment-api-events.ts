@@ -565,9 +565,9 @@ declare module '@polkadot/api/types/events' {
       MemberRegistered: AugmentedEvent<ApiType, [MemberId, AccountId, EntryMethod]>;
       MemberSetControllerAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
       MemberSetRootAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
-      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId]>;
+      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId, Bytes]>;
     };
     memo: {
       MemoUpdated: AugmentedEvent<ApiType, [AccountId]>;
