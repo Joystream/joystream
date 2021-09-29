@@ -18,7 +18,7 @@ export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
 
 export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
   return class extends BTreeSet.with(valType) {
-    public forEach(callbackFn: (value: V, value2: V, set: Set<V>) => void, thisArg?: any): void {
+    public forEach(callbackFn: (value: V, value2: V, set: Set<V>) => void, thisArg?: unknown): void {
       const sorted = this.toArray()
       return new Set(sorted).forEach(callbackFn, thisArg)
     }
