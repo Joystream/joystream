@@ -221,8 +221,20 @@ impl<T: Trait> Module<T> {
                 }
                 Ok(())
             }
-            _ => Err(Error::<T>::NoIncomingTransfers.into()),
+            _ => Err(Error::<T>::NoIncomingOffers.into()),
         }
+    }
+
+    /// Cancel NFT transaction
+    pub fn cancel_transaction(nft: Nft<T>) -> Nft<T> {
+        if let TransactionalStatus::Auction(ref auction) = nft.transactional_status {
+            if let Some(ref last_bid) = auction.last_bid {
+                // Unreserve previous bidder balance
+                T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
+            }
+        }
+
+        nft.set_idle_transactional_status()
     }
 
     /// Buy nft
