@@ -138,14 +138,14 @@ export async function processVideoMetadata(
 function findAssetByIndex(assets: typeof Asset[], index: number, name?: string): typeof Asset | null {
   if (assets[index]) {
     return assets[index]
-  } else {
-    invalidMetadata(`Invalid${name ? ' ' + name : ''} asset index`, {
-      numberOfAssets: assets.length,
-      requestedAssetIndex: index,
-    })
-
-    return null
   }
+
+  invalidMetadata(`Invalid${name ? ' ' + name : ''} asset index`, {
+    numberOfAssets: assets.length,
+    requestedAssetIndex: index,
+  })
+
+  return null
 }
 
 async function processVideoMediaEncoding(
