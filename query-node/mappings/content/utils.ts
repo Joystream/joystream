@@ -502,7 +502,9 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
       channelId: channel.id.toString(),
       dataObjectId: dataObject.id,
     })
-  } else if (video) {
+  }
+
+  if (video) {
     videoAssets.forEach((assetName) => {
       if (video[assetName] && (video[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
         video[assetName] = new AssetNone()
