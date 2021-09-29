@@ -96,12 +96,12 @@ export async function workingGroup_TerminatedLeader({ event, store }: EventConte
 function getWorkerType(event: SubstrateEvent): WorkerType | null {
   if (event.section === 'storageWorkingGroup') {
     return WorkerType.STORAGE
-  } 
-  
+  }
+
   if (event.section === 'gatewayWorkingGroup') {
     return WorkerType.GATEWAY
   }
-  
+
   return null
 }
 
