@@ -1,12 +1,12 @@
 import fs from 'fs'
-import { ReadonlyConfig, DataObjectData } from '../../types'
+import { ReadonlyConfig } from '../../types'
 import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
 import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileContinousReadStream'
 import FileType from 'file-type'
-import _ from 'lodash'
 import { Readable, pipeline } from 'stream'
+import { NetworkingService } from '../networking'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
@@ -15,6 +15,7 @@ export class ContentService {
   private dataDir: string
   private logger: Logger
   private stateCache: StateCacheService
+  private networking: NetworkingService
 
   private contentSizeSum = 0
 
@@ -26,22 +27,50 @@ export class ContentService {
     return this.config.limits.storage - this.contentSizeSum
   }
 
-  public constructor(config: ReadonlyConfig, logging: LoggingService, stateCache: StateCacheService) {
+  public constructor(
+    config: ReadonlyConfig,
+    logging: LoggingService,
+    networking: NetworkingService,
+    stateCache: StateCacheService
+  ) {
     this.config = config
     this.logger = logging.createLogger('ContentService')
     this.stateCache = stateCache
+    this.networking = networking
     this.dataDir = config.directories.data
   }
 
-  public async startupInit(supportedObjects: DataObjectData[]): Promise<void> {
-    const dataObjectsById = _.groupBy(supportedObjects, (o) => o.objectId)
+  public async cacheCleanup(): Promise<void> {
+    const supportedObjects = await this.networking.fetchSupportedDataObjects()
+    const cachedObjectsIds = this.stateCache.getCachedObjectsIds()
+    let droppedObjects = 0
+
+    this.logger.verbose('Performing cache cleanup...', {
+      supportedObjects: supportedObjects.size,
+      objectsInCache: cachedObjectsIds.length,
+    })
+
+    for (const objectId of cachedObjectsIds) {
+      if (!supportedObjects.has(objectId)) {
+        this.drop(objectId, 'No longer supported')
+        ++droppedObjects
+      }
+    }
+
+    this.logger.verbose('Cache cleanup finished', {
+      droppedObjects,
+    })
+  }
+
+  public async startupInit(): Promise<void> {
+    const supportedObjects = await this.networking.fetchSupportedDataObjects()
     const dataDirFiles = fs.readdirSync(this.dataDir)
     const filesCountOnStartup = dataDirFiles.length
     const cachedObjectsIds = this.stateCache.getCachedObjectsIds()
     const cacheItemsCountOnStartup = cachedObjectsIds.length
 
     this.logger.info('ContentService initializing...', {
-      supportedObjects: supportedObjects.length,
+      supportedObjects: supportedObjects.size,
       filesCountOnStartup,
       cacheItemsCountOnStartup,
     })
@@ -53,14 +82,14 @@ export class ContentService {
       this.contentSizeSum += fileSize
 
       // Drop files that are not part of current chain assignment
-      const [objectById] = dataObjectsById[objectId] || []
-      if (!objectById) {
+      const dataObject = supportedObjects.get(objectId)
+      if (!dataObject) {
         this.drop(objectId, 'Not supported')
         continue
       }
 
       // Compare file size to expected one
-      const { size: dataObjectSize } = objectById
+      const { size: dataObjectSize } = dataObject
       if (fileSize !== dataObjectSize) {
         // Existing file size does not match the expected one
         const msg = `Unexpected file size. Expected: ${dataObjectSize}, actual: ${fileSize}`

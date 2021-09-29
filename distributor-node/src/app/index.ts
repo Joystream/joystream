@@ -7,6 +7,7 @@ import { ServerService } from '../services/server/ServerService'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
+import { AppIntervals } from '../types/app'
 
 export class App {
   private config: ReadonlyConfig
@@ -16,15 +17,33 @@ export class App {
   private server: ServerService
   private logging: LoggingService
   private logger: Logger
+  private intervals: AppIntervals | undefined
 
   constructor(config: ReadonlyConfig) {
     this.config = config
     this.logging = LoggingService.withAppConfig(config)
     this.stateCache = new StateCacheService(config, this.logging)
-    this.content = new ContentService(config, this.logging, this.stateCache)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)
+    this.content = new ContentService(config, this.logging, this.networking, this.stateCache)
     this.server = new ServerService(config, this.stateCache, this.content, this.logging, this.networking)
     this.logger = this.logging.createLogger('App')
+  }
+
+  private setIntervals() {
+    this.intervals = {
+      saveCacheState: setInterval(() => this.stateCache.save(), this.config.intervals.saveCacheState * 1000),
+      checkStorageNodeResponseTimes: setInterval(
+        () => this.networking.checkActiveStorageNodeEndpoints(),
+        this.config.intervals.checkStorageNodeResponseTimes * 1000
+      ),
+      cacheCleanup: setInterval(() => this.content.cacheCleanup(), this.config.intervals.cacheCleanup * 1000),
+    }
+  }
+
+  private clearIntervals() {
+    if (this.intervals) {
+      Object.values(this.intervals).forEach((interval) => clearInterval(interval))
+    }
   }
 
   private checkConfigDirectories(): void {
@@ -51,12 +70,12 @@ export class App {
   }
 
   public async start(): Promise<void> {
-    this.logger.info('Starting the app')
+    this.logger.info('Starting the app', { config: this.config })
     try {
       this.checkConfigDirectories()
       this.stateCache.load()
-      const dataObjects = await this.networking.fetchSupportedDataObjects()
-      await this.content.startupInit(dataObjects)
+      await this.content.startupInit()
+      this.setIntervals()
       this.server.start()
     } catch (err) {
       this.logger.error('Node initialization failed!', { err })
@@ -102,8 +121,7 @@ export class App {
   private exitHandler(exitCode: number | null, signal: string | null): boolean | undefined {
     this.logger.info('Exiting...')
     // Clear intervals
-    this.stateCache.clearInterval()
-    this.networking.clearIntervals()
+    this.clearIntervals()
     // Stop the server
     this.server.stop()
     // Save cache

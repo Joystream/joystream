@@ -7,7 +7,7 @@ export const bytesizeRegex = new RegExp(`^[0-9]+(${bytesizeUnits.join('|')})$`)
 
 export const configSchema: JSONSchema4 = {
   type: 'object',
-  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits'],
+  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits', 'intervals'],
   additionalProperties: false,
   properties: {
     id: { type: 'string' },
@@ -40,6 +40,11 @@ export const configSchema: JSONSchema4 = {
       maxConcurrentStorageNodeDownloads: { type: 'integer', minimum: 1 },
       maxConcurrentOutboundConnections: { type: 'integer', minimum: 1 },
       outboundRequestsTimeout: { type: 'integer', minimum: 1 },
+    }),
+    intervals: strictObject({
+      saveCacheState: { type: 'integer', minimum: 1 },
+      checkStorageNodeResponseTimes: { type: 'integer', minimum: 1 },
+      cacheCleanup: { type: 'integer', minimum: 1 },
     }),
     port: { type: 'integer', minimum: 0 },
     keys: { type: 'array', items: { type: 'string' }, minItems: 1 },

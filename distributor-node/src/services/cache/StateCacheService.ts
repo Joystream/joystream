@@ -32,7 +32,6 @@ export class StateCacheService {
   private logger: Logger
   private config: ReadonlyConfig
   private cacheFilePath: string
-  private saveInterval: NodeJS.Timeout
 
   private memoryState = {
     pendingDownloadsByObjectId: new Map<string, PendingDownloadData>(),
@@ -45,11 +44,10 @@ export class StateCacheService {
     mimeTypeByObjectId: new Map<string, string>(),
   }
 
-  public constructor(config: ReadonlyConfig, logging: LoggingService, saveIntervalMs = 60 * 1000) {
+  public constructor(config: ReadonlyConfig, logging: LoggingService) {
     this.logger = logging.createLogger('StateCacheService')
     this.cacheFilePath = `${config.directories.cache}/cache.json`
     this.config = config
-    this.saveInterval = setInterval(() => this.save(), saveIntervalMs)
   }
 
   public setContentMimeType(objectId: string, mimeType: string): void {
@@ -288,9 +286,5 @@ export class StateCacheService {
     } else {
       this.logger.warn(`Cache file (${this.cacheFilePath}) is empty. Starting from scratch`)
     }
-  }
-
-  public clearInterval(): void {
-    clearInterval(this.saveInterval)
   }
 }

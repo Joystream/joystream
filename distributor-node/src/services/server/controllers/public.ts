@@ -39,8 +39,7 @@ export class PublicApiController {
     next: express.NextFunction,
     objectId: string
   ): void {
-    // TODO: FIXME: Actually check if we are still supposed to serve it and just remove after responding if not
-    // TODO: Limit the number of times useContent is trigerred for similar requests
+    // TODO: Limit the number of times useContent is trigerred for similar requests?
     // (for example: same ip, 3 different request within a minute = 1 request)
     this.stateCache.useContent(objectId)
 

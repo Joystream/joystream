@@ -28,6 +28,11 @@ export interface ConfigJson {
     maxConcurrentOutboundConnections: number
     outboundRequestsTimeout: number
   }
+  intervals: {
+    saveCacheState: number
+    checkStorageNodeResponseTimes: number
+    cacheCleanup: number
+  }
   port: number
   keys: [string, ...string[]]
   buckets: [number, ...number[]] | 'all'

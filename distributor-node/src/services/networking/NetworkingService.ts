@@ -20,9 +20,9 @@ import http from 'http'
 import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 
+// Concurrency limits
 const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
 const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
-const STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS = 60000
 
 export class NetworkingService {
   private config: ReadonlyConfig
@@ -32,7 +32,6 @@ export class NetworkingService {
   private stateCache: StateCacheService
   private logger: Logger
 
-  private storageNodeEndpointsCheckInterval: NodeJS.Timeout
   private testLatencyQueue: queue
   private downloadQueue: queue
 
@@ -52,9 +51,6 @@ export class NetworkingService {
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     // this.runtimeApi = new RuntimeApi(config.endpoints.substrateNode)
     void this.checkActiveStorageNodeEndpoints()
-    this.storageNodeEndpointsCheckInterval = setInterval(async () => {
-      await this.checkActiveStorageNodeEndpoints()
-    }, STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS)
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
       'end',
@@ -65,10 +61,6 @@ export class NetworkingService {
       }
     )
     this.downloadQueue = queue({ concurrency: config.limits.maxConcurrentStorageNodeDownloads, autostart: true })
-  }
-
-  public clearIntervals(): void {
-    clearInterval(this.storageNodeEndpointsCheckInterval)
   }
 
   private validateNodeEndpoint(endpoint: string): void {
@@ -284,17 +276,17 @@ export class NetworkingService {
     return downloadPromise
   }
 
-  async fetchSupportedDataObjects(): Promise<DataObjectData[]> {
+  async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
     const data =
       this.config.buckets === 'all'
         ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
         : await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
-    const objectsData: DataObjectData[] = []
+    const objectsData = new Map<string, DataObjectData>()
     data.forEach((bucket) => {
       bucket.bagAssignments.forEach((a) => {
         a.storageBag.objects.forEach((object) => {
           const { ipfsHash, id, size } = object
-          objectsData.push({ contentHash: ipfsHash, objectId: id, size: parseInt(size) })
+          objectsData.set(id, { contentHash: ipfsHash, objectId: id, size: parseInt(size) })
         })
       })
     })
