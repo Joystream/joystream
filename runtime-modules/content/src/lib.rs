@@ -274,7 +274,7 @@ type StorageAssets<T> = StorageAssetsRecord<<T as balances::Trait>::Balance>;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCreationParametersRecord<StorageAssets> {
     /// Asset collection for the video
-    assets: StorageAssets,
+    assets: Option<StorageAssets>,
     /// Metadata for the video.
     meta: Vec<u8>,
 }
@@ -927,6 +927,9 @@ decl_module! {
 
             // next video id
             let video_id = NextVideoId::<T>::get();
+
+            // atomically upload to storage and return the # of uploaded assets
+            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
 
             //
             // == MUTATION SAFE ==
