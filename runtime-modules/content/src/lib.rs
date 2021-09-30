@@ -672,6 +672,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
+            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -681,6 +682,8 @@ decl_module! {
                 &actor,
                 &channel.owner,
             )?;
+
+            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
 
             // atomically upload to storage and return the # of uploaded assets
             let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
@@ -980,21 +983,10 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // remove assets if any
-            if assets.len() > 0 {
-                Storage::<T>::delete_data_objects(
-                    channel.deletion_prize_source_account_id,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets,
-                )?;
-            }
+            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
 
-            // upload new assets if any
-            // params.assets.and_then(|assets| {
-
-        // }
-
-            // update video.assets counter
+            // atomically upload to storage and return the # of uploaded assets
+            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
 
             //
             // == MUTATION SAFE ==
@@ -1399,6 +1391,23 @@ impl<T: Trait> Module<T> {
         // attempt to upload objects att
         Storage::<T>::upload_data_objects(upload_params.clone())
             .map_or(0u64, |_| upload_params.object_creation_list.len() as u64)
+    }
+
+    fn remove_assets_from_storage(
+        assets: &BTreeSet<<T as storage::Trait>::DataObjectId>,
+        channel_id: &T::ChannelId,
+        prize_source_account: &T::AccountId,
+    ) -> u64 {
+        // remove assets if any
+        match assets.len() > 0 {
+            false => 0u64,
+            true => Storage::<T>::delete_data_objects(
+                prize_source_account.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets.clone(),
+            )
+            .map_or(0u64, |_| assets.len() as u64),
+        }
     }
 }
 
