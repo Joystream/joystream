@@ -711,6 +711,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -724,6 +725,9 @@ decl_module! {
 
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
+
+            // remove specified assets from storage
+            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
 
             // delete channel dynamic bag
             let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
@@ -1022,13 +1026,7 @@ decl_module! {
             Self::ensure_video_can_be_removed(&video)?;
 
             // remove assets from storage if any
-            if assets.len() > 0 {
-                Storage::<T>::delete_data_objects(
-                    channel.deletion_prize_source_account_id,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets,
-                )?;
-            }
+            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
 
             //
             // == MUTATION SAFE ==
