@@ -224,7 +224,7 @@ export interface ChannelOwner extends Enum {
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
   readonly isDao: boolean;
-  readonly asDao: DAOId;
+  readonly asDao: DaoId;
 }
 
 /** @name ChannelOwnershipTransferRequest */
@@ -336,8 +336,8 @@ export interface CuratorOpening extends Null {}
 /** @name CuratorOpeningId */
 export interface CuratorOpeningId extends Null {}
 
-/** @name DAOId */
-export interface DAOId extends u64 {}
+/** @name DaoId */
+export interface DaoId extends u64 {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -606,7 +606,7 @@ export interface ObjectOwner extends Enum {
   readonly isChannel: boolean;
   readonly asChannel: ChannelId;
   readonly isDao: boolean;
-  readonly asDao: DAOId;
+  readonly asDao: DaoId;
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
   readonly asWorkingGroup: WorkingGroup;
@@ -1139,7 +1139,7 @@ export interface StorageObjectOwner extends Enum {
   readonly isChannel: boolean;
   readonly asChannel: ChannelId;
   readonly isDao: boolean;
-  readonly asDao: DAOId;
+  readonly asDao: DaoId;
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
   readonly asWorkingGroup: WorkingGroup;

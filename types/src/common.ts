@@ -47,7 +47,7 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
 export class Url extends Text {}
 
 export class ChannelId extends u64 {}
-export class DAOId extends u64 {}
+export class DaoId extends u64 {}
 
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
@@ -157,7 +157,7 @@ export const commonTypes: RegistryTypes = {
   Address,
   LookupSource,
   ChannelId,
-  DAOId,
+  DaoId,
   Url,
 }
 

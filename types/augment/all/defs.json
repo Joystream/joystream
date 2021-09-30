@@ -104,7 +104,7 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "ChannelId": "u64",
-    "DAOId": "u64",
+    "DaoId": "u64",
     "Url": "Text",
     "EntryMethod": {
         "_enum": {
@@ -521,7 +521,7 @@
         "_enum": {
             "Member": "MemberId",
             "Channel": "ChannelId",
-            "DAO": "DAOId",
+            "DAO": "DaoId",
             "Council": "Null",
             "WorkingGroup": "WorkingGroup"
         }
@@ -530,7 +530,7 @@
         "_enum": {
             "Member": "MemberId",
             "Channel": "ChannelId",
-            "DAO": "DAOId",
+            "DAO": "DaoId",
             "Council": "Null",
             "WorkingGroup": "WorkingGroup"
         }
@@ -721,7 +721,7 @@
         "_enum": {
             "Member": "MemberId",
             "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
+            "Dao": "DaoId"
         }
     },
     "ChannelCategoryId": "u64",

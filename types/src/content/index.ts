@@ -1,7 +1,7 @@
 import { Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DaoId, Url } from '../common'
 import { ContentParameters } from '../storage'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
@@ -36,7 +36,7 @@ export class ContentActor extends JoyEnum({
 export class ChannelOwner extends JoyEnum({
   Member: MemberId,
   Curators: CuratorGroupId,
-  Dao: DAOId,
+  Dao: DaoId,
 }) {}
 
 export class Channel extends JoyStructDecorated({
