@@ -4,7 +4,8 @@ import PieChart from '../../../react-components/src/Chart/PieChart';
 import styled from 'styled-components';
 
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
-import { COLORS } from './index';
+
+import { WORKING_GROUPS, NON_WORKING_GROUPS } from '../tokenomicsGroupsData';
 
 const StyledPieChart = styled(PieChart)`
   width:15rem;
@@ -29,120 +30,62 @@ const ChartContainer = styled('div')`
 const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = ({ data, className }) => {
   return (
     <div className={className}>
-      {data ? <ChartContainer>
-        <StyledPieChart
-          values={[{
-            colors: [COLORS.VALIDATOR],
-            label: 'Validators',
-            value: data.validators.rewardsShare * 100
-          }, {
-            colors: [COLORS.COUNCIL_MEMBER],
-            label: 'Council',
-            value: data.council.rewardsShare * 100
-          }, {
-            colors: [COLORS.STORAGE_PROVIDER],
-            label: 'Storage Providers',
-            value: data.storageProviders.rewardsShare * 100
-          }, {
-            colors: [COLORS.STORAGE_LEAD],
-            label: 'Storage Lead',
-            value: data.storageProviders.lead.rewardsShare * 100
-          }, {
-            colors: [COLORS.CONTENT_CURATOR],
-            label: 'Content Curators',
-            value: data.contentCurators.rewardsShare * 100
-          }, {
-            colors: [COLORS.CURATOR_LEAD],
-            label: 'Content Curators Lead',
-            value: data.contentCurators.lead.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_ALPHA],
-            label: 'Operations Alpha',
-            value: data.operationsAlpha.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_ALPHA_LEAD],
-            label: 'Operations Alpha Lead',
-            value: data.operationsAlpha.lead.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_BETA],
-            label: 'Operations Beta',
-            value: data.operationsBeta.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_BETA_LEAD],
-            label: 'Operations Beta Lead',
-            value: data.operationsBeta.lead.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_GAMMA],
-            label: 'Operations Gamma',
-            value: data.operationsGamma.rewardsShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_GAMMA_LEAD],
-            label: 'Operations Gamma Lead',
-            value: data.operationsGamma.lead.rewardsShare * 100
-          }
-          ]} />
-        <Label as='div'>
-          <Icon name='money' />
-          <span style={{ fontWeight: 600 }}>Spending</span>
-        </Label>
-      </ChartContainer> : <Icon name='circle notched' loading/>}
-      {data ? <ChartContainer>
-        <StyledPieChart
-          values={[{
-            colors: [COLORS.VALIDATOR],
-            label: 'Validators',
-            value: data.validators.stakeShare * 100
-          }, {
-            colors: [COLORS.COUNCIL_MEMBER],
-            label: 'Council',
-            value: data.council.stakeShare * 100
-          }, {
-            colors: [COLORS.STORAGE_PROVIDER],
-            label: 'Storage Providers',
-            value: data.storageProviders.stakeShare * 100
-          }, {
-            colors: [COLORS.STORAGE_LEAD],
-            label: 'Storage Lead',
-            value: data.storageProviders.lead.stakeShare * 100
-          }, {
-            colors: [COLORS.CONTENT_CURATOR],
-            label: 'Content Curators',
-            value: data.contentCurators.stakeShare * 100
-          }, {
-            colors: [COLORS.CURATOR_LEAD],
-            label: 'Content Curators Lead',
-            value: data.contentCurators.lead.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_ALPHA],
-            label: 'Operations Alpha',
-            value: data.operationsAlpha.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_ALPHA_LEAD],
-            label: 'Operations Alpha Lead',
-            value: data.operationsAlpha.lead.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_BETA],
-            label: 'Operations Beta',
-            value: data.operationsBeta.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_BETA_LEAD],
-            label: 'Operations Beta Lead',
-            value: data.operationsBeta.lead.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_GAMMA],
-            label: 'Operations Gamma',
-            value: data.operationsGamma.stakeShare * 100
-          }, {
-            colors: [COLORS.OPERATIONS_GAMMA_LEAD],
-            label: 'Operations Gamma Lead',
-            value: data.operationsGamma.lead.stakeShare * 100
-          }
-          ]} />
-        <Label as='div'>
-          <Icon name='block layout' />
-          <span style={{ fontWeight: 600 }}>Stake</span>
-        </Label>
-      </ChartContainer> : <Icon name='circle notched' loading/>}
+      {data ? (
+        <ChartContainer>
+          <StyledPieChart
+            values={[
+              ...WORKING_GROUPS.map(({ color, title, groupType, lead }) => [{
+                colors: [color],
+                label: title,
+                value: data[groupType].rewardsShare * 100
+              }, {
+                colors: [lead.color],
+                label: lead.title,
+                value: data[groupType].lead.rewardsShare * 100
+              }]).flat(),
+              ...NON_WORKING_GROUPS.map(({ color, shortTitle, groupType }) => ({
+                colors: [color],
+                label: shortTitle,
+                value: data[groupType].rewardsShare * 100
+              }))
+            ]}
+          />
+          <Label as='div'>
+            <Icon name='money' />
+            <span style={{ fontWeight: 600 }}>Spending</span>
+          </Label>
+        </ChartContainer>
+      ) : (
+        <Icon name='circle notched' loading />
+      )}
+      {data ? (
+        <ChartContainer>
+          <StyledPieChart
+            values={[
+              ...WORKING_GROUPS.map(({ color, title, groupType, lead }) => [{
+                colors: [color],
+                label: title,
+                value: data[groupType].stakeShare * 100
+              }, {
+                colors: [lead.color],
+                label: lead.title,
+                value: data[groupType].lead.stakeShare * 100
+              }]).flat(),
+              ...NON_WORKING_GROUPS.map(({ color, shortTitle, groupType }) => ({
+                colors: [color],
+                label: shortTitle,
+                value: data[groupType].stakeShare * 100
+              }))
+            ]}
+          />
+          <Label as='div'>
+            <Icon name='block layout' />
+            <span style={{ fontWeight: 600 }}>Stake</span>
+          </Label>
+        </ChartContainer>
+      ) : (
+        <Icon name='circle notched' loading />
+      )}
     </div>
   );
 };

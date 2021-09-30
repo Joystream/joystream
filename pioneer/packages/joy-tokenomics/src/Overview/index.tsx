@@ -38,21 +38,6 @@ const StyledTokenomicsCharts = styled(TokenomicsCharts)`
   }
 `;
 
-const COLORS = {
-  VALIDATOR: '#ff9800',
-  COUNCIL_MEMBER: '#ffc107',
-  STORAGE_PROVIDER: '#ffeb3b',
-  STORAGE_LEAD: '#cddc39',
-  CONTENT_CURATOR: '#8bc34a',
-  CURATOR_LEAD: '#4caf50',
-  OPERATIONS_ALPHA: '#009688',
-  OPERATIONS_ALPHA_LEAD: '#00bcd4',
-  OPERATIONS_BETA: '#03a9f4',
-  OPERATIONS_BETA_LEAD: '#2196f3',
-  OPERATIONS_GAMMA: '#3f51b5',
-  OPERATIONS_GAMMA_LEAD: '#673ab7'
-};
-
 const Overview: React.FC = () => {
   const transport = useTransport();
   const [statusDataValue, statusDataError] = usePromise<StatusServerData | undefined>(() => fetch('https://status.joystream.org/status').then((res) => res.json().then((data) => data as StatusServerData)), undefined, []);
@@ -72,4 +57,3 @@ const Overview: React.FC = () => {
 };
 
 export default Overview;
-export { COLORS };
