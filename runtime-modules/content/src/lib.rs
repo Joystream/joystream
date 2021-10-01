@@ -753,54 +753,6 @@ decl_module! {
             Ok(())
         }
 
-        // /// Remove assets of a channel from storage
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn remove_channel_assets(
-        //     origin,
-        //     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        //     channel_id: T::ChannelId,
-        //     assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
-        // ) {
-        //     // check that channel exists
-        //     let channel = Self::ensure_channel_exists(&channel_id)?;
-
-        //     ensure_actor_authorized_to_update_channel::<T>(
-        //         origin,
-        //         &actor,
-        //         &channel.owner,
-        //     )?;
-
-        //     // ensure that the provided assets are not empty
-        //     ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
-
-        //     let num_assets_to_remove = assets.len() as u64;
-
-        //     // cannot remove more asset than those already present
-        //     ensure!(
-        //         num_assets_to_remove <= channel.num_assets,
-        //         Error::<T>::InvalidAssetsProvided
-        //     );
-
-        //     // remove assets from storage
-        //     Storage::<T>::delete_data_objects(
-        //         channel.deletion_prize_source_account_id.clone(),
-        //         Self::bag_id_for_channel(&channel_id),
-        //         assets.clone(),
-        //     )?;
-
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
-
-        //     // update onchain channel status
-        //     let mut channel = channel;
-        //     channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
-        //     ChannelById::<T>::insert(channel_id, channel.clone());
-
-
-        //     Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets, channel));
-        // }
-
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_censorship_status(
             origin,
