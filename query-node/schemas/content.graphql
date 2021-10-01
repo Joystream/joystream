@@ -53,17 +53,21 @@ type Channel @entity {
   "Reward account where revenue is sent if set."
   rewardAccount: String
 
+  "Destination account for the prize associated with channel deletion"
+  deletionPrizeDestAccount: String!
+
   "The title of the Channel"
   title: String @fulltext(query: "search")
 
   "The description of a Channel"
   description: String
 
+  # FIXME: Due to https://github.com/Joystream/hydra/issues/434, Asset is currently non-optional (use AssetNone to unset it)
   "Channel's cover (background) photo asset. Recommended ratio: 16:9."
-  coverPhoto: Asset
+  coverPhoto: Asset!
 
   "Channel's avatar photo asset."
-  avatarPhoto: Asset
+  avatarPhoto: Asset!
 
   ##########################
 
@@ -125,8 +129,9 @@ type Video @entity {
   "Video duration in seconds"
   duration: Int
 
+# FIXME: Due to https://github.com/Joystream/hydra/issues/434, Asset is currently non-optional (use AssetNone to unset it)
   "Video thumbnail asset (recommended ratio: 16:9)"
-  thumbnailPhoto: Asset
+  thumbnailPhoto: Asset!
 
   ##########################
 
@@ -151,8 +156,9 @@ type Video @entity {
   "License under the video is published"
   license: License
 
+  # FIXME: Due to https://github.com/Joystream/hydra/issues/434, Asset is currently non-optional (use AssetNone to unset it)
   "Video media asset"
-  media: Asset
+  media: Asset!
 
   ##########################
 

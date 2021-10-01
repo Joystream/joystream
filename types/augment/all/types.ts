@@ -139,6 +139,9 @@ export interface Approved extends Enum {
   readonly asExecutionFailed: ExecutionFailed;
 }
 
+/** @name AssetUrls */
+export interface AssetUrls extends Vec<Url> {}
+
 /** @name Backer */
 export interface Backer extends Struct {
   readonly member: GenericAccountId;
@@ -202,11 +205,11 @@ export interface CategoryId extends u64 {}
 /** @name Channel */
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
-  readonly videos: Vec<VideoId>;
-  readonly playlists: Vec<PlaylistId>;
-  readonly series: Vec<SeriesId>;
+  readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
+  readonly deletion_prize_source_account_id: GenericAccountId;
+  readonly num_assets: u64;
 }
 
 /** @name ChannelCategory */
@@ -230,7 +233,7 @@ export interface ChannelContentType extends Null {}
 
 /** @name ChannelCreationParameters */
 export interface ChannelCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
+  readonly assets: NewAssets;
   readonly meta: Bytes;
   readonly reward_account: Option<GenericAccountId>;
 }
@@ -247,8 +250,6 @@ export interface ChannelOwner extends Enum {
   readonly asMember: MemberId;
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
 }
 
 /** @name ChannelOwnershipTransferRequest */
@@ -267,7 +268,7 @@ export interface ChannelPublicationStatus extends Null {}
 
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<NewAssets>;
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
 }
@@ -308,14 +309,17 @@ export interface ContentActor extends Enum {
   readonly isLead: boolean;
 }
 
-/** @name ContentId */
-export interface ContentId extends u64 {}
-
 /** @name ContentIdSet */
 export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Null {}
+
+/** @name CreationUploadParameters */
+export interface CreationUploadParameters extends Struct {
+  readonly object_creation_list: Vec<DataObjectCreationParameters>;
+  readonly expected_data_size_fee: u128;
+}
 
 /** @name Credential */
 export interface Credential extends Null {}
@@ -654,12 +658,12 @@ export interface ModerationAction extends Struct {
   readonly rationale: Text;
 }
 
-/** @name NewAsset */
-export interface NewAsset extends Enum {
+/** @name NewAssets */
+export interface NewAssets extends Enum {
   readonly isUpload: boolean;
-  readonly asUpload: u64;
+  readonly asUpload: CreationUploadParameters;
   readonly isUrls: boolean;
-  readonly asUrls: Vec<Url>;
+  readonly asUrls: Vec<AssetUrls>;
 }
 
 /** @name NextAdjustment */
@@ -781,7 +785,7 @@ export interface PersonController extends Enum {
 
 /** @name PersonCreationParameters */
 export interface PersonCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
+  readonly assets: NewAssets;
   readonly meta: Bytes;
 }
 
@@ -790,7 +794,7 @@ export interface PersonId extends u64 {}
 
 /** @name PersonUpdateParameters */
 export interface PersonUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<NewAssets>;
   readonly meta: Option<Bytes>;
 }
 
@@ -1079,7 +1083,7 @@ export interface Season extends Struct {
 
 /** @name SeasonParameters */
 export interface SeasonParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<NewAssets>;
   readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1105,7 +1109,7 @@ export interface SeriesId extends u64 {}
 
 /** @name SeriesParameters */
 export interface SeriesParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<NewAssets>;
   readonly seasons: Option<Vec<Option<SeasonParameters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1329,6 +1333,7 @@ export interface Video extends Struct {
   readonly in_channel: ChannelId;
   readonly in_series: Option<SeriesId>;
   readonly is_censored: bool;
+  readonly maybe_data_objects_id_set: Option<Vec<DataObjectId>>;
 }
 
 /** @name VideoCategory */
@@ -1349,7 +1354,7 @@ export interface VideoCategoryUpdateParameters extends Struct {
 
 /** @name VideoCreationParameters */
 export interface VideoCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
+  readonly assets: NewAssets;
   readonly meta: Bytes;
 }
 
@@ -1358,7 +1363,7 @@ export interface VideoId extends u64 {}
 
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<NewAssets>;
   readonly new_meta: Option<Bytes>;
 }
 

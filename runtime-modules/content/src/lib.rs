@@ -127,7 +127,7 @@ pub enum ChannelOwner<MemberId, CuratorGroupId> {
 // simplification type
 pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
-        <T as membership::Trait>::MemberId,
+        <T as common::MembershipTypes>::MemberId,
         <T as ContentActorAuthenticator>::CuratorGroupId,
     >,
     Error<T>,
@@ -185,7 +185,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
 
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
-    <T as membership::Trait>::MemberId,
+    <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
 >;
@@ -209,7 +209,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
 // ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as storage::Trait>::ChannelId,
-    <T as membership::Trait>::MemberId,
+    <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
@@ -1446,17 +1446,10 @@ impl<T: Trait> Module<T> {
         match actor {
             // Lead should use their member or curator role to create channels
             ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
-            ContentActor::Curator(
-                curator_group_id,
-                _curator_id
-            ) => {
+            ContentActor::Curator(curator_group_id, _curator_id) => {
                 Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
-            ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+            ContentActor::Member(member_id) => Ok(ChannelOwner::Member(*member_id)),
         }
     }
 
@@ -1477,7 +1470,7 @@ decl_event!(
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
             <T as ContentActorAuthenticator>::CuratorId,
-            <T as membership::Trait>::MemberId,
+            <T as common::MembershipTypes>::MemberId,
         >,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,

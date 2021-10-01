@@ -189,12 +189,15 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
-    type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type ScreenedMemberMaxInitialBalance = ();
 }
 

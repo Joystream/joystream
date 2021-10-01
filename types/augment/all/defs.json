@@ -764,25 +764,29 @@
             "Lead": "Null"
         }
     },
-    "NewAsset": {
+    "CreationUploadParameters": {
+        "object_creation_list": "Vec<DataObjectCreationParameters>",
+        "expected_data_size_fee": "u128"
+    },
+    "AssetUrls": "Vec<Url>",
+    "NewAssets": {
         "_enum": {
-            "Upload": "u64",
-            "Urls": "Vec<Url>"
+            "Upload": "CreationUploadParameters",
+            "Urls": "Vec<AssetUrls>"
         }
     },
     "Channel": {
         "owner": "ChannelOwner",
-        "videos": "Vec<VideoId>",
-        "playlists": "Vec<PlaylistId>",
-        "series": "Vec<SeriesId>",
+        "num_videos": "u64",
         "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "deletion_prize_source_account_id": "GenericAccountId",
+        "num_assets": "u64"
     },
     "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
-            "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
+            "Curators": "CuratorGroupId"
         }
     },
     "ChannelCategoryId": "u64",
@@ -794,12 +798,12 @@
         "new_meta": "Bytes"
     },
     "ChannelCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "NewAssets",
         "meta": "Bytes",
         "reward_account": "Option<GenericAccountId>"
     },
     "ChannelUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<NewAssets>",
         "new_meta": "Option<Bytes>",
         "reward_account": "Option<Option<GenericAccountId>>"
     },
@@ -813,7 +817,8 @@
     "Video": {
         "in_channel": "ChannelId",
         "in_series": "Option<SeriesId>",
-        "is_censored": "bool"
+        "is_censored": "bool",
+        "maybe_data_objects_id_set": "Option<Vec<DataObjectId>>"
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
@@ -825,11 +830,11 @@
         "new_meta": "Bytes"
     },
     "VideoCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "NewAssets",
         "meta": "Bytes"
     },
     "VideoUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<NewAssets>",
         "new_meta": "Option<Bytes>"
     },
     "Person": {
@@ -849,11 +854,11 @@
         }
     },
     "PersonCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "NewAssets",
         "meta": "Bytes"
     },
     "PersonUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<NewAssets>",
         "meta": "Option<Bytes>"
     },
     "Playlist": {
@@ -875,12 +880,12 @@
         "episodes": "Vec<VideoId>"
     },
     "SeriesParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<NewAssets>",
         "seasons": "Option<Vec<Option<SeasonParameters>>>",
         "meta": "Option<Bytes>"
     },
     "SeasonParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<NewAssets>",
         "episodes": "Option<Vec<Option<EpisodeParemters>>>",
         "meta": "Option<Bytes>"
     },
@@ -891,6 +896,5 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool",
-    "ContentId": "u64"
+    "IsCensored": "bool"
 }

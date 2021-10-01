@@ -34,9 +34,10 @@ use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
     DistributionWorkingGroupConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
-    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupAlphaConfig,
+    OperationsWorkingGroupBetaConfig, OperationsWorkingGroupGammaConfig, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -314,7 +315,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance4: Some(OperationsWorkingGroupConfig {
+        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -331,6 +332,22 @@ pub fn testnet_genesis(
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance6: Some(DistributionWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
