@@ -734,13 +734,11 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
-
             // remove specified assets from storage
             Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // delete channel dynamic bag
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
             Storage::<T>::delete_dynamic_bag(
                 channel.deletion_prize_source_account_id,
                 dyn_bag
@@ -1003,6 +1001,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
+        // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
@@ -1047,7 +1046,7 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
-            // remove assets from storage if any
+            // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             //
