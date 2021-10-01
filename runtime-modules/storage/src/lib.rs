@@ -452,10 +452,10 @@ pub type Cid = Vec<u8>;
 type Balances<T> = balances::Module<T>;
 
 /// Alias for the member id.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -1109,7 +1109,14 @@ decl_event! {
         /// Params
         /// - dynamic bag ID
         /// - optional DynamicBagDeletionPrize instance
-        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>),
+        /// - assigned storage buckets' IDs
+        /// - assigned distribution buckets' IDs
+        DynamicBagCreated(
+            DynamicBagId,
+            Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>,
+            BTreeSet<StorageBucketId>,
+            BTreeSet<DistributionBucketId>,
+        ),
 
         /// Emits on changing the voucher for a storage bucket.
         /// Params
@@ -2722,9 +2729,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = Bag::<T> {
-            stored_by: storage_buckets,
+            stored_by: storage_buckets.clone(),
             deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
-            distributed_by: distribution_buckets,
+            distributed_by: distribution_buckets.clone(),
             ..Default::default()
         };
 
@@ -2732,7 +2739,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
-        Self::deposit_event(RawEvent::DynamicBagCreated(dynamic_bag_id, deletion_prize));
+        Self::deposit_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id,
+            deletion_prize,
+            storage_buckets,
+            distribution_buckets,
+        ));
 
         Ok(())
     }

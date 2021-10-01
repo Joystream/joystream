@@ -86,7 +86,7 @@ type CreateInterface_NoOption<T extends Codec> =
       ? CreateInterface<S>[]
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
-      : any)
+      : unknown)
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
 // (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
