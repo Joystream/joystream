@@ -101,6 +101,7 @@ fn video_update_successful() {
             Ok(()),
         );
 
+        // create video with 3 assets
         let params = VideoCreationParametersRecord {
             assets: Some(StorageAssetsRecord {
                 object_creation_list: vec![
@@ -124,6 +125,8 @@ fn video_update_successful() {
 
         let video_id = Content::next_video_id();
 
+        let first_obj_id = Storage::<Test>::next_data_object_id();
+
         create_video_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -132,6 +135,7 @@ fn video_update_successful() {
             Ok(()),
         );
 
+        // add 1 asset
         let update_params = VideoUpdateParametersRecord {
             assets: Some(StorageAssetsRecord {
                 object_creation_list: vec![DataObjectCreationParameters {
@@ -143,12 +147,27 @@ fn video_update_successful() {
             new_meta: None,
         };
 
+        let last_obj_id = Storage::<Test>::next_data_object_id();
+
         update_video_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
             update_params,
             BTreeSet::new(),
+            Ok(()),
+        );
+
+        // remove all assets from the channel the video is in
+        update_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            VideoUpdateParametersRecord {
+                assets: None,
+                new_meta: None,
+            },
+            (first_obj_id..last_obj_id).collect::<BTreeSet<_>>(),
             Ok(()),
         );
     })
