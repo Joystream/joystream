@@ -636,8 +636,13 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             // atomically upload to storage and return the # of uploaded assets
-            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &sender));
-
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &sender,
+                )?;
+            }
             //
             // == MUTATION SAFE ==
             //
@@ -680,10 +685,16 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
+            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
-            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -702,7 +713,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
-            // extrinsics for channel deletion
+        // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
             origin,
@@ -723,11 +734,13 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
+
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
+
             // remove specified assets from storage
-            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
+            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // delete channel dynamic bag
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
             Storage::<T>::delete_dynamic_bag(
                 channel.deletion_prize_source_account_id,
                 dyn_bag
@@ -933,7 +946,13 @@ decl_module! {
             let video_id = NextVideoId::<T>::get();
 
             // atomically upload to storage and return the # of uploaded assets
-            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -984,10 +1003,16 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
+            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
-            let _num_assets_uploaded = params.assets.as_ref().map_or(0u64,|assets| Self::upload_assets_to_storage(assets, &channel_id, &channel.deletion_prize_source_account_id));
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1023,7 +1048,7 @@ decl_module! {
             Self::ensure_video_can_be_removed(&video)?;
 
             // remove assets from storage if any
-            let _num_assets_removed = Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id);
+            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1378,31 +1403,31 @@ impl<T: Trait> Module<T> {
         assets: &StorageAssets<T>,
         channel_id: &T::ChannelId,
         prize_source_account: &T::AccountId,
-    ) -> u64 {
+    ) -> DispatchResult {
         // construct upload params
         let upload_params =
             Self::pick_upload_parameters_from_assets(assets, channel_id, prize_source_account);
 
         // attempt to upload objects att
-        Storage::<T>::upload_data_objects(upload_params.clone())
-            .map_or(0u64, |_| upload_params.object_creation_list.len() as u64)
+        Storage::<T>::upload_data_objects(upload_params.clone())?;
+
+        Ok(())
     }
 
     fn remove_assets_from_storage(
         assets: &BTreeSet<<T as storage::Trait>::DataObjectId>,
         channel_id: &T::ChannelId,
         prize_source_account: &T::AccountId,
-    ) -> u64 {
+    ) -> DispatchResult {
         // remove assets if any
-        match assets.len() > 0 {
-            false => 0u64,
-            true => Storage::<T>::delete_data_objects(
+        if assets.len() > 0 {
+            Storage::<T>::delete_data_objects(
                 prize_source_account.clone(),
                 Self::bag_id_for_channel(&channel_id),
                 assets.clone(),
-            )
-            .map_or(0u64, |_| assets.len() as u64),
+            )?;
         }
+        Ok(())
     }
 }
 

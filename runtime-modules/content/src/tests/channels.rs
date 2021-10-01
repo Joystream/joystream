@@ -18,7 +18,8 @@ fn successful_channel_deletion() {
             <Test as balances::Trait>::Balance::from(100u32),
         );
 
-        // 3 assets
+        // 3 assets added at creation
+        let first_obj_id = Storage::<Test>::next_data_object_id();
         let assets = StorageAssetsRecord {
             object_creation_list: vec![
                 DataObjectCreationParameters {
@@ -36,7 +37,6 @@ fn successful_channel_deletion() {
             ],
             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
         };
-
         let channel_id = NextChannelId::<Test>::get();
 
         // create channel
@@ -45,13 +45,17 @@ fn successful_channel_deletion() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
             },
             Ok(()),
         );
 
-        // attempt to delete channel with non zero assets
+        // retrieve objs id set
+        let obj_ids =
+            (first_obj_id..Storage::<Test>::next_data_object_id()).collect::<BTreeSet<_>>();
+
+        // attempt to delete channel with non zero assets should result in error
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -60,18 +64,12 @@ fn successful_channel_deletion() {
             Err(storage::Error::<Test>::CannotDeleteNonEmptyDynamicBag.into()),
         );
 
-        // delete assets
-        let assets_to_delete = [0u64, 1u64, 2u64]
-            .iter()
-            .map(|&x| x)
-            .collect::<BTreeSet<_>>();
-
-        // successful deletion
+        // successful deletion because we empty the bag first
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            assets_to_delete,
+            obj_ids,
             Ok(()),
         );
     })
