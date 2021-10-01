@@ -744,6 +744,10 @@ decl_module! {
                 dyn_bag
             )?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
 
@@ -953,7 +957,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-        // remove specified assets from channel bag in storage
+            // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
