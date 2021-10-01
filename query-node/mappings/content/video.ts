@@ -114,7 +114,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   })
   // deserialize & process metadata
   const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta) || {}
-  await processVideoMetadata(ctx, channel, video, metadata, videoCreationParameters.assets)
+  await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets)
 
   // save video
   await store.save<Video>(video)
@@ -145,7 +145,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video.channel, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
+    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets.unwrapOr(undefined))
   }
 
   // set last update time
