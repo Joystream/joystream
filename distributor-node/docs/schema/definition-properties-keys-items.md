@@ -1,0 +1,3 @@
+## items Type
+
+`string`

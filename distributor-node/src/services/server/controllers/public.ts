@@ -94,13 +94,14 @@ export class PublicApiController {
 
     // Handle request using pending download file if this makes sense in current context:
     if (this.content.exists(objectId)) {
+      const partiallyDownloadedContentSize = this.content.fileSize(objectId)
       const range = req.range(objectSize)
       if (!range || range === -1 || range === -2 || range.length !== 1 || range.type !== 'bytes') {
         // Range is not provided / invalid - serve data from pending download file
         return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize)
-      } else if (range[0].start === 0) {
-        // Range starts from the beginning of the content - serve data from pending download file
-        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize, range[0].end)
+      } else if (range[0].start <= partiallyDownloadedContentSize) {
+        // Range starts at the already downloaded part of the content - serve data from pending download file
+        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize, range[0])
       }
     }
 
@@ -116,19 +117,19 @@ export class PublicApiController {
     next: express.NextFunction,
     objectId: string,
     objectSize: number,
-    rangeEnd?: number
+    range?: { start: number; end: number }
   ) {
-    const isRange = rangeEnd !== undefined
-    this.logger.verbose(`Serving pending download asset from file`, { objectId, isRange, objectSize, rangeEnd })
+    this.logger.verbose(`Serving pending download asset from file`, { objectId, objectSize, range })
     const stream = this.content.createContinousReadStream(objectId, {
-      end: isRange ? rangeEnd || 0 : objectSize - 1,
+      start: range?.start,
+      end: range !== undefined ? range.end : objectSize - 1,
     })
-    res.status(isRange ? 206 : 200)
+    res.status(range !== undefined ? 206 : 200)
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('x-data-source', 'local')
     res.setHeader('content-disposition', 'inline')
-    if (isRange) {
-      res.setHeader('content-range', `bytes 0-${rangeEnd}/${objectSize}`)
+    if (range !== undefined) {
+      res.setHeader('content-range', `bytes ${range.start}-${range.end}/${objectSize}`)
     }
     stream.pipe(res)
     req.on('close', () => {

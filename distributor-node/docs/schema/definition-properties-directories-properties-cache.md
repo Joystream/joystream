@@ -1,0 +1,3 @@
+## cache Type
+
+`string`

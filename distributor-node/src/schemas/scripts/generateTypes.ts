@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { compile } from 'json-schema-to-typescript'
-import { schemas } from './schemas'
+import { schemas } from '..'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const prettierConfig = require('@joystream/prettier-config')

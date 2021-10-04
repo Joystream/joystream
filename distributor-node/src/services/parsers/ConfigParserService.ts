@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import _ from 'lodash'
-import configSchema, { bytesizeUnits } from '../validation/schemas/configSchema'
+import configSchema, { bytesizeUnits } from '../../schemas/configSchema'
 import { JSONSchema4 } from 'json-schema'
 
 const MIN_CACHE_SIZE = 20 * Math.pow(1024, 3)

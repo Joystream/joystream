@@ -21,8 +21,8 @@ import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 
 // Concurrency limits
-const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
-const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
+export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
+export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 
 export class NetworkingService {
   private config: ReadonlyConfig

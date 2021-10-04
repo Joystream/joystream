@@ -1,0 +1,3 @@
+## data Type
+
+`string`

@@ -1,0 +1,3 @@
+## substrateNode Type
+
+`string`
