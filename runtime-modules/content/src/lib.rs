@@ -439,6 +439,8 @@ pub struct Person<MemberId> {
     controlled_by: PersonController<MemberId>,
 }
 
+type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -674,7 +676,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
-            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
+            assets: BTreeSet<DataObjectId<T>>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -719,7 +721,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
+            assets: BTreeSet<DataObjectId<T>>,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -943,7 +945,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
-            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
+            assets: BTreeSet<DataObjectId<T>>,
         ) {
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
@@ -981,7 +983,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
+            assets: BTreeSet<DataObjectId<T>>,
         ) {
 
             // check that video exists
@@ -1370,12 +1372,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn remove_assets_from_storage(
-        assets: &BTreeSet<<T as storage::Trait>::DataObjectId>,
+        assets: &BTreeSet<DataObjectId<T>>,
         channel_id: &T::ChannelId,
         prize_source_account: &T::AccountId,
     ) -> DispatchResult {
         // remove assets if any
-        if assets.len() > 0 {
+        if !assets.is_empty() {
             Storage::<T>::delete_data_objects(
                 prize_source_account.clone(),
                 Self::bag_id_for_channel(&channel_id),
@@ -1407,7 +1409,7 @@ decl_event!(
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        DataObjectId = <T as storage::Trait>::DataObjectId,
+        DataObjectId = DataObjectId<T>,
         IsCensored = bool,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
@@ -1515,6 +1517,5 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ChannelDeleted(ContentActor, ChannelId),
-        //        VideoAssetsDeleted(ContentActor, VideoId, BTreeSet<AssetsToBeRemoved>),
     }
 );
