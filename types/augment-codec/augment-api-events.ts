@@ -565,9 +565,9 @@ declare module '@polkadot/api/types/events' {
       MemberRegistered: AugmentedEvent<ApiType, [MemberId, AccountId, EntryMethod]>;
       MemberSetControllerAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
       MemberSetRootAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
-      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId]>;
+      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId, Bytes]>;
     };
     memo: {
       MemoUpdated: AugmentedEvent<ApiType, [AccountId]>;
@@ -950,8 +950,10 @@ declare module '@polkadot/api/types/events' {
        * Params
        * - dynamic bag ID
        * - optional DynamicBagDeletionPrize instance
+       * - assigned storage buckets' IDs
+       * - assigned distribution buckets' IDs
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>, BTreeSet<StorageBucketId>, BTreeSet<DistributionBucketId>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params

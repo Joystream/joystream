@@ -78,7 +78,7 @@ pub use types::{
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
 /// Member identifier in membership::member module
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Workaround for BTreeSet type
 pub type ApplicationIdSet<T> = BTreeSet<ApplicationId<T>>;
@@ -109,7 +109,7 @@ pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
 pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Alias for the application id from the hiring module.
 pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
