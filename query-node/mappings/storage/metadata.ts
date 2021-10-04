@@ -5,16 +5,32 @@ import {
   StorageBucketOperatorMetadata,
   GeoCoordinates,
   NodeLocationMetadata,
+  Continent,
+  GeographicalAreaContinent,
+  GeographicalAreaCountry,
+  GeographicalAreaSubdivistion,
+  DistributionBucketFamilyGeographicArea,
 } from 'query-node/dist/model'
-import { deserializeMetadata } from '../common'
+import { deserializeMetadata, invalidMetadata } from '../common'
 import { Bytes } from '@polkadot/types'
 import {
   DistributionBucketOperatorMetadata as DistributionBucketOperatorMetadataProto,
   StorageBucketOperatorMetadata as StorageBucketOperatorMetadataProto,
   DistributionBucketFamilyMetadata as DistributionBucketFamilyMetadataProto,
   INodeLocationMetadata,
+  GeographicalArea as GeographicalAreaProto,
 } from '@joystream/metadata-protobuf'
-import { isSet, isEmptyObject, isValidCountryCode } from '@joystream/metadata-protobuf/utils'
+import { isSet, isEmptyObject, isValidCountryCode, isValidSubdivisionCode } from '@joystream/metadata-protobuf/utils'
+
+const protobufContinentToGraphlContinent: { [key in GeographicalAreaProto.Continent]: Continent } = {
+  [GeographicalAreaProto.Continent.AF]: Continent.AF,
+  [GeographicalAreaProto.Continent.AN]: Continent.AN,
+  [GeographicalAreaProto.Continent.AS]: Continent.AS,
+  [GeographicalAreaProto.Continent.EU]: Continent.EU,
+  [GeographicalAreaProto.Continent.NA]: Continent.NA,
+  [GeographicalAreaProto.Continent.OC]: Continent.OC,
+  [GeographicalAreaProto.Continent.SA]: Continent.SA,
+}
 
 async function processNodeLocationMetadata(
   store: DatabaseManager,
@@ -118,24 +134,57 @@ export async function processDistributionBucketFamilyMetadata(
   if (isSet(meta.description)) {
     metadataEntity.description = meta.description || (null as any)
   }
+  if (isSet(meta.latencyTestTargets)) {
+    metadataEntity.latencyTestTargets = meta.latencyTestTargets
+  }
 
   await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
 
-  // Update boundary after metadata is saved (since we need an id to reference)
-  if (isSet(meta.boundary)) {
-    await Promise.all((metadataEntity.boundary || []).map((coords) => store.remove<GeoCoordinates>(coords)))
+  // Update areas after metadata is saved (since we need an id to reference)
+  if (isSet(meta.areas)) {
+    // Drop current areas
+    await Promise.all(metadataEntity.areas?.map((a) => store.remove<DistributionBucketFamilyGeographicArea>(a)) || [])
+    // Save new areas
     await Promise.all(
-      meta.boundary
-        .filter((c) => !isEmptyObject(c))
-        .map(({ latitude, longitude }) =>
-          store.save<GeoCoordinates>(
-            new GeoCoordinates({
-              latitude: latitude || 0,
-              longitude: longitude || 0,
-              boundarySourceBucketFamilyMeta: metadataEntity,
-            })
-          )
-        )
+      meta.areas
+        .filter((a) => !isEmptyObject(a))
+        .map(async (a) => {
+          const area = new DistributionBucketFamilyGeographicArea({
+            distributionBucketFamilyMetadata: metadataEntity,
+          })
+
+          if (a.continent) {
+            const continent = new GeographicalAreaContinent()
+            continent.code = protobufContinentToGraphlContinent[a.continent]
+            if (!continent.code) {
+              return invalidMetadata(`Unrecognized continent enum variant: ${a.continent}`)
+            }
+            area.id = `${metadataEntity.id}-C-${continent.code}`
+            area.area = continent
+          }
+
+          if (a.countryCode) {
+            if (!isValidCountryCode(a.countryCode)) {
+              return invalidMetadata(`Invalid country code: ${a.countryCode}`)
+            }
+            const country = new GeographicalAreaCountry()
+            country.code = a.countryCode
+            area.id = `${metadataEntity.id}-c-${country.code}`
+            area.area = country
+          }
+
+          if (a.subdivisionCode) {
+            if (!isValidSubdivisionCode(a.subdivisionCode)) {
+              return invalidMetadata(`Invalid subdivision code: ${a.subdivisionCode}`)
+            }
+            const subdivision = new GeographicalAreaSubdivistion()
+            subdivision.code = a.subdivisionCode
+            area.id = `${metadataEntity.id}-s-${subdivision.code}`
+            area.area = subdivision
+          }
+
+          await store.save<DistributionBucketFamilyGeographicArea>(area)
+        })
     )
   }
 

@@ -41,7 +41,9 @@
     "long": "^4.0.0",
     "@types/long": "^4.0.1",
     "i18n-iso-countries": "^6.8.0",
-    "iso-639-1": "^2.1.9"
+    "iso-639-1": "^2.1.9",
+    "iso-3166-2": "^1.0.0",
+    "@types/iso-3166-2": "^1.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
