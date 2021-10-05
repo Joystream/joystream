@@ -230,7 +230,7 @@ type DistributionBucketFamilyMetadata @entity {
   areas: [DistributionBucketFamilyGeographicArea!] @derivedFrom(field: "distributionBucketFamilyMetadata")
 
   "List of targets (hosts/ips) best suited latency measurements for the family"
-  latencyTestTargets: [String!]
+  latencyTestTargets: [String]
 }
 
 type DistributionBucketOperatorMetadata @entity {
