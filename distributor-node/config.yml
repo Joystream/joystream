@@ -1,11 +1,11 @@
 id: test-node
 endpoints:
   queryNode: http://localhost:8081/graphql
-  substrateNode: ws://localhost:9944
+  joystreamNodeWs: ws://localhost:9944
   # elasticSearch: http://localhost:9200
 directories:
-  data: ./local/data
-  cache: ./local/cache
+  assets: ./local/data
+  cacheState: ./local/cache
   logs: ./local/logs
 log:
   file: debug

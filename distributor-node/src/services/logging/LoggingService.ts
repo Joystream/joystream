@@ -79,26 +79,23 @@ export class LoggingService {
       transports.push(esTransport)
     }
 
-    const fileTransport =
-      config.log?.file && config.log.file !== 'off'
-        ? new winston.transports.File({
-            filename: `${config.directories.logs}/logs.json`,
-            level: config.log.file,
-            format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
-          })
-        : undefined
-    if (fileTransport) {
+    if (config.log?.file && config.log.file !== 'off') {
+      if (!config.directories.logs) {
+        throw new Error('config.directories.logs must be provided when file logging is enabled!')
+      }
+      const fileTransport = new winston.transports.File({
+        filename: `${config.directories.logs}/logs.json`,
+        level: config.log.file,
+        format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
+      })
       transports.push(fileTransport)
     }
 
-    const consoleTransport =
-      config.log?.console && config.log.console !== 'off'
-        ? new winston.transports.Console({
-            level: config.log.console,
-            format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
-          })
-        : undefined
-    if (consoleTransport) {
+    if (config.log?.console && config.log.console !== 'off') {
+      const consoleTransport = new winston.transports.Console({
+        level: config.log.console,
+        format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
+      })
       transports.push(consoleTransport)
     }
 

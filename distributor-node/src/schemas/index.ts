@@ -1,4 +1,4 @@
-import { ConfigJson } from '../types/generated/ConfigJson'
+import { DistributorNodeConfiguration as ConfigJson } from '../types/generated/ConfigJson'
 import { OperatorMetadataJson } from '../types/generated/OperatorMetadataJson'
 import { FamilyMetadataJson } from '../types/generated/FamilyMetadataJson'
 import { configSchema } from './configSchema'

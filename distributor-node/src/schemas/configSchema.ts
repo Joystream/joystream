@@ -9,14 +9,19 @@ export const configSchema: JSONSchema4 = {
   title: 'Distributor node configuration',
   description: 'Configuration schema for distirubtor CLI and node',
   type: 'object',
-  required: ['endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits', 'intervals'],
+  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits', 'intervals'],
   additionalProperties: false,
   properties: {
+    id: {
+      type: 'string',
+      description: 'Node identifier used when sending elasticsearch logs and exposed on /status endpoint',
+      minLength: 1,
+    },
     endpoints: {
       type: 'object',
       description: 'Specifies external endpoints that the distributor node will connect to',
       additionalProperties: false,
-      required: ['queryNode', 'substrateNode'],
+      required: ['queryNode', 'joystreamNodeWs'],
       properties: {
         queryNode: {
           description: 'Query node graphql server uri (for example: http://localhost:8081/graphql)',
@@ -34,21 +39,24 @@ export const configSchema: JSONSchema4 = {
     },
     directories: {
       type: 'object',
-      required: ['assets', 'state'],
+      required: ['assets', 'cacheState'],
       additionalProperties: false,
       description: "Specifies paths where node's data will be stored",
-      assets: {
-        description: 'Path to a directory where all the cached assets will be stored',
-        type: 'string',
-      },
-      cacheState: {
-        description:
-          'Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)',
-        type: 'string',
-      },
-      logs: {
-        description: 'Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).',
-        type: 'string',
+      properties: {
+        assets: {
+          description: 'Path to a directory where all the cached assets will be stored',
+          type: 'string',
+        },
+        cacheState: {
+          description:
+            'Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)',
+          type: 'string',
+        },
+        logs: {
+          description:
+            'Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).',
+          type: 'string',
+        },
       },
     },
     log: {

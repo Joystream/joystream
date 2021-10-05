@@ -46,7 +46,7 @@ export class StateCacheService {
 
   public constructor(config: ReadonlyConfig, logging: LoggingService) {
     this.logger = logging.createLogger('StateCacheService')
-    this.cacheFilePath = `${config.directories.cache}/cache.json`
+    this.cacheFilePath = `${config.directories.cacheState}/cache.json`
     this.config = config
   }
 

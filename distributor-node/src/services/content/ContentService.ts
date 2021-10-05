@@ -37,7 +37,7 @@ export class ContentService {
     this.logger = logging.createLogger('ContentService')
     this.stateCache = stateCache
     this.networking = networking
-    this.dataDir = config.directories.data
+    this.dataDir = config.directories.assets
   }
 
   public async cacheCleanup(): Promise<void> {

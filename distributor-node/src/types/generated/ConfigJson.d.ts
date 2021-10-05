@@ -10,6 +10,10 @@
  */
 export interface DistributorNodeConfiguration {
   /**
+   * Node identifier used when sending elasticsearch logs and exposed on /status endpoint
+   */
+  id: string
+  /**
    * Specifies external endpoints that the distributor node will connect to
    */
   endpoints: {
@@ -20,7 +24,7 @@ export interface DistributorNodeConfiguration {
     /**
      * Joystream node websocket api uri (for example: ws://localhost:9944)
      */
-    joystreamNodeWs?: string
+    joystreamNodeWs: string
     /**
      * Elasticsearch uri used for submitting the distributor node logs (if enabled via `log.elastic`)
      */
@@ -29,7 +33,20 @@ export interface DistributorNodeConfiguration {
   /**
    * Specifies paths where node's data will be stored
    */
-  directories: {}
+  directories: {
+    /**
+     * Path to a directory where all the cached assets will be stored
+     */
+    assets: string
+    /**
+     * Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)
+     */
+    cacheState: string
+    /**
+     * Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).
+     */
+    logs?: string
+  }
   /**
    * Specifies minimum log levels by supported log outputs
    */

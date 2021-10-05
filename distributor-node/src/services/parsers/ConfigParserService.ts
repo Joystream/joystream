@@ -17,7 +17,9 @@ export class ConfigParserService {
   }
 
   public resolveConfigDirectoryPaths(paths: Config['directories'], configFilePath: string): Config['directories'] {
-    return _.mapValues(paths, (v) => path.resolve(path.dirname(configFilePath), v))
+    return _.mapValues(paths, (v) =>
+      typeof v === 'string' ? path.resolve(path.dirname(configFilePath), v) : v
+    ) as Config['directories']
   }
 
   private parseBytesize(bytesize: string) {

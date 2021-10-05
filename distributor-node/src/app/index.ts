@@ -48,6 +48,9 @@ export class App {
 
   private checkConfigDirectories(): void {
     Object.entries(this.config.directories).forEach(([name, path]) => {
+      if (path === undefined) {
+        return
+      }
       const dirInfo = `${name} directory (${path})`
       if (!fs.existsSync(path)) {
         try {
