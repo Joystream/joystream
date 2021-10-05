@@ -8,8 +8,17 @@
 export interface FamilyMetadataJson {
   region?: string
   description?: string
-  boundary?: {
-    latitude?: number
-    longitude?: number
-  }[]
+  areas?: (
+    | {
+        continentCode: 'AF' | 'AN' | 'AS' | 'EU' | 'NA' | 'OC' | 'SA'
+      }
+    | {
+        countryCode: string
+      }
+    | {
+        subdivisionCode: string
+      }
+    | {}
+  )[]
+  latencyTestTargets?: string[]
 }
