@@ -1,9 +1,9 @@
 import { Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DaoId, Url } from '../common'
-import { ContentParameters } from '../storage'
+import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, Url } from '../common'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
@@ -17,9 +17,16 @@ export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 
-export class NewAsset extends JoyEnum({
-  Upload: ContentParameters,
-  Urls: Vec.with(Url),
+export class AssetUrls extends Vec.with(Url) {}
+
+export class CreationUploadParameters extends JoyStructDecorated({
+  object_creation_list: Vec.with(DataObjectCreationParameters),
+  expected_data_size_fee: u128,
+}) {}
+
+export class NewAssets extends JoyEnum({
+  Upload: CreationUploadParameters,
+  Urls: Vec.with(AssetUrls),
 }) {}
 
 export class CuratorGroup extends JoyStructDecorated({
@@ -36,26 +43,25 @@ export class ContentActor extends JoyEnum({
 export class ChannelOwner extends JoyEnum({
   Member: MemberId,
   Curators: CuratorGroupId,
-  Dao: DaoId,
 }) {}
 
 export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
-  videos: Vec.with(VideoId),
-  playlists: Vec.with(PlaylistId),
-  series: Vec.with(SeriesId),
+  num_videos: u64,
   is_censored: bool,
   reward_account: Option.with(AccountId),
+  deletion_prize_source_account_id: AccountId,
+  num_assets: u64,
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
+  assets: NewAssets,
   meta: Bytes,
   reward_account: Option.with(AccountId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(NewAssets),
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
 }) {}
@@ -95,15 +101,16 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Option.with(SeriesId),
   is_censored: bool,
+  maybe_data_objects_id_set: Option.with(JoyBTreeSet(DataObjectId)),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
+  assets: NewAssets,
   meta: Bytes,
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(NewAssets),
   new_meta: Option.with(Bytes),
 }) {}
 
@@ -129,7 +136,7 @@ export class Season extends JoyStructDecorated({
 }) {}
 
 export class SeasonParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(NewAssets),
   episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
   meta: Option.with(Bytes),
 }) {}
@@ -140,7 +147,7 @@ export class Series extends JoyStructDecorated({
 }) {}
 
 export class SeriesParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(NewAssets),
   seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
   meta: Option.with(Bytes),
 }) {}
@@ -155,12 +162,12 @@ export class Person extends JoyStructDecorated({
 }) {}
 
 export class PersonCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
+  assets: NewAssets,
   meta: Bytes,
 }) {}
 
 export class PersonUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(NewAssets),
   meta: Option.with(Bytes),
 }) {}
 
@@ -174,7 +181,9 @@ export const contentTypes = {
   CuratorGroupId,
   CuratorGroup,
   ContentActor,
-  NewAsset,
+  CreationUploadParameters,
+  AssetUrls,
+  NewAssets,
   Channel,
   ChannelOwner,
   ChannelCategoryId,

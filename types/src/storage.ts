@@ -1,117 +1,265 @@
-import { BTreeMap, u64, bool, Text, Null, Bytes, Option } from '@polkadot/types'
-import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DaoId, WorkingGroup } from './common'
+import {
+  Null,
+  u64,
+  Bytes,
+  Vec,
+  bool,
+  GenericAccountId as AccountId,
+  BTreeSet,
+  BTreeMap,
+  Option,
+  u32,
+} from '@polkadot/types'
+import { RegistryTypes } from '@polkadot/types/types'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
-import { StorageProviderId } from './working-group' // this should be in discovery really
-import { randomAsU8a } from '@polkadot/util-crypto'
-import { encodeAddress, decodeAddress } from '@polkadot/keyring'
-import { RegistryTypes, Registry } from '@polkadot/types/types'
+import { WorkerId } from './working-group'
 
-export class ContentId extends Hash {
-  static generate(registry: Registry): ContentId {
-    // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
-    return new ContentId(registry, randomAsU8a())
-  }
+export class DataObjectId extends u64 {}
+export class StorageBucketId extends u64 {}
 
-  static decode(registry: Registry, contentId: string): ContentId {
-    return new ContentId(registry, decodeAddress(contentId))
-  }
-
-  static encode(contentId: Uint8Array): string {
-    // console.log('contentId:', Buffer.from(contentId).toString('hex'))
-    return encodeAddress(contentId)
-  }
-
-  encode(): string {
-    return ContentId.encode(this)
-  }
+export type IStorageBucketsPerBagValueConstraint = {
+  min: u64
+  max_min_diff: u64
 }
 
-export class DataObjectTypeId extends u64 {}
-export class DataObjectStorageRelationshipId extends u64 {}
+export class StorageBucketsPerBagValueConstraint
+  extends JoyStructDecorated({
+    min: u64,
+    max_min_diff: u64,
+  })
+  implements IStorageBucketsPerBagValueConstraint {}
 
-export const LiaisonJudgementDef = {
-  Pending: Null,
-  Accepted: Null,
+export type IDataObject = {
+  accepted: bool
+  deletion_prize: BalanceOf
+  size: u64
+  ipfsContentId: Bytes
+}
+
+export class DataObject
+  extends JoyStructDecorated({
+    accepted: bool,
+    deletion_prize: BalanceOf,
+    size: u64,
+    ipfsContentId: Bytes,
+  })
+  implements IDataObject {}
+
+export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
+export class DistributionBucketId extends u64 {}
+export class DistributionBucketFamilyId extends u64 {}
+export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
+export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
+
+export type IDynamicBagDeletionPrize = {
+  account_id: AccountId
+  prize: BalanceOf
+}
+
+export class DynamicBagDeletionPrize
+  extends JoyStructDecorated({
+    account_id: AccountId,
+    prize: BalanceOf,
+  })
+  implements IDynamicBagDeletionPrize {}
+
+export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
+
+export type IBag = {
+  objects: BTreeMap<DataObjectId, DataObject>
+  stored_by: StorageBucketIdSet
+  distributed_by: DistributionBucketIdSet
+  deletion_prize: Option<BalanceOf>
+}
+
+export class Bag
+  extends JoyStructDecorated({
+    objects: BTreeMap.with(DataObjectId, DataObject),
+    stored_by: StorageBucketIdSet,
+    distributed_by: DistributionBucketIdSet,
+    deletion_prize: Option.with(BalanceOf),
+  })
+  implements IBag {}
+
+export type IDynamicBagCreationPolicy = {
+  numberOfStorageBuckets: u64
+  families: BTreeMap<DistributionBucketFamilyId, u32>
+}
+
+export class DynamicBagCreationPolicy
+  extends JoyStructDecorated({
+    numberOfStorageBuckets: u64,
+    families: BTreeMap.with(DistributionBucketFamilyId, u32),
+  })
+  implements IDynamicBagCreationPolicy {}
+
+export const DynamicBagTypeDef = {
+  Member: Null,
+  Channel: Null,
 } as const
-export type LiaisonJudgementKey = keyof typeof LiaisonJudgementDef
-export class LiaisonJudgement extends JoyEnum(LiaisonJudgementDef) {}
+export type DynamicBagTypeKey = keyof typeof DynamicBagTypeDef
+export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
 
-export class StorageObjectOwner extends JoyEnum({
-  Member: MemberId,
-  Channel: ChannelId,
-  DAO: DaoId,
+export const StaticBagIdDef = {
   Council: Null,
   WorkingGroup: WorkingGroup,
-}) {}
+} as const
+export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
+export class Static extends StaticBagId {}
 
-export class ContentParameters extends JoyStructDecorated({
-  content_id: ContentId,
-  type_id: DataObjectTypeId,
-  size: u64,
-  ipfs_content_id: Bytes,
-}) {
-  /** Actually it's 'size', but 'size' is already reserved by a parent class. */
-  get size_in_bytes(): u64 {
-    return this.get('size') as u64
-  }
+// This type should be imported from content-directory/common types once the Olympia release is merged.
+export class ChannelId extends u64 {}
+
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+} as const
+export class DynamicBagId extends JoyEnum(DynamicBagIdDef) {}
+export class Dynamic extends DynamicBagId {}
+
+export const BagIdDef = {
+  Static,
+  Dynamic,
+} as const
+export class BagId extends JoyEnum(BagIdDef) {}
+
+// Alias
+export class BagIdType extends BagId {}
+
+export type IVoucher = {
+  sizeLimit: u64
+  objectsLimit: u64
+  sizeUsed: u64
+  objectsUsed: u64
 }
 
-export class DataObject extends JoyStructDecorated({
-  owner: StorageObjectOwner,
-  added_at: BlockAndTime,
-  type_id: DataObjectTypeId,
-  size: u64,
-  liaison: Option.with(StorageProviderId),
-  liaison_judgement: LiaisonJudgement,
-  ipfs_content_id: Text,
-}) {
-  /** Actually it's 'size', but 'size' is already reserved by a parent class. */
-  get size_in_bytes(): u64 {
-    return this.get('size') as u64
-  }
+export class Voucher
+  extends JoyStructDecorated({
+    sizeLimit: u64,
+    objectsLimit: u64,
+    sizeUsed: u64,
+    objectsUsed: u64,
+  })
+  implements IVoucher {}
+
+export const StorageBucketOperatorStatusDef = {
+  Missing: Null,
+  InvitedStorageWorker: WorkerId,
+  StorageWorker: WorkerId,
+} as const
+export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
+
+export type IStorageBucket = {
+  operator_status: StorageBucketOperatorStatus
+  accepting_new_bags: bool
+  voucher: Voucher
+  metadata: Bytes
 }
 
-export class DataObjectStorageRelationship extends JoyStructDecorated({
-  content_id: ContentId,
-  storage_provider: StorageProviderId,
-  ready: bool,
-}) {}
+export class StorageBucket
+  extends JoyStructDecorated({
+    operator_status: StorageBucketOperatorStatus,
+    accepting_new_bags: bool,
+    voucher: Voucher,
+    metadata: Bytes,
+  })
+  implements IStorageBucket {}
 
-export class DataObjectType extends JoyStructDecorated({
-  description: Text,
-  active: bool,
-}) {}
+export type IDataObjectCreationParameters = {
+  size: u64
+  ipfsContentId: Bytes
+}
 
-export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
+export class DataObjectCreationParameters
+  extends JoyStructDecorated({
+    size: u64,
+    ipfsContentId: Bytes,
+  })
+  implements IDataObjectCreationParameters {}
 
-export class Voucher extends JoyStructDecorated({
-  // Total objects size limit per StorageObjectOwner
-  size_limit: u64,
-  // Total objects number limit per StorageObjectOwner
-  objects_limit: u64,
-  size_used: u64,
-  objects_used: u64,
-}) {}
+export type IUploadParameters = {
+  bagId: BagId
+  objectCreationList: Vec<DataObjectCreationParameters>
+  deletionPrizeSourceAccountId: AccountId
+  expectedDataSizeFee: BalanceOf
+}
 
-// These types names only in the data_directory Events, do they really need a type name alias?
-export class VoucherLimit extends u64 {}
-export class UploadingStatus extends bool {}
+export class UploadParameters
+  extends JoyStructDecorated({
+    bagId: BagId,
+    objectCreationList: Vec.with(DataObjectCreationParameters),
+    deletionPrizeSourceAccountId: AccountId,
+    expectedDataSizeFee: BalanceOf,
+  })
+  implements IUploadParameters {}
 
-export const mediaTypes: RegistryTypes = {
-  ContentId,
-  LiaisonJudgement,
-  DataObject,
-  DataObjectStorageRelationshipId,
-  DataObjectStorageRelationship,
-  DataObjectTypeId,
-  DataObjectType,
-  DataObjectsMap,
-  ContentParameters,
-  StorageObjectOwner,
-  ObjectOwner: StorageObjectOwner,
+export class Cid extends Bytes {}
+export class ContentIdSet extends BTreeSet.with(Cid) {}
+
+export type IDistributionBucket = {
+  accepting_new_bags: bool
+  distributing: bool
+  pending_invitations: BTreeSet<WorkerId>
+  operators: BTreeSet<WorkerId>
+  assigned_bags: u64
+}
+
+export class DistributionBucket
+  extends JoyStructDecorated({
+    accepting_new_bags: bool,
+    distributing: bool,
+    pending_invitations: BTreeSet.with(WorkerId),
+    operators: BTreeSet.with(WorkerId),
+    assigned_bags: u64,
+  })
+  implements IDistributionBucket {}
+
+export type IDistributionBucketFamily = {
+  distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>
+}
+
+export class DistributionBucketFamily
+  extends JoyStructDecorated({
+    distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+  })
+  implements IDistributionBucketFamily {}
+
+export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
+
+export const storageTypes: RegistryTypes = {
+  StorageBucketId,
+  StorageBucketsPerBagValueConstraint,
+  DataObjectId,
+  DynamicBagId,
   Voucher,
-  VoucherLimit,
-  UploadingStatus,
+  DynamicBagType,
+  DynamicBagCreationPolicy,
+  DynamicBagDeletionPrize,
+  DynamicBagDeletionPrizeRecord,
+  Bag,
+  StorageBucket,
+  StaticBagId,
+  Static,
+  Dynamic,
+  BagId,
+  DataObjectCreationParameters,
+  BagIdType,
+  UploadParameters,
+  StorageBucketIdSet,
+  DataObjectIdSet,
+  ContentIdSet,
+  Cid,
+  StorageBucketOperatorStatus,
+  DataObject,
+  DistributionBucketId,
+  DistributionBucketFamilyId,
+  DistributionBucket,
+  DistributionBucketFamily,
+  // Utility types:
+  DataObjectIdMap,
+  DistributionBucketIdSet,
+  DynamicBagCreationPolicyDistributorFamiliesMap,
 }
-
-export default mediaTypes
+export default storageTypes

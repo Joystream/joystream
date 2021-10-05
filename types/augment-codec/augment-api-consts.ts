@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { Vec, u32, u64 } from '@polkadot/types';
-import type { MaxNumber } from './all';
+import type { MaxNumber, StorageBucketsPerBagValueConstraint } from './all';
 import type { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
 import type { SessionIndex } from '@polkadot/types/interfaces/session';
 import type { EraIndex } from '@polkadot/types/interfaces/staking';
@@ -38,7 +38,13 @@ declare module '@polkadot/api/types/consts' {
        **/
       maxNumberOfCuratorsPerGroup: MaxNumber & AugmentedConst<ApiType>;
     };
-    contentDirectoryWorkingGroup: {
+    contentWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    distributionWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/
@@ -175,6 +181,54 @@ declare module '@polkadot/api/types/consts' {
        * intervention.
        **/
       slashDeferDuration: EraIndex & AugmentedConst<ApiType>;
+    };
+    storage: {
+      /**
+       * Exports const - maximum size of the "hash blacklist" collection.
+       **/
+      blacklistSizeLimit: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - a prize for a data object deletion.
+       **/
+      dataObjectDeletionPrize: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - the default dynamic bag creation policy for channels (storage bucket
+       * number).
+       **/
+      defaultChannelDynamicBagNumberOfStorageBuckets: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - the default dynamic bag creation policy for members (storage bucket
+       * number).
+       **/
+      defaultMemberDynamicBagNumberOfStorageBuckets: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - "Distribution buckets per bag" value constraint.
+       **/
+      distributionBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max data object size in bytes.
+       **/
+      maxDataObjectSize: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max allowed distribution bucket family number.
+       **/
+      maxDistributionBucketFamilyNumber: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max allowed distribution bucket number per family.
+       **/
+      maxDistributionBucketNumberPerFamily: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max number of data objects per bag.
+       **/
+      maxNumberOfDataObjectsPerBag: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max number of pending invitations per distribution bucket.
+       **/
+      maxNumberOfPendingInvitationsPerDistributionBucket: u64 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - "Storage buckets per bag" value constraint.
+       **/
+      storageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint & AugmentedConst<ApiType>;
     };
     storageWorkingGroup: {
       /**
