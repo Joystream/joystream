@@ -171,7 +171,7 @@ async function getDistributionBucketFamilyWithMetadata(
 ): Promise<DistributionBucketFamily> {
   const family = await store.get(DistributionBucketFamily, {
     where: { id },
-    relations: ['metadata', 'metadata.boundary'],
+    relations: ['metadata', 'metadata.areas'],
   })
   if (!family) {
     throw new Error(`DistributionBucketFamily not found by id: ${id}`)

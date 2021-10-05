@@ -6,7 +6,7 @@ use common::origin::ActorOriginValidator;
 use frame_system::ensure_signed;
 
 /// Member of the Joystream organization
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Default membership actor origin validator.
 pub struct MembershipOriginValidator<T> {

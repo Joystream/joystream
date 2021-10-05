@@ -138,14 +138,14 @@ export async function processVideoMetadata(
 function findAssetByIndex(assets: typeof Asset[], index: number, name?: string): typeof Asset | null {
   if (assets[index]) {
     return assets[index]
-  } else {
-    invalidMetadata(`Invalid${name ? ' ' + name : ''} asset index`, {
-      numberOfAssets: assets.length,
-      requestedAssetIndex: index,
-    })
-
-    return null
   }
+
+  invalidMetadata(`Invalid${name ? ' ' + name : ''} asset index`, {
+    numberOfAssets: assets.length,
+    requestedAssetIndex: index,
+  })
+
+  return null
 }
 
 async function processVideoMediaEncoding(
@@ -279,7 +279,9 @@ async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAss
       resultAsset.urls = JSON.stringify(assetUrls.map((u) => u.toString()))
       return resultAsset
     })
-  } else if (assets.isUpload) {
+  }
+
+  if (assets.isUpload) {
     const assetsUploaded = assets.asUpload.object_creation_list.length
     // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
     const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
@@ -288,9 +290,9 @@ async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAss
       resultAsset.dataObjectId = o.id
       return resultAsset
     })
-  } else {
-    unexpectedData('Unrecognized assets type', assets.type)
   }
+
+  unexpectedData('Unrecognized assets type', assets.type)
 }
 
 function extractVideoSize(assets: NewAssets | undefined, assetIndex: number | null | undefined): number | undefined {
@@ -500,7 +502,9 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
       channelId: channel.id.toString(),
       dataObjectId: dataObject.id,
     })
-  } else if (video) {
+  }
+
+  if (video) {
     videoAssets.forEach((assetName) => {
       if (video[assetName] && (video[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
         video[assetName] = new AssetNone()
