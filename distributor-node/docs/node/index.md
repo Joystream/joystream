@@ -207,12 +207,21 @@ query {
       metadata {
         region
         description
-        areas {
-          continent
-          countryCode
-          subdivisionCode
-        }
         latencyTestTargets
+        areas {
+        	area {
+            __typename
+            ...on GeographicalAreaCountry {
+              countryCode: code
+            }
+            ...on GeographicalAreaContinent {
+              continentCode: code
+            }
+            ...on GeographicalAreaSubdivistion {
+              subdivisionCode: code
+            }
+          }
+        }
       }
     }
     operators {
