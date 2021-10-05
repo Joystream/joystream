@@ -363,9 +363,6 @@ export interface CuratorOpening extends Null {}
 /** @name CuratorOpeningId */
 export interface CuratorOpeningId extends Null {}
 
-/** @name DAOId */
-export interface DAOId extends u64 {}
-
 /** @name DataObject */
 export interface DataObject extends Struct {
   readonly accepted: bool;
@@ -1413,9 +1410,11 @@ export interface WorkingGroup extends Enum {
   readonly isReserved1: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
-  readonly isOperations: boolean;
+  readonly isOperationsAlpha: boolean;
   readonly isGateway: boolean;
   readonly isDistribution: boolean;
+  readonly isOperationsBeta: boolean;
+  readonly isOperationsGamma: boolean;
 }
 
 /** @name WorkingGroupUnstaker */

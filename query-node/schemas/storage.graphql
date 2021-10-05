@@ -42,10 +42,33 @@ union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | Storage
 type GeoCoordinates @entity {
   latitude: Float!
   longitude: Float!
-
-  "Optional DistributionBucketFamilyMetadata reference in case the coordinates are part of a region boundary"
-  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadata
 }
+
+enum Continent {
+  AF
+  NA
+  OC
+  AN
+  AS
+  EU
+  SA
+}
+
+type GeographicalAreaContinent @variant {
+  code: Continent
+}
+
+type GeographicalAreaCountry @variant {
+  "ISO 3166-1 alpha-2 country code"
+  code: String
+}
+
+type GeographicalAreaSubdivistion @variant {
+  "ISO 3166-2 subdivision code"
+  code: String
+}
+
+union GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion
 
 type NodeLocationMetadata @entity {
   "ISO 3166-1 alpha-2 country code (2 letters)"
@@ -185,6 +208,17 @@ type StorageDataObject @entity {
   ipfsHash: String!
 }
 
+type DistributionBucketFamilyGeographicArea @entity {
+  "{metadataId}-{(C|c|s)}-{code}"
+  id: ID!
+
+  "Geographical area (continent / country / subdivision)"
+  area: GeographicalArea!
+
+  "Related distribution bucket family metadata"
+  distributionBucketFamilyMetadata: DistributionBucketFamilyMetadata!
+}
+
 type DistributionBucketFamilyMetadata @entity {
   "Name of the geographical region covered by the family (ie.: us-east-1)"
   region: String
@@ -192,8 +226,11 @@ type DistributionBucketFamilyMetadata @entity {
   "Optional, more specific description of the region covered by the family"
   description: String
 
-  "Optional region boundary as geocoordiantes polygon"
-  boundary: [GeoCoordinates!] @derivedFrom(field: "boundarySourceBucketFamilyMeta")
+  "Geographical areas covered by the family"
+  areas: [DistributionBucketFamilyGeographicArea!] @derivedFrom(field: "distributionBucketFamilyMetadata")
+
+  "List of targets (hosts/ips) best suited latency measurements for the family"
+  latencyTestTargets: [String!]
 }
 
 type DistributionBucketOperatorMetadata @entity {
