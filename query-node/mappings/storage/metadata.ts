@@ -135,7 +135,7 @@ export async function processDistributionBucketFamilyMetadata(
     metadataEntity.description = meta.description || (null as any)
   }
   if (isSet(meta.latencyTestTargets)) {
-    metadataEntity.latencyTestTargets = meta.latencyTestTargets
+    metadataEntity.latencyTestTargets = meta.latencyTestTargets.filter((t) => t)
   }
 
   await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
