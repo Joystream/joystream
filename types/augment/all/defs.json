@@ -86,9 +86,11 @@
             "_Reserved1",
             "Storage",
             "Content",
-            "Operations",
+            "OperationsAlpha",
             "Gateway",
-            "Distribution"
+            "Distribution",
+            "OperationsBeta",
+            "OperationsGamma"
         ]
     },
     "SlashingTerms": {
@@ -105,7 +107,6 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "ChannelId": "u64",
-    "DAOId": "u64",
     "Url": "Text",
     "EntryMethod": {
         "_enum": {
