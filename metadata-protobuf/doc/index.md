@@ -21,8 +21,11 @@
     - [DistributionBucketFamilyMetadata](#.DistributionBucketFamilyMetadata)
     - [DistributionBucketOperatorMetadata](#.DistributionBucketOperatorMetadata)
     - [GeoCoordiantes](#.GeoCoordiantes)
+    - [GeographicalArea](#.GeographicalArea)
     - [NodeLocationMetadata](#.NodeLocationMetadata)
     - [StorageBucketOperatorMetadata](#.StorageBucketOperatorMetadata)
+  
+    - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
     - [License](#.License)
@@ -224,7 +227,8 @@
 | ----- | ---- | ----- | ----------- |
 | region | [string](#string) | optional | ID / name of the region covered by the distribution family (ie. us-east-1). Should be unique. |
 | description | [string](#string) | optional | Additional, more specific description of the region |
-| boundary | [GeoCoordiantes](#GeoCoordiantes) | repeated | Geographical boundary of the region, defined as polygon through array of coordinates (providing [{}] will unset the current value) |
+| areas | [GeographicalArea](#GeographicalArea) | repeated | Standarized geographical areas covered by the family (providing [{}] will unset the current value) |
+| latency_test_targets | [string](#string) | repeated | List of targets (hosts/ips) best suited latency measurements for this family |
 
 
 
@@ -258,6 +262,23 @@
 | ----- | ---- | ----- | ----------- |
 | latitude | [float](#float) | optional |  |
 | longitude | [float](#float) | optional |  |
+
+
+
+
+
+
+<a name=".GeographicalArea"></a>
+
+### GeographicalArea
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| continent | [GeographicalArea.Continent](#GeographicalArea.Continent) | optional |  |
+| country_code | [string](#string) | optional | ISO 3166-1 alpha-2 country code |
+| subdivision_code | [string](#string) | optional | ISO 3166-2 subdivision code |
 
 
 
@@ -298,6 +319,23 @@
 
 
  
+
+
+<a name=".GeographicalArea.Continent"></a>
+
+### GeographicalArea.Continent
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AF | 1 |  |
+| NA | 2 |  |
+| OC | 3 |  |
+| AN | 4 |  |
+| AS | 5 |  |
+| EU | 6 |  |
+| SA | 7 |  |
+
 
  
 
