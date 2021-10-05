@@ -183,6 +183,17 @@ export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
   />
 );
 
+export const Distribution = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.Distribution}
+    description={
+      'Distribution Working Group is responsible for running and maintaining distributor nodes' +
+      ' that deliver large volumes of upstream data to a large number of simultaneous end users.'
+    }
+    {...props}
+  />
+);
+
 const LeadSection = styled.div`
   margin-top: 1rem;
 `;

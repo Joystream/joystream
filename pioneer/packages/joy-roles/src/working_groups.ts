@@ -3,7 +3,8 @@ export enum WorkingGroups {
   StorageProviders = 'storageProviders',
   OperationsAlpha = 'operationsGroupAlpha',
   OperationsBeta = 'operationsGroupBeta',
-  OperationsGamma = 'operationsGroupGamma'
+  OperationsGamma = 'operationsGroupGamma',
+  Distribution = 'distribution'
 }
 
 export const AvailableGroups: readonly WorkingGroups[] = [
@@ -11,7 +12,8 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.OperationsAlpha,
   WorkingGroups.OperationsBeta,
-  WorkingGroups.OperationsGamma
+  WorkingGroups.OperationsGamma,
+  WorkingGroups.Distribution
 ] as const;
 
 export const workerRoleNameByGroup: { [key in WorkingGroups]: string } = {
@@ -19,5 +21,6 @@ export const workerRoleNameByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'Storage Provider',
   [WorkingGroups.OperationsAlpha]: 'Operations Group Alpha Worker',
   [WorkingGroups.OperationsBeta]: 'Operations Group Beta Worker',
-  [WorkingGroups.OperationsGamma]: 'Operations Group Gamma Worker'
+  [WorkingGroups.OperationsGamma]: 'Operations Group Gamma Worker',
+  [WorkingGroups.Distribution]: 'Distribution'
 };

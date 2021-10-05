@@ -199,7 +199,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
               />
               <SpendingAndStakeTableRow
                 role={width <= lead.titleCutoff ? lead.shortTitle : lead.title}
-                helpContent={helpText}
+                helpContent={lead.helpText}
                 numberOfActors={data && `${data[groupType].lead.number}`}
                 groupEarning={data && `${Math.round(data[groupType].lead.rewardsPerWeek)}`}
                 groupEarningDollar={displayStatusData(groupType, 'rewardsPerWeek', true)}

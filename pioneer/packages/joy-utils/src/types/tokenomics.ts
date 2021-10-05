@@ -40,6 +40,7 @@ export type TokenomicsData = {
   operationsAlpha: WorkingGroupTokenomicsData;
   operationsBeta: WorkingGroupTokenomicsData;
   operationsGamma: WorkingGroupTokenomicsData;
+  distribution: WorkingGroupTokenomicsData;
 }
 
 export type StatusServerData = {

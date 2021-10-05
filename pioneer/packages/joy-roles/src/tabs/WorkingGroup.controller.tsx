@@ -11,7 +11,8 @@ import { WorkingGroupMembership,
   StorageProviders,
   OperationsGroupAlpha,
   OperationsGroupBeta,
-  OperationsGroupGamma } from './WorkingGroup';
+  OperationsGroupGamma,
+  Distribution } from './WorkingGroup';
 
 import styled from 'styled-components';
 
@@ -21,6 +22,7 @@ type State = {
   operationsGroupAlpha?: WorkingGroupMembership;
   operationsGroupBeta?: WorkingGroupMembership;
   operationsGroupGamma?: WorkingGroupMembership;
+  distribution?: WorkingGroupMembership;
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
@@ -63,6 +65,7 @@ export const WorkingGroupsView = View<WorkingGroupsController, State>(
       <OperationsGroupAlpha {...state.operationsGroupAlpha}/>
       <OperationsGroupBeta {...state.operationsGroupBeta}/>
       <OperationsGroupGamma {...state.operationsGroupGamma}/>
+      <Distribution {...state.distribution}/>
     </WorkingGroupsOverview>
   )
 );

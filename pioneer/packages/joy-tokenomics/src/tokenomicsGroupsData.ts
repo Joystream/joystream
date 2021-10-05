@@ -94,5 +94,20 @@ export const WORKING_GROUPS = [
       helpText: 'Current Operations Group Gamma Lead, and their projected reward and stake.',
       color: '#673ab7'
     }
+  },
+  {
+    groupType: 'distribution' as const,
+    titleCutoff: 1050,
+    shortTitle: 'Distribution',
+    title: 'Distribution',
+    helpText: 'The current Distribution Group members, and the sum of their projected rewards and stakes.',
+    color: '#9c27b0',
+    lead: {
+      titleCutoff: 1015,
+      shortTitle: 'Distr. Lead',
+      title: 'Distribution Lead',
+      helpText: 'Current Distribution Group Lead, and their projected reward and stake.',
+      color: '#e91e63'
+    }
   }
 ];
