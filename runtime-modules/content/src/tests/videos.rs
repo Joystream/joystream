@@ -137,7 +137,7 @@ fn video_update_successful() {
 
         // add 1 asset
         let update_params = VideoUpdateParametersRecord {
-            assets: Some(StorageAssetsRecord {
+            assets_to_upload: Some(StorageAssetsRecord {
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: 3,
                     ipfs_content_id: b"first".to_vec(),
@@ -145,6 +145,7 @@ fn video_update_successful() {
                 expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
             }),
             new_meta: None,
+            assets_to_remove: BTreeSet::new(),
         };
 
         let last_obj_id = Storage::<Test>::next_data_object_id();
@@ -154,7 +155,6 @@ fn video_update_successful() {
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
             update_params,
-            BTreeSet::new(),
             Ok(()),
         );
 
@@ -164,10 +164,10 @@ fn video_update_successful() {
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
             VideoUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
+                assets_to_remove: (first_obj_id..last_obj_id).collect::<BTreeSet<_>>(),
             },
-            (first_obj_id..last_obj_id).collect::<BTreeSet<_>>(),
             Ok(()),
         );
     })
@@ -214,10 +214,10 @@ fn member_can_create_videos() {
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
             VideoUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
+                assets_to_remove: BTreeSet::new(),
             },
-            BTreeSet::new(),
         ));
 
         assert_eq!(
@@ -226,8 +226,9 @@ fn member_can_create_videos() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 video_id,
                 VideoUpdateParametersRecord {
-                    assets: None,
+                    assets_to_upload: None,
                     new_meta: None,
+                    assets_to_remove: BTreeSet::new(),
                 }
             ))
         );
@@ -253,10 +254,10 @@ fn member_can_create_videos() {
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
                 VideoUpdateParametersRecord {
-                    assets: None,
+                    assets_to_upload: None,
                     new_meta: None,
+                    assets_to_remove: BTreeSet::new(),
                 },
-                BTreeSet::new(),
             ),
             Error::<Test>::ActorNotAuthorized
         );

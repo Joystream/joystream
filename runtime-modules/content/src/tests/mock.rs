@@ -472,7 +472,6 @@ pub fn update_channel_mock(
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     params: ChannelUpdateParameters<Test>,
-    assets: BTreeSet<<Test as storage::Trait>::DataObjectId>,
     result: DispatchResult,
 ) {
     let channel_pre = ChannelById::<Test>::get(channel_id.clone());
@@ -483,7 +482,6 @@ pub fn update_channel_mock(
             actor.clone(),
             channel_id.clone(),
             params.clone(),
-            assets.clone(),
         ),
         result.clone(),
     );
@@ -573,7 +571,6 @@ pub fn update_video_mock(
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: <Test as Trait>::VideoId,
     params: VideoUpdateParameters<Test>,
-    assets: BTreeSet<<Test as storage::Trait>::DataObjectId>,
     result: DispatchResult,
 ) {
     // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
@@ -585,7 +582,6 @@ pub fn update_video_mock(
             actor.clone(),
             video_id.clone(),
             params.clone(),
-            assets.clone()
         ),
         result.clone(),
     );

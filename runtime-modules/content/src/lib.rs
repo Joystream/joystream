@@ -218,17 +218,22 @@ type ChannelCreationParameters<T> =
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId> {
+pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord> {
     /// Asset collection for the channel, referenced by metadata    
-    assets: Option<StorageAssets>,
+    assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
+    /// assets to be removed from channel
+    assets_to_remove: BTreeSet<DataObjectId>,
 }
 
-type ChannelUpdateParameters<T> =
-    ChannelUpdateParametersRecord<StorageAssets<T>, <T as frame_system::Trait>::AccountId>;
+type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
+    StorageAssets<T>,
+    <T as frame_system::Trait>::AccountId,
+    DataObjectId<T>,
+>;
 
 /// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -282,14 +287,16 @@ type VideoCreationParameters<T> = VideoCreationParametersRecord<StorageAssets<T>
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParametersRecord<StorageAssets> {
+pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
     /// Assets referenced by metadata
-    assets: Option<StorageAssets>,
+    assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
+    /// video assets to be removed from channel
+    assets_to_remove: BTreeSet<DataObjectId>,
 }
 
-type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>>;
+type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>>;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -676,7 +683,6 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
-            assets: BTreeSet<DataObjectId<T>>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -687,10 +693,10 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
-            if let Some(upload_assets) = params.assets.as_ref() {
+            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
@@ -721,7 +727,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            assets: BTreeSet<DataObjectId<T>>,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -737,7 +743,7 @@ decl_module! {
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
             // remove specified assets from storage
-            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // delete channel dynamic bag
             let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
@@ -945,7 +951,6 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
-            assets: BTreeSet<DataObjectId<T>>,
         ) {
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
@@ -960,10 +965,10 @@ decl_module! {
             )?;
 
             // remove specified assets from channel bag in storage
-            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // atomically upload to storage and return the # of uploaded assets
-            if let Some(upload_assets) = params.assets.as_ref() {
+            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
@@ -983,7 +988,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            assets: BTreeSet<DataObjectId<T>>,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
 
             // check that video exists
@@ -1005,7 +1010,7 @@ decl_module! {
             Self::ensure_video_can_be_removed(&video)?;
 
             // remove specified assets from channel bag in storage
-            Self::remove_assets_from_storage(&assets, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             //
             // == MUTATION SAFE ==

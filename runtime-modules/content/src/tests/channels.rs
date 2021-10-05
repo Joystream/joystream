@@ -120,7 +120,7 @@ fn successful_channel_assets_deletion() {
         );
 
         // delete assets
-        let assets_to_delete = [0u64, 1u64].iter().map(|&x| x).collect::<BTreeSet<_>>();
+        let assets_to_remove = [0u64, 1u64].iter().map(|&x| x).collect::<BTreeSet<_>>();
 
         // delete channel assets
         assert_ok!(Content::update_channel(
@@ -128,11 +128,11 @@ fn successful_channel_assets_deletion() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
+                assets_to_remove: assets_to_remove,
             },
-            assets_to_delete,
         ));
     })
 }
@@ -201,11 +201,11 @@ fn succesful_channel_update() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
-                assets: Some(second_batch),
+                assets_to_upload: Some(second_batch),
                 new_meta: Some(vec![]),
                 reward_account: None,
+                assets_to_remove: BTreeSet::new(),
             },
-            BTreeSet::new(),
             Ok(()),
         );
 
@@ -215,11 +215,11 @@ fn succesful_channel_update() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
+                assets_to_remove: first_batch_ids,
             },
-            first_batch_ids,
             Ok(()),
         );
     })
@@ -378,11 +378,11 @@ fn curator_owned_channels() {
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             channel_id,
             ChannelUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
+                assets_to_remove: BTreeSet::new(),
             },
-            BTreeSet::new(),
         ));
 
         // Lead can update curator owned channels
@@ -391,11 +391,11 @@ fn curator_owned_channels() {
             ContentActor::Lead,
             channel_id,
             ChannelUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
+                assets_to_remove: BTreeSet::new(),
             },
-            BTreeSet::new(),
         ));
     })
 }
@@ -494,11 +494,11 @@ fn member_owned_channels() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id_1,
             ChannelUpdateParametersRecord {
-                assets: None,
+                assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
+                assets_to_remove: BTreeSet::new(),
             },
-            BTreeSet::new(),
         ));
 
         assert_eq!(
@@ -515,9 +515,10 @@ fn member_owned_channels() {
                     num_videos: 0,
                 },
                 ChannelUpdateParametersRecord {
-                    assets: None,
+                    assets_to_upload: None,
                     new_meta: None,
                     reward_account: None,
+                    assets_to_remove: BTreeSet::new(),
                 }
             ))
         );
@@ -529,11 +530,11 @@ fn member_owned_channels() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id_2,
                 ChannelUpdateParametersRecord {
-                    assets: None,
+                    assets_to_upload: None,
                     new_meta: None,
                     reward_account: None,
+                    assets_to_remove: BTreeSet::new(),
                 },
-                BTreeSet::new(),
             ),
             Error::<Test>::ActorNotAuthorized
         );
