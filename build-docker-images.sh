@@ -36,9 +36,14 @@ docker-compose build colossus
 echo "Building distributor docker image..."
 docker-compose build distributor-node
 
+# Run a local development chain
+docker-compose up -d joystream-node
+
 # Build processor/graphql-server docker image
 echo "Building joystream/apps docker image..."
-docker-compose build graphql-server
+WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944/ docker-compose build graphql-server
+
+docker-compose down
 
 # Build the pioneer docker image
 # echo "Building pioneer docker image"
