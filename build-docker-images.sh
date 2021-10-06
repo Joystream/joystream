@@ -36,6 +36,10 @@ docker-compose build colossus
 echo "Building distributor docker image..."
 docker-compose build distributor-node
 
+# Build processor/graphql-server docker image
+echo "Building joystream/apps docker image..."
+docker-compose build graphql-server
+
 # Build the pioneer docker image
 # echo "Building pioneer docker image"
 # docker-compose build pioneer
