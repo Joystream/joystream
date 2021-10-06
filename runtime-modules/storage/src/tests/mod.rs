@@ -1014,25 +1014,6 @@ fn upload_fails_with_empty_object_cid() {
 }
 
 #[test]
-fn upload_fails_with_max_data_object_size_exceeded() {
-    build_test_externalities().execute_with(|| {
-        let max_object_size = MaxNumberOfDataObjectsPerBag::get();
-        let invalid_object_number: u8 = (max_object_size + 1).saturated_into();
-
-        let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: create_data_object_candidates(1, invalid_object_number),
-            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params)
-            .call_and_assert(Err(Error::<Test>::DataObjectsPerBagLimitExceeded.into()));
-    });
-}
-
-#[test]
 fn upload_fails_with_insufficient_balance_for_deletion_prize() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {

@@ -669,20 +669,19 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxDistributionBucketNumberPerFamily: u64 = 20; //TODO: adjust value
-    pub const MaxDistributionBucketFamilyNumber: u64 = 20; //TODO: adjust value
-    pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
-    pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
+    pub const MaxDistributionBucketNumberPerFamily: u64 = 500;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 200;
+    pub const DataObjectDeletionPrize: Balance = 1; //TODO: Change during Olympia release
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
-    pub const MaxRandomIterationNumber: u64 = 30; //TODO: adjust value
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 30; //TODO: adjust value
+    pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
+        storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::DistributionBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
+        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
     pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
 }
 
@@ -693,7 +692,6 @@ impl storage::Trait for Runtime {
     type DistributionBucketId = DistributionBucketId;
     type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
-    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
