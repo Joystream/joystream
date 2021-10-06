@@ -100,7 +100,6 @@ services:
     build:
       context: .
       dockerfile: apps.Dockerfile
-      network: joystream_default
       args:
         - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     env_file:
@@ -135,7 +134,6 @@ services:
     build:
       context: .
       dockerfile: apps.Dockerfile
-      network: joystream_default
       args:
         - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     env_file:
