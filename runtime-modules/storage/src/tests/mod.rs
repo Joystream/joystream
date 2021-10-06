@@ -7,7 +7,6 @@ use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
 use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
-use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::{repeat, FromIterator};
@@ -25,8 +24,8 @@ use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
-    MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
-    Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
+    MaxDistributionBucketNumberPerFamily, MaxRandomIterationNumber, Storage, Test,
+    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
