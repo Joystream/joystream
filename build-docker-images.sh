@@ -36,12 +36,22 @@ docker-compose build colossus
 echo "Building distributor docker image..."
 docker-compose build distributor-node
 
-# Run a local development chain
-docker-compose up -d joystream-node
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    IP_ADDRESS=$(ip addr show | grep "\binet\b.*\bdocker0\b" | awk '{print $2}' | cut -d '/' -f 1)
+    # Run a local development chain
+    docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d joystream-node
 
-# Build processor/graphql-server docker image
-echo "Building joystream/apps docker image..."
-WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944/ docker-compose build graphql-server
+    # Build processor/graphql-server docker image
+    echo "Building joystream/apps docker image..."
+    WS_PROVIDER_ENDPOINT_URI=ws://${IP_ADDRESS}:9944/ docker-compose build graphql-server
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Run a local development chain
+    docker-compose up -d joystream-node
+
+    # Build processor/graphql-server docker image
+    echo "Building joystream/apps docker image..."
+    WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944/ docker-compose build graphql-server
+fi
 
 docker-compose down
 
