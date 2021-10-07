@@ -1012,7 +1012,8 @@ decl_event! {
         /// Params
         /// - data objects IDs
         /// - initial uploading parameters
-        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters),
+        /// - deletion prize for objects
+        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters, Balance),
 
         /// Emits on setting the storage operator metadata.
         /// Params
@@ -2581,6 +2582,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
             params,
+            T::DataObjectDeletionPrize::get(),
         ));
 
         Ok(())
