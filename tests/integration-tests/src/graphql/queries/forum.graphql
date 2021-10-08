@@ -65,6 +65,7 @@ fragment ForumPostFields on ForumPost {
       }
     }
   }
+  isVisible
   origin {
     __typename
     ... on PostOriginThreadInitial {
@@ -90,7 +91,7 @@ fragment ForumPostFields on ForumPost {
   }
 }
 
-fragment ForumThreadWithPostsFields on ForumThread {
+fragment ForumThreadWithInitialPost on ForumThread {
   id
   createdAt
   updatedAt
@@ -101,7 +102,7 @@ fragment ForumThreadWithPostsFields on ForumThread {
     id
   }
   title
-  posts {
+  initialPost {
     ...ForumPostFields
   }
   poll {
@@ -120,6 +121,8 @@ fragment ForumThreadWithPostsFields on ForumThread {
   isSticky
   createdInEvent {
     id
+    title
+    text
   }
   status {
     __typename
@@ -139,10 +142,14 @@ fragment ForumThreadWithPostsFields on ForumThread {
       }
     }
   }
-  titleUpdates {
+  isVisible
+  metadataUpdates {
     id
   }
   movedInEvents {
+    id
+  }
+  tags {
     id
   }
 }
@@ -153,9 +160,9 @@ query getCategoriesByIds($ids: [ID!]) {
   }
 }
 
-query getThreadsWithPostsByIds($ids: [ID!]) {
+query getThreadsWithInitialPostsByIds($ids: [ID!]) {
   forumThreads(where: { id_in: $ids }) {
-    ...ForumThreadWithPostsFields
+    ...ForumThreadWithInitialPost
   }
 }
 

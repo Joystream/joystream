@@ -7,7 +7,7 @@ import {
   StoreContext,
 } from '@dzlzv/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup, WorkerId, ContentParameters } from '@joystream/types/augment/all'
+import { WorkingGroup, WorkerId, ThreadId, ContentParameters } from '@joystream/types/augment/all'
 import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner } from 'query-node/dist/model'
 import { BaseModel } from 'warthog'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
@@ -202,6 +202,13 @@ export function extractSudoCallParameters<DataParams>(rawEvent: SubstrateEvent):
 
   return callArgs
 }
+
+// FIXME:
+type MappingsMemoryCache = {
+  lastCreatedProposalThreadId?: ThreadId
+}
+
+export const MemoryCache: MappingsMemoryCache = {}
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent

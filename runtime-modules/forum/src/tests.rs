@@ -404,12 +404,12 @@ fn update_category_archival_status_lock_works() {
         );
 
         // can't update thread
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origin.clone(),
             forum_lead,
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
     });
@@ -990,7 +990,7 @@ fn create_thread_poll_timestamp() {
 
 #[test]
 // test if author can edit thread's title
-fn edit_thread_title() {
+fn edit_thread_metadata() {
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
 
@@ -1028,22 +1028,22 @@ fn edit_thread_title() {
         );
 
         // check author can edit text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[0].clone(),
             forum_users[0],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Ok(()),
         );
 
         // check non-author is forbidden from editing text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[1].clone(),
             forum_users[1],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
         );
     });
