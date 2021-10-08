@@ -15,7 +15,7 @@ import fs from 'fs'
  * Shell command: "operator:set-metadata"
  */
 export default class OperatorSetMetadata extends ApiCommandBase {
-  static description = 'Accept pending storage bucket invitation.'
+  static description = 'Set metadata for the storage bucket.'
 
   static flags = {
     bucketId: flags.integer({

@@ -8,8 +8,20 @@ Joystream storage subsystem.
 
 <!-- toc -->
 * [Description](#description)
+  * [API](#api)
+  * [Auth schema](#auth-schema-description)
+  * [CLI](#cli)
+  * [Metadata](#metadata)
+  * [Data](#data)
+    * [Uploading](#uploading)
+    * [Synchronization](#synchronization)
+    * [Distribution](#distribution)
+  * [Comments](#comments)
 * [Installation](#installation)
 * [Usage](#usage)
+  * [Prerequisites](#prerequisites)
+  * [CLI Command](#cli-command)
+  * [Docker](#docker)
 * [CLI Commands](#cli-commands)
 <!-- tocstop -->
 
@@ -22,7 +34,7 @@ On data uploading, clients should provide an authentication token to prevent abu
 Data management is blockchain-based, it relies on the concepts of buckets, bags, data objects.
 The full description of the blockchain smart contracts could be found [here](https://github.com/Joystream/joystream/issues/2224).
 
-#### API
+### API
 
 Colossus provides REST API for its clients and other Colossus instances. It's based on the OpenAPI Specification v3. Here is the complete [spec](./src/api-spec/openapi.yaml) (work in progress).
 
@@ -39,12 +51,12 @@ API endpoints:
     - data statistics - total data folder size and data object number
 
 
-#### Auth schema description
+### Auth schema description
 
 To reduce the possibility of abuse of the uploading endpoint we implemented a simple authentication schema. On each uploading attempt, the client should receive the auth token first and provide it as a special header. The token has an expiration time and cannot be reused. To receive such token the client should be part of the StorageWorkingGroup and have  `WorkerId`.
 
 
-#### CLI
+### CLI
 
 There is a command-line interface to manage Storage Working Group operations like create a bucket or change storage settings. Full description could be found [below](#cli-commands).
 
@@ -54,15 +66,17 @@ There are several groups of command:
 - *dev* - development support commands. Requires development blockchain setup with Alice account.
 - *ungroupped* - server and help commands. `server` starts Colossus and `help` shows the full command list.
 
-#### Data synchronization
+### Metadata
+The storage provider should provide *metadata* for Colossus instance to be discoverable by other Colossus or
+Argus (distributor node) instances. At the very least an endpoint should be registered in the blockchain.
+For some complex scenarios, Colossus should provide its geolocation.
 
-Several instances of Colossus should contain the data replica in order to provide some degree of reliability. When some Colossus instance receives the data upload it marks the related data object as `accepted`. Other instances that have the same obligations to store the data (they serve storage buckets assigned to the same bag) will eventually load this data object from the initial receiver (or some other node that already downloaded a new data object from the initial receiver) using REST API.
+Metadata could be registered using [operator:set-metadata](#storage-node-operatorset-metadata) command.
+A simple endpoint could be set using the `--endpoint` flag of the command. Complex metadata requires JSON file ([example](./scripts/operatorMetadata.json)).
+JSON file format based on the *protobuf* format described [here](../metadata-protobuf/proto/Storage.proto).
 
-#### Data distribution
-
-The actual data distribution (serving to end-users) is done via Argus - the distributor node. It gets data from Colossus using the same `get` endpoint on a single data object basis.
-
-#### Data uploading
+### Data 
+#### Uploading
 
 Colossus accepts files using its API. The data must be uploaded using POST http method with `multipart/form-data`.
 Simplified process:
@@ -76,8 +90,20 @@ Simplified process:
    - data hash & size verification
    - moving the data to the data folder
    - registering the data object as `accepted` in the blockchain
+    
+#### Synchronization
 
-#### Comments
+Several instances of Colossus should contain the data replica in order to provide some degree of reliability.
+When some Colossus instance receives the data upload it marks the related data object as `accepted`.
+Other instances that have the same obligations to store the data (they serve storage buckets assigned to the same bag)
+will eventually load this data object from the initial receiver (or some other node that already downloaded a new
+data object from the initial receiver) using REST API.
+
+#### Distribution
+
+The actual data distribution (serving to end-users) is done via Argus - the distributor node. It gets data from Colossus using the same `get` endpoint on a single data object basis.
+
+### Comments
 - Colossus relies on the [Query Node (Hydra)](https://www.joystream.org/hydra/) to get the blockchain data in a structured form.
 - Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) as well as active `WorkerId` from the Storage Working group.
 
@@ -92,9 +118,6 @@ apt install git curl
 # Clone the code repository
 git clone https://github.com/Joystream/joystream
 cd joystream
-
-# Change working branch! No need after the Giza release (merge with master)
-git checkout giza
 
 # Install volta
 curl https://get.volta.sh | bash
@@ -111,7 +134,12 @@ cd storage-node-v2
 yarn storage-node version
 ```
 # Usage
-## Prerequisites
+
+```sh-session
+$ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Alice -q localhost:8081 -o 3333 -d ~/uploads --sync
+```
+
+### Prerequisites
 - accountURI or keyfile and password
 - workerId from the Storage working group that matches with the account above
 - Joystream Network validator URL
@@ -119,10 +147,9 @@ yarn storage-node version
 - (optional) ElasticSearch URL
 - created directory for data uploading
 
-```sh-session
-$ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Alice -q localhost:8081 -o 3333 -d ~/uploads --sync
-```
-
+### CLI command
+ Full command description could be find [below](#storage-node-server).
+### Docker
 There is also an option to run Colossus as [Docker container](../colossus.Dockerfile).
 
 # CLI Commands
@@ -652,7 +679,7 @@ _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joyst
 
 ## `storage-node operator:set-metadata`
 
-Accept pending storage bucket invitation.
+Set metadata for the storage bucket.
 
 ```
 USAGE
