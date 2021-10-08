@@ -1,3 +1,34 @@
+<!-- AUTO-GENERATED-CONTENT:START (TOC:firsth1=true) -->
+- [The API](#the-api)
+  - [Requesting assets](#requesting-assets)
+    - [Scenario 1 (cache hit)](#scenario-1-cache-hit)
+    - [Scenario 2 (pending)](#scenario-2-pending)
+      - [Scenario 2.1: No `Range` header was provided with a request or the `Range` start is `<= partiallyDownloadedContentSize`](#scenario-21-no-range-header-was-provided-with-a-request-or-the-range-start-is--partiallydownloadedcontentsize)
+      - [Scenario 2.2: `Range` header was provided with a request and `Range` start is `> partiallyDownloadedContentSize`](#scenario-22-range-header-was-provided-with-a-request-and-range-start-is--partiallydownloadedcontentsize)
+    - [Scenario 3 (cache miss)](#scenario-3-cache-miss)
+      - [Scenario 3.1: The requested data object is not found](#scenario-31-the-requested-data-object-is-not-found)
+      - [Scenario 3.2: The object is not distributed by the node](#scenario-32-the-object-is-not-distributed-by-the-node)
+      - [Scenario 3.3: The request is valid, the node needs to fetch the missing object](#scenario-33-the-request-is-valid-the-node-needs-to-fetch-the-missing-object)
+  - [Checking asset status](#checking-asset-status)
+  - [API limits](#api-limits)
+    - [Example Nginx configuration](#example-nginx-configuration)
+    - [System configuration](#system-configuration)
+- [Data fetching](#data-fetching)
+  - [Finding nearby storage nodes:](#finding-nearby-storage-nodes)
+  - [Data object fetching flow](#data-object-fetching-flow)
+- [Metadata](#metadata)
+  - [DistributionBucketFamilyMetadata](#distributionbucketfamilymetadata)
+    - [Geographical areas covered by the distirbution bucket family](#geographical-areas-covered-by-the-distirbution-bucket-family)
+    - [Using latency tests for choosing a family](#using-latency-tests-for-choosing-a-family)
+  - [Distribution bucket operator metadata](#distribution-bucket-operator-metadata)
+- [State](#state)
+- [Caching](#caching)
+  - [Caching policy](#caching-policy)
+    - [LRU groups](#lru-groups)
+  - [Cache cleanup](#cache-cleanup)
+- [Logging](#logging)
+<!-- AUTO-GENERATED-CONTENT:END -->
+
 <a name="the-api"></a>
 
 # The API
@@ -6,7 +37,7 @@ The Distributor Node exposes an HTTP api implemented with [ExpressJS](https://ex
 
 The api is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/openapi.yml](../../src/api-spec/openapi.yml)_
 
-Current, detailed api documentation can be found [here](../api/index.md)
+**Current, detailed api documentation can be found [here](../api/index.md)**
 
 <a name="requesting-assets"></a>
 
@@ -23,10 +54,10 @@ There are multiple scenarios of how a distributor will act upon that request, de
 **The requested data object is already available in the distributor node's filesystem (cache)**
 
 In this case:
-- Object's LRU-SP cache state is updated (see Caching policy for more details)
-- The [`send`](https://www.npmjs.com/package/send) library is used to handle the request and serve the object. The library supports partial responses (Ranges), conditional-GET negotiation (If-Match, If-Unmodified-Since, If-None-Match, If-Modified-Since) and much more.
-- `x-cache: hit` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario.
+- Object's [LRU-SP cache state](#caching-policy) is updated
+- The [`send`](https://www.npmjs.com/package/send) library is used to handle the request and serve the object. The library supports, among others, partial responses (`Ranges`) and conditional-GET negotiation (`If-Match`, `If-Unmodified-Since`, `If-None-Match`, `If-Modified-Since`).
 - `cache-control: max-age` is set to `31536000` (one year), which is a common practice for informing the browser that the object can essentially be cached "forever" (minimizing the number of request for the same data object)
+- `x-cache: hit` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
 
 <a name="scenario-2"></a>
 
@@ -38,25 +69,25 @@ In this case `cache-control: max-age` is set to a substantially lower value (cur
 
 <a name="scenario-2-1"></a>
 
-#### Scenario 2.1: No `Range` header was provided or the `Range` start is `<= partiallyDownloadedContentSize`
+#### Scenario 2.1: No `Range` header was provided with a request or the `Range` start is `<= partiallyDownloadedContentSize`
 
 In this case:
 
-- The data is streamed into the response from the local, partially downloaded file. All the data that gets written to the local file, as it's being downloaded from the storage node, is immediately pushed into the http response.
-- `x-cache: pending` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario.
+- The data is streamed into the response from the local, partially downloaded file. All the data that gets written into the local file, as it's being downloaded from the storage node, is beeing simultaneously read from the file (using a small interval) and immediately pushed into the http response.
+- `x-cache: pending` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
 
 <a name="scenario-2-2"></a>
 
-#### Scenario 2.2: `Range` header was provided and `Range` start is `> partiallyDownloadedContentSize`
+#### Scenario 2.2: `Range` header was provided with a request and `Range` start is `> partiallyDownloadedContentSize`
 
-In this case streaming the response from partially downloaded file, like in scenario above, may cause unnecessary delay, since the requested `Range` may target the very end of the file, which will only be available locally once the entire data object is fetched. That's why in this case:
-- The request is forwarded to the storage node that the data object is currently being downloaded from using [express-http-proxy](https://www.npmjs.com/package/express-http-proxy)
-- `x-cache: pending` and `x-data-source: external` headers are sent, providing the client detailed information about the triggered scenario.
+In this case streaming the response from partially downloaded file, like in the scenario above, may cause unnecessary delay, because the requested `Range` may target the very end of the file (which will only be available locally once the entire data object is fetched). That's why in this case:
+- The request is forwarded to the storage node (that the data object is currently being downloaded from) via [express-http-proxy](https://www.npmjs.com/package/express-http-proxy)
+- `x-cache: pending` and `x-data-source: external` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
 
 <a name="scenario-3"></a>
 ### Scenario 3 (cache miss)
 
-In this case the distributor node is making a request to query node to fetch details of the requested object like:
+In this case the distributor node is making an additional request to the query node in order to fetch details of the requested object, including:
 - content hash,
 - object size,
 - storage buckets assigned to store the object,
@@ -88,11 +119,11 @@ In this case
 
 ## Checking asset status
 
-It is possible to check the asset status without triggering given scenario (for example - the process of fetching the missing data object) by sending a [`HEAD` request to `/asset/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
+It is possible to check an asset status without affecting the distributor node state in any way (for example - by triggering the process of [fetching the missing data object](#data-fetching)), by sending a [`HEAD` request to `/asset/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
 
-If the request is valid, the node will send, among others, the `x-cache`, `content-length`, `cache-control` headers.
+If the request is valid, the node will respond with, among others, the `x-cache`, `content-length`, `cache-control` headers.
 
-In case of an invalid request, the node will respond with the same status it would in case of a `GET` request.
+In case the request is not invalid, the node will respond with the same status code it would in case of an invalid `GET` request.
 
 <a name="api-limits"></a>
 
@@ -100,7 +131,7 @@ In case of an invalid request, the node will respond with the same status it wou
 
 There are no rate / connection limits on incoming requests enforced by the node, it is therefore recommended to use a firewall or reverse proxy in order to protect the node from DOS/DDOS attacks.
 
-The outbound connections (from distributor node to storage nodes) can be limited with [`limits`](../schema/definition-properties-limits.md) configuration settings.
+The outbound connections (from distributor node to storage nodes) however can be limited with [`limits`](../schema/definition-properties-limits.md) configuration settings.
 
 <a name="example-nginx-configuration"></a>
 
@@ -150,7 +181,7 @@ Having in mind that [most browsers will not make more than 6 concurrent connecti
 
 ### System configuration
 
-When configuring the limits important to keep in mind that when handling a lot of simultaneous connections some system limitation may be hit.
+When configuring the limits, keep in mind that a lot of simultaneous connections may also cause some OS limits to be hit.
 
 For example, the default limit of file descriptors a single process can open on Linux systems is `1024`. If left unchanged, this limit can easily cause problems, as this means only `1024` connections can be handled concurrently. In reality this number will be much lower for distributor node, because:
 - Each connection will require 1 file descriptor for a socket
@@ -171,7 +202,7 @@ In order to limit the number of requests being made on cache miss and the time i
 
 This can be partially solved by making use of the on-chain metadata provided by storage node operators, which may include details about the node location (see [Metadata](#metadata) section) that can provide some estimation of which nodes will likely respond faster. However, because this approach is quite limited and it's possible that most storage providers will choose not to expose their node location, the distributor node instead uses a different approach to find nearby nodes.
 
-Currently the distributor node periodically (every [`intervals.checkStorageNodeResponseTimes`](../schema/definition-properties-intervals-properties-checkstoragenoderesponsetimes.md) seconds) fetches all active storage provider endpoints (from the query node) and measures their average response times to `/status/version` requests. This is done independently of any incoming requests. The "response time check" requests are queued using relatively small concurrency limit (10) in order to make the cost of this operation minimal.
+Currently the distributor node periodically (every [`intervals.checkStorageNodeResponseTimes`](../schema/definition-properties-intervals.md#checkstoragenoderesponsetimes) seconds) fetches all active storage provider endpoints (from the query node) and measures their average response times to `/status/version` requests. This is done independently of any incoming requests. The "response time check" requests are queued using relatively small concurrency limit (10) in order to make the cost of this operation minimal.
 
 This provides a pretty good estimation on which nodes will likely be the best candidates for fetching data objects during a cache miss, it also allows filtering-out storage nodes that don't respond at all or respond with an error.
 
@@ -187,7 +218,7 @@ The `HEAD /files/{objectId}` requests are then sent to the storage endpoints, st
 
 As soon as any storage node confirms the availability of the object, the `availabilityCheckQueue` is temporarily stopped and `GET /files/{objectId}` request is made to fetch the full data from the selected provider. Because the distributor node uses `Connection: keep-alive` headers when sending requests to storage nodes, there's no need to re-establish a TCP connection at this point, which can save a considerable amount of time. If other storage providers confirm the availability of the object during this time, other `GET` requests will be added to `objectDownloadQueue` (which uses a concurrency of 1), allowing the distributor node to instantly try a different provider in case the first `GET` request fails. The process continues until a storage node that responds with `HTTP 200` to a `GET` request is found.
 
-Once some storage node responds with `HTTP 200` and starts streaming the data, all other requests related to that data object are stopped and the distributor node begins to write the data into its filesystem. Any errors at this point (unexpected data size, stream errors) will mean that the fetching process has failed, causing the data object and any related state to be dropped and the whole process of fetching the object to potentially be repeated upon another request.
+Once some storage node responds with `HTTP 200` and starts streaming the data, all other requests related to that data object are stopped and the distributor node begins to write the data into its filesystem. Any errors at this point (unexpected data size, stream errors) will mean that the fetching process has failed, causing the data object and any related state to be dropped and the whole process of fetching the object to potentially be re-tried upon another request.
 
 <a name="metadata"></a>
 
@@ -197,7 +228,7 @@ The documentation of current storage&distribution system on-chain metadata stand
 
 [Distributor node metadata](#distribution-bucket-operator-metadata) can be set using [`operator:set-metadata`](../commands/operator.md#joystream-distributor-operatorset-metadata) command in Distributor Node CLI.
 
-[Distribution family metadata](#distribution-bucket-family-metadata) can be set using [`leader:set-bucket-family-metadata](../commands/leader.md#joystream-distributor-leaderset-bucket-family-metadata)
+[Distribution family metadata](#distribution-bucket-family-metadata) can be set using [`leader:set-bucket-family-metadata`](../commands/leader.md#joystream-distributor-leaderset-bucket-family-metadata)
 
 Once set, the metadata can be accessed from the Query Node with a GraphQL query like, for example:
 ```graphql
@@ -209,7 +240,7 @@ query {
         description
         latencyTestTargets
         areas {
-        	area {
+          area {
             __typename
             ...on GeographicalAreaCountry {
               countryCode: code
@@ -247,7 +278,7 @@ query {
 
 The main purpose of distribution family metadata is to help client (frontend) applications find out which distribution nodes should be preferred when fetching assets.
 
-Although each node operator may choose to expose its own node location in the [DistributionBucketOperatorMetadata](#distribution-bucket-operator-metadata), it is generally assumed that all nodes belonging to a given family will have a decent latency in the region covered by this family, so they can be treated more-or-less equally.
+Although each node operator may choose to expose its own node location in the [DistributionBucketOperatorMetadata](#distribution-bucket-operator-metadata), it is generally assumed that all nodes belonging to a given family will have a good-enough latency in the region covered by this family, so they can be treated more-or-less equally.
 
 What exactly constitutes a `region` in the `DistributionBucketFamilyMetadata` is not strictly enforced and the current metadata standard remains quite flexible in that regard.
 
@@ -272,7 +303,7 @@ There are multiple ways client applications may be able to determine most suitab
 
 ### Using latency tests for choosing a family
 
-Another way to choose the most appropriate region may be to perform an initial latency check by pinging endpoints that are supposed to give the most representative results for given family (for example, [https://www.cloudping.info/] can perform such measurements using endpoints that represent AWS regions).
+Another way to choose the most appropriate region may be to perform an initial latency check by pinging endpoints that are supposed to give the most representative results for given family (for example, https://www.cloudping.info/ can perform such measurements using endpoints that represent AWS regions).
 
 In order to facilitate this, `latency_test_targets` field in the `DistributionBucketFamilyMetadata` allows specifying the list of representative ips / hosts to be used for such measurements. Alternatively a chosen set of distribution nodes themselves may also be used.
 
@@ -288,16 +319,16 @@ The node operator may optionally choose to expose more details about the node, l
 
 # State
 
-The distributor node state is divided into memory state and persistent state.
+The distributor node state is divided into memory state (recreated on startup) and persistent state (stored in filesystem).
 
-Most of the state is managed via via an "intermediary" service called [`StateCacheService`](../../src/services/cache/StateCacheService.ts). This is to facilitate the potential migration to other state management approaches, like using `Redis` in the future. Currently the service automatically saves the persistent state to the filesystem every [`intervals.saveCacheState`](../schema/definition-properties-intervals-properties-savecachestate.md) seconds. It also tries to save the state every time the node is exiting.
+Most of the state is managed via via an "intermediary" service called [`StateCacheService`](../../src/services/cache/StateCacheService.ts). This is to facilitate the potential migration to other state management approaches, like using `Redis` in the future. Currently the service automatically saves the persistent state to the filesystem every [`intervals.saveCacheState`](../schema/definition-properties-intervals.md#savecachestate) seconds. It also tries to save the state every time the node is exiting.
 
 The current state includes:
 
 **Memory state**
 - `pendingDownloadsByObjectId` map - stores information about currently pending downloads (data object fetching attempts). Each pending download can be in one of the following states:
-  - `Waiting` - in case [`limits.maxConcurrentStorageNodeDownloads`](../schema/definition-properties-limits-properties-maxconcurrentstoragenodedownloads.md) limit is reached, this is the status of pending downloads that are waiting in the queue. It is also the initial status of all pending downloads in general.
-  - `LookingForSource` - the process of finding a storage node that is able to serve the asset has started, but the source node has not yet been chosen.
+  - `Waiting` - in case [`limits.maxConcurrentStorageNodeDownloads`](../schema/definition-properties-limits.md#maxconcurrentstoragenodedownloads) limit is reached, this is the status of pending downloads that are waiting in the queue. It is also the initial status of all pending downloads in general.
+  - `LookingForSource` - the process of looking for a storage node that is able to serve the asset has started, but the source node has not yet been chosen.
   - `Downloading` - the source storage node has been chosen and the data object is being downloaded.
 - `storageNodeEndpointDataByEndpoint` map - currently stores the last 10 average mean response times mapped by storage nodes endpoints (see: [_Finding nearby storage nodes_](#finding-nearby-storage-nodes))
 - `groupNumberByObjectId` map - stores the LRU-SP cache group number (see: [_Caching policy_](#caching-policy)) of each cached data object.
@@ -322,7 +353,7 @@ This caching policy was designed specifically for the web and it takes into acco
 - time elapsed since the object was last requested (`t`)
 
 The cost function of a cache item is described by the formula: `t * s / p`.
-Objects with highest cost are the first to be evicted in case [`limits.storage`](../schema/definition-properties-limits-properties-storage.md) limit is reached.
+Objects with highest cost are the first to be evicted in case [`limits.storage`](../schema/definition-properties-limits.md#storage) limit is reached.
 
 <a name="lru-groups"></a>
 
@@ -338,15 +369,15 @@ In order to find the best eviction candidate, we're taking the "bottom" item fro
 
 ## Cache cleanup
 
-No-longer-distributed data objects are dropped from the cache periodically every [`intervals.cacheCleanup`](../schema/definition-properties-intervals-properties-cachecleanup.md) seconds. During this time the distributor node will fetch all its current on-chain obligations using the query node and drop any objects that are part of the cache but not part of the obligations from both the cache state and filesystem.
+No-longer-distributed data objects are dropped from the cache periodically every [`intervals.cacheCleanup`](../schema/definition-properties-intervals.md#cachecleanup) seconds. During this time the distributor node will fetch all its current on-chain obligations using the query node and drop any objects that are part of the cache but not part of the obligations from both the cache state and filesystem.
 
 <a name="logging"></a>
 
 # Logging
 
-The distributor node supports detailed logging with [winston](https://www.npmjs.com/package/winston) library. [NPM log levels](https://www.npmjs.com/package/winston#logging-levels) are used to specify the log importance.
+The distributor node supports detailed logging with [winston](https://www.npmjs.com/package/winston) library. [NPM log levels](https://www.npmjs.com/package/winston#logging-levels) are used to specify the log priority.
 
-The logs can be directed to some of the 3 available outputs, depending on the [`logs`](../schema/definition-properties-directories-logs.md) configuration settings:
+The logs can be directed to some of the 3 available outputs, depending on the [`log`](../schema/definition-properties-log.md) configuration settings:
 - console
-- a log file inside [`directories.logs`](../schema/definition-properties-directories-logs.md)
-- an elasticsearch endpoint specified via [`endpoints.elasticsearch`](../schema/definition-properties-endpoints-properties-elasticsearch.md)
+- a log file inside [`directories.logs`](../schema/definition-properties-directories.md#logs)
+- an elasticsearch endpoint specified via [`endpoints.elasticsearch`](../schema/definition-properties-endpoints.md#elasticsearch)

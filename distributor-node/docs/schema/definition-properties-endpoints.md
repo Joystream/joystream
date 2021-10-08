@@ -7,7 +7,7 @@
 | Property                            | Type     | Required | Nullable       | Defined by                                                                                                                                                   |
 | :---------------------------------- | :------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [queryNode](#querynode)             | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-querynode.md "undefined#/properties/endpoints/properties/queryNode")             |
-| [joystreamNodeWs](#joystreamnodews) | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-joystreamnodews.md "undefined#/properties/endpoints/properties/joystreamNodeWs") |
+| [joystreamNodeWs](#joystreamnodews) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-joystreamnodews.md "undefined#/properties/endpoints/properties/joystreamNodeWs") |
 | [elasticSearch](#elasticsearch)     | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-elasticsearch.md "undefined#/properties/endpoints/properties/elasticSearch")     |
 
 ## queryNode
@@ -34,7 +34,7 @@ Joystream node websocket api uri (for example: ws\://localhost:9944)
 
 `joystreamNodeWs`
 
-*   is optional
+*   is required
 
 *   Type: `string`
 

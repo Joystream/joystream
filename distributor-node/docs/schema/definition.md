@@ -6,6 +6,7 @@
 
 | Property                    | Type      | Required | Nullable       | Defined by                                                                                                 |
 | :-------------------------- | :-------- | :------- | :------------- | :--------------------------------------------------------------------------------------------------------- |
+| [id](#id)                   | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-id.md "undefined#/properties/id")                   |
 | [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "undefined#/properties/endpoints")     |
 | [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "undefined#/properties/directories") |
 | [log](#log)                 | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-log.md "undefined#/properties/log")                 |
@@ -15,6 +16,28 @@
 | [keys](#keys)               | `array`   | Required | cannot be null | [Distributor node configuration](definition-properties-keys.md "undefined#/properties/keys")               |
 | [buckets](#buckets)         | Merged    | Required | cannot be null | [Distributor node configuration](definition-properties-buckets.md "undefined#/properties/buckets")         |
 | [workerId](#workerid)       | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-workerid.md "undefined#/properties/workerId")       |
+
+## id
+
+Node identifier used when sending elasticsearch logs and exposed on /status endpoint
+
+`id`
+
+*   is required
+
+*   Type: `string`
+
+*   cannot be null
+
+*   defined in: [Distributor node configuration](definition-properties-id.md "undefined#/properties/id")
+
+### id Type
+
+`string`
+
+### id Constraints
+
+**minimum length**: the minimum number of characters for this string is: `1`
 
 ## endpoints
 

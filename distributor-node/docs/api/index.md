@@ -16,6 +16,29 @@ headingLevel: 2
 
 ---
 
+<!-- AUTO-GENERATED-CONTENT:START (TOC) -->
+- [public](#public)
+- [public.status](#publicstatus)
+  - [Responses](#responses)
+  - [Responses](#responses-1)
+- [public.buckets](#publicbuckets)
+- [public.assetHead](#publicassethead)
+  - [Parameters](#parameters)
+  - [Responses](#responses-2)
+  - [Response Headers](#response-headers)
+- [public.asset](#publicasset)
+  - [Parameters](#parameters-1)
+  - [Responses](#responses-3)
+- [ErrorResponse](#errorresponse)
+  - [Response Headers](#response-headers-1)
+- [Schemas](#schemas)
+  - [Properties](#properties)
+- [StatusResponse](#statusresponse)
+  - [Properties](#properties-1)
+- [BucketsResponse](#bucketsresponse)
+  - [Properties](#properties-2)
+<!-- AUTO-GENERATED-CONTENT:END -->
+
 <h1 id="distributor-node-api">Distributor node API v0.1.0</h1>
 
 > Scroll down for code samples, example requests and responses.

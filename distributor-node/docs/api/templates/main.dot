@@ -1,3 +1,6 @@
+<!-- AUTO-GENERATED-CONTENT:START (TOC) -->
+<!-- AUTO-GENERATED-CONTENT:END -->
+
 {{= data.tags.section }}
 <h1 id="{{=data.title_prefix}}">{{=data.api.info && data.api.info.title}} {{=data.version}}</h1>
 
