@@ -3,5 +3,7 @@ enum ExitCodes {
   Error = 1,
   ApiError = 200,
   InvalidInput = 400,
+  FileNotFound = 401,
+  InvalidFile = 402,
 }
 export = ExitCodes

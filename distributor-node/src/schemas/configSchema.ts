@@ -146,22 +146,58 @@ export const configSchema: JSONSchema4 = {
     },
     port: { description: 'Distributor node http server port', type: 'integer', minimum: 0 },
     keys: {
-      description:
-        'Specifies the keys to use within distributor node CLI. Must be provided in form of substrate uris (ie.: //Alice)',
+      description: 'Specifies the keys available within distributor node CLI.',
       type: 'array',
-      items: { type: 'string' },
+      items: {
+        oneOf: [
+          {
+            type: 'object',
+            title: 'Substrate uri',
+            description: "Keypair's substrate uri (for example: //Alice)",
+            required: ['suri'],
+            additionalProperties: false,
+            properties: {
+              type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
+              suri: { type: 'string' },
+            },
+          },
+          {
+            type: 'object',
+            title: 'Mnemonic phrase',
+            description: 'Menomonic phrase',
+            required: ['mnemonic'],
+            additionalProperties: false,
+            properties: {
+              type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
+              mnemonic: { type: 'string' },
+            },
+          },
+          {
+            type: 'object',
+            title: 'JSON backup file',
+            description: 'Path to JSON backup file from polkadot signer / polakdot/apps (relative to config file path)',
+            required: ['keyfile'],
+            additionalProperties: false,
+            properties: {
+              keyfile: { type: 'string' },
+            },
+          },
+        ],
+      },
       minItems: 1,
     },
     buckets: {
       description: 'Specifies the buckets distributed by the node',
       oneOf: [
         {
+          title: 'Bucket ids',
           description: 'List of distribution bucket ids',
           type: 'array',
           items: { type: 'integer', minimum: 0 },
           minItems: 1,
         },
         {
+          title: 'All buckets',
           description: 'Distribute all buckets assigned to worker specified in `workerId`',
           type: 'string',
           enum: ['all'],

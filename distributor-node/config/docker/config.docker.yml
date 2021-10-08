@@ -20,6 +20,7 @@ intervals:
   checkStorageNodeResponseTimes: 60
   cacheCleanup: 60
 port: 3334
-keys: [//Alice]
+keys:
+  - suri: //Alice
 buckets: 'all'
 workerId: 0

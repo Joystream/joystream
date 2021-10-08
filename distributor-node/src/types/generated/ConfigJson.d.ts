@@ -6,6 +6,15 @@
  */
 
 /**
+ * List of distribution bucket ids
+ */
+export type BucketIds = [number, ...number[]]
+/**
+ * Distribute all buckets assigned to worker specified in `workerId`
+ */
+export type AllBuckets = 'all'
+
+/**
  * Configuration schema for distirubtor CLI and node
  */
 export interface DistributorNodeConfiguration {
@@ -107,15 +116,35 @@ export interface DistributorNodeConfiguration {
    */
   port: number
   /**
-   * Specifies the keys to use within distributor node CLI. Must be provided in form of substrate uris (ie.: //Alice)
+   * Specifies the keys available within distributor node CLI.
    */
-  keys: [string, ...string[]]
+  keys: [SubstrateUri | MnemonicPhrase | JSONBackupFile, ...(SubstrateUri | MnemonicPhrase | JSONBackupFile)[]]
   /**
    * Specifies the buckets distributed by the node
    */
-  buckets: [number, ...number[]] | 'all'
+  buckets: BucketIds | AllBuckets
   /**
    * ID of the node operator (distribution working group worker)
    */
   workerId: number
+}
+/**
+ * Keypair's substrate uri (for example: //Alice)
+ */
+export interface SubstrateUri {
+  type?: 'ed25519' | 'sr25519' | 'ecdsa'
+  suri: string
+}
+/**
+ * Menomonic phrase
+ */
+export interface MnemonicPhrase {
+  type?: 'ed25519' | 'sr25519' | 'ecdsa'
+  mnemonic: string
+}
+/**
+ * Path to JSON backup file from polkadot signer / polakdot/apps (relative to config file path)
+ */
+export interface JSONBackupFile {
+  keyfile: string
 }
