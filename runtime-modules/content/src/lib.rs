@@ -98,6 +98,9 @@ pub trait Trait:
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
+
+    /// The storage type used
+    type DataObjectStorage: storage::DataObjectStorage<Self>;
 }
 
 /// The owner of a channel, is the authorized "actor" that can update
@@ -1339,7 +1342,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if !storage::Bags::<T>::contains_key(bag_id.clone()) {
+        if let Ok(_) = Storage::<T>::ensure_bag_exists(&bag_id) {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
