@@ -58,7 +58,7 @@ In this case:
 - Object's [LRU-SP cache state](#caching-policy) is updated
 - The [`send`](https://www.npmjs.com/package/send) library is used to handle the request and serve the object. The library supports, among others, partial responses (`Ranges`) and conditional-GET negotiation (`If-Match`, `If-Unmodified-Since`, `If-None-Match`, `If-Modified-Since`).
 - `cache-control: max-age` is set to `31536000` (one year), which is a common practice for informing the browser that the object can essentially be cached "forever" (minimizing the number of request for the same data object)
-- `x-cache: hit` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
+- `x-cache: hit` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses)).
 
 <a name="scenario-2"></a>
 
@@ -75,7 +75,7 @@ In this case `cache-control: max-age` is set to a substantially lower value (cur
 In this case:
 
 - The data is streamed into the response from the local, partially downloaded file. All the data that gets written into the local file, as it's being downloaded from the storage node, is beeing simultaneously read from the file (using a small interval) and immediately pushed into the http response.
-- `x-cache: pending` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
+- `x-cache: pending` and `x-data-source: local` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses)).
 
 <a name="scenario-2-2"></a>
 
@@ -83,7 +83,7 @@ In this case:
 
 In this case streaming the response from partially downloaded file, like in the scenario above, may cause unnecessary delay, because the requested `Range` may target the very end of the file (which will only be available locally once the entire data object is fetched). That's why in this case:
 - The request is forwarded to the storage node (that the data object is currently being downloaded from) via [express-http-proxy](https://www.npmjs.com/package/express-http-proxy)
-- `x-cache: pending` and `x-data-source: external` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses).
+- `x-cache: pending` and `x-data-source: external` headers are sent, providing the client detailed information about the triggered scenario (see: [_public.assets Responses_](../api/index.md#public.asset-responses)).
 
 <a name="scenario-3"></a>
 ### Scenario 3 (cache miss)
