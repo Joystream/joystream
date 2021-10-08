@@ -1,6 +1,6 @@
 ################### Council ####################################################
 
-type AnnouncingPeriodStartedEvent @entity {
+type AnnouncingPeriodStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -21,7 +21,7 @@ type AnnouncingPeriodStartedEvent @entity {
   ### SPECIFIC DATA ###
 }
 
-type NotEnoughCandidatesEvent @entity {
+type NotEnoughCandidatesEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -42,7 +42,7 @@ type NotEnoughCandidatesEvent @entity {
   ### SPECIFIC DATA ###
 }
 
-type VotingPeriodStartedEvent @entity {
+type VotingPeriodStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -66,7 +66,7 @@ type VotingPeriodStartedEvent @entity {
   numOfCandidates: BigInt!
 }
 
-type NewCandidateEvent @entity {
+type NewCandidateEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -99,7 +99,7 @@ type NewCandidateEvent @entity {
   balance: BigInt!
 }
 
-type NewCouncilElectedEvent @entity {
+type NewCouncilElectedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -123,7 +123,7 @@ type NewCouncilElectedEvent @entity {
   electedMembers: [Membership!]
 }
 
-type NewCouncilNotElectedEvent @entity {
+type NewCouncilNotElectedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -144,31 +144,7 @@ type NewCouncilNotElectedEvent @entity {
   ### SPECIFIC DATA ###
 }
 
-type CandidacyStakeReleaseEvent @entity {
-  ### GENERIC DATA ###
-
-  "(network}-{blockNumber}-{indexInBlock}"
-  id: ID!
-
-  "Hash of the extrinsic which caused the event to be emitted"
-  inExtrinsic: String
-
-  "Blocknumber of the block in which the event was emitted."
-  inBlock: Int!
-
-  "Network the block was produced in"
-  network: Network!
-
-  "Index of event in block from which it was emitted."
-  indexInBlock: Int!
-
-  ### SPECIFIC DATA ###
-
-  "Candidate's membership."
-  member: Membership!
-}
-
-type CandidacyWithdrawEvent @entity {
+type CandidacyStakeReleaseEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -192,7 +168,31 @@ type CandidacyWithdrawEvent @entity {
   member: Membership!
 }
 
-type CandidacyNoteSetEvent @entity {
+type CandidacyWithdrawEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Candidate's membership."
+  member: Membership!
+}
+
+type CandidacyNoteSetEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -219,7 +219,7 @@ type CandidacyNoteSetEvent @entity {
   note: String!
 }
 
-type RewardPaymentEvent @entity {
+type RewardPaymentEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -252,7 +252,7 @@ type RewardPaymentEvent @entity {
   missingBalance: BigInt!
 }
 
-type BudgetBalanceSetEvent @entity {
+type BudgetBalanceSetEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -276,7 +276,7 @@ type BudgetBalanceSetEvent @entity {
   balance: BigInt!
 }
 
-type BudgetRefillEvent @entity {
+type BudgetRefillEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -300,7 +300,7 @@ type BudgetRefillEvent @entity {
   balance: BigInt!
 }
 
-type BudgetRefillPlannedEvent @entity {
+type BudgetRefillPlannedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -321,7 +321,7 @@ type BudgetRefillPlannedEvent @entity {
   ### SPECIFIC DATA ###
 }
 
-type BudgetIncrementUpdatedEvent @entity {
+type BudgetIncrementUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -345,7 +345,7 @@ type BudgetIncrementUpdatedEvent @entity {
   amount: BigInt!
 }
 
-type CouncilorRewardUpdatedEvent @entity {
+type CouncilorRewardUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -369,7 +369,7 @@ type CouncilorRewardUpdatedEvent @entity {
   rewardAmount: BigInt!
 }
 
-type RequestFundedEvent @entity {
+type RequestFundedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -398,7 +398,7 @@ type RequestFundedEvent @entity {
 
 ################### Referendum #################################################
 
-type ReferendumStartedEvent @entity {
+type ReferendumStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -422,7 +422,7 @@ type ReferendumStartedEvent @entity {
   winningTargetCount: BigInt!
 }
 
-type ReferendumStartedForcefullyEvent @entity {
+type ReferendumStartedForcefullyEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -446,7 +446,7 @@ type ReferendumStartedForcefullyEvent @entity {
   winningTargetCount: BigInt!
 }
 
-type RevealingStageStartedEvent @entity {
+type RevealingStageStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -467,7 +467,7 @@ type RevealingStageStartedEvent @entity {
   ### SPECIFIC DATA ###
 }
 
-type ReferendumFinishedEvent @entity {
+type ReferendumFinishedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -491,7 +491,7 @@ type ReferendumFinishedEvent @entity {
   optionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "referendumFinishedEvent")
 }
 
-type VoteCastEvent @entity {
+type VoteCastEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -521,7 +521,7 @@ type VoteCastEvent @entity {
   votePower: BigInt!
 }
 
-type VoteRevealedEvent @entity {
+type VoteRevealedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -551,7 +551,7 @@ type VoteRevealedEvent @entity {
   salt: String!
 }
 
-type StakeReleasedEvent @entity {
+type StakeReleasedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"

@@ -86,8 +86,8 @@ type Membership @entity {
 
   # Council & Referendum relations
 
-  "Council reward payment made received by the member."
-  budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+  #"Council reward payment made received by the member."
+  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
 
   "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
