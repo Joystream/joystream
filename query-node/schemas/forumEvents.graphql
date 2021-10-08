@@ -1,0 +1,485 @@
+type CategoryCreatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The created category"
+  category: ForumCategory!
+
+  # The actor is always lead
+}
+
+type CategoryArchivalStatusUpdatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The category beeing updated"
+  category: ForumCategory!
+
+  "The new archival status of the category (true = archived)"
+  newArchivalStatus: Boolean!
+
+  "The moderator (possibly lead) responsible for updating the category"
+  actor: Worker!
+}
+
+type CategoryDeletedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Category beeing deleted"
+  category: ForumCategory!
+
+  "The moderator (possibly lead) responsible for deleting the category"
+  actor: Worker!
+}
+
+type ThreadCreatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The thread that was created"
+  thread: ForumThread!
+
+  "Thread's original title"
+  title: String!
+
+  "Thread's original text"
+  text: String!
+
+  # The author is already part of the Thread entity itself and is immutable
+}
+
+type ThreadModeratedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The thread beeing moderated"
+  thread: ForumThread!
+
+  "Rationale behind the moderation"
+  rationale: String!
+
+  "Actor responsible for the moderation"
+  actor: Worker!
+}
+
+type ThreadMetadataUpdatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The thread beeing updated"
+  thread: ForumThread!
+
+  "New title of the thread"
+  newTitle: String
+
+  # Only author can update the thread title, so no actor information required
+}
+
+type ThreadDeletedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The thread beeing deleted"
+  thread: ForumThread!
+
+  # Only author can delete the thread, so no actor information required
+}
+
+type ThreadMovedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The thread beeing moved"
+  thread: ForumThread!
+
+  "Thread's previous category"
+  oldCategory: ForumCategory!
+
+  "Thread's new category"
+  newCategory: ForumCategory!
+
+  "The actor performing the transfer"
+  actor: Worker!
+}
+
+type PostAddedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The post that was added"
+  post: ForumPost!
+
+  "Whether the added post is editable"
+  isEditable: Boolean
+
+  "Post's original text"
+  text: String!
+}
+
+type PostModeratedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The post beeing moderated"
+  post: ForumPost!
+
+  "The rationale behind the moderation"
+  rationale: String!
+
+  "The actor responsible for the moderation"
+  actor: Worker!
+}
+
+type PostDeletedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "List of deleted posts"
+  posts: [ForumPost!] @derivedFrom(field: "deletedInEvent")
+
+  "The actor responsible for the removal"
+  actor: Membership!
+
+  "Posts deletion rationale"
+  rationale: String!
+}
+
+type PostTextUpdatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The post beeing updated"
+  post: ForumPost!
+
+  "New post text"
+  newText: String!
+
+  # Only author can edit the post, so no actor context required
+}
+
+type PostReactionResultCancel @variant {
+  _phantom: Int
+}
+
+type PostReactionResultValid @variant {
+  reaction: PostReaction!
+  reactionId: Int!
+}
+
+type PostReactionResultInvalid @variant {
+  reactionId: Int!
+}
+
+union PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
+
+type PostReactedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The post beeing reacted to"
+  post: ForumPost!
+
+  "The reaction result - new valid reaction, cancelation of previous reaction or invalid reaction (which also cancels the previous one)"
+  reactionResult: PostReactionResult!
+
+  "The member reacting to the post"
+  reactingMember: Membership!
+}
+
+type VoteOnPollEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Poll alternative beeing voted on"
+  pollAlternative: ForumPollAlternative!
+
+  "The member that casted the vote"
+  votingMember: Membership!
+}
+
+type CategoryStickyThreadUpdateEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The related category"
+  category: ForumCategory!
+
+  "List of the threads beeing made sticky"
+  newStickyThreads: [ForumThread!]
+
+  "The actor responsible for making the threads sticky"
+  actor: Worker!
+}
+
+type CategoryMembershipOfModeratorUpdatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The moderator in question"
+  moderator: Worker!
+
+  "The category in question"
+  category: ForumCategory!
+
+  "The flag indicating whether the permissions to moderate the category are granted or revoked"
+  newCanModerateValue: Boolean!
+
+  # Actor is always lead
+}

@@ -95,7 +95,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -301,6 +301,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
 
 pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
+pub const DEFAULT_WORKER_ACCOUNT_ID: u64 = 2;
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 

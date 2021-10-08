@@ -1,6 +1,5 @@
-import { Null, u32, u128, bool, Option } from '@polkadot/types'
-import AccountId from '@polkadot/types/generic/AccountId'
-import { JoyEnum, JoyStructDecorated, JoyBTreeSet, MemberId } from './common'
+import { Null, u32, u128, bool, Option, BTreeSet } from '@polkadot/types'
+import { JoyEnum, JoyStructDecorated, MemberId, AccountId } from './common'
 
 export class BountyId extends u32 {}
 export class EntryId extends u32 {}
@@ -12,7 +11,7 @@ export class BountyActor extends JoyEnum({
 
 export class AssuranceContractType extends JoyEnum({
   Open: Null,
-  Closed: JoyBTreeSet(MemberId),
+  Closed: BTreeSet.with(MemberId),
 }) {}
 
 export class FundingType_Perpetual extends JoyStructDecorated({

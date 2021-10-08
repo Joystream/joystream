@@ -24,7 +24,7 @@ import { Accordion,
   TextAreaProps } from 'semantic-ui-react';
 
 import Identicon from '@polkadot/react-identicon';
-import AccountId from '@polkadot/types/generic/AccountId';
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId';
 
 import { GenericJoyStreamRoleSchema,
   ApplicationDetails,

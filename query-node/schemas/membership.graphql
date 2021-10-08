@@ -73,6 +73,13 @@ type Membership @entity {
 
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")
+
+  # Required for ProposalDiscussionWhitelist->members Many-to-Many relationship
+  "List of proposal thread whitelists the member is part of"
+  whitelistedIn: [ProposalDiscussionWhitelist!] @derivedFrom(field: "members")
+
+  "Content channels the member owns"
+  channels: [Channel!] @derivedFrom(field: "ownerMember")
 }
 
 type MembershipSystemSnapshot @entity {

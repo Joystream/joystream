@@ -2,6 +2,7 @@
 
 const debug = require('debug')('joystream:runtime:assets')
 const { decodeAddress } = require('@polkadot/keyring')
+const { StorageObjectOwner, DataObject } = require('@joystream/types/storage')
 
 function parseContentId(contentId) {
   try {
@@ -31,7 +32,18 @@ class AssetsApi {
    */
   async createDataObject(accountId, memberId, contentId, doTypeId, size, ipfsCid) {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.addContent(memberId, contentId, doTypeId, size, ipfsCid)
+    const owner = {
+      Member: memberId,
+    }
+    const content = [
+      {
+        content_id: contentId,
+        type_id: doTypeId,
+        size,
+        ipfs_content_id: ipfsCid,
+      },
+    ]
+    const tx = this.base.api.tx.dataDirectory.addContent(owner, content)
     await this.base.signAndSend(accountId, tx)
 
     // If the data object constructed properly, we should now be able to return
@@ -40,11 +52,17 @@ class AssetsApi {
   }
 
   /*
-   * Return the Data Object for a contendId
+   * Returns the Data Object for a contendId.
+   * Returns null if it doesn't exist.
    */
   async getDataObject(contentId) {
     contentId = parseContentId(contentId)
-    return this.base.api.query.dataDirectory.dataObjectByContentId(contentId)
+    // check if contentId key exists in map
+    const storageSize = await this.base.api.query.dataDirectory.dataByContentId.size(contentId)
+    if (storageSize.eq(0)) {
+      return null
+    }
+    return this.base.api.query.dataDirectory.dataByContentId(contentId)
   }
 
   /*
@@ -58,20 +76,18 @@ class AssetsApi {
   async checkLiaisonForDataObject(storageProviderId, contentId) {
     contentId = parseContentId(contentId)
 
-    let obj = await this.getDataObject(contentId)
+    const obj = await this.getDataObject(contentId)
 
-    if (obj.isNone) {
-      throw new Error(`No DataObject created for content ID: ${contentId}`)
+    if (!obj) {
+      throw new Error(`No DataObject found for content ID: ${contentId}`)
     }
-
-    obj = obj.unwrap()
 
     if (!obj.liaison.eq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`)
     }
 
     if (obj.liaison_judgement.type !== 'Pending') {
-      throw new Error(`Expected Pending judgement, but found: ${obj.liaison_judgement.type}`)
+      throw new Error(`Content upload has already been processed.`)
     }
 
     return obj
@@ -84,15 +100,6 @@ class AssetsApi {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.acceptContent(storageProviderId, contentId)
     return this.base.signAndSend(providerAccoundId, tx)
-  }
-
-  /*
-   * Sets the data object liaison judgement to Rejected
-   */
-  async rejectContent(providerAccountId, storageProviderId, contentId) {
-    contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.rejectContent(storageProviderId, contentId)
-    return this.base.signAndSend(providerAccountId, tx)
   }
 
   /*
@@ -141,10 +148,27 @@ class AssetsApi {
   }
 
   /*
-   * Returns array of know content ids
+   * Returns array of all the content ids in storage
    */
   async getKnownContentIds() {
-    return this.base.api.query.dataDirectory.knownContentIds()
+    const keys = await this.base.api.query.dataDirectory.dataByContentId.keys()
+    return keys.map(({ args: [contentId] }) => contentId)
+  }
+
+  /*
+   * Returns array of all content ids in storage where liaison judgement was Accepted
+   */
+  async getAcceptedContentIds() {
+    const entries = await this.base.api.query.dataDirectory.dataByContentId.entries()
+    return entries
+      .filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
+      .map(
+        ([
+          {
+            args: [contentId],
+          },
+        ]) => contentId
+      )
   }
 }
 

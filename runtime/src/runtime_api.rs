@@ -11,13 +11,15 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
+
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
+    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
-    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, DataDirectory, Grandpa, Historical,
+    InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
+    TransactionPayment,
 };
 use frame_support::weights::Weight;
 
@@ -53,6 +55,7 @@ pub type SignedExtra = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
+
 /// We don't use specific Address types (like Indices).
 pub type Address = AccountId;
 
@@ -75,19 +78,27 @@ pub type BlockId = generic::BlockId<Block>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
-// pub type Executive = frame_executive::Executive<
-//     Runtime,
-//     Block,
-//     frame_system::ChainContext<Runtime>,
-//     Runtime,
-//     AllModules,
-// >;
+// pub type Executive =
+//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        ProposalsEngine::cancel_active_and_pending_proposals()
+        ProposalsEngine::cancel_active_and_pending_proposals();
+
+        content::Module::<Runtime>::on_runtime_upgrade();
+
+        DataDirectory::initialize_data_directory(
+            Vec::new(),
+            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_GLOBAL_VOUCHER,
+            data_directory::DEFAULT_VOUCHER,
+            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
+        );
+
+        10_000_000 // TODO: adjust weight
     }
 }
 
@@ -305,8 +316,8 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Trait for Runtime {}
             impl frame_system_benchmarking::Trait for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::Trait>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::Trait>::MemberId) {
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
                     crate::council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
@@ -323,15 +334,15 @@ impl_runtime_apis! {
 
             impl membership::MembershipWorkingGroupHelper<
                 <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::membership::Trait>::MemberId,
-                <Runtime as common::membership::Trait>::ActorId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::ActorId,
                     > for Runtime
             {
                 fn insert_a_lead(
                     opening_id: u32,
                     caller_id: &<Runtime as frame_system::Trait>::AccountId,
-                    member_id: <Runtime as common::membership::Trait>::MemberId,
-                ) -> <Runtime as common::membership::Trait>::ActorId {
+                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
                         working_group::OpeningType::Leader,
                         opening_id,

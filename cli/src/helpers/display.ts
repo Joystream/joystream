@@ -1,6 +1,6 @@
 import { cli, Table } from 'cli-ux'
 import chalk from 'chalk'
-import { NameValueObj } from '../Types'
+import { MemberDetails, NameValueObj } from '../Types'
 import { AccountId } from '@polkadot/types/interfaces'
 
 export function displayHeader(caption: string, placeholderSign = '_', size = 50) {
@@ -17,8 +17,8 @@ export function displayNameValueTable(rows: NameValueObj[]) {
   cli.table(
     rows,
     {
-      name: { minWidth: 30, get: (row) => chalk.bold.white(row.name) },
-      value: { get: (row) => chalk.white(row.value) },
+      name: { minWidth: 30, get: (row) => chalk.bold.magentaBright(row.name) },
+      value: { get: (row) => chalk.magentaBright(row.value) },
     },
     { 'no-header': true }
   )
@@ -49,7 +49,7 @@ export function displayTable(rows: { [k: string]: string | number }[], cellHoriz
     }, columnName.length)
   const columnDef = (columnName: string) => ({
     header: columnName,
-    get: (row: typeof rows[number]) => chalk.white(`${row[columnName]}`),
+    get: (row: typeof rows[number]) => chalk.magentaBright(`${row[columnName]}`),
     minWidth: maxLength(columnName) + cellHorizontalPadding,
   })
   const columns: Table.table.Columns<{ [k: string]: string }> = {}
@@ -70,4 +70,8 @@ export function toFixedLength(text: string, length: number, spacesOnLeft = false
 
 export function shortAddress(address: AccountId | string): string {
   return address.toString().substr(0, 6) + '...' + address.toString().substr(-6)
+}
+
+export function memberHandle(member: MemberDetails): string {
+  return member.handle ? member.handle : member.membership.handle_hash.toHex().substr(0, 10) + '... (hash)'
 }

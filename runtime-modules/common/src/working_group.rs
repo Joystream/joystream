@@ -7,7 +7,7 @@ use strum_macros::EnumIter;
 
 /// Defines well-known working groups.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum WorkingGroup {
     /// Forum working group: working_group::Instance1.
     Forum,
@@ -17,10 +17,14 @@ pub enum WorkingGroup {
     Content,
     /// Membership working group: working_group::Instance4.
     Membership,
+    /// Operations working group: working_group::Instance5.
+    Operations,
+    /// Gateway working group: working_group::Instance6.
+    Gateway,
 }
 
 /// Working group interface to work with its members - workers and leaders.
-pub trait WorkingGroupAuthenticator<T: crate::membership::Trait> {
+pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
     /// Validate origin for the worker.
     fn ensure_worker_origin(origin: T::Origin, worker_id: &T::ActorId) -> DispatchResult;
 
@@ -35,6 +39,9 @@ pub trait WorkingGroupAuthenticator<T: crate::membership::Trait> {
 
     /// Verifies that given account ID and worker ID belong to the working group member.
     fn is_worker_account_id(account_id: &T::AccountId, worker_id: &T::ActorId) -> bool;
+
+    /// Verifies that a worker belongs to the working group.
+    fn worker_exists(worker_id: &T::ActorId) -> bool;
 }
 
 /// Working group interface to work with the its budget.

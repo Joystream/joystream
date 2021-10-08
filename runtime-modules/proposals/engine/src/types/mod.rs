@@ -115,7 +115,7 @@ impl VotingResults {
     }
 }
 
-/// 'Proposal' contains information necessary for the proposal system functioning.
+/// 'Proposal' contains information necessary for the proposal frame_system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {

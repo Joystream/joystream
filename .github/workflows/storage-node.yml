@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [14.x]
     steps:
     - uses: actions/checkout@v1
     - name: Use Node.js ${{ matrix.node-version }}
@@ -17,14 +17,16 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
+        yarn workspace @joystream/types build
         yarn workspace storage-node checks --quiet
+        yarn workspace storage-node build
 
   storage_node_build_osx:
     name: MacOS Checks
     runs-on: macos-latest
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [14.x]
     steps:
     - uses: actions/checkout@v1
     - name: Use Node.js ${{ matrix.node-version }}
@@ -34,4 +36,6 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
+        yarn workspace @joystream/types build
         yarn workspace storage-node checks --quiet
+        yarn workspace storage-node build

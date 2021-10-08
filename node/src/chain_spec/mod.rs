@@ -18,6 +18,8 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
+// Remove after the Antioch release.
+#![allow(clippy::unnecessary_wraps)]
 
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
@@ -30,14 +32,15 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    ContentConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
+pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
@@ -132,6 +135,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -168,6 +172,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -209,6 +214,7 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
+    data_directory_config: DataDirectoryConfig,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
@@ -232,7 +238,7 @@ pub fn testnet_genesis(
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {
-            validator_count: 20,
+            validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
@@ -268,20 +274,24 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
+        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         }),
-        content_directory: Some({
-            ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
-                curator_group_by_id: vec![],
-                next_class_id: 1,
-                next_entity_id: 1,
+        content: Some({
+            ContentConfig {
                 next_curator_group_id: 1,
+                next_channel_category_id: 1,
+                next_channel_id: 1,
+                next_video_category_id: 1,
+                next_video_id: 1,
+                next_playlist_id: 1,
+                next_series_id: 1,
+                next_person_id: 1,
+                next_channel_transfer_request_id: 1,
             }
         }),
     }
@@ -297,10 +307,18 @@ pub(crate) mod tests {
         testnet_genesis(
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+                get_authority_keys_from_seed("Charlie").0,
+                get_authority_keys_from_seed("Alice").1,
+                get_authority_keys_from_seed("Bob").1,
+                get_authority_keys_from_seed("Charlie").1,
+            ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::empty_data_directory_config(),
         )
     }
 
@@ -333,6 +351,7 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::empty_data_directory_config(),
         )
     }
 

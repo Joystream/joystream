@@ -85,7 +85,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
@@ -103,7 +103,9 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+{
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -126,7 +128,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Work entry Id type
     type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
@@ -148,7 +155,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Defines who can submit the work.
@@ -321,7 +328,7 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Crowdfunded bounty record.
@@ -383,7 +390,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
     <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
 >;
@@ -702,6 +709,9 @@ decl_module! {
 
         /// Exports const - min work entrant stake for a bounty.
         const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+
+        /// Exports const - bounty lock id.
+        const BountyLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>

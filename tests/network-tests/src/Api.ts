@@ -1,42 +1,42 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
-import { ISubmittableResult } from '@polkadot/types/types'
+import { Codec, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId } from '@joystream/types/common'
+import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
+import { Mint, MintId } from '@joystream/types/mint'
 import {
   Application,
-  ApplicationId,
   ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
+  OpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
-  OpeningId,
-  StakePolicy,
 } from '@joystream/types/working-group'
-
-import { AccountInfo, Balance, Event, EventRecord } from '@polkadot/types/interfaces'
+import { ElectionStake, Seat } from '@joystream/types/council'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
+import { Stake, StakedState, StakeId } from '@joystream/types/stake'
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
 import { types } from '@joystream/types'
-
-import { ProposalId } from '@joystream/types/proposals'
+import {
+  ActivateOpeningAt,
+  Application as HiringApplication,
+  ApplicationId,
+  Opening as HiringOpening,
+  OpeningId,
+} from '@joystream/types/hiring'
+import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
-import { OperationType } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
-import Debugger from 'debug'
-import { CouncilMemberOf } from '@joystream/types/council'
-import { DispatchError } from '@polkadot/types/interfaces/system'
+import { ContentId, DataObject } from '@joystream/types/storage'
+import { extendDebug } from './Debugger'
+import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
   ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
-  MembershipWorkingGroup = 'membershipWorkingGroup',
-  ForumWorkingGroup = 'forumWorkingGroup',
 }
 
 export class ApiFactory {
@@ -50,16 +50,16 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('api-factory')
+    const debug = extendDebug('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = await ApiPromise.create({ provider, types })
+        const api = new ApiPromise({ provider, types })
 
         // Wait for api to be connected and ready
-        await api.isReady
+        await api.isReadyOrError
 
         // If a node was just started up it might take a few seconds to start producing blocks
         // Give it a few seconds to be ready.
@@ -86,9 +86,9 @@ export class ApiFactory {
     return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
-  }
+  // public close(): void {
+  //   this.api.disconnect()
+  // }
 }
 
 export class Api {
@@ -105,34 +105,6 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
-  public get tx(): SubmittableExtrinsics<'promise'> {
-    return this.api.tx
-  }
-
-  public get query(): QueryableStorage<'promise'> {
-    return this.api.query
-  }
-
-  public get consts(): QueryableConsts<'promise'> {
-    return this.api.consts
-  }
-
-  public get derive() {
-    return this.api.derive
-  }
-
-  public async signAndSend(
-    tx: SubmittableExtrinsic<'promise'>,
-    sender: AccountId | string
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(tx, sender)
-  }
-
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
-    const sudo = await this.api.query.sudo.key()
-    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
-  }
-
   public enableDebugTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Debug)
   }
@@ -141,12 +113,9 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  // Create new keys and store them in the shared keyring
   public createKeyPairs(n: number): KeyringPair[] {
     const nKeyPairs: KeyringPair[] = []
     for (let i = 0; i < n; i++) {
-      // What are risks of generating duplicate keys this way?
-      // Why not use a deterministic /TestKeys/N and increment N
       nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
     }
     return nKeyPairs
@@ -159,37 +128,29 @@ export class Api {
         return 'Storage'
       case WorkingGroups.ContentDirectoryWorkingGroup:
         return 'Content'
-      case WorkingGroups.ForumWorkingGroup:
-        return 'Forum'
-      case WorkingGroups.MembershipWorkingGroup:
-        return 'Membership'
       default:
         throw new Error(`Invalid working group string representation: ${workingGroup}`)
     }
   }
 
-  public getBlockDuration(): BN {
-    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
+  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
+    const sudo = await this.api.query.sudo.key()
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
   }
 
-  public durationInMsFromBlocks(durationInBlocks: number): number {
-    return this.getBlockDuration().muln(durationInBlocks).toNumber()
+  public createPaidTermId(value: BN): PaidTermId {
+    return this.api.createType('PaidTermId', value)
   }
 
-  public getValidatorCount(): Promise<BN> {
-    return this.api.query.staking.validatorCount<u32>()
+  public async buyMembership(account: string, paidTermsId: PaidTermId, name: string): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ ''),
+      account
+    )
   }
 
-  public getMemberIds(controllerAddress: string): Promise<MemberId[]> {
-    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(controllerAddress)
-  }
-
-  public getBestBlock(): Promise<BN> {
-    return this.api.derive.chain.bestNumber()
-  }
-
-  public async getControllerAccountOfMember(id: MemberId): Promise<string> {
-    return (await this.api.query.members.membershipById(id)).controller_account.toString()
+  public getMemberIds(address: string): Promise<MemberId[]> {
+    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
   }
 
   public async getBalance(address: string): Promise<Balance> {
@@ -197,30 +158,25 @@ export class Api {
     return accountData.data.free
   }
 
-  public async transferBalance({
-    from,
-    to,
-    amount,
-  }: {
-    from: string
-    to: string
-    amount: BN
-  }): Promise<ISubmittableResult> {
+  public async transferBalance(from: string, to: string, amount: BN): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
-    return this.transferBalance({ from: this.treasuryAccount, to, amount })
+    return this.transferBalance(this.treasuryAccount, to, amount)
   }
 
-  public treasuryTransferBalanceToAccounts(destinations: string[], amount: BN): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      destinations.map((account) => this.transferBalance({ from: this.treasuryAccount, to: account, amount }))
-    )
+  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(to.map((account) => this.transferBalance(this.treasuryAccount, account, amount)))
   }
 
-  public async getMembershipFee(): Promise<BN> {
-    return this.api.query.members.membershipPrice()
+  public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<PaidMembershipTerms> {
+    return this.api.query.members.paidMembershipTermsById<PaidMembershipTerms>(paidTermsId)
+  }
+
+  public async getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
+    const terms: PaidMembershipTerms = await this.getPaidMembershipTerms(paidTermsId)
+    return terms.fee
   }
 
   // This method does not take into account weights and the runtime weight to fees computation!
@@ -229,26 +185,79 @@ export class Api {
     return Utils.calcTxLength(tx).mul(byteFee)
   }
 
-  // The estimation methods here serve to allow fixtures to estimate fees ahead of
-  // constructing transactions which may have dependencies on other transactions finalizing
-
-  public estimateBuyMembershipFee(account: string, handle: string): BN {
+  public estimateBuyMembershipFee(account: string, paidTermsId: PaidTermId, name: string): BN {
     return this.estimateTxFee(
-      this.api.tx.members.buyMembership({ root_account: account, controller_account: account, handle })
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ '')
     )
   }
 
-  public estimateApplyForCouncilFee(membershipId: number | MemberId, account: string, stake: BN): BN {
-    return this.estimateTxFee(this.api.tx.council.announceCandidacy(membershipId, account, account, stake))
+  public estimateApplyForCouncilFee(amount: BN): BN {
+    return this.estimateTxFee(this.api.tx.councilElection.apply(amount))
   }
 
-  public estimateVoteForCouncilFee(memberId: string, salt: string, stake: BN): BN {
-    const hashedVote: string = Utils.hashVote(memberId, salt)
-    return this.estimateTxFee(this.api.tx.referendum.vote(hashedVote, stake))
+  public estimateVoteForCouncilFee(nominee: string, salt: string, stake: BN): BN {
+    const hashedVote: string = Utils.hashVote(nominee, salt)
+    return this.estimateTxFee(this.api.tx.councilElection.vote(hashedVote, stake))
   }
 
-  public estimateRevealVoteFee(memberId: string, salt: string): BN {
-    return this.estimateTxFee(this.api.tx.referendum.revealVote(salt, memberId))
+  public estimateRevealVoteFee(nominee: string, salt: string): BN {
+    const hashedVote: string = Utils.hashVote(nominee, salt)
+    return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, salt))
+  }
+
+  public estimateProposeRuntimeUpgradeFee(stake: BN, name: string, description: string, runtime: Bytes | string): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(stake, name, description, stake, runtime)
+    )
+  }
+
+  public estimateProposeTextFee(stake: BN, name: string, description: string, text: string): BN {
+    return this.estimateTxFee(this.api.tx.proposalsCodex.createTextProposal(stake, name, description, stake, text))
+  }
+
+  public estimateProposeSpendingFee(
+    title: string,
+    description: string,
+    stake: BN,
+    balance: BN,
+    destination: string
+  ): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSpendingProposal(stake, title, description, stake, balance, destination)
+    )
+  }
+
+  public estimateProposeValidatorCountFee(title: string, description: string, stake: BN): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetValidatorCountProposal(stake, title, description, stake, stake)
+    )
+  }
+
+  public estimateProposeElectionParametersFee(
+    title: string,
+    description: string,
+    stake: BN,
+    announcingPeriod: BN,
+    votingPeriod: BN,
+    revealingPeriod: BN,
+    councilSize: BN,
+    candidacyLimit: BN,
+    newTermDuration: BN,
+    minCouncilStake: BN,
+    minVotingStake: BN
+  ): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(stake, title, description, stake, {
+        announcing_period: announcingPeriod,
+        voting_period: votingPeriod,
+        revealing_period: revealingPeriod,
+        council_size: councilSize,
+        candidacy_limit: candidacyLimit,
+        new_term_duration: newTermDuration,
+        min_council_stake: minCouncilStake,
+        min_voting_stake: minVotingStake,
+      })
+    )
   }
 
   public estimateVoteForProposalFee(): BN {
@@ -256,100 +265,84 @@ export class Api {
       this.api.tx.proposalsEngine.vote(
         this.api.createType('MemberId', 0),
         this.api.createType('ProposalId', 0),
-        'Approve',
-        'rationale-text'
-      )
-    )
-  }
-
-  public estimateProposeRuntimeUpgradeFee(title: string, description: string, runtime: Bytes | string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          RuntimeUpgrade: runtime,
-        }
-      )
-    )
-  }
-
-  public estimateProposeTextFee(title: string, description: string, text: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          Text: text,
-        }
-      )
-    )
-  }
-
-  public estimateProposeSpendingFee(title: string, description: string, balance: BN, destination: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          Spending: [balance, destination],
-        }
-      )
-    )
-  }
-
-  public estimateProposeValidatorCountFee(title: string, description: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetValidatorCount: 1,
-        }
+        'Approve'
       )
     )
   }
 
   public estimateAddOpeningFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].addOpening('Human readable text', 'Regular', null, null))
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
+        max_active_applicants: new BN(32) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: this.api.createType('SlashingTerms', {
+        Slashable: {
+          max_count: new BN(0),
+          max_percent_pts_per_time: new BN(0),
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+    })
+
+    return this.estimateTxFee(
+      this.api.tx[module].addOpening('CurrentBlock', commitment, 'Human readable text', 'Worker')
+    )
+  }
+
+  public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)))
   }
 
   public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx[module].applyOnOpening({
-        member_id: this.api.createType('MemberId', 0),
-        opening_id: this.api.createType('OpeningId', 0),
-        role_account_id: account,
-        reward_account_id: account,
-        description:
-          'Some testing text used for estimation purposes which is longer than text expected during the test',
-        stake_parameters: null,
-      })
+      this.api.tx[module].applyOnOpening(
+        this.api.createType('MemberId', 0),
+        this.api.createType('OpeningId', 0),
+        account,
+        null,
+        null,
+        'Some testing text used for estimation purposes which is longer than text expected during the test'
+      )
     )
   }
 
+  public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].beginApplicantReview(0))
+  }
+
   public estimateFillOpeningFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].fillOpening(0, this.api.createType('ApplicationIdSet', [0])))
+    return this.estimateTxFee(
+      this.api.tx[module].fillOpening(0, this.api.createType('ApplicationIdSet', [0]), {
+        'amount_per_payout': 0,
+        'next_payment_at_block': 0,
+        'payout_interval': 0,
+      })
+    )
   }
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
@@ -369,97 +362,136 @@ export class Api {
   }
 
   public estimateLeaveRoleFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].leaveRole(this.api.createType('WorkerId', 0)))
+    return this.estimateTxFee(
+      this.api.tx[module].leaveRole(this.api.createType('WorkerId', 0), 'Long justification text')
+    )
   }
 
   public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
     return this.estimateTxFee(this.api.tx[module].withdrawApplication(this.api.createType('ApplicationId', 0)))
   }
 
+  public estimateTerminateApplicationFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].terminateApplication(this.api.createType('ApplicationId', 0)))
+  }
+
   public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), {
-        slashing_text: 'some-slash-reason-text',
-        slashing_amount: 100,
-      })
-    )
+    return this.estimateTxFee(this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx[module].terminateRole(this.api.createType('WorkerId', 0), {
-        slashing_text: 'termination-reason-text',
-        slashing_amount: 100,
-      })
+      this.api.tx[module].terminateRole(
+        this.api.createType('WorkerId', 0),
+        'Long justification text explaining why the worker role will be terminated',
+        false
+      )
     )
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
+        max_active_applicants: new BN(32) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: this.api.createType('SlashingTerms', {
+        Slashable: {
+          max_count: new BN(0),
+          max_percent_pts_per_time: new BN(0),
         },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+    })
+
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        0,
+        'some long title for the purpose of testing',
+        'some long description for the purpose of testing',
+        null,
         {
-          AddWorkingGroupLeaderOpening: {
-            description: 'long description of opening details',
-            stake_policy: null, // Option.with(StakePolicy),
-            reward_per_block: null, // Option.with(u128),
-            working_group: 'Storage',
-          },
+          activate_at: 'CurrentBlock',
+          commitment: commitment,
+          human_readable_text: 'Opening readable text',
+          working_group: 'Storage',
         }
+      )
+    )
+  }
+
+  public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        this.api.createType('OpeningId', 0),
+        'Storage'
       )
     )
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters = this.api.createType('FillOpeningParameters', {
+    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: this.api.createType('OpeningId', 0),
       successful_application_id: this.api.createType('ApplicationId', 0),
-      working_group: 'Storage',
+      reward_policy: this.api.createType('Option<RewardPolicy>', {
+        amount_per_payout: new BN(1) as Balance,
+        next_payment_at_block: new BN(99999) as BlockNumber,
+        payout_interval: this.api.createType('Option<u32>', new BN(99999)),
+      }),
+      working_group: this.api.createType('WorkingGroup', 'Storage'),
     })
 
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-fill-opening',
-          description: 'long description for filling lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          FillWorkingGroupLeaderOpening: fillOpeningParameters,
-        }
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        fillOpeningParameters
       )
     )
   }
 
   public estimateProposeTerminateLeaderRoleFee(): BN {
-    const terminateRoleParameters = this.api.createType('TerminateRoleParameters', {
-      worker_id: this.api.createType('WorkerId', 0),
-      penalty: this.api.createType('Penalty', {
-        slashing_text: 'reason for slashing',
-        slashing_amount: 100,
-      }),
-      working_group: 'Storage',
-    })
-
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
         {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'terminate-lead',
-          description: 'long description for terminating lead',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          TerminateWorkingGroupLeaderRole: terminateRoleParameters,
+          'worker_id': this.api.createType('WorkerId', 0),
+          'rationale': 'Exceptionaly long and extraordinary descriptive rationale',
+          'slash': true,
+          'working_group': 'Storage',
         }
       )
     )
@@ -467,218 +499,264 @@ export class Api {
 
   public estimateProposeLeaderRewardFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetWorkingGroupLeaderReward: [this.api.createType('WorkerId', 1), 1000, 'Storage'],
-        }
+      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        this.api.createType('WorkerId', 0),
+        0,
+        'Storage'
       )
     )
   }
 
   public estimateProposeDecreaseLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          DecreaseWorkingGroupLeaderStake: [this.api.createType('WorkerId', 1), 1000, 'Storage'],
-        }
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        this.api.createType('WorkerId', 0),
+        0,
+        'Storage'
       )
     )
   }
 
   public estimateProposeSlashLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SlashWorkingGroupLeaderStake: [
-            this.api.createType('WorkerId', 1),
-            {
-              slashing_text: 'reason for slashing',
-              slashing_amount: 100,
-            },
-            'Storage',
-          ],
-        }
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        this.api.createType('WorkerId', 0),
+        0,
+        'Storage'
       )
     )
   }
 
-  // rename this to estimateProposeWorkingGroupBudgetFee
   public estimateProposeWorkingGroupMintCapacityFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetWorkingGroupBudgetCapacity: [1000, 'Storage'],
-        }
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        this.api.createType('MemberId', 0),
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        null,
+        0,
+        'Storage'
       )
     )
   }
 
-  // Council and elections
-
-  // Move into fixture
-  private applyForCouncilElection(
-    membershipId: MemberId | number,
-    account: string,
-    amount: BN
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.council.announceCandidacy(membershipId, account, account, amount),
-      account
-    )
+  private applyForCouncilElection(account: string, amount: BN): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account)
   }
 
-  public batchApplyForCouncilElection(
-    membershipIds: number[], // would be better to pass Map<membershipId, account>
-    accounts: string[], //
-    amount: BN
-  ): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      accounts.map(async (account, ix) => this.applyForCouncilElection(membershipIds[ix], account, amount))
-    )
+  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(accounts.map(async (account) => this.applyForCouncilElection(account, amount)))
   }
 
-  /*
-    We can't manually control the election stages anymore.
-
-    Tests must take these constants into account:
-    Council:
-      AnnouncingPeriodDuration: BlockNumber = 15;
-      IdlePeriodDuration: BlockNumber = 27;
-    Referendum:
-      VoteStageDuration: BlockNumber = 5;
-      RevealStageDuration: BlockNumber = 7;
-      MinimumVotingStake: u64 = 10000;
-
-  public async getAnnouncingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.announcingPeriod<BlockNumber>()
+  public async getCouncilElectionStake(address: string): Promise<BN> {
+    return (((await this.api.query.councilElection.applicantStakes(address)) as unknown) as ElectionStake).new
   }
 
-  public async getVotingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.votingPeriod<BlockNumber>()
-  }
-
-  public async getRevealingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.revealingPeriod<BlockNumber>()
-  }
-
-  public async getCouncilSize(): Promise<BN> {
-    return this.api.query.councilElection.councilSize<u32>()
-  }
-
-  public async getCandidacyLimit(): Promise<BN> {
-    return this.api.query.councilElection.candidacyLimit<u32>()
-  }
-
-  public async getNewTermDuration(): Promise<BN> {
-    return this.api.query.councilElection.newTermDuration<BlockNumber>()
-  }
-
-  public async getMinCouncilStake(): Promise<BN> {
-    return this.api.query.councilElection.minCouncilStake<BalanceOf>()
-  }
-
-  public async getMinVotingStake(): Promise<BN> {
-    return this.api.query.councilElection.minVotingStake<BalanceOf>()
-  }
-  */
-
-  private voteForCouncilMember(
-    voterAccountId: string,
-    nominee: string, // FIXME: -> MemberId | number,
-    salt: string,
-    stake: BN
-  ): Promise<ISubmittableResult> {
+  private voteForCouncilMember(account: string, nominee: string, salt: string, stake: BN): Promise<ISubmittableResult> {
     const hashedVote: string = Utils.hashVote(nominee, salt)
-    return this.sender.signAndSend(this.api.tx.referendum.vote(hashedVote, stake), voterAccountId)
+    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account)
   }
 
   public batchVoteForCouncilMember(
     accounts: string[],
     nominees: string[],
-    salts: string[],
+    salt: string[],
     stake: BN
   ): Promise<ISubmittableResult[]> {
     return Promise.all(
-      accounts.map(async (account, index) => this.voteForCouncilMember(account, nominees[index], salts[index], stake))
+      accounts.map(async (account, index) => this.voteForCouncilMember(account, nominees[index], salt[index], stake))
     )
   }
 
-  private revealVote(account: string, nominee: string, salt: string): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.referendum.revealVote(salt, nominee), account)
+  private revealVote(account: string, commitment: string, nominee: string, salt: string): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account)
   }
 
-  public batchRevealVote(voterAccountIds: string[], nominees: string[], salt: string[]): Promise<ISubmittableResult[]> {
+  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<ISubmittableResult[]> {
     return Promise.all(
-      voterAccountIds.map(async (account, index) => {
-        return this.revealVote(account, nominees[index], salt[index])
+      accounts.map(async (account, index) => {
+        const commitment = Utils.hashVote(nominees[index], salt[index])
+        return this.revealVote(account, commitment, nominees[index], salt[index])
       })
     )
   }
 
-  public sudoSetCouncilBudget(capacity: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.council.setBudget(capacity))
+  public sudoStartAnnouncingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock))
   }
 
-  public getCouncilMembers(): Promise<CouncilMemberOf[]> {
-    return this.api.query.council.councilMembers()
+  public sudoStartVotingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock))
   }
 
-  public async getCouncilControllerAccounts(): Promise<string[]> {
-    const council = await this.getCouncilMembers()
-    const memberIds = council.map((member) => member.membership_id)
-    return Promise.all(memberIds.map((id) => this.getControllerAccountOfMember(id)))
+  public sudoStartRevealingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock))
+  }
+
+  public sudoSetCouncilMintCapacity(capacity: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity))
+  }
+
+  public getBestBlock(): Promise<BN> {
+    return this.api.derive.chain.bestNumber()
+  }
+
+  public getCouncil(): Promise<Seat[]> {
+    return this.api.query.council.activeCouncil<Vec<Codec>>().then((seats) => {
+      return (seats as unknown) as Seat[]
+    })
+  }
+
+  public async getCouncilAccounts(): Promise<string[]> {
+    const council = await this.getCouncil()
+    return council.map((seat) => seat.member.toString())
+  }
+
+  public async proposeRuntime(
+    account: string,
+    stake: BN,
+    name: string,
+    description: string,
+    runtime: Bytes | string
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
+      account
+    )
+  }
+
+  public async proposeText(
+    account: string,
+    stake: BN,
+    name: string,
+    description: string,
+    text: string
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
+      account
+    )
+  }
+
+  public async proposeSpending(
+    account: string,
+    title: string,
+    description: string,
+    stake: BN,
+    balance: BN,
+    destination: string
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
+      account
+    )
+  }
+
+  public async proposeValidatorCount(
+    account: string,
+    title: string,
+    description: string,
+    stake: BN,
+    validatorCount: BN
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
+      account
+    )
+  }
+
+  public async proposeElectionParameters(
+    account: string,
+    title: string,
+    description: string,
+    stake: BN,
+    announcingPeriod: BN,
+    votingPeriod: BN,
+    revealingPeriod: BN,
+    councilSize: BN,
+    candidacyLimit: BN,
+    newTermDuration: BN,
+    minCouncilStake: BN,
+    minVotingStake: BN
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, {
+        announcing_period: announcingPeriod,
+        voting_period: votingPeriod,
+        revealing_period: revealingPeriod,
+        council_size: councilSize,
+        candidacy_limit: candidacyLimit,
+        new_term_duration: newTermDuration,
+        min_council_stake: minCouncilStake,
+        min_voting_stake: minVotingStake,
+      }),
+      account
+    )
+  }
+
+  public async proposeBeginWorkingGroupLeaderApplicationReview(
+    account: string,
+    title: string,
+    description: string,
+    stake: BN,
+    openingId: OpeningId,
+    workingGroup: string
+  ): Promise<ISubmittableResult> {
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        openingId,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
+      account
+    )
+  }
+
+  public approveProposal(account: string, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account)
+  }
+
+  public async batchApproveProposal(proposal: ProposalId): Promise<ISubmittableResult[]> {
+    const councilAccounts = await this.getCouncilAccounts()
+    return Promise.all(
+      councilAccounts.map(async (account) => {
+        const memberId: MemberId = (await this.getMemberIds(account))[0]
+        return this.approveProposal(account, memberId, proposal)
+      })
+    )
+  }
+
+  public getBlockDuration(): BN {
+    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
+  }
+
+  public durationInMsFromBlocks(durationInBlocks: number): number {
+    return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
   public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
     return events.find((record) => record.event.section === section && record.event.method === method)
-  }
-
-  public getErrorNameFromExtrinsicFailedRecord(result: ISubmittableResult): string | undefined {
-    const failed = result.findRecord('system', 'ExtrinsicFailed')
-    if (!failed) {
-      return
-    }
-    const record = failed as EventRecord
-    const {
-      event: { data },
-    } = record
-    const err = data[0] as DispatchError
-    if (err.isModule) {
-      try {
-        const { name } = this.api.registry.findMetaError(err.asModule)
-        return name
-      } catch (findmetaerror) {
-        //
-      }
-    }
   }
 
   public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
@@ -698,7 +776,6 @@ export class Api {
   public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
     const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
     if (record) {
-      // Event data is not a tuple, so shouldn't this just be: return (record.event.data as unknown) as OpeningId
       return record.event.data[0] as OpeningId
     }
   }
@@ -707,6 +784,16 @@ export class Api {
     const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
     if (record) {
       return (record.event.data as unknown) as WorkerId
+    }
+  }
+
+  public findBeganApplicationReviewEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
     }
   }
 
@@ -736,39 +823,43 @@ export class Api {
     return this.findEventRecord(events, workingGroup, 'StakeSlashed')
   }
 
-  public findBudgetSetEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BudgetSet')
+  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
     if (record) {
-      return (record.event.data[0] as unknown) as BN
+      return (record.event.data[1] as unknown) as BN
     }
   }
 
-  // Resolves to true when proposal finalized and executed successfully
-  // Resolved to false when proposal finalized and execution fails
-  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('Executed')
-          ) {
-            unsubscribe()
-            resolve([true, events])
-          } else if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('ExecutionFailed')
-          ) {
-            unsubscribe()
-            resolve([false, events])
-          }
-        })
+  // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
+  // The inverted promise wraps a promise which resolves when the Proposal with id specified
+  // is executed.
+  // - On successful execution the wrapped promise resolves to `[true, events]`
+  // - On failed execution the wrapper promise resolves to `[false, events]`
+  public async subscribeToProposalExecutionResult(id: ProposalId): Promise<InvertedPromise<[boolean, EventRecord[]]>> {
+    const invertedPromise = new InvertedPromise<[boolean, EventRecord[]]>()
+    const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
+      events.forEach((record) => {
+        if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([true, events])
+        } else if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executionFailed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([false, events])
+        }
       })
     })
+
+    return invertedPromise
   }
 
   public findOpeningFilledEvent(
@@ -781,152 +872,305 @@ export class Api {
     }
   }
 
-  // Looks for the first occurance of an expected event, and resolves.
-  // Use this when the event we are expecting is not particular to a specific extrinsic
-  // that is being tracked. So these would be events emitted when on_finalize, on_initialize
-  // on_runtime_upgrade.
-  public waitForSystemEvent(eventName: string): Promise<Event> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === eventName) {
-            unsubscribe()
-            resolve(record.event)
-          }
-        })
-      })
-    })
-  }
-
-  public async getWorkingGroupBudget(module: WorkingGroups): Promise<BN> {
-    return this.api.query[module].budget()
-  }
-
-  /* Move proposeX methods into fixtures
-
-  public async proposeRuntime(
-    account: string,
-    title: string,
-    description: string,
-    runtime: Bytes | string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          RuntimeUpgrade: runtime,
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeText(
-    account: string,
-    title: string,
-    description: string,
-    text: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          Text: text,
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeSpending(
-    account: string,
-    title: string,
-    description: string,
-    balance: BN,
-    destination: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          Spending: [balance, destination],
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeValidatorCount(
-    account: string,
-    title: string,
-    description: string,
-    validatorCount: BN
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          SetValidatorCount: validatorCount,
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeCreateWorkingGroupLeaderOpening(
-    account: string,
-    title: string,
-    description: string,
+  public findApplicationReviewBeganEvent(
+    events: EventRecord[],
     workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
+    }
+  }
+
+  public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
+    const mintId: MintId = await this.api.query[module].mint<MintId>()
+    const mint: Mint = await this.api.query.minting.mints<Mint>(mintId)
+    return mint.capacity
+  }
+
+  public getValidatorCount(): Promise<BN> {
+    return this.api.query.staking.validatorCount<u32>()
+  }
+
+  public async addOpening(
+    lead: string,
+    openingParameters: {
+      activationDelay: BN
+      maxActiveApplicants: BN
+      maxReviewPeriodLength: BN
+      applicationStakingPolicyAmount: BN
+      applicationCrowdedOutUnstakingPeriodLength: BN
+      applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+      roleStakingPolicyAmount: BN
+      roleCrowdedOutUnstakingPeriodLength: BN
+      roleReviewPeriodExpiredUnstakingPeriodLength: BN
+      slashableMaxCount: BN
+      slashableMaxPercentPtsPerTime: BN
+      fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+      terminateApplicationStakeUnstakingPeriod: BN
+      terminateRoleStakeUnstakingPeriod: BN
+      exitRoleApplicationStakeUnstakingPeriod: BN
+      exitRoleStakeUnstakingPeriod: BN
+      text: string
+      type: string
+    },
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
+    const activateAt: ActivateOpeningAt = this.api.createType(
+      'ActivateOpeningAt',
+      openingParameters.activationDelay.eqn(0)
+        ? 'CurrentBlock'
+        : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
+    )
+
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
+        max_active_applicants: openingParameters.maxActiveApplicants as u32,
+      }),
+      max_review_period_length: openingParameters.maxReviewPeriodLength as u32,
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: openingParameters.applicationStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: openingParameters.applicationCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: openingParameters.roleStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: openingParameters.roleCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: openingParameters.roleReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_slashing_terms: this.api.createType('SlashingTerms', {
+        Slashable: {
+          max_count: openingParameters.slashableMaxCount,
+          max_percent_pts_per_time: openingParameters.slashableMaxPercentPtsPerTime,
         },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleStakeUnstakingPeriod
+      ),
+    })
+
+    return this.sender.signAndSend(
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
+      lead
+    )
+  }
+
+  public async sudoAddOpening(
+    openingParameters: {
+      activationDelay: BN
+      maxActiveApplicants: BN
+      maxReviewPeriodLength: BN
+      applicationStakingPolicyAmount: BN
+      applicationCrowdedOutUnstakingPeriodLength: BN
+      applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+      roleStakingPolicyAmount: BN
+      roleCrowdedOutUnstakingPeriodLength: BN
+      roleReviewPeriodExpiredUnstakingPeriodLength: BN
+      slashableMaxCount: BN
+      slashableMaxPercentPtsPerTime: BN
+      fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+      terminateApplicationStakeUnstakingPeriod: BN
+      terminateRoleStakeUnstakingPeriod: BN
+      exitRoleApplicationStakeUnstakingPeriod: BN
+      exitRoleStakeUnstakingPeriod: BN
+      text: string
+      type: string
+    },
+    module: WorkingGroups
+  ): Promise<ISubmittableResult> {
+    const activateAt: ActivateOpeningAt = this.api.createType(
+      'ActivateOpeningAt',
+      openingParameters.activationDelay.eqn(0)
+        ? 'CurrentBlock'
+        : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
+    )
+
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
+        max_active_applicants: openingParameters.maxActiveApplicants as u32,
+      }),
+      max_review_period_length: openingParameters.maxReviewPeriodLength as u32,
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: openingParameters.applicationStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: openingParameters.applicationCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: openingParameters.roleStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: openingParameters.roleCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: openingParameters.roleReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_slashing_terms: this.api.createType('SlashingTerms', {
+        Slashable: {
+          max_count: openingParameters.slashableMaxCount,
+          max_percent_pts_per_time: openingParameters.slashableMaxPercentPtsPerTime,
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleStakeUnstakingPeriod
+      ),
+    })
+
+    return this.makeSudoCall(
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module)
+    )
+  }
+
+  public async proposeCreateWorkingGroupLeaderOpening(leaderOpening: {
+    account: string
+    title: string
+    description: string
+    proposalStake: BN
+    actiavteAt: string
+    maxActiveApplicants: BN
+    maxReviewPeriodLength: BN
+    applicationStakingPolicyAmount: BN
+    applicationCrowdedOutUnstakingPeriodLength: BN
+    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+    roleStakingPolicyAmount: BN
+    roleCrowdedOutUnstakingPeriodLength: BN
+    roleReviewPeriodExpiredUnstakingPeriodLength: BN
+    slashableMaxCount: BN
+    slashableMaxPercentPtsPerTime: BN
+    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+    terminateApplicationStakeUnstakingPeriod: BN
+    terminateRoleStakeUnstakingPeriod: BN
+    exitRoleApplicationStakeUnstakingPeriod: BN
+    exitRoleStakeUnstakingPeriod: BN
+    text: string
+    workingGroup: string
+  }): Promise<ISubmittableResult> {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
+        max_active_applicants: leaderOpening.maxActiveApplicants as u32,
+      }),
+      max_review_period_length: leaderOpening.maxReviewPeriodLength as u32,
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: leaderOpening.applicationStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: leaderOpening.applicationCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          leaderOpening.applicationReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
+        amount: leaderOpening.roleStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: leaderOpening.roleCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: leaderOpening.roleReviewPeriodExpiredUnstakingPeriodLength,
+      }),
+      role_slashing_terms: this.api.createType('SlashingTerms', {
+        Slashable: {
+          max_count: leaderOpening.slashableMaxCount,
+          max_percent_pts_per_time: leaderOpening.slashableMaxPercentPtsPerTime,
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.exitRoleStakeUnstakingPeriod
+      ),
+    })
+
+    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        memberId,
+        leaderOpening.title,
+        leaderOpening.description,
+        leaderOpening.proposalStake,
         {
-          AddWorkingGroupLeaderOpening: {
-            description,
-            stake_policy: null, // Option.with(StakePolicy),
-            reward_per_block: null, // Option.with(u128),
-            working_group: workingGroup,
-          },
+          activate_at: leaderOpening.actiavteAt,
+          commitment: commitment,
+          human_readable_text: leaderOpening.text,
+          working_group: leaderOpening.workingGroup,
         }
       ),
-      account
+      leaderOpening.account
     )
   }
 
@@ -1088,78 +1332,49 @@ export class Api {
       account
     )
   }
-  */
 
-  // Council member votes Approve on proposal
-  public async approveProposal(councilMemberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
-    const controllerAccount = await this.getControllerAccountOfMember(councilMemberId)
-    return this.sender.signAndSend(
-      this.api.tx.proposalsEngine.vote(councilMemberId, proposal, 'Approve', 'rationale'),
-      controllerAccount
-    )
+  private createAddOpeningTransaction(
+    actiavteAt: ActivateOpeningAt,
+    commitment: OpeningPolicyCommitment,
+    text: string,
+    type: string,
+    module: WorkingGroups
+  ): SubmittableExtrinsic<'promise'> {
+    return this.api.tx[module].addOpening(actiavteAt, commitment, text, this.api.createType('OpeningType', type))
   }
 
-  // Make each council member vote 'Approve' on the proposal
-  public async batchApproveProposal(proposalId: ProposalId): Promise<ISubmittableResult[]> {
-    const councilMemberIds = (await this.getCouncilMembers()).map((member) => member.membership_id)
-    return Promise.all(
-      councilMemberIds.map(async (memberId) => {
-        return this.approveProposal(memberId, proposalId)
-      })
-    )
-  }
-
-  // Working Groups
-
-  // Call by lead to create a worker 'Regular' opening
-  public async addRegularWorkerOpening(
-    module: WorkingGroups,
-    leaderRoleAccount: string,
-    description: string,
-    stakePolicy?: StakePolicy,
-    rewardPerBlock?: number
+  public async acceptApplications(
+    leader: string,
+    openingId: OpeningId,
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const reward = this.api.createType('Option<Balance>', rewardPerBlock)
-    const policy = this.api.createType('Option<StakePolicy>', stakePolicy)
-    return this.sender.signAndSend(
-      this.api.tx[module].addOpening(description, 'Regular', policy, reward),
-      leaderRoleAccount
-    )
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader)
   }
 
-  // Sudo call to create a lead opening
-  public async addLeaderOpening(
-    module: WorkingGroups,
-    description: string,
-    stakePolicy?: StakePolicy,
-    rewardPerBlock?: number
+  public async beginApplicantReview(
+    leader: string,
+    openingId: OpeningId,
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const reward = this.api.createType('Option<Balance>', rewardPerBlock)
-    const policy = this.api.createType('Option<StakePolicy>', stakePolicy)
-    return this.makeSudoCall(this.api.tx[module].addOpening(description, 'Leader', policy, reward))
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader)
+  }
+
+  public async sudoBeginApplicantReview(openingId: OpeningId, module: WorkingGroups): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId))
   }
 
   public async applyOnOpening(
     account: string,
     roleAccountAddress: string,
     openingId: OpeningId,
-    stake: BN,
+    roleStake: BN,
+    applicantStake: BN,
     text: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      this.api.tx[module].applyOnOpening({
-        member_id: memberId,
-        opening_id: openingId,
-        role_account_id: roleAccountAddress,
-        reward_account_id: roleAccountAddress,
-        description: text,
-        stake_parameters: {
-          stake,
-          staking_account_id: account,
-        },
-      }),
+      this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account
     )
   }
@@ -1167,69 +1382,79 @@ export class Api {
   public async batchApplyOnOpening(
     accounts: string[],
     openingId: OpeningId,
-    stake: BN,
+    roleStake: BN,
+    applicantStake: BN,
     text: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult[]> {
     return Promise.all(
-      accounts.map(async (account) => this.applyOnOpening(account, account, openingId, stake, text, module))
+      accounts.map(async (account) =>
+        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, module)
+      )
     )
   }
 
-  // Leader fills openning
   public async fillOpening(
-    leaderRoleAccount: string,
+    leader: string,
     openingId: OpeningId,
     applicationIds: ApplicationId[],
+    amountPerPayout: BN,
+    nextPaymentBlock: BN,
+    payoutInterval: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
-      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds)),
-      leaderRoleAccount
+      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds), {
+        amount_per_payout: amountPerPayout,
+        next_payment_at_block: nextPaymentBlock,
+        payout_interval: payoutInterval,
+      }),
+      leader
     )
   }
 
   public async sudoFillOpening(
     openingId: OpeningId,
     applicationIds: ApplicationId[],
+    amountPerPayout: BN,
+    nextPaymentBlock: BN,
+    payoutInterval: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     return this.makeSudoCall(
-      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds))
+      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds), {
+        'amount_per_payout': amountPerPayout,
+        'next_payment_at_block': nextPaymentBlock,
+        'payout_interval': payoutInterval,
+      })
     )
   }
 
   public async increaseStake(
-    workerRoleAccount: string,
+    worker: string,
     workerId: WorkerId,
-    amount: BN,
+    stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, amount), workerRoleAccount)
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker)
   }
 
   public async decreaseStake(
     leader: string,
     workerId: WorkerId,
-    amount: BN,
+    stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, amount), leader)
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader)
   }
 
   public async slashStake(
     leader: string,
     workerId: WorkerId,
-    amount: BN,
+    stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx[module].slashStake(workerId, {
-        slashing_text: 'slash reason',
-        slashing_amount: amount,
-      }),
-      leader
-    )
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader)
   }
 
   public async updateRoleAccount(
@@ -1277,22 +1502,88 @@ export class Api {
     )
   }
 
-  public async terminateRole(leader: string, workerId: WorkerId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, null), leader)
+  public async terminateApplication(
+    leader: string,
+    applicationId: ApplicationId,
+    module: WorkingGroups
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader)
   }
 
-  public async leaveRole(account: string, workerId: WorkerId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId), account)
+  public async batchTerminateApplication(
+    leader: string,
+    applicationIds: ApplicationId[],
+    module: WorkingGroups
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(applicationIds.map((id) => this.terminateApplication(leader, id, module)))
   }
 
-  public async batchLeaveRole(workerIds: WorkerId[], module: WorkingGroups): Promise<ISubmittableResult[]> {
+  public async terminateRole(
+    leader: string,
+    workerId: WorkerId,
+    text: string,
+    module: WorkingGroups
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader)
+  }
+
+  public async leaveRole(
+    account: string,
+    workerId: WorkerId,
+    text: string,
+    module: WorkingGroups
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account)
+  }
+
+  public async batchLeaveRole(
+    workerIds: WorkerId[],
+    text: string,
+    module: WorkingGroups
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
       workerIds.map(async (workerId) => {
         // get role_account of worker
         const worker = await this.getWorkerById(workerId, module)
-        return this.leaveRole(worker.role_account_id.toString(), workerId, module)
+        return this.leaveRole(worker.role_account_id.toString(), workerId, text, module)
       })
     )
+  }
+
+  public async getAnnouncingPeriod(): Promise<BN> {
+    return this.api.query.councilElection.announcingPeriod<BlockNumber>()
+  }
+
+  public async getVotingPeriod(): Promise<BN> {
+    return this.api.query.councilElection.votingPeriod<BlockNumber>()
+  }
+
+  public async getRevealingPeriod(): Promise<BN> {
+    return this.api.query.councilElection.revealingPeriod<BlockNumber>()
+  }
+
+  public async getCouncilSize(): Promise<BN> {
+    return this.api.query.councilElection.councilSize<u32>()
+  }
+
+  public async getCandidacyLimit(): Promise<BN> {
+    return this.api.query.councilElection.candidacyLimit<u32>()
+  }
+
+  public async getNewTermDuration(): Promise<BN> {
+    return this.api.query.councilElection.newTermDuration<BlockNumber>()
+  }
+
+  public async getMinCouncilStake(): Promise<BN> {
+    return this.api.query.councilElection.minCouncilStake<BalanceOf>()
+  }
+
+  public async getMinVotingStake(): Promise<BN> {
+    return this.api.query.councilElection.minVotingStake<BalanceOf>()
+  }
+
+  public async getHiringOpening(id: OpeningId): Promise<HiringOpening> {
+    return await this.api.query.hiring.openingById<HiringOpening>(id)
   }
 
   public async getWorkingGroupOpening(id: OpeningId, group: WorkingGroups): Promise<WorkingGroupOpening> {
@@ -1314,7 +1605,9 @@ export class Api {
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds = await this.api.query[module].applicationById.entries<Application>()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[
+      module
+    ].applicationById.entries<Application>()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]
@@ -1325,12 +1618,14 @@ export class Api {
       .filter((id) => id !== undefined) as ApplicationId[]
   }
 
+  public async getHiringApplicationById(id: ApplicationId): Promise<HiringApplication> {
+    return this.api.query.hiring.applicationById<HiringApplication>(id)
+  }
+
   public async getApplicationById(id: ApplicationId, module: WorkingGroups): Promise<Application> {
     return this.api.query[module].applicationById<Application>(id)
   }
 
-  // Note: some applications for closed openings might still be returned if
-  // applicantion was not yet withdrawn
   public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
     const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
 
@@ -1340,7 +1635,14 @@ export class Api {
       })
       .map(([, application]) => application)
 
-    return applications.map((application) => application.role_account_id.toString())
+    return (
+      await Promise.all(
+        applications.map(async (application) => {
+          const active = (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
+          return active ? application.role_account_id.toString() : ''
+        })
+      )
+    ).filter((addr) => addr !== '')
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
@@ -1353,14 +1655,31 @@ export class Api {
       .map(([, worker]) => worker.role_account_id.toString())
   }
 
+  public async getStake(id: StakeId): Promise<Stake> {
+    return this.api.query.stake.stakes<Stake>(id)
+  }
+
   public async getWorkerStakeAmount(workerId: WorkerId, module: WorkingGroups): Promise<BN> {
-    // const stakingAccount = (await this.api.query[module].workerById(workerId)).staking_account_id
-    // read lock information on the account to determine how much is staked
-    return new BN(0)
+    const stakeId: StakeId = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id
+    return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount
+  }
+
+  public async getRewardRelationship(id: RewardRelationshipId): Promise<RewardRelationship> {
+    return this.api.query.recurringRewards.rewardRelationships<RewardRelationship>(id)
+  }
+
+  public async getWorkerRewardRelationship(workerId: WorkerId, module: WorkingGroups): Promise<RewardRelationship> {
+    const rewardRelationshipId: RewardRelationshipId = (
+      await this.getWorkerById(workerId, module)
+    ).reward_relationship.unwrap()
+    return this.getRewardRelationship(rewardRelationshipId)
   }
 
   public async getWorkerRewardAccount(workerId: WorkerId, module: WorkingGroups): Promise<string> {
-    return (await this.api.query[module].workerById(workerId)).reward_account_id.toString()
+    const rewardRelationshipId: RewardRelationshipId = (
+      await this.getWorkerById(workerId, module)
+    ).reward_relationship.unwrap()
+    return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString()
   }
 
   public async getLeadWorkerId(module: WorkingGroups): Promise<WorkerId | undefined> {
@@ -1380,78 +1699,8 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
-    const transaction = this.api.tx.contentDirectory.transaction(
-      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      operations // We provide parsed operations as second argument
-    )
-    const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    return this.sender.signAndSend(transaction, lead.role_account_id)
-  }
-
-  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Channel',
-          entries: [channel], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Video',
-          entries: [video], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async updateChannelEntity(
-    channelUpdateInput: Record<string, any>,
-    uniquePropValue: Record<string, any>
-  ): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(this.api)
-
-    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
-    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
-    const updateOperations = await parser.getEntityUpdateOperations(
-      channelUpdateInput,
-      'Channel', // Class name
-      CHANNEL_ID // Id of the entity we want to update
-    )
-    return this.sendContentDirectoryTransaction(updateOperations)
-  }
-
-  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
-  }
-
-  public async initializeContentDirectory(): Promise<void> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
-    if (!lead) {
-      throw new Error('No Lead is set for storage wokring group')
-    }
-    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
-    return initializeContentDir(this.api, leadKeyPair)
   }
 }

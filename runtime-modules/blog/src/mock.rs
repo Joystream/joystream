@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
+use common::MembershipTypes;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -136,7 +137,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -145,7 +146,8 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
+    {
         unimplemented!()
     }
 
@@ -155,8 +157,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
+        unimplemented!();
+    }
+
+    fn worker_exists(_worker_id: &<Runtime as MembershipTypes>::ActorId) -> bool {
         unimplemented!();
     }
 }
@@ -290,7 +296,7 @@ impl
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }

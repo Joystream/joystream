@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture, BuyMembershipWithInsufficienFundsFixture } from '../../fixtures/membership'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
 export default async function creatingMemberships({ api, query, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creating-members')
+  const debug = extendDebug('flow:creating-members')
   debug('Started')
   api.enableDebugTxLogs()
 

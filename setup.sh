@@ -2,41 +2,44 @@
 
 set -e
 
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # code build tools
+    sudo apt-get update
+    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
+    # docker
+    sudo apt-get install -y docker.io docker-compose containerd runc
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # install brew package manager
+    if ! which brew >/dev/null 2>&1; then
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+    fi
+    # install additional packages
+    brew update
+    brew install coreutils gnu-tar jq curl
+    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
+fi
+
 # If OS is supported will install build tools for rust and substrate.
-# Skips installing substrate itself and subkey
+# Skips installation of substrate and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
+rustup install nightly-2021-03-24
+rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
+
+rustup default nightly-2021-03-24
+
 rustup component add rustfmt clippy
-
-# Current version of substrate requires an older version of nightly toolchain
-# to successfully compile the WASM runtime. We force install because rustfmt package
-# is not available for this nightly version.
-rustup install nightly-2020-10-06 --force
-rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
-
-# Sticking with older version of compiler to ensure working build
-rustup install 1.47.0
-rustup default 1.47.0
-
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
-    sudo apt-get install -y docker.io docker-compose containerd runc
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install b2sum gnu-tar jq curl
-    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
-fi
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
 # source env variables added by Volta
-source ~/.bashrc || :
-source ~/.bash_profile || :
+source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
 
-volta install node@12
+volta install node@14
 volta install yarn
 volta install npx
 
-echo "Open a new terminal to start using newly installed tools"
+echo "You may need to open a new terminal/shell session to make newly installed tools available."

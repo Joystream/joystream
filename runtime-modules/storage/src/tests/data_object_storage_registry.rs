@@ -149,7 +149,7 @@ fn test_toggle_ready() {
 
         // Toggling from a different account should fail
         let res = TestDataObjectStorageRegistry::set_relationship_ready(
-            Origin::signed(2),
+            Origin::signed(55),
             storage_provider_id,
             dosr_id,
         );
@@ -174,9 +174,9 @@ fn test_toggle_ready() {
             System::events().last().unwrap().event,
             MetaEvent::data_object_storage_registry(
                 data_object_storage_registry::RawEvent::DataObjectStorageRelationshipReadyUpdated(
+                    storage_provider_id,
                     dosr_id,
                     true,
-                    storage_provider_id
                 )
             )
         );

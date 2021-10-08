@@ -85,7 +85,7 @@ fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
 
 benchmarks! {
     where_clause { where T: balances::Trait, T: Trait, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Trait>::AccountId, <T as common::membership::Trait>::MemberId, <T as common::membership::Trait>::ActorId> }
+        frame_system::Trait>::AccountId, <T as common::membership::MembershipTypes>::MemberId, <T as common::membership::MembershipTypes>::ActorId> }
     _{  }
 
     buy_membership_without_referrer{
@@ -499,7 +499,7 @@ benchmarks! {
     }
 
     set_membership_price {
-        let membership_price: BalanceOf<T> = 1000.into();
+        let membership_price: BalanceOf<T> = 1000u32.into();
 
     }: _(RawOrigin::Root, membership_price)
     verify {
@@ -594,7 +594,7 @@ benchmarks! {
     }
 
     set_initial_invitation_balance {
-        let invitation_balance: BalanceOf<T> = 1000.into();
+        let invitation_balance: BalanceOf<T> = 1000u32.into();
 
     }: _(RawOrigin::Root, invitation_balance)
     verify {

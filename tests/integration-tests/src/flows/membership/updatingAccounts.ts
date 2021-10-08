@@ -1,11 +1,11 @@
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture, UpdateAccountsHappyCaseFixture } from '../../fixtures/membership'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 
 export default async function updatingAccounts({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:member-accounts-update')
+  const debug = extendDebug('flow:member-accounts-update')
   debug('Started')
   api.enableDebugTxLogs()
 

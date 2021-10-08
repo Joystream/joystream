@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "./build-packages.sh",
-    "build-joystream-cli": "yarn workspace @joystream/cli build",
-    "build": "./build.sh",
+    "build": "./build-npm-packages.sh && ./build-docker-images.sh",
+    "build:packages": "./build-npm-packages.sh",
+    "build:docker": "./build-docker-images.sh",
+    "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
     "cargo-build": "scripts/cargo-build.sh"
@@ -19,39 +20,32 @@
     "storage-node/packages/*",
     "devops/eslint-config",
     "devops/prettier-config",
-    "pioneer",
-    "pioneer/packages/*",
     "utils/api-scripts",
-    "content-directory-schemas",
-    "metadata-protobuf",
     "query-node",
     "query-node/mappings",
-    "query-node/generated/*"
+    "query-node/generated/*",
+    "metadata-protobuf"
   ],
   "resolutions": {
-    "@polkadot/api": "2.4.1",
-    "@polkadot/api-derive": "2.4.1",
-    "@polkadot/api-contract": "2.4.1",
-    "@polkadot/keyring": "3.6.1",
-    "@polkadot/networks": "3.6.1",
-    "@polkadot/types": "2.4.1",
-    "@polkadot/types-known": "2.4.1",
-    "@polkadot/util": "3.6.1",
-    "@polkadot/util-crypto": "3.6.1",
-    "@polkadot/wasm-crypto": "1.4.1",
-    "@polkadot/rpc-core": "2.4.1",
-    "@polkadot/rpc-provider": "2.4.1",
-    "@polkadot/metadata": "2.4.1",
+    "@polkadot/api": "5.3.2",
+    "@polkadot/api-contract": "5.3.2",
+    "@polkadot/types": "5.3.2",
+    "@polkadot/keyring": "^7.1.1",
+    "@polkadot/util": "^7.1.1",
+    "@polkadot/util-crypto": "^7.1.1",
+    "@polkadot/wasm-crypto": "^4.1.2",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.9.7",
+    "typescript": "^4.3.5",
     "bn.js": "^5.1.2",
+    "rxjs": "^7.2.0",
     "typeorm": "^0.2.31",
-    "pg": "^8.4.0"
+    "pg": "^8.4.0",
+    "chalk": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.6.0",
+    "eslint": "^7.25.0",
     "husky": "^4.2.5",
-    "prettier": "2.2.1"
+    "prettier": "^2.2.1"
   },
   "husky": {
     "hooks": {
@@ -60,11 +54,11 @@
     }
   },
   "engines": {
-    "node": ">=12.18.0",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "volta": {
-    "node": "12.18.2",
+    "node": "14.16.1",
     "yarn": "1.22.4"
   }
 }

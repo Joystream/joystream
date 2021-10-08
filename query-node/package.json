@@ -1,6 +1,6 @@
 {
   "name": "query-node-root",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
   "scripts": {
     "build": "./build.sh",
@@ -33,8 +33,7 @@
     "docker:db:up": "(cd ../ && docker-compose up -d db)",
     "docker:db:migrate": "docker run --env-file .env --env DB_HOST=db --env TYPEORM_HOST=db --network container:${PWD##*/}_db_1 hydra-kit:latest yarn db:migrate",
     "docker:up": "docker-compose up -d",
-    "format": "prettier ./ --write",
-    "db:init": "node --unhandled-rejections=strict ./mappings/lib/init.js"
+    "format": "prettier ./ --write"
   },
   "author": "",
   "license": "ISC",
@@ -42,7 +41,7 @@
     "tslib": "^2.0.0",
     "@types/bn.js": "^4.11.6",
     "bn.js": "^5.1.2",
-    "@dzlzv/hydra-processor": "3.0.0-beta.6",
+    "@dzlzv/hydra-processor": "3.1.0-alpha.0",
     "envsub": "4.0.7"
   },
   "volta": {

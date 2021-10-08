@@ -27,7 +27,6 @@ const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
 const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
 const { WorkersApi } = require('@joystream/storage-runtime-api/workers')
 const { AssetsApi } = require('@joystream/storage-runtime-api/assets')
-const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
@@ -65,15 +64,14 @@ class RuntimeApi {
       }
 
       try {
-        this.api = await ApiPromise.create({ provider, types: types })
+        this.api = new ApiPromise({ provider, types })
+        await this.api.isReadyOrError
         break
       } catch (err) {
         debug('Connecting to node failed, will retry..')
       }
       await sleep(5000)
     }
-
-    await this.api.isReady
 
     this.asyncLock = new AsyncLock()
 
@@ -89,7 +87,6 @@ class RuntimeApi {
     this.balances = await BalancesApi.create(this)
     this.workers = await WorkersApi.create(this)
     this.assets = await AssetsApi.create(this)
-    this.discovery = await DiscoveryApi.create(this)
     this.system = await SystemApi.create(this)
   }
 

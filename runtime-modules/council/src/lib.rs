@@ -43,7 +43,7 @@
 
 // used dependencies
 use codec::{Decode, Encode};
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
@@ -176,18 +176,18 @@ pub type Balance<T> = <T as balances::Trait>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::Hash,
 >>::VotePower;
 pub type CastVoteOf<T> = CastVote<
     <T as frame_system::Trait>::Hash,
     Balance<T>,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 pub type CouncilMemberOf<T> = CouncilMember<
     <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     Balance<T>,
     <T as frame_system::Trait>::BlockNumber,
 >;
@@ -222,7 +222,9 @@ pub trait WeightInfo {
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
 
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::membership::Trait + balances::Trait {
+pub trait Trait:
+    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
+{
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -232,21 +234,35 @@ pub trait Trait: frame_system::Trait + common::membership::Trait + balances::Tra
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
     type MinNumberOfExtraCandidates: Get<u64>;
+
     /// Council member count
     type CouncilSize: Get<u64>;
+
     /// Minimum stake candidate has to lock
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
+    type CandidacyLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
+
     /// Identifier for currency lock used for candidacy staking.
-    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
+    type CouncilorLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
+
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
@@ -276,7 +292,10 @@ pub trait ReferendumConnection<T: Trait> {
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `process_results()`.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     );
 
     /// Process referendum results. This function MUST be called in runtime's implementation of
@@ -332,7 +351,7 @@ decl_event! {
     where
         Balance = Balance<T>,
         <T as frame_system::Trait>::BlockNumber,
-        <T as common::membership::Trait>::MemberId,
+        <T as common::membership::MembershipTypes>::MemberId,
         <T as frame_system::Trait>::AccountId,
     {
         /// New council was elected
@@ -474,18 +493,30 @@ decl_module! {
         /// Minimum number of extra candidates needed for the valid election.
         /// Number of total candidates is equal to council size plus extra candidates.
         const MinNumberOfExtraCandidates: u64 = T::MinNumberOfExtraCandidates::get();
+
         /// Council member count
         const CouncilSize: u64 = T::CouncilSize::get();
+
         /// Minimum stake candidate has to lock
         const MinCandidateStake: Balance<T> = T::MinCandidateStake::get();
+
         /// Duration of annoncing period
         const AnnouncingPeriodDuration: T::BlockNumber = T::AnnouncingPeriodDuration::get();
+
         /// Duration of idle period
         const IdlePeriodDuration: T::BlockNumber = T::IdlePeriodDuration::get();
+
         /// Interval for automatic reward payments.
         const ElectedMemberRewardPeriod: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
+
         /// Interval between automatic budget refills.
         const BudgetRefillPeriod: T::BlockNumber = T::BudgetRefillPeriod::get();
+
+        /// Exports const - candidacy lock id.
+        const CandidacyLockId: LockIdentifier = T::CandidacyLock::lock_id();
+
+        /// Exports const - councilor lock id.
+        const CouncilorLockId: LockIdentifier = T::CouncilorLock::lock_id();
 
         /////////////////// Lifetime ///////////////////////////////////////////
 
@@ -892,7 +923,10 @@ impl<T: Trait> Module<T> {
 
     // Conclude election period and elect new council if possible.
     fn end_election_period(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -917,7 +951,7 @@ impl<T: Trait> Module<T> {
                 // clear candidate record and unlock their candidacy stake
                 Mutations::<T>::clear_candidate(&membership_id, &candidate);
 
-                (candidate, membership_id, now, 0.into()).into()
+                (candidate, membership_id, now, Zero::zero()).into()
             })
             .collect();
         // prepare council users for event
@@ -981,7 +1015,7 @@ impl<T: Trait> Module<T> {
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
                 // depleted budget or no accumulated reward to be paid?
-                if balance == 0.into() || unpaid_reward == 0.into() {
+                if balance == Zero::zero() || unpaid_reward == Zero::zero() {
                     // no need to update council member record here; their unpaid reward will be
                     // recalculated next time rewards are paid
 
@@ -989,7 +1023,7 @@ impl<T: Trait> Module<T> {
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
                         council_member.reward_account_id.clone(),
-                        0.into(),
+                        Zero::zero(),
                         unpaid_reward,
                     ));
                     return balance;
@@ -1070,7 +1104,10 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
     // Process candidates' results recieved from the referendum.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     ) {
         //
         // == MUTATION SAFE ==
@@ -1172,7 +1209,7 @@ impl<T: Trait> Calculations<T> {
         // reward_per_block
         council_member.unpaid_reward.saturating_add(
             now.saturating_sub(council_member.last_payment_block)
-                .saturated_into()
+                .saturated_into::<u64>()
                 .saturating_mul(reward_per_block.saturated_into())
                 .saturated_into(),
         )
@@ -1185,7 +1222,7 @@ impl<T: Trait> Calculations<T> {
     ) -> (Balance<T>, Balance<T>) {
         // check if reward has enough balance
         if reward_amount <= budget_balance {
-            return (*reward_amount, 0.into());
+            return (*reward_amount, Zero::zero());
         }
 
         // calculate missing balance
@@ -1570,7 +1607,7 @@ impl<T: Trait> EnsureChecks<T> {
     }
 }
 
-impl<T: Trait + common::membership::Trait>
+impl<T: Trait + common::membership::MembershipTypes>
     CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T>
 {
     fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {

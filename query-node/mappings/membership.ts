@@ -140,25 +140,23 @@ export async function members_MembershipBought({ store, event }: EventContext & 
 }
 
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId] = new Members.MemberProfileUpdatedEvent(event).params
-  const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event).args
-  const metadata = metadataBytesOpt.isSome
-    ? deserializeMetadata(MembershipMetadata, metadataBytesOpt.unwrap())
-    : undefined
+  const [memberId, newHandle, newMetadata] = new Members.MemberProfileUpdatedEvent(event).params
+  const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
   const member = await getMemberById(store, memberId)
   const eventTime = new Date(event.blockTimestamp)
 
+  // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
-    member.metadata.name = metadata.name || undefined
+    member.metadata.name = (metadata.name || null) as string | undefined
     member.metadata.updatedAt = eventTime
   }
   if (typeof metadata?.about === 'string') {
-    member.metadata.about = metadata.about || undefined
+    member.metadata.about = (metadata.about || null) as string | undefined
     member.metadata.updatedAt = eventTime
   }
   // TODO: avatar
-  if (handle.isSome) {
-    member.handle = bytesToString(handle.unwrap())
+  if (newHandle.isSome) {
+    member.handle = bytesToString(newHandle.unwrap())
     member.updatedAt = eventTime
   }
 
@@ -180,8 +178,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
 }
 
 export async function members_MemberAccountsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId] = new Members.MemberAccountsUpdatedEvent(event).params
-  const { newRootAccount, newControllerAccount } = new Members.UpdateAccountsCall(event).args
+  const [memberId, newRootAccount, newControllerAccount] = new Members.MemberAccountsUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
   const eventTime = new Date(event.blockTimestamp)
 

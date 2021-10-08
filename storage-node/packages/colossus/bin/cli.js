@@ -83,9 +83,7 @@ const cli = meow(
     $ colossus [command] [arguments]
 
   Commands:
-    server        Runs a production server instance. (discovery and storage services)
-                  This is the default command if not specified.
-    discovery     Run the discovery service only.
+    server        Runs a production server instance
 
   Arguments (required for with server command, unless --dev or --anonymous args are used):
     --provider-id ID, -i ID     StorageProviderId assigned to you in working group.
@@ -128,14 +126,8 @@ function startExpressApp(app, port) {
 }
 
 // Start app
-function startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl, anonymous }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api, discoveryClient, ipfsHttpGatewayUrl, anonymous)
-  return startExpressApp(app, port)
-}
-
-// Start discovery service app only
-function startDiscoveryService({ port, discoveryClient }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, discoveryClient)
+function startAllServices({ store, api, port, ipfsHttpGatewayUrl, anonymous }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, ipfsHttpGatewayUrl, anonymous)
   return startExpressApp(app, port)
 }
 
@@ -149,11 +141,11 @@ function getStorage(runtimeApi, { ipfsHost }) {
     resolve_content_id: async (contentId) => {
       // Resolve via API
       const obj = await runtimeApi.assets.getDataObject(contentId)
-      if (!obj || obj.isNone) {
+      if (!obj) {
         return
       }
       // if obj.liaison_judgement !== Accepted .. throw ?
-      return obj.unwrap().ipfs_content_id.toString()
+      return obj.ipfs_content_id.toString()
     },
     ipfsHost,
   }
@@ -214,26 +206,12 @@ async function initApiDevelopment({ wsProvider }) {
   return api
 }
 
-function getServiceInformation(publicUrl) {
-  // For now assume we run all services on the same endpoint
-  return {
-    asset: {
-      version: 1, // spec version
-      endpoint: publicUrl,
-    },
-    discover: {
-      version: 1, // spec version
-      endpoint: publicUrl,
-    },
-  }
-}
-
 // TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
 // or cleaner code with generators?
-async function announcePublicUrl(api, publicUrl, publisherClient) {
+async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl, publisherClient)
+    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
   }
 
   const chainIsSyncing = await api.chainIsSyncing()
@@ -257,20 +235,9 @@ async function announcePublicUrl(api, publicUrl, publisherClient) {
   debug('announcing public url')
 
   try {
-    const serviceInformation = getServiceInformation(publicUrl)
+    await api.workers.setWorkerStorageValue(publicUrl)
 
-    const keyId = await publisherClient.publish(serviceInformation)
-
-    await api.discovery.setAccountInfo(keyId)
-
-    debug('publishing complete, scheduling next update')
-
-    // >> sometimes after tx is finalized.. we are not reaching here!
-
-    // Reannounce before expiery. Here we are concerned primarily
-    // with keeping the account information refreshed and 'available' in
-    // the ipfs network. our record on chain is valid for 24hr
-    reannounce(50 * 60 * 1000) // in 50 minutes
+    debug('announcing complete.')
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
 
@@ -306,34 +273,16 @@ const commands = {
     const store = getStorage(api, cli.flags)
 
     const ipfsHost = cli.flags.ipfsHost
-    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
 
     const { startSyncing } = require('../lib/sync')
     startSyncing(api, { syncPeriod: SYNC_PERIOD_MS, anonymous: cli.flags.anonymous }, store)
 
     if (!cli.flags.anonymous) {
-      const { PublisherClient } = require('@joystream/service-discovery')
-      announcePublicUrl(api, publicUrl, new PublisherClient(ipfs))
+      announcePublicUrl(api, publicUrl)
     }
 
-    const { DiscoveryClient } = require('@joystream/service-discovery')
-    const discoveryClient = new DiscoveryClient({ ipfs, api })
-    return startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl, anonymous: cli.flags.anonymous })
-  },
-  discovery: async () => {
-    banner()
-    debug('Starting Joystream Discovery Service')
-    const { RuntimeApi } = require('@joystream/storage-runtime-api')
-    const wsProvider = cli.flags.wsProvider
-    const api = await RuntimeApi.create({ provider_url: wsProvider })
-    const port = cli.flags.port
-    const ipfsHost = cli.flags.ipfsHost
-    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
-    const { DiscoveryClient } = require('@joystream/service-discovery')
-    const discoveryClient = new DiscoveryClient({ ipfs, api })
-    await api.untilChainIsSynced()
-    await startDiscoveryService({ api, port, discoveryClient })
+    return startAllServices({ store, api, port, ipfsHttpGatewayUrl, anonymous: cli.flags.anonymous })
   },
 }
 

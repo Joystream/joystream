@@ -6,7 +6,7 @@ import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
 // import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export default {
   storage: async function ({ api, env }: FlowProps): Promise<void> {
@@ -19,7 +19,7 @@ export default {
 
 // Worker application happy case scenario
 async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = Debugger(`flow:leaderSetup:${group}`)
+  const debug = extendDebug(`flow:leaderSetup:${group}`)
   debug('Started')
 
   const existingLead = await api.getGroupLead(group)

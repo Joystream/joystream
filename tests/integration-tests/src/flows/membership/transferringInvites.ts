@@ -1,11 +1,11 @@
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture, TransferInvitesHappyCaseFixture } from '../../fixtures/membership'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 
 export default async function transferringInvites({ api, query, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:transferring-invites')
+  const debug = extendDebug('flow:transferring-invites')
   debug('Started')
   api.enableDebugTxLogs()
 

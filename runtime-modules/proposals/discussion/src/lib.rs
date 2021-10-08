@@ -1,6 +1,6 @@
 //! # Proposals discussion module
 //! Proposals `discussion` module for the Joystream platform.
-//! It contains discussion subsystem of the proposals.
+//! It contains discussion system of the proposals.
 //!
 //! ## Overview
 //!
@@ -27,7 +27,7 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + common::membership::Trait {}
+//! pub trait Trait: discussions::Trait + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -101,7 +101,7 @@ decl_event!(
         ThreadCreated(ThreadId, MemberId),
 
         /// Emits on post creation.
-        PostCreated(PostId, MemberId, ThreadId, Vec<u8>),
+        PostCreated(PostId, MemberId, ThreadId, Vec<u8>, bool),
 
         /// Emits on post update.
         PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
@@ -121,7 +121,9 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+{
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -275,7 +277,7 @@ decl_module! {
             }
 
             PostCount::put(next_post_count_value);
-            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text, editable));
        }
 
         /// Remove post from storage, with the last parameter indicating whether to also hide it

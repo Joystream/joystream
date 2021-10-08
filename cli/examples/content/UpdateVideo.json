@@ -1,0 +1,8 @@
+{
+  "title": "Example Joystream Video [UPDATED!]",
+  "thumbnailPhotoPath": "./avatar-photo-2.png",
+  "publishedBeforeJoystream": {
+    "isPublished": false
+  },
+  "license": {}
+}

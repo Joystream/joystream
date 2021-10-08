@@ -1,0 +1,63 @@
+name: Build code and create AMI
+
+on:
+  push:
+    branches:
+      - master
+      - olympia
+      - test_branch
+
+jobs:
+  build:
+    name: Build the code and run setup
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: joystream-github-action-${{ github.run_number }}
+      KEY_NAME: joystream-github-action-key
+    steps:
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
+    - name: Set AMI Name environment variable
+      shell: bash
+      run: echo "ami_name=joystream-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
+      id: ami_name
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Deploy to AWS CloudFormation
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      id: deploy_stack
+      with:
+        name: ${{ env.STACK_NAME }}
+        template: devops/infrastructure/single-instance.yml
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: "KeyName=${{ env.KEY_NAME }}"
+
+    - name: Install Ansible dependencies
+      run: pipx inject ansible-base boto3 botocore
+
+    - name: Run playbook
+      uses: dawidd6/action-ansible-playbook@v2
+      with:
+        playbook: github-action-playbook.yml
+        directory: devops/infrastructure
+        requirements: requirements.yml
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        inventory: |
+          [all]
+          ${{ steps.deploy_stack.outputs.PublicIp }}
+        options: |
+          --extra-vars "git_repo=https://github.com/${{ github.repository }} \
+                        branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
+                        stack_name=${{ env.STACK_NAME }} ami_name=${{ env.ami_name }}"

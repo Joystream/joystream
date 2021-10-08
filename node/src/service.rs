@@ -1,36 +1,40 @@
-// Copyright 2019 Joystream Contributors
-// This file is part of Joystream node.
+// This file is part of Substrate.
 
-// Joystream node is free software: you can redistribute it and/or modify
+// Copyright (C) 2018-2020 Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Joystream node is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![warn(unused_extern_crates)]
 // Substrate implementation issue.
 #![allow(clippy::redundant_closure_call)]
 // Substrate implementation issue.
 #![allow(clippy::type_complexity)]
+// Substrate implementation issue.
+#![allow(clippy::redundant_clone)]
 
 //! Service implementation. Specialized wrapper over substrate service.
 
 use crate::node_executor;
 use crate::node_rpc;
-use node_runtime::opaque::Block;
-use node_runtime::RuntimeApi;
+use sc_finality_grandpa as grandpa;
 
 use futures::prelude::*;
 use node_executor::Executor;
+use node_runtime::opaque::Block;
+use node_runtime::RuntimeApi;
 use sc_client_api::{ExecutorProvider, RemoteBackend};
-use sc_finality_grandpa as grandpa;
 use sc_finality_grandpa::FinalityProofProvider as GrandpaFinalityProofProvider;
 use sc_network::{Event, NetworkService};
 use sc_service::{
@@ -216,7 +220,7 @@ pub fn new_full_base(
             on_demand: None,
             block_announce_validator_builder: None,
             finality_proof_request_builder: None,
-            finality_proof_provider: Some(finality_proof_provider),
+            finality_proof_provider: Some(finality_proof_provider.clone()),
         })?;
 
     if config.offchain_worker.enabled {
@@ -238,7 +242,7 @@ pub fn new_full_base(
 
     sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         config,
-        backend,
+        backend: backend.clone(),
         client: client.clone(),
         keystore: keystore.clone(),
         network: network.clone(),
@@ -382,8 +386,6 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
     new_full_base(config, |_, _| ()).map(|NewFullBase { task_manager, .. }| task_manager)
 }
 
-// Substrate implementation issue.
-#[allow(clippy::type_complexity)]
 pub fn new_light_base(
     config: Configuration,
 ) -> Result<
@@ -436,8 +438,8 @@ pub fn new_light_base(
         None,
         Some(Box::new(finality_proof_import)),
         client.clone(),
-        select_chain,
-        inherent_data_providers,
+        select_chain.clone(),
+        inherent_data_providers.clone(),
         &task_manager.spawn_handle(),
         config.prometheus_registry(),
         sp_consensus::NeverCanAuthor,

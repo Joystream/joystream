@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.15.0",
+  "version": "0.17.0",
   "description": "Types for Joystream Substrate Runtime - Olympia release",
   "main": "index.js",
   "types": "index.d.ts",
@@ -22,9 +22,9 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "2.4.1",
-    "@polkadot/keyring": "3.6.1",
-    "@polkadot/types": "2.4.1",
+    "@polkadot/api": "5.3.2",
+    "@polkadot/types": "5.3.2",
+    "@polkadot/keyring": "^7.1.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
@@ -32,14 +32,14 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polkadot/typegen": "2.4.1",
+    "@polkadot/typegen": "5.3.2",
     "ts-node": "^8.6.2",
-    "typescript": "^4.0.3",
+    "typescript": "^4.3.5",
     "madge": "^3.9.2",
     "json-schema-to-typescript": "^9.1.1"
   },
   "engines": {
-    "node": ">=12.18.0",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "publishConfig": {
@@ -61,7 +61,7 @@
   },
   "homepage": "https://github.com/Joystream/joystream",
   "volta": {
-    "node": "12.18.2",
+    "node": "14.16.1",
     "yarn": "1.22.4"
   }
 }

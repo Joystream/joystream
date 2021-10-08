@@ -1,14 +1,13 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import { Vec } from '@polkadot/types/codec';
-import { u32, u64, u8 } from '@polkadot/types/primitive';
-import { ProposalParameters } from './all';
-import { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
-import { SessionIndex } from '@polkadot/types/interfaces/session';
-import { EraIndex } from '@polkadot/types/interfaces/staking';
-import { WeightToFeeCoefficient } from '@polkadot/types/interfaces/support';
-import { ApiTypes } from '@polkadot/api/types';
+import type { Vec, u32, u64, u8 } from '@polkadot/types';
+import type { MaxNumber, ProposalParameters } from './all';
+import type { Balance, BalanceOf, BlockNumber, LockIdentifier, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
+import type { SessionIndex } from '@polkadot/types/interfaces/session';
+import type { EraIndex } from '@polkadot/types/interfaces/staking';
+import type { WeightToFeeCoefficient } from '@polkadot/types/interfaces/support';
+import type { ApiTypes } from '@polkadot/api/types';
 
 declare module '@polkadot/api/types/consts' {
   export interface AugmentedConsts<ApiType> {
@@ -35,6 +34,10 @@ declare module '@polkadot/api/types/consts' {
     };
     bounty: {
       /**
+       * Exports const - bounty lock id.
+       **/
+      bountyLockId: LockIdentifier & AugmentedConst<ApiType>;
+      /**
        * Exports const - max work entry number for a closed assurance type contract bounty.
        **/
       closedContractSizeLimit: u32 & AugmentedConst<ApiType>;
@@ -51,11 +54,38 @@ declare module '@polkadot/api/types/consts' {
        **/
       minWorkEntrantStake: BalanceOf & AugmentedConst<ApiType>;
     };
+    content: {
+      /**
+       * Exports const -  max number of curators per group
+       **/
+      maxNumberOfCuratorsPerGroup: MaxNumber & AugmentedConst<ApiType>;
+    };
     contentDirectoryWorkingGroup: {
       /**
-       * Exports const -  max simultaneous active worker number.
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
     };
     council: {
       /**
@@ -66,6 +96,14 @@ declare module '@polkadot/api/types/consts' {
        * Interval between automatic budget refills.
        **/
       budgetRefillPeriod: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Exports const - candidacy lock id.
+       **/
+      candidacyLockId: LockIdentifier & AugmentedConst<ApiType>;
+      /**
+       * Exports const - councilor lock id.
+       **/
+      councilorLockId: LockIdentifier & AugmentedConst<ApiType>;
       /**
        * Council member count
        **/
@@ -88,12 +126,6 @@ declare module '@polkadot/api/types/consts' {
        **/
       minNumberOfExtraCandidates: u64 & AugmentedConst<ApiType>;
     };
-    dataDirectory: {
-      /**
-       * Maximum objects allowed per inject_data_objects() transaction
-       **/
-      maxObjectsPerInjection: u32 & AugmentedConst<ApiType>;
-    };
     finalityTracker: {
       /**
        * The delay after which point things become suspicious. Default is 1000.
@@ -104,13 +136,76 @@ declare module '@polkadot/api/types/consts' {
        **/
       windowSize: BlockNumber & AugmentedConst<ApiType>;
     };
+    forum: {
+      /**
+       * Exports const
+       * Deposit needed to create a post
+       **/
+      postDeposit: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Deposit needed to create a thread
+       **/
+      threadDeposit: BalanceOf & AugmentedConst<ApiType>;
+    };
     forumWorkingGroup: {
       /**
-       * Exports const -  max simultaneous active worker number.
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
     };
     members: {
+      /**
+       * Exports const - Stake needed to candidate as staking account.
+       **/
+      candidateStake: BalanceOf & AugmentedConst<ApiType>;
       /**
        * Exports const - default balance for the invited member.
        **/
@@ -120,15 +215,71 @@ declare module '@polkadot/api/types/consts' {
        **/
       defaultMembershipPrice: BalanceOf & AugmentedConst<ApiType>;
       /**
+       * Exports const - invited member lock id.
+       **/
+      invitedMemberLockId: LockIdentifier & AugmentedConst<ApiType>;
+      /**
        * Exports const - maximum percent value of the membership fee for the referral cut.
        **/
       referralCutMaximumPercent: u8 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - staking candidate lock id.
+       **/
+      stakingCandidateLockId: LockIdentifier & AugmentedConst<ApiType>;
     };
     membershipWorkingGroup: {
       /**
-       * Exports const -  max simultaneous active worker number.
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroup: {
+      /**
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
     };
     proposalsCodex: {
       /**
@@ -227,6 +378,10 @@ declare module '@polkadot/api/types/consts' {
        **/
       rejectionFee: BalanceOf & AugmentedConst<ApiType>;
       /**
+       * Exports const - staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
+      /**
        * Exports const -  max allowed proposal title length.
        **/
       titleMaxLength: u32 & AugmentedConst<ApiType>;
@@ -245,6 +400,10 @@ declare module '@polkadot/api/types/consts' {
        * Duration of revealing stage (number of blocks)
        **/
       revealStageDuration: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Exports const - staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
       /**
        * Duration of voting stage (number of blocks)
        **/
@@ -297,9 +456,30 @@ declare module '@polkadot/api/types/consts' {
     };
     storageWorkingGroup: {
       /**
-       * Exports const -  max simultaneous active worker number.
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: Balance & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: BlockNumber & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: LockIdentifier & AugmentedConst<ApiType>;
     };
     system: {
       /**

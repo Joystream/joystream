@@ -133,7 +133,7 @@ fn create_proposal<T: Trait + membership::Trait>(
     let (account_id, member_id) = member_funded_account::<T>("member", id);
 
     let proposal_parameters = ProposalParameters {
-        voting_period: T::BlockNumber::from(1),
+        voting_period: T::BlockNumber::from(1u32),
         grace_period: T::BlockNumber::from(grace_period),
         approval_quorum_percentage: 1,
         approval_threshold_percentage: 1,

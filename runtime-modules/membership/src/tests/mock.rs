@@ -100,7 +100,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -337,7 +337,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
-        worker_id: &<Test as common::membership::Trait>::ActorId,
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
             origin.into();
@@ -357,7 +357,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         LEAD_SET.with(|lead_set| {
             if *lead_set.borrow() {
                 Some(ALICE_MEMBER_ID)
@@ -373,9 +373,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
     }
 }
 
@@ -383,15 +387,15 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 impl
     crate::MembershipWorkingGroupHelper<
         <Test as frame_system::Trait>::AccountId,
-        <Test as common::membership::Trait>::MemberId,
-        <Test as common::membership::Trait>::ActorId,
+        <Test as common::membership::MembershipTypes>::MemberId,
+        <Test as common::membership::MembershipTypes>::ActorId,
     > for Test
 {
     fn insert_a_lead(
         _opening_id: u32,
         _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::membership::Trait>::MemberId,
-    ) -> <Test as common::membership::Trait>::ActorId {
+        _member_id: <Test as common::membership::MembershipTypes>::MemberId,
+    ) -> <Test as common::membership::MembershipTypes>::ActorId {
         ALICE_MEMBER_ID
     }
 }

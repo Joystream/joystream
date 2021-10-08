@@ -2,6 +2,8 @@ target/
 **node_modules*
 .tmp/
 .vscode/
-query-node/generated
 query-node/**/dist
 query-node/lib
+cli/
+tests/
+!tests/integration-tests/proposal-parameters.json

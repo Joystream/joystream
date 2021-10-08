@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '14.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: |
           pushd node
-          WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release --features runtime-benchmarks
+          WASM_BUILD_TOOLCHAIN=nightly-2021-03-24 cargo build --release --features runtime-benchmarks
           popd
         if: env.GIT_DIFF
 

@@ -6,4 +6,4 @@ export { RemoveStakingAccountsHappyCaseFixture } from './RemoveStakingAccountsHa
 export { SudoUpdateMembershipSystem } from './SudoUpdateMembershipSystem'
 export { TransferInvitesHappyCaseFixture } from './TransferInvitesHappyCaseFixture'
 export { UpdateAccountsHappyCaseFixture } from './UpdateAccountsHappyCaseFixture'
-export { UpdateProfileHappyCaseFixture } from './UpdateProfileHappyCaseFixture'
+export { UpdateProfileHappyCaseFixture, MemberProfileData } from './UpdateProfileHappyCaseFixture'

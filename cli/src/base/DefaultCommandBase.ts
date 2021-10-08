@@ -38,6 +38,19 @@ export default abstract class DefaultCommandBase extends Command {
     return result
   }
 
+  async requireConfirmation(
+    message = 'Are you sure you want to execute this action?',
+    defaultVal = false
+  ): Promise<void> {
+    if (process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '')) {
+      return
+    }
+    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
+    if (!confirmed) {
+      this.exit(ExitCodes.OK)
+    }
+  }
+
   private jsonPrettyIndented(line: string) {
     return `${this.jsonPrettyIdent}${line}`
   }
@@ -53,7 +66,7 @@ export default abstract class DefaultCommandBase extends Command {
   }
 
   private jsonPrettyKeyVal(key: string, val: any): string {
-    return this.jsonPrettyIndented(chalk.white(`${key}: ${this.jsonPrettyAny(val)}`))
+    return this.jsonPrettyIndented(chalk.magentaBright(`${key}: ${this.jsonPrettyAny(val)}`))
   }
 
   private jsonPrettyObj(obj: { [key: string]: any }): string {
