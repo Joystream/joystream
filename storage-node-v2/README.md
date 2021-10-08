@@ -15,10 +15,10 @@ Joystream storage subsystem.
 
 # Description
 
-The main responsibility of Colossus is handling media data for users. The data could be images, audio or video files.
-Colossus receives uploads and saves files in the local folder, registers uploads in the blockchain and later serves files 
+The main responsibility of Colossus is handling media data for users. The data could be images, audio, or video files.
+Colossus receives uploads and saves files in the local folder, registers uploads in the blockchain, and later serves files 
 to Argus nodes (distribution nodes). Colossus instances spread the data using peer-to-peer synchronization.
-On data uploading clients should provide authentication token to prevent abuse.
+On data uploading, clients should provide an authentication token to prevent abuse.
 Data management is blockchain-based, it relies on the concepts of buckets, bags, data objects.
 The full description of the blockchain smart contracts could be found [here](https://github.com/Joystream/joystream/issues/2224).
 
@@ -41,12 +41,12 @@ API endpoints:
 
 #### Auth schema description
 
-To reduce possibility of abuse of the uploading endpoint we implemented simple authentication schema. On each uploading attempt the client should receive the auth token first and provided as a special header. The token has expiration time and cannot be reused. To receive such token the client should be part of the StorageWorkingGroup and have  `WorkerId`.
+To reduce the possibility of abuse of the uploading endpoint we implemented a simple authentication schema. On each uploading attempt, the client should receive the auth token first and provide it as a special header. The token has an expiration time and cannot be reused. To receive such token the client should be part of the StorageWorkingGroup and have  `WorkerId`.
 
 
 #### CLI
 
-There is a command line interface to manage Storage Working Group operations like create bucket or change storage settings. Full description could be found [below](#cli-commands).
+There is a command-line interface to manage Storage Working Group operations like create a bucket or change storage settings. Full description could be found [below](#cli-commands).
 
 There are several groups of command:
 - *leader* - manages the Storage Working group in the blockchain. Requires leader privileges.
@@ -56,11 +56,11 @@ There are several groups of command:
 
 #### Data synchronization
 
-Several instances of Colossus should contain the data replica in order to provide some degree of reliability. When some Colossus instance receive the data upload it marks the related data object as `accepted`. Other instances that has the same obligations to store the data (they serve storage buckets assigned to the same bag) will eventually load this data object from the initial receiver (or some other node that already downloaded new data object from the initial receiver) using REST API.
+Several instances of Colossus should contain the data replica in order to provide some degree of reliability. When some Colossus instance receives the data upload it marks the related data object as `accepted`. Other instances that have the same obligations to store the data (they serve storage buckets assigned to the same bag) will eventually load this data object from the initial receiver (or some other node that already downloaded a new data object from the initial receiver) using REST API.
 
 #### Data distribution
 
-The actual data distribution (serving to end users) is done via Argus - the distributor node. It gets data from Colossus using the same `get` endpoint on the single data object basis.
+The actual data distribution (serving to end-users) is done via Argus - the distributor node. It gets data from Colossus using the same `get` endpoint on a single data object basis.
 
 #### Data uploading
 
@@ -72,14 +72,14 @@ Simplified process:
 
 2. Upload file
    - auth header decoding and verification
-   - accepting the data upload in temp folder
+   - accepting the data upload in the temp folder
    - data hash & size verification
-   - moving the data to data folder
+   - moving the data to the data folder
    - registering the data object as `accepted` in the blockchain
 
 #### Comments
 - Colossus relies on the [Query Node (Hydra)](https://www.joystream.org/hydra/) to get the blockchain data in a structured form.
-- Using Colossus as functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) as well as active `WorkerId` from the Storage Working group.
+- Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) as well as active `WorkerId` from the Storage Working group.
 
 # Installation
 ```shell
