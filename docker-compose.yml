@@ -31,20 +31,9 @@ services:
       - /keystore
     ports:
       - '127.0.0.1:3333:${COLOSSUS_PORT}'
-    entrypoint: ['/bin/sh', '-c']
-    command:
-      - |
-        yarn storage-node dev:init --apiUrl ${WS_PROVIDER_ENDPOINT_URI}
-        yarn storage-node server --queryNodeHost $${QUERY_NODE_HOST} --port ${COLOSSUS_PORT} \
-          --uploads /data --worker $${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=1 \
-          --keyFile=${ACCOUNT_KEYFILE} --elasticSearchHost=${ELASTIC_SEARCH_HOST}
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
-    environment:
-      - QUERY_NODE_HOST=${GRAPHQL_SERVER_HOST}:${GRAPHQL_SERVER_PORT}
-      - WORKER_ID=0
-      - ACCOUNT_URI=//Alice
 
   distributor-node:
     image: joystream/distributor-node
