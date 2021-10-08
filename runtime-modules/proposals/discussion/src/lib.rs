@@ -101,7 +101,7 @@ decl_event!(
         ThreadCreated(ThreadId, MemberId),
 
         /// Emits on post creation.
-        PostCreated(PostId, MemberId, ThreadId, Vec<u8>),
+        PostCreated(PostId, MemberId, ThreadId, Vec<u8>, bool),
 
         /// Emits on post update.
         PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
@@ -277,7 +277,7 @@ decl_module! {
             }
 
             PostCount::put(next_post_count_value);
-            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text, editable));
        }
 
         /// Remove post from storage, with the last parameter indicating whether to also hide it

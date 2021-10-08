@@ -267,7 +267,8 @@ benchmarks! {
                 post_id,
                 caller_member_id,
                 thread_id,
-                text
+                text,
+                true,
             ).into()
         );
     }
