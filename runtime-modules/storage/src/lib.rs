@@ -3419,7 +3419,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Check the dynamic bag existence. Static bags always exist.
-    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+    pub fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
         if let BagId::<T>::Dynamic(_) = &bag_id {
             ensure!(
                 <Bags<T>>::contains_key(&bag_id),
