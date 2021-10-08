@@ -23,10 +23,26 @@ fragment DataObjectInfo on StorageDataObject {
   deletionPrize
   type {
     __typename
-      ... on DataObjectTypeVideoMedia { video { id } }
-      ... on DataObjectTypeVideoThumbnail { video { id } }
-      ... on DataObjectTypeChannelAvatar { channel { id } }
-      ... on DataObjectTypeChannelCoverPhoto { channel { id } }
+    ... on DataObjectTypeVideoMedia {
+      video {
+        id
+      }
+    }
+    ... on DataObjectTypeVideoThumbnail {
+      video {
+        id
+      }
+    }
+    ... on DataObjectTypeChannelAvatar {
+      channel {
+        id
+      }
+    }
+    ... on DataObjectTypeChannelCoverPhoto {
+      channel {
+        id
+      }
+    }
   }
 }
 
@@ -47,4 +63,3 @@ query getDataObjectsByVideoId($videoId: ID) {
     ...DataObjectInfo
   }
 }
-

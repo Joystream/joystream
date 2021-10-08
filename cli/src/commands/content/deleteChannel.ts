@@ -1,11 +1,10 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { createTypeFromConstructor, registry } from '@joystream/types'
-import { BagId, DataObjectId } from '@joystream/types/storage'
+import { createTypeFromConstructor } from '@joystream/types'
+import { BagId } from '@joystream/types/storage'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
-import { JoyBTreeSet } from '@joystream/types/common'
 import BN from 'bn.js'
 
 export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
@@ -98,10 +97,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(account, 'content', 'deleteChannel', [
       actor,
       channelId,
-      new (JoyBTreeSet(DataObjectId))(
-        registry,
-        dataObjectsInfo.map(([id]) => id)
-      ),
+      force ? dataObjectsInfo.length : 0,
     ])
   }
 }
