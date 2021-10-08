@@ -811,8 +811,7 @@
     "Video": {
         "in_channel": "ChannelId",
         "in_series": "Option<SeriesId>",
-        "is_censored": "bool",
-        "maybe_data_objects_id_set": "Option<Vec<DataObjectId>>"
+        "is_censored": "bool"
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",

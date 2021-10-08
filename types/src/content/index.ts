@@ -94,7 +94,6 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Option.with(SeriesId),
   is_censored: bool,
-  maybe_data_objects_id_set: Option.with(JoyBTreeSet(DataObjectId)),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({

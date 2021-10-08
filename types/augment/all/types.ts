@@ -139,9 +139,6 @@ export interface Approved extends Enum {
   readonly asExecutionFailed: ExecutionFailed;
 }
 
-/** @name AssetUrls */
-export interface AssetUrls extends Vec<Url> {}
-
 /** @name Backer */
 export interface Backer extends Struct {
   readonly member: GenericAccountId;
@@ -314,12 +311,6 @@ export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Null {}
-
-/** @name CreationUploadParameters */
-export interface CreationUploadParameters extends Struct {
-  readonly object_creation_list: Vec<DataObjectCreationParameters>;
-  readonly expected_data_size_fee: u128;
-}
 
 /** @name Credential */
 export interface Credential extends Null {}
@@ -1328,7 +1319,6 @@ export interface Video extends Struct {
   readonly in_channel: ChannelId;
   readonly in_series: Option<SeriesId>;
   readonly is_censored: bool;
-  readonly maybe_data_objects_id_set: Option<Vec<DataObjectId>>;
 }
 
 /** @name VideoCategory */

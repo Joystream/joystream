@@ -242,7 +242,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<AssetInstance>': Option<AssetInstance>;
     'Option<AssetMetadata>': Option<AssetMetadata>;
     'Option<AssetOptions>': Option<AssetOptions>;
-    'Option<AssetUrls>': Option<AssetUrls>;
     'Option<AssignmentId>': Option<AssignmentId>;
     'Option<AssignmentKind>': Option<AssignmentKind>;
     'Option<AttestedCandidate>': Option<AttestedCandidate>;
@@ -389,7 +388,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<CoreOccupied>': Option<CoreOccupied>;
     'Option<CreatedBlock>': Option<CreatedBlock>;
     'Option<CreateEntityOperation>': Option<CreateEntityOperation>;
-    'Option<CreationUploadParameters>': Option<CreationUploadParameters>;
     'Option<Credential>': Option<Credential>;
     'Option<CredentialSet>': Option<CredentialSet>;
     'Option<CurationActor>': Option<CurationActor>;
@@ -1248,7 +1246,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<AssetInstance>': Vec<AssetInstance>;
     'Vec<AssetMetadata>': Vec<AssetMetadata>;
     'Vec<AssetOptions>': Vec<AssetOptions>;
-    'Vec<AssetUrls>': Vec<AssetUrls>;
     'Vec<AssignmentId>': Vec<AssignmentId>;
     'Vec<AssignmentKind>': Vec<AssignmentKind>;
     'Vec<AttestedCandidate>': Vec<AttestedCandidate>;
@@ -1395,7 +1392,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<CoreOccupied>': Vec<CoreOccupied>;
     'Vec<CreatedBlock>': Vec<CreatedBlock>;
     'Vec<CreateEntityOperation>': Vec<CreateEntityOperation>;
-    'Vec<CreationUploadParameters>': Vec<CreationUploadParameters>;
     'Vec<Credential>': Vec<Credential>;
     'Vec<CredentialSet>': Vec<CredentialSet>;
     'Vec<CurationActor>': Vec<CurationActor>;
@@ -2254,7 +2250,6 @@ declare module '@polkadot/types/types/registry' {
     AssetInstance: AssetInstance;
     AssetMetadata: AssetMetadata;
     AssetOptions: AssetOptions;
-    AssetUrls: AssetUrls;
     AssignmentId: AssignmentId;
     AssignmentKind: AssignmentKind;
     AttestedCandidate: AttestedCandidate;
@@ -2401,7 +2396,6 @@ declare module '@polkadot/types/types/registry' {
     CoreOccupied: CoreOccupied;
     CreatedBlock: CreatedBlock;
     CreateEntityOperation: CreateEntityOperation;
-    CreationUploadParameters: CreationUploadParameters;
     Credential: Credential;
     CredentialSet: CredentialSet;
     CurationActor: CurationActor;
