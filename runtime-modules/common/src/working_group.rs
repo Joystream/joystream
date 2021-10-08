@@ -5,23 +5,34 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 /// Defines well-known working groups.
+/// Additional integer values are set to maintain the index of the enum variants after its
+/// modifying. The 'isize' suffix is required by the 'clippy' linter. We should revisit it after we
+/// upgrade the rust compiler version (current version is "nightly-2021-02-20-x86_64").
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
 pub enum WorkingGroup {
     /* Reserved
         /// Forum working group: working_group::Instance1.
         Forum,
     */
     /// Storage working group: working_group::Instance2.
-    Storage,
+    Storage = 2isize,
+
     /// Storage working group: working_group::Instance3.
-    Content,
+    Content = 3isize,
+
     /// Operations working group: working_group::Instance4.
-    OperationsAlpha,
-    /// Operations working group: working_group::Instance6.
-    OperationsBeta,
-    /// Operations working group: working_group::Instance7.
-    OperationsGamma,
+    OperationsAlpha = 4isize,
+
     /// Gateway working group: working_group::Instance5.
-    Gateway,
+    Gateway = 5isize,
+
+    /// Distribution working group: working_group::Instance6.
+    Distribution = 6isize,
+
+    /// Operations working group: working_group::Instance7.
+    OperationsBeta = 7isize,
+
+    /// Operations working group: working_group::Instance8.
+    OperationsGamma = 8isize,
 }

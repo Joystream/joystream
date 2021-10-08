@@ -2332,7 +2332,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "5.6.0"
+version = "5.7.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2393,7 +2393,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "9.8.0"
+version = "9.9.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2401,6 +2401,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "hex-literal",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
@@ -3805,7 +3806,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-common"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3821,12 +3822,15 @@ dependencies = [
 
 [[package]]
 name = "pallet-content"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-randomness-collective-flip",
+ "pallet-storage",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -3855,7 +3859,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-forum"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3872,7 +3876,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-governance"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3915,7 +3919,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-hiring"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3953,7 +3957,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3971,7 +3975,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-memo"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4050,7 +4054,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4068,7 +4072,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4102,7 +4106,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-recurring-reward"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4153,7 +4157,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-stake"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4202,19 +4206,16 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "3.1.1"
+version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-hiring",
  "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
+ "pallet-randomness-collective-flip",
  "pallet-timestamp",
- "pallet-token-mint",
- "pallet-working-group",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4258,7 +4259,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-token-mint"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4336,7 +4337,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "3.1.1"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",

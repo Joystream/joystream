@@ -139,6 +139,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       InvalidAssetsProvided: AugmentedError<ApiType>;
       /**
+       * Bag Size specified is not valid
+       **/
+      InvalidBagSizeSpecified: AugmentedError<ApiType>;
+      /**
        * Lead authentication failed
        **/
       LeadAuthFailed: AugmentedError<ApiType>;

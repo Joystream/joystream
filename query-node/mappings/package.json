@@ -9,18 +9,16 @@
     "copy-types": "cp ../../types/augment/all/defs.json lib/generated/types/typedefs.json",
     "clean": "rm -rf lib",
     "lint": "eslint . --quiet --ext .ts",
-    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "checks": "prettier ./ --check && yarn lint",
     "format": "prettier ./ --write "
   },
   "dependencies": {
     "@polkadot/types": "4.2.1",
-    "@dzlzv/hydra-common": "2.1.0-beta.7",
-    "@dzlzv/hydra-db-utils": "2.1.0-beta.7",
+    "@joystream/hydra-common": "3.1.0-alpha.1",
+    "@joystream/hydra-db-utils": "3.1.0-alpha.1",
     "@joystream/content-metadata-protobuf": "^1.1.0",
-    "@joystream/types": "^0.16.1",
-    "iso-639-1": "^2.1.8",
-    "query-node": "^0.1.0",
-    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
+    "@joystream/types": "^0.17.0",
+    "@joystream/warthog": "2.35.0"
   },
   "devDependencies": {
     "prettier": "^2.2.1",

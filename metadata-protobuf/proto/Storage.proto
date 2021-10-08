@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+message GeoCoordiantes {
+  optional float latitude = 3;
+  optional float longitude = 4;
+}
+
+message NodeLocationMetadata {
+  optional string country_code = 1; // ISO 3166-1 alpha-2 country code (2 letters)
+  optional string city = 2; // City name
+  optional GeoCoordiantes coordinates = 3; // Geographic coordinates (providing {} will unset current value)
+}
+
+message StorageBucketOperatorMetadata {
+  optional string endpoint = 1; // Root storage node endpoint (ie. https://example.com/storage)
+  optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
+  optional string extra = 3; // Additional information about the node / node operator
+}
+
+message DistributionBucketOperatorMetadata {
+  optional string endpoint = 1; // Root distribution node endpoint (ie. https://example.com/distribution)
+  optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
+  optional string extra = 3; // Additional information about the node / node operator
+}
+
+message DistributionBucketFamilyMetadata {
+  optional string region = 1; // ID / name of the region covered by the distribution family (ie. us-east-1). Should be unique.
+  optional string description = 2; // Additional, more specific description of the region
+  repeated GeoCoordiantes boundary = 3; // Geographical boundary of the region, defined as polygon through array of coordinates (providing [{}] will unset the current value)
+}

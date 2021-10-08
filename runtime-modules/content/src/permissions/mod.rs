@@ -5,17 +5,15 @@ pub use curator_group::*;
 pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
-pub use common::MembershipTypes;
 use core::fmt::Debug;
 use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
-// use frame_system::ensure_root;
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
+pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
     /// Curator identifier
     type CuratorId: Parameter
         + Member
@@ -105,26 +103,18 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 ) -> DispatchResult {
     match actor {
         // Lead should use their member or curator role to create or update channel assets.
-        ContentActor::Lead => {
-            Err(Error::<T>::ActorCannotOwnChannel.into())
-        }
+        ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel.into()),
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
             // Authorize curator, performing all checks to ensure curator can act
-            CuratorGroup::<T>::perform_curator_in_group_auth(
-                curator_id,
-                curator_group_id,
-                &sender,
-            )
+            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
         }
         ContentActor::Member(member_id) => {
             let sender = ensure_signed(origin)?;
 
             ensure_member_auth_success::<T>(member_id, &sender)
         }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
     }
 }
 
@@ -132,7 +122,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DaoId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     // Only owner of a channel can update and delete channel assets.
     // Lead can update and delete curator group owned channel assets.
@@ -177,8 +167,6 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
 
             Ok(())
         }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
     }
 }
 
@@ -199,7 +187,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DaoId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
     // Only lead can censor curator group owned channels and videos
@@ -207,7 +195,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
             ensure_lead_auth_success::<T>(&sender)
-        },
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
@@ -224,13 +212,11 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
             } else {
                 Ok(())
             }
-        },
+        }
         ContentActor::Member(_) => {
             // Members cannot censore channels!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
     }
 }
 
@@ -243,39 +229,19 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
             ensure_lead_auth_success::<T>(&sender)
-        },
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
             // Authorize curator, performing all checks to ensure curator can act
-            CuratorGroup::<T>::perform_curator_in_group_auth(
-                curator_id,
-                curator_group_id,
-                &sender,
-            )
-        },
+            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
+        }
         ContentActor::Member(_) => {
             // Members cannot censore channels!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
     }
 }
-
-// pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
-//     origin: T::Origin,
-//     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-// ) -> DispatchResult {
-//     // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
-//     if let ContentActor::Lead = actor {
-//         let sender = ensure_signed(origin)?;
-//         ensure_lead_auth_success::<T>(&sender)
-//     } else {
-//         ensure_root(origin)?;
-//         Ok(())
-//     }
-// }
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -288,7 +254,6 @@ pub enum ContentActor<
     Curator(CuratorGroupId, CuratorId),
     Member(MemberId),
     Lead,
-    // Dao,
 }
 
 impl<

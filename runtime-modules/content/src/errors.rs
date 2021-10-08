@@ -62,6 +62,23 @@ decl_error! {
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels
+        CannotCensoreCuratorGroupOwnedChannels,
+
+        /// No assets to be removed have been specified
+        NoAssetsSpecified,
+
+        /// Channel assets feasibility
+        InvalidAssetsProvided,
+
+        /// Channel Contains Video
+        ChannelContainsVideos,
+
+        /// Channel Contains Assets
+        ChannelContainsAssets,
+
+        /// Bag Size specified is not valid
+        InvalidBagSizeSpecified,
+
+
     }
 }

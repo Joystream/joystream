@@ -2,7 +2,7 @@ use frame_support::StorageMap;
 use sp_std::marker::PhantomData;
 
 use crate::{
-    ContentDirectoryWorkingGroupInstance, GatewayWorkingGroupInstance,
+    ContentWorkingGroupInstance, DistributionWorkingGroupInstance, GatewayWorkingGroupInstance,
     OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
     OperationsWorkingGroupInstanceGamma, StorageWorkingGroupInstance,
 };
@@ -78,8 +78,12 @@ pub struct GatewayWgStakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }
 
+pub struct DistributionWgStakingEventsHandler<T> {
+    pub marker: PhantomData<T>,
+}
+
 wg_staking_event_impl!(
-    ContentDirectoryWorkingGroupInstance,
+    ContentWorkingGroupInstance,
     ContentDirectoryWgStakingEventsHandler<T>
 );
 
@@ -106,4 +110,9 @@ wg_staking_event_impl!(
 wg_staking_event_impl!(
     OperationsWorkingGroupInstanceGamma,
     OperationsWgStakingEventsHandlerGamma<T>
+);
+
+wg_staking_event_impl!(
+    DistributionWorkingGroupInstance,
+    DistributionWgStakingEventsHandler<T>
 );

@@ -181,7 +181,7 @@ pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
     <T as frame_system::Trait>::AccountId,
 >>::NegativeImbalance;
 
-type MemberId<T> = <T as membership::Trait>::MemberId;
+type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 decl_error! {
     /// Codex module predefined errors

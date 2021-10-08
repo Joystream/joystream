@@ -209,7 +209,6 @@ export interface Channel extends Struct {
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
   readonly deletion_prize_source_account_id: GenericAccountId;
-  readonly num_assets: u64;
 }
 
 /** @name ChannelCategory */
@@ -233,8 +232,8 @@ export interface ChannelContentType extends Null {}
 
 /** @name ChannelCreationParameters */
 export interface ChannelCreationParameters extends Struct {
-  readonly assets: NewAssets;
-  readonly meta: Bytes;
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
   readonly reward_account: Option<GenericAccountId>;
 }
 
@@ -268,9 +267,10 @@ export interface ChannelPublicationStatus extends Null {}
 
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
-  readonly assets: Option<NewAssets>;
+  readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
+  readonly assets_to_remove: Vec<DataObjectId>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -655,14 +655,6 @@ export interface ModerationAction extends Struct {
   readonly rationale: Text;
 }
 
-/** @name NewAssets */
-export interface NewAssets extends Enum {
-  readonly isUpload: boolean;
-  readonly asUpload: CreationUploadParameters;
-  readonly isUrls: boolean;
-  readonly asUrls: Vec<AssetUrls>;
-}
-
 /** @name NextAdjustment */
 export interface NextAdjustment extends Struct {
   readonly adjustment: AdjustOnInterval;
@@ -782,7 +774,7 @@ export interface PersonController extends Enum {
 
 /** @name PersonCreationParameters */
 export interface PersonCreationParameters extends Struct {
-  readonly assets: NewAssets;
+  readonly assets: StorageAssets;
   readonly meta: Bytes;
 }
 
@@ -791,7 +783,7 @@ export interface PersonId extends u64 {}
 
 /** @name PersonUpdateParameters */
 export interface PersonUpdateParameters extends Struct {
-  readonly assets: Option<NewAssets>;
+  readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
 }
 
@@ -1080,7 +1072,7 @@ export interface Season extends Struct {
 
 /** @name SeasonParameters */
 export interface SeasonParameters extends Struct {
-  readonly assets: Option<NewAssets>;
+  readonly assets: Option<StorageAssets>;
   readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1106,7 +1098,7 @@ export interface SeriesId extends u64 {}
 
 /** @name SeriesParameters */
 export interface SeriesParameters extends Struct {
-  readonly assets: Option<NewAssets>;
+  readonly assets: Option<StorageAssets>;
   readonly seasons: Option<Vec<Option<SeasonParameters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1205,6 +1197,12 @@ export interface StaticBagId extends Enum {
 
 /** @name Status */
 export interface Status extends Null {}
+
+/** @name StorageAssets */
+export interface StorageAssets extends Struct {
+  readonly object_creation_list: Vec<DataObjectCreationParameters>;
+  readonly expected_data_size_fee: u128;
+}
 
 /** @name StorageBucket */
 export interface StorageBucket extends Struct {
@@ -1351,8 +1349,8 @@ export interface VideoCategoryUpdateParameters extends Struct {
 
 /** @name VideoCreationParameters */
 export interface VideoCreationParameters extends Struct {
-  readonly assets: NewAssets;
-  readonly meta: Bytes;
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
 }
 
 /** @name VideoId */
@@ -1360,8 +1358,9 @@ export interface VideoId extends u64 {}
 
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
-  readonly assets: Option<NewAssets>;
+  readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
+  readonly assets_to_remove: Vec<DataObjectId>;
 }
 
 /** @name VoteKind */
