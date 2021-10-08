@@ -1,6 +1,6 @@
 ## 1 Type
 
-`string`
+`string` ([All buckets](definition-properties-buckets-oneof-all-buckets.md))
 
 ## 1 Constraints
 

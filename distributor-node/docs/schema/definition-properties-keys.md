@@ -1,6 +1,6 @@
 ## keys Type
 
-`string[]`
+an array of merged types ([Details](definition-properties-keys-items.md))
 
 ## keys Constraints
 

@@ -1,3 +1,0 @@
-## cacheState Type
-
-`string`

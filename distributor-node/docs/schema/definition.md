@@ -153,13 +153,13 @@ Distributor node http server port
 
 ## keys
 
-Specifies the keys to use within distributor node CLI. Must be provided in form of substrate uris (ie.: //Alice)
+Specifies the keys available within distributor node CLI.
 
 `keys`
 
 *   is required
 
-*   Type: `string[]`
+*   Type: an array of merged types ([Details](definition-properties-keys-items.md))
 
 *   cannot be null
 
@@ -167,7 +167,7 @@ Specifies the keys to use within distributor node CLI. Must be provided in form 
 
 ### keys Type
 
-`string[]`
+an array of merged types ([Details](definition-properties-keys-items.md))
 
 ### keys Constraints
 
@@ -193,9 +193,9 @@ merged type ([Details](definition-properties-buckets.md))
 
 one (and only one) of
 
-*   [Untitled array in Distributor node configuration](definition-properties-buckets-oneof-0.md "check type definition")
+*   [Bucket ids](definition-properties-buckets-oneof-bucket-ids.md "check type definition")
 
-*   [Untitled string in Distributor node configuration](definition-properties-buckets-oneof-1.md "check type definition")
+*   [All buckets](definition-properties-buckets-oneof-all-buckets.md "check type definition")
 
 ## workerId
 
