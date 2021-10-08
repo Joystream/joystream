@@ -27,6 +27,7 @@
     - [LRU groups](#lru-groups)
   - [Cache cleanup](#cache-cleanup)
 - [Logging](#logging)
+- [Query node integration](#query-node-integration)
 <!-- AUTO-GENERATED-CONTENT:END -->
 
 <a name="the-api"></a>
@@ -381,3 +382,19 @@ The logs can be directed to some of the 3 available outputs, depending on the [`
 - console
 - a log file inside [`directories.logs`](../schema/definition-properties-directories.md#logs)
 - an elasticsearch endpoint specified via [`endpoints.elasticsearch`](../schema/definition-properties-endpoints.md#elasticsearch)
+
+# Query node integration
+
+Because the distributor node is making requests to a query node:
+- on [cache miss](#scenario-3)
+- periodically, for [cache cleanup](#cache-cleanup) purposes
+
+In order to achieve the best perfomance it is recommended to either run the query-node processor and graphql server on the same machine the distributor node will be running on, or use a query node endpoint that can be accessed with a minimal latency.
+
+Taking the [docker-compose.yml](../../docker-compose.yml) example, the services that could be run on the same machine may include:
+- `db`
+- `processor`
+- `graphql-server`
+- `distributor-node`
+
+The `INDEXER_ENDPOINT_URL` can be point to a completely external indexer endpoint, as the latency between `processor` and `indexer` is less of an issue in this case.
