@@ -32,7 +32,6 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
 export class Url extends Text {}
 
 export class ChannelId extends u64 {}
-export class DAOId extends u64 {}
 
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
@@ -97,9 +96,11 @@ export const WorkingGroupDef = {
   // _Reserved1
   Storage: Null,
   Content: Null,
-  Operations: Null,
+  OperationsAlpha: Null,
   Gateway: Null,
   Distribution: Null,
+  OperationsBeta: Null,
+  OperationsGamma: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum({
@@ -149,7 +150,6 @@ export const commonTypes: RegistryTypes = {
   Address,
   LookupSource,
   ChannelId,
-  DAOId,
   Url,
 }
 
