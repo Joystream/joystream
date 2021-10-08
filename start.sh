@@ -45,7 +45,7 @@ docker-compose up -d processor
 docker-compose up -d graphql-server
 
 ## Storage Infrastructure
-docker-compose run -d --name colossus colossus "yarn storage-node dev:init --apiUrl ${WS_PROVIDER_ENDPOINT_URI} && \
+docker-compose run -d --name colossus --entrypoint sh colossus -c "yarn storage-node dev:init --apiUrl ${WS_PROVIDER_ENDPOINT_URI} && \
           yarn storage-node server --queryNodeHost ${QUERY_NODE_HOST} --port ${COLOSSUS_PORT} \
           --uploads /data --worker ${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=1 \
           --keyFile=${ACCOUNT_KEYFILE} --elasticSearchHost=${ELASTIC_SEARCH_HOST}"
