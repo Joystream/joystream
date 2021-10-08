@@ -1,7 +1,7 @@
 `joystream-distributor dev`
 ===========================
 
-
+Developer utility commands
 
 * [`joystream-distributor dev:batchUpload`](#joystream-distributor-devbatchupload)
 * [`joystream-distributor dev:init`](#joystream-distributor-devinit)

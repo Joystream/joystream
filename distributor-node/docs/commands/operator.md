@@ -1,8 +1,7 @@
 `joystream-distributor operator`
 ================================
 
-Accept pending distribution bucket operator invitation.
-  Requires the invited distribution group worker role key.
+Commands for performing node operator (Distribution Working Group worker) on-chain duties (like accepting bucket invitations, setting node metadata)
 
 * [`joystream-distributor operator:accept-invitation`](#joystream-distributor-operatoraccept-invitation)
 * [`joystream-distributor operator:set-metadata`](#joystream-distributor-operatorset-metadata)

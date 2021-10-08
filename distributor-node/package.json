@@ -93,7 +93,18 @@
     "bin": "joystream-distributor",
     "plugins": [
       "@oclif/plugin-help"
-    ]
+    ],
+    "topics": {
+      "leader": {
+        "description": "Commands for performing Distribution Working Group leader on-chain duties (like setting distribution module limits and parameters, assigning bags and buckets etc.)"
+      },
+      "operator": {
+        "description": "Commands for performing node operator (Distribution Working Group worker) on-chain duties (like accepting bucket invitations, setting node metadata)"
+      },
+      "dev": {
+        "description":"Developer utility commands"
+      }
+    }
   },
   "repository": {
     "type": "git",

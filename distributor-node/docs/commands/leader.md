@@ -1,8 +1,7 @@
 `joystream-distributor leader`
 ==============================
 
-Cancel pending distribution bucket operator invitation.
-  Requires distribution working group leader permissions.
+Commands for performing Distribution Working Group leader on-chain duties (like setting distribution module limits and parameters, assigning bags and buckets etc.)
 
 * [`joystream-distributor leader:cancel-invitation`](#joystream-distributor-leadercancel-invitation)
 * [`joystream-distributor leader:create-bucket`](#joystream-distributor-leadercreate-bucket)
