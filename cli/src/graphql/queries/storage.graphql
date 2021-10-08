@@ -16,3 +16,35 @@ query getStorageNodesInfoByBagId($bagId: String) {
     ...StorageNodeInfo
   }
 }
+
+fragment DataObjectInfo on StorageDataObject {
+  id
+  size
+  deletionPrize
+  type {
+    __typename
+      ... on DataObjectTypeVideoMedia { video { id } }
+      ... on DataObjectTypeVideoThumbnail { video { id } }
+      ... on DataObjectTypeChannelAvatar { channel { id } }
+      ... on DataObjectTypeChannelCoverPhoto { channel { id } }
+  }
+}
+
+query getDataObjectsByBagId($bagId: ID) {
+  storageDataObjects(where: { storageBag: { id_eq: $bagId } }) {
+    ...DataObjectInfo
+  }
+}
+
+query getDataObjectsChannelId($channelId: ID) {
+  storageDataObjects(where: { type_json: { channelId_eq: $channelId } }) {
+    ...DataObjectInfo
+  }
+}
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...DataObjectInfo
+  }
+}
+

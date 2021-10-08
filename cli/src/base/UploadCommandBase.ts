@@ -27,7 +27,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import FormData from 'form-data'
 import BN from 'bn.js'
 import { createTypeFromConstructor } from '@joystream/types'
-import { NewAssets } from '@joystream/types/content'
+import { StorageAssets } from '@joystream/types/content'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -159,7 +159,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
   async getRandomActiveStorageNodeInfo(bagId: string, retryTime = 6, retryCount = 5): Promise<StorageNodeInfo | null> {
     for (let i = 0; i <= retryCount; ++i) {
-      const nodesInfo = _.shuffle(await this.getApi().storageNodesInfoByBagId(bagId))
+      const nodesInfo = _.shuffle(await this.getQNApi().storageNodesInfoByBagId(bagId))
       for (const info of nodesInfo) {
         try {
           // TODO: Use a status endpoint once available?
@@ -336,7 +336,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
   }
 
-  async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<NewAssets | undefined> {
+  async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
@@ -349,11 +349,9 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         `Total fee of ${chalk.cyan(formatBalance(totalFee))} ` +
           `will have to be paid in order to store the provided assets. Are you sure you want to continue?`
       )
-      return createTypeFromConstructor(NewAssets, {
-        Upload: {
-          expected_data_size_fee: feePerMB,
-          object_creation_list: resolvedAssets.map((a) => a.parameters),
-        },
+      return createTypeFromConstructor(StorageAssets, {
+        expected_data_size_fee: feePerMB,
+        object_creation_list: resolvedAssets.map((a) => a.parameters),
       })
     }
 

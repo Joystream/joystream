@@ -3,11 +3,16 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { ChannelInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface } from '@joystream/types'
+import { CreateInterface, registry } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
-
+import { DataObjectInfoFragment } from '../../graphql/generated/queries'
+import BN from 'bn.js'
+import { formatBalance } from '@polkadot/util'
+import chalk from 'chalk'
+import { JoyBTreeSet } from '@joystream/types/common'
+import { DataObjectId } from '@joystream/types/storage'
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
@@ -39,6 +44,33 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     }
   }
 
+  async getAssetsToRemove(
+    channelId: number,
+    coverPhotoIndex: number | undefined,
+    avatarPhotoIndex: number | undefined
+  ): Promise<string[]> {
+    let assetsToRemove: DataObjectInfoFragment[] = []
+    if (coverPhotoIndex !== undefined || avatarPhotoIndex !== undefined) {
+      const currentAssets = await this.getQNApi().dataObjectsByChannelId(channelId.toString())
+      const currentCovers = currentAssets.filter((a) => a.type.__typename === 'DataObjectTypeChannelCoverPhoto')
+      const currentAvatars = currentAssets.filter((a) => a.type.__typename === 'DataObjectTypeChannelAvatar')
+      if (currentCovers.length && coverPhotoIndex !== undefined) {
+        assetsToRemove = assetsToRemove.concat(currentCovers)
+      }
+      if (currentAvatars.length && avatarPhotoIndex !== undefined) {
+        assetsToRemove = assetsToRemove.concat(currentAvatars)
+      }
+      if (assetsToRemove.length) {
+        this.log(`\nData objects to be removed due to replacement:`)
+        assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
+        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
+        this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
+      }
+    }
+
+    return assetsToRemove.map((a) => a.id)
+  }
+
   async run() {
     const {
       flags: { input },
@@ -65,14 +97,18 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     meta.avatarPhoto = avatarPhotoIndex
 
     // Preare and send the extrinsic
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assetsToRemove = await this.getAssetsToRemove(channelId, coverPhotoIndex, avatarPhotoIndex)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
-      assets,
+      assets_to_upload: assetsToUpload,
+      assets_to_remove: new (JoyBTreeSet(DataObjectId))(registry, assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
     }
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, rewardAccount }))
+    this.jsonPrettyPrint(
+      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), assetsToRemove, metadata: meta, rewardAccount })
+    )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

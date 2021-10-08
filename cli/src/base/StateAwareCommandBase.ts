@@ -12,7 +12,7 @@ import { WorkingGroups } from '../Types'
 type StateObject = {
   selectedAccountFilename: string
   apiUri: string
-  queryNodeUri: string
+  queryNodeUri: string | null | undefined
   defaultWorkingGroup: WorkingGroups
   metadataCache: Record<string, any>
 }
@@ -21,7 +21,7 @@ type StateObject = {
 const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
   apiUri: '',
-  queryNodeUri: '',
+  queryNodeUri: undefined,
   defaultWorkingGroup: WorkingGroups.StorageProviders,
   metadataCache: {},
 }

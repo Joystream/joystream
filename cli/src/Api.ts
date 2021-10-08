@@ -21,7 +21,6 @@ import {
   StakingPolicyUnstakingPeriodKey,
   UnaugmentedApiPromise,
   CouncilInfo,
-  StorageNodeInfo,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -41,26 +40,7 @@ import {
   ChannelCategoryId,
   VideoCategoryId,
 } from '@joystream/types/content'
-import {
-  ApolloClient,
-  InMemoryCache,
-  HttpLink,
-  NormalizedCacheObject,
-  DocumentNode,
-  from,
-  ApolloLink,
-} from '@apollo/client/core'
-import { ErrorLink, onError } from '@apollo/client/link/error'
-import { Maybe } from './graphql/generated/schema'
 import { Observable } from '@polkadot/x-rxjs'
-import {
-  GetStorageNodesInfoByBagId,
-  GetStorageNodesInfoByBagIdQuery,
-  GetStorageNodesInfoByBagIdQueryVariables,
-} from './graphql/generated/queries'
-import ExitCodes from './ExitCodes'
-import { URL } from 'url'
-import fetch from 'cross-fetch'
 import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -77,17 +57,11 @@ export const apiModuleByGroup = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
-  private _queryNode?: ApolloClient<NormalizedCacheObject>
   public isDevelopment = false
 
-  private constructor(
-    originalApi: ApiPromise,
-    isDevelopment: boolean,
-    queryNodeClient?: ApolloClient<NormalizedCacheObject>
-  ) {
+  private constructor(originalApi: ApiPromise, isDevelopment: boolean) {
     this.isDevelopment = isDevelopment
     this._api = originalApi
-    this._queryNode = queryNodeClient
   }
 
   public getOriginalApi(): ApiPromise {
@@ -119,83 +93,9 @@ export default class Api {
     return { api, properties, chainType }
   }
 
-  private static async createQueryNodeClient(uri: string, errorHandler?: ErrorLink.ErrorHandler) {
-    const links: ApolloLink[] = []
-    if (errorHandler) {
-      links.push(onError(errorHandler))
-    }
-    links.push(new HttpLink({ uri, fetch }))
-    return new ApolloClient({
-      link: from(links),
-      cache: new InMemoryCache(),
-      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
-    })
-  }
-
-  static async create(
-    apiUri = DEFAULT_API_URI,
-    metadataCache: Record<string, any>,
-    queryNodeUri?: string,
-    queryNodeErrorHandler?: ErrorLink.ErrorHandler
-  ): Promise<Api> {
+  static async create(apiUri = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
-    const queryNodeClient = queryNodeUri
-      ? await this.createQueryNodeClient(queryNodeUri, queryNodeErrorHandler)
-      : undefined
-    return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
-  }
-
-  // Query-node: get entity by unique input
-  protected async uniqueEntityQuery<
-    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
-    VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<Required<QueryT>[keyof QueryT] | null | undefined> {
-    if (!this._queryNode) {
-      return undefined
-    }
-    try {
-      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
-    } catch (e) {
-      return undefined
-    }
-  }
-
-  // Query-node: get entities by "non-unique" input and return first result
-  protected async firstEntityQuery<
-    QueryT extends { [k: string]: unknown[] },
-    VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<QueryT[keyof QueryT][number] | null | undefined> {
-    if (!this._queryNode) {
-      return undefined
-    }
-    try {
-      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
-    } catch (e) {
-      return undefined
-    }
-  }
-
-  // Query-node: get multiple entities
-  protected async multipleEntitiesQuery<
-    QueryT extends { [k: string]: unknown[] },
-    VariablesT extends Record<string, unknown>
-  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | undefined> {
-    if (!this._queryNode) {
-      return undefined
-    }
-    try {
-      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
-    } catch (e) {
-      return undefined
-    }
+    return new Api(api, chainType.isDevelopment || chainType.isLocal)
   }
 
   async bestNumber(): Promise<number> {
@@ -649,32 +549,10 @@ export default class Api {
     return (await this.entriesByIds(this._api.query.content.videoCategoryById)).map(([id]) => id)
   }
 
-  async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfo[]> {
-    const result = await this.multipleEntitiesQuery<
-      GetStorageNodesInfoByBagIdQuery,
-      GetStorageNodesInfoByBagIdQueryVariables
-    >(GetStorageNodesInfoByBagId, { bagId }, 'storageBuckets')
-
-    if (!result) {
-      throw new CLIError('Could not fetch storage buckets information from the query node!', {
-        exit: ExitCodes.QueryNodeError,
-      })
-    }
-
-    const validNodesInfo: StorageNodeInfo[] = []
-    for (const { operatorMetadata, id } of result) {
-      if (operatorMetadata?.nodeEndpoint) {
-        try {
-          const validUrl = new URL(operatorMetadata.nodeEndpoint)
-          validNodesInfo.push({
-            apiEndpoint: validUrl.toString().endsWith('/') ? validUrl.toString() : validUrl.toString() + '/',
-            bucketId: parseInt(id),
-          })
-        } catch (e) {
-          continue
-        }
-      }
-    }
-    return validNodesInfo
+  async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {
+    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(([{ args: [, dataObjectId] }, value]) => [
+      dataObjectId,
+      value,
+    ])
   }
 }

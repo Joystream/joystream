@@ -15,6 +15,7 @@ import { AugmentedSubmittables, SubmittableExtrinsic, AugmentedEvents, Augmented
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import QueryNodeApi from '../QueryNodeApi'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -22,15 +23,30 @@ export class ExtrinsicFailedError extends Error {}
  * Abstract base class for commands that require access to the API.
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
-  private api: Api | null = null
+  private api: Api | undefined
+  private queryNodeApi: QueryNodeApi | null | undefined
 
   // Command configuration
   protected requiresApiConnection = true
   protected requiresQueryNode = false
 
   getApi(): Api {
-    if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
+    if (!this.api) {
+      throw new CLIError('Tried to access API before initialization.', { exit: ExitCodes.ApiError })
+    }
     return this.api
+  }
+
+  getQNApi(): QueryNodeApi {
+    if (this.queryNodeApi === undefined) {
+      throw new CLIError('Tried to access QueryNodeApi before initialization.', { exit: ExitCodes.QueryNodeError })
+    }
+    if (this.queryNodeApi === null) {
+      throw new CLIError('Query node endpoint uri is required in order to run this command!', {
+        exit: ExitCodes.QueryNodeError,
+      })
+    }
+    return this.queryNodeApi
   }
 
   // Shortcuts
@@ -50,6 +66,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getOriginalApi().createType(typeName, value)
   }
 
+  isQueryNodeUriSet(): boolean {
+    const { queryNodeUri } = this.getPreservedState()
+    return !!queryNodeUri
+  }
+
   async init(): Promise<void> {
     await super.init()
     if (this.requiresApiConnection) {
@@ -60,20 +81,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         apiUri = await this.promptForApiUri()
       }
 
-      let queryNodeUri: string = this.getPreservedState().queryNodeUri
+      let queryNodeUri: string | null | undefined = this.getPreservedState().queryNodeUri
 
-      if (this.requiresQueryNode && (!queryNodeUri || queryNodeUri === 'none')) {
+      if (this.requiresQueryNode && !queryNodeUri) {
         this.warn('Query node endpoint uri is required in order to run this command!')
         queryNodeUri = await this.promptForQueryNodeUri(true)
-      } else if (!queryNodeUri) {
+      } else if (queryNodeUri === undefined) {
         this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
         queryNodeUri = await this.promptForQueryNodeUri()
       }
 
       const { metadataCache } = this.getPreservedState()
-      this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri, (err) => {
-        this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
-      })
+      this.api = await Api.create(apiUri, metadataCache)
 
       const { genesisHash, runtimeVersion } = this.getOriginalApi()
       const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
@@ -82,6 +101,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
         await this.setPreservedState({ metadataCache })
       }
+
+      this.queryNodeApi = queryNodeUri
+        ? new QueryNodeApi(queryNodeUri, (err) => {
+            this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+          })
+        : null
     }
   }
 
@@ -122,7 +147,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return selectedNodeUri
   }
 
-  async promptForQueryNodeUri(isRequired = false): Promise<string> {
+  async promptForQueryNodeUri(isRequired = false): Promise<string | null> {
     const choices = [
       {
         name: 'Local query node (http://localhost:8081/graphql)',
@@ -143,7 +168,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         value: 'none',
       })
     }
-    let selectedUri = await this.simplePrompt({
+    let selectedUri: string = await this.simplePrompt({
       type: 'list',
       message: 'Choose a query node endpoint:',
       choices,
@@ -163,7 +188,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     await this.setPreservedState({ queryNodeUri: selectedUri })
 
-    return selectedUri
+    return selectedUri === 'none' ? null : selectedUri
   }
 
   isApiUriValid(uri: string): boolean {

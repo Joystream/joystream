@@ -27,7 +27,6 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
 
       displayCollapsedRow({
         'NumberOfVideos': channel.num_videos.toNumber(),
-        'NumberOfAssets': channel.num_assets.toNumber(),
       })
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)

@@ -17,7 +17,7 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
       char: 'o',
       required: true,
       multiple: true,
-      description: 'ID of the object to remove',
+      description: 'ID of an object to remove',
     }),
   }
 
@@ -31,14 +31,13 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
     const actor = await this.getChannelOwnerActor(channel)
     await this.requestAccountDecoding(account)
 
-    this.log('Channel id:', channelId)
-    this.log('List of assets to remove:', objectIds)
+    this.jsonPrettyPrint(JSON.stringify({ channelId, assetsToRemove: objectIds }))
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(account, 'content', 'removeChannelAssets', [
+    await this.sendAndFollowNamedTx(account, 'content', 'updateChannel', [
       actor,
       channelId,
-      new (JoyBTreeSet(DataObjectId))(registry, objectIds),
+      { assets_to_remove: new (JoyBTreeSet(DataObjectId))(registry, objectIds) },
     ])
   }
 }

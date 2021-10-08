@@ -9,7 +9,7 @@ echo "{}" > ~/tmp/empty.json
 export AUTO_CONFIRM=true
 
 # Init content lead
-GROUP=contentDirectoryWorkingGroup yarn workspace api-scripts initialize-content-lead
+yarn workspace api-scripts initialize-content-lead
 # Test create/update/remove category
 yarn joystream-cli content:createVideoCategory -i ./examples/content/CreateCategory.json
 yarn joystream-cli content:createVideoCategory -i ./examples/content/CreateCategory.json
@@ -52,3 +52,11 @@ yarn joystream-cli content:channels
 yarn joystream-cli content:channel 1
 yarn joystream-cli content:curatorGroups
 yarn joystream-cli content:curatorGroup 1
+# Remove videos/channels/assets
+yarn joystream-cli content:removeChannelAssets -c 1 -o 0
+yarn joystream-cli content:deleteVideo -v 1 -f
+yarn joystream-cli content:deleteVideo -v 2 -f
+yarn joystream-cli content:deleteVideo -v 3 -f
+yarn joystream-cli content:deleteChannel -c 1 -f
+yarn joystream-cli content:deleteChannel -c 2 -f
+yarn joystream-cli content:deleteChannel -c 3 -f
