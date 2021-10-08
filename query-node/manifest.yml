@@ -83,6 +83,7 @@ typegen:
     - content.VideoDeleted
     - content.VideoCensorshipStatusUpdated
     - content.FeaturedVideosSet
+    - content.ChannelDeleted
 
     # working groups (we're using "storage_working_group" as a reference module)
     - storage_working_group.WorkerStorageUpdated
@@ -172,6 +173,8 @@ mappings:
       handler: content_VideoCensorshipStatusUpdated
     - event: content.FeaturedVideosSet
       handler: content_FeaturedVideosSet
+    - event: content.ChannelDeleted
+      handler: content_ChannelDeleted
 
     # working groups
     ## storage - workers

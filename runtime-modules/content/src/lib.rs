@@ -652,6 +652,7 @@ decl_module! {
                     &sender,
                 )?;
             }
+
             //
             // == MUTATION SAFE ==
             //
@@ -727,7 +728,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            num_objects_to_delete: u64,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -742,11 +743,28 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
+            // get bag id for the channel
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
+            let bag_id = storage::BagIdType::from(dyn_bag.clone());
+
+            // ensure that bag size provided is valid
+            ensure!(
+                storage::Bags::<T>::get(&bag_id).objects_number == num_objects_to_delete,
+                Error::<T>::InvalidBagSizeSpecified
+            );
+
+            // construct collection of assets to be removed
+            let assets_to_remove: BTreeSet<DataObjectId<T>> =
+                storage::DataObjectsById::<T>::iter_prefix(&bag_id).map(|x| x.0).collect();
+
             // remove specified assets from storage
-            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(
+                &assets_to_remove,
+                &channel_id,
+                &channel.deletion_prize_source_account_id
+            )?;
 
             // delete channel dynamic bag
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
             Storage::<T>::delete_dynamic_bag(
                 channel.deletion_prize_source_account_id,
                 dyn_bag

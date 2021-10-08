@@ -19,7 +19,6 @@ fn successful_channel_deletion() {
         );
 
         // 3 assets added at creation
-        let first_obj_id = Storage::<Test>::next_data_object_id();
         let assets = StorageAssetsRecord {
             object_creation_list: vec![
                 DataObjectCreationParameters {
@@ -51,17 +50,14 @@ fn successful_channel_deletion() {
             Ok(()),
         );
 
-        // retrieve objs id set
-        let obj_ids =
-            (first_obj_id..Storage::<Test>::next_data_object_id()).collect::<BTreeSet<_>>();
-
-        // attempt to delete channel with non zero assets should result in error
+        // attempt to delete channel with non zero assets should result in error: objects
+        // are misspecified
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            BTreeSet::new(),
-            Err(storage::Error::<Test>::CannotDeleteNonEmptyDynamicBag.into()),
+            2u64,
+            Err(Error::<Test>::InvalidBagSizeSpecified.into()),
         );
 
         // successful deletion because we empty the bag first
@@ -69,7 +65,7 @@ fn successful_channel_deletion() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            obj_ids,
+            3u64,
             Ok(()),
         );
     })

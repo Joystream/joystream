@@ -62,8 +62,8 @@ registry.register(types)
 // will create a type like: { a: string } | { b: number } | { c: Null } | "c"
 type EnumVariant<T> = keyof T extends infer K
   ? K extends keyof T
-    ? T[K] extends Null
-      ? K
+    ? T[K] extends Null | null
+      ? K | { [I in K]: T[I] }
       : { [I in K]: T[I] }
     : never
   : never
@@ -86,6 +86,8 @@ type CreateInterface_NoOption<T extends Codec> =
       ? CreateInterface<S>[]
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
+      : T extends Null
+      ? null
       : unknown)
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option

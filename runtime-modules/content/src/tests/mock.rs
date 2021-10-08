@@ -507,7 +507,7 @@ pub fn delete_channel_mock(
     sender: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    assets: BTreeSet<<Test as storage::Trait>::DataObjectId>,
+    objects_num: u64,
     result: DispatchResult,
 ) {
     assert_eq!(
@@ -515,7 +515,7 @@ pub fn delete_channel_mock(
             Origin::signed(sender),
             actor.clone(),
             channel_id.clone(),
-            assets.clone()
+            objects_num,
         ),
         result.clone(),
     );
