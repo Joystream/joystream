@@ -59,7 +59,9 @@ export type NameValueObj = { name: string; value: string }
 export enum WorkingGroups {
   StorageProviders = 'storageProviders',
   Curators = 'curators',
-  Operations = 'operations',
+  OperationsAlpha = 'operationsAlpha',
+  OperationsBeta = 'operationsBeta',
+  OperationsGamma = 'operationsGamma',
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
@@ -68,7 +70,9 @@ export enum WorkingGroups {
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
-  WorkingGroups.Operations,
+  WorkingGroups.OperationsAlpha,
+  WorkingGroups.OperationsBeta,
+  WorkingGroups.OperationsGamma,
   WorkingGroups.Gateway,
   WorkingGroups.Distribution,
 ] as const

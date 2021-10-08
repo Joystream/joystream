@@ -49,7 +49,9 @@ export const DEFAULT_API_URI = 'ws://localhost:9944/'
 export const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.Curators]: 'contentWorkingGroup',
-  [WorkingGroups.Operations]: 'operationsWorkingGroup',
+  [WorkingGroups.OperationsAlpha]: 'operationsWorkingGroupAlpha',
+  [WorkingGroups.OperationsBeta]: 'operationsWorkingGroupBeta',
+  [WorkingGroups.OperationsGamma]: 'operationsWorkingGroupGamma',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
   [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 } as const
