@@ -59,7 +59,9 @@ pub trait NumericIdentifier:
     + Eq
     + PartialEq
     + Ord
-    + Zero { }
+    + Zero
+{
+}
 
 impl NumericIdentifier for u64 {}
 
@@ -749,7 +751,7 @@ decl_module! {
             let bag_id = storage::BagIdType::from(dyn_bag.clone());
 
             // channel has a dynamic bag associated to it -> remove assets from storage
-            if let Ok(bag) = Storage::<T>::ensure_bag_exists(&bag_id) {
+            if let Ok(bag) = <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id) {
                 // ensure that bag size provided is valid
                 ensure!(
                     bag.objects_number == num_objects_to_delete,
@@ -757,8 +759,7 @@ decl_module! {
                 );
 
                 // construct collection of assets to be removed
-                let assets_to_remove: BTreeSet<DataObjectId<T>> =
-                    storage::DataObjectsById::<T>::iter_prefix(&bag_id).map(|x| x.0).collect();
+                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
                 // remove specified assets from storage
                 Self::remove_assets_from_storage(
@@ -1340,7 +1341,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
+        if <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }

@@ -211,6 +211,12 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult;
+
+    /// Checks if a bag does exists and returns it. Static Always exists
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
+
+    /// Get all objects id in a bag, without checking its existence
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 }
 
 /// Storage trait.
@@ -2757,6 +2763,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     ) -> DispatchResult {
         Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
     }
+
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+        Self::ensure_bag_exists(bag_id)
+    }
+
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
+        DataObjectsById::<T>::iter_prefix(&bag_id)
+            .map(|x| x.0)
+            .collect()
+    }
 }
 
 impl<T: Trait> Module<T> {
@@ -3419,7 +3435,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Check the dynamic bag existence. Static bags always exist.
-    pub fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
         if let BagId::<T>::Dynamic(_) = &bag_id {
             ensure!(
                 <Bags<T>>::contains_key(&bag_id),
