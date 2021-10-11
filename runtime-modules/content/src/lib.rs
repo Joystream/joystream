@@ -59,9 +59,7 @@ pub trait NumericIdentifier:
     + Eq
     + PartialEq
     + Ord
-    + Zero
-{
-}
+    + Zero { }
 
 impl NumericIdentifier for u64 {}
 
@@ -1342,7 +1340,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if let Ok(_) = Storage::<T>::ensure_bag_exists(&bag_id) {
+        if Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
