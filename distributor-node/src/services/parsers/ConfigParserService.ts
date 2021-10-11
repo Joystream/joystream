@@ -22,6 +22,12 @@ export class ConfigParserService {
     ) as Config['directories']
   }
 
+  public resolveConfigKeysPaths(keys: Config['keys'], configFilePath: string): Config['keys'] {
+    return keys.map((k) =>
+      'keyfile' in k ? { keyfile: path.resolve(path.dirname(configFilePath), k.keyfile) } : k
+    ) as Config['keys']
+  }
+
   private parseBytesize(bytesize: string) {
     const intValue = parseInt(bytesize)
     const unit = bytesize[bytesize.length - 1]
@@ -96,6 +102,7 @@ export class ConfigParserService {
 
     // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
+    const keys = this.resolveConfigKeysPaths(configJson.keys, configPath)
     const storageLimit = this.parseBytesize(configJson.limits.storage)
 
     if (storageLimit < MIN_CACHE_SIZE) {
@@ -105,6 +112,7 @@ export class ConfigParserService {
     const parsedConfig: Config = {
       ...configJson,
       directories,
+      keys,
       limits: {
         ...configJson.limits,
         storage: storageLimit,
