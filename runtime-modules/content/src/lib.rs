@@ -303,7 +303,7 @@ decl_storage! {
 
         pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
-        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
+        pub ContentById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
@@ -763,7 +763,7 @@ decl_module! {
             };
 
             // add it to the onchain state
-            VideoById::<T>::insert(video_id, video);
+            ContentById::<T>::insert(video_id, video);
 
             // Only increment next video id if adding content was successful
             NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
@@ -849,7 +849,7 @@ decl_module! {
             //
 
             // Remove video
-            VideoById::<T>::remove(video_id);
+            ContentById::<T>::remove(video_id);
 
             // Decrease video count for the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
@@ -964,7 +964,7 @@ decl_module! {
             //
 
             // update
-            VideoById::<T>::mutate(video_id, |video| {
+            ContentById::<T>::mutate(video_id, |video| {
                 video.is_censored = is_censored;
             });
 
@@ -1004,10 +1004,10 @@ impl<T: Trait> Module<T> {
 
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
-            VideoById::<T>::contains_key(video_id),
+            ContentById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
         );
-        Ok(VideoById::<T>::get(video_id))
+        Ok(ContentById::<T>::get(video_id))
     }
 
     fn ensure_channel_category_exists(
