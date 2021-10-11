@@ -7,6 +7,8 @@ import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileC
 import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
+import { createHash } from 'blake3'
+import * as multihash from 'multihashes'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
@@ -177,7 +179,12 @@ export class ContentService {
     this.logger.verbose('Cache eviction finalized.', { currentfreeSpace: this.freeSpace, itemsDropped })
   }
 
-  public async handleNewContent(objectId: string, expectedSize: number, dataStream: Readable): Promise<void> {
+  public async handleNewContent(
+    objectId: string,
+    expectedSize: number,
+    expectedHash: string,
+    dataStream: Readable
+  ): Promise<void> {
     this.logger.verbose('Handling new content', {
       objectId,
       expectedSize,
@@ -201,12 +208,15 @@ export class ContentService {
       const fileStream = this.createWriteStream(objectId)
 
       let bytesRecieved = 0
+      const hash = createHash()
 
       pipeline(dataStream, fileStream, async (err) => {
         const { bytesWritten } = fileStream
+        const finalHash = multihash.toB58String(multihash.encode(hash.digest(), 'blake3'))
         const logMetadata = {
           objectId,
           expectedSize,
+          expectedHash,
           bytesRecieved,
           bytesWritten,
         }
@@ -217,20 +227,28 @@ export class ContentService {
           })
           this.drop(objectId)
           reject(err)
-        } else {
-          if (bytesWritten === bytesRecieved && bytesWritten === expectedSize) {
-            const mimeType = await this.detectMimeType(objectId)
-            this.logger.info('New content accepted', { ...logMetadata })
-            this.stateCache.dropPendingDownload(objectId)
-            this.stateCache.newContent(objectId, expectedSize)
-            this.stateCache.setContentMimeType(objectId, mimeType)
-          } else {
-            this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
-              ...logMetadata,
-            })
-            this.drop(objectId)
-          }
+          return
         }
+
+        if (bytesWritten !== bytesRecieved || bytesWritten !== expectedSize) {
+          this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
+            ...logMetadata,
+          })
+          this.drop(objectId)
+          return
+        }
+
+        if (finalHash !== expectedHash) {
+          this.logger.error('Content rejected: Hash mismatch!', { ...logMetadata })
+          this.drop(objectId)
+          return
+        }
+
+        const mimeType = await this.detectMimeType(objectId)
+        this.logger.info('New content accepted', { ...logMetadata })
+        this.stateCache.dropPendingDownload(objectId)
+        this.stateCache.newContent(objectId, expectedSize)
+        this.stateCache.setContentMimeType(objectId, mimeType)
       })
 
       fileStream.on('open', () => {
@@ -240,6 +258,8 @@ export class ContentService {
 
       dataStream.on('data', (chunk) => {
         bytesRecieved += chunk.length
+        hash.update(chunk)
+
         if (bytesRecieved > expectedSize) {
           dataStream.destroy(new Error('Unexpected content size: Too much data recieved from source!'))
         }

@@ -215,13 +215,13 @@ export class PublicApiController {
         if (!objectData) {
           throw new Error('Missing data object data')
         }
-        const { size } = objectData
+        const { size, contentHash } = objectData
 
         const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
         if (downloadResponse) {
           // Note: Await will only wait unil the file is created, so we may serve the response from it
-          await this.content.handleNewContent(objectId, size, downloadResponse.data)
+          await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
           res.setHeader('x-cache', 'miss')
         } else {
           res.setHeader('x-cache', 'pending')
