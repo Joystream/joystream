@@ -12,7 +12,7 @@ services:
       - /data
       - /keystore
     ports:
-      - '127.0.0.1:3335:3335'
+      - '127.0.0.1:3335:${COLOSSUS_PORT_2}'
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -29,7 +29,7 @@ services:
       - /data
       - /cache
     ports:
-      - 127.0.0.1:3336:3336
+      - 127.0.0.1:3336:${DISTRIBUTOR_PORT_2}
     environment:
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://${QUERY_NODE_HOST}/graphql
       JOYSTREAM_DISTRIBUTOR__PORT: 3336
