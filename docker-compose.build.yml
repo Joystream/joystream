@@ -1,4 +1,0 @@
-version: '3.4'
-services:
-  joystream-node:
-    network_mode: host

@@ -39,7 +39,7 @@ docker-compose build distributor-node
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     IP_ADDRESS=$(ip addr show | grep "\binet\b.*\bdocker0\b" | awk '{print $2}' | cut -d '/' -f 1)
     # Run a local development chain
-    docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d joystream-node
+    docker-compose -f docker-compose.linux-gnu-build.yml up -d joystream-node
 
     # Build processor/graphql-server docker image
     echo "Building joystream/apps docker image..."
