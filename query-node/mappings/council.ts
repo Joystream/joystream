@@ -1,5 +1,5 @@
 import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
-import { bytesToString, genericEventFields } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
 import { FindConditions } from 'typeorm'
 
@@ -47,11 +47,13 @@ import {
   CouncilStageElection,
   VariantNone,
   CastVote,
+  CandidacyNoteMetadata,
 
   // Misc
   Membership,
 } from 'query-node/dist/model'
 import { Council, Referendum } from './generated/types'
+import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 
 /////////////////// Common - Gets //////////////////////////////////////////////
 
@@ -346,6 +348,10 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
 
   const electionRound = await getCurrentElectionRound(store)
 
+  // prepare note metadata record (empty until explicitily set via different extrinsic)
+  const noteMetadata = new CandidacyNoteMetadata({})
+  await store.save<CandidacyNoteMetadata>(noteMetadata)
+
   // save candidate record
   const candidate = new Candidate({
     stakingAccountId: stakingAccount.toString(),
@@ -358,6 +364,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     candidacyWithdrawn: false,
     votePower: new BN(0),
     note: '', // note is empty before explicitely set
+    noteMetadata,
   })
   await store.save<Candidate>(candidate)
 }
@@ -490,10 +497,24 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
   const member = await getMembership(store, memberId.toString())
 
+  // load candidate recored
+  const electionRound = await getCurrentElectionRound(store)
+  const candidate = await getCandidate(store, memberId.toString(), electionRound)
+
+  // unpack note's metadata and save it to db
+  const metadata = deserializeMetadata(CouncilCandidacyNoteMetadata, note)
+  const noteMetadata = candidate.noteMetadata
+  noteMetadata.header = metadata?.header || undefined
+  noteMetadata.bulletPoints = metadata?.bulletPoints || []
+  noteMetadata.bannerImageUri = metadata?.bannerImageUri || undefined
+  noteMetadata.description = metadata?.description || undefined
+  await store.save<CandidacyNoteMetadata>(noteMetadata)
+
   const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
     ...genericEventFields(event),
     member,
     note: bytesToString(note),
+    noteMetadata,
   })
 
   await store.save<CandidacyNoteSetEvent>(candidacyNoteSetEvent)
@@ -501,8 +522,6 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   // specific event processing
 
   // update candidacy note
-  const electionRound = await getCurrentElectionRound(store)
-  const candidate = await getCandidate(store, memberId.toString(), electionRound)
   candidate.note = bytesToString(note)
   await store.save<Candidate>(candidate)
 }

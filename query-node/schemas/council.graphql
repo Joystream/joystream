@@ -84,6 +84,9 @@ type Candidate @entity {
 
   "Candidacy note."
   note: String!
+
+  "The metadata contained in note."
+  noteMetadata: CandidacyNoteMetadata!
 }
 
 type CouncilMember @entity {
@@ -112,6 +115,20 @@ type CouncilMember @entity {
   accumulatedReward: BigInt!
 
   electedInCouncil: ElectedCouncil!
+}
+
+type CandidacyNoteMetadata @entity {
+  "Candidacy header text."
+  header: String
+
+  "Candidate program in form of bullet points."
+  bulletPoints: [String!]!
+
+  "Image uri of candidate's banner."
+  bannerImageUri: String
+
+  "Candidacy description (Markdown-formatted)."
+  description: String
 }
 
 ################### Referendum #################################################
