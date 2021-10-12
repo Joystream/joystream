@@ -82,9 +82,6 @@ type Candidate @entity {
   "Sum of power of all votes received."
   votePower: BigInt!
 
-  "Candidacy note."
-  note: String!
-
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
 }

@@ -215,9 +215,6 @@ type CandidacyNoteSetEvent implements Event @entity {
   "Candidate's membership."
   member: Membership!
 
-  "The note that has been set."
-  note: String!
-
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
 }

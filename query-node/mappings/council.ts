@@ -57,6 +57,9 @@ import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 
 /////////////////// Common - Gets //////////////////////////////////////////////
 
+/*
+  Retrieves the member record by its id.
+*/
 async function getMembership(store: DatabaseManager, memberId: string): Promise<Membership> {
   // TODO: is this enough to load existing membership? this technic was adpoted from forum mappings (`forum.ts`)
   const member = new Membership({ id: memberId })
@@ -64,6 +67,10 @@ async function getMembership(store: DatabaseManager, memberId: string): Promise<
   return member
 }
 
+/*
+  Retrieves the council candidate by its member id. Returns the last record for the member
+  if the election round isn't explicitly set.
+*/
 async function getCandidate(
   store: DatabaseManager,
   memberId: string,
@@ -83,6 +90,9 @@ async function getCandidate(
   return candidate
 }
 
+/*
+  Retrieves the member's last council member record.
+*/
 async function getCouncilMember(store: DatabaseManager, memberId: string): Promise<CouncilMember> {
   const councilMember = await store.get(CouncilMember, {
     where: { memberId: memberId },
@@ -96,6 +106,9 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
   return councilMember
 }
 
+/*
+  Returns the current election round record.
+*/
 async function getCurrentElectionRound(store: DatabaseManager): Promise<ElectionRound> {
   const electionRound = await store.get(ElectionRound, { order: { id: 'DESC' } })
 
@@ -106,6 +119,9 @@ async function getCurrentElectionRound(store: DatabaseManager): Promise<Election
   return electionRound
 }
 
+/*
+  Returns the last council stage update.
+*/
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
   const stageUpdate = await store.get(CouncilStageUpdate, { order: { id: 'DESC' } })
 
@@ -116,6 +132,9 @@ async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilSta
   return stageUpdate
 }
 
+/*
+  Returns current elected council record.
+*/
 async function getCurrentElectedCouncil(
   store: DatabaseManager,
   canFail: boolean = false
@@ -129,6 +148,10 @@ async function getCurrentElectedCouncil(
   return electedCouncil
 }
 
+/*
+  Returns the last vote cast in an election by the given account. Returns the last record for the account
+  if the election round isn't explicitly set.
+*/
 async function getAccountCastVote(
   store: DatabaseManager,
   account: string,
@@ -139,7 +162,7 @@ async function getAccountCastVote(
     where.electionRound = electionRound
   }
 
-  const castVote = await store.get(CastVote, { where })
+  const castVote = await store.get(CastVote, { where, order: { id: 'DESC' } })
 
   if (!castVote) {
     throw new Error(
@@ -158,12 +181,18 @@ function calculateVotePower(accountId: string, stake: BN): BN {
   return stake
 }
 
+/*
+  Custom typeguard for council stage - election.
+*/
 function isCouncilStageElection(councilStage: typeof CouncilStage): councilStage is CouncilStageElection {
   return councilStage.isTypeOf == 'CouncilStageElection'
 }
 
 /////////////////// Common /////////////////////////////////////////////////////
 
+/*
+  Creates new council stage update record.
+*/
 async function updateCouncilStage(
   store: DatabaseManager,
   councilStage: typeof CouncilStage,
@@ -189,6 +218,9 @@ async function updateCouncilStage(
   await store.save<ElectedCouncil>(electedCouncil)
 }
 
+/*
+  Concludes current election round and starts the next one.
+*/
 async function startNextElectionRound(
   store: DatabaseManager,
   electedCouncil: ElectedCouncil,
@@ -217,6 +249,9 @@ async function startNextElectionRound(
   return electionRound
 }
 
+/*
+  Converts successful council candidate records to council member records.
+*/
 async function convertCandidatesToCouncilMembers(
   store: DatabaseManager,
   candidates: Candidate[],
@@ -363,7 +398,6 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     stakeLocked: true,
     candidacyWithdrawn: false,
     votePower: new BN(0),
-    note: '', // note is empty before explicitely set
     noteMetadata,
   })
   await store.save<Candidate>(candidate)
@@ -513,17 +547,12 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
     ...genericEventFields(event),
     member,
-    note: bytesToString(note),
     noteMetadata,
   })
 
   await store.save<CandidacyNoteSetEvent>(candidacyNoteSetEvent)
 
-  // specific event processing
-
-  // update candidacy note
-  candidate.note = bytesToString(note)
-  await store.save<Candidate>(candidate)
+  // no specific event processing
 }
 
 /*
