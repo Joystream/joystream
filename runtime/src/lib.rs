@@ -442,7 +442,7 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type DataObjectStorage = storage::Module<Runtime>;
+    type DataObjectStorage = Storage;
 }
 
 impl hiring::Trait for Runtime {
