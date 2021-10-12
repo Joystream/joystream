@@ -751,7 +751,7 @@ decl_module! {
             let bag_id = storage::BagIdType::from(dyn_bag.clone());
 
             // channel has a dynamic bag associated to it -> remove assets from storage
-            if let Ok(bag) = <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id) {
+            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
                 // ensure that bag size provided is valid
                 ensure!(
                     bag.objects_number == num_objects_to_delete,
@@ -1341,7 +1341,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
+        if T::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
