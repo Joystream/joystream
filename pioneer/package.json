@@ -57,7 +57,7 @@
     "concurrently": "^5.2.0",
     "devtron": "^1.4.0",
     "dnslink-cloudflare": "^2.0.4",
-    "electron": "^9.1.1",
+    "electron": "^11.5.0",
     "electron-builder": "^22.8.0",
     "electron-builder-notarize": "^1.2.0",
     "eslint-plugin-header": "^3.0.0",
