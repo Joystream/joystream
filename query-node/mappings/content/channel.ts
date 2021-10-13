@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
-import { AssetNone, Channel, ChannelCategory, StorageDataObject } from 'query-node/dist/model'
+import { Channel, ChannelCategory, StorageDataObject } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
@@ -27,9 +27,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     createdInBlock: event.blockNumber,
     rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
     deletionPrizeDestAccount: runtimeChannel.deletion_prize_source_account_id.toString(),
-    // assets
-    coverPhoto: new AssetNone(),
-    avatarPhoto: new AssetNone(),
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
@@ -38,8 +35,10 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
   })
 
   // deserialize & process metadata
-  const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta) || {}
-  await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets)
+  if (channelCreationParameters.meta.isSome) {
+    const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
+    await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets.unwrapOr(undefined))
+  }
 
   // save entity
   await store.save<Channel>(channel)
@@ -67,7 +66,12 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   //  update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr(undefined))
+    await processChannelMetadata(
+      ctx,
+      channel,
+      newMetadata,
+      channelUpdateParameters.assets_to_upload.unwrapOr(undefined)
+    )
   }
 
   // prepare changed reward account
@@ -208,4 +212,10 @@ export async function content_ChannelCategoryDeleted({ store, event }: EventCont
 
   // emit log event
   logger.info('Channel category has been deleted', { id: channelCategory.id })
+}
+
+export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [, channelId] = new Content.ChannelDeletedEvent(event).params
+
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }

@@ -8,7 +8,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, unexpectedData, logger } from '../common'
+import { invalidMetadata, inconsistentState, logger } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -20,52 +20,119 @@ import {
   License,
   VideoMediaMetadata,
   // asset
-  Asset,
   Membership,
   VideoMediaEncoding,
   ChannelCategory,
-  AssetNone,
-  AssetExternal,
-  AssetJoystreamStorage,
   StorageDataObject,
+  DataObjectTypeChannelAvatar,
+  DataObjectTypeChannelCoverPhoto,
+  DataObjectTypeVideoMedia,
+  DataObjectTypeVideoThumbnail,
 } from 'query-node/dist/model'
 // Joystream types
-import { NewAssets, ContentActor } from '@joystream/types/augment'
+import { ContentActor, StorageAssets } from '@joystream/types/augment'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
-import { DataObjectCreationParameters as ObjectCreationParams } from '@joystream/types/storage'
-import { registry } from '@joystream/types'
+
+const ASSET_TYPES = {
+  channel: [
+    {
+      DataObjectTypeConstructor: DataObjectTypeChannelCoverPhoto,
+      metaFieldName: 'coverPhoto',
+      schemaFieldName: 'coverPhoto',
+    },
+    {
+      DataObjectTypeConstructor: DataObjectTypeChannelAvatar,
+      metaFieldName: 'avatarPhoto',
+      schemaFieldName: 'avatarPhoto',
+    },
+  ],
+  video: [
+    {
+      DataObjectTypeConstructor: DataObjectTypeVideoMedia,
+      metaFieldName: 'video',
+      schemaFieldName: 'media',
+    },
+    {
+      DataObjectTypeConstructor: DataObjectTypeVideoThumbnail,
+      metaFieldName: 'thumbnailPhoto',
+      schemaFieldName: 'thumbnailPhoto',
+    },
+  ],
+} as const
+
+async function processChannelAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  channel: Channel,
+  meta: DecodedMetadataObject<IChannelMetadata>
+) {
+  await Promise.all(
+    ASSET_TYPES.channel.map(async ({ metaFieldName, schemaFieldName, DataObjectTypeConstructor }) => {
+      const newAssetIndex = meta[metaFieldName]
+      const currentAsset = channel[schemaFieldName]
+      if (isSet(newAssetIndex)) {
+        const asset = findAssetByIndex(assets, newAssetIndex)
+        if (asset) {
+          if (currentAsset) {
+            currentAsset.unsetAt = new Date(event.blockTimestamp)
+            await store.save<StorageDataObject>(currentAsset)
+          }
+          const dataObjectType = new DataObjectTypeConstructor()
+          dataObjectType.channelId = channel.id
+          asset.type = dataObjectType
+          channel[schemaFieldName] = asset
+          await store.save<StorageDataObject>(asset)
+        }
+      }
+    })
+  )
+}
+
+async function processVideoAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  video: Video,
+  meta: DecodedMetadataObject<IVideoMetadata>
+) {
+  await Promise.all(
+    ASSET_TYPES.video.map(async ({ metaFieldName, schemaFieldName, DataObjectTypeConstructor }) => {
+      const newAssetIndex = meta[metaFieldName]
+      const currentAsset = video[schemaFieldName]
+      if (isSet(newAssetIndex)) {
+        const asset = findAssetByIndex(assets, newAssetIndex)
+        if (asset) {
+          if (currentAsset) {
+            currentAsset.unsetAt = new Date(event.blockTimestamp)
+            await store.save<StorageDataObject>(currentAsset)
+          }
+          const dataObjectType = new DataObjectTypeConstructor()
+          dataObjectType.videoId = video.id
+          asset.type = dataObjectType
+          video[schemaFieldName] = asset
+          await store.save<StorageDataObject>(asset)
+        }
+      }
+    })
+  )
+}
 
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assets?: NewAssets
+  assetsParams?: StorageAssets
 ): Promise<Channel> {
-  const processedAssets = assets ? await processNewAssets(ctx, assets) : []
+  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
+
+  await processChannelAssets(ctx, assets, channel, meta)
 
   // prepare channel category if needed
   if (isSet(meta.category)) {
     channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
-  }
-
-  // prepare cover photo asset if needed
-  if (isSet(meta.coverPhoto)) {
-    const asset = findAssetByIndex(processedAssets, meta.coverPhoto, 'channel cover photo')
-    if (asset) {
-      channel.coverPhoto = asset
-    }
-  }
-
-  // prepare avatar photo asset if needed
-  if (isSet(meta.avatarPhoto)) {
-    const asset = findAssetByIndex(processedAssets, meta.avatarPhoto, 'channel avatar photo')
-    if (asset) {
-      channel.avatarPhoto = asset
-    }
   }
 
   // prepare language if needed
@@ -80,11 +147,13 @@ export async function processVideoMetadata(
   ctx: EventContext & StoreContext,
   video: Video,
   meta: DecodedMetadataObject<IVideoMetadata>,
-  assets?: NewAssets
+  assetsParams?: StorageAssets
 ): Promise<Video> {
-  const processedAssets = assets ? await processNewAssets(ctx, assets) : []
+  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
+
+  await processVideoAssets(ctx, assets, video, meta)
 
   // prepare video category if needed
   if (meta.category) {
@@ -92,31 +161,15 @@ export async function processVideoMetadata(
   }
 
   // prepare media meta information if needed
-  if (isSet(meta.mediaType) || isSet(meta.mediaPixelWidth) || isSet(meta.mediaPixelHeight)) {
+  if (isSet(meta.video) || isSet(meta.mediaType) || isSet(meta.mediaPixelWidth) || isSet(meta.mediaPixelHeight)) {
     // prepare video file size if poosible
-    const videoSize = extractVideoSize(assets, meta.video)
+    const videoSize = extractVideoSize(assets)
     video.mediaMetadata = await processVideoMediaMetadata(ctx, video.mediaMetadata, meta, videoSize)
   }
 
   // prepare license if needed
   if (isSet(meta.license)) {
     await updateVideoLicense(ctx, video, meta.license)
-  }
-
-  // prepare thumbnail photo asset if needed
-  if (isSet(meta.thumbnailPhoto)) {
-    const asset = findAssetByIndex(processedAssets, meta.thumbnailPhoto, 'thumbnail photo')
-    if (asset) {
-      video.thumbnailPhoto = asset
-    }
-  }
-
-  // prepare video asset if needed
-  if (isSet(meta.video)) {
-    const asset = findAssetByIndex(processedAssets, meta.video, 'video')
-    if (asset) {
-      video.media = asset
-    }
   }
 
   // prepare language if needed
@@ -135,7 +188,7 @@ export async function processVideoMetadata(
   return video
 }
 
-function findAssetByIndex(assets: typeof Asset[], index: number, name?: string): typeof Asset | null {
+function findAssetByIndex(assets: StorageDataObject[], index: number, name?: string): StorageDataObject | null {
   if (assets[index]) {
     return assets[index]
   }
@@ -172,7 +225,7 @@ async function processVideoMediaMetadata(
   ctx: StoreContext & EventContext,
   existingVideoMedia: VideoMediaMetadata | undefined,
   metadata: DecodedMetadataObject<IVideoMetadata>,
-  videoSize: number | undefined
+  videoSize: BN | undefined
 ): Promise<VideoMediaMetadata> {
   const { store, event } = ctx
   const videoMedia =
@@ -272,65 +325,16 @@ function processPublishedBeforeJoystream(
   return new Date(timestamp)
 }
 
-async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAssets): Promise<Array<typeof Asset>> {
-  if (assets.isUrls) {
-    return assets.asUrls.map((assetUrls) => {
-      const resultAsset = new AssetExternal()
-      resultAsset.urls = JSON.stringify(assetUrls.map((u) => u.toString()))
-      return resultAsset
-    })
-  }
-
-  if (assets.isUpload) {
-    const assetsUploaded = assets.asUpload.object_creation_list.length
-    // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
-    const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
-    return objects.map((o) => {
-      const resultAsset = new AssetJoystreamStorage()
-      resultAsset.dataObjectId = o.id
-      return resultAsset
-    })
-  }
-
-  unexpectedData('Unrecognized assets type', assets.type)
+async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
+  const assetsUploaded = assets.object_creation_list.length
+  // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
+  const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
+  return objects
 }
 
-function extractVideoSize(assets: NewAssets | undefined, assetIndex: number | null | undefined): number | undefined {
-  // escape if no assetIndex is set
-  if (!isSet(assetIndex)) {
-    return undefined
-  }
-
-  // index provided, but there are no assets
-  if (!assets) {
-    invalidMetadata(`Non-existing asset video size extraction requested - no assets were uploaded!`, {
-      assetIndex,
-    })
-    return undefined
-  }
-
-  // cannot extract size from other asset types than "Upload"
-  if (!assets.isUpload) {
-    return undefined
-  }
-
-  const dataObjectsParams = assets.asUpload.object_creation_list
-
-  // ensure asset index is valid
-  if (assetIndex >= dataObjectsParams.length) {
-    invalidMetadata(`Non-existing asset video size extraction requested`, {
-      assetsProvided: dataObjectsParams.length,
-      assetIndex,
-    })
-    return undefined
-  }
-
-  // extract video size from objectParams
-  const objectParams = assets.asUpload.object_creation_list[assetIndex]
-  const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
-  const videoSize = params.getField('size').toNumber()
-
-  return videoSize
+function extractVideoSize(assets: StorageDataObject[]): BN | undefined {
+  const mediaAsset = assets.find((a) => a.type?.isTypeOf === DataObjectTypeVideoMedia.name)
+  return mediaAsset ? mediaAsset.size : undefined
 }
 
 async function processLanguage(
@@ -476,23 +480,25 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   // is allowed to be associated only with one channel/video in runtime
   const channel = await store.get(Channel, {
     where: channelAssets.map((assetName) => ({
-      [assetName]: Raw((alias) => `${alias} ->> 'dataObjectId' = :id`, {
+      [assetName]: {
         id: dataObject.id,
-      }),
+      },
     })),
+    relations: [...channelAssets],
   })
   const video = await store.get(Video, {
     where: videoAssets.map((assetName) => ({
-      [assetName]: Raw((alias) => `${alias} ->> 'dataObjectId' = :id`, {
+      [assetName]: {
         id: dataObject.id,
-      }),
+      },
     })),
+    relations: [...videoAssets],
   })
 
   if (channel) {
     channelAssets.forEach((assetName) => {
-      if (channel[assetName] && (channel[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
-        channel[assetName] = new AssetNone()
+      if (channel[assetName] && channel[assetName]?.id === dataObject.id) {
+        channel[assetName] = null as any
       }
     })
     await store.save<Channel>(channel)
@@ -506,8 +512,8 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   if (video) {
     videoAssets.forEach((assetName) => {
-      if (video[assetName] && (video[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
-        video[assetName] = new AssetNone()
+      if (video[assetName] && video[assetName]?.id === dataObject.id) {
+        video[assetName] = null as any
       }
     })
     await store.save<Video>(video)
