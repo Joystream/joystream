@@ -712,6 +712,7 @@ fn upload_succeeded() {
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
             vec![data_object_id],
             upload_params,
+            DataObjectDeletionPrize::get(),
         ));
     });
 }

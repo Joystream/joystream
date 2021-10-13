@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
-import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, NewAssets, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
+import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageAssets, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -69,15 +69,15 @@ declare module '@polkadot/api/types/events' {
       CuratorGroupStatusSet: AugmentedEvent<ApiType, [CuratorGroupId, bool]>;
       CuratorRemoved: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
       FeaturedVideosSet: AugmentedEvent<ApiType, [ContentActor, Vec<VideoId>]>;
-      PersonCreated: AugmentedEvent<ApiType, [ContentActor, PersonId, NewAssets, PersonCreationParameters]>;
+      PersonCreated: AugmentedEvent<ApiType, [ContentActor, PersonId, StorageAssets, PersonCreationParameters]>;
       PersonDeleted: AugmentedEvent<ApiType, [ContentActor, PersonId]>;
-      PersonUpdated: AugmentedEvent<ApiType, [ContentActor, PersonId, NewAssets, PersonUpdateParameters]>;
+      PersonUpdated: AugmentedEvent<ApiType, [ContentActor, PersonId, StorageAssets, PersonUpdateParameters]>;
       PlaylistCreated: AugmentedEvent<ApiType, [ContentActor, PlaylistId, PlaylistCreationParameters]>;
       PlaylistDeleted: AugmentedEvent<ApiType, [ContentActor, PlaylistId]>;
       PlaylistUpdated: AugmentedEvent<ApiType, [ContentActor, PlaylistId, PlaylistUpdateParameters]>;
-      SeriesCreated: AugmentedEvent<ApiType, [ContentActor, SeriesId, NewAssets, SeriesParameters, Series]>;
+      SeriesCreated: AugmentedEvent<ApiType, [ContentActor, SeriesId, StorageAssets, SeriesParameters, Series]>;
       SeriesDeleted: AugmentedEvent<ApiType, [ContentActor, SeriesId]>;
-      SeriesUpdated: AugmentedEvent<ApiType, [ContentActor, SeriesId, NewAssets, SeriesParameters, Series]>;
+      SeriesUpdated: AugmentedEvent<ApiType, [ContentActor, SeriesId, StorageAssets, SeriesParameters, Series]>;
       VideoCategoryCreated: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId, VideoCategoryCreationParameters]>;
       VideoCategoryDeleted: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId]>;
       VideoCategoryUpdated: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId, VideoCategoryUpdateParameters]>;
@@ -1098,8 +1098,9 @@ declare module '@polkadot/api/types/events' {
        * Params
        * - data objects IDs
        * - initial uploading parameters
+       * - deletion prize for objects
        **/
-      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters, Balance]>;
       /**
        * Emits on creating distribution bucket.
        * Params

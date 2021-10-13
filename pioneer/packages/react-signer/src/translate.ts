@@ -4,7 +4,7 @@
 
 import { useTranslation as useTranslationBase, UseTranslationResponse, withTranslation } from 'react-i18next';
 
-export function useTranslation (): UseTranslationResponse {
+export function useTranslation (): UseTranslationResponse<'react-signer'> {
   return useTranslationBase('react-signer');
 }
 

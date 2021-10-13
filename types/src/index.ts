@@ -1,4 +1,4 @@
-import { Codec, RegistryTypes } from '@polkadot/types/types'
+import { Codec, DetectCodec, RegistryTypes, Constructor } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
@@ -13,7 +13,6 @@ import storage from './storage'
 import proposals from './proposals'
 import content from './content'
 import legacy from './legacy'
-import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
@@ -51,6 +50,8 @@ export const types: RegistryTypes = {
   ...storage,
   ...proposals,
   ...content,
+  // https://github.com/polkadot-js/api/blob/master/CHANGELOG.md#351-jan-18-2020
+  AccountInfo: 'AccountInfoWithRefCount',
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
@@ -62,8 +63,8 @@ registry.register(types)
 // will create a type like: { a: string } | { b: number } | { c: Null } | "c"
 type EnumVariant<T> = keyof T extends infer K
   ? K extends keyof T
-    ? T[K] extends Null
-      ? K
+    ? T[K] extends Null | null
+      ? K | { [I in K]: T[I] }
       : { [I in K]: T[I] }
     : never
   : never
@@ -86,6 +87,8 @@ type CreateInterface_NoOption<T extends Codec> =
       ? CreateInterface<S>[]
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
+      : T extends Null
+      ? null
       : unknown)
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
@@ -94,11 +97,15 @@ export type CreateInterface<T extends Codec> =
   | T
   | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
 
-export type AnyTypeName = keyof InterfaceTypes
-
-export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] = InterfaceTypes[TN]>(
-  type: TN,
+export function createType<T extends Codec, TN extends string>(
+  typeName: TN,
   value: CreateInterface<T>
-): InterfaceTypes[TN] {
-  return registry.createType(type, value)
+): DetectCodec<T, TN> {
+  return registry.createType<T, TN>(typeName, value)
+}
+
+// FIXME: Backward-compatibility. Use only one createType in the future!
+export function createTypeFromConstructor<T extends Codec>(type: Constructor<T>, value: CreateInterface<T>): T {
+  const TypeConstructor = type
+  return new TypeConstructor(registry, value)
 }

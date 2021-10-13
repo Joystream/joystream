@@ -1,7 +1,7 @@
-import { Vec, Option, Tuple } from '@polkadot/types'
+import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, Url } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
@@ -17,20 +17,13 @@ export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 
-export class AssetUrls extends Vec.with(Url) {}
-
-export class CreationUploadParameters extends JoyStructDecorated({
+export class StorageAssets extends JoyStructDecorated({
   object_creation_list: Vec.with(DataObjectCreationParameters),
   expected_data_size_fee: u128,
 }) {}
 
-export class NewAssets extends JoyEnum({
-  Upload: CreationUploadParameters,
-  Urls: Vec.with(AssetUrls),
-}) {}
-
 export class CuratorGroup extends JoyStructDecorated({
-  curators: JoyBTreeSet(CuratorId),
+  curators: BTreeSet.with(CuratorId),
   active: bool,
 }) {}
 
@@ -51,19 +44,19 @@ export class Channel extends JoyStructDecorated({
   is_censored: bool,
   reward_account: Option.with(AccountId),
   deletion_prize_source_account_id: AccountId,
-  num_assets: u64,
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
-  assets: NewAssets,
-  meta: Bytes,
+  assets: Option.with(StorageAssets),
+  meta: Option.with(Bytes),
   reward_account: Option.with(AccountId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(NewAssets),
+  assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
+  assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
@@ -101,17 +94,17 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Option.with(SeriesId),
   is_censored: bool,
-  maybe_data_objects_id_set: Option.with(JoyBTreeSet(DataObjectId)),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
-  assets: NewAssets,
-  meta: Bytes,
+  assets: Option.with(StorageAssets),
+  meta: Option.with(Bytes),
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(NewAssets),
+  assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
+  assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
 export class Playlist extends JoyStructDecorated({
@@ -136,7 +129,7 @@ export class Season extends JoyStructDecorated({
 }) {}
 
 export class SeasonParameters extends JoyStructDecorated({
-  assets: Option.with(NewAssets),
+  assets: Option.with(StorageAssets),
   episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
   meta: Option.with(Bytes),
 }) {}
@@ -147,7 +140,7 @@ export class Series extends JoyStructDecorated({
 }) {}
 
 export class SeriesParameters extends JoyStructDecorated({
-  assets: Option.with(NewAssets),
+  assets: Option.with(StorageAssets),
   seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
   meta: Option.with(Bytes),
 }) {}
@@ -162,12 +155,12 @@ export class Person extends JoyStructDecorated({
 }) {}
 
 export class PersonCreationParameters extends JoyStructDecorated({
-  assets: NewAssets,
+  assets: StorageAssets,
   meta: Bytes,
 }) {}
 
 export class PersonUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(NewAssets),
+  assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
 }) {}
 
@@ -181,9 +174,7 @@ export const contentTypes = {
   CuratorGroupId,
   CuratorGroup,
   ContentActor,
-  CreationUploadParameters,
-  AssetUrls,
-  NewAssets,
+  StorageAssets,
   Channel,
   ChannelOwner,
   ChannelCategoryId,

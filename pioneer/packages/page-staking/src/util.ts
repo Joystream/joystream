@@ -5,6 +5,7 @@
 import { DeriveAccountInfo } from '@polkadot/api-derive/types';
 
 import { ApiPromise } from '@polkadot/api';
+import { isFunction } from '@polkadot/util';
 import keyring from '@polkadot/ui-keyring';
 
 export function checkVisibility (api: ApiPromise, address: string, filterName: string, withIdentity: boolean, accountInfo?: DeriveAccountInfo): boolean {
@@ -17,7 +18,7 @@ export function checkVisibility (api: ApiPromise, address: string, filterName: s
 
       if (!withIdentity && (accountId?.toString().includes(filterName) || accountIndex?.toString().includes(filterName))) {
         isVisible = true;
-      } else if (api.query.identity && api.query.identity.identityOf) {
+      } else if (api.query.identity && isFunction(api.query.identity.identityOf)) {
         isVisible = (!!identity?.display && identity.display.toLowerCase().includes(filterLower)) ||
           (!!identity?.displayParent && identity.displayParent.toLowerCase().includes(filterLower));
       } else if (nickname) {

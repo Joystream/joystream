@@ -137,17 +137,13 @@ declare module '@polkadot/api/types/submittable' {
       createSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, SeriesParameters]>;
       createVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: VideoCreationParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, VideoCreationParameters]>;
       createVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: VideoCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryCreationParameters]>;
-      deleteChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId]>;
+      deleteChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, u64]>;
       deleteChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: ChannelCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryId]>;
       deletePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonId]>;
       deletePlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, PlaylistId]>;
       deleteSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, series: SeriesId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, SeriesId]>;
-      deleteVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId]>;
+      deleteVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, assetsToRemove: BTreeSet<DataObjectId>) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, BTreeSet<DataObjectId>]>;
       deleteVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId]>;
-      /**
-       * Remove assets of a channel from storage
-       **/
-      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: BTreeSet<DataObjectId>) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, BTreeSet<DataObjectId>]>;
       /**
        * Remove curator from a given curator group
        **/
@@ -159,13 +155,13 @@ declare module '@polkadot/api/types/submittable' {
        **/
       setCuratorGroupStatus: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, isActive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, bool]>;
       setFeaturedVideos: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, list: Vec<VideoId> | (VideoId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, Vec<VideoId>]>;
-      updateChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: ChannelUpdateParameters | { assets?: any; new_meta?: any; reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, ChannelUpdateParameters]>;
+      updateChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: ChannelUpdateParameters | { assets_to_upload?: any; new_meta?: any; reward_account?: any; assets_to_remove?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, ChannelUpdateParameters]>;
       updateChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: ChannelCategoryId | AnyNumber | Uint8Array, params: ChannelCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryId, ChannelCategoryUpdateParameters]>;
       updateChannelCensorshipStatus: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, isCensored: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, bool, Bytes]>;
       updatePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array, params: PersonUpdateParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonId, PersonUpdateParameters]>;
       updatePlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array, params: PlaylistUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, PlaylistId, PlaylistUpdateParameters]>;
       updateSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, SeriesParameters]>;
-      updateVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, params: VideoUpdateParameters | { assets?: any; new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, VideoUpdateParameters]>;
+      updateVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, params: VideoUpdateParameters | { assets_to_upload?: any; new_meta?: any; assets_to_remove?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, VideoUpdateParameters]>;
       updateVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array, params: VideoCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId, VideoCategoryUpdateParameters]>;
       updateVideoCensorshipStatus: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, isCensored: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, bool, Bytes]>;
     };
@@ -961,7 +957,7 @@ declare module '@polkadot/api/types/submittable' {
        * - DbWrites per key id: `KeyOwner`
        * # </weight>
        **/
-      setKeys: AugmentedSubmittable<(keys: Keys, proof: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Keys, Bytes]>;
+      setKeys: AugmentedSubmittable<(keys: Keys | string | Uint8Array, proof: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Keys, Bytes]>;
     };
     staking: {
       /**
@@ -988,7 +984,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Bonded, Payee, [Origin Account], Locks, Ledger
        * # </weight>
        **/
-      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<BalanceOf>, RewardDestination]>;
+      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<BalanceOf>, RewardDestination]>;
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
@@ -1278,7 +1274,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Payee
        * # </weight>
        **/
-      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [RewardDestination]>;
+      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [RewardDestination]>;
       /**
        * Sets the ideal number of validators.
        * 
@@ -1542,10 +1538,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateDistributionBucketMode: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, distributing: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
       /**
-       * Updates a distribution bucket 'accepts new bags' flag.
-       **/
-      updateDistributionBucketStatus: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
-      /**
        * Updates distribution buckets for a bag.
        **/
       updateDistributionBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, addBuckets: BTreeSet<DistributionBucketId>, removeBuckets: BTreeSet<DistributionBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, DistributionBucketFamilyId, BTreeSet<DistributionBucketId>, BTreeSet<DistributionBucketId>]>;
@@ -1553,6 +1545,10 @@ declare module '@polkadot/api/types/submittable' {
        * Updates "Distribution buckets per bag" number limit.
        **/
       updateDistributionBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Updates a distribution bucket 'accepts new bags' flag.
+       **/
+      updateDistributionBucketStatus: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
       /**
        * Update number of distributed buckets used in given dynamic bag creation policy.
        **/
@@ -1562,10 +1558,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateNumberOfStorageBucketsInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array, numberOfStorageBuckets: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagType, u64]>;
       /**
-       * Update whether new bags are being accepted for storage.
-       **/
-      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
-      /**
        * Updates storage buckets for a bag..
        **/
       updateStorageBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, addBuckets: BTreeSet<StorageBucketId>, removeBuckets: BTreeSet<StorageBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, BTreeSet<StorageBucketId>, BTreeSet<StorageBucketId>]>;
@@ -1573,6 +1565,10 @@ declare module '@polkadot/api/types/submittable' {
        * Updates "Storage buckets per bag" number limit.
        **/
       updateStorageBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Update whether new bags are being accepted for storage.
+       **/
+      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
       /**
        * Updates "Storage buckets voucher max limits".
        **/

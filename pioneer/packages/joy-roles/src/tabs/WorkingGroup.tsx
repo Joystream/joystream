@@ -73,6 +73,10 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
   customBecomeLeadDesc?: string;
 }
 
+interface OperationsGroupProps extends GroupOverviewOuterProps{
+  group: WorkingGroups;
+}
+
 const GroupOverview = Loadable<GroupOverviewProps>(
   ['workers', 'leadStatus'],
   ({
@@ -142,9 +146,8 @@ export const StorageProviders = (props: GroupOverviewOuterProps) => (
   />
 );
 
-export const OperationsGroup = (props: GroupOverviewOuterProps) => (
+export const OperationsGroup = (props: OperationsGroupProps) => (
   <GroupOverview
-    group={WorkingGroups.Operations}
     description={
       <span>
         {"Operations Working Group encompases all the activites that don't require privilages on chain, for example:"}
@@ -154,6 +157,38 @@ export const OperationsGroup = (props: GroupOverviewOuterProps) => (
           <li>Marketing</li>
         </ul>
       </span>
+    }
+    {...props}
+  />
+);
+
+export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsAlpha}
+    {...props}
+  />
+);
+
+export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsBeta}
+    {...props}
+  />
+);
+
+export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsGamma}
+    {...props}
+  />
+);
+
+export const Distribution = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.Distribution}
+    description={
+      'Distribution Working Group is responsible for running and maintaining distributor nodes' +
+      ' that deliver large volumes of upstream data to a large number of simultaneous end users.'
     }
     {...props}
   />
