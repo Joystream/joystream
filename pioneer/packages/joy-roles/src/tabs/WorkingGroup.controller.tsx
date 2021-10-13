@@ -9,14 +9,20 @@ import { AvailableGroups } from '../working_groups';
 import { WorkingGroupMembership,
   ContentCurators,
   StorageProviders,
-  OperationsGroup } from './WorkingGroup';
+  OperationsGroupAlpha,
+  OperationsGroupBeta,
+  OperationsGroupGamma,
+  Distribution } from './WorkingGroup';
 
 import styled from 'styled-components';
 
 type State = {
   curators?: WorkingGroupMembership;
   storageProviders?: WorkingGroupMembership;
-  operationsGroup?: WorkingGroupMembership;
+  operationsGroupAlpha?: WorkingGroupMembership;
+  operationsGroupBeta?: WorkingGroupMembership;
+  operationsGroupGamma?: WorkingGroupMembership;
+  distribution?: WorkingGroupMembership;
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
@@ -56,7 +62,10 @@ export const WorkingGroupsView = View<WorkingGroupsController, State>(
     <WorkingGroupsOverview>
       <ContentCurators {...state.curators}/>
       <StorageProviders {...state.storageProviders}/>
-      <OperationsGroup {...state.operationsGroup}/>
+      <OperationsGroupAlpha {...state.operationsGroupAlpha}/>
+      <OperationsGroupBeta {...state.operationsGroupBeta}/>
+      <OperationsGroupGamma {...state.operationsGroupGamma}/>
+      <Distribution {...state.distribution}/>
     </WorkingGroupsOverview>
   )
 );

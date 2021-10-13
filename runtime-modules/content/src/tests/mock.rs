@@ -221,7 +221,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
@@ -358,6 +357,9 @@ impl Trait for Test {
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+
+    /// The data object used in storage
+    type DataObjectStorage = storage::Module<Self>;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -445,10 +447,6 @@ pub fn create_channel_mock(
     );
 
     if result.is_ok() {
-        let num_assets = match params.assets.clone() {
-            NewAssets::<Test>::Urls(v) => v.len() as u64,
-            NewAssets::<Test>::Upload(c) => c.object_creation_list.len() as u64,
-        };
         let owner = Content::actor_to_channel_owner(&actor).unwrap();
 
         assert_eq!(
@@ -461,7 +459,6 @@ pub fn create_channel_mock(
                     is_censored: false,
                     reward_account: params.reward_account,
                     deletion_prize_source_account_id: sender,
-                    num_assets: num_assets,
                     num_videos: 0,
                 },
                 params.clone(),
@@ -484,16 +481,12 @@ pub fn update_channel_mock(
             Origin::signed(sender),
             actor.clone(),
             channel_id.clone(),
-            params.clone()
+            params.clone(),
         ),
         result.clone(),
     );
 
     if result.is_ok() {
-        let maybe_num_assets = params.assets.clone().map_or(None, |assets| match assets {
-            NewAssets::<Test>::Urls(v) => Some(v.len() as u64),
-            NewAssets::<Test>::Upload(c) => Some(c.object_creation_list.len() as u64),
-        });
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelUpdated(
@@ -504,50 +497,9 @@ pub fn update_channel_mock(
                     is_censored: channel_pre.is_censored,
                     reward_account: channel_pre.reward_account.clone(),
                     deletion_prize_source_account_id: sender,
-                    num_assets: channel_pre.num_assets + maybe_num_assets.unwrap_or(0),
                     num_videos: channel_pre.num_videos,
                 },
                 params.clone(),
-            ))
-        );
-    }
-}
-
-pub fn delete_channel_assets_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    assets: BTreeSet<<Test as storage::Trait>::DataObjectId>,
-    result: DispatchResult,
-) {
-    let channel_pre = ChannelById::<Test>::get(channel_id.clone());
-
-    assert_eq!(
-        Content::remove_channel_assets(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            assets.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        let num_assets_removed = assets.len();
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelAssetsRemoved(
-                actor.clone(),
-                channel_id,
-                assets.clone(),
-                ChannelRecord {
-                    owner: channel_pre.owner.clone(),
-                    is_censored: channel_pre.is_censored,
-                    reward_account: channel_pre.reward_account.clone(),
-                    deletion_prize_source_account_id: sender,
-                    num_assets: channel_pre.num_assets - (num_assets_removed as u64),
-                    num_videos: channel_pre.num_videos,
-                },
             ))
         );
     }
@@ -557,10 +509,16 @@ pub fn delete_channel_mock(
     sender: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    objects_num: u64,
     result: DispatchResult,
 ) {
     assert_eq!(
-        Content::delete_channel(Origin::signed(sender), actor.clone(), channel_id.clone()),
+        Content::delete_channel(
+            Origin::signed(sender),
+            actor.clone(),
+            channel_id.clone(),
+            objects_num,
+        ),
         result.clone(),
     );
 
@@ -623,7 +581,7 @@ pub fn update_video_mock(
             Origin::signed(sender),
             actor.clone(),
             video_id.clone(),
-            params.clone()
+            params.clone(),
         ),
         result.clone(),
     );
