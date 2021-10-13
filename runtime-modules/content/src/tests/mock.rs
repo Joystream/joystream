@@ -221,7 +221,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
@@ -358,6 +357,9 @@ impl Trait for Test {
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+
+    /// The data object used in storage
+    type DataObjectStorage = storage::Module<Self>;
 }
 
 pub type System = frame_system::Module<Test>;
