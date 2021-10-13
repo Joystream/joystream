@@ -1,6 +1,6 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt, u128 } from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
-import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
+import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
@@ -8,26 +8,6 @@ import { JoyEnum } from './JoyEnum'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
-
-// Adds sorting during BTreeSet toU8a encoding (required by the runtime)
-// Currently only supports values that extend UInt
-// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
-export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
-  toArray(): V[]
-}
-
-export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
-  return class extends BTreeSet.with(valType) {
-    public forEach(callbackFn: (value: V, value2: V, set: Set<V>) => void, thisArg?: unknown): void {
-      const sorted = this.toArray()
-      return new Set(sorted).forEach(callbackFn, thisArg)
-    }
-
-    public toArray() {
-      return Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
-    }
-  }
-}
 
 export class Url extends Text {}
 

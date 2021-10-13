@@ -1,12 +1,174 @@
 import { DatabaseManager } from '@joystream/hydra-common'
-import { DataObjectCreationParameters } from '@joystream/types/augment'
+import { UploadParameters } from '@joystream/types/augment'
 import { registry } from '@joystream/types'
 import { DataObjectCreationParameters as ObjectCreationParams } from '@joystream/types/storage'
-import { StorageBag, StorageDataObject, StorageSystemParameters } from 'query-node/dist/model'
+import {
+  DataObjectTypeUnknown,
+  StorageBag,
+  StorageDataObject,
+  StorageSystemParameters,
+  StorageBagOwner,
+  StorageBagOwnerChannel,
+  StorageBagOwnerCouncil,
+  StorageBagOwnerMember,
+  StorageBagOwnerWorkingGroup,
+  StorageBucket,
+  DistributionBucketOperator,
+  DistributionBucketFamily,
+} from 'query-node/dist/model'
 import BN from 'bn.js'
-import { bytesToString, inconsistentState } from '../common'
+import { bytesToString, inconsistentState, getById } from '../common'
 import { In } from 'typeorm'
 import { unsetAssetRelations } from '../content/utils'
+
+import { BTreeSet } from '@polkadot/types'
+import _ from 'lodash'
+import { DataObjectId, BagId, DynamicBagId, StaticBagId } from '@joystream/types/augment/all'
+import { Balance } from '@polkadot/types/interfaces'
+
+export async function getDataObjectsInBag(
+  store: DatabaseManager,
+  bagId: BagId,
+  dataObjectIds: BTreeSet<DataObjectId>
+): Promise<StorageDataObject[]> {
+  const dataObjects = await store.getMany(StorageDataObject, {
+    where: {
+      id: In(Array.from(dataObjectIds).map((id) => id.toString())),
+      storageBag: { id: getBagId(bagId) },
+    },
+  })
+  if (dataObjects.length !== Array.from(dataObjectIds).length) {
+    throw new Error(
+      `Missing data objects: ${_.difference(
+        Array.from(dataObjectIds).map((id) => id.toString()),
+        dataObjects.map((o) => o.id)
+      )} in bag ${getBagId(bagId)}`
+    )
+  }
+  return dataObjects
+}
+
+export function getStaticBagOwner(bagId: StaticBagId): typeof StorageBagOwner {
+  if (bagId.isCouncil) {
+    return new StorageBagOwnerCouncil()
+  } else if (bagId.isWorkingGroup) {
+    const owner = new StorageBagOwnerWorkingGroup()
+    owner.workingGroupId = bagId.asWorkingGroup.toString().toLowerCase()
+    return owner
+  } else {
+    throw new Error(`Unexpected static bag type: ${bagId.type}`)
+  }
+}
+
+export function getDynamicBagOwner(bagId: DynamicBagId) {
+  if (bagId.isChannel) {
+    const owner = new StorageBagOwnerChannel()
+    owner.channelId = bagId.asChannel.toNumber()
+    return owner
+  } else if (bagId.isMember) {
+    const owner = new StorageBagOwnerMember()
+    owner.memberId = bagId.asMember.toNumber()
+    return owner
+  } else {
+    throw new Error(`Unexpected dynamic bag type: ${bagId.type}`)
+  }
+}
+
+export function getStaticBagId(bagId: StaticBagId): string {
+  if (bagId.isCouncil) {
+    return `static:council`
+  } else if (bagId.isWorkingGroup) {
+    return `static:wg:${bagId.asWorkingGroup.type.toLowerCase()}`
+  } else {
+    throw new Error(`Unexpected static bag type: ${bagId.type}`)
+  }
+}
+
+export function getDynamicBagId(bagId: DynamicBagId): string {
+  if (bagId.isChannel) {
+    return `dynamic:channel:${bagId.asChannel.toString()}`
+  } else if (bagId.isMember) {
+    return `dynamic:member:${bagId.asMember.toString()}`
+  } else {
+    throw new Error(`Unexpected dynamic bag type: ${bagId.type}`)
+  }
+}
+
+export function getBagId(bagId: BagId) {
+  return bagId.isStatic ? getStaticBagId(bagId.asStatic) : getDynamicBagId(bagId.asDynamic)
+}
+
+export async function getDynamicBag(
+  store: DatabaseManager,
+  bagId: DynamicBagId,
+  relations?: 'objects'[]
+): Promise<StorageBag> {
+  return getById(store, StorageBag, getDynamicBagId(bagId), relations)
+}
+
+export async function getStaticBag(
+  store: DatabaseManager,
+  bagId: StaticBagId,
+  relations?: 'objects'[]
+): Promise<StorageBag> {
+  const id = getStaticBagId(bagId)
+  const bag = await store.get(StorageBag, { where: { id }, relations })
+  if (!bag) {
+    console.log(`Creating new static bag: ${id}`)
+    const newBag = new StorageBag({
+      id,
+      owner: getStaticBagOwner(bagId),
+    })
+    await store.save<StorageBag>(newBag)
+    return newBag
+  }
+  return bag
+}
+
+export async function getBag(store: DatabaseManager, bagId: BagId, relations?: 'objects'[]): Promise<StorageBag> {
+  return bagId.isStatic
+    ? getStaticBag(store, bagId.asStatic, relations)
+    : getDynamicBag(store, bagId.asDynamic, relations)
+}
+
+export async function getDistributionBucketOperatorWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketOperator> {
+  const operator = await store.get(DistributionBucketOperator, {
+    where: { id },
+    relations: ['metadata', 'metadata.nodeLocation', 'metadata.nodeLocation.coordinates'],
+  })
+  if (!operator) {
+    throw new Error(`DistributionBucketOperator not found by id: ${id}`)
+  }
+  return operator
+}
+
+export async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string): Promise<StorageBucket> {
+  const bucket = await store.get(StorageBucket, {
+    where: { id },
+    relations: ['operatorMetadata', 'operatorMetadata.nodeLocation', 'operatorMetadata.nodeLocation.coordinates'],
+  })
+  if (!bucket) {
+    throw new Error(`StorageBucket not found by id: ${id}`)
+  }
+  return bucket
+}
+
+export async function getDistributionBucketFamilyWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketFamily> {
+  const family = await store.get(DistributionBucketFamily, {
+    where: { id },
+    relations: ['metadata', 'metadata.areas'],
+  })
+  if (!family) {
+    throw new Error(`DistributionBucketFamily not found by id: ${id}`)
+  }
+  return family
+}
 
 export async function getStorageSystem(store: DatabaseManager): Promise<StorageSystemParameters> {
   const storageSystem = await store.get(StorageSystemParameters, {})
@@ -19,13 +181,15 @@ export async function getStorageSystem(store: DatabaseManager): Promise<StorageS
 
 export async function createDataObjects(
   store: DatabaseManager,
-  objectsParams: DataObjectCreationParameters[],
-  storageBag: StorageBag,
+  uploadParams: UploadParameters,
+  deletionPrize: Balance,
   objectIds?: BN[]
 ): Promise<StorageDataObject[]> {
   const storageSystem = await getStorageSystem(store)
+  const { objectCreationList, bagId } = uploadParams
+  const storageBag = await getBag(store, bagId)
 
-  const dataObjects = objectsParams.map((objectParams, i) => {
+  const dataObjects = objectCreationList.map((objectParams, i) => {
     const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
     const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId
     const object = new StorageDataObject({
@@ -33,6 +197,8 @@ export async function createDataObjects(
       isAccepted: false,
       ipfsHash: bytesToString(objectParams.ipfsContentId),
       size: new BN(params.getField('size').toString()),
+      type: new DataObjectTypeUnknown(),
+      deletionPrize,
       storageBag,
     })
     if (objectId.gte(storageSystem.nextDataObjectId)) {
@@ -67,5 +233,5 @@ export async function getMostRecentlyCreatedDataObjects(
 
 export async function removeDataObject(store: DatabaseManager, object: StorageDataObject): Promise<void> {
   await unsetAssetRelations(store, object)
-  await store.save<StorageDataObject>(object)
+  await store.remove<StorageDataObject>(object)
 }

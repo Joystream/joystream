@@ -42,10 +42,33 @@ union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | Storage
 type GeoCoordinates @entity {
   latitude: Float!
   longitude: Float!
-
-  "Optional DistributionBucketFamilyMetadata reference in case the coordinates are part of a region boundary"
-  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadata
 }
+
+enum Continent {
+  AF
+  NA
+  OC
+  AN
+  AS
+  EU
+  SA
+}
+
+type GeographicalAreaContinent @variant {
+  code: Continent
+}
+
+type GeographicalAreaCountry @variant {
+  "ISO 3166-1 alpha-2 country code"
+  code: String
+}
+
+type GeographicalAreaSubdivistion @variant {
+  "ISO 3166-2 subdivision code"
+  code: String
+}
+
+union GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion
 
 type NodeLocationMetadata @entity {
   "ISO 3166-1 alpha-2 country code (2 letters)"
@@ -168,6 +191,32 @@ type StorageBagDistributionAssignment @entity {
   distributionBucketId: ID
 }
 
+type DataObjectTypeChannelAvatar @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeChannelCoverPhoto @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeVideoMedia @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeVideoThumbnail @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeUnknown @variant {
+  _phantom: Int
+}
+
+union DataObjectType = DataObjectTypeChannelAvatar | DataObjectTypeChannelCoverPhoto | DataObjectTypeVideoMedia | DataObjectTypeVideoThumbnail | DataObjectTypeUnknown
+
 type StorageDataObject @entity {
   "Data object runtime id"
   id: ID!
@@ -183,6 +232,27 @@ type StorageDataObject @entity {
 
   "IPFS content hash"
   ipfsHash: String!
+
+  # FIXME: Cannot be optional because: https://github.com/Joystream/hydra/issues/434
+  "The type of the asset that the data object represents (if known)"
+  type: DataObjectType!
+
+  "Prize for removing the data object"
+  deletionPrize: BigInt!
+
+  "If the object is no longer used as an asset - the time at which it was unset (if known)"
+  unsetAt: DateTime
+}
+
+type DistributionBucketFamilyGeographicArea @entity {
+  "{metadataId}-{(C|c|s)}-{code}"
+  id: ID!
+
+  "Geographical area (continent / country / subdivision)"
+  area: GeographicalArea!
+
+  "Related distribution bucket family metadata"
+  distributionBucketFamilyMetadata: DistributionBucketFamilyMetadata!
 }
 
 type DistributionBucketFamilyMetadata @entity {
@@ -192,8 +262,11 @@ type DistributionBucketFamilyMetadata @entity {
   "Optional, more specific description of the region covered by the family"
   description: String
 
-  "Optional region boundary as geocoordiantes polygon"
-  boundary: [GeoCoordinates!] @derivedFrom(field: "boundarySourceBucketFamilyMeta")
+  "Geographical areas covered by the family"
+  areas: [DistributionBucketFamilyGeographicArea!] @derivedFrom(field: "distributionBucketFamilyMetadata")
+
+  "List of targets (hosts/ips) best suited latency measurements for the family"
+  latencyTestTargets: [String]
 }
 
 type DistributionBucketOperatorMetadata @entity {

@@ -14,7 +14,7 @@ import { getLedger, isLedger } from '@polkadot/react-api';
 import { useApi, useAccounts, useCall, useFavorites, useIpfs, useToggle } from '@polkadot/react-hooks';
 import { FormatBalance } from '@polkadot/react-query';
 import { Button, Input, Table } from '@polkadot/react-components';
-import { BN_ZERO } from '@polkadot/util';
+import { BN_ZERO, isFunction } from '@polkadot/util';
 
 import { useTranslation } from '../translate';
 import CreateModal from './modals/Create';
@@ -81,7 +81,7 @@ function Overview ({ className = '', onStatusChange }: Props): React.ReactElemen
   }, [allAccounts, favorites]);
 
   useEffect(() => {
-    if (api.query.democracy?.votingOf && !delegations?.length) {
+    if (isFunction(api.query.democracy?.votingOf) && !delegations?.length) {
       return;
     }
 

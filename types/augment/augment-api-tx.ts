@@ -957,7 +957,7 @@ declare module '@polkadot/api/types/submittable' {
        * - DbWrites per key id: `KeyOwner`
        * # </weight>
        **/
-      setKeys: AugmentedSubmittable<(keys: Keys, proof: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Keys, Bytes]>;
+      setKeys: AugmentedSubmittable<(keys: Keys | string | Uint8Array, proof: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Keys, Bytes]>;
     };
     staking: {
       /**
@@ -984,7 +984,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Bonded, Payee, [Origin Account], Locks, Ledger
        * # </weight>
        **/
-      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<BalanceOf>, RewardDestination]>;
+      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<BalanceOf>, RewardDestination]>;
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
@@ -1274,7 +1274,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Payee
        * # </weight>
        **/
-      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [RewardDestination]>;
+      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [RewardDestination]>;
       /**
        * Sets the ideal number of validators.
        * 
@@ -1538,10 +1538,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateDistributionBucketMode: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, distributing: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
       /**
-       * Updates a distribution bucket 'accepts new bags' flag.
-       **/
-      updateDistributionBucketStatus: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
-      /**
        * Updates distribution buckets for a bag.
        **/
       updateDistributionBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, addBuckets: BTreeSet<DistributionBucketId>, removeBuckets: BTreeSet<DistributionBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, DistributionBucketFamilyId, BTreeSet<DistributionBucketId>, BTreeSet<DistributionBucketId>]>;
@@ -1549,6 +1545,10 @@ declare module '@polkadot/api/types/submittable' {
        * Updates "Distribution buckets per bag" number limit.
        **/
       updateDistributionBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Updates a distribution bucket 'accepts new bags' flag.
+       **/
+      updateDistributionBucketStatus: AugmentedSubmittable<(familyId: DistributionBucketFamilyId | AnyNumber | Uint8Array, distributionBucketId: DistributionBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
       /**
        * Update number of distributed buckets used in given dynamic bag creation policy.
        **/
@@ -1558,10 +1558,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateNumberOfStorageBucketsInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array, numberOfStorageBuckets: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagType, u64]>;
       /**
-       * Update whether new bags are being accepted for storage.
-       **/
-      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
-      /**
        * Updates storage buckets for a bag..
        **/
       updateStorageBucketsForBag: AugmentedSubmittable<(bagId: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, addBuckets: BTreeSet<StorageBucketId>, removeBuckets: BTreeSet<StorageBucketId>) => SubmittableExtrinsic<ApiType>, [BagId, BTreeSet<StorageBucketId>, BTreeSet<StorageBucketId>]>;
@@ -1569,6 +1565,10 @@ declare module '@polkadot/api/types/submittable' {
        * Updates "Storage buckets per bag" number limit.
        **/
       updateStorageBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Update whether new bags are being accepted for storage.
+       **/
+      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
       /**
        * Updates "Storage buckets voucher max limits".
        **/
