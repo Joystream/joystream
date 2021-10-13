@@ -2,22 +2,26 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Codec } from '@polkadot/types/types';
-import { CallOptions, CallParam, CallParams } from './types';
+import type { RpcPromiseResult } from '@polkadot/api/types';
+import type { StorageEntryTypeLatest } from '@polkadot/types/interfaces';
+import type { AnyFunction, Codec } from '@polkadot/types/types';
+import type { CallOptions, CallParam, CallParams } from './types';
+import type { MountedRef } from './useIsMountedRef';
 
 import { useEffect, useRef, useState } from 'react';
+
 import { isNull, isUndefined } from '@polkadot/util';
 
-import useIsMountedRef, { MountedRef } from './useIsMountedRef';
+import useIsMountedRef from './useIsMountedRef';
 
 type TrackFnResult = Promise<() => void>;
 
-interface TrackFn {
+export type TrackFn = RpcPromiseResult<AnyFunction> | QueryTrackFn;
+
+interface QueryTrackFn {
   (...params: CallParam[]): TrackFnResult;
   meta?: {
-    type: {
-      isDoubleMap: boolean;
-    };
+    type?: StorageEntryTypeLatest;
   };
 }
 
@@ -65,7 +69,7 @@ function subscribe <T> (mountedRef: MountedRef, tracker: TrackerRef, fn: TrackFn
 
   setTimeout((): void => {
     if (mountedRef.current) {
-      if (fn && (!fn.meta || !fn.meta.type?.isDoubleMap || validParams.length === 2)) {
+      if (fn && (!(fn as QueryTrackFn).meta?.type?.isDoubleMap || validParams.length === 2)) {
         // swap to acive mode and reset our count
         tracker.current.isActive = true;
         tracker.current.count = 0;

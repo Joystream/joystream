@@ -54,9 +54,9 @@ function ProposedAction ({ asInset, className = '', expandNested, idNumber, inse
   const { meta, method, section } = registry.findMetaCall(proposal.callIndex);
 
   const header = `#${stringId}: ${section}.${method}`;
-  const documentation = meta?.documentation
+  const documentation = meta?.docs
     ? (
-      <summary>{meta.documentation.join(' ')}</summary>
+      <summary>{meta.docs.join(' ')}</summary>
     )
     : null;
   const params = (isTreasuryProposalVote(proposal) && expandNested)

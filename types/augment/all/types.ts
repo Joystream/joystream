@@ -4,11 +4,15 @@
 import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
+import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {
   readonly started_accepting_applicants_at_block: u32;
 }
+
+/** @name AccountInfo */
+export interface AccountInfo extends AccountInfoWithRefCount {}
 
 /** @name ActivateOpeningAt */
 export interface ActivateOpeningAt extends Enum {
@@ -30,7 +34,7 @@ export interface ActiveOpeningStage extends Enum {
 /** @name ActiveOpeningStageVariant */
 export interface ActiveOpeningStageVariant extends Struct {
   readonly stage: ActiveOpeningStage;
-  readonly applications_added: Vec<ApplicationId>;
+  readonly applications_added: BTreeSet<ApplicationId>;
   readonly active_application_count: u32;
   readonly unstaking_application_count: u32;
   readonly deactivated_application_count: u32;
@@ -267,7 +271,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
-  readonly assets_to_remove: Vec<DataObjectId>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -338,7 +342,7 @@ export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: Vec<CuratorId>;
+  readonly curators: BTreeSet<CuratorId>;
   readonly active: bool;
 }
 
@@ -404,8 +408,8 @@ export interface DiscussionThread extends Struct {
 export interface DistributionBucket extends Struct {
   readonly accepting_new_bags: bool;
   readonly distributing: bool;
-  readonly pending_invitations: Vec<WorkerId>;
-  readonly operators: Vec<WorkerId>;
+  readonly pending_invitations: BTreeSet<WorkerId>;
+  readonly operators: BTreeSet<WorkerId>;
   readonly assigned_bags: u64;
 }
 
@@ -681,7 +685,7 @@ export interface OpeningId extends u64 {}
 /** @name OpeningOf */
 export interface OpeningOf extends Struct {
   readonly hiring_opening_id: OpeningId;
-  readonly applications: Vec<ApplicationId>;
+  readonly applications: BTreeSet<ApplicationId>;
   readonly policy_commitment: OpeningPolicyCommitment;
   readonly opening_type: OpeningType;
 }
@@ -1350,7 +1354,7 @@ export interface VideoId extends u64 {}
 export interface VideoUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
-  readonly assets_to_remove: Vec<DataObjectId>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
 }
 
 /** @name VoteKind */

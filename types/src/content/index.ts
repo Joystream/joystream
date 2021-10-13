@@ -1,7 +1,7 @@
-import { Vec, Option, Tuple } from '@polkadot/types'
+import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
@@ -23,7 +23,7 @@ export class StorageAssets extends JoyStructDecorated({
 }) {}
 
 export class CuratorGroup extends JoyStructDecorated({
-  curators: JoyBTreeSet(CuratorId),
+  curators: BTreeSet.with(CuratorId),
   active: bool,
 }) {}
 
@@ -56,7 +56,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
-  assets_to_remove: JoyBTreeSet(DataObjectId),
+  assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
@@ -104,7 +104,7 @@ export class VideoCreationParameters extends JoyStructDecorated({
 export class VideoUpdateParameters extends JoyStructDecorated({
   assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
-  assets_to_remove: JoyBTreeSet(DataObjectId),
+  assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
 export class Playlist extends JoyStructDecorated({
