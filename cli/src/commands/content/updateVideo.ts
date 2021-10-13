@@ -3,15 +3,13 @@ import { VideoInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
-import { CreateInterface, registry } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
 import { VideoUpdateParameters } from '@joystream/types/content'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
-import { JoyBTreeSet } from '@joystream/types/common'
-import { DataObjectId } from '@joystream/types/storage'
 import chalk from 'chalk'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
@@ -91,7 +89,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
       assets_to_upload: assetsToUpload,
       new_meta: metadataToBytes(VideoMetadata, meta),
-      assets_to_remove: new (JoyBTreeSet(DataObjectId))(registry, assetsToRemove),
+      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
     }
 
     this.jsonPrettyPrint(

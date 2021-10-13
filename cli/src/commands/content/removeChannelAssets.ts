@@ -1,8 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
-import { JoyBTreeSet } from '@joystream/types/common'
-import { DataObjectId } from '@joystream/types/storage'
-import { registry } from '@joystream/types'
+import { createType } from '@joystream/types'
 
 export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandBase {
   static description = 'Remove data objects associated with the channel or any of its videos.'
@@ -37,7 +35,7 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
     await this.sendAndFollowNamedTx(account, 'content', 'updateChannel', [
       actor,
       channelId,
-      { assets_to_remove: new (JoyBTreeSet(DataObjectId))(registry, objectIds) },
+      { assets_to_remove: createType('BTreeSet<DataObjectId>', objectIds) },
     ])
   }
 }

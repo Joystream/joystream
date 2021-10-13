@@ -3,7 +3,7 @@ import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
-import { Registry, Codec, TypeDef, TypeDefInfo, IEvent } from '@polkadot/types/types'
+import { Registry, Codec, TypeDef, TypeDefInfo, IEvent, DetectCodec } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { ApiPromise, SubmittableResult, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -62,8 +62,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getOriginalApi().registry
   }
 
-  createType<K extends keyof InterfaceTypes>(typeName: K, value?: unknown): InterfaceTypes[K] {
-    return this.getOriginalApi().createType(typeName, value)
+  createType<T extends Codec = Codec, TN extends string = string>(typeName: TN, value?: unknown): DetectCodec<T, TN> {
+    return this.getOriginalApi().createType<T, TN>(typeName, value)
   }
 
   isQueryNodeUriSet(): boolean {
@@ -279,10 +279,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         createParamOptions(subtype.name, defaultValue?.unwrapOr(undefined))
       )
       this.closeIndentGroup()
-      return this.createType(`Option<${subtype.type}>` as any, value)
+      return this.createType<Option<Codec>>(`Option<${subtype.type}>`, value)
     }
 
-    return this.createType(`Option<${subtype.type}>` as any, null)
+    return this.createType<Option<Codec>>(`Option<${subtype.type}>`, null)
   }
 
   // Prompt for Tuple
@@ -303,7 +303,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return new Tuple(this.getTypesRegistry(), subtypes.map((subtype) => subtype.type) as any, result)
+    return new Tuple(
+      this.getTypesRegistry(),
+      subtypes.map((subtype) => subtype.type),
+      result
+    )
   }
 
   // Prompt for Struct
@@ -330,7 +334,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return this.createType(structType as any, structValues)
+    return this.createType(structType, structValues)
   }
 
   // Prompt for Vec
@@ -358,7 +362,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     } while (addAnother)
     this.closeIndentGroup()
 
-    return this.createType(`Vec<${subtype.type}>` as any, entries)
+    return this.createType<Vec<Codec>>(`Vec<${subtype.type}>`, entries)
   }
 
   // Prompt for Enum
@@ -383,12 +387,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     if (enumSubtype.type !== 'Null') {
       const subtypeOptions = createParamOptions(enumSubtype.name, defaultValue?.value)
-      return this.createType(enumType as any, {
+      return this.createType<Enum>(enumType, {
         [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, subtypeOptions),
       })
     }
 
-    return this.createType(enumType as any, enumSubtype.name)
+    return this.createType<Enum>(enumType, enumSubtype.name)
   }
 
   // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
@@ -470,8 +474,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 let errorMsg = dispatchError.toString()
                 if (dispatchError.isModule) {
                   try {
-                    const { name, documentation } = this.getOriginalApi().registry.findMetaError(dispatchError.asModule)
-                    errorMsg = `${name} (${documentation})`
+                    const { name, docs } = this.getOriginalApi().registry.findMetaError(dispatchError.asModule)
+                    errorMsg = `${name} (${docs.join(', ')})`
                   } catch (e) {
                     // This probably means we don't have this error in the metadata
                     // In this case - continue (we'll just display dispatchError.toString())
@@ -561,7 +565,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const argName = arg.name.toString()
       const argType = arg.type.toString()
       try {
-        parsedArgs.push({ name: argName, value: this.createType(argType as any, draftJSONObj[parseInt(index)]) })
+        parsedArgs.push({ name: argName, value: this.createType(argType, draftJSONObj[parseInt(index)]) })
       } catch (e) {
         throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, {
           exit: ExitCodes.InvalidFile,

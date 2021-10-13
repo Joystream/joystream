@@ -3,7 +3,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { ChannelInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface, registry } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
@@ -11,8 +11,6 @@ import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
-import { JoyBTreeSet } from '@joystream/types/common'
-import { DataObjectId } from '@joystream/types/storage'
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
@@ -101,7 +99,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     const assetsToRemove = await this.getAssetsToRemove(channelId, coverPhotoIndex, avatarPhotoIndex)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets_to_upload: assetsToUpload,
-      assets_to_remove: new (JoyBTreeSet(DataObjectId))(registry, assetsToRemove),
+      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
     }

@@ -3,10 +3,8 @@ import { flags } from '@oclif/command'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'
-import { registry } from '@joystream/types'
-import { DataObjectId } from '@joystream/types/storage'
+import { createType } from '@joystream/types'
 import ExitCodes from '../../ExitCodes'
-import { JoyBTreeSet } from '@joystream/types/common'
 
 export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the video and optionally all associated data objects.'
@@ -74,8 +72,8 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(account, 'content', 'deleteVideo', [
       actor,
       videoId,
-      new (JoyBTreeSet(DataObjectId))(
-        registry,
+      createType(
+        'BTreeSet<DataObjectId>',
         dataObjectsInfo.map(([id]) => id)
       ),
     ])

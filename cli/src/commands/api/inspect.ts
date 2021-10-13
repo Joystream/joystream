@@ -2,7 +2,7 @@ import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import { displayNameValueTable } from '../../helpers/display'
 import { Codec } from '@polkadot/types/types'
-import { ConstantCodec } from '@polkadot/metadata/decorate/types'
+import { ConstantCodec } from '@polkadot/types/metadata/decorate/types'
 import ExitCodes from '../../ExitCodes'
 import chalk from 'chalk'
 import { NameValueObj, ApiMethodArg, UnaugmentedApiPromise } from '../../Types'
@@ -86,7 +86,7 @@ export default class ApiInspect extends ApiCommandBase {
   }
 
   getMethodDescription(apiType: ApiType, apiModule: string, apiMethod: string): string {
-    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).documentation.join(' ')
+    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).docs.join(' ')
     return description || 'No description available.'
   }
 

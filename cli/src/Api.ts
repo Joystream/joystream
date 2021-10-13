@@ -40,7 +40,7 @@ import {
   ChannelCategoryId,
   VideoCategoryId,
 } from '@joystream/types/content'
-import { Observable } from '@polkadot/x-rxjs'
+import { Observable } from 'rxjs'
 import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -181,7 +181,7 @@ export default class Api {
   // TODO: This is a lot of repeated logic from "/pioneer/joy-utils/transport"
   // It will be refactored to "joystream-js" soon
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
-    apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>>
+    apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
   ): Promise<[IDType, ValueType][]> {
     const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
       storageKey.args[0] as IDType,
