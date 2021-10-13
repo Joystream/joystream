@@ -591,6 +591,7 @@ pub fn create_channel_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: num_assets,
                     num_videos: 0,
+                    num_nfts: 0,
                 },
                 params.clone(),
             ))
@@ -634,6 +635,7 @@ pub fn update_channel_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: channel_pre.num_assets + maybe_num_assets.unwrap_or(0),
                     num_videos: channel_pre.num_videos,
+                    num_nfts: channel_pre.num_nfts,
                 },
                 params.clone(),
             ))
@@ -675,6 +677,7 @@ pub fn delete_channel_assets_mock(
                     deletion_prize_source_account_id: sender,
                     num_assets: channel_pre.num_assets - (num_assets_removed as u64),
                     num_videos: channel_pre.num_videos,
+                    num_nfts: channel_pre.num_nfts,
                 },
             ))
         );

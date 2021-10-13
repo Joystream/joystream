@@ -155,7 +155,7 @@ fn accept_incoming_offer_auth_failed() {
 }
 
 #[test]
-fn accept_incoming_offer_no_incoming_transfers() {
+fn accept_incoming_offer_no_incoming_offers() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -193,7 +193,7 @@ fn accept_incoming_offer_no_incoming_transfers() {
         // Failure checked
         assert_err!(
             accept_incoming_offer_result,
-            Error::<Test>::NoIncomingTransfers
+            Error::<Test>::NoIncomingOffers
         );
     })
 }

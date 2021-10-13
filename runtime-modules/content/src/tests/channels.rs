@@ -363,6 +363,7 @@ fn curator_owned_channels() {
                     deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
+                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -443,6 +444,7 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
+                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -477,6 +479,7 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
+                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -510,6 +513,7 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
+                    num_nfts: 0,
                 },
                 ChannelUpdateParametersRecord {
                     assets: None,
