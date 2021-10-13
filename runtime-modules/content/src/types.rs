@@ -73,8 +73,6 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
-    /// The nfts under this channel
-    pub num_nfts: u64,
     /// If curators have censored this channel or not
     pub is_censored: bool,
     /// Reward account where revenue is sent if set.
