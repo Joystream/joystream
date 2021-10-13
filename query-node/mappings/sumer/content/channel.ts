@@ -28,7 +28,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     db,
     event,
     assets: channelCreationParameters.assets,
-    contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
+    ChannelOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
   })
 
   // create entity
@@ -86,7 +86,7 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
       db,
       event,
       assets: channelUpdateParameters.assets.unwrapOr([]),
-      contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
+      ChannelOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     })
 
     // update all fields read from protobuf
