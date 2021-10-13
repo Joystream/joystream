@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
-import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, ContentId, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, NewAsset, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
+import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageAssets, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -53,12 +53,13 @@ declare module '@polkadot/api/types/events' {
       Unreserved: AugmentedEvent<ApiType, [AccountId, Balance]>;
     };
     content: {
-      ChannelAssetsRemoved: AugmentedEvent<ApiType, [ContentActor, ChannelId, Vec<ContentId>]>;
+      ChannelAssetsRemoved: AugmentedEvent<ApiType, [ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel]>;
       ChannelCategoryCreated: AugmentedEvent<ApiType, [ChannelCategoryId, ChannelCategory, ChannelCategoryCreationParameters]>;
       ChannelCategoryDeleted: AugmentedEvent<ApiType, [ContentActor, ChannelCategoryId]>;
       ChannelCategoryUpdated: AugmentedEvent<ApiType, [ContentActor, ChannelCategoryId, ChannelCategoryUpdateParameters]>;
       ChannelCensorshipStatusUpdated: AugmentedEvent<ApiType, [ContentActor, ChannelId, IsCensored, Bytes]>;
       ChannelCreated: AugmentedEvent<ApiType, [ContentActor, ChannelId, Channel, ChannelCreationParameters]>;
+      ChannelDeleted: AugmentedEvent<ApiType, [ContentActor, ChannelId]>;
       ChannelOwnershipTransferred: AugmentedEvent<ApiType, [ContentActor, ChannelOwnershipTransferRequestId]>;
       ChannelOwnershipTransferRequested: AugmentedEvent<ApiType, [ContentActor, ChannelOwnershipTransferRequestId, ChannelOwnershipTransferRequest]>;
       ChannelOwnershipTransferRequestWithdrawn: AugmentedEvent<ApiType, [ContentActor, ChannelOwnershipTransferRequestId]>;
@@ -68,15 +69,15 @@ declare module '@polkadot/api/types/events' {
       CuratorGroupStatusSet: AugmentedEvent<ApiType, [CuratorGroupId, bool]>;
       CuratorRemoved: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
       FeaturedVideosSet: AugmentedEvent<ApiType, [ContentActor, Vec<VideoId>]>;
-      PersonCreated: AugmentedEvent<ApiType, [ContentActor, PersonId, Vec<NewAsset>, PersonCreationParameters]>;
+      PersonCreated: AugmentedEvent<ApiType, [ContentActor, PersonId, StorageAssets, PersonCreationParameters]>;
       PersonDeleted: AugmentedEvent<ApiType, [ContentActor, PersonId]>;
-      PersonUpdated: AugmentedEvent<ApiType, [ContentActor, PersonId, Vec<NewAsset>, PersonUpdateParameters]>;
+      PersonUpdated: AugmentedEvent<ApiType, [ContentActor, PersonId, StorageAssets, PersonUpdateParameters]>;
       PlaylistCreated: AugmentedEvent<ApiType, [ContentActor, PlaylistId, PlaylistCreationParameters]>;
       PlaylistDeleted: AugmentedEvent<ApiType, [ContentActor, PlaylistId]>;
       PlaylistUpdated: AugmentedEvent<ApiType, [ContentActor, PlaylistId, PlaylistUpdateParameters]>;
-      SeriesCreated: AugmentedEvent<ApiType, [ContentActor, SeriesId, Vec<NewAsset>, SeriesParameters, Series]>;
+      SeriesCreated: AugmentedEvent<ApiType, [ContentActor, SeriesId, StorageAssets, SeriesParameters, Series]>;
       SeriesDeleted: AugmentedEvent<ApiType, [ContentActor, SeriesId]>;
-      SeriesUpdated: AugmentedEvent<ApiType, [ContentActor, SeriesId, Vec<NewAsset>, SeriesParameters, Series]>;
+      SeriesUpdated: AugmentedEvent<ApiType, [ContentActor, SeriesId, StorageAssets, SeriesParameters, Series]>;
       VideoCategoryCreated: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId, VideoCategoryCreationParameters]>;
       VideoCategoryDeleted: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId]>;
       VideoCategoryUpdated: AugmentedEvent<ApiType, [ContentActor, VideoCategoryId, VideoCategoryUpdateParameters]>;
@@ -564,9 +565,9 @@ declare module '@polkadot/api/types/events' {
       MemberRegistered: AugmentedEvent<ApiType, [MemberId, AccountId, EntryMethod]>;
       MemberSetControllerAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
       MemberSetRootAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
-      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId]>;
+      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId, Bytes]>;
     };
     memo: {
       MemoUpdated: AugmentedEvent<ApiType, [AccountId]>;
@@ -580,7 +581,267 @@ declare module '@polkadot/api/types/events' {
        **/
       Offence: AugmentedEvent<ApiType, [Kind, OpaqueTimeSlot, bool]>;
     };
-    operationsWorkingGroup: {
+    operationsWorkingGroupAlpha: {
+      /**
+       * Emits on accepting application for the worker opening.
+       * Params:
+       * - Opening id
+       **/
+      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on terminating the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on withdrawing the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on adding the application for the worker opening.
+       * Params:
+       * - Opening id
+       * - Application id
+       **/
+      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      /**
+       * Emits on beginning the application review for the worker/lead opening.
+       * Params:
+       * - Opening id
+       **/
+      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on setting the leader.
+       * Params:
+       * - Worker id.
+       **/
+      LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on un-setting the leader.
+       * Params:
+       **/
+      LeaderUnset: AugmentedEvent<ApiType, []>;
+      /**
+       * Emits on changing working group mint capacity.
+       * Params:
+       * - mint id.
+       * - new mint balance.
+       **/
+      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      /**
+       * Emits on adding new worker opening.
+       * Params:
+       * - Opening id
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on filling the worker opening.
+       * Params:
+       * - Worker opening id
+       * - Worker application id to the worker id dictionary
+       **/
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      /**
+       * Emits on decreasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on increasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on slashing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on terminating the leader.
+       * Params:
+       * - leader worker id.
+       * - termination rationale text
+       **/
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on terminating the worker.
+       * Params:
+       * - worker id.
+       * - termination rationale text
+       **/
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on exiting the worker.
+       * Params:
+       * - worker id.
+       * - exit rationale text
+       **/
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on updating the reward account of the worker.
+       * Params:
+       * - Member id of the worker.
+       * - Reward account id of the worker.
+       **/
+      WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the reward amount of the worker.
+       * Params:
+       * - Id of the worker.
+       **/
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on updating the role account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Role account id of the worker.
+       **/
+      WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+    };
+    operationsWorkingGroupBeta: {
+      /**
+       * Emits on accepting application for the worker opening.
+       * Params:
+       * - Opening id
+       **/
+      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on terminating the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on withdrawing the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on adding the application for the worker opening.
+       * Params:
+       * - Opening id
+       * - Application id
+       **/
+      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      /**
+       * Emits on beginning the application review for the worker/lead opening.
+       * Params:
+       * - Opening id
+       **/
+      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on setting the leader.
+       * Params:
+       * - Worker id.
+       **/
+      LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on un-setting the leader.
+       * Params:
+       **/
+      LeaderUnset: AugmentedEvent<ApiType, []>;
+      /**
+       * Emits on changing working group mint capacity.
+       * Params:
+       * - mint id.
+       * - new mint balance.
+       **/
+      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      /**
+       * Emits on adding new worker opening.
+       * Params:
+       * - Opening id
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on filling the worker opening.
+       * Params:
+       * - Worker opening id
+       * - Worker application id to the worker id dictionary
+       **/
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      /**
+       * Emits on decreasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on increasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on slashing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on terminating the leader.
+       * Params:
+       * - leader worker id.
+       * - termination rationale text
+       **/
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on terminating the worker.
+       * Params:
+       * - worker id.
+       * - termination rationale text
+       **/
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on exiting the worker.
+       * Params:
+       * - worker id.
+       * - exit rationale text
+       **/
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on updating the reward account of the worker.
+       * Params:
+       * - Member id of the worker.
+       * - Reward account id of the worker.
+       **/
+      WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the reward amount of the worker.
+       * Params:
+       * - Id of the worker.
+       **/
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on updating the role account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Role account id of the worker.
+       **/
+      WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+    };
+    operationsWorkingGroupGamma: {
       /**
        * Emits on accepting application for the worker opening.
        * Params:
@@ -837,8 +1098,9 @@ declare module '@polkadot/api/types/events' {
        * Params
        * - data objects IDs
        * - initial uploading parameters
+       * - deletion prize for objects
        **/
-      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters, Balance]>;
       /**
        * Emits on creating distribution bucket.
        * Params
@@ -949,8 +1211,10 @@ declare module '@polkadot/api/types/events' {
        * Params
        * - dynamic bag ID
        * - optional DynamicBagDeletionPrize instance
+       * - assigned storage buckets' IDs
+       * - assigned distribution buckets' IDs
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>, BTreeSet<StorageBucketId>, BTreeSet<DistributionBucketId>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params

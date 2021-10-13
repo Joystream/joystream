@@ -583,7 +583,133 @@ declare module '@polkadot/api/types/storage' {
        **/
       reportsByKindIndex: AugmentedQuery<ApiType, (arg: Kind | string | Uint8Array) => Observable<Bytes>, [Kind]>;
     };
-    operationsWorkingGroup: {
+    operationsWorkingGroupAlpha: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>, [ApplicationId]>;
+      /**
+       * The current lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>, []>;
+      /**
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
+       **/
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>, [HiringApplicationId]>;
+      /**
+       * The mint currently funding the rewards for this module.
+       **/
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>, []>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>, []>;
+      /**
+       * Next identifier value for new worker opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>, []>;
+      /**
+       * Next identifier for new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>, []>;
+      /**
+       * Maps identifier to worker opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>, [OpeningId]>;
+      /**
+       * Opening human readable text length limits
+       **/
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Worker application human readable text length limits
+       **/
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>, [WorkerId]>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
+    };
+    operationsWorkingGroupBeta: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>, [ApplicationId]>;
+      /**
+       * The current lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>, []>;
+      /**
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
+       **/
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>, [HiringApplicationId]>;
+      /**
+       * The mint currently funding the rewards for this module.
+       **/
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>, []>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>, []>;
+      /**
+       * Next identifier value for new worker opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>, []>;
+      /**
+       * Next identifier for new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>, []>;
+      /**
+       * Maps identifier to worker opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>, [OpeningId]>;
+      /**
+       * Opening human readable text length limits
+       **/
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Worker application human readable text length limits
+       **/
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>, [WorkerId]>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
+    };
+    operationsWorkingGroupGamma: {
       /**
        * Count of active workers.
        **/
@@ -1137,7 +1263,7 @@ declare module '@polkadot/api/types/storage' {
        **/
       uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>, []>;
       /**
-       * "Max objects number for a storage bucket voucher" number limit.
+       * "Max objects number for a storage  bucket voucher" number limit.
        **/
       voucherMaxObjectsNumberLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**

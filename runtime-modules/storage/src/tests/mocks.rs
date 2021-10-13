@@ -50,7 +50,6 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
     pub const MaxDistributionBucketNumberPerFamily: u64 = 10;
     pub const DataObjectDeletionPrize: u64 = 10;
@@ -85,7 +84,6 @@ impl crate::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
@@ -189,12 +187,15 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
-    type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type ScreenedMemberMaxInitialBalance = ();
 }
 

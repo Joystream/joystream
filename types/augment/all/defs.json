@@ -82,12 +82,15 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Reserved",
-            "Forum",
+            "_Reserved0",
+            "_Reserved1",
             "Storage",
             "Content",
-            "Operations",
-            "Gateway"
+            "OperationsAlpha",
+            "Gateway",
+            "Distribution",
+            "OperationsBeta",
+            "OperationsGamma"
         ]
     },
     "SlashingTerms": {
@@ -104,7 +107,6 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "ChannelId": "u64",
-    "DAOId": "u64",
     "Url": "Text",
     "EntryMethod": {
         "_enum": {
@@ -763,25 +765,21 @@
             "Lead": "Null"
         }
     },
-    "NewAsset": {
-        "_enum": {
-            "Upload": "u64",
-            "Urls": "Vec<Url>"
-        }
+    "StorageAssets": {
+        "object_creation_list": "Vec<DataObjectCreationParameters>",
+        "expected_data_size_fee": "u128"
     },
     "Channel": {
         "owner": "ChannelOwner",
-        "videos": "Vec<VideoId>",
-        "playlists": "Vec<PlaylistId>",
-        "series": "Vec<SeriesId>",
+        "num_videos": "u64",
         "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "deletion_prize_source_account_id": "GenericAccountId"
     },
     "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
-            "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
+            "Curators": "CuratorGroupId"
         }
     },
     "ChannelCategoryId": "u64",
@@ -793,14 +791,15 @@
         "new_meta": "Bytes"
     },
     "ChannelCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes",
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>",
         "reward_account": "Option<GenericAccountId>"
     },
     "ChannelUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>"
+        "reward_account": "Option<Option<GenericAccountId>>",
+        "assets_to_remove": "Vec<DataObjectId>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
@@ -824,12 +823,13 @@
         "new_meta": "Bytes"
     },
     "VideoCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>"
     },
     "VideoUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Option<Bytes>"
+        "assets_to_upload": "Option<StorageAssets>",
+        "new_meta": "Option<Bytes>",
+        "assets_to_remove": "Vec<DataObjectId>"
     },
     "Person": {
         "controlled_by": "PersonController"
@@ -848,11 +848,11 @@
         }
     },
     "PersonCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "StorageAssets",
         "meta": "Bytes"
     },
     "PersonUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>"
     },
     "Playlist": {
@@ -874,12 +874,12 @@
         "episodes": "Vec<VideoId>"
     },
     "SeriesParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "seasons": "Option<Vec<Option<SeasonParameters>>>",
         "meta": "Option<Bytes>"
     },
     "SeasonParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "episodes": "Option<Vec<Option<EpisodeParemters>>>",
         "meta": "Option<Bytes>"
     },
@@ -890,6 +890,5 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool",
-    "ContentId": "u64"
+    "IsCensored": "bool"
 }

@@ -99,7 +99,6 @@
 //! - create_dynamic_bag
 //!
 //! ### Pallet constants
-//! - MaxNumberOfDataObjectsPerBag
 //! - DataObjectDeletionPrize
 //! - BlacklistSizeLimit
 //! - StorageBucketsPerBagValueConstraint
@@ -211,6 +210,12 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult;
+
+    /// Checks if a bag does exists and returns it. Static Always exists
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
+
+    /// Get all objects id in a bag, without checking its existence
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 }
 
 /// Storage trait.
@@ -282,9 +287,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Defines max number of data objects per bag.
-    type MaxNumberOfDataObjectsPerBag: Get<u64>;
 
     /// Defines a prize for a data object deletion.
     type DataObjectDeletionPrize: Get<BalanceOf<Self>>;
@@ -452,10 +454,10 @@ pub type Cid = Vec<u8>;
 type Balances<T> = balances::Module<T>;
 
 /// Alias for the member id.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -1012,7 +1014,8 @@ decl_event! {
         /// Params
         /// - data objects IDs
         /// - initial uploading parameters
-        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters),
+        /// - deletion prize for objects
+        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters, Balance),
 
         /// Emits on setting the storage operator metadata.
         /// Params
@@ -1109,7 +1112,14 @@ decl_event! {
         /// Params
         /// - dynamic bag ID
         /// - optional DynamicBagDeletionPrize instance
-        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>),
+        /// - assigned storage buckets' IDs
+        /// - assigned distribution buckets' IDs
+        DynamicBagCreated(
+            DynamicBagId,
+            Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>,
+            BTreeSet<StorageBucketId>,
+            BTreeSet<DistributionBucketId>,
+        ),
 
         /// Emits on changing the voucher for a storage bucket.
         /// Params
@@ -1308,9 +1318,6 @@ decl_error! {
         /// Upload data error: invalid deletion prize source account.
         InvalidDeletionPrizeSourceAccount,
 
-        /// Upload data error: data objects per bag limit exceeded.
-        DataObjectsPerBagLimitExceeded,
-
         /// Invalid storage provider for bucket.
         InvalidStorageProvider,
 
@@ -1450,9 +1457,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-        /// Exports const - max number of data objects per bag.
-        const MaxNumberOfDataObjectsPerBag: u64 = T::MaxNumberOfDataObjectsPerBag::get();
 
         /// Exports const - a prize for a data object deletion.
         const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
@@ -2574,6 +2578,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
             params,
+            T::DataObjectDeletionPrize::get(),
         ));
 
         Ok(())
@@ -2722,9 +2727,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = Bag::<T> {
-            stored_by: storage_buckets,
+            stored_by: storage_buckets.clone(),
             deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
-            distributed_by: distribution_buckets,
+            distributed_by: distribution_buckets.clone(),
             ..Default::default()
         };
 
@@ -2732,7 +2737,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
-        Self::deposit_event(RawEvent::DynamicBagCreated(dynamic_bag_id, deletion_prize));
+        Self::deposit_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id,
+            deletion_prize,
+            storage_buckets,
+            distribution_buckets,
+        ));
 
         Ok(())
     }
@@ -2742,6 +2752,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
         Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+    }
+
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+        Self::ensure_bag_exists(bag_id)
+    }
+
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
+        DataObjectsById::<T>::iter_prefix(&bag_id)
+            .map(|x| x.0)
+            .collect()
     }
 }
 
@@ -3210,15 +3230,6 @@ impl<T: Trait> Module<T> {
         );
 
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
-        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
-        let total_possible_data_objects_number: u64 = new_objects_number + bag.objects_number;
-
-        // Check bag capacity.
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
 
         // Check data size fee change.
         ensure!(

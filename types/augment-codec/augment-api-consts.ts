@@ -69,7 +69,19 @@ declare module '@polkadot/api/types/consts' {
     members: {
       screenedMemberMaxInitialBalance: BalanceOf & AugmentedConst<ApiType>;
     };
-    operationsWorkingGroup: {
+    operationsWorkingGroupAlpha: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroupBeta: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroupGamma: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/
@@ -205,10 +217,6 @@ declare module '@polkadot/api/types/consts' {
        * Exports const - max allowed distribution bucket number per family.
        **/
       maxDistributionBucketNumberPerFamily: u64 & AugmentedConst<ApiType>;
-      /**
-       * Exports const - max number of data objects per bag.
-       **/
-      maxNumberOfDataObjectsPerBag: u64 & AugmentedConst<ApiType>;
       /**
        * Exports const - max number of pending invitations per distribution bucket.
        **/
