@@ -99,7 +99,6 @@
 //! - create_dynamic_bag
 //!
 //! ### Pallet constants
-//! - MaxNumberOfDataObjectsPerBag
 //! - DataObjectDeletionPrize
 //! - BlacklistSizeLimit
 //! - StorageBucketsPerBagValueConstraint
@@ -288,9 +287,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Defines max number of data objects per bag.
-    type MaxNumberOfDataObjectsPerBag: Get<u64>;
 
     /// Defines a prize for a data object deletion.
     type DataObjectDeletionPrize: Get<BalanceOf<Self>>;
@@ -1322,9 +1318,6 @@ decl_error! {
         /// Upload data error: invalid deletion prize source account.
         InvalidDeletionPrizeSourceAccount,
 
-        /// Upload data error: data objects per bag limit exceeded.
-        DataObjectsPerBagLimitExceeded,
-
         /// Invalid storage provider for bucket.
         InvalidStorageProvider,
 
@@ -1464,9 +1457,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-        /// Exports const - max number of data objects per bag.
-        const MaxNumberOfDataObjectsPerBag: u64 = T::MaxNumberOfDataObjectsPerBag::get();
 
         /// Exports const - a prize for a data object deletion.
         const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
@@ -3240,15 +3230,6 @@ impl<T: Trait> Module<T> {
         );
 
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
-        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
-        let total_possible_data_objects_number: u64 = new_objects_number + bag.objects_number;
-
-        // Check bag capacity.
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
 
         // Check data size fee change.
         ensure!(
