@@ -260,22 +260,22 @@ impl<
         bidder: MemberId,
         bidder_account_id: AccountId,
         bid: Balance,
-        current_block: BlockNumber,
-    ) -> Self {
-        let bid = Bid::new(bidder, bidder_account_id, bid, current_block);
+        last_bid_block: BlockNumber,
+    ) -> (Self, Bid<MemberId, AccountId, BlockNumber, Balance>) {
+        let bid = Bid::new(bidder, bidder_account_id, bid, last_bid_block);
         match &mut self.auction_type {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
-            }) if current_block - self.starts_at >= *auction_duration - *extension_period => {
+            }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
                 *auction_duration += *extension_period;
             }
             _ => (),
         }
 
-        self.last_bid = Some(bid);
-        self
+        self.last_bid = Some(bid.clone());
+        (self, bid)
     }
 
     /// Cnacel auction bid
@@ -358,7 +358,7 @@ impl<
     pub fn ensure_bid_lock_duration_expired<T: Trait>(
         &self,
         current_block: BlockNumber,
-        bid: &Bid<MemberId, AccountId, BlockNumber, Balance>,
+        bid: Bid<MemberId, AccountId, BlockNumber, Balance>,
     ) -> DispatchResult {
         if let AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) = &self.auction_type {
             ensure!(
@@ -402,9 +402,9 @@ impl<
     /// Ensure auction has last bid, return corresponding reference
     pub fn ensure_last_bid_exists<T: Trait>(
         &self,
-    ) -> Result<&Bid<MemberId, AccountId, BlockNumber, Balance>, Error<T>> {
+    ) -> Result<Bid<MemberId, AccountId, BlockNumber, Balance>, Error<T>> {
         if let Some(bid) = &self.last_bid {
-            Ok(bid)
+            Ok(bid.clone())
         } else {
             Err(Error::<T>::LastBidDoesNotExist)
         }

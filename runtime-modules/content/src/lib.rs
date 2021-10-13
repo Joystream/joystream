@@ -1215,13 +1215,7 @@ decl_module! {
             auction.ensure_is_valid_bid::<T>(bid)?;
 
             // Used only for immediate auction completion
-            let owner_account_id = match auction.buy_now_price {
-                // Do not charge more then buy now
-                Some(buy_now_price) if bid >= buy_now_price => {
-                    Some(Self::ensure_owner_account_id(&video, &nft)?)
-                },
-                _ => None,
-            };
+            let funds_destination_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
             //
             // == MUTATION SAFE ==
@@ -1232,35 +1226,36 @@ decl_module! {
                 T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
             }
 
-            // Complete auction immediately
-            if let (Some(buy_now_price), Some(owner_account_id)) = (auction.buy_now_price, owner_account_id) {
+            match auction.buy_now_price {
+                Some(buy_now_price) if bid >= buy_now_price => {
+                    // Do not charge more then buy now
+                    let (_, bid) = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
-                // Do not charge more then buy now
-                let auction = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
+                    let nft = Self::complete_auction(video.in_channel, nft, bid, funds_destination_account_id);
+                    let video = video.set_nft_status(nft);
 
-                let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
-                let video = video.set_nft_status(nft);
+                    // Update the video
+                    VideoById::<T>::insert(video_id, video);
 
-                // Update the video
-                VideoById::<T>::insert(video_id, video);
+                    // Trigger event
+                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
+                }
+                _ => {
+                    // Make auction bid & update auction data
 
-                // Trigger event
-                Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
-            } else {
-                // Make auction bid & update auction data
+                    // Reseve balance for current bid
+                    // Can not fail, needed check made
+                    T::Currency::reserve(&participant_account_id, bid)?;
 
-                // Reseve balance for current bid
-                // Can not fail, needed check made
-                T::Currency::reserve(&participant_account_id, bid)?;
+                    let (auction, _) = auction.make_bid(participant_id, participant_account_id, bid, current_block);
+                    let nft = nft.set_auction_transactional_status(auction);
+                    let video = video.set_nft_status(nft);
 
-                let auction = auction.make_bid(participant_id, participant_account_id, bid, current_block);
-                let nft = nft.set_auction_transactional_status(auction);
-                let video = video.set_nft_status(nft);
+                    VideoById::<T>::insert(video_id, video);
 
-                VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+                    // Trigger event
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+                }
             }
         }
 
@@ -1323,7 +1318,7 @@ decl_module! {
             // Ensure auction for given video id exists, retrieve corresponding one
             let auction = nft.ensure_auction_state::<T>()?;
 
-            auction.ensure_last_bid_exists::<T>()?;
+            let bid = auction.ensure_last_bid_exists::<T>()?;
 
             // Ensure actor authorized to complete auction.
             Self::ensure_member_is_last_bidder(origin, member_id, &auction)?;
@@ -1331,13 +1326,13 @@ decl_module! {
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
-            let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
+            let nft = Self::complete_auction(video.in_channel, nft, bid, owner_account_id);
             let video = video.set_nft_status(nft);
 
             // Update the video
@@ -1372,15 +1367,15 @@ decl_module! {
             auction.ensure_is_open_auction::<T>()?;
 
             // Ensure there is a bid to accept
-            auction.ensure_last_bid_exists::<T>()?;
+            let bid = auction.ensure_last_bid_exists::<T>()?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
-            let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
+            let nft = Self::complete_auction(video.in_channel, nft, bid, owner_account_id);
             let video = video.set_nft_status(nft);
 
             // Update the video
@@ -1652,21 +1647,14 @@ impl<T: Trait> Module<T> {
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
         if let NFTOwner::Member(member_id) = owned_nft.owner {
-            Self::ensure_member_controller_account_id(member_id)
+            let membership = <membership::Module<T>>::ensure_membership(member_id)
+                .map_err(|_| Error::<T>::MemberProfileNotFound)?;
+            Ok(membership.controller_account)
         } else if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
             Ok(reward_account)
         } else {
             Err(Error::<T>::RewardAccountIsNotSet)
         }
-    }
-
-    /// Ensure member controller account id exists, retrieve corresponding one.
-    pub fn ensure_member_controller_account_id(
-        member_id: T::MemberId,
-    ) -> Result<T::AccountId, Error<T>> {
-        let membership = <membership::Module<T>>::ensure_membership(member_id)
-            .map_err(|_| Error::<T>::MemberProfileNotFound)?;
-        Ok(membership.controller_account)
     }
 
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
