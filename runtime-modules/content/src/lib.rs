@@ -1691,21 +1691,14 @@ impl<T: Trait> Module<T> {
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
         if let NFTOwner::Member(member_id) = owned_nft.owner {
-            Self::ensure_member_controller_account_id(member_id)
+            let membership = <membership::Module<T>>::ensure_membership(member_id)
+                .map_err(|_| Error::<T>::MemberProfileNotFound)?;
+            Ok(membership.controller_account)
         } else if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
             Ok(reward_account)
         } else {
             Err(Error::<T>::RewardAccountIsNotSet)
         }
-    }
-
-    /// Ensure member controller account id exists, retrieve corresponding one.
-    pub fn ensure_member_controller_account_id(
-        member_id: T::MemberId,
-    ) -> Result<T::AccountId, Error<T>> {
-        let membership = <membership::Module<T>>::ensure_membership(member_id)
-            .map_err(|_| Error::<T>::MemberProfileNotFound)?;
-        Ok(membership.controller_account)
     }
 
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
