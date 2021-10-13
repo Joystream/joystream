@@ -6,7 +6,7 @@ import { In } from 'typeorm'
 import { Content } from '../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { processVideoMetadata } from './utils'
-import { Channel, Video, VideoCategory, AssetNone } from 'query-node/dist/model'
+import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -107,14 +107,14 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
-    thumbnailPhoto: new AssetNone(),
-    media: new AssetNone(),
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
   })
   // deserialize & process metadata
-  const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta) || {}
-  await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets)
+  if (videoCreationParameters.meta.isSome) {
+    const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta.unwrap()) || {}
+    await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets.unwrapOr(undefined))
+  }
 
   // save video
   await store.save<Video>(video)
@@ -145,7 +145,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets.unwrapOr(undefined))
+    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
   }
 
   // set last update time

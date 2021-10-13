@@ -1,6 +1,7 @@
 import { AnyMessage, AnyMetadataClass, DecodedMetadataObject } from './types'
 import countries from 'i18n-iso-countries'
 import langs from 'iso-639-1'
+import subdivisions from 'iso-3166-2'
 
 export function isSet<T>(v: T | null | undefined): v is T {
   return v !== null && v !== undefined
@@ -41,4 +42,9 @@ export function isValidCountryCode(code: string): boolean {
 // Checks if the provided code is valid according to ISO 639-1 standard
 export function isValidLanguageCode(code: string): boolean {
   return langs.validate(code)
+}
+
+// According to ISO 3166-2 standard
+export function isValidSubdivisionCode(code: string): boolean {
+  return !!subdivisions.subdivision(code)
 }
