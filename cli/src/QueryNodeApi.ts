@@ -106,9 +106,13 @@ export default class QueryNodeApi {
     for (const { operatorMetadata, id } of result) {
       if (operatorMetadata?.nodeEndpoint) {
         try {
-          const validUrl = new URL(operatorMetadata.nodeEndpoint)
+          const rootEndpoint = operatorMetadata.nodeEndpoint
+          const apiEndpoint = new URL(
+            'api/v1',
+            rootEndpoint.endsWith('/') ? rootEndpoint : rootEndpoint + '/'
+          ).toString()
           validNodesInfo.push({
-            apiEndpoint: validUrl.toString().endsWith('/') ? validUrl.toString() : validUrl.toString() + '/',
+            apiEndpoint,
             bucketId: parseInt(id),
           })
         } catch (e) {

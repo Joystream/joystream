@@ -162,9 +162,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       const nodesInfo = _.shuffle(await this.getQNApi().storageNodesInfoByBagId(bagId))
       for (const info of nodesInfo) {
         try {
-          // TODO: Use a status endpoint once available?
-          await axios.get(info.apiEndpoint, {
-            validateStatus: (s) => s === 404, // we expect 404 on root endpoint
+          await axios.get(info.apiEndpoint + '/version', {
             headers: {
               connection: 'close',
             },
@@ -229,7 +227,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     const postData: TokenRequest = { data, signature }
     const {
       data: { token },
-    } = await axios.post(`${storageNodeInfo.apiEndpoint}authToken`, postData)
+    } = await axios.post(`${storageNodeInfo.apiEndpoint}/authToken`, postData)
     if (!token) {
       this.error('Recieved empty token from the storage node!', { exit: ExitCodes.StorageNodeError })
     }
@@ -272,7 +270,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     })
     this.log(`Uploading object ${objectId.toString()} (${filePath})`)
     try {
-      await axios.post(`${storageNodeInfo.apiEndpoint}files`, formData, {
+      await axios.post(`${storageNodeInfo.apiEndpoint}/files`, formData, {
         headers: {
           'x-api-key': token,
           'content-type': 'multipart/form-data',
