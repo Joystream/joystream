@@ -257,7 +257,7 @@ impl<T: Trait> Module<T> {
                     nft.creator_royalty,
                     *price,
                     new_owner_account_id,
-                    owner_account_id,
+                    Some(owner_account_id),
                 );
             }
 
@@ -273,7 +273,7 @@ impl<T: Trait> Module<T> {
         creator_royalty: Option<Royalty>,
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
-        receiver_account_id: T::AccountId,
+        receiver_account_id: Option<T::AccountId>,
     ) {
         let auction_fee = Self::platform_fee_percentage() * amount;
 
@@ -284,11 +284,18 @@ impl<T: Trait> Module<T> {
             T::Currency::slash_reserved(&sender_account_id, amount);
 
             // Deposit amount, exluding royalty and platform fee into receiver account
-            if amount > royalty + auction_fee {
-                T::Currency::deposit_creating(&receiver_account_id, amount - royalty - auction_fee);
-            } else {
-                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
-            }
+            match receiver_account_id {
+                Some(receiver_account_id) if amount > royalty + auction_fee => {
+                    T::Currency::deposit_creating(
+                        &receiver_account_id,
+                        amount - royalty - auction_fee,
+                    );
+                }
+                Some(receiver_account_id) => {
+                    T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+                }
+                _ => (),
+            };
 
             // Should always be Some(_) at this stage, because of previously made check.
             if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
@@ -299,8 +306,10 @@ impl<T: Trait> Module<T> {
             // Slash amount from sender
             T::Currency::slash_reserved(&sender_account_id, amount);
 
-            // Deposit amount, exluding auction fee into receiver account
-            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+            if let Some(receiver_account_id) = receiver_account_id {
+                // Deposit amount, exluding auction fee into receiver account
+                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+            }
         }
     }
 
@@ -308,25 +317,23 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        auction: Auction<T>,
-        owner_account_id: T::AccountId,
+        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        owner_account_id: Option<T::AccountId>,
     ) -> Nft<T> {
-        if let Some(last_bid) = auction.last_bid {
-            let last_bid_amount = last_bid.amount;
-            let last_bidder = last_bid.bidder;
-            let bidder_account_id = last_bid.bidder_account_id;
+        let last_bid_amount = last_bid.amount;
+        let last_bidder = last_bid.bidder;
+        let bidder_account_id = last_bid.bidder_account_id;
 
-            Self::complete_payment(
-                in_channel,
-                nft.creator_royalty,
-                last_bid_amount,
-                bidder_account_id,
-                owner_account_id,
-            );
+        Self::complete_payment(
+            in_channel,
+            nft.creator_royalty,
+            last_bid_amount,
+            bidder_account_id,
+            owner_account_id,
+        );
 
-            nft.owner = NFTOwner::Member(last_bidder);
-            nft.transactional_status = TransactionalStatus::Idle;
-        }
+        nft.owner = NFTOwner::Member(last_bidder);
+        nft.transactional_status = TransactionalStatus::Idle;
         nft
     }
 }
