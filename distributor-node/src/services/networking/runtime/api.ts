@@ -120,8 +120,8 @@ export class RuntimeApi {
                 let errorMsg = dispatchError.toString()
                 if (dispatchError.isModule) {
                   try {
-                    const { name, documentation } = this._api.registry.findMetaError(dispatchError.asModule)
-                    errorMsg = `${name} (${documentation})`
+                    const { name, docs } = this._api.registry.findMetaError(dispatchError.asModule)
+                    errorMsg = `${name} (${docs.join(', ')})`
                   } catch (e) {
                     // This probably means we don't have this error in the metadata
                     // In this case - continue (we'll just display dispatchError.toString())
