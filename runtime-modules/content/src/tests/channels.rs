@@ -77,7 +77,7 @@ fn successful_channel_deletion() {
         let params = get_video_creation_parameters();
 
         let video_id = NextVideoId::<Test>::get();
-        
+
         // Create simple video using member actor
         create_video_mock(
             FIRST_MEMBER_ORIGIN,
@@ -391,7 +391,6 @@ fn curator_owned_channels() {
                     deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
-                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -472,7 +471,6 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
-                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -507,7 +505,6 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
-                    num_nfts: 0,
                 },
                 ChannelCreationParametersRecord {
                     assets: NewAssets::<Test>::Urls(vec![]),
@@ -541,7 +538,6 @@ fn member_owned_channels() {
                     deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
                     num_assets: 0,
                     num_videos: 0,
-                    num_nfts: 0,
                 },
                 ChannelUpdateParametersRecord {
                     assets: None,
