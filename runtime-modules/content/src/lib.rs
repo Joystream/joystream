@@ -375,8 +375,6 @@ decl_module! {
                 owner: channel_owner,
                 // a newly create channel has zero videos ??
                 num_videos: 0u64,
-                // a newly create channel has zero nfts
-                num_nfts: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
                 // number of assets uploaded
@@ -471,9 +469,6 @@ decl_module! {
 
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
-
-            // check that channel nfts are 0
-            ensure!(channel.num_nfts == 0, Error::<T>::ChannelContainsNFTs);
 
             // delete channel dynamic bag
             let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
@@ -1094,11 +1089,6 @@ decl_module! {
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
-
-            // Increment the number of channel related video nfts.
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_nfts = channel.num_nfts.saturating_add(1);
-            });
 
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
