@@ -25,7 +25,7 @@ ${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev
 ${CLI} leader:set-bucket-limits -i=${BUCKET_ID} -o=100 -s=10000000 --dev
 ${CLI} leader:update-bucket-status -i=${BUCKET_ID} --set on --dev
 ${CLI} leader:update-bag -a=${BUCKET_ID} -i static:council --dev 
-${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -m=http://google.com --dev
+${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -e=http://google.com --dev
 
 # Create and delete a bucket
 BUCKET_ID=`${CLI} leader:create-bucket -a -n=100 -s=10000000  --dev` # bucketId = 1
