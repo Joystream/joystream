@@ -266,10 +266,10 @@ impl<
         bidder_account_id: AccountId,
         bid: Balance,
         last_bid_block: BlockNumber,
-    ) -> Self {
+    ) -> (Self, Bid<MemberId, AccountId, BlockNumber, Balance>) {
         let bid = Bid::new(bidder, bidder_account_id, bid, last_bid_block);
-        self.last_bid = Some(bid);
-        self
+        self.last_bid = Some(bid.clone());
+        (self, bid)
     }
 
     /// Cnacel auction bid
@@ -349,7 +349,7 @@ impl<
     pub fn ensure_bid_lock_duration_expired<T: Trait>(
         &self,
         current_block: BlockNumber,
-        bid: &Bid<MemberId, AccountId, BlockNumber, Balance>,
+        bid: Bid<MemberId, AccountId, BlockNumber, Balance>,
     ) -> DispatchResult {
         if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
             ensure!(
@@ -393,9 +393,9 @@ impl<
     /// Ensure auction has last bid, return corresponding reference
     pub fn ensure_last_bid_exists<T: Trait>(
         &self,
-    ) -> Result<&Bid<MemberId, AccountId, BlockNumber, Balance>, Error<T>> {
+    ) -> Result<Bid<MemberId, AccountId, BlockNumber, Balance>, Error<T>> {
         if let Some(bid) = &self.last_bid {
-            Ok(bid)
+            Ok(bid.clone())
         } else {
             Err(Error::<T>::LastBidDoesNotExist)
         }

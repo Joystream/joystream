@@ -293,25 +293,23 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        auction: Auction<T>,
+        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, BalanceOf<T>>,
         owner_account_id: Option<T::AccountId>,
     ) -> Nft<T> {
-        if let Some(last_bid) = auction.last_bid {
-            let last_bid_amount = last_bid.amount;
-            let last_bidder = last_bid.bidder;
-            let bidder_account_id = last_bid.bidder_account_id;
+        let last_bid_amount = last_bid.amount;
+        let last_bidder = last_bid.bidder;
+        let bidder_account_id = last_bid.bidder_account_id;
 
-            Self::complete_payment(
-                in_channel,
-                nft.creator_royalty,
-                last_bid_amount,
-                bidder_account_id,
-                owner_account_id,
-            );
+        Self::complete_payment(
+            in_channel,
+            nft.creator_royalty,
+            last_bid_amount,
+            bidder_account_id,
+            owner_account_id,
+        );
 
-            nft.owner = NFTOwner::Member(last_bidder);
-            nft.transactional_status = TransactionalStatus::Idle;
-        }
+        nft.owner = NFTOwner::Member(last_bidder);
+        nft.transactional_status = TransactionalStatus::Idle;
         nft
     }
 }
