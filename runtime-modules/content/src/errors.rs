@@ -191,5 +191,7 @@ decl_error! {
         /// Channel Contains Assets
         ChannelContainsAssets,
 
+        /// Channel Contains NFTs
+        ChannelContainsNFTs,
     }
 }
