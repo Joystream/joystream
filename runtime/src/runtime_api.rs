@@ -58,6 +58,9 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
+        // initialize content module
+        content::Module::<Runtime>::on_runtime_upgrade();
+
         10_000_000 // TODO: adjust weight
     }
 }
