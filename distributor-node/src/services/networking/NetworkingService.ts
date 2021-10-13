@@ -87,6 +87,10 @@ export class NetworkingService {
     })
   }
 
+  private getApiEndpoint(rootEndpoint: string) {
+    return rootEndpoint.endsWith('/') ? rootEndpoint + 'api/v1' : rootEndpoint + '/api/v1'
+  }
+
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     const endpointsData = details.storageBag.storageAssignments
       .filter(
@@ -94,10 +98,14 @@ export class NetworkingService {
           a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' &&
           a.storageBucket.operatorMetadata?.nodeEndpoint
       )
-      .map((a) => ({
-        bucketId: a.storageBucket.id,
-        endpoint: a.storageBucket.operatorMetadata!.nodeEndpoint!,
-      }))
+      .map((a) => {
+        const rootEndpoint = a.storageBucket.operatorMetadata!.nodeEndpoint!
+        const apiEndpoint = this.getApiEndpoint(rootEndpoint)
+        return {
+          bucketId: a.storageBucket.id,
+          endpoint: apiEndpoint,
+        }
+      })
 
     return this.filterStorageNodeEndpoints(endpointsData)
   }
@@ -300,7 +308,7 @@ export class NetworkingService {
       const endpoints = this.filterStorageNodeEndpoints(
         activeStorageOperators.map(({ id, operatorMetadata }) => ({
           bucketId: id,
-          endpoint: operatorMetadata!.nodeEndpoint!,
+          endpoint: this.getApiEndpoint(operatorMetadata!.nodeEndpoint!),
         }))
       )
       this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
