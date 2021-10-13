@@ -7,7 +7,7 @@ import { RawParam } from '@polkadot/react-params/types';
 import { TypeDef } from '@polkadot/types/types';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { GenericCall, getTypeDef } from '@polkadot/types';
+import { getTypeDef } from '@polkadot/types';
 import Params from '@polkadot/react-params';
 import { isUndefined } from '@polkadot/util';
 
@@ -37,7 +37,7 @@ interface CallState {
 }
 
 function getParams ({ meta }: SubmittableExtrinsicFunction<'promise'>): { name: string; type: TypeDef }[] {
-  return GenericCall.filterOrigin(meta).map((arg): { name: string; type: TypeDef } => ({
+  return meta.args.map((arg): { name: string; type: TypeDef } => ({
     name: arg.name.toString(),
     type: getTypeDef(arg.type.toString())
   }));
@@ -65,7 +65,7 @@ function ExtrinsicDisplay ({ defaultValue, isDisabled, isError, isPrivate, label
       try {
         method = extrinsic.fn(...values.map(({ value }): any => value));
       } catch (error) {
-        onError && onError(error);
+        onError && onError(error as Error);
       }
     } else {
       onError && onError(null);
@@ -85,7 +85,7 @@ function ExtrinsicDisplay ({ defaultValue, isDisabled, isError, isPrivate, label
     <div className='extrinsics--Extrinsic'>
       <InputExtrinsic
         defaultValue={defaultValue}
-        help={meta?.documentation.join(' ')}
+        help={meta?.docs.join(' ')}
         isDisabled={isDisabled}
         isError={isError}
         isPrivate={isPrivate}

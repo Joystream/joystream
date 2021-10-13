@@ -8,6 +8,7 @@ import React from 'react';
 
 import { ApiPromise } from '@polkadot/api';
 import { unwrapStorageType } from '@polkadot/types/primitive/StorageKey';
+import { registry } from '@joystream/types';
 
 export default function createOptions (api: ApiPromise, sectionName: string): DropdownOptions {
   const section = api.query[sectionName];
@@ -28,8 +29,8 @@ export default function createOptions (api: ApiPromise, sectionName: string): Dr
           ? `${type.asDoubleMap.key1.toString()}, ${type.asDoubleMap.key2.toString()}`
           : '';
       const output = method.meta.modifier.isOptional
-        ? `Option<${unwrapStorageType(type)}>`
-        : unwrapStorageType(type);
+        ? `Option<${unwrapStorageType(registry, type)}>`
+        : unwrapStorageType(registry, type);
 
       return {
         className: 'ui--DropdownLinked-Item',
@@ -45,7 +46,7 @@ export default function createOptions (api: ApiPromise, sectionName: string): Dr
             className='ui--DropdownLinked-Item-text'
             key={`${sectionName}_${value}:text`}
           >
-            {(method.meta.documentation[0] || method.meta.name).toString()}
+            {(method.meta.docs[0] || method.meta.name).toString()}
           </div>
         ],
         value

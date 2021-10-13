@@ -6,7 +6,7 @@ import { MemberId, ActorId } from '../members'
 import { RewardRelationshipId } from '../recurring-rewards'
 import { StakeId } from '../stake'
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring'
-import { JoyEnum, JoyStructDecorated, SlashingTerms, JoyBTreeSet } from '../common'
+import { JoyEnum, JoyStructDecorated, SlashingTerms } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class RationaleText extends Bytes {}
@@ -34,7 +34,7 @@ export class WorkerId extends ActorId {}
 
 export class StorageProviderId extends WorkerId {}
 
-export class ApplicationIdSet extends JoyBTreeSet(ApplicationId) {}
+export class ApplicationIdSet extends BTreeSet.with(ApplicationId) {}
 
 export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
@@ -127,7 +127,7 @@ export type IOpening = {
 export class Opening
   extends JoyStructDecorated({
     hiring_opening_id: OpeningId,
-    applications: JoyBTreeSet(ApplicationId),
+    applications: BTreeSet.with(ApplicationId),
     policy_commitment: OpeningPolicyCommitment,
     opening_type: OpeningType,
   })

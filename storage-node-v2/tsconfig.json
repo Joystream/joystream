@@ -16,7 +16,8 @@
     "esModuleInterop": true,
     "types" : [ "node", "mocha" ],
     "noUnusedLocals": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "useUnknownInCatchVariables": false
   },
   "include": [
     "src/**/*"

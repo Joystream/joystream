@@ -11,10 +11,10 @@
     "format": "prettier ./ --write",
     "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
     "checks": "yarn build && madge --circular ./ && prettier ./ --check && yarn check:augment && yarn lint",
-    "generate:defs": "ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./augment",
-    "generate:meta": "ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ws://127.0.0.1:9944 --output ./augment --strict",
-    "generate:augment-codec": "ts-node ./src/scripts/generateAugmentCodec.ts",
-    "generate:registry-json": "ts-node ./src/scripts/generateRegistryJson.ts",
+    "generate:defs": "yarn ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./augment",
+    "generate:meta": "yarn ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ws://127.0.0.1:9944 --output ./augment --strict",
+    "generate:augment-codec": "yarn ts-node ./src/scripts/generateAugmentCodec.ts",
+    "generate:registry-json": "yarn ts-node ./src/scripts/generateRegistryJson.ts",
     "generate:augment": "yarn generate:registry-json && yarn generate:defs && yarn generate:meta",
     "generate:all": "yarn generate:augment && yarn generate:augment-codec",
     "generate:json-schemas": "json2ts -i ./src/hiring/schemas/role.schema.json -o ./src/hiring/schemas/role.schema.typings.ts"
@@ -22,9 +22,9 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "4.2.1",
-    "@polkadot/types": "4.2.1",
-    "@polkadot/keyring": "^6.0.5",
+    "@polkadot/api": "5.9.1",
+    "@polkadot/types": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
@@ -32,9 +32,9 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polkadot/typegen": "4.2.1",
-    "ts-node": "^8.8.2",
-    "typescript": "^3.7.2",
+    "@polkadot/typegen": "5.9.1",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3",
     "madge": "^3.9.2",
     "json-schema-to-typescript": "^9.1.1"
   },

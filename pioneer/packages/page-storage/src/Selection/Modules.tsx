@@ -142,7 +142,7 @@ function Modules ({ onAdd }: Props): React.ReactElement<Props> {
       <div className='storage--actionrow-value'>
         <InputStorage
           defaultValue={api.query.timestamp.now}
-          help={meta?.documentation.join(' ')}
+          help={meta?.docs.join(' ')}
           label={t<string>('selected state query')}
           onChange={_onChangeKey}
         />
