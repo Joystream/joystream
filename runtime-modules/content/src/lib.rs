@@ -1104,10 +1104,9 @@ decl_module! {
         pub fn start_nft_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
+            video_id: T::VideoId,
+            auction_params: AuctionParams<T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
-            let video_id = auction_params.video_id;
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1142,7 +1141,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionStarted(owner_id, auction_params));
+            Self::deposit_event(RawEvent::AuctionStarted(owner_id, video_id, auction_params));
         }
 
         /// Cancel video nft transaction
@@ -1697,12 +1696,8 @@ decl_event!(
         Channel = Channel<T>,
         DataObjectId = <T as storage::Trait>::DataObjectId,
         IsCensored = bool,
-        AuctionParams = AuctionParams<
-            <T as Trait>::VideoId,
-            <T as frame_system::Trait>::BlockNumber,
-            BalanceOf<T>,
-            MemberId<T>,
-        >,
+        AuctionParams =
+            AuctionParams<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>,
         Balance = BalanceOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
@@ -1812,7 +1807,7 @@ decl_event!(
         ChannelDeleted(ContentActor, ChannelId),
 
         // NFT auction
-        AuctionStarted(ContentActor, AuctionParams),
+        AuctionStarted(ContentActor, VideoId, AuctionParams),
         NftIssued(
             ContentActor,
             VideoId,

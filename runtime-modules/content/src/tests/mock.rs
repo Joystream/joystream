@@ -496,7 +496,7 @@ type RawEvent = crate::RawEvent<
     Channel<Test>,
     <Test as storage::Trait>::DataObjectId,
     bool,
-    AuctionParams<VideoId, <Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
+    AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
     BalanceOf<Test>,
     ChannelCreationParameters<Test>,
     ChannelUpdateParameters<Test>,
@@ -554,6 +554,21 @@ pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
         }),
         meta: b"test".to_vec(),
+    }
+}
+
+/// Get good params for open auction
+pub fn get_open_auction_params(
+) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
+    AuctionParams {
+        starting_price: Content::min_starting_price(),
+        buy_now_price: None,
+        auction_type: AuctionType::Open(OpenAuctionDetails {
+            bid_lock_duration: Content::min_bid_lock_duration(),
+        }),
+        minimal_bid_step: Content::min_bid_step(),
+        starts_at: None,
+        whitelist: BTreeSet::new(),
     }
 }
 

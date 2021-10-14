@@ -53,7 +53,7 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, MemberId<T>>,
+        auction_params: &AuctionParams<T::BlockNumber, BalanceOf<T>, MemberId<T>>,
     ) -> DispatchResult {
         match auction_params.auction_type {
             AuctionType::English(EnglishAuctionDetails {
@@ -174,12 +174,12 @@ impl<T: Trait> Module<T> {
         starting_price: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            starting_price >= Self::max_starting_price(),
-            Error::<T>::StartingPriceUpperBoundExceeded
+            starting_price >= Self::min_starting_price(),
+            Error::<T>::StartingPriceLowerBoundExceeded
         );
         ensure!(
-            starting_price <= Self::min_starting_price(),
-            Error::<T>::StartingPriceLowerBoundExceeded
+            starting_price <= Self::max_starting_price(),
+            Error::<T>::StartingPriceUpperBoundExceeded
         );
         Ok(())
     }
