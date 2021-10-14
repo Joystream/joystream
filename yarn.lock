@@ -4861,6 +4861,11 @@
   resolved "https://registry.yarnpkg.com/@types/is-function/-/is-function-1.0.0.tgz#1b0b819b1636c7baf0d6785d030d12edf70c3e83"
   integrity "sha1-GwuBmxY2x7rw1nhdAw0S7fcMPoM= sha512-iTs9HReBu7evG77Q4EC8hZnqRt57irBDkK9nvmHroiOIVwYMQc4IvYvdRgwKfYepunIY7Oh/dBuuld+Gj9uo6w=="
 
+"@types/iso-3166-2@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@types/iso-3166-2/-/iso-3166-2-1.0.0.tgz#98a7b6e505c031e83c5aac13c9c49f9d9f6ca234"
+  integrity sha512-DYDyoRyPyxBeI9bYoTXLfsOZH12m1anrWEj9LU5Sl9rgsJ4soJMYf/7byozM+64Smn6/a1i079eQLGuPykwaHQ==
+
 "@types/isomorphic-fetch@^0.0.35":
   version "0.0.35"
   resolved "https://registry.yarnpkg.com/@types/isomorphic-fetch/-/isomorphic-fetch-0.0.35.tgz#c1c0d402daac324582b6186b91f8905340ea3361"
@@ -14492,11 +14497,6 @@ google-protobuf@^3.14.0:
   resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.17.3.tgz#f87595073545a77946c8f0b67c302c5f7646d700"
   integrity sha512-OVPzcSWIAJ+d5yiHyeaLrdufQtrvaBrF4JQg+z8ynTkbO3uFcujqXszTumqg1cGsAsjkWnI+M5B1xZ19yR4Wyg==
 
-google-protobuf@^3.6.1:
-  version "3.15.8"
-  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.15.8.tgz#5f3948905e4951c867d6bc143f385a80e2a39efe"
-  integrity sha512-2jtfdqTaSxk0cuBJBtTTWsot4WtR9RVr2rXg7x7OoqiuOKopPrwXpM1G4dXIkLcUNRh3RKzz76C8IOkksZSeOw==
-
 got@^6.3.0, got@^6.7.1:
   version "6.7.1"
   resolved "https://registry.yarnpkg.com/got/-/got-6.7.1.tgz#240cd05785a9a18e561dc1b44b41c763ef1e8db0"
@@ -16922,6 +16922,15 @@ isexe@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=
+
+iso-639-1@^2.1.9:
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/iso-639-1/-/iso-639-1-2.1.9.tgz#e41b11d4f1808e5316d0252c3fa16eeb9b37bb58"
+  integrity sha512-owRu9up+Cpx/hwSzm83j6G8PtC7U99UCtPVItsafefNfEgMl+pi8KBwhXwJkJfp6IouyYWFxj8n24SvCWpKZEQ==
+iso-3166-2@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/iso-3166-2/-/iso-3166-2-1.0.0.tgz#20c5cda527b56bfc7409c6802d9bff0119086131"
+  integrity sha512-xLAazfKZzwlsg/Zz/GQGQk3jJez5/2ORrjD3TjSuqz/arMht/xTK49c0GOE3afO/gEd9tHtBVVlfBla01unUng==
 
 iso-constants@^0.1.2:
   version "0.1.2"
@@ -27739,13 +27748,6 @@ ts-pnp@^1.1.2:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/ts-pnp/-/ts-pnp-1.2.0.tgz#a500ad084b0798f1c3071af391e65912c86bca92"
   integrity "sha1-pQCtCEsHmPHDBxrzkeZZEshrypI= sha512-csd+vJOb/gkzvcCHgTGSChYpy5f1/XKNsmvBGO4JXS+z1v2HobugDz4s1IeFXM3wZB44uczs+eazB5Q/ccdhQw=="
-
-ts-protoc-gen@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/ts-protoc-gen/-/ts-protoc-gen-0.14.0.tgz#a6f4c3fc37d1d449915551c18404fb7e9aa8fef6"
-  integrity sha512-2z6w2HioMCMVNcgNHBcEvudmQfzrn+3BjAlz+xgYZ9L0o8n8UG8WUiTJcbXHFiEg2SU8IltwH2pm1otLoMSKwg==
-  dependencies:
-    google-protobuf "^3.6.1"
 
 tsconfig-paths-webpack-plugin@^3.2.0:
   version "3.5.1"

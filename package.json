@@ -27,7 +27,6 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",
-    "content-metadata-protobuf",
     "metadata-protobuf"
   ],
   "resolutions": {
