@@ -28,88 +28,88 @@ import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } fr
 export type BucketsResponse = BucketsResponseOneOf | BucketsResponseOneOf1;
 
 /**
- *
+ * 
  * @export
  * @interface BucketsResponseOneOf
  */
 export interface BucketsResponseOneOf {
     /**
-     *
+     * 
      * @type {Array<number>}
      * @memberof BucketsResponseOneOf
      */
     bucketIds: Array<number>;
 }
 /**
- *
+ * 
  * @export
  * @interface BucketsResponseOneOf1
  */
 export interface BucketsResponseOneOf1 {
     /**
-     *
+     * 
      * @type {number}
      * @memberof BucketsResponseOneOf1
      */
     allByWorkerId: number;
 }
 /**
- *
+ * 
  * @export
  * @interface ErrorResponse
  */
 export interface ErrorResponse {
     /**
-     *
+     * 
      * @type {string}
      * @memberof ErrorResponse
      */
     type?: string;
     /**
-     *
+     * 
      * @type {string}
      * @memberof ErrorResponse
      */
     message: string;
 }
 /**
- *
+ * 
  * @export
  * @interface StatusResponse
  */
 export interface StatusResponse {
     /**
-     *
+     * 
      * @type {string}
      * @memberof StatusResponse
      */
     id: string;
     /**
-     *
+     * 
      * @type {number}
      * @memberof StatusResponse
      */
     objectsInCache: number;
     /**
-     *
+     * 
      * @type {number}
      * @memberof StatusResponse
      */
     storageLimit: number;
     /**
-     *
+     * 
      * @type {number}
      * @memberof StatusResponse
      */
     storageUsed: number;
     /**
-     *
+     * 
      * @type {number}
      * @memberof StatusResponse
      */
     uptime: number;
     /**
-     *
+     * 
      * @type {number}
      * @memberof StatusResponse
      */
@@ -145,7 +145,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
             const localVarQueryParameter = {} as any;
 
 
-
+    
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -178,7 +178,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
             const localVarQueryParameter = {} as any;
 
 
-
+    
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -207,7 +207,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
             const localVarQueryParameter = {} as any;
 
 
-
+    
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -236,7 +236,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
             const localVarQueryParameter = {} as any;
 
 
-
+    
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
