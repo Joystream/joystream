@@ -22,151 +22,151 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
 
 /**
- * 
+ *
  * @export
  * @interface DataStatsResponse
  */
 export interface DataStatsResponse {
     /**
-     * 
+     *
      * @type {number}
      * @memberof DataStatsResponse
      */
     totalSize: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof DataStatsResponse
      */
     objectNumber: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof DataStatsResponse
      */
     tempDirSize?: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof DataStatsResponse
      */
     tempDownloads?: number;
 }
 /**
- * 
+ *
  * @export
  * @interface ErrorResponse
  */
 export interface ErrorResponse {
     /**
-     * 
+     *
      * @type {string}
      * @memberof ErrorResponse
      */
     type?: string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof ErrorResponse
      */
     message: string;
 }
 /**
- * 
+ *
  * @export
  * @interface InlineResponse201
  */
 export interface InlineResponse201 {
     /**
-     * 
+     *
      * @type {string}
      * @memberof InlineResponse201
      */
     id?: string;
 }
 /**
- * 
+ *
  * @export
  * @interface InlineResponse2011
  */
 export interface InlineResponse2011 {
     /**
-     * 
+     *
      * @type {string}
      * @memberof InlineResponse2011
      */
     token?: string;
 }
 /**
- * 
+ *
  * @export
  * @interface TokenRequest
  */
 export interface TokenRequest {
     /**
-     * 
+     *
      * @type {TokenRequestData}
      * @memberof TokenRequest
      */
     data: TokenRequestData;
     /**
-     * 
+     *
      * @type {string}
      * @memberof TokenRequest
      */
     signature: string;
 }
 /**
- * 
+ *
  * @export
  * @interface TokenRequestData
  */
 export interface TokenRequestData {
     /**
-     * 
+     *
      * @type {number}
      * @memberof TokenRequestData
      */
     memberId: number;
     /**
-     * 
+     *
      * @type {string}
      * @memberof TokenRequestData
      */
     accountId: string;
     /**
-     * 
+     *
      * @type {number}
      * @memberof TokenRequestData
      */
     dataObjectId: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof TokenRequestData
      */
     storageBucketId: number;
     /**
-     * 
+     *
      * @type {string}
      * @memberof TokenRequestData
      */
     bagId: string;
 }
 /**
- * 
+ *
  * @export
  * @interface VersionResponse
  */
 export interface VersionResponse {
     /**
-     * 
+     *
      * @type {string}
      * @memberof VersionResponse
      */
     version: string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof VersionResponse
      */
@@ -199,7 +199,7 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             localVarHeaderParameter['Content-Type'] = 'application/json';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
@@ -235,7 +235,7 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -268,7 +268,7 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -311,25 +311,25 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
             await setApiKeyToObject(localVarHeaderParameter, "x-api-key", configuration)
 
 
-            if (file !== undefined) { 
+            if (file !== undefined) {
                 localVarFormParams.append('file', file as any);
             }
-    
-            if (dataObjectId !== undefined) { 
+
+            if (dataObjectId !== undefined) {
                 localVarFormParams.append('dataObjectId', dataObjectId as any);
             }
-    
-            if (storageBucketId !== undefined) { 
+
+            if (storageBucketId !== undefined) {
                 localVarFormParams.append('storageBucketId', storageBucketId as any);
             }
-    
-            if (bagId !== undefined) { 
+
+            if (bagId !== undefined) {
                 localVarFormParams.append('bagId', bagId as any);
             }
-    
-    
+
+
             localVarHeaderParameter['Content-Type'] = 'multipart/form-data';
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -526,7 +526,7 @@ export const StateApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -559,7 +559,7 @@ export const StateApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -588,7 +588,7 @@ export const StateApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -617,7 +617,7 @@ export const StateApiAxiosParamCreator = function (configuration?: Configuration
             const localVarQueryParameter = {} as any;
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};

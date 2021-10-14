@@ -3,6 +3,7 @@ import { apiModuleByGroup } from '../../Api'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
+import { Bytes } from '@polkadot/types'
 
 export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
   static description = 'Evicts given worker. Requires lead access.'
@@ -30,7 +31,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
     const groupMember = await this.getWorkerForLeadAction(workerId)
 
     // TODO: Terminate worker text limits? (minMaxStr)
-    const rationale = await this.promptForParam('Bytes', createParamOptions('rationale'))
+    const rationale = (await this.promptForParam('Bytes', createParamOptions('rationale'))) as Bytes
     const shouldSlash = groupMember.stake
       ? await this.simplePrompt({
           message: `Should the worker stake (${formatBalance(groupMember.stake)}) be slashed?`,

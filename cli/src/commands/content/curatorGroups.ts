@@ -13,7 +13,7 @@ export default class CuratorGroupsCommand extends ContentDirectoryCommandBase {
         groups.map(([id, group]) => ({
           'ID': id.toString(),
           'Status': group.active.valueOf() ? 'Active' : 'Inactive',
-          'Members': group.curators.toArray().length,
+          'Members': Array.from(group.curators).length,
         })),
         5
       )

@@ -1,23 +1,24 @@
 import BN from 'bn.js'
 import { ElectionStage, Seat } from '@joystream/types/council'
-import { Option } from '@polkadot/types'
+import { Option, bool } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
-import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
+import { Opening, StakingPolicy, ApplicationStage } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
-import {
-  VideoMetadata,
-  ChannelMetadata,
-  ChannelCategoryMetadata,
-  VideoCategoryMetadata,
-} from '@joystream/content-metadata-protobuf'
-import { ContentId, ContentParameters } from '@joystream/types/storage'
-
+import { ApiPromise } from '@polkadot/api'
+import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
 import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
+import {
+  IChannelCategoryMetadata,
+  IChannelMetadata,
+  IVideoCategoryMetadata,
+  IVideoMetadata,
+} from '@joystream/metadata-protobuf'
+import { DataObjectCreationParameters } from '@joystream/types/storage'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -33,43 +34,21 @@ export type AccountSummary = {
   balances: DeriveBalancesAll
 }
 
-// This function allows us to easily transform the tuple into the object
-// and simplifies the creation of consitent Object and Tuple types (seen below).
-export function createCouncilInfoObj(
-  activeCouncil: Seat[],
-  termEndsAt: BlockNumber,
-  autoStart: boolean,
-  newTermDuration: BN,
-  candidacyLimit: BN,
-  councilSize: BN,
-  minCouncilStake: Balance,
-  minVotingStake: Balance,
-  announcingPeriod: BlockNumber,
-  votingPeriod: BlockNumber,
-  revealingPeriod: BlockNumber,
-  round: BN,
+export type CouncilInfo = {
+  activeCouncil: Seat[]
+  termEndsAt: BlockNumber
+  autoStart: bool
+  newTermDuration: BN
+  candidacyLimit: BN
+  councilSize: BN
+  minCouncilStake: Balance
+  minVotingStake: Balance
+  announcingPeriod: BlockNumber
+  votingPeriod: BlockNumber
+  revealingPeriod: BlockNumber
+  round: BN
   stage: Option<ElectionStage>
-) {
-  return {
-    activeCouncil,
-    termEndsAt,
-    autoStart,
-    newTermDuration,
-    candidacyLimit,
-    councilSize,
-    minCouncilStake,
-    minVotingStake,
-    announcingPeriod,
-    votingPeriod,
-    revealingPeriod,
-    round,
-    stage,
-  }
 }
-// Object/Tuple containing council/councilElection information (council:info).
-// The tuple is useful, because that's how api.queryMulti returns the results.
-export type CouncilInfoTuple = Parameters<typeof createCouncilInfoObj>
-export type CouncilInfoObj = ReturnType<typeof createCouncilInfoObj>
 
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY
@@ -80,15 +59,22 @@ export type NameValueObj = { name: string; value: string }
 export enum WorkingGroups {
   StorageProviders = 'storageProviders',
   Curators = 'curators',
-  Operations = 'operations',
+  OperationsAlpha = 'operationsAlpha',
+  OperationsBeta = 'operationsBeta',
+  OperationsGamma = 'operationsGamma',
   Gateway = 'gateway',
+  Distribution = 'distributors',
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
-  WorkingGroups.Operations,
+  WorkingGroups.OperationsAlpha,
+  WorkingGroups.OperationsBeta,
+  WorkingGroups.OperationsGamma,
+  WorkingGroups.Gateway,
+  WorkingGroups.Distribution,
 ] as const
 
 export type Reward = {
@@ -119,7 +105,7 @@ export type GroupApplication = {
     role: number
   }
   humanReadableText: string
-  stage: ApplicationStageKeys
+  stage: keyof ApplicationStage['typeDefinitions']
 }
 
 export enum OpeningStatus {
@@ -206,18 +192,21 @@ export type ApiMethodNamedArg = {
 }
 export type ApiMethodNamedArgs = ApiMethodNamedArg[]
 
-// Content-related
-export enum AssetType {
-  AnyAsset = 1,
+// Api without TypeScript augmentations for "query", "tx" and "consts" (useful when more type flexibility is needed)
+export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> & {
+  query: { [key: string]: QueryableModuleStorage<'promise'> }
+  tx: { [key: string]: SubmittableModuleExtrinsics<'promise'> }
+  consts: { [key: string]: QueryableModuleConsts }
 }
 
-export type InputAsset = {
+export type AssetToUpload = {
+  dataObjectId: BN
   path: string
-  contentId: ContentId
 }
 
-export type InputAssetDetails = InputAsset & {
-  parameters: ContentParameters
+export type ResolvedAsset = {
+  path: string
+  parameters: DataObjectCreationParameters
 }
 
 export type VideoFFProbeMetadata = {
@@ -234,47 +223,69 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<VideoMetadata.AsObject, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
 }
 
-export type ChannelInputParameters = Omit<ChannelMetadata.AsObject, 'coverPhoto' | 'avatarPhoto'> & {
+export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
 }
 
-export type ChannelCategoryInputParameters = ChannelCategoryMetadata.AsObject
+export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
-export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject
+export type VideoCategoryInputParameters = IVideoCategoryMetadata
+
+type AnyNonObject = string | number | boolean | any[] | Long
 
 // JSONSchema utility types
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
   ? 'number' | ['number', 'null']
-  : T extends any[]
-  ? 'array' | ['array', 'null']
-  : T extends Record<string, unknown>
-  ? 'object' | ['object', 'null']
   : T extends boolean
   ? 'boolean' | ['boolean', 'null']
-  : never
+  : T extends any[]
+  ? 'array' | ['array', 'null']
+  : T extends Long
+  ? 'number' | ['number', 'null']
+  : 'object' | ['object', 'null']
 
 export type PropertySchema<P> = Omit<
   JSONSchema7Definition & {
     type: JSONTypeName<P>
-    properties: P extends Record<string, unknown> ? JsonSchemaProperties<P> : never
+    properties: P extends AnyNonObject ? never : JsonSchemaProperties<P>
   },
-  P extends Record<string, unknown> ? '' : 'properties'
+  P extends AnyNonObject ? 'properties' : ''
 >
 
-export type JsonSchemaProperties<T extends Record<string, unknown>> = {
+export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
 }
 
-export type JsonSchema<T extends Record<string, unknown>> = JSONSchema7 & {
+export type JsonSchema<T> = JSONSchema7 & {
   type: 'object'
   properties: JsonSchemaProperties<T>
+}
+
+// Storage node related types
+
+export type StorageNodeInfo = {
+  bucketId: number
+  apiEndpoint: string
+}
+
+export type TokenRequest = {
+  data: TokenRequestData
+  signature: string
+}
+
+export type TokenRequestData = {
+  memberId: number
+  accountId: string
+  dataObjectId: number
+  storageBucketId: number
+  bagId: string
 }
