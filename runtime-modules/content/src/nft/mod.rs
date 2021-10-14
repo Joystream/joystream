@@ -83,7 +83,7 @@ impl<T: Trait> Module<T> {
         starts_at: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            starts_at > <frame_system::Module<T>>::block_number(),
+            starts_at >= <frame_system::Module<T>>::block_number(),
             Error::<T>::StartsAtLowerBoundExceeded
         );
 
