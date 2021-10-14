@@ -1,0 +1,76 @@
+version: '3.4'
+
+services:
+  distributor-node:
+    image: node:14
+    labels:
+      co.elastic.logs/enabled: true
+      co.elastic.logs/json.keys_under_root: true
+      co.elastic.logs/json.overwrite_keys: true
+      co.elastic.logs/json.add_error_key: true
+      co.elastic.logs/json.expand_keys: true
+    volumes:
+      - type: bind
+        source: ..
+        target: /joystream
+      - data:/data
+      - cache:/cache
+      - logs:/logs
+    networks:
+      - joystream
+    ports:
+      - 127.0.0.1:3334:3334
+    working_dir: /joystream/distributor-node
+    init: true
+    entrypoint: ["./bin/run"]
+    command: ["start", "./config/docker/distributor-dev.docker.yml"]
+  # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/7.13/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - 127.0.0.1:9200:9200
+  # Ref: https://www.elastic.co/guide/en/kibana/7.13/docker.html
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.2
+    container_name: kibana
+    ports:
+      - 127.0.0.1:5601:5601
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+  # Ref: https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html
+  filebeat:
+    user: root
+    image: joystream/distributor-filebeat
+    build:
+      context: ./config/docker
+      dockerfile: ./filebeat.Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - logs:/logs
+
+volumes:
+  es-data:
+    driver: local
+  logs:
+    driver: local
+  cache:
+    driver: local
+  data:
+    driver: local
+
+# Join default joystream network (from root docker-compose)
+networks:
+  joystream:
+    external: true
+    name: joystream_default

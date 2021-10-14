@@ -1,0 +1,42 @@
+version: '3.4'
+services:
+  colossus-2:
+    image: joystream/colossus:latest
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: colossus.Dockerfile
+    depends_on:
+      - graphql-server
+    volumes:
+      - /data
+      - /keystore
+      - ${ACCOUNT_KEYFILE}:/joystream/storage-node-v2/keyfile
+    ports:
+      - '127.0.0.1:${COLOSSUS_PORT_2}:${COLOSSUS_PORT}'
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      WORKER_ID: ${WORKER_ID}
+      ACCOUNT_KEYFILE: /joystream/storage-node-v2/keyfile
+
+  distributor-node-2:
+    image: joystream/distributor-node
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: distributor-node.Dockerfile
+    depends_on:
+      - graphql-server
+    volumes:
+      - /data
+      - /cache
+    ports:
+      - 127.0.0.1:${DISTRIBUTOR_PORT_2}:3334
+    environment:
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://${QUERY_NODE_HOST}/graphql
+      JOYSTREAM_DISTRIBUTOR__KEYS: ${KEYS}
+      JOYSTREAM_DISTRIBUTOR__BUCKETS: ${BUCKETS}
+      JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${WORKER_ID}
+    command: ['start']

@@ -1,0 +1,16 @@
+{
+  "region": "eu-west",
+  "description": "Western Europe",
+  "boundary": [
+    { "longitude": 0.935664253776034, "latitude": 61.70157919955392 },
+    { "longitude": 7.077063962609969, "latitude": 37.40179586925884 },
+    { "longitude": 27.46754964469303, "latitude": 32.88770433956931 },
+    { "longitude": 40.68423960078124, "latitude": 48.39367044189657 },
+    { "longitude": 32.14019766910849, "latitude": 54.63502471598309 },
+    { "longitude": 28.56450578831937, "latitude": 59.09093283322235 },
+    { "longitude": 30.75892533489921, "latitude": 70.1670216697313 },
+    { "longitude": 19.2385951319647, "latitude": 73.4978175093038 },
+    { "longitude": -9.158590783812665, "latitude": 67.80006125371919 },
+    { "longitude": 0.935664253776034, "latitude": 61.70157919955392 }
+  ]
+}
