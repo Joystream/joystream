@@ -27,7 +27,6 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/graphql-server",
-    "content-metadata-protobuf",
     "metadata-protobuf"
   ],
   "resolutions": {
