@@ -10,7 +10,7 @@
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/content-metadata-protobuf": "^1.1.0",
+    "@joystream/metadata-protobuf": "^1.0.0",
     "@joystream/types": "^0.16.1",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
@@ -18,7 +18,7 @@
     "@oclif/plugin-help": "^3.2.2",
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
-    "@polkadot/api": "4.2.1",
+    "@polkadot/api": "5.9.1",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
@@ -48,7 +48,7 @@
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
     "@oclif/test": "^1.2.5",
-    "@polkadot/ts": "^0.3.62",
+    "@polkadot/ts": "^0.4.8",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.17.18",
@@ -60,8 +60,8 @@
     "json-schema-to-typescript": "^9.1.1",
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
-    "ts-node": "^8.8.2",
-    "typescript": "^3.8.3"
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
   },
   "engines": {
     "node": ">=14.0.0",

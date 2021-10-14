@@ -151,7 +151,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     setAfterSubmit(() => sendTx);
   };
 
-  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | Error | null) => {
     setSubmitting(false);
   };
 
