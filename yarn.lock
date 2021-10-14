@@ -2053,7 +2053,7 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/types@^0.16.1":
+"@joystream/sumer-types@npm:@joystream/types@^0.16.0", "@joystream/types@^0.16.1":
   version "0.16.1"
   resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.16.1.tgz#40f5014a9b64928ccea634a1f0f5d2b0392de293"
   integrity sha512-Jz8M6F4oRKH4WtEn8kpZvSMi0mVbfGSmjt38CcEu2946TYmCwlC3Ad1RFH8Wlcylqz/fMLL+pe0z1Dvo6dfzJA==
@@ -16923,14 +16923,15 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=
 
-iso-639-1@^2.1.9:
-  version "2.1.9"
-  resolved "https://registry.yarnpkg.com/iso-639-1/-/iso-639-1-2.1.9.tgz#e41b11d4f1808e5316d0252c3fa16eeb9b37bb58"
-  integrity sha512-owRu9up+Cpx/hwSzm83j6G8PtC7U99UCtPVItsafefNfEgMl+pi8KBwhXwJkJfp6IouyYWFxj8n24SvCWpKZEQ==
 iso-3166-2@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/iso-3166-2/-/iso-3166-2-1.0.0.tgz#20c5cda527b56bfc7409c6802d9bff0119086131"
   integrity sha512-xLAazfKZzwlsg/Zz/GQGQk3jJez5/2ORrjD3TjSuqz/arMht/xTK49c0GOE3afO/gEd9tHtBVVlfBla01unUng==
+
+iso-639-1@^2.1.9:
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/iso-639-1/-/iso-639-1-2.1.9.tgz#e41b11d4f1808e5316d0252c3fa16eeb9b37bb58"
+  integrity sha512-owRu9up+Cpx/hwSzm83j6G8PtC7U99UCtPVItsafefNfEgMl+pi8KBwhXwJkJfp6IouyYWFxj8n24SvCWpKZEQ==
 
 iso-constants@^0.1.2:
   version "0.1.2"

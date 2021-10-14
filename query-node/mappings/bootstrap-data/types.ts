@@ -1,11 +1,11 @@
 export type MemberJson = {
-  member_id: string
-  root_account: string
-  controller_account: string
+  memberId: string
+  rootAccount: string
+  controllerAccount: string
   handle: string
   about?: string
-  avatar_uri?: string
-  registered_at_time: number
+  avatarUri?: string
+  registeredAtTime: number
 }
 
 export type StorageSystemJson = {
@@ -17,4 +17,18 @@ export type StorageSystemJson = {
   dataObjectFeePerMb: number | string
   storageBucketMaxObjectsCountLimit: number | string
   storageBucketMaxObjectsSizeLimit: number | string
+}
+
+export type WorkerJson = {
+  workerId: string
+  metadata?: string
+  createdAt: number
+}
+
+export type WorkingGroupJson = {
+  workers: WorkerJson[]
+}
+
+export type WorkingGroupsJson = {
+  [group in 'GATEWAY' | 'STORAGE']?: WorkingGroupJson
 }

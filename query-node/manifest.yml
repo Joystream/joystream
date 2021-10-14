@@ -284,7 +284,7 @@ mappings:
     #- extrinsic: Sudo.batchCall
     #  handler: handleSudoCall(DatabaseManager,SubstrateEvent)
   preBlockHooks:
-    - handler: loadGenesisData
+    - handler: bootstrapData
       filter:
         height: "[0,0]" # will be executed only at genesis
   postBlockHooks:
