@@ -1,7 +1,7 @@
 # Compiles new joystream/node and joystream/apps images if local images not found
 # and runs a complete joystream development network
 # To prevent build of docker images run docker-compose with "--no-build" arg
-version: "3.4"
+version: '3.4'
 services:
   joystream-node:
     image: joystream/node:latest
@@ -15,47 +15,71 @@ services:
       - /data
     command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
     ports:
-      - "127.0.0.1:9944:9944"
-      - "127.0.0.1:9933:9933"
-
-  ipfs:
-    image: ipfs/go-ipfs:latest
-    ports:
-      - '127.0.0.1:5001:5001'
-      - '127.0.0.1:8080:8080'
-    volumes:
-      - /data/ipfs
-    entrypoint: ''
-    command: |
-      /bin/sh -c "
-        set -e
-        /usr/local/bin/start_ipfs config profile apply lowpower
-        /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
-        /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
-      "
+      - '127.0.0.1:9944:9944'
+      - '127.0.0.1:9933:9933'
 
   colossus:
-    image: joystream/apps
+    image: joystream/colossus:latest
     restart: on-failure
-    depends_on:
-      - "ipfs"
     build:
       context: .
-      dockerfile: apps.Dockerfile
+      dockerfile: colossus.Dockerfile
+    depends_on:
+      - graphql-server
+    volumes:
+      - /data
+      - /keystore
+    ports:
+      - '127.0.0.1:3333:${COLOSSUS_PORT}'
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
-    ports:
-      - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
     environment:
-      - DEBUG=*
+      - COLOSSUS_PORT=3333
+      - QUERY_NODE_HOST=graphql-server-mnt:${GRAPHQL_SERVER_PORT}
+      - WORKER_ID=0
+      - ACCOUNT_URI=//Alice
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
 
+  distributor-node:
+    image: joystream/distributor-node
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: distributor-node.Dockerfile
+    depends_on:
+      - graphql-server
+    volumes:
+      - /data
+      - /cache
+    ports:
+      - 127.0.0.1:3334:3334
+    # Node configuration can be overriden via env, for exampe:
+    environment:
+      # JOYSTREAM_DISTRIBUTOR__ID: node-id
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://${GRAPHQL_SERVER_HOST}:${GRAPHQL_SERVER_PORT}/graphql
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__SUBSTRATE_NODE: sn-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__DATA: data-dir
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE: cache-dir
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__LOGS: logs-dir
+    #   JOYSTREAM_DISTRIBUTOR__LOG__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOG__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
+    #   JOYSTREAM_DISTRIBUTOR__PORT: 1234
+    #   JOYSTREAM_DISTRIBUTOR__KEYS: "[\"//Bob\"]"
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
+    #   JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
+    command: ['start']
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
   db:
     image: postgres:12
     restart: always
     ports:
-      - "127.0.0.1:${DB_PORT}:5432"
+      - '127.0.0.1:${DB_PORT}:5432'
     volumes:
       - /var/lib/postgresql/data
     env_file:
@@ -72,17 +96,16 @@ services:
     build:
       context: .
       dockerfile: apps.Dockerfile
-      network: joystream_default
       args:
         - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     ports:
-      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+      - '127.0.0.1:8081:${GRAPHQL_SERVER_PORT}'
     depends_on:
       - db
-    command: ["workspace", "query-node-root", "query-node:start:prod"]
+    command: ['workspace', 'query-node-root', 'query-node:start:prod']
 
   graphql-server-mnt:
     image: node:14
@@ -91,7 +114,7 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     ports:
-      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+      - '127.0.0.1:8081:${GRAPHQL_SERVER_PORT}'
     depends_on:
       - db
     volumes:
@@ -99,7 +122,7 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
+    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
     image: joystream/apps
@@ -107,7 +130,6 @@ services:
     build:
       context: .
       dockerfile: apps.Dockerfile
-      network: joystream_default
       args:
         - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     env_file:
@@ -122,7 +144,7 @@ services:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
       - hydra-indexer-gateway
-    command: ["workspace", "query-node-root", "processor:start"]
+    command: ['workspace', 'query-node-root', 'processor:start']
 
   processor-mnt:
     image: node:14
@@ -141,7 +163,7 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ["yarn", "workspace", "query-node-root", "processor:start"]
+    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
     image: joystream/hydra-indexer:3.0.0
@@ -179,7 +201,7 @@ services:
       - PORT=${WARTHOG_APP_PORT}
       - DEBUG=*
     ports:
-      - "127.0.0.1:4000:${WARTHOG_APP_PORT}"
+      - '127.0.0.1:4000:${WARTHOG_APP_PORT}'
     depends_on:
       - redis
       - db
@@ -189,7 +211,7 @@ services:
     image: redis:6.0-alpine
     restart: always
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
 
   pioneer:
     image: joystream/pioneer
@@ -197,4 +219,4 @@ services:
       context: .
       dockerfile: pioneer.Dockerfile
     ports:
-      - "127.0.0.1:3000:80"
+      - '127.0.0.1:3000:80'

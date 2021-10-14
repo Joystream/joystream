@@ -1,0 +1,14 @@
+version: '3.4'
+services:
+  joystream-node:
+    image: joystream/node:latest
+    build:
+      # context is relative to the compose file
+      context: .
+      # dockerfile is relative to the context
+      dockerfile: joystream-node.Dockerfile
+    container_name: joystream-node
+    volumes:
+      - /data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
+    network_mode: host

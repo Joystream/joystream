@@ -15,21 +15,23 @@ servers:
   - url: http://localhost:3333/api/v1/
 
 tags:
-  - name: public
-    description: Public storage node API
+  - name: files
+    description: Storage node Files API
+  - name: state
+    description: Storage node State API
 
 paths:
-  /files/{cid}:
+  /files/{id}:
     get:
       operationId: publicApi.getFile
       description: Returns a media file.
       tags:
-        - public
+        - files
       parameters:
-        - name: cid
+        - name: id
           required: true
           in: path
-          description: Content ID
+          description: Data object ID
           schema:
             type: string
       responses:
@@ -76,12 +78,12 @@ paths:
       operationId: publicApi.getFileHeaders
       description: Returns a media file headers.
       tags:
-        - public
+        - files
       parameters:
-        - name: cid
+        - name: id
           required: true
           in: path
-          description: Content ID
+          description: Data object ID
           schema:
             type: string
       responses:
@@ -100,7 +102,7 @@ paths:
       description: Upload data
       operationId: publicApi.uploadFile
       tags:
-        - public
+        - files
       requestBody:
         content:
           multipart/form-data:
@@ -151,7 +153,7 @@ paths:
       description: Get auth token from a server.
       operationId: publicApi.authTokenForUploading
       tags:
-        - public
+        - files
       requestBody:
         description: Token request parameters,
         content:
@@ -180,6 +182,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /state/data-objects:
+    get:
+      operationId: stateApi.getAllLocalDataObjects
+      description: Returns all local data objects.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataObjectResponse'
+
+  /state/bags/{bagId}/data-objects:
+    get:
+      operationId: stateApi.getLocalDataObjectsByBagId
+      description: Returns local data objects for the bag.
+      tags:
+        - state
+      parameters:
+        - name: bagId
+          required: true
+          in: path
+          description: Bag ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataObjectResponse'
+
+  /version:
+    get:
+      operationId: stateApi.getVersion
+      description: Returns server version.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+  /state/data:
+    get:
+      operationId: stateApi.getLocalDataStats
+      description: Returns local uploading directory stats.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataStatsResponse'
 
 components:
   securitySchemes:
@@ -227,3 +291,34 @@ components:
           type: string
         message:
           type: string
+    DataStatsResponse:
+      type: object
+      required:
+        - totalSize
+        - objectNumber
+      properties:
+        totalSize:
+          type: integer
+          format: int64
+        objectNumber:
+          type: integer
+          format: int64
+        tempDirSize:
+          type: integer
+          format: int64
+        tempDownloads:
+          type: integer
+          format: int64
+    VersionResponse:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+        userAgent:
+          type: string
+    DataObjectResponse:
+      type: array
+      items:
+        type: string
