@@ -89,8 +89,6 @@ export class ReferenceConstraint extends Null {}
 export class InputEntityValuesMap extends Null {}
 export class FailedAt extends Null {}
 
-export class StorageBucketsPerBagValueConstraint extends Null {}
-
 // From discovery_service
 export class IPNSIdentity extends Null {}
 export class ServiceProviderRecord extends Null {}
@@ -167,7 +165,6 @@ export const legacyTypes: RegistryTypes = {
   FailedAt,
   IPNSIdentity,
   ServiceProviderRecord,
-  StorageBucketsPerBagValueConstraint,    
 }
 
 export default legacyTypes
