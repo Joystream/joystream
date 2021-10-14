@@ -32,7 +32,7 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
     const event = this.api.getEvent(result, 'storage', 'DistributionBucketCreated')
 
     this.log('Bucket succesfully created!')
-    const bucketId = event.data[0]
+    const bucketId = event.data[2]
     this.output(bucketId.toString())
   }
 }
