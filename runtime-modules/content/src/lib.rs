@@ -1527,7 +1527,7 @@ decl_module! {
             //
 
             // Buy nft
-            let nft = Self::buy_now(nft, owner_account_id, participant_account_id, participant_id);
+            let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);

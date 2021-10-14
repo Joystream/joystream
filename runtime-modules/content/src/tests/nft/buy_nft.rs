@@ -55,6 +55,12 @@ fn buy_nft() {
 
         // Runtime tested state after call
 
+        // Ensure buyer balance was succesfully slashed after nft had been bought
+        assert_eq!(balances::Module::<Test>::free_balance(SECOND_MEMBER_ORIGIN), 0);
+
+        // Ensure the price of nft - platform fee was succesfully deposited into seller account (channel reward account id in this case)
+        assert_eq!(balances::Module::<Test>::free_balance(REWARD_ACCOUNT_ID), price - Content::platform_fee_percentage() * price);
+
         // Ensure nft succesfully bought
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,

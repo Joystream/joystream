@@ -704,7 +704,7 @@ pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
     // deposit initial balance
     let _ = balances::Module::<Test>::deposit_creating(
         &sender,
-        <Test as balances::Trait>::Balance::from(100u32),
+        <Test as balances::Trait>::Balance::from(30u32),
     );
 
     let channel_id = NextChannelId::<Test>::get();
