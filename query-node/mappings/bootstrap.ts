@@ -26,8 +26,8 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
         handle: m.handle,
         about: m.about,
         avatarUri: m.avatarUri,
-        createdInBlock: 0,
-        entry: MembershipEntryMethod.GENESIS,
+        createdInBlock: m.registeredAtBlock,
+        entry: m.registeredAtBlock === 1 ? MembershipEntryMethod.GENESIS : MembershipEntryMethod.PAID,
         // fill in auto-generated fields
         createdAt: new Date(m.registeredAtTime),
         updatedAt: new Date(m.registeredAtTime),
@@ -45,6 +45,7 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
           new Worker({
             id: workerEntityId(WorkerType[group], w.workerId),
             workerId: w.workerId,
+            isActive: true,
             type: WorkerType[group],
             createdAt: new Date(w.createdAt),
             updatedAt: new Date(w.createdAt),

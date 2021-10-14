@@ -6,6 +6,7 @@ export type MemberJson = {
   about?: string
   avatarUri?: string
   registeredAtTime: number
+  registeredAtBlock: number
 }
 
 export type StorageSystemJson = {

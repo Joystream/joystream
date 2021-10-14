@@ -18,12 +18,13 @@ async function main() {
   const members = await getAllMembers(api, hash)
 
   fs.writeFileSync(path.resolve(__dirname, '../data/members.json'), JSON.stringify(members, undefined, 4))
-  console.log(`${members.length} members exported & saved!`)
+  const lastMemberId = Math.max(...members.map((m) => parseInt(m.memberId)))
+  console.log(`${members.length} members exported & saved! Last member id: ${lastMemberId}`)
 
   await api.disconnect()
 }
 
-async function getAllMembers(api: ApiPromise, hash?: BlockHash): Promise<any[]> {
+async function getAllMembers(api: ApiPromise, hash?: BlockHash): Promise<MemberJson[]> {
   const memberStorageEntries = hash
     ? await api.query.members.membershipById.entriesAt(hash)
     : await api.query.members.membershipById.entries()
@@ -39,6 +40,7 @@ async function getAllMembers(api: ApiPromise, hash?: BlockHash): Promise<any[]> 
     avatarUri: member.avatar_uri.toString(),
     about: member.about.toString(),
     registeredAtTime: member.registered_at_time.toNumber(),
+    registeredAtBlock: member.registered_at_block.toNumber(),
   }))
 
   return members
