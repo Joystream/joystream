@@ -1,8 +1,8 @@
 {
-    "STORAGE": {
-        "workers": []
-    },
-    "GATEWAY": {
-        "workers": []
-    }
+  "STORAGE": {
+    "workers": []
+  },
+  "GATEWAY": {
+    "workers": []
+  }
 }
