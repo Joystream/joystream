@@ -59,7 +59,7 @@ export class DownloadFileTask implements SyncTask {
   constructor(baseUrl: string, id: string, uploadsDirectory: string) {
     this.id = id
     this.uploadsDirectory = uploadsDirectory
-    this.url = urljoin(baseUrl, 'api/v1/files', id)
+    this.url = urljoin('http://', baseUrl, 'api/v1/files', id)
   }
 
   description(): string {
@@ -99,20 +99,20 @@ export class DownloadFileTask implements SyncTask {
  * Resolve remote storage node URLs and creates file downloading tasks (DownloadFileTask).
  */
 export class PrepareDownloadFileTask implements SyncTask {
-  cid: string
+  dataObjectId: string
   operatorUrlCandidates: string[]
   taskSink: TaskSink
   uploadsDirectory: string
 
-  constructor(operatorUrlCandidates: string[], cid: string, uploadsDirectory: string, taskSink: TaskSink) {
-    this.cid = cid
+  constructor(operatorUrlCandidates: string[], dataObjectId: string, uploadsDirectory: string, taskSink: TaskSink) {
+    this.dataObjectId = dataObjectId
     this.taskSink = taskSink
     this.operatorUrlCandidates = operatorUrlCandidates
     this.uploadsDirectory = uploadsDirectory
   }
 
   description(): string {
-    return `Sync - preparing for download of: ${this.cid} ....`
+    return `Sync - preparing for download of: ${this.dataObjectId} ....`
   }
 
   async execute(): Promise<void> {
@@ -136,18 +136,18 @@ export class PrepareDownloadFileTask implements SyncTask {
 
       try {
         const chosenBaseUrl = randomUrl
-        const remoteOperatorCids: string[] = await getRemoteDataObjects(chosenBaseUrl)
+        const remoteOperatorIds: string[] = await getRemoteDataObjects(chosenBaseUrl)
 
-        if (remoteOperatorCids.includes(this.cid)) {
-          const newTask = new DownloadFileTask(chosenBaseUrl, this.cid, this.uploadsDirectory)
+        if (remoteOperatorIds.includes(this.dataObjectId)) {
+          const newTask = new DownloadFileTask(chosenBaseUrl, this.dataObjectId, this.uploadsDirectory)
 
           return this.taskSink.add([newTask])
         }
       } catch (err) {
-        logger.error(`Sync - fetching data error for ${this.cid}: ${err}`)
+        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`)
       }
     }
 
-    logger.warn(`Sync - cannot get operator URLs for ${this.cid}`)
+    logger.warn(`Sync - cannot get operator URLs for ${this.dataObjectId}`)
   }
 }

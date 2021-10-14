@@ -24,7 +24,7 @@ export type GetStorageBagDetailsQueryVariables = Types.Exact<{
 
 export type GetStorageBagDetailsQuery = { storageBags: Array<StorageBagDetailsFragment> }
 
-export type DataObjectDetailsFragment = { ipfsHash: string; storageBag: { id: string } }
+export type DataObjectDetailsFragment = { id: string; storageBagId: string }
 
 export type GetDataObjectDetailsQueryVariables = Types.Exact<{
   bagIds?: Types.Maybe<Types.StorageBagWhereInput>
@@ -63,10 +63,8 @@ export const StorageBagDetails = gql`
 `
 export const DataObjectDetails = gql`
   fragment DataObjectDetails on StorageDataObject {
-    ipfsHash
-    storageBag {
-      id
-    }
+    id
+    storageBagId
   }
 `
 export const GetStorageBucketDetails = gql`

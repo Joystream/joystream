@@ -23,6 +23,8 @@ ENV ACCOUNT_PWD=
 # Optional variables
 ENV SYNC_INTERVAL=1
 ENV ELASTIC_SEARCH_HOST=
+# warn, error, debug, info
+ENV ELASTIC_LOG_LEVEL=debug
 # - overrides account key file
 ENV ACCOUNT_URI=
 

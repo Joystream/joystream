@@ -2,7 +2,7 @@ import { BagId, DynamicBagType, DynamicBagTypeKey, Static, Dynamic } from '@joys
 import { WorkingGroup } from '@joystream/types/common'
 import { registry } from '@joystream/types'
 import { createType } from '@polkadot/types'
-import { InterfaceTypes } from '@polkadot/types/types'
+import { DetectCodec, Codec } from '@polkadot/types/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
@@ -160,6 +160,9 @@ class BagIdParser {
 /**
  * Creates Joystream type using type registry.
  */
-function createJoystreamType<T extends keyof InterfaceTypes>(type: T, value: unknown): InterfaceTypes[T] {
+function createJoystreamType<T extends Codec = Codec, K extends string = string>(
+  type: K,
+  value: unknown
+): DetectCodec<T, K> {
   return createType(registry, type, value)
 }

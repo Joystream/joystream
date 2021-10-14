@@ -1,6 +1,5 @@
 import { QueryNodeApi } from '../queryNode/api'
 import logger from '../logger'
-import { u8aToString, hexToU8a } from '@polkadot/util'
 import {
   StorageBagDetailsFragment,
   StorageBucketDetailsFragment,
@@ -67,9 +66,9 @@ type Bag = {
  */
 type DataObject = {
   /**
-   * Content ID (IPFS hash)
+   * Data object ID
    */
-  cid: string
+  id: string
 
   /**
    * Assigned bag ID
@@ -104,7 +103,7 @@ export async function getStorageObligationsFromRuntime(
   const model: DataObligations = {
     storageBuckets: allBuckets.map((bucket) => ({
       id: bucket.id,
-      operatorUrl: extractOperatorUrl(bucket.operatorMetadata?.nodeEndpoint),
+      operatorUrl: bucket.operatorMetadata?.nodeEndpoint ?? '',
       workerId: bucket.operatorStatus?.workerId,
     })),
     bags: assignedBags.map((bag) => ({
@@ -112,8 +111,8 @@ export async function getStorageObligationsFromRuntime(
       buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.storageBucket.id),
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
-      cid: dataObject.ipfsHash,
-      bagId: dataObject.storageBag.id,
+      id: dataObject.id,
+      bagId: dataObject.storageBagId,
     })),
   }
 
@@ -149,7 +148,7 @@ export async function getDataObjectIDsByBagId(queryNodeUrl: string, bagId: strin
   const api = new QueryNodeApi(queryNodeUrl)
   const dataObjects = await getAllAssignedDataObjects(api, [bagId])
 
-  return dataObjects.map((obj) => obj.ipfsHash)
+  return dataObjects.map((obj) => obj.id)
 }
 
 /**
@@ -220,22 +219,4 @@ async function getAllObjectsWithPaging<T>(
   } while (resultPart.length > 0)
 
   return result
-}
-
-/**
- * Extract storage operator URL from the encoded metadata
- *
- * @param encodedString - encoded storage operator metadata
- * @returns storage operator URL
- */
-function extractOperatorUrl(encodedString: string | undefined | null): string {
-  try {
-    if (encodedString) {
-      return u8aToString(hexToU8a(encodedString))
-    }
-  } catch (err) {
-    logger.error(`Sync - ${err}`)
-  }
-
-  return ''
 }

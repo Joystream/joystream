@@ -3,7 +3,7 @@ import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger, { initElasticLogger } from '../services/logger'
 import { ApiPromise } from '@polkadot/api'
-import { performSync } from '../services/sync/synchronizer'
+import { performSync, TempDirName } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
 import rimraf from 'rimraf'
 import _ from 'lodash'
@@ -64,7 +64,9 @@ export default class Server extends ApiCommandBase {
     elasticSearchHost: flags.string({
       char: 'e',
       required: false,
-      description: 'Elasticsearch host and port (e.g.: some.com:8081).',
+      description: `Elasticsearch host and port (e.g.: some.com:8081).
+Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
+Supported values: warn, error, debug, info. Default:debug`,
     }),
     disableUploadAuth: flags.boolean({
       char: 'a',
@@ -77,8 +79,7 @@ export default class Server extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    const tempDirName = 'temp'
-    await removeTempDirectory(flags.uploads, tempDirName)
+    await removeTempDirectory(flags.uploads, TempDirName)
 
     let elasticUrl
     if (!_.isEmpty(flags.elasticSearchHost)) {
@@ -120,7 +121,7 @@ export default class Server extends ApiCommandBase {
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempDirName,
+        tempDirName: TempDirName,
         process: this.config,
         queryNodeUrl,
         enableUploadingAuth: !flags.disableUploadAuth,

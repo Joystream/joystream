@@ -4,7 +4,13 @@ import { SyncTask, DownloadFileTask, DeleteLocalFileTask, PrepareDownloadFileTas
 import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
 import fs from 'fs'
+import path from 'path'
 const fsPromises = fs.promises
+
+/**
+ * Temporary directory name for data uploading.
+ */
+export const TempDirName = 'temp'
 
 /**
  * Runs the data synchronization workflow. It compares the current node's
@@ -30,13 +36,13 @@ export async function performSync(
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
     getStorageObligationsFromRuntime(queryNodeUrl, workerId),
-    getLocalFileNames(uploadDirectory),
+    getLocalDataObjects(uploadDirectory, TempDirName),
   ])
 
-  const requiredCids = model.dataObjects.map((obj) => obj.cid)
+  const requiredIds = model.dataObjects.map((obj) => obj.id)
 
-  const added = _.difference(requiredCids, files)
-  const deleted = _.difference(files, requiredCids)
+  const added = _.difference(requiredIds, files)
+  const deleted = _.difference(files, requiredIds)
 
   logger.debug(`Sync - added objects: ${added.length}`)
   logger.debug(`Sync - deleted objects: ${deleted.length}`)
@@ -63,31 +69,22 @@ export async function performSync(
 }
 
 /**
- * Returns file names from the local directory.
- *
- * @param directory - local directory to get file names from
- */
-async function getLocalFileNames(directory: string): Promise<string[]> {
-  return fsPromises.readdir(directory)
-}
-
-/**
  * Creates the download preparation tasks.
  *
  * @param dataObligations - defines the current data obligations for the node
- * @param addedCids - data object IDs to download
+ * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
  * @param taskSink - a destination for the newly created tasks
  */
 async function getPrepareDownloadTasks(
   dataObligations: DataObligations,
-  addedCids: string[],
+  addedIds: string[],
   uploadDirectory: string,
   taskSink: TaskSink
 ): Promise<PrepareDownloadFileTask[]> {
-  const cidMap = new Map()
+  const idMap = new Map()
   for (const entry of dataObligations.dataObjects) {
-    cidMap.set(entry.cid, entry.bagId)
+    idMap.set(entry.id, entry.bagId)
   }
 
   const bucketMap = new Map()
@@ -111,16 +108,16 @@ async function getPrepareDownloadTasks(
     bagMap.set(entry.id, operatorUrls)
   }
 
-  const tasks = addedCids.map((cid) => {
+  const tasks = addedIds.map((id) => {
     let operatorUrls: string[] = [] // can be empty after look up
-    if (cidMap.has(cid)) {
-      const bagid = cidMap.get(cid)
+    if (idMap.has(id)) {
+      const bagid = idMap.get(id)
       if (bagMap.has(bagid)) {
         operatorUrls = bagMap.get(bagid)
       }
     }
 
-    return new PrepareDownloadFileTask(operatorUrls, cid, uploadDirectory, taskSink)
+    return new PrepareDownloadFileTask(operatorUrls, id, uploadDirectory, taskSink)
   })
 
   return tasks
@@ -130,15 +127,15 @@ async function getPrepareDownloadTasks(
  * Creates the download file tasks.
  *
  * @param operatorUrl - defines the data source URL.
- * @param addedCids - data object IDs to download
+ * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
  */
 async function getDownloadTasks(
   operatorUrl: string,
-  addedCids: string[],
+  addedIds: string[],
   uploadDirectory: string
 ): Promise<DownloadFileTask[]> {
-  const addedTasks = addedCids.map((fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory))
+  const addedTasks = addedIds.map((fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory))
 
   return addedTasks
 }
@@ -148,8 +145,21 @@ async function getDownloadTasks(
  *
  * @param uploadDirectory - local directory to get file names from
  */
-export async function getLocalDataObjects(uploadDirectory: string): Promise<string[]> {
-  const localCids = await getLocalFileNames(uploadDirectory)
+export async function getLocalDataObjects(uploadDirectory: string, tempDirName: string): Promise<string[]> {
+  const localIds = await getLocalFileNames(uploadDirectory)
 
-  return localCids
+  // Filter temporary directory name.
+  const tempDirectoryName = path.parse(tempDirName).name
+  const data = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
+
+  return data
+}
+
+/**
+ * Returns file names from the local directory.
+ *
+ * @param directory - local directory to get file names from
+ */
+async function getLocalFileNames(directory: string): Promise<string[]> {
+  return fsPromises.readdir(directory)
 }

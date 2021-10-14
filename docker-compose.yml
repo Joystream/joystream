@@ -34,6 +34,13 @@ services:
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
+    environment:
+      - COLOSSUS_PORT=3333
+      - QUERY_NODE_HOST=graphql-server-mnt:${GRAPHQL_SERVER_PORT}
+      - WORKER_ID=0
+      - ACCOUNT_URI=//Alice
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
 
   distributor-node:
     image: joystream/distributor-node
@@ -66,7 +73,8 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
     #   JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
     command: ['start']
-
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
   db:
     image: postgres:12
     restart: always

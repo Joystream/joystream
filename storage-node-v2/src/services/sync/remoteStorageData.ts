@@ -9,8 +9,8 @@ const ExpirationPeriod: number = 5 * 60 // minutes
 // Max data entries in local cache
 const MaxEntries = 10000
 
-// Local in-memory cache for CIDs by operator URL.
-const availableCidsCache = new NodeCache({
+// Local in-memory cache for data object IDs by operator URL.
+const availableIDsCache = new NodeCache({
   stdTTL: ExpirationPeriod,
   deleteOnExpire: true,
   maxKeys: MaxEntries,
@@ -31,7 +31,7 @@ const badOperatorUrls = new NodeCache({
  * @param operatorUrl - remote storage node URL
  */
 export async function getRemoteDataObjects(operatorUrl: string): Promise<string[]> {
-  const url = urljoin(operatorUrl, 'api/v1/state/data-objects')
+  const url = urljoin('http://', operatorUrl, 'api/v1/state/data-objects')
 
   const faultyOperator = badOperatorUrls.has(operatorUrl)
   if (faultyOperator) {
@@ -39,7 +39,7 @@ export async function getRemoteDataObjects(operatorUrl: string): Promise<string[
     return []
   }
 
-  const cachedData = availableCidsCache.get<string[]>(url)
+  const cachedData = availableIDsCache.get<string[]>(url)
   if (cachedData) {
     logger.debug(`Sync - getting from cache available data for ${url}`)
     return cachedData
@@ -51,7 +51,7 @@ export async function getRemoteDataObjects(operatorUrl: string): Promise<string[
     const response = await superagent.get(url).timeout(timeoutMs)
 
     const data = response.body
-    availableCidsCache.set(url, data, ExpirationPeriod)
+    availableIDsCache.set(url, data, ExpirationPeriod)
 
     return data
   } catch (err) {

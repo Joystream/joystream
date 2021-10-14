@@ -1,5 +1,5 @@
 /**
- * OperatorMetadataJson file generating script. 
+ * OperatorMetadataJson file generating script.
  */
 
 import fs from 'fs'

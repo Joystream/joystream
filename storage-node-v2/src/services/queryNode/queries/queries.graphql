@@ -36,10 +36,8 @@ query getStorageBagDetails($bucketIds: [String!], $offset: Int, $limit: Int) {
 }
 
 fragment DataObjectDetails on StorageDataObject {
-  ipfsHash
-  storageBag {
-    id
-  }
+  id
+  storageBagId
 }
 
 query getDataObjectDetails($bagIds: StorageBagWhereInput, $offset: Int, $limit: Int) {
