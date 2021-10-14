@@ -2886,20 +2886,6 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/types@^0.16.1":
-  version "0.16.1"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.16.1.tgz#40f5014a9b64928ccea634a1f0f5d2b0392de293"
-  integrity sha512-Jz8M6F4oRKH4WtEn8kpZvSMi0mVbfGSmjt38CcEu2946TYmCwlC3Ad1RFH8Wlcylqz/fMLL+pe0z1Dvo6dfzJA==
-  dependencies:
-    "@polkadot/api" "4.2.1"
-    "@polkadot/keyring" "^6.0.5"
-    "@polkadot/types" "4.2.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@joystream/types@link:types":
   version "0.17.0"
   dependencies:
@@ -4176,7 +4162,7 @@
     "@polkadot/util-crypto" "^7.3.1"
     rxjs "^7.3.0"
 
-"@polkadot/api@4.2.1", "@polkadot/api@5.9.1":
+"@polkadot/api@5.9.1":
   version "5.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-5.9.1.tgz#ce314cc34f0a47098d039db7b9036bb491c2898c"
   integrity sha512-POpIXn/Ao+NLB0uMldXdXU44dVbRr6+6Ax77Z0R285M8Z2EiF5jl2K3SPvlowLo4SntxiCSaHQxCekYhUcJKlw==
@@ -4304,7 +4290,7 @@
     "@polkadot/util" "7.4.1"
     "@zondax/ledger-substrate" "^0.18.0"
 
-"@polkadot/keyring@7.3.1", "@polkadot/keyring@^6.0.5", "@polkadot/keyring@^7.3.1", "@polkadot/keyring@^7.4.1":
+"@polkadot/keyring@7.3.1", "@polkadot/keyring@^7.3.1", "@polkadot/keyring@^7.4.1":
   version "7.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-7.3.1.tgz#bf36115cfb395567bec9cf13c8e3fc0fb39c802a"
   integrity sha512-3lbwIjUql8yjs6AR2fMdCgmTc5D9ne7+y2jqHmGjyzVQFz1w1jiHb+N38L0pwl9/23UxmzC3aVvHLfl3gEGSIQ==
@@ -4408,7 +4394,7 @@
     "@babel/runtime" "^7.15.4"
     "@polkadot/util" "^7.3.1"
 
-"@polkadot/types@4.2.1", "@polkadot/types@5.9.1":
+"@polkadot/types@5.9.1":
   version "5.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-5.9.1.tgz#74cf4695795f2aa365ff85d3873e22c430100bc9"
   integrity sha512-30vcSlNBxPyWYZaxKDr/BoMhfLCRKB265XxpnnNJmbdZZsL+N4Zp2mJR9/UbA6ypmJBkUjD7b1s9AYsLwUs+8w==
@@ -12726,7 +12712,7 @@ electron-to-chromium@^1.3.830:
 elegant-spinner@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/elegant-spinner/-/elegant-spinner-1.0.1.tgz#db043521c95d7e303fd8f345bedc3349cfb0729e"
-  integrity "sha1-2wQ1IcldfjA/2PNFvtwzSc+wcp4= sha512-B+ZM+RXvRqQaAmkMlO/oSe5nMUOaUnyfGYCEHoR8wrXsZR2mA0XVibsxV1bvTwxdRWah1PkQqso2EzhILGHtEQ=="
+  integrity sha1-2wQ1IcldfjA/2PNFvtwzSc+wcp4=
 
 element-resize-detector@^1.2.1:
   version "1.2.2"
@@ -14528,7 +14514,7 @@ fork-ts-checker-webpack-plugin@1.5.0:
     tapable "^1.0.0"
     worker-rpc "^0.1.0"
 
-form-data@4.0.0:
+form-data@4.0.0, form-data@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/form-data/-/form-data-4.0.0.tgz#93919daeaf361ee529584b9b31664dc12c9fa452"
   integrity sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==
