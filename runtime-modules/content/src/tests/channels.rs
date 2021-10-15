@@ -68,6 +68,26 @@ fn successful_channel_deletion() {
             3u64,
             Ok(()),
         );
+
+        // create a channel with no assets:
+        let empty_channel_id = Content::next_channel_id();
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: None,
+                reward_account: None,
+            },
+            Ok(()),
+        );
+        delete_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            empty_channel_id,
+            43u64, // this param will be discarded if channel has no assets
+            Ok(()),
+        );
     })
 }
 

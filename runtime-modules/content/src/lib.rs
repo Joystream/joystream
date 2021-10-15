@@ -98,6 +98,9 @@ pub trait Trait:
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
+
+    /// The storage type used
+    type DataObjectStorage: storage::DataObjectStorage<Self>;
 }
 
 /// The owner of a channel, is the authorized "actor" that can update
@@ -747,28 +750,30 @@ decl_module! {
             let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
             let bag_id = storage::BagIdType::from(dyn_bag.clone());
 
-            // ensure that bag size provided is valid
-            ensure!(
-                storage::Bags::<T>::get(&bag_id).objects_number == num_objects_to_delete,
-                Error::<T>::InvalidBagSizeSpecified
-            );
+            // channel has a dynamic bag associated to it -> remove assets from storage
+            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
+                // ensure that bag size provided is valid
+                ensure!(
+                    bag.objects_number == num_objects_to_delete,
+                    Error::<T>::InvalidBagSizeSpecified
+                );
 
-            // construct collection of assets to be removed
-            let assets_to_remove: BTreeSet<DataObjectId<T>> =
-                storage::DataObjectsById::<T>::iter_prefix(&bag_id).map(|x| x.0).collect();
+                // construct collection of assets to be removed
+                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
-            // remove specified assets from storage
-            Self::remove_assets_from_storage(
-                &assets_to_remove,
-                &channel_id,
-                &channel.deletion_prize_source_account_id
-            )?;
+                // remove specified assets from storage
+                Self::remove_assets_from_storage(
+                    &assets_to_remove,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
 
-            // delete channel dynamic bag
-            Storage::<T>::delete_dynamic_bag(
-                channel.deletion_prize_source_account_id,
-                dyn_bag
-            )?;
+                // delete channel dynamic bag
+                Storage::<T>::delete_dynamic_bag(
+                    channel.deletion_prize_source_account_id,
+                    dyn_bag
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1336,7 +1341,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if !storage::Bags::<T>::contains_key(bag_id.clone()) {
+        if T::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }

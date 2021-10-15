@@ -3040,10 +3040,6 @@ declare module '@polkadot/api/types/errors' {
        **/
       DataObjectIdParamsAreEmpty: AugmentedError<ApiType>;
       /**
-       * Upload data error: data objects per bag limit exceeded.
-       **/
-      DataObjectsPerBagLimitExceeded: AugmentedError<ApiType>;
-      /**
        * Invalid extrinsic call: data size fee changed.
        **/
       DataSizeFeeChanged: AugmentedError<ApiType>;
