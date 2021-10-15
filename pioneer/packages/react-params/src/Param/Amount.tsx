@@ -8,7 +8,6 @@ import BN from 'bn.js';
 import React, { useCallback, useState } from 'react';
 import { registry } from '@polkadot/react-api';
 import { Input } from '@polkadot/react-components';
-import { ClassOf } from '@polkadot/types';
 import { bnToBn, formatNumber } from '@polkadot/util';
 
 import Bare from './Bare';
@@ -17,7 +16,7 @@ function Amount ({ className = '', defaultValue: { value }, isDisabled, isError,
   const [defaultValue] = useState(
     isDisabled
       ? (
-        value instanceof ClassOf(registry, 'AccountIndex')
+        value instanceof registry.createClass('AccountIndex')
           ? value.toString()
           : formatNumber(value as number)
       )

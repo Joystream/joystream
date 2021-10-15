@@ -29,7 +29,7 @@ async function send (queueSetTxStatus: QueueTxMessageSetStatus, currentItem: Que
     }));
   } catch (error) {
     console.error('send: error:', error);
-    queueSetTxStatus(currentItem.id, 'error', {}, error);
+    queueSetTxStatus(currentItem.id, 'error', {}, error as Error);
 
     currentItem.txFailedCb && currentItem.txFailedCb(null);
   }
