@@ -75,6 +75,13 @@ impl<T: Trait> Module<T> {
             Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
         }
 
+        if let Some(buy_now_price) = auction_params.buy_now_price {
+            ensure!(
+                buy_now_price > auction_params.starting_price,
+                Error::<T>::BuyNowIsLessThenStartingPrice
+            );
+        }
+
         Ok(())
     }
 

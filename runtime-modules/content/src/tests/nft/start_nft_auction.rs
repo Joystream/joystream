@@ -562,5 +562,32 @@ fn start_nft_auction_invalid_params() {
             start_nft_auction_result,
             Error::<Test>::StartsAtUpperBoundExceeded
         );
+
+        // Make an attempt to start nft auction if auction related buy now is less then starting price
+        let buy_now_price = Content::min_starting_price();
+
+        let auction_params = AuctionParams {
+            starting_price: buy_now_price + 1,
+            buy_now_price: Some(buy_now_price),
+            auction_type: AuctionType::Open(OpenAuctionDetails {
+                bid_lock_duration: Content::min_bid_lock_duration(),
+            }),
+            minimal_bid_step: Content::max_bid_step(),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_nft_auction(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::BuyNowIsLessThenStartingPrice
+        );
     })
 }

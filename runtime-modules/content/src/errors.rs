@@ -143,47 +143,50 @@ decl_error! {
         /// NFT is already in Idle state
         NoPendingTransaction,
 
-        // No incoming offers for given origin found
+        /// No incoming offers for given origin found
         NoIncomingOffers,
 
-        // Creator royalty requires reward account to be set.
+        /// Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
-        // Actor, which makes an attempt to finish auction is not a winner
+        /// Actor, which makes an attempt to finish auction is not a winner
         CallerIsNotAWinner,
 
-        // Auction cannot be completed
+        /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
-        // Auction does not have bids
+        /// Auction does not have bids
         LastBidDoesNotExist,
 
-        // Auction starts at lower bound exceeded
+        /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 
-        // Auction starts at upper bound exceeded
+        /// Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
 
-        // Nft is not in auction state
+        /// Nft is not in auction state
         NotInAuctionState,
 
-        // Member is not allowed to participate in auction
+        /// Member is not allowed to participate in auction
         MemberIsNotAllowedToParticipate,
 
-        // Member profile not found
+        /// Member profile not found
         MemberProfileNotFound,
 
-        // Given video nft is not in buy now state
+        /// Given video nft is not in buy now state
         NFTNotInBuyNowState,
 
-        // Auction type is not `Open`
+        /// Auction type is not `Open`
         IsNotOpenAuctionType,
 
-        // Bid lock duration is not expired
+        /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,
 
-        // NFT auction is already expired
+        /// NFT auction is already expired
         NFTAuctionIsAlreadyExpired,
+
+        /// Auction buy now is less then starting price
+        BuyNowIsLessThenStartingPrice,
 
         /// No assets to be removed have been specified
         NoAssetsSpecified,
