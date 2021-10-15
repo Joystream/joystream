@@ -90,6 +90,11 @@ else
     src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
 
   echo "Runtime upgraded."
+
+  echo "Performing migration tests"
+  ./run-migration-tests.sh $1
+
+  echo "Done with migrations tests"
 fi
 
 # Display runtime version
