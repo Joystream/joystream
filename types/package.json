@@ -5,9 +5,10 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build",
     "compile": "tsc --build tsconfig.json",
-    "build": "yarn compile && yarn generate:all",
+    "build": "git clean -xdf && yarn compile && yarn generate:all",
     "lint": "eslint ./ --ext .ts",
     "format": "prettier ./ --write",
     "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
