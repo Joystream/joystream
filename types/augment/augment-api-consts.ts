@@ -218,10 +218,6 @@ declare module '@polkadot/api/types/consts' {
        **/
       maxDistributionBucketNumberPerFamily: u64 & AugmentedConst<ApiType>;
       /**
-       * Exports const - max number of data objects per bag.
-       **/
-      maxNumberOfDataObjectsPerBag: u64 & AugmentedConst<ApiType>;
-      /**
        * Exports const - max number of pending invitations per distribution bucket.
        **/
       maxNumberOfPendingInvitationsPerDistributionBucket: u64 & AugmentedConst<ApiType>;
