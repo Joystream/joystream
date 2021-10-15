@@ -122,8 +122,8 @@ function formatDispatchError(api: ApiPromise, error: DispatchError): string {
   // Need to assert that registry is of TypeRegistry type, since Registry intefrace
   // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
   const typeRegistry = api.registry as TypeRegistry
-  const { name, documentation } = typeRegistry.findMetaError(error.asModule)
-  const errorMsg = `${name} (${documentation})`
+  const { name, docs } = typeRegistry.findMetaError(error.asModule)
+  const errorMsg = `${name} (${docs.join(', ')})`
 
   return errorMsg
 }
