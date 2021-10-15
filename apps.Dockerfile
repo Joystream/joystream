@@ -1,15 +1,6 @@
-FROM mikefarah/yq as manifest-maker
-# Change metadata.source in manifest file. It's not possible to override it via flag/env.
-USER root
-ARG WS_PROVIDER_ENDPOINT_URI
-COPY ./query-node/manifest.yml /joystream/qn-manifest.yml
-RUN yq e -i ".typegen.metadata.source = \"$WS_PROVIDER_ENDPOINT_URI\"" /joystream/qn-manifest.yml
-
 FROM --platform=linux/x86-64 node:14 as builder
 
 WORKDIR /joystream
-COPY . /joystream
-COPY --from=manifest-maker /joystream/qn-manifest.yml /joystream/query-node/manifest.yml
 
 RUN rm -fr /joystream/pioneer
 

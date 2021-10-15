@@ -85,6 +85,9 @@ function generateExportAllFile(filePath: string) {
 }
 
 // ACTUAL SCRIPT:
+if (!fs.existsSync(AUGMENT_CODEC_PATH)) {
+  fs.mkdirSync(AUGMENT_CODEC_PATH)
+}
 // Generate /augment-codec/all.ts file exporting all types ("augment-*" files will import from it)
 generateExportAllFile(EXPORT_ALL_TYPES_FILE_PATH)
 console.log(`Generated all types export file in ${EXPORT_ALL_TYPES_FILE_PATH}\n`)
