@@ -188,6 +188,12 @@ decl_error! {
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
 
+        /// Max auction whitelist length upper bound exceeded
+        MaxAuctionWhiteListLengthUpperBoundExceeded,
+
+        /// Auction whitelist has only one member
+        WhitelistHasOnlyOneMember,
+
         /// No assets to be removed have been specified
         NoAssetsSpecified,
 

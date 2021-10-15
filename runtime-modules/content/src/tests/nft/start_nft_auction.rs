@@ -3,6 +3,7 @@
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+use std::iter::FromIterator;
 
 #[test]
 fn start_nft_auction() {
@@ -588,6 +589,61 @@ fn start_nft_auction_invalid_params() {
         assert_err!(
             start_nft_auction_result,
             Error::<Test>::BuyNowIsLessThenStartingPrice
+        );
+
+        // Make an attempt to start nft auction if auction whitelist provided consists only 1 member
+        let auction_params = AuctionParams {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            auction_type: AuctionType::Open(OpenAuctionDetails {
+                bid_lock_duration: Content::min_bid_lock_duration(),
+            }),
+            minimal_bid_step: Content::max_bid_step(),
+            starts_at: None,
+            whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID].into_iter()),
+        };
+
+        let start_nft_auction_result = Content::start_nft_auction(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::WhitelistHasOnlyOneMember
+        );
+
+        // Make an attempt to start nft auction if length of auction whitelist provided exceeds max allowed length
+        let whitelist: BTreeSet<_> = (0..=Content::max_auction_whitelist_length())
+            .into_iter()
+            .map(|member| member as u64)
+            .collect();
+
+        let auction_params = AuctionParams {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            auction_type: AuctionType::Open(OpenAuctionDetails {
+                bid_lock_duration: Content::min_bid_lock_duration(),
+            }),
+            minimal_bid_step: Content::max_bid_step(),
+            starts_at: None,
+            whitelist,
+        };
+
+        let start_nft_auction_result = Content::start_nft_auction(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::MaxAuctionWhiteListLengthUpperBoundExceeded
         );
     })
 }

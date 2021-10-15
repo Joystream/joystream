@@ -363,6 +363,7 @@ pub fn testnet_genesis(
                 max_bid_step: 100,
                 platform_fee_percentage: Perbill::from_percent(1),
                 auction_starts_at_max_delta: 90_000,
+                max_auction_whitelist_length: 100,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {

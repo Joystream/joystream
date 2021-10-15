@@ -70,6 +70,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
+        Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
         if let Some(starts_at) = auction_params.starts_at {
             Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
@@ -127,6 +128,25 @@ impl<T: Trait> Module<T> {
             Error::<T>::AuctionBidStepLowerBoundExceeded
         );
         Ok(())
+    }
+
+    /// Ensure whitelist bounds satisfied
+    pub(crate) fn ensure_whitelist_bounds_satisfied(
+        whitelist: &BTreeSet<T::MemberId>,
+    ) -> DispatchResult {
+        match whitelist.len() {
+            // whitelist is empty <==> feature is not active.
+            0 => Ok(()),
+            // auctions with one paticipant does not makes sense
+            1 => Err(Error::<T>::WhitelistHasOnlyOneMember.into()),
+            length => {
+                ensure!(
+                    length <= Self::max_auction_whitelist_length() as usize,
+                    Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded
+                );
+                Ok(())
+            }
+        }
     }
 
     /// Ensure auction duration bounds satisfied

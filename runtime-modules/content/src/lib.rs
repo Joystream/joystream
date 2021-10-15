@@ -187,6 +187,9 @@ decl_storage! {
 
         /// Max delta between current block and starts at
         pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
+
+        /// Max nft auction whitelist length
+        pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
     }
 }
 
