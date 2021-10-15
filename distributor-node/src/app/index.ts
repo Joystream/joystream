@@ -7,6 +7,7 @@ import { ServerService } from '../services/server/ServerService'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
+import { AppIntervals } from '../types/app'
 
 export class App {
   private config: ReadonlyConfig
@@ -16,19 +17,40 @@ export class App {
   private server: ServerService
   private logging: LoggingService
   private logger: Logger
+  private intervals: AppIntervals | undefined
 
   constructor(config: ReadonlyConfig) {
     this.config = config
     this.logging = LoggingService.withAppConfig(config)
     this.stateCache = new StateCacheService(config, this.logging)
-    this.content = new ContentService(config, this.logging, this.stateCache)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)
+    this.content = new ContentService(config, this.logging, this.networking, this.stateCache)
     this.server = new ServerService(config, this.stateCache, this.content, this.logging, this.networking)
     this.logger = this.logging.createLogger('App')
   }
 
+  private setIntervals() {
+    this.intervals = {
+      saveCacheState: setInterval(() => this.stateCache.save(), this.config.intervals.saveCacheState * 1000),
+      checkStorageNodeResponseTimes: setInterval(
+        () => this.networking.checkActiveStorageNodeEndpoints(),
+        this.config.intervals.checkStorageNodeResponseTimes * 1000
+      ),
+      cacheCleanup: setInterval(() => this.content.cacheCleanup(), this.config.intervals.cacheCleanup * 1000),
+    }
+  }
+
+  private clearIntervals() {
+    if (this.intervals) {
+      Object.values(this.intervals).forEach((interval) => clearInterval(interval))
+    }
+  }
+
   private checkConfigDirectories(): void {
     Object.entries(this.config.directories).forEach(([name, path]) => {
+      if (path === undefined) {
+        return
+      }
       const dirInfo = `${name} directory (${path})`
       if (!fs.existsSync(path)) {
         try {
@@ -51,12 +73,17 @@ export class App {
   }
 
   public async start(): Promise<void> {
-    this.logger.info('Starting the app')
-    this.checkConfigDirectories()
-    this.stateCache.load()
-    const dataObjects = await this.networking.fetchSupportedDataObjects()
-    await this.content.startupInit(dataObjects)
-    this.server.start()
+    this.logger.info('Starting the app', { config: this.config })
+    try {
+      this.checkConfigDirectories()
+      this.stateCache.load()
+      await this.content.startupInit()
+      this.setIntervals()
+      this.server.start()
+    } catch (err) {
+      this.logger.error('Node initialization failed!', { err })
+      process.exit(-1)
+    }
     nodeCleanup(this.exitHandler.bind(this))
   }
 
@@ -64,11 +91,6 @@ export class App {
     // Async exit handler - ideally should not take more than 10 sec
     // We can try to wait until some pending downloads are finished here etc.
     this.logger.info('Graceful exit initialized')
-
-    // Stop accepting any new requests and save cache
-    this.server.stop()
-    this.stateCache.clearInterval()
-    this.stateCache.saveSync()
 
     // Try to process remaining downloads
     const MAX_RETRY_ATTEMPTS = 3
@@ -95,17 +117,18 @@ export class App {
   }
 
   private exitCritically(): void {
-    this.logger.info('Critical exit initialized')
-    // Handling exits due to an error - only some critical, synchronous work can be done here
-    this.server.stop()
-    this.stateCache.clearInterval()
-    this.stateCache.saveSync()
+    // Some additional synchronous work if required...
     this.logger.info('Critical exit finished')
   }
 
   private exitHandler(exitCode: number | null, signal: string | null): boolean | undefined {
-    this.logger.info('Exiting')
-    this.stateCache.clearInterval()
+    this.logger.info('Exiting...')
+    // Clear intervals
+    this.clearIntervals()
+    // Stop the server
+    this.server.stop()
+    // Save cache
+    this.stateCache.saveSync()
     if (signal) {
       // Async exit can be executed
       this.exitGracefully()

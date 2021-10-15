@@ -522,10 +522,11 @@
         "prize": "u128"
     },
     "Bag": {
-        "objects": "BTreeMap<DataObjectId,DataObject>",
-        "stored_by": "StorageBucketIdSet",
-        "distributed_by": "DistributionBucketIdSet",
-        "deletion_prize": "Option<u128>"
+        "stored_by": "BTreeSet<StorageBucketId>",
+        "distributed_by": "BTreeSet<DistributionBucketId>",
+        "deletion_prize": "Option<u128>",
+        "objects_total_size": "u64",
+        "objects_number": "u64"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",

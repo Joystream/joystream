@@ -1,11 +1,11 @@
 id: distributor-node-docker
 endpoints:
   queryNode: http://graphql-server-mnt:4002/graphql
-  substrateNode: ws://joystream-node:9944
+  joystreamNodeWs: ws://joystream-node:9944
   # elasticSearch: http://elasticsearch:9200
 directories:
-  data: /data
-  cache: /cache
+  assets: /data
+  cacheState: /cache
   logs: /logs
 log:
   console: info
@@ -15,7 +15,12 @@ limits:
   maxConcurrentStorageNodeDownloads: 100
   maxConcurrentOutboundConnections: 300
   outboundRequestsTimeout: 5000
+intervals:
+  saveCacheState: 60
+  checkStorageNodeResponseTimes: 60
+  cacheCleanup: 60
 port: 3334
-keys: [//Alice]
+keys:
+  - suri: //Alice
 buckets: 'all'
 workerId: 0

@@ -14,7 +14,9 @@ BUCKET_ID=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
 ${CLI} leader:update-bag -b static:council -f ${FAMILY_ID} -a ${BUCKET_ID}
 ${CLI} leader:update-bag -b static:wg:storage -f ${FAMILY_ID} -a ${BUCKET_ID}
 ${CLI} leader:update-bag -b static:wg:content -f ${FAMILY_ID} -a ${BUCKET_ID}
-${CLI} leader:update-bag -b static:wg:operations -f ${FAMILY_ID} -a ${BUCKET_ID}
+${CLI} leader:update-bag -b static:wg:operationsAlpha -f ${FAMILY_ID} -a ${BUCKET_ID}
+${CLI} leader:update-bag -b static:wg:operationsBeta -f ${FAMILY_ID} -a ${BUCKET_ID}
+${CLI} leader:update-bag -b static:wg:operationsGamma -f ${FAMILY_ID} -a ${BUCKET_ID}
 ${CLI} leader:update-bag -b static:wg:gateway -f ${FAMILY_ID} -a ${BUCKET_ID}
 ${CLI} leader:update-bag -b static:wg:distribution -f ${FAMILY_ID} -a ${BUCKET_ID}
 ${CLI} leader:update-bucket-status -f ${FAMILY_ID} -B ${BUCKET_ID}  --acceptingBags yes

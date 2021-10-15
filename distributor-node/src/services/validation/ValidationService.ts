@@ -1,5 +1,5 @@
 import Ajv from 'ajv'
-import { SchemaKey, schemas, TypeBySchemaKey } from './schemas'
+import { SchemaKey, schemas, TypeBySchemaKey } from '../../schemas'
 
 class ValidationError extends Error {
   public readonly errors: string[]

@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import _ from 'lodash'
-import configSchema, { bytesizeUnits } from '../validation/schemas/configSchema'
+import configSchema, { bytesizeUnits } from '../../schemas/configSchema'
 import { JSONSchema4 } from 'json-schema'
 
 const MIN_CACHE_SIZE = 20 * Math.pow(1024, 3)
@@ -17,7 +17,15 @@ export class ConfigParserService {
   }
 
   public resolveConfigDirectoryPaths(paths: Config['directories'], configFilePath: string): Config['directories'] {
-    return _.mapValues(paths, (v) => path.resolve(path.dirname(configFilePath), v))
+    return _.mapValues(paths, (v) =>
+      typeof v === 'string' ? path.resolve(path.dirname(configFilePath), v) : v
+    ) as Config['directories']
+  }
+
+  public resolveConfigKeysPaths(keys: Config['keys'], configFilePath: string): Config['keys'] {
+    return keys.map((k) =>
+      'keyfile' in k ? { keyfile: path.resolve(path.dirname(configFilePath), k.keyfile) } : k
+    ) as Config['keys']
   }
 
   private parseBytesize(bytesize: string) {
@@ -94,6 +102,7 @@ export class ConfigParserService {
 
     // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
+    const keys = this.resolveConfigKeysPaths(configJson.keys, configPath)
     const storageLimit = this.parseBytesize(configJson.limits.storage)
 
     if (storageLimit < MIN_CACHE_SIZE) {
@@ -103,6 +112,7 @@ export class ConfigParserService {
     const parsedConfig: Config = {
       ...configJson,
       directories,
+      keys,
       limits: {
         ...configJson.limits,
         storage: storageLimit,

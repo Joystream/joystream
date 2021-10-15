@@ -37,19 +37,18 @@ export class PublicApiController {
     req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
-    contentHash: string
+    objectId: string
   ): void {
-    // TODO: FIXME: Actually check if we are still supposed to serve it and just remove after responding if not
-    // TODO: Limit the number of times useContent is trigerred for similar requests
+    // TODO: Limit the number of times useContent is trigerred for similar requests?
     // (for example: same ip, 3 different request within a minute = 1 request)
-    this.stateCache.useContent(contentHash)
+    this.stateCache.useContent(objectId)
 
-    const path = this.content.path(contentHash)
+    const path = this.content.path(objectId)
     const stream = send(req, path, {
       maxAge: CACHED_MAX_AGE,
       lastModified: false,
     })
-    const mimeType = this.stateCache.getContentMimeType(contentHash)
+    const mimeType = this.stateCache.getContentMimeType(objectId)
 
     stream.on('headers', (res) => {
       res.setHeader('x-cache', 'hit')
@@ -77,9 +76,9 @@ export class PublicApiController {
     req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
-    contentHash: string
+    objectId: string
   ) {
-    const pendingDownload = this.stateCache.getPendingDownload(contentHash)
+    const pendingDownload = this.stateCache.getPendingDownload(objectId)
     if (!pendingDownload) {
       throw new Error('Trying to serve pending download asset that is not pending download!')
     }
@@ -94,14 +93,15 @@ export class PublicApiController {
     res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
 
     // Handle request using pending download file if this makes sense in current context:
-    if (this.content.exists(contentHash)) {
+    if (this.content.exists(objectId)) {
+      const partiallyDownloadedContentSize = this.content.fileSize(objectId)
       const range = req.range(objectSize)
       if (!range || range === -1 || range === -2 || range.length !== 1 || range.type !== 'bytes') {
         // Range is not provided / invalid - serve data from pending download file
-        return this.servePendingDownloadAssetFromFile(req, res, next, contentHash, objectSize)
-      } else if (range[0].start === 0) {
-        // Range starts from the beginning of the content - serve data from pending download file
-        return this.servePendingDownloadAssetFromFile(req, res, next, contentHash, objectSize, range[0].end)
+        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize)
+      } else if (range[0].start <= partiallyDownloadedContentSize) {
+        // Range starts at the already downloaded part of the content - serve data from pending download file
+        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize, range[0])
       }
     }
 
@@ -115,21 +115,21 @@ export class PublicApiController {
     req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
-    contentHash: string,
+    objectId: string,
     objectSize: number,
-    rangeEnd?: number
+    range?: { start: number; end: number }
   ) {
-    const isRange = rangeEnd !== undefined
-    this.logger.verbose(`Serving pending download asset from file`, { contentHash, isRange, objectSize, rangeEnd })
-    const stream = this.content.createContinousReadStream(contentHash, {
-      end: isRange ? rangeEnd || 0 : objectSize - 1,
+    this.logger.verbose(`Serving pending download asset from file`, { objectId, objectSize, range })
+    const stream = this.content.createContinousReadStream(objectId, {
+      start: range?.start,
+      end: range !== undefined ? range.end : objectSize - 1,
     })
-    res.status(isRange ? 206 : 200)
+    res.status(range !== undefined ? 206 : 200)
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('x-data-source', 'local')
     res.setHeader('content-disposition', 'inline')
-    if (isRange) {
-      res.setHeader('content-range', `bytes 0-${rangeEnd}/${objectSize}`)
+    if (range !== undefined) {
+      res.setHeader('content-range', `bytes ${range.start}-${range.end}/${objectSize}`)
     }
     stream.pipe(res)
     req.on('close', () => {
@@ -140,20 +140,19 @@ export class PublicApiController {
 
   public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
     const objectId = req.params.objectId
-    const contentHash = this.stateCache.getObjectContentHash(objectId)
-    const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
+    const pendingDownload = this.stateCache.getPendingDownload(objectId)
 
     res.setHeader('timing-allow-origin', '*')
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('content-disposition', 'inline')
 
-    if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
+    if (!pendingDownload && this.content.exists(objectId)) {
       res.status(200)
       res.setHeader('x-cache', 'hit')
       res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
-      res.setHeader('content-type', this.stateCache.getContentMimeType(contentHash) || DEFAULT_CONTENT_TYPE)
-      res.setHeader('content-length', this.content.fileSize(contentHash))
-    } else if (contentHash && pendingDownload) {
+      res.setHeader('content-type', this.stateCache.getContentMimeType(objectId) || DEFAULT_CONTENT_TYPE)
+      res.setHeader('content-length', this.content.fileSize(objectId))
+    } else if (pendingDownload) {
       res.status(200)
       res.setHeader('x-cache', 'pending')
       res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
@@ -181,24 +180,22 @@ export class PublicApiController {
     next: express.NextFunction
   ): Promise<void> {
     const objectId = req.params.objectId
-    const contentHash = this.stateCache.getObjectContentHash(objectId)
-    const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
+    const pendingDownload = this.stateCache.getPendingDownload(objectId)
 
     this.logger.verbose('Data object requested', {
       objectId,
-      contentHash,
       status: pendingDownload && pendingDownload.status,
     })
 
     res.setHeader('timing-allow-origin', '*')
 
-    if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
-      this.logger.verbose('Requested file found in filesystem', { path: this.content.path(contentHash) })
-      return this.serveAssetFromFilesystem(req, res, next, contentHash)
-    } else if (contentHash && pendingDownload) {
-      this.logger.verbose('Requested file is in pending download state', { path: this.content.path(contentHash) })
+    if (!pendingDownload && this.content.exists(objectId)) {
+      this.logger.verbose('Requested file found in filesystem', { path: this.content.path(objectId) })
+      return this.serveAssetFromFilesystem(req, res, next, objectId)
+    } else if (pendingDownload) {
+      this.logger.verbose('Requested file is in pending download state', { path: this.content.path(objectId) })
       res.setHeader('x-cache', 'pending')
-      return this.servePendingDownloadAsset(req, res, next, contentHash)
+      return this.servePendingDownloadAsset(req, res, next, objectId)
     } else {
       this.logger.verbose('Requested file not found in filesystem')
       const objectInfo = await this.networking.dataObjectInfo(objectId)
@@ -218,18 +215,18 @@ export class PublicApiController {
         if (!objectData) {
           throw new Error('Missing data object data')
         }
-        const { contentHash, size } = objectData
+        const { size, contentHash } = objectData
 
         const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
         if (downloadResponse) {
           // Note: Await will only wait unil the file is created, so we may serve the response from it
-          await this.content.handleNewContent(contentHash, size, downloadResponse.data)
+          await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
           res.setHeader('x-cache', 'miss')
         } else {
           res.setHeader('x-cache', 'pending')
         }
-        return this.servePendingDownloadAsset(req, res, next, contentHash)
+        return this.servePendingDownloadAsset(req, res, next, objectId)
       }
     }
   }
@@ -237,7 +234,7 @@ export class PublicApiController {
   public async status(req: express.Request, res: express.Response<StatusResponse>): Promise<void> {
     const data: StatusResponse = {
       id: this.config.id,
-      objectsInCache: this.stateCache.getCachedContentLength(),
+      objectsInCache: this.stateCache.getCachedObjectsCount(),
       storageLimit: this.config.limits.storage,
       storageUsed: this.content.usedSpace,
       uptime: Math.floor(process.uptime()),

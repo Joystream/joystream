@@ -154,10 +154,11 @@ export interface Backers extends Vec<Backer> {}
 
 /** @name Bag */
 export interface Bag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, DataObject>;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: DistributionBucketIdSet;
+  readonly stored_by: BTreeSet<StorageBucketId>;
+  readonly distributed_by: BTreeSet<DistributionBucketId>;
   readonly deletion_prize: Option<u128>;
+  readonly objects_total_size: u64;
+  readonly objects_number: u64;
 }
 
 /** @name BagId */

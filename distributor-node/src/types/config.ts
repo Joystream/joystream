@@ -1,4 +1,4 @@
-import { ConfigJson } from './generated/ConfigJson'
+import { DistributorNodeConfiguration as ConfigJson } from './generated/ConfigJson'
 import { DeepReadonly } from './common'
 
 export type Config = Omit<ConfigJson, 'limits'> & {

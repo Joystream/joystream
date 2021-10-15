@@ -1,7 +1,7 @@
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
 import { hash } from 'blake3'
-import { PublicApi, Configuration, TokenRequest } from '../../services/networking/storage-node/generated'
+import { FilesApi, Configuration, TokenRequest } from '../../services/networking/storage-node/generated'
 import { u8aToHex } from '@polkadot/util'
 import * as multihash from 'multihashes'
 import FormData from 'form-data'
@@ -31,7 +31,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
     }),
     bucketId: flags.integer({
       char: 'B',
-      description: 'Distribution bucket id',
+      description: 'Storage bucket id',
       required: true,
     }),
     batchSize: flags.integer({
@@ -49,10 +49,9 @@ export default class DevBatchUpload extends AccountsCommandBase {
     const { bagId, bucketId, batchSize, batchesCount } = this.parse(DevBatchUpload).flags
     const sudoKey = (await api.query.sudo.key()).toHuman()
     const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
-    const storageApi = new PublicApi(
+    const storageApi = new FilesApi(
       new Configuration({
         basePath: 'http://127.0.0.1:3333/api/v1',
-        formDataCtor: FormData,
       })
     )
 

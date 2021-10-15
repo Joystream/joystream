@@ -56,7 +56,7 @@ paths:
       tags:
         - public
       parameters:
-        - $ref: '#components/parameters/ObjectId'
+        - $ref: '#/components/parameters/ObjectId'
       responses:
         200:
           description: Object is supported and should be send on GET request.
@@ -75,7 +75,7 @@ paths:
       tags:
         - public
       parameters:
-        - $ref: '#components/parameters/ObjectId'
+        - $ref: '#/components/parameters/ObjectId'
       responses:
         200:
           description: Full available object data sent

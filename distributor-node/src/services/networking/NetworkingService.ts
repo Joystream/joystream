@@ -5,7 +5,7 @@ import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
 import { PendingDownloadData, StateCacheService } from '../cache/StateCacheService'
 import { DataObjectDetailsFragment } from './query-node/generated/queries'
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import {
   StorageNodeEndpointData,
   DataObjectAccessPoints,
@@ -20,9 +20,9 @@ import http from 'http'
 import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 
-const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
-const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
-const STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS = 60000
+// Concurrency limits
+export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
+export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 
 export class NetworkingService {
   private config: ReadonlyConfig
@@ -32,7 +32,6 @@ export class NetworkingService {
   private stateCache: StateCacheService
   private logger: Logger
 
-  private storageNodeEndpointsCheckInterval: NodeJS.Timeout
   private testLatencyQueue: queue
   private downloadQueue: queue
 
@@ -49,13 +48,9 @@ export class NetworkingService {
     this.logging = logging
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
-    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode)
+    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     // this.runtimeApi = new RuntimeApi(config.endpoints.substrateNode)
-    this.checkActiveStorageNodeEndpoints()
-    this.storageNodeEndpointsCheckInterval = setInterval(
-      this.checkActiveStorageNodeEndpoints.bind(this),
-      STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS
-    )
+    void this.checkActiveStorageNodeEndpoints()
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
       'end',
@@ -66,10 +61,6 @@ export class NetworkingService {
       }
     )
     this.downloadQueue = queue({ concurrency: config.limits.maxConcurrentStorageNodeDownloads, autostart: true })
-  }
-
-  public clearIntervals(): void {
-    clearInterval(this.storageNodeEndpointsCheckInterval)
   }
 
   private validateNodeEndpoint(endpoint: string): void {
@@ -96,6 +87,10 @@ export class NetworkingService {
     })
   }
 
+  private getApiEndpoint(rootEndpoint: string) {
+    return rootEndpoint.endsWith('/') ? rootEndpoint + 'api/v1' : rootEndpoint + '/api/v1'
+  }
+
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     const endpointsData = details.storageBag.storageAssignments
       .filter(
@@ -103,10 +98,14 @@ export class NetworkingService {
           a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' &&
           a.storageBucket.operatorMetadata?.nodeEndpoint
       )
-      .map((a) => ({
-        bucketId: a.storageBucket.id,
-        endpoint: a.storageBucket.operatorMetadata!.nodeEndpoint!,
-      }))
+      .map((a) => {
+        const rootEndpoint = a.storageBucket.operatorMetadata!.nodeEndpoint!
+        const apiEndpoint = this.getApiEndpoint(rootEndpoint)
+        return {
+          bucketId: a.storageBucket.id,
+          endpoint: apiEndpoint,
+        }
+      })
 
     return this.filterStorageNodeEndpoints(endpointsData)
   }
@@ -119,9 +118,6 @@ export class NetworkingService {
 
   public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
     const details = await this.queryNodeApi.getDataObjectDetails(objectId)
-    if (details) {
-      this.stateCache.setObjectContentHash(objectId, details.ipfsHash)
-    }
     return {
       exists: !!details,
       isSupported:
@@ -164,7 +160,7 @@ export class NetworkingService {
     onFinished?: () => void
   ): Promise<void> {
     const {
-      objectData: { contentHash, accessPoints },
+      objectData: { objectId, accessPoints },
       startAt,
     } = downloadData
 
@@ -173,13 +169,13 @@ export class NetworkingService {
     return new Promise<void>((resolve, reject) => {
       // Handlers:
       const fail = (message: string) => {
-        this.stateCache.dropPendingDownload(contentHash)
+        this.stateCache.dropPendingDownload(objectId)
         onError(new Error(message))
         reject(new Error(message))
       }
 
       const sourceFound = (response: StorageNodeDownloadResponse) => {
-        this.logger.info('Download source chosen', { contentHash, source: response.config.url })
+        this.logger.info('Download source chosen', { objectId, source: response.config.url })
         pendingDownload.status = 'Downloading'
         onSourceFound(response)
       }
@@ -194,7 +190,7 @@ export class NetworkingService {
       )
 
       this.logger.info('Downloading new data object', {
-        contentHash,
+        objectId,
         possibleSources: storageEndpoints.map((e) => ({
           endpoint: e,
           meanResponseTime: this.stateCache.getStorageNodeEndpointMeanResponseTime(e),
@@ -213,7 +209,7 @@ export class NetworkingService {
       storageEndpoints.forEach(async (endpoint) => {
         availabilityQueue.push(async () => {
           const api = new StorageNodeApi(endpoint, this.logging)
-          const available = await api.isObjectAvailable(contentHash)
+          const available = await api.isObjectAvailable(objectId)
           if (!available) {
             throw new Error('Not avilable')
           }
@@ -225,7 +221,7 @@ export class NetworkingService {
         availabilityQueue.stop()
         const job = async () => {
           const api = new StorageNodeApi(endpoint, this.logging)
-          const response = await api.downloadObject(contentHash, startAt)
+          const response = await api.downloadObject(objectId, startAt)
           return response
         }
         objectDownloadQueue.push(job)
@@ -267,10 +263,10 @@ export class NetworkingService {
 
   public downloadDataObject(downloadData: DownloadData): Promise<StorageNodeDownloadResponse> | null {
     const {
-      objectData: { contentHash, size },
+      objectData: { objectId, size },
     } = downloadData
 
-    if (this.stateCache.getPendingDownload(contentHash)) {
+    if (this.stateCache.getPendingDownload(objectId)) {
       // Already downloading
       return null
     }
@@ -282,23 +278,23 @@ export class NetworkingService {
     })
 
     // Queue the download
-    const pendingDownload = this.stateCache.newPendingDownload(contentHash, size, downloadPromise)
+    const pendingDownload = this.stateCache.newPendingDownload(objectId, size, downloadPromise)
     this.downloadQueue.push(() => this.downloadJob(pendingDownload, downloadData, resolveDownload, rejectDownload))
 
     return downloadPromise
   }
 
-  async fetchSupportedDataObjects(): Promise<DataObjectData[]> {
+  async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
     const data =
       this.config.buckets === 'all'
         ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
         : await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
-    const objectsData: DataObjectData[] = []
+    const objectsData = new Map<string, DataObjectData>()
     data.forEach((bucket) => {
       bucket.bagAssignments.forEach((a) => {
         a.storageBag.objects.forEach((object) => {
           const { ipfsHash, id, size } = object
-          objectsData.push({ contentHash: ipfsHash, objectId: id, size: parseInt(size) })
+          objectsData.set(id, { contentHash: ipfsHash, objectId: id, size: parseInt(size) })
         })
       })
     })
@@ -307,45 +303,47 @@ export class NetworkingService {
   }
 
   async checkActiveStorageNodeEndpoints(): Promise<void> {
-    const activeStorageOperators = await this.queryNodeApi.getActiveStorageBucketOperatorsData()
-    const endpoints = this.filterStorageNodeEndpoints(
-      activeStorageOperators.map(({ id, operatorMetadata }) => ({
-        bucketId: id,
-        endpoint: operatorMetadata!.nodeEndpoint!,
-      }))
-    )
-    this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
+    try {
+      const activeStorageOperators = await this.queryNodeApi.getActiveStorageBucketOperatorsData()
+      const endpoints = this.filterStorageNodeEndpoints(
+        activeStorageOperators.map(({ id, operatorMetadata }) => ({
+          bucketId: id,
+          endpoint: this.getApiEndpoint(operatorMetadata!.nodeEndpoint!),
+        }))
+      )
+      this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
 
-    endpoints.forEach(({ endpoint }) =>
-      this.testLatencyQueue.push(async () => {
-        await this.checkResponseTime(endpoint)
-      })
-    )
+      endpoints.forEach(({ endpoint }) =>
+        this.testLatencyQueue.push(async () => {
+          await this.checkResponseTime(endpoint)
+        })
+      )
+    } catch (err) {
+      this.logger.error("Couldn't check active storage node endpooints", { err })
+    }
   }
 
   async checkResponseTime(endpoint: string): Promise<void> {
     const start = Date.now()
     this.logger.debug(`Sending storage node response-time check request to: ${endpoint}`, { endpoint })
     try {
-      // TODO: Use a status endpoint once available?
-      await axios.get(endpoint, {
-        headers: {
-          connection: 'close',
-        },
-      })
-      throw new Error('Unexpected status 200')
+      const api = new StorageNodeApi(endpoint, this.logging)
+      const reqConfig: AxiosRequestConfig = { headers: { connection: 'close' } }
+      await api.stateApi.stateApiGetVersion(reqConfig)
+      const responseTime = Date.now() - start
+      this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
+      this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 404) {
-        // This is the expected outcome currently
-        const responseTime = Date.now() - start
-        this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
-        this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
-      } else {
-        this.logger.warn(`${endpoint} check request unexpected response`, {
+      if (axios.isAxiosError(err)) {
+        const parsedErr = parseAxiosError(err)
+        this.logger.warn(`${endpoint} check request error: ${parsedErr.message}`, {
           endpoint,
-          err: axios.isAxiosError(err) ? parseAxiosError(err) : err,
+          err: parsedErr,
           '@pauseFor': 900,
         })
+      } else {
+        const message = err instanceof Error ? err.message : 'Unknown'
+        this.logger.error(`${endpoint} check unexpected error: ${message}`, { endpoint, err, '@pauseFor': 900 })
       }
     }
   }

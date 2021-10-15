@@ -1,14 +1,8 @@
-import { BagId } from '@joystream/types/storage'
-import { registry } from '@joystream/types'
-import { createType } from '@polkadot/types'
-import { InterfaceTypes } from '@polkadot/types/types'
-import { WorkingGroup } from '@joystream/types/common'
+import { BagId, StaticBagId } from '@joystream/types/storage'
+import { createType } from '@joystream/types'
+import { WorkingGroup, WorkingGroupKey } from '@joystream/types/common'
 
 export class BagIdParserService {
-  private createType<T extends keyof InterfaceTypes>(type: T, value: any) {
-    return createType(registry, type, value)
-  }
-
   public parseBagId(bagId: string): BagId {
     const bagIdParts = bagId.toLowerCase().split(':')
 
@@ -31,8 +25,8 @@ export class BagIdParserService {
     // Try to construct static council bag ID.
     if (bagIdParts[1] === 'council') {
       if (bagIdParts.length === 2) {
-        const staticBagId = this.createType('StaticBagId', 'Council')
-        const constructedBagId = this.createType('BagId', {
+        const staticBagId = createType<StaticBagId, 'StaticBagId'>('StaticBagId', 'Council')
+        const constructedBagId = createType<BagId, 'BagId'>('BagId', {
           'Static': staticBagId,
         })
 
@@ -42,13 +36,13 @@ export class BagIdParserService {
 
     // Try to construct static working group bag ID.
     if (bagIdParts[1] === 'wg' && bagIdParts.length === 3) {
-      const groups = Object.keys(WorkingGroup.typeDefinitions)
+      const groups = Object.keys(WorkingGroup.typeDefinitions) as WorkingGroupKey[]
       const inputGroup = bagIdParts[2]
 
       if (groups.find((g) => g.toLocaleLowerCase() === inputGroup)) {
-        return this.createType('BagId', {
+        return createType<BagId, 'BagId'>('BagId', {
           Static: {
-            WorkingGroup: inputGroup,
+            WorkingGroup: inputGroup as WorkingGroupKey,
           },
         })
       }

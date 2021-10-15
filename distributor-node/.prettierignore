@@ -1,3 +1,5 @@
 /**/generated
 /**/mock.graphql
 lib
+local
+/**/*.md

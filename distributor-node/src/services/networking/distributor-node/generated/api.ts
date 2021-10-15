@@ -124,11 +124,15 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
     return {
         /**
          * Returns a media file.
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicAsset: async (options: any = {}): Promise<RequestArgs> => {
-            const localVarPath = `/asset/{objectId}`;
+        publicAsset: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'objectId' is not null or undefined
+            assertParamExists('publicAsset', 'objectId', objectId)
+            const localVarPath = `/asset/{objectId}`
+                .replace(`{${"objectId"}}`, encodeURIComponent(String(objectId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -153,11 +157,15 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
         },
         /**
          * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicAssetHead: async (options: any = {}): Promise<RequestArgs> => {
-            const localVarPath = `/asset/{objectId}`;
+        publicAssetHead: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'objectId' is not null or undefined
+            assertParamExists('publicAssetHead', 'objectId', objectId)
+            const localVarPath = `/asset/{objectId}`
+                .replace(`{${"objectId"}}`, encodeURIComponent(String(objectId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -250,20 +258,22 @@ export const PublicApiFp = function(configuration?: Configuration) {
     return {
         /**
          * Returns a media file.
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async publicAsset(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAsset(options);
+        async publicAsset(objectId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAsset(objectId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async publicAssetHead(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAssetHead(options);
+        async publicAssetHead(objectId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAssetHead(objectId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -296,19 +306,21 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
     return {
         /**
          * Returns a media file.
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicAsset(options?: any): AxiosPromise<any> {
-            return localVarFp.publicAsset(options).then((request) => request(axios, basePath));
+        publicAsset(objectId: string, options?: any): AxiosPromise<any> {
+            return localVarFp.publicAsset(objectId, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+         * @param {string} objectId Data Object ID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        publicAssetHead(options?: any): AxiosPromise<void> {
-            return localVarFp.publicAssetHead(options).then((request) => request(axios, basePath));
+        publicAssetHead(objectId: string, options?: any): AxiosPromise<void> {
+            return localVarFp.publicAssetHead(objectId, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns list of distributed buckets
@@ -338,22 +350,24 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
 export class PublicApi extends BaseAPI {
     /**
      * Returns a media file.
+     * @param {string} objectId Data Object ID
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PublicApi
      */
-    public publicAsset(options?: any) {
-        return PublicApiFp(this.configuration).publicAsset(options).then((request) => request(this.axios, this.basePath));
+    public publicAsset(objectId: string, options?: any) {
+        return PublicApiFp(this.configuration).publicAsset(objectId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+     * @param {string} objectId Data Object ID
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PublicApi
      */
-    public publicAssetHead(options?: any) {
-        return PublicApiFp(this.configuration).publicAssetHead(options).then((request) => request(this.axios, this.basePath));
+    public publicAssetHead(objectId: string, options?: any) {
+        return PublicApiFp(this.configuration).publicAssetHead(objectId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

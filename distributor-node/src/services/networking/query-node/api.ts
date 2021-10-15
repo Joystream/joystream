@@ -1,5 +1,8 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client/core'
+import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode, from } from '@apollo/client/core'
+import { onError } from '@apollo/client/link/error'
 import fetch from 'cross-fetch'
+import { Logger } from 'winston'
+import { LoggingService } from '../../logging'
 import {
   DataObjectDetailsFragment,
   GetDataObjectDetails,
@@ -21,10 +24,17 @@ import { Maybe } from './generated/schema'
 
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
+  private logger: Logger
 
-  public constructor(endpoint: string) {
+  public constructor(endpoint: string, logging: LoggingService, exitOnError = false) {
+    this.logger = logging.createLogger('QueryNodeApi')
+    const errorLink = onError(({ graphQLErrors, networkError }) => {
+      const message = networkError?.message || 'Graphql syntax errors found'
+      this.logger.error('Error when trying to execute a query!', { err: { message, graphQLErrors, networkError } })
+      exitOnError && process.exit(-1)
+    })
     this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch }),
+      link: from([errorLink, new HttpLink({ uri: endpoint, fetch })]),
       cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
