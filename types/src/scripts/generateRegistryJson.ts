@@ -12,9 +12,6 @@ const OUTPUT_PATH = path.join(__dirname, '../../augment/all/defs.json')
 function normalizeDef(registry: Registry, defOrConstructor: unknown, typeName: string): RegistryTypes[string] {
   if (typeof defOrConstructor === 'string') {
     let typeName: string = defOrConstructor
-    // Replace unhandled BTreeSet with Vec
-    // FIXME: Remove after updating @polkadot/api!
-    typeName = typeName.replace('BTreeSet<', 'Vec<')
     // Workaround for "Unhandled type VecFixed"
     typeName = typeName.replace('[u8;32]', 'Hash')
     return typeName

@@ -35,10 +35,10 @@ function ErrorDisplay (props: Props): React.ReactElement<Props> {
 
     if (isModuleError(value as ModuleErrorDefault)) {
       try {
-        const { documentation, name, section } = registry.findMetaError((value as DispatchError).asModule);
+        const { docs, name, section } = registry.findMetaError((value as DispatchError).asModule);
 
         return setDetails({
-          details: documentation.join(', '),
+          details: docs.join(', '),
           type: `${section}.${name}`
         });
       } catch (error) {

@@ -9,9 +9,11 @@ import {
   BTreeMap,
   Option,
   u32,
+  u128,
 } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
+import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
 import { WorkerId } from './working-group'
 
@@ -46,12 +48,12 @@ export class DataObject
   })
   implements IDataObject {}
 
-export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdSet extends BTreeSet.with(DataObjectId) {}
 export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
 export class DistributionBucketId extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
-export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
-export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
+export class StorageBucketIdSet extends BTreeSet.with(StorageBucketId) {}
+export class DistributionBucketIdSet extends BTreeSet.with(DistributionBucketId) {}
 
 export type IDynamicBagDeletionPrize = {
   account_id: AccountId
@@ -68,18 +70,20 @@ export class DynamicBagDeletionPrize
 export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
 
 export type IBag = {
-  objects: BTreeMap<DataObjectId, DataObject>
-  stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketIdSet
-  deletion_prize: Option<BalanceOf>
+  stored_by: BTreeSet<StorageBucketId>
+  distributed_by: BTreeSet<DistributionBucketId>
+  deletion_prize: Option<Balance>
+  objects_total_size: u64
+  objects_number: u64
 }
 
 export class Bag
   extends JoyStructDecorated({
-    objects: BTreeMap.with(DataObjectId, DataObject),
-    stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketIdSet,
-    deletion_prize: Option.with(BalanceOf),
+    stored_by: BTreeSet.with(StorageBucketId),
+    distributed_by: BTreeSet.with(DistributionBucketId),
+    deletion_prize: Option.with(u128),
+    objects_total_size: u64,
+    objects_number: u64,
   })
   implements IBag {}
 
