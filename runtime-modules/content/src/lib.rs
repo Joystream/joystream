@@ -1433,12 +1433,8 @@ decl_module! {
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
-            recipient_id: MemberId<T>,
         ) {
-
-            // Authorize participant under given member id
             let receiver_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&recipient_id, &receiver_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1447,7 +1443,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure new pending offer is available to proceed
-            Self::ensure_new_pending_offer_available_to_proceed(&nft, recipient_id, &receiver_account_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
             let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
 
@@ -1462,7 +1458,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferAccepted(video_id, recipient_id));
+            Self::deposit_event(RawEvent::OfferAccepted(video_id));
         }
 
         /// Sell NFT
@@ -1825,7 +1821,7 @@ decl_event!(
         OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         TransactionCanceled(VideoId, ContentActor),
-        OfferAccepted(VideoId, MemberId),
+        OfferAccepted(VideoId),
         NFTSellOrderMade(VideoId, ContentActor, Balance),
         NFTBought(VideoId, MemberId, Metadata),
     }

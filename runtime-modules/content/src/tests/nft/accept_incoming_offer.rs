@@ -42,7 +42,6 @@ fn accept_incoming_offer() {
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
-            SECOND_MEMBER_ID,
         ));
 
         // Runtime tested state after call
@@ -57,8 +56,7 @@ fn accept_incoming_offer() {
             }) if member_id == SECOND_MEMBER_ID
         ));
 
-        let offer_accepted_event =
-            get_test_event(RawEvent::OfferAccepted(video_id, SECOND_MEMBER_ID));
+        let offer_accepted_event = get_test_event(RawEvent::OfferAccepted(video_id));
 
         // Last event checked
         assert_event(offer_accepted_event, number_of_events_before_call + 1);
@@ -74,11 +72,8 @@ fn accept_incoming_offer_video_does_not_exist() {
         let video_id = NextVideoId::<Test>::get();
 
         // Make an attempt to accept incoming nft offer if corresponding video does not exist
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            SECOND_MEMBER_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(
@@ -99,11 +94,8 @@ fn accept_incoming_offer_nft_not_issued() {
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
 
         // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            SECOND_MEMBER_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(accept_incoming_offer_result, Error::<Test>::NFTDoesNotExist);
@@ -140,11 +132,8 @@ fn accept_incoming_offer_auth_failed() {
         ));
 
         // Make an attempt to accept incoming nft offer providing wrong credentials
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            UNKNOWN_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(UNKNOWN_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(
@@ -174,21 +163,9 @@ fn accept_incoming_offer_no_incoming_offers() {
             None
         ));
 
-        // Offer nft
-        assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            None,
-        ));
-
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            video_id,
-            FIRST_MEMBER_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(
@@ -255,11 +232,8 @@ fn accept_incoming_offer_reward_account_is_not_set() {
         ));
 
         // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            SECOND_MEMBER_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(
@@ -301,11 +275,8 @@ fn accept_incoming_offer_insufficient_balance() {
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            SECOND_MEMBER_ID,
-        );
+        let accept_incoming_offer_result =
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
 
         // Failure checked
         assert_err!(

@@ -238,17 +238,20 @@ impl<T: Trait> Module<T> {
     /// Ensure new pending offer for given participant is available to proceed
     pub(crate) fn ensure_new_pending_offer_available_to_proceed(
         nft: &Nft<T>,
-        participant: T::MemberId,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
-        match &nft.transactional_status {
-            TransactionalStatus::InitiatedOfferToMember(to, price) if participant == *to => {
-                if let Some(price) = price {
-                    Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
-                }
-                Ok(())
+        if let TransactionalStatus::InitiatedOfferToMember(member_id, price) =
+            &nft.transactional_status
+        {
+            // Authorize participant under given member id
+            ensure_member_auth_success::<T>(&member_id, &participant_account_id)?;
+
+            if let Some(price) = price {
+                Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
             }
-            _ => Err(Error::<T>::NoIncomingOffers.into()),
+            Ok(())
+        } else {
+            Err(Error::<T>::NoIncomingOffers.into())
         }
     }
 
