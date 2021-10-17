@@ -74,7 +74,7 @@ fn make_bid() {
             }) if auction == auction_with_bid
         ));
 
-        let nft_auction_started_event = get_test_event(RawEvent::AuctionBidMade(
+        let auction_bid_made_event = get_test_event(RawEvent::AuctionBidMade(
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -82,6 +82,89 @@ fn make_bid() {
         ));
 
         // Last event checked
-        assert_event(nft_auction_started_event, number_of_events_before_call + 4);
+        assert_event(auction_bid_made_event, number_of_events_before_call + 4);
+    })
+}
+
+#[test]
+fn make_bid_completes_auction() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            None,
+            b"metablob".to_vec(),
+            None
+        ));
+
+        let buy_now_price = Content::min_starting_price();
+
+        let auction_params = AuctionParams {
+            starting_price: buy_now_price,
+            buy_now_price: Some(2 * buy_now_price),
+            auction_type: AuctionType::Open(OpenAuctionDetails {
+                bid_lock_duration: Content::min_bid_lock_duration(),
+            }),
+            minimal_bid_step: Content::max_bid_step(),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_nft_auction(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // Runtime tested state before call
+
+        // Events number before tested calls
+        let number_of_events_before_call = System::events().len();
+
+        // deposit initial balance
+        let bid = 2 * Content::min_starting_price();
+
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+
+        // Make nft auction bid
+        assert_ok!(Content::make_bid(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+            vec![],
+        ));
+
+        // Runtime tested state after call
+
+        // Ensure nft status changed to given Auction
+        assert!(matches!(
+            Content::video_by_id(video_id).nft_status,
+            Some(OwnedNFT {
+                transactional_status: TransactionalStatus::Idle,
+                owner,
+                ..
+            }) if owner == NFTOwner::Member(SECOND_MEMBER_ID)
+        ));
+
+        let nft_auction_started_event = get_test_event(RawEvent::BidMadeCompletingAuction(
+            SECOND_MEMBER_ID,
+            video_id,
+            vec![],
+        ));
+
+        // Last event checked
+        assert_event(nft_auction_started_event, number_of_events_before_call + 5);
     })
 }
