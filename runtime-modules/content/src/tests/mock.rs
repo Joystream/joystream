@@ -53,6 +53,8 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const THIRD_MEMBER_ID: MemberId = 7;
+pub const FOURTH_MEMBER_ID: MemberId = 8;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
