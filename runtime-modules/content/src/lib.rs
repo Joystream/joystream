@@ -793,6 +793,9 @@ decl_module! {
 
             Self::ensure_video_can_be_removed(&video)?;
 
+            // Ensure nft for this video have not been issued
+            video.ensure_nft_is_not_issued::<T>()?;
+
             // If video is on storage, remove it
             if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
                 Storage::<T>::delete_data_objects(
@@ -1051,8 +1054,10 @@ decl_module! {
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
 
+            let channel_id = video.in_channel;
+
             // Ensure channel exists, retrieve channel owner
-            let channel_owner = Self::ensure_channel_exists(&video.in_channel)?.owner;
+            let channel_owner = Self::ensure_channel_exists(&channel_id)?.owner;
 
             ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
 
