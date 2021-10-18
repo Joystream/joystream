@@ -14,10 +14,10 @@ pub type Royalty = Perbill;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransactionalStatus<
-    BlockNumber: BaseArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
-    Balance: Default + Clone,
+    Balance: Default + Clone + BaseArithmetic,
 > {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
@@ -26,10 +26,10 @@ pub enum TransactionalStatus<
 }
 
 impl<
-        BlockNumber: BaseArithmetic + Copy,
+        BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + Ord,
         AccountId: Default + Clone + Ord,
-        Balance: Default + Clone,
+        Balance: Default + Clone + BaseArithmetic,
     > Default for TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>
 {
     fn default() -> Self {
@@ -41,10 +41,10 @@ impl<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct OwnedNFT<
-    BlockNumber: BaseArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
-    Balance: Default + Clone,
+    Balance: Default + Clone + BaseArithmetic,
 > {
     pub owner: NFTOwner<MemberId>,
     pub transactional_status: TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>,
@@ -52,10 +52,10 @@ pub struct OwnedNFT<
 }
 
 impl<
-        BlockNumber: BaseArithmetic + Copy,
+        BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + PartialEq + Ord,
         AccountId: Default + Clone + PartialEq + Ord,
-        Balance: Default + Clone,
+        Balance: Default + Clone + BaseArithmetic,
     > OwnedNFT<BlockNumber, MemberId, AccountId, Balance>
 {
     /// Create new NFT
@@ -118,21 +118,16 @@ impl<
         self
     }
 
-    /// Whether pending tansfer exist
-    pub fn is_initiated_offer_to_member_transactional_status(&self) -> bool {
-        matches!(
-            self.transactional_status,
-            TransactionalStatus::InitiatedOfferToMember(..),
-        )
-    }
-
-    /// Ensure NFT has pending offer
-    pub fn ensure_pending_offer_exists<T: Trait>(&self) -> DispatchResult {
-        ensure!(
-            self.is_initiated_offer_to_member_transactional_status(),
-            Error::<T>::PendingTransferDoesNotExist
-        );
-        Ok(())
+    /// Ensure NFT transaction can be canceled
+    pub fn ensure_transaction_can_be_canceled<T: Trait>(&self) -> DispatchResult {
+        match &self.transactional_status {
+            TransactionalStatus::Auction(auction) => {
+                // Ensure given auction can be canceled
+                auction.ensure_auction_can_be_canceled::<T>()
+            }
+            TransactionalStatus::Idle => Err(Error::<T>::NoPendingTransaction.into()),
+            _ => Ok(()),
+        }
     }
 }
 
