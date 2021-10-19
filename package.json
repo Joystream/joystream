@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "./build-npm-packages.sh && ./build-docker-images.sh",
+    "build:node:docker": "./build-node-docker.sh",
+    "build:apps:docker": "./build-apps-docker.sh",
     "build:packages": "./build-npm-packages.sh",
-    "build:docker": "./build-docker-images.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",

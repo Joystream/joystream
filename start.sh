@@ -52,13 +52,13 @@ docker-compose run -d --name colossus --entrypoint sh colossus -c "yarn storage-
 
 docker-compose up -d distributor-node
 
-# # Create a new content directory lead
-# yarn workspace api-scripts initialize-content-lead
+# Create a new content directory lead
+yarn workspace api-scripts initialize-content-lead
 
-# # Set sudo as the membership screening authority
-# yarn workspace api-scripts set-sudo-as-screening-auth
+# Set sudo as the membership screening authority
+yarn workspace api-scripts set-sudo-as-screening-auth
 
-# docker-compose up -d pioneer
+docker-compose up -d pioneer
 
 echo "use Ctrl+C to shutdown the development network."
 
