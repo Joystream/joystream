@@ -7,6 +7,7 @@ COPY ./distributor-node distributor-node
 COPY ./yarn.lock yarn.lock
 COPY ./package.json package.json
 COPY ./chain-metadata.json chain-metadata.json
+COPY ./.git .git
 EXPOSE 3334
 
 # Build & cleanup
