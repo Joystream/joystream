@@ -8,24 +8,8 @@ then
   exit 0
 fi
 
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    IP_ADDRESS=$(ip addr show | grep "\binet\b.*\bdocker0\b" | awk '{print $2}' | cut -d '/' -f 1)
-    # Run a local development chain
-    docker-compose -f docker-compose.linux-gnu-build.yml up -d joystream-node
-
-    # Build processor/graphql-server docker image
-    echo "Building joystream/apps docker image..."
-    WS_PROVIDER_ENDPOINT_URI=ws://${IP_ADDRESS}:9944/ docker-compose build graphql-server
-    docker-compose down
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    # Run a local development chain
-    docker-compose up -d joystream-node
-
-    # Build processor/graphql-server docker image
-    echo "Building joystream/apps docker image..."
-    WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944/ docker-compose build graphql-server
-    docker-compose down
-fi
+# Build processor/graphql-server docker image
+docker-compose build graphql-server
 
 # Build colossus docker image
 echo "Building colossus docker image..."

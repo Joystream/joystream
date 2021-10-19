@@ -25,24 +25,14 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm dependencies
-yarn
+# build local npm packages
+yarn build:packages
 
 # Build joystream/node image
 yarn build:node:docker
 
 # Build applications docker image
 yarn build:apps:docker
-
-# start local dev joystream/node (required when building query-node package)
-# or optionally build native binary and run dev chain with ./script/run-dev-chain.sh
-docker-compose up -d joystream/node
-
-# build local npm packages
-yarn build:packages
-
-# stop dev joystream/node container
-docker-compose down -v
 
 # start a local development network
 yarn start

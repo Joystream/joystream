@@ -6,7 +6,7 @@ COPY ./metadata-protobuf metadata-protobuf
 COPY ./distributor-node distributor-node
 COPY ./yarn.lock yarn.lock
 COPY ./package.json package.json
-
+COPY ./chain-metadata.json chain-metadata.json
 EXPOSE 3334
 
 # Build & cleanup
