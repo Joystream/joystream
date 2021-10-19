@@ -1,13 +1,14 @@
 FROM --platform=linux/x86-64 node:14 as builder
 
 WORKDIR /joystream
+COPY ./.git .git
+COPY ./chain-metadata.json chain-metadata.json
 COPY ./types types
 COPY ./metadata-protobuf metadata-protobuf
 COPY ./distributor-node distributor-node
 COPY ./yarn.lock yarn.lock
 COPY ./package.json package.json
-COPY ./chain-metadata.json chain-metadata.json
-COPY ./.git .git
+
 EXPOSE 3334
 
 # Build & cleanup
