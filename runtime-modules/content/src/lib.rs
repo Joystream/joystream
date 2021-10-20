@@ -84,12 +84,6 @@ pub trait Trait:
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
 
-    /// Type of identifier for Playlists
-    type PlaylistId: NumericIdentifier;
-
-    /// Type of identifier for Persons
-    type PersonId: NumericIdentifier;
-
     /// Type of identifier for Channels
     type SeriesId: NumericIdentifier;
 
@@ -315,31 +309,6 @@ pub struct VideoRecord<ChannelId, SeriesId> {
 
 type Video<T> = VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId>;
 
-/// Information about the plyalist being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistCreationParameters {
-    /// Metadata about the playlist.
-    meta: Vec<u8>,
-}
-
-/// Information about the playlist being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistUpdateParameters {
-    // It is the only field so its not an Option
-    /// Metadata update for the playlist.
-    new_meta: Vec<u8>,
-}
-
-/// A playlist is an ordered collection of videos.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Playlist<ChannelId> {
-    /// The channel the playlist belongs to.
-    in_channel: ChannelId,
-}
-
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -395,62 +364,6 @@ pub struct Series<ChannelId, VideoId> {
     seasons: Vec<Season<VideoId>>,
 }
 
-/// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PersonActor<MemberId, CuratorId> {
-    Member(MemberId),
-    Curator(CuratorId),
-}
-
-/// The authorized actor that may update or delete a Person.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PersonController<MemberId> {
-    /// Member controls the person
-    Member(MemberId),
-    /// Any curator controls the person
-    Curators,
-}
-
-/// Default trait implemented only because its used in Person which needs to implement a Default trait
-/// since it is a StorageValue.
-impl<MemberId: Default> Default for PersonController<MemberId> {
-    fn default() -> Self {
-        PersonController::Member(MemberId::default())
-    }
-}
-
-/// Information for Person being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PersonCreationParameters<StorageAssets> {
-    /// Assets referenced by metadata
-    assets: StorageAssets,
-    /// Metadata for person.
-    meta: Vec<u8>,
-}
-
-/// Information for Persion being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonUpdateParameters<StorageAssets> {
-    /// Assets referenced by metadata
-    assets: Option<StorageAssets>,
-    /// Metadata to update person.
-    new_meta: Option<Vec<u8>>,
-}
-
-/// A Person represents a real person that may be associated with a video.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Person<MemberId> {
-    /// Who can update or delete this person.
-    controlled_by: PersonController<MemberId>,
-}
-
-type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
-
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -461,11 +374,7 @@ decl_storage! {
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
-        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId>;
-
         pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
-
-        pub PersonById get(fn person_by_id): map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
 
         pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
             map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T>;
@@ -477,10 +386,6 @@ decl_storage! {
         pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
-
-        pub NextPlaylistId get(fn next_playlist_id) config(): T::PlaylistId;
-
-        pub NextPersonId get(fn next_person_id) config(): T::PersonId;
 
         pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
 
@@ -1306,10 +1211,7 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-<<<<<<< HEAD
         StorageAssets = StorageAssets<T>,
-=======
->>>>>>> removed event Traits
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
