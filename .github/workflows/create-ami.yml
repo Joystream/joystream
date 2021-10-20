@@ -56,10 +56,11 @@ jobs:
           options: |
             --extra-vars "git_repo=https://github.com/${{ github.repository }} \
                           branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
-                          stack_name=${{ env.STACK_NAME }} ami_name=${{ env.ami_name }}"
+                          ami_name=${{ env.ami_name }}"
 
       - name: Delete CloudFormation Stack
         if: always()
+        continue-on-error: true
         run: |
           echo "Deleting ${{ env.STACK_NAME }} stack"
           aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
