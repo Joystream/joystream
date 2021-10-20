@@ -185,6 +185,9 @@ decl_error! {
         // NFT auction is already expired
         NFTAuctionIsAlreadyExpired,
 
+        /// Extension period is greater then auction duration
+        ExtensionPeriodIsGreaterThenAuctionDuration,
+
         /// No assets to be removed have been specified
         NoAssetsSpecified,
 
