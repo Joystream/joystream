@@ -118,16 +118,25 @@ impl<
         self
     }
 
-    /// Ensure NFT transaction can be canceled
-    pub fn ensure_transaction_can_be_canceled<T: Trait>(&self) -> DispatchResult {
-        match &self.transactional_status {
-            TransactionalStatus::Auction(auction) => {
-                // Ensure given auction can be canceled
-                auction.ensure_auction_can_be_canceled::<T>()
-            }
-            TransactionalStatus::Idle => Err(Error::<T>::NoPendingTransaction.into()),
-            _ => Ok(()),
-        }
+    /// Ensure NFT has pending offer
+    pub fn ensure_pending_offer_state<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(
+                self.transactional_status,
+                TransactionalStatus::InitiatedOfferToMember(..),
+            ),
+            Error::<T>::PendingOfferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure NFT is in BuyNow state
+    pub fn ensure_buy_now_state<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(self.transactional_status, TransactionalStatus::BuyNow(..),),
+            Error::<T>::NFTNotInBuyNowState
+        );
+        Ok(())
     }
 }
 

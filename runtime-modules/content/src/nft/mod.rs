@@ -184,7 +184,7 @@ impl<T: Trait> Module<T> {
                 }
                 Ok(())
             }
-            _ => Err(Error::<T>::NoIncomingOffers.into()),
+            _ => Err(Error::<T>::PendingOfferDoesNotExist.into()),
         }
     }
 

@@ -134,11 +134,8 @@ decl_error! {
         /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// NFT is already in Idle state
-        NoPendingTransaction,
-
-        // No incoming offers for given origin found
-        NoIncomingOffers,
+        /// No pending offers for given NFT
+        PendingOfferDoesNotExist,
 
         // Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
