@@ -8,5 +8,5 @@ cd $SCRIPT_PATH
 yarn joystream-cli working-groups:overview --group=operationsAlpha
 yarn joystream-cli working-groups:overview --group=operationsBeta
 yarn joystream-cli working-groups:overview --group=operationsGamma
-yarn joystream-cli working-groups:overview --group=content
+yarn joystream-cli working-groups:overview --group=curators
 

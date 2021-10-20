@@ -62,7 +62,6 @@ export enum WorkingGroups {
   OperationsAlpha = 'operationsAlpha',
   OperationsBeta = 'operationsBeta',
   OperationsGamma = 'operationsGamma',
-  Content = 'content',    
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
@@ -74,7 +73,6 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.OperationsAlpha,
   WorkingGroups.OperationsBeta,
   WorkingGroups.OperationsGamma,
-  WorkingGroups.Content,
   WorkingGroups.Gateway,
   WorkingGroups.Distribution,
 ] as const
