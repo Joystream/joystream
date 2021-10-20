@@ -1,6 +1,6 @@
 mod accept_incoming_offer;
 mod buy_nft;
-mod cancel_nft_transaction;
+mod cancel_nft_auction;
 mod issue_nft;
 mod make_bid;
 mod offer_nft;

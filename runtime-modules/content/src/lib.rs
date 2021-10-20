@@ -1896,7 +1896,6 @@ decl_event!(
         BidMadeCompletingAuction(MemberId, VideoId, Metadata),
         OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
-        TransactionCanceled(VideoId, ContentActor),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
         NFTSellOrderMade(VideoId, ContentActor, Balance),
