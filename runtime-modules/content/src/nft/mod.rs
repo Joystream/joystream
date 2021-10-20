@@ -22,19 +22,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure
-    pub(crate) fn ensure_actor_is_last_bidder(
-        origin: T::Origin,
-        member_id: MemberId<T>,
-        auction: &Auction<T>,
-    ) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        ensure_member_auth_success::<T>(&member_id, &account_id)?;
-
-        auction.ensure_caller_is_last_bidder::<T>(member_id)
-    }
-
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,

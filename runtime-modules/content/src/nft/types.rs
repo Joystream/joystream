@@ -332,7 +332,7 @@ impl<
 
     /// Ensure caller is last bidder.
     pub fn ensure_caller_is_last_bidder<T: Trait>(&self, who: MemberId) -> DispatchResult {
-        ensure!(self.is_last_bidder(who), Error::<T>::CallerIsNotAWinner);
+        ensure!(self.is_last_bidder(who), Error::<T>::ActorIsNotALastBidder);
         Ok(())
     }
 
@@ -341,6 +341,15 @@ impl<
         ensure!(
             matches!(&self.auction_type, AuctionType::Open(_)),
             Error::<T>::IsNotOpenAuctionType
+        );
+        Ok(())
+    }
+
+    /// Ensure auction type is `English`
+    pub fn ensure_is_english_auction<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(&self.auction_type, AuctionType::English(_)),
+            Error::<T>::IsNotEnglishAuctionType
         );
         Ok(())
     }
@@ -366,13 +375,14 @@ impl<
         who: MemberId,
         current_block: BlockNumber,
     ) -> DispatchResult {
+
         // ensure is open auction
         self.ensure_is_open_auction::<T>()?;
 
         // ensure last bid exists
         let last_bid = self.ensure_last_bid_exists::<T>()?;
 
-        // Ensure caller is last bidder.
+        // ensure caller is last bidder.
         self.ensure_caller_is_last_bidder::<T>(who)?;
 
         // ensure bid lock duration expired

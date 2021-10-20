@@ -143,8 +143,8 @@ decl_error! {
         // Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
-        // Actor, which makes an attempt to finish auction is not a winner
-        CallerIsNotAWinner,
+        // Actor is not a last bidder
+        ActorIsNotALastBidder,
 
         // Auction cannot be completed
         AuctionCannotBeCompleted,
@@ -172,6 +172,9 @@ decl_error! {
 
         // Auction type is not `Open`
         IsNotOpenAuctionType,
+
+        // Auction type is not `English`
+        IsNotEnglishAuctionType,
 
         // Bid lock duration is not expired
         BidLockDurationIsNotExpired,

@@ -1308,14 +1308,18 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
         }
 
-        /// Complete auction
+        /// Claim won english auction
+        /// Can be called by anyone
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn complete_nft_auction(
+        pub fn claim_won_english_auction(
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
             metadata: Metadata,
         ) {
+            // Authorize member under given member id
+            let account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&member_id, &account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1326,10 +1330,11 @@ decl_module! {
             // Ensure auction for given video id exists, retrieve corresponding one
             let auction = nft.ensure_auction_state::<T>()?;
 
+            // Ensure auction has at least one bid
             let bid = auction.ensure_last_bid_exists::<T>()?;
 
-            // Ensure actor authorized to complete auction.
-            Self::ensure_actor_is_last_bidder(origin, member_id, &auction)?;
+            // Ensure auction type is set to `English`
+            auction.ensure_is_english_auction::<T>()?;
 
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
@@ -1351,8 +1356,9 @@ decl_module! {
         }
 
         /// Accept open auction bid
+        /// Should only be called by auctioneer
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn settle_open_auction(
+        pub fn pick_open_auction_winner(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
