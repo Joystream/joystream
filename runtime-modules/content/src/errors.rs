@@ -194,6 +194,9 @@ decl_error! {
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
 
+        /// Extension period is greater then auction duration
+        ExtensionPeriodIsGreaterThenAuctionDuration,
+
         /// No assets to be removed have been specified
         NoAssetsSpecified,
 

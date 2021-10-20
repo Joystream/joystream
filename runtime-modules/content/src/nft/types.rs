@@ -259,21 +259,22 @@ impl<
         bidder_account_id: AccountId,
         bid: Balance,
         last_bid_block: BlockNumber,
-    ) -> (Self, Bid<MemberId, AccountId, BlockNumber, Balance>) {
+    ) -> (Self, bool, Bid<MemberId, AccountId, BlockNumber, Balance>) {
         let bid = Bid::new(bidder, bidder_account_id, bid, last_bid_block);
-        match &mut self.auction_type {
+        let is_extended = match &mut self.auction_type {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
             }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
                 *auction_duration += *extension_period;
+                true
             }
-            _ => (),
-        }
+            _ => false,
+        };
 
         self.last_bid = Some(bid.clone());
-        (self, bid)
+        (self, is_extended, bid)
     }
 
     /// Cnacel auction bid

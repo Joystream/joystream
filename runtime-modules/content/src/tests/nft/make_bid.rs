@@ -63,7 +63,7 @@ fn make_bid() {
             auction.starts_at = current_block;
         }
 
-        let (auction, _) =
+        let (auction, _, _) =
             auction.make_bid(SECOND_MEMBER_ID, SECOND_MEMBER_ORIGIN, bid, current_block);
 
         // Ensure nft status changed to given Auction
@@ -80,6 +80,7 @@ fn make_bid() {
             video_id,
             bid,
             vec![],
+            false,
         ));
 
         // Last event checked

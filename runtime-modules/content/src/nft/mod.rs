@@ -62,6 +62,12 @@ impl<T: Trait> Module<T> {
             }) => {
                 Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
                 Self::ensure_extension_period_bounds_satisfied(extension_period)?;
+
+                // Ensure auction_duration of English auction is >= extension_period
+                ensure!(
+                    auction_duration >= extension_period,
+                    Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
+                );
             }
             AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
                 Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;

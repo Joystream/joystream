@@ -409,9 +409,9 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
-            min_auction_duration: 3,
+            min_auction_duration: 5,
             max_auction_duration: 20,
-            min_auction_extension_period: 5,
+            min_auction_extension_period: 4,
             max_auction_extension_period: 30,
             min_bid_lock_duration: 2,
             max_bid_lock_duration: 10,
@@ -508,6 +508,7 @@ type RawEvent = crate::RawEvent<
     VideoCreationParameters<Test>,
     VideoUpdateParameters<Test>,
     NewAssets<Test>,
+    bool,
 >;
 
 pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
