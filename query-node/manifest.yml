@@ -9,7 +9,7 @@ entities:
   - generated/graphql-server/dist/src/modules/**/*.model.js
 typegen:
   metadata:
-    source: ws://localhost:9944
+    source: ../chain-metadata.json
   events:
     # storage
     - storage.StorageBucketCreated

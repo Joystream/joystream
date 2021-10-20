@@ -10,7 +10,9 @@
     "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
-    "cargo-build": "scripts/cargo-build.sh"
+    "cargo-build": "scripts/cargo-build.sh",
+    "update-chain-metadata": "scripts/fetch-chain-metadata.sh > chain-metadata.json",
+    "verify-chain-metadata": "scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
     "tests/network-tests",
@@ -48,7 +50,8 @@
     "bn.js": "4.12.0",
     "rxjs": "^7.4.0",
     "typeorm": "0.2.34",
-    "pg": "^8.4.0"
+    "pg": "^8.4.0",
+    "chalk": "^4.0.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

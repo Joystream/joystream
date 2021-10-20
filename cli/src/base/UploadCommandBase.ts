@@ -271,6 +271,8 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     this.log(`Uploading object ${objectId.toString()} (${filePath})`)
     try {
       await axios.post(`${storageNodeInfo.apiEndpoint}/files`, formData, {
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
         headers: {
           'x-api-key': token,
           'content-type': 'multipart/form-data',
