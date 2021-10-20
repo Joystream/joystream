@@ -41,6 +41,7 @@ pub use common::{
 };
 
 type Storage<T> = storage::Module<T>;
+type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -718,6 +719,8 @@ decl_module! {
             params: VideoCreationParameters<T>,
         ) {
 
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -730,26 +733,14 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            // adding the content to storage node if uploading is needed
-            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                &params.assets,
-                &channel_id,
-                &sender,
-            );
-
-            // if storaged uploading is required save t he object id for the video
-            let maybe_data_objects_ids = maybe_upload_parameters
-                .map_or(
-                    Ok(None),
-                    |upload_parameters| {
-                     // beginning object id
-                        let beg = Storage::<T>::next_data_object_id();
-
-                        // upload objects and return their indexes
-                        Storage::<T>::upload_data_objects(upload_parameters)
-                        .map(|_| Storage::<T>::next_data_object_id()) // ending index
-                        .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
-                })?;
+             // atomically upload to storage and return the # of uploaded assets
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &sender,
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -837,9 +828,6 @@ decl_module! {
                 // The channel owner will be..
                 &channel.owner,
             )?;
-
-            // ensure video can be removed
-            Self::ensure_video_can_be_removed(&video)?;
 
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
@@ -1124,7 +1112,6 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        StorageAssets = StorageAssets<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
