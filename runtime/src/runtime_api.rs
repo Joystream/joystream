@@ -77,9 +77,6 @@ pub(crate) type ContentWorkingGroup<T> = working_group::Module<T, ContentWorking
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        // initialize content module
-        content::Module::<Runtime>::on_runtime_upgrade();
-
         // Initialize new groups
         let default_text_constraint = crate::working_group::default_text_constraint();
 
