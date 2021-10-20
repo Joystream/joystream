@@ -1,3 +1,8 @@
+### Version 9.10.0 - Giza
+- New storage and distribution runtime module
+- Renaming of working groups and adding new working group for distributor role
+- Enhancements to content directory module, supporting deletion of channels and videos.
+
 ### Version 9.9.0 - Sumer - upgrade
 - Increase the max allowed working group mint capacity that can be set by council via proposals
 
