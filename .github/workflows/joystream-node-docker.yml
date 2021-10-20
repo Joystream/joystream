@@ -145,6 +145,14 @@ jobs:
                           stack_name=${{ env.STACK_NAME }} platform=${{ matrix.platform }}"
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
+      - name: Delete CloudFormation Stack
+        if: always()
+        run: |
+          echo "Deleting ${{ env.STACK_NAME }} stack"
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
+
   push-manifest:
     name: Create manifest using both the arch images
     needs: [push-amd64, push-arm]
