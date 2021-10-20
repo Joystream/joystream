@@ -93,7 +93,6 @@ else
 
   echo "Performing migration tests"
   ./run-migration-tests.sh $1
-
   echo "Done with migrations tests"
 fi
 

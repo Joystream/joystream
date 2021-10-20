@@ -22,8 +22,8 @@ use crate::{
 };
 
 use crate::{
-    OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
-    OperationsWorkingGroupInstanceGamma,
+    ContentWorkingGroupInstance, OperationsWorkingGroupInstanceAlpha,
+    OperationsWorkingGroupInstanceBeta, OperationsWorkingGroupInstanceGamma,
 };
 use frame_support::weights::Weight;
 
@@ -71,6 +71,8 @@ pub(crate) type OperationsWorkingGroupBeta<T> =
 pub(crate) type OperationsWorkingGroupGamma<T> =
     working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
 
+pub(crate) type ContentWorkingGroup<T> = working_group::Module<T, ContentWorkingGroupInstance>;
+
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
@@ -103,6 +105,14 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
         );
 
         OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        ContentWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
