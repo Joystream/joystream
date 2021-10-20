@@ -94,11 +94,13 @@ export async function workingGroup_TerminatedLeader({ event, store }: EventConte
 /// ///////////////// Helpers ////////////////////////////////////////////////////
 
 function getWorkerType(event: SubstrateEvent): WorkerType | null {
-  if (event.section === 'storageWorkingGroup') {
+  // Note: event.section is not available!
+  const [eventSection] = event.name.split('.')
+  if (eventSection === 'storageWorkingGroup') {
     return WorkerType.STORAGE
   }
 
-  if (event.section === 'gatewayWorkingGroup') {
+  if (eventSection === 'gatewayWorkingGroup') {
     return WorkerType.GATEWAY
   }
 
