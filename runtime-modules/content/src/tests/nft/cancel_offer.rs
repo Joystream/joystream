@@ -5,7 +5,7 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
-fn cancel_buy_now() {
+fn cancel_offer() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -24,14 +24,13 @@ fn cancel_buy_now() {
             None
         ));
 
-        let price = 100;
-
-        // Sell nft
-        assert_ok!(Content::sell_nft(
+        // Offer nft
+        assert_ok!(Content::offer_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            SECOND_MEMBER_ID,
+            None,
         ));
 
         // Runtime tested state before call
@@ -39,8 +38,8 @@ fn cancel_buy_now() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        // Cancel buy now
-        assert_ok!(Content::cancel_buy_now(
+        // Cancel offer
+        assert_ok!(Content::cancel_offer(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
@@ -57,7 +56,7 @@ fn cancel_buy_now() {
             })
         ));
 
-        let buy_now_canceled_event = get_test_event(RawEvent::BuyNowCanceled(
+        let buy_now_canceled_event = get_test_event(RawEvent::OfferCanceled(
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
         ));
@@ -68,27 +67,27 @@ fn cancel_buy_now() {
 }
 
 #[test]
-fn cancel_buy_now_video_does_not_exist() {
+fn cancel_offer_video_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
 
-        // Make an attempt to cancel buy now which corresponding video does not exist yet
-        let cancel_buy_now_result = Content::cancel_buy_now(
+        // Make an attempt to cancel offer which corresponding video does not exist yet
+        let cancel_offer_result = Content::cancel_offer(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::VideoDoesNotExist);
+        assert_err!(cancel_offer_result, Error::<Test>::VideoDoesNotExist);
     })
 }
 
 #[test]
-fn cancel_buy_now_not_issued() {
+fn cancel_offer_not_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -97,20 +96,20 @@ fn cancel_buy_now_not_issued() {
 
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
 
-        // Make an attempt to cancel buy now for nft which is not issued yet
-        let cancel_buy_now_result = Content::cancel_buy_now(
+        // Make an attempt to cancel offer for nft which is not issued yet
+        let cancel_offer_result = Content::cancel_offer(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(cancel_offer_result, Error::<Test>::NFTDoesNotExist);
     })
 }
 
 #[test]
-fn cancel_buy_now_auth_failed() {
+fn cancel_offer_auth_failed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -129,30 +128,29 @@ fn cancel_buy_now_auth_failed() {
             None
         ));
 
-        let price = 100;
-
-        // Sell nft
-        assert_ok!(Content::sell_nft(
+        // Offer nft
+        assert_ok!(Content::offer_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            SECOND_MEMBER_ID,
+            None,
         ));
 
-        // Make an attempt to cancel buy now with wrong credentials
-        let cancel_buy_now_result = Content::cancel_buy_now(
+        // Make an attempt to cancel offer with wrong credentials
+        let cancel_offer_result = Content::cancel_offer(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(UNKNOWN_ID),
             video_id,
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::MemberAuthFailed);
+        assert_err!(cancel_offer_result, Error::<Test>::MemberAuthFailed);
     })
 }
 
 #[test]
-fn cancel_buy_now_not_authorized() {
+fn cancel_offer_not_authorized() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -171,30 +169,29 @@ fn cancel_buy_now_not_authorized() {
             None
         ));
 
-        let price = 100;
-
-        // Sell nft
-        assert_ok!(Content::sell_nft(
+        // Offer nft
+        assert_ok!(Content::offer_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            SECOND_MEMBER_ID,
+            None,
         ));
 
-        // Make an attempt to cancel buy now if actor is not authorized
-        let cancel_buy_now_result = Content::cancel_buy_now(
+        // Make an attempt to cancel offer if actor is not authorized
+        let cancel_offer_result = Content::cancel_offer(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::ActorNotAuthorized);
+        assert_err!(cancel_offer_result, Error::<Test>::ActorNotAuthorized);
     })
 }
 
 #[test]
-fn cancel_buy_now_not_in_auction_state() {
+fn cancel_offer_not_in_auction_state() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -213,14 +210,14 @@ fn cancel_buy_now_not_in_auction_state() {
             None
         ));
 
-        // Make an attempt to cancel buy now if there is no pending one
-        let cancel_buy_now_result = Content::cancel_buy_now(
+        // Make an attempt to cancel offer if there is no pending one
+        let cancel_offer_result = Content::cancel_offer(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::NFTNotInBuyNowState);
+        assert_err!(cancel_offer_result, Error::<Test>::PendingOfferDoesNotExist);
     })
 }

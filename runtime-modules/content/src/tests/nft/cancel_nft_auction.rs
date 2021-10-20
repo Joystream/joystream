@@ -61,10 +61,7 @@ fn cancel_nft_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            nft_auction_canceled_event,
-            number_of_events_before_call + 1,
-        );
+        assert_event(nft_auction_canceled_event, number_of_events_before_call + 1);
     })
 }
 
