@@ -882,35 +882,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn request_channel_transfer(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _request: ChannelOwnershipTransferRequest<T>,
-        ) {
-            // requester must be new_owner
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_channel_transfer_request(
-            _origin,
-            _request_id: T::ChannelOwnershipTransferRequestId,
-        ) {
-            // origin must be original requester (ie. proposed new channel owner)
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_channel_transfer(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _request_id: T::ChannelOwnershipTransferRequestId,
-        ) {
-            // only current owner of channel can approve
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -930,14 +901,26 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            // atomically upload to storage and return the # of uploaded assets
-            if let Some(upload_assets) = params.assets.as_ref() {
-                Self::upload_assets_to_storage(
-                    upload_assets,
-                    &channel_id,
-                    &channel.deletion_prize_source_account_id
-                )?;
-            }
+            // adding the content to storage node if uploading is needed
+            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                &params.assets,
+                &channel_id,
+                &sender,
+            );
+
+            // if storaged uploading is required save t he object id for the video
+            let maybe_data_objects_ids = maybe_upload_parameters
+                .map_or(
+                    Ok(None),
+                    |upload_parameters| {
+                     // beginning object id
+                        let beg = Storage::<T>::next_data_object_id();
+
+                        // upload objects and return their indexes
+                        Storage::<T>::upload_data_objects(upload_parameters)
+                        .map(|_| Storage::<T>::next_data_object_id()) // ending index
+                        .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
+                })?;
 
             //
             // == MUTATION SAFE ==
@@ -1051,36 +1034,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: PlaylistCreationParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _playlist: T::PlaylistId,
-            _params: PlaylistUpdateParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _playlist: T::PlaylistId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_featured_videos(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1159,53 +1112,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-            _params: PersonUpdateParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_person_to_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId,
-            _person: T::PersonId
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_person_from_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_censorship_status(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1239,34 +1145,6 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoCensorshipStatusUpdated(actor, video_id, is_censored, rationale));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _series: T::SeriesId,
-        ) {
-            Self::not_implemented()?;
-        }
     }
 }
 
@@ -1371,10 +1249,6 @@ impl<T: Trait> Module<T> {
         // retrieve bag id from channel id
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         BagIdType::from(dyn_bag)
-    }
-
-    fn not_implemented() -> DispatchResult {
-        Err(Error::<T>::FeatureNotImplemented.into())
     }
 
     fn upload_assets_to_storage(
