@@ -146,11 +146,17 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        /// Min auction round time
-        pub MinRoundTime get(fn min_round_duration) config(): T::BlockNumber;
+        /// Min auction duration
+        pub MinAuctionDuration get(fn min_auction_duration) config(): T::BlockNumber;
 
-        /// Max auction round time
-        pub MaxRoundTime get(fn max_round_duration) config(): T::BlockNumber;
+        /// Max auction duration
+        pub MaxAuctionDuration get(fn max_auction_duration) config(): T::BlockNumber;
+
+        /// Min auction extension period
+        pub MinAuctionExtensionPeriod get(fn min_auction_extension_period) config(): T::BlockNumber;
+
+        /// Max auction extension period
+        pub MaxAuctionExtensionPeriod get(fn max_auction_extension_period) config(): T::BlockNumber;
 
         /// Min bid lock duration
         pub MinBidLockDuration get(fn min_bid_lock_duration) config(): T::BlockNumber;
@@ -1228,7 +1234,7 @@ decl_module! {
             match auction.buy_now_price {
                 Some(buy_now_price) if bid >= buy_now_price => {
                     // Do not charge more then buy now
-                    let (_, bid) = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
+                    let (_, _, bid) = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
                     let nft = Self::complete_auction(video.in_channel, nft, bid, funds_destination_account_id);
                     let video = video.set_nft_status(nft);
@@ -1246,14 +1252,14 @@ decl_module! {
                     // Can not fail, needed check made
                     T::Currency::reserve(&participant_account_id, bid)?;
 
-                    let (auction, _) = auction.make_bid(participant_id, participant_account_id, bid, current_block);
+                    let (auction, is_extended, _) = auction.make_bid(participant_id, participant_account_id, bid, current_block);
                     let nft = nft.set_auction_transactional_status(auction);
                     let video = video.set_nft_status(nft);
 
                     VideoById::<T>::insert(video_id, video);
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata, is_extended));
                 }
             }
         }
@@ -1320,7 +1326,7 @@ decl_module! {
             let bid = auction.ensure_last_bid_exists::<T>()?;
 
             // Ensure actor authorized to complete auction.
-            Self::ensure_actor_is_last_bidder(origin, member_id, &auction)?;
+            Self::ensure_member_is_last_bidder(origin, member_id, &auction)?;
 
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
@@ -1703,6 +1709,7 @@ decl_event!(
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
         NewAssets = NewAssets<T>,
+        IsExtended = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1814,7 +1821,7 @@ decl_event!(
             Metadata,
             Option<MemberId>,
         ),
-        AuctionBidMade(MemberId, VideoId, Balance, Metadata),
+        AuctionBidMade(MemberId, VideoId, Balance, Metadata, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCompleted(MemberId, VideoId, Metadata),
         BidMadeCompletingAuction(MemberId, VideoId, Metadata),

@@ -261,10 +261,22 @@ impl<
         bidder_account_id: AccountId,
         bid: Balance,
         last_bid_block: BlockNumber,
-    ) -> (Self, Bid<MemberId, AccountId, BlockNumber, Balance>) {
+    ) -> (Self, bool, Bid<MemberId, AccountId, BlockNumber, Balance>) {
         let bid = Bid::new(bidder, bidder_account_id, bid, last_bid_block);
+        let is_extended = match &mut self.auction_type {
+            AuctionType::English(EnglishAuctionDetails {
+                extension_period,
+                auction_duration,
+            }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
+                // bump auction duration when bid is made during extension period.
+                *auction_duration = *auction_duration + *extension_period;
+                true
+            }
+            _ => false,
+        };
+
         self.last_bid = Some(bid.clone());
-        (self, bid)
+        (self, is_extended, bid)
     }
 
     /// Cnacel auction bid
@@ -299,9 +311,12 @@ impl<
 
     /// Check whether nft auction expired
     pub fn is_nft_auction_expired(&self, current_block: BlockNumber) -> bool {
-        if let AuctionType::English(round_duration) = self.auction_type {
-            // Check whether auction round time expired.
-            (current_block - self.starts_at) >= round_duration
+        if let AuctionType::English(EnglishAuctionDetails {
+            auction_duration, ..
+        }) = self.auction_type
+        {
+            // Check whether auction time expired.
+            (current_block - self.starts_at) >= auction_duration
         } else {
             // Open auction never expires
             false
@@ -346,7 +361,7 @@ impl<
         current_block: BlockNumber,
         bid: Bid<MemberId, AccountId, BlockNumber, Balance>,
     ) -> DispatchResult {
-        if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
+        if let AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) = &self.auction_type {
             ensure!(
                 current_block - bid.made_at_block >= *bid_lock_duration,
                 Error::<T>::BidLockDurationIsNotExpired
@@ -431,14 +446,32 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum AuctionType<BlockNumber> {
-    // Auction round duration
-    English(BlockNumber),
-    // Bid lock duration
-    Open(BlockNumber),
+    // English auction details
+    English(EnglishAuctionDetails<BlockNumber>),
+    // Open auction details
+    Open(OpenAuctionDetails<BlockNumber>),
 }
 
 impl<BlockNumber: Default> Default for AuctionType<BlockNumber> {
     fn default() -> Self {
-        Self::English(BlockNumber::default())
+        Self::English(EnglishAuctionDetails::default())
     }
+}
+
+/// English auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnglishAuctionDetails<BlockNumber> {
+    // the remaining time on a lot will automatically reset to to the preset extension time
+    // if a new bid is placed within that period
+    pub extension_period: BlockNumber,
+    // auction duration
+    pub auction_duration: BlockNumber,
+}
+
+/// Open auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct OpenAuctionDetails<BlockNumber> {
+    pub bid_lock_duration: BlockNumber,
 }
