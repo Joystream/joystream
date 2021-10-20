@@ -1100,7 +1100,6 @@ decl_module! {
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
-
             let video_id = auction_params.video_id;
 
             // Ensure given video exists
@@ -1140,9 +1139,9 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionStarted(owner_id, auction_params));
         }
 
-        /// Cancel video nft auction
+        /// Cancel video nft transaction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_nft_auction(
+        pub fn cancel_nft_transaction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
@@ -1157,29 +1156,21 @@ decl_module! {
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
-            // Ensure auction for given video id exists
-            let auction = nft.ensure_auction_state::<T>()?;
-
-            // Ensure given auction can be canceled
-            auction.ensure_auction_can_be_canceled::<T>()?;
+            // Ensure nft transaction can be canceled
+            nft.ensure_transaction_can_be_canceled::<T>()?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(last_bid) = auction.last_bid {
-                // Unreserve previous bidder balance
-                T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
-            }
-
-            // Cancel auction
-            let nft = nft.set_idle_transactional_status();
+            // Cancel transaction
+            let nft = Self::cancel_transaction(nft);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
+            Self::deposit_event(RawEvent::TransactionCanceled(video_id, owner_id));
         }
 
         /// Make auction bid
@@ -1418,7 +1409,6 @@ decl_module! {
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
-
             // Ensure there is no pending offer or existing auction for given nft.
             nft.ensure_nft_transactional_status_is_idle::<T>()?;
 
@@ -1434,40 +1424,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
-        }
-
-        /// Cancel NFT offer
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_offer(
-            origin,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-            video_id: T::VideoId,
-        ) {
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure nft is already issued
-            let nft = video.ensure_nft_is_issued::<T>()?;
-
-            // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
-
-
-            // Ensure given pending offer exists
-            nft.ensure_pending_offer_exists::<T>()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Cancel pending offer
-            let nft = nft.set_idle_transactional_status();
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::OfferCancelled(video_id, owner_id));
         }
 
         /// Accept incoming NFT offer
@@ -1866,12 +1822,11 @@ decl_event!(
         ),
         AuctionBidMade(MemberId, VideoId, Balance, Metadata),
         AuctionBidCanceled(MemberId, VideoId),
-        AuctionCancelled(ContentActor, VideoId),
         AuctionCompleted(MemberId, VideoId, Metadata),
         BidMadeCompletingAuction(MemberId, VideoId, Metadata),
         OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
-        OfferCancelled(VideoId, ContentActor),
+        TransactionCanceled(VideoId, ContentActor),
         OfferAccepted(VideoId, MemberId),
         NFTSellOrderMade(VideoId, ContentActor, Balance),
         NFTBought(VideoId, MemberId, Metadata),
