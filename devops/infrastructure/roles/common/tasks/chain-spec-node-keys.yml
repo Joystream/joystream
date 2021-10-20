@@ -10,21 +10,23 @@
   copy:
     src: '{{ initial_members_file }}'
     dest: '{{ admin_code_dir }}/initial-members.json'
-  when: initial_members_file is defined
+  when: initial_members_file is defined and initial_members_file|length > 0
+  run_once: true
 
 - name: Copying initial balances file to the server
   copy:
     src: '{{ initial_balances_file }}'
     dest: '{{ admin_code_dir }}/initial-balances.json'
-  when: initial_balances_file is defined
+  when: initial_balances_file is defined and initial_balances_file|length > 0
+  run_once: true
 
 - name: Run chain-spec-builder to generate chainspec.json file (with initial data)
   shell: >
     {{ admin_code_dir }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
     --chain-spec-path {{ chain_spec_path }} --deployment {{ deployment_type }}
     --endowed 1 --keystore-path {{ data_path }}
-    {% if initial_members_file is defined %}--initial-balances-path {{ admin_code_dir }}/initial-balances.json{% endif %}
-    {% if initial_balances_file is defined %}--initial-members-path {{ admin_code_dir }}/initial-members.json{% endif %}
+    {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ admin_code_dir }}/initial-balances.json{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ admin_code_dir }}/initial-members.json{% endif %}
   register: chain_spec_output
   delegate_to: '{{ local_or_admin }}'
   run_once: true
