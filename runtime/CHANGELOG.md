@@ -1,3 +1,6 @@
+### Version 9.9.0 - Sumer - upgrade
+- Increase the max allowed working group mint capacity that can be set by council via proposals
+
 ### Version 9.7.0 - Sumer - runtime upgrade - May 27 2021
 - Introduced new content pallet the new content directory
 - Improved data_directory pallet
