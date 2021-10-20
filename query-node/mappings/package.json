@@ -14,7 +14,7 @@
     "bootstrap-data:fetch:members": "yarn ts-node ./bootstrap-data/scripts/fetchMembersData.ts",
     "bootstrap-data:fetch:categories": "yarn ts-node ./bootstrap-data/scripts/fetchCategories.ts",
     "bootstrap-data:fetch:workingGroups": "yarn ts-node ./bootstrap-data/scripts/fetchWorkingGroupsData.ts",
-    "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups"
+    "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups && yarn bootstrap-data:fetch:categories"
   },
   "dependencies": {
     "@polkadot/types": "5.9.1",
