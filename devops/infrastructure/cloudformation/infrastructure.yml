@@ -74,6 +74,10 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
@@ -112,7 +116,8 @@ Resources:
             # Update all packages
             apt-get update -y
 
-            # Install the updates
+            # Install the updates except docker
+            apt-mark hold docker.io
             apt-get upgrade -y
 
             # Get latest cfn scripts and install them;
