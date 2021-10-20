@@ -95,11 +95,17 @@ decl_error! {
         /// Royalty Lower Bound Exceeded
         RoyaltyLowerBoundExceeded,
 
-        /// Round time upper bound exceeded
-        RoundTimeUpperBoundExceeded,
+        /// Auction duration upper bound exceeded
+        AuctionDurationUpperBoundExceeded,
 
-        /// Round time lower bound exceeded
-        RoundTimeLowerBoundExceeded,
+        /// Auction duration lower bound exceeded
+        AuctionDurationLowerBoundExceeded,
+
+        /// Auction extension period upper bound exceeded
+        ExtensionPeriodUpperBoundExceeded,
+
+        /// Auction extension period lower bound exceeded
+        ExtensionPeriodLowerBoundExceeded,
 
         /// Bid lock duration upper bound exceeded
         BidLockDurationUpperBoundExceeded,
@@ -178,6 +184,9 @@ decl_error! {
 
         // NFT auction is already expired
         NFTAuctionIsAlreadyExpired,
+
+        /// Extension period is greater then auction duration
+        ExtensionPeriodIsGreaterThenAuctionDuration,
 
         /// No assets to be removed have been specified
         NoAssetsSpecified,

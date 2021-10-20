@@ -7,11 +7,15 @@ use crate::*;
 impl<T: Trait> Module<T> {
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed = if let AuctionType::English(round_duration) = auction.auction_type {
+        let can_be_completed = if let AuctionType::English(EnglishAuctionDetails {
+            auction_duration,
+            ..
+        }) = auction.auction_type
+        {
             let now = <frame_system::Module<T>>::block_number();
 
-            // Check whether auction round time expired.
-            (now - auction.starts_at) >= round_duration
+            // Check whether auction time expired.
+            (now - auction.starts_at) >= auction_duration
         } else {
             // Open auction can be completed at any time
             true
@@ -39,11 +43,21 @@ impl<T: Trait> Module<T> {
         auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, MemberId<T>>,
     ) -> DispatchResult {
         match auction_params.auction_type {
-            AuctionType::English(round_duration) => {
-                Self::ensure_round_duration_bounds_satisfied(round_duration)?;
+            AuctionType::English(EnglishAuctionDetails {
+                extension_period,
+                auction_duration,
+            }) => {
+                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
+                Self::ensure_extension_period_bounds_satisfied(extension_period)?;
+
+                // Ensure auction_duration of English auction is >= extension_period
+                ensure!(
+                    auction_duration >= extension_period,
+                    Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
+                );
             }
-            AuctionType::Open(lock_duration) => {
-                Self::ensure_bid_lock_duration_bounds_satisfied(lock_duration)?;
+            AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
+                Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
             }
         }
 
@@ -102,16 +116,32 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure auction duration bounds satisfied
-    pub(crate) fn ensure_round_duration_bounds_satisfied(
-        round_duration: T::BlockNumber,
+    pub(crate) fn ensure_auction_duration_bounds_satisfied(
+        duration: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            round_duration <= Self::max_round_duration(),
-            Error::<T>::RoundTimeUpperBoundExceeded
+            duration <= Self::max_auction_duration(),
+            Error::<T>::AuctionDurationUpperBoundExceeded
         );
         ensure!(
-            round_duration >= Self::min_round_duration(),
-            Error::<T>::RoundTimeLowerBoundExceeded
+            duration >= Self::min_auction_duration(),
+            Error::<T>::AuctionDurationLowerBoundExceeded
+        );
+
+        Ok(())
+    }
+
+    /// Ensure auction extension period bounds satisfied
+    pub(crate) fn ensure_extension_period_bounds_satisfied(
+        extension_period: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            extension_period <= Self::max_auction_extension_period(),
+            Error::<T>::ExtensionPeriodUpperBoundExceeded
+        );
+        ensure!(
+            extension_period >= Self::min_auction_extension_period(),
+            Error::<T>::ExtensionPeriodLowerBoundExceeded
         );
 
         Ok(())
