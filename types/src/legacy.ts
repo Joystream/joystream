@@ -186,7 +186,7 @@ export const legacyTypes: RegistryTypes = {
   ObjectOwner,
   StorageObjectOwner,
   UploadingStatus,
-  VoucherLimit
+  VoucherLimit,
 }
 
 export default legacyTypes
