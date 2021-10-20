@@ -95,4 +95,4 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-# ./run-test-scenario.sh $1
+#./run-test-scenario.sh $1
