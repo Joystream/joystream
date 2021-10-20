@@ -375,7 +375,6 @@ impl<
         who: MemberId,
         current_block: BlockNumber,
     ) -> DispatchResult {
-
         // ensure is open auction
         self.ensure_is_open_auction::<T>()?;
 
