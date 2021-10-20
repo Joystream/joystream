@@ -510,6 +510,33 @@ fn start_nft_auction_invalid_params() {
             Error::<Test>::AuctionDurationUpperBoundExceeded
         );
 
+        // Make an attempt to start english nft auction if extension period
+        // of auction provided is greater auction duration
+        let auction_params = AuctionParams {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            auction_type: AuctionType::English(EnglishAuctionDetails {
+                extension_period: Content::max_auction_extension_period(),
+                auction_duration: Content::min_auction_duration(),
+            }),
+            minimal_bid_step: Content::max_bid_step(),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_nft_auction(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::ExtensionPeriodIsGreaterThenAuctionDuration
+        );
+
         // Make an attempt to start nft auction if starts_at provided is less then now
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
