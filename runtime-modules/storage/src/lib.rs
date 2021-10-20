@@ -1109,7 +1109,14 @@ decl_event! {
         /// Params
         /// - dynamic bag ID
         /// - optional DynamicBagDeletionPrize instance
-        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>),
+        /// - assigned storage buckets' IDs
+        /// - assigned distribution buckets' IDs
+        DynamicBagCreated(
+            DynamicBagId,
+            Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>,
+            BTreeSet<StorageBucketId>,
+            BTreeSet<DistributionBucketId>,
+        ),
 
         /// Emits on changing the voucher for a storage bucket.
         /// Params
@@ -2722,9 +2729,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = Bag::<T> {
-            stored_by: storage_buckets,
+            stored_by: storage_buckets.clone(),
             deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
-            distributed_by: distribution_buckets,
+            distributed_by: distribution_buckets.clone(),
             ..Default::default()
         };
 
@@ -2732,7 +2739,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
-        Self::deposit_event(RawEvent::DynamicBagCreated(dynamic_bag_id, deletion_prize));
+        Self::deposit_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id,
+            deletion_prize,
+            storage_buckets,
+            distribution_buckets,
+        ));
 
         Ok(())
     }

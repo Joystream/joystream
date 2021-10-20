@@ -9,7 +9,6 @@ set -a
 . ../.env
 set +a
 
-# only use this when new Hydra releases and contents of `generated/` folder needs to be refreshed
 yarn clean
 yarn codegen:noinstall
 yarn typegen # if this fails try to run this command outside of yarn workspaces

@@ -140,17 +140,14 @@ decl_error! {
         /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// NFT is already in Idle state
-        NoPendingTransaction,
-
-        /// No incoming offers for given origin found
-        NoIncomingOffers,
+        /// No pending offers for given NFT
+        PendingOfferDoesNotExist,
 
         /// Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
-        /// Actor, which makes an attempt to finish auction is not a winner
-        CallerIsNotAWinner,
+        /// Actor is not a last bidder
+        ActorIsNotALastBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
@@ -178,6 +175,9 @@ decl_error! {
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
+
+        /// Auction type is not `English`
+        IsNotEnglishAuctionType,
 
         /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,

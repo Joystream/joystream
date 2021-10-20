@@ -170,7 +170,7 @@ fn accept_incoming_offer_no_incoming_offers() {
         // Failure checked
         assert_err!(
             accept_incoming_offer_result,
-            Error::<Test>::NoIncomingOffers
+            Error::<Test>::PendingOfferDoesNotExist
         );
     })
 }
