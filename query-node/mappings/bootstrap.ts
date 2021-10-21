@@ -86,5 +86,5 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
         name: m.name,
       })
   )
-  await Promise.all(channelCategories.map((m) => store.save<VideoCategory>(m)))
+  await Promise.all(videoCategories.map((m) => store.save<VideoCategory>(m)))
 }
