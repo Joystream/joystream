@@ -106,68 +106,6 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
-export class Playlist extends JoyStructDecorated({
-  in_channel: ChannelId,
-}) {}
-
-export class PlaylistCreationParameters extends JoyStructDecorated({
-  meta: Bytes,
-}) {}
-
-export class PlaylistUpdateParameters extends JoyStructDecorated({
-  new_meta: Bytes,
-}) {}
-
-export class EpisodeParemters extends JoyEnum({
-  NewVideo: VideoCreationParameters,
-  ExistingVideo: VideoId,
-}) {}
-
-export class Season extends JoyStructDecorated({
-  episodes: Vec.with(VideoId),
-}) {}
-
-export class SeasonParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
-  meta: Option.with(Bytes),
-}) {}
-
-export class Series extends JoyStructDecorated({
-  in_channel: ChannelId,
-  seasons: Vec.with(Season),
-}) {}
-
-export class SeriesParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
-  meta: Option.with(Bytes),
-}) {}
-
-export class PersonController extends JoyEnum({
-  Member: MemberId,
-  Curators: Null,
-}) {}
-
-export class Person extends JoyStructDecorated({
-  controlled_by: PersonController,
-}) {}
-
-export class PersonCreationParameters extends JoyStructDecorated({
-  assets: StorageAssets,
-  meta: Bytes,
-}) {}
-
-export class PersonUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  meta: Option.with(Bytes),
-}) {}
-
-export class PersonActor extends JoyEnum({
-  Member: MemberId,
-  Curator: CuratorId,
-}) {}
-
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -192,22 +130,6 @@ export const contentTypes = {
   VideoCategoryUpdateParameters,
   VideoCreationParameters,
   VideoUpdateParameters,
-  Person,
-  PersonId,
-  PersonController,
-  PersonActor,
-  PersonCreationParameters,
-  PersonUpdateParameters,
-  Playlist,
-  PlaylistId,
-  PlaylistCreationParameters,
-  PlaylistUpdateParameters,
-  SeriesId,
-  Series,
-  Season,
-  SeriesParameters,
-  SeasonParameters,
-  EpisodeParemters,
   MaxNumber,
   IsCensored,
 }

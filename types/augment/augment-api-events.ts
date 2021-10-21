@@ -2,11 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
-<<<<<<< HEAD
-import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageAssets, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
-=======
 import type { ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelUpdateParameters, Cid, ContentActor, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, OpeningId, PostId, ProposalId, ProposalStatus, RationaleText, StorageBucketId, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, Voucher, WorkerId } from './all';
->>>>>>> types have been generated
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';

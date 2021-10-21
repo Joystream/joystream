@@ -529,14 +529,6 @@ export interface EntryMethod extends Enum {
   readonly isGenesis: boolean;
 }
 
-/** @name EpisodeParemters */
-export interface EpisodeParemters extends Enum {
-  readonly isNewVideo: boolean;
-  readonly asNewVideo: VideoCreationParameters;
-  readonly isExistingVideo: boolean;
-  readonly asExistingVideo: VideoId;
-}
-
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
   readonly error: Text;
@@ -747,59 +739,6 @@ export interface ParametrizedClassPropertyValue extends Null {}
 
 /** @name ParametrizedPropertyValue */
 export interface ParametrizedPropertyValue extends Null {}
-
-/** @name Person */
-export interface Person extends Struct {
-  readonly controlled_by: PersonController;
-}
-
-/** @name PersonActor */
-export interface PersonActor extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isCurator: boolean;
-  readonly asCurator: CuratorId;
-}
-
-/** @name PersonController */
-export interface PersonController extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isCurators: boolean;
-}
-
-/** @name PersonCreationParameters */
-export interface PersonCreationParameters extends Struct {
-  readonly assets: StorageAssets;
-  readonly meta: Bytes;
-}
-
-/** @name PersonId */
-export interface PersonId extends u64 {}
-
-/** @name PersonUpdateParameters */
-export interface PersonUpdateParameters extends Struct {
-  readonly assets: Option<StorageAssets>;
-  readonly meta: Option<Bytes>;
-}
-
-/** @name Playlist */
-export interface Playlist extends Struct {
-  readonly in_channel: ChannelId;
-}
-
-/** @name PlaylistCreationParameters */
-export interface PlaylistCreationParameters extends Struct {
-  readonly meta: Bytes;
-}
-
-/** @name PlaylistId */
-export interface PlaylistId extends u64 {}
-
-/** @name PlaylistUpdateParameters */
-export interface PlaylistUpdateParameters extends Struct {
-  readonly new_meta: Bytes;
-}
 
 /** @name Post */
 export interface Post extends Struct {
@@ -1061,18 +1000,6 @@ export interface SealedVote extends Struct {
   readonly vote: Option<GenericAccountId>;
 }
 
-/** @name Season */
-export interface Season extends Struct {
-  readonly episodes: Vec<VideoId>;
-}
-
-/** @name SeasonParameters */
-export interface SeasonParameters extends Struct {
-  readonly assets: Option<StorageAssets>;
-  readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
-  readonly meta: Option<Bytes>;
-}
-
 /** @name Seat */
 export interface Seat extends Struct {
   readonly member: GenericAccountId;
@@ -1082,22 +1009,6 @@ export interface Seat extends Struct {
 
 /** @name Seats */
 export interface Seats extends Vec<Seat> {}
-
-/** @name Series */
-export interface Series extends Struct {
-  readonly in_channel: ChannelId;
-  readonly seasons: Vec<Season>;
-}
-
-/** @name SeriesId */
-export interface SeriesId extends u64 {}
-
-/** @name SeriesParameters */
-export interface SeriesParameters extends Struct {
-  readonly assets: Option<StorageAssets>;
-  readonly seasons: Option<Vec<Option<SeasonParameters>>>;
-  readonly meta: Option<Bytes>;
-}
 
 /** @name ServiceProviderRecord */
 export interface ServiceProviderRecord extends Null {}

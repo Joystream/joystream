@@ -811,7 +811,7 @@
     },
     "Video": {
         "in_channel": "ChannelId",
-        "is_censored": "bool",
+        "is_censored": "bool"
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
@@ -830,64 +830,6 @@
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>"
-    },
-    "Person": {
-        "controlled_by": "PersonController"
-    },
-    "PersonId": "u64",
-    "PersonController": {
-        "_enum": {
-            "Member": "MemberId",
-            "Curators": "Null"
-        }
-    },
-    "PersonActor": {
-        "_enum": {
-            "Member": "MemberId",
-            "Curator": "CuratorId"
-        }
-    },
-    "PersonCreationParameters": {
-        "assets": "StorageAssets",
-        "meta": "Bytes"
-    },
-    "PersonUpdateParameters": {
-        "assets": "Option<StorageAssets>",
-        "meta": "Option<Bytes>"
-    },
-    "Playlist": {
-        "in_channel": "ChannelId"
-    },
-    "PlaylistId": "u64",
-    "PlaylistCreationParameters": {
-        "meta": "Bytes"
-    },
-    "PlaylistUpdateParameters": {
-        "new_meta": "Bytes"
-    },
-    "SeriesId": "u64",
-    "Series": {
-        "in_channel": "ChannelId",
-        "seasons": "Vec<Season>"
-    },
-    "Season": {
-        "episodes": "Vec<VideoId>"
-    },
-    "SeriesParameters": {
-        "assets": "Option<StorageAssets>",
-        "seasons": "Option<Vec<Option<SeasonParameters>>>",
-        "meta": "Option<Bytes>"
-    },
-    "SeasonParameters": {
-        "assets": "Option<StorageAssets>",
-        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
-        "meta": "Option<Bytes>"
-    },
-    "EpisodeParemters": {
-        "_enum": {
-            "NewVideo": "VideoCreationParameters",
-            "ExistingVideo": "VideoId"
-        }
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
