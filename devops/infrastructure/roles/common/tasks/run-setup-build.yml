@@ -8,6 +8,8 @@
   command: ./setup.sh
   args:
     chdir: '{{ remote_code_path }}'
+  environment:
+    DEBIAN_FRONTEND: noninteractive
 
 - name: Build joystream node
   shell: . ~/.bash_profile && yarn cargo-build
