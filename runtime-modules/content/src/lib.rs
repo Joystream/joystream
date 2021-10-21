@@ -1409,21 +1409,14 @@ impl<T: Trait> Module<T> {
     }
 }
 
-// Some initial config for the module on runtime upgrade
+// Giza:
+// Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
 impl<T: Trait> Module<T> {
     pub fn on_runtime_upgrade() {
-        // all ids start at 1
-        <NextChannelCategoryId<T>>::put(T::ChannelCategoryId::one());
-        <NextVideoCategoryId<T>>::put(T::VideoCategoryId::one());
-        <NextVideoId<T>>::put(T::VideoId::one());
-        <NextChannelId<T>>::put(T::ChannelId::one());
-        <NextPlaylistId<T>>::put(T::PlaylistId::one());
-        <NextSeriesId<T>>::put(T::SeriesId::one());
-        <NextPersonId<T>>::put(T::PersonId::one());
-        <NextChannelOwnershipTransferRequestId<T>>::put(T::ChannelOwnershipTransferRequestId::one());
-
-        // VideoById map is cleared
+        // Clear VideoById map
         <VideoById<T>>::remove_all();
+        // Clear ChannelById map
+        <ChannelById<T>>::remove_all();
     }
 }
 
