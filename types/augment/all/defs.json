@@ -811,8 +811,7 @@
     },
     "Video": {
         "in_channel": "ChannelId",
-        "in_series": "Option<SeriesId>",
-        "is_censored": "bool"
+        "is_censored": "bool",
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
