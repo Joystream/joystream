@@ -553,10 +553,10 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         /// Migration config for channels
-        pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
+        pub ChannelMigration get(fn channel_migration) : ChannelMigrationConfig<T>;
 
         /// Migration config for videos
-        pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
+        pub VideoMigration get(fn video_migration) : VideoMigrationConfig<T>;
 
     }
 }
