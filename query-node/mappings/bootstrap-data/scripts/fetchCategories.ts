@@ -12,7 +12,7 @@ async function main() {
   const env = process.env
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 
-  console.log(`${queryNodeUrl} is`)
+  console.log(`Connecting to Query Node at: ${queryNodeUrl}`)
   const queryNodeProvider = new ApolloClient({
     link: new HttpLink({ uri: queryNodeUrl, fetch }),
     cache: new InMemoryCache(),
