@@ -9,4 +9,5 @@ yarn joystream-cli working-groups:overview --group=operationsAlpha
 yarn joystream-cli working-groups:overview --group=operationsBeta
 yarn joystream-cli working-groups:overview --group=operationsGamma
 yarn joystream-cli working-groups:overview --group=curators
+yarn joystream-cli working-groups:overview --group=distributors
 

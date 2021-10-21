@@ -1409,6 +1409,17 @@ impl<T: Trait> Module<T> {
     }
 }
 
+// Giza:
+// Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
+impl<T: Trait> Module<T> {
+    pub fn on_runtime_upgrade() {
+        // Clear VideoById map
+        <VideoById<T>>::remove_all();
+        // Clear ChannelById map
+        <ChannelById<T>>::remove_all();
+    }
+}
+
 decl_event!(
     pub enum Event<T>
     where
