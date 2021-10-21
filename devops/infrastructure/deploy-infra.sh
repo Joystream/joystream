@@ -81,15 +81,11 @@ if [ $? -eq 0 ]; then
     ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml
   fi
 
-  DEPLOYMENT_TYPE=${DEPLOYMENT_TYPE:=live}
-
   echo -e "\n\n=========== Configure and start new validators, rpc node and pioneer ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-pioneer.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
                   data_path=data-$NEW_STACK_NAME bucket_name=$BUCKET_NAME number_of_validators=$NUMBER_OF_VALIDATORS
-                  deployment_type=$DEPLOYMENT_TYPE
-                 "
-
+                  deployment_type=$DEPLOYMENT_TYPE initial_balances_file=$INITIAL_BALANCES_PATH initial_members_file=$INITIAL_MEMBERS_PATH"
 
   echo -e "\n\n Pioneer URL: https://$DOMAIN_NAME"
 fi
