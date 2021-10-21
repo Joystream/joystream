@@ -103,6 +103,12 @@ pub trait Trait:
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
+
+    /// Video migrated in each block during migration
+    type VideosMigratedEachBlock: Get<u64>;
+
+    /// Channel migrated in each block during migration
+    type ChannelsMigratedEachBlock: Get<u64>;
 }
 
 /// Migration Index used for accessing the on-chain map
@@ -117,10 +123,45 @@ pub enum MigrationType {
 /// Data structure in order to keep track of the migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct MigrationConfig {
-    elements_per_block: u64,
-    current_id: u64,
-    final_id: u64,
+pub struct MigrationConfigRecord<NumericId> {
+    current_id: NumericId,
+    final_id: NumericId,
+}
+
+type VideoMigrationConfig<T> = MigrationConfigRecord<<T as Trait>::VideoId>;
+type ChannelMigrationConfig<T> = MigrationConfigRecord<<T as storage::Trait>::ChannelId>;
+
+/// Helper macro in order to ensure  proper migration
+#[macro_export]
+macro_rules! ensure_migration_done {
+    ($routine:ident, $step:expr, $current_id:expr, $final_id:expr, $config_name: ty) => {
+        // if migration not done
+        if $current_id == $final_id {
+            // perform migration procedure
+            let next_id = sp_std::cmp::min($current_id + $step, $final_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // clear maps
+            let _ = ($current_id..next_id).map(|id| Self::$routine(id));
+
+            // edit the current id
+            <$config_name>::mutate(|value| value.current_id = next_id.into());
+
+            // ensure migration has finished
+            ensure!(next_id == $final_id, Error::<T>::MigrationNotFinished)
+        }
+    };
+}
+
+macro_rules! start_migration {
+    ($config_name:ty, $next_value:ty) => {
+        <$config_name>::mutate(|migration| {
+            migration.final_id = <$next_value>::get().saturating_sub(One::one())
+        })
+    };
 }
 
 /// The owner of a channel, is the authorized "actor" that can update
@@ -511,8 +552,11 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        /// Map containing all fthe currently pending migrations
-        pub MigrationByType get(fn migration_by_id): map hasher(blake2_128_concat) MigrationType => MigrationConfig;
+        /// Migration config for channels
+        pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
+
+        /// Migration config for videos
+        pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
 
     }
 }
@@ -1308,45 +1352,43 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    fn migrate_video_routine(id: u64) {
+        <VideoById<T>>::remove(T::VideoId::from(id));
+    }
+
+    fn migrate_channel_routine(id: u64) {
+        <ChannelById<T>>::remove(<T as storage::Trait>::ChannelId::from(id));
+    }
+
     /// Migrate videos
     fn ensure_video_migration_done() -> DispatchResult {
-        Self::_ensure_migration_done(&MigrationType::Video, |x: u64| {
-            <VideoById<T>>::remove(T::VideoId::from(x));
-        })
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <VideoMigration<T>>::get();
+        ensure_migration_done!(
+            migrate_video_routine,
+            T::VideosMigratedEachBlock::get(),
+            current_id.into(),
+            final_id.into(),
+            VideoMigration<T>
+        );
+        Ok(())
     }
 
     /// Migrate channels
     fn ensure_channel_migration_done() -> DispatchResult {
-        Self::_ensure_migration_done(&MigrationType::Channel, |x: u64| {
-            <ChannelById<T>>::remove(<T as storage::Trait>::ChannelId::from(x));
-        })
-    }
-
-    /// helper function for ensuring migration is processed correctly
-    fn _ensure_migration_done(
-        migration_type: &MigrationType,
-        migration_routine: fn(u64) -> (),
-    ) -> DispatchResult {
-        let MigrationConfig {
-            elements_per_block,
+        let MigrationConfigRecord {
             current_id,
             final_id,
-        } = <MigrationByType>::get(migration_type);
-
-        if current_id != final_id {
-            // perform migration procedure
-            let next_id = sp_std::cmp::min(current_id + elements_per_block, final_id);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let _ = (current_id..next_id).map(|id| migration_routine(id));
-            <MigrationByType>::mutate(migration_type, |migration| migration.current_id = next_id);
-
-            // ensure migration has finished
-            ensure!(next_id == final_id, Error::<T>::MigrationNotFinished);
-        }
+        } = <ChannelMigration<T>>::get();
+        ensure_migration_done!(
+            migrate_channel_routine,
+            T::ChannelsMigratedEachBlock::get(),
+            current_id.into(),
+            final_id.into(),
+            ChannelMigration<T>
+        );
         Ok(())
     }
 
@@ -1493,12 +1535,8 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> Module<T> {
     pub fn on_runtime_upgrade() {
         // setting final index triggers migration
-        <MigrationByType>::mutate(MigrationType::Video, |migration| {
-            migration.final_id = <NextVideoId<T>>::get().saturating_sub(One::one()).into()
-        });
-        <MigrationByType>::mutate(MigrationType::Video, |migration| {
-            migration.final_id = <NextChannelId<T>>::get().saturating_sub(One::one()).into()
-        });
+        start_migration!(VideoMigration<T>, NextVideoId<T>);
+        start_migration!(ChannelMigration<T>, NextChannelId<T>);
     }
 }
 

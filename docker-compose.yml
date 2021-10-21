@@ -4,7 +4,7 @@
 version: '3.4'
 services:
   joystream-node:
-    image: joystream/node:latest
+    image: joystream/node:giza
     build:
       # context is relative to the compose file
       context: .
