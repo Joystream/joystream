@@ -311,8 +311,14 @@ export interface ContentActor extends Enum {
   readonly isLead: boolean;
 }
 
+/** @name ContentId */
+export interface ContentId extends Null {}
+
 /** @name ContentIdSet */
 export interface ContentIdSet extends BTreeSet<Cid> {}
+
+/** @name ContentParameters */
+export interface ContentParameters extends Null {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Null {}
@@ -379,6 +385,18 @@ export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
 
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
+
+/** @name DataObjectStorageRelationship */
+export interface DataObjectStorageRelationship extends Null {}
+
+/** @name DataObjectStorageRelationshipId */
+export interface DataObjectStorageRelationshipId extends Null {}
+
+/** @name DataObjectType */
+export interface DataObjectType extends Null {}
+
+/** @name DataObjectTypeId */
+export interface DataObjectTypeId extends Null {}
 
 /** @name Deactivated */
 export interface Deactivated extends Struct {
@@ -651,6 +669,9 @@ export interface ModerationAction extends Struct {
   readonly rationale: Text;
 }
 
+/** @name NewAsset */
+export interface NewAsset extends Null {}
+
 /** @name NextAdjustment */
 export interface NextAdjustment extends Struct {
   readonly adjustment: AdjustOnInterval;
@@ -659,6 +680,9 @@ export interface NextAdjustment extends Struct {
 
 /** @name Nonce */
 export interface Nonce extends Null {}
+
+/** @name ObjectOwner */
+export interface ObjectOwner extends Null {}
 
 /** @name Opening */
 export interface Opening extends Struct {
@@ -1229,6 +1253,9 @@ export interface StorageBucketsPerBagValueConstraint extends Struct {
   readonly max_min_diff: u64;
 }
 
+/** @name StorageObjectOwner */
+export interface StorageObjectOwner extends Null {}
+
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
 
@@ -1295,6 +1322,9 @@ export interface UnstakingApplicationStage extends Struct {
 
 /** @name UpdatePropertyValuesOperation */
 export interface UpdatePropertyValuesOperation extends Null {}
+
+/** @name UploadingStatus */
+export interface UploadingStatus extends Null {}
 
 /** @name UploadParameters */
 export interface UploadParameters extends Struct {
@@ -1381,6 +1411,9 @@ export interface Voucher extends Struct {
   readonly sizeUsed: u64;
   readonly objectsUsed: u64;
 }
+
+/** @name VoucherLimit */
+export interface VoucherLimit extends Null {}
 
 /** @name WaitingToBeingOpeningStageVariant */
 export interface WaitingToBeingOpeningStageVariant extends Struct {

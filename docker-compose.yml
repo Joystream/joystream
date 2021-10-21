@@ -10,7 +10,7 @@ services:
       context: .
       # dockerfile is relative to the context
       dockerfile: joystream-node.Dockerfile
-    container_name: joystream-node
+    container_name: joystream-node-giza
     volumes:
       - /data
     command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data

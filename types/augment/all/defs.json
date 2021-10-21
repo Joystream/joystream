@@ -70,6 +70,17 @@
     "FailedAt": "Null",
     "IPNSIdentity": "Null",
     "ServiceProviderRecord": "Null",
+    "ContentId": "Null",
+    "ContentParameters": "Null",
+    "DataObjectStorageRelationship": "Null",
+    "DataObjectStorageRelationshipId": "Null",
+    "DataObjectType": "Null",
+    "DataObjectTypeId": "Null",
+    "NewAsset": "Null",
+    "ObjectOwner": "Null",
+    "StorageObjectOwner": "Null",
+    "UploadingStatus": "Null",
+    "VoucherLimit": "Null",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
