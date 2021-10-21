@@ -23,7 +23,8 @@
     "@joystream/metadata-protobuf": "^1.0.0",
     "@joystream/sumer-types": "npm:@joystream/types@^0.16.0",
     "@joystream/types": "^0.17.0",
-    "@joystream/warthog": "2.35.0"
+    "@joystream/warthog": "2.35.0",
+    "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
     "prettier": "^2.2.1",
