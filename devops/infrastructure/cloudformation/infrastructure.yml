@@ -116,7 +116,7 @@ Resources:
             # Update all packages
             apt-get update -y
 
-            # Install the updates except docker
+            # Install the updates except docker, to avoid interactive prompt which blocks the flow of the script
             apt-mark hold docker.io
             apt-get upgrade -y
 

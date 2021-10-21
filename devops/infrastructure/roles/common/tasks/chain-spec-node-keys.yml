@@ -23,8 +23,9 @@
 - name: Run chain-spec-builder to generate chainspec.json file (with initial data)
   shell: >
     {{ admin_code_dir }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
-    --chain-spec-path {{ chain_spec_path }} --deployment {{ deployment_type }}
+    --chain-spec-path {{ chain_spec_path }}
     --endowed 1 --keystore-path {{ data_path }}
+    {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ admin_code_dir }}/initial-balances.json{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ admin_code_dir }}/initial-members.json{% endif %}
   register: chain_spec_output
