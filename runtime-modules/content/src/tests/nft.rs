@@ -8,5 +8,6 @@ mod claim_won_english_auction;
 mod issue_nft;
 mod make_bid;
 mod offer_nft;
+mod pick_open_auction_winner;
 mod sell_nft;
 mod start_nft_auction;
