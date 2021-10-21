@@ -59,7 +59,8 @@ pub trait NumericIdentifier:
     + Eq
     + PartialEq
     + Ord
-    + Zero
+    + Zero // + From<u64>
+// + Into<u64>
 {
 }
 
@@ -101,6 +102,29 @@ pub trait Trait:
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
+
+    /// Migration Id
+    type MigrationId: NumericIdentifier;
+}
+
+/// The owner of a channel, is the authorized "actor" that can update
+/// or delete or transfer a channel and its contents.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum MigrationStatus {
+    MigrationDone,
+    MigrationPending,
+}
+
+/// The owner of a channel, is the authorized "actor" that can update
+/// or delete or transfer a channel and its contents.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct MigrationConfigRecord {
+    elements_each_block: u64,
+    current_element_id: u64,
+    final_element_id: u64,
+    status: MigrationStatus,
 }
 
 /// The owner of a channel, is the authorized "actor" that can update
@@ -490,6 +514,9 @@ decl_storage! {
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+
+//        pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
+
     }
 }
 
