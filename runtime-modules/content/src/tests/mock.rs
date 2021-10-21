@@ -325,6 +325,8 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const VideosMigratedEachBlock: u64 = 20;
+    pub const ChannelsMigratedEachBlock: u64 = 10;
 }
 
 impl Trait for Test {
@@ -360,6 +362,9 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
+
+    type VideosMigratedEachBlock = VideosMigratedEachBlock;
+    type ChannelsMigratedEachBlock = ChannelsMigratedEachBlock;
 }
 
 pub type System = frame_system::Module<Test>;
