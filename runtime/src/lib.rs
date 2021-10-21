@@ -429,6 +429,9 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
+    pub const VideosMigratedEachBlock: u64 = 20;
+    pub const ChannelsMigratedEachBlock: u64 = 10;
+
 }
 
 impl content::Trait for Runtime {
@@ -443,6 +446,8 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type VideosMigratedEachBlock = VideosMigratedEachBlock;
+    type ChannelsMigratedEachBlock = ChannelsMigratedEachBlock;
 }
 
 impl hiring::Trait for Runtime {
