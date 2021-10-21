@@ -30,7 +30,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -59,8 +59,9 @@ pub trait NumericIdentifier:
     + Eq
     + PartialEq
     + Ord
-    + Zero // + From<u64>
-// + Into<u64>
+    + Zero
+    + From<u64>
+    + Into<u64>
 {
 }
 
@@ -102,29 +103,24 @@ pub trait Trait:
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
-
-    /// Migration Id
-    type MigrationId: NumericIdentifier;
 }
 
-/// The owner of a channel, is the authorized "actor" that can update
-/// or delete or transfer a channel and its contents.
+/// Migration Index used for accessing the on-chain map
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum MigrationStatus {
-    MigrationDone,
-    MigrationPending,
+pub enum MigrationType {
+    Video,
+    Channel,
+    //..
 }
 
-/// The owner of a channel, is the authorized "actor" that can update
-/// or delete or transfer a channel and its contents.
+/// Data structure in order to keep track of the migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MigrationConfigRecord {
-    elements_each_block: u64,
-    current_element_id: u64,
-    final_element_id: u64,
-    status: MigrationStatus,
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct MigrationConfig {
+    elements_per_block: u64,
+    current_id: u64,
+    final_id: u64,
 }
 
 /// The owner of a channel, is the authorized "actor" that can update
@@ -515,7 +511,8 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-//        pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
+        /// Map containing all fthe currently pending migrations
+        pub MigrationByType get(fn migration_by_id): map hasher(blake2_128_concat) MigrationType => MigrationConfig;
 
     }
 }
@@ -715,6 +712,9 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
+            // ensure migration is done
+            Self::ensure_channel_migration_done()?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -760,6 +760,10 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
+
+            // ensure migration is done
+            Self::ensure_channel_migration_done()?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -1002,6 +1006,10 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
+
+            // ensure migration is done
+            Self::ensure_video_migration_done()?;
+
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1040,6 +1048,8 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
+            // ensure migration is done
+            Self::ensure_video_migration_done()?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1298,6 +1308,48 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    /// Migrate videos
+    fn ensure_video_migration_done() -> DispatchResult {
+        Self::_ensure_migration_done(&MigrationType::Video, |x: u64| {
+            <VideoById<T>>::remove(T::VideoId::from(x));
+        })
+    }
+
+    /// Migrate channels
+    fn ensure_channel_migration_done() -> DispatchResult {
+        Self::_ensure_migration_done(&MigrationType::Channel, |x: u64| {
+            <ChannelById<T>>::remove(<T as storage::Trait>::ChannelId::from(x));
+        })
+    }
+
+    /// helper function for ensuring migration is processed correctly
+    fn _ensure_migration_done(
+        migration_type: &MigrationType,
+        migration_routine: fn(u64) -> (),
+    ) -> DispatchResult {
+        let MigrationConfig {
+            elements_per_block,
+            current_id,
+            final_id,
+        } = <MigrationByType>::get(migration_type);
+
+        if current_id != final_id {
+            // perform migration procedure
+            let next_id = std::cmp::min(current_id + elements_per_block, final_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let _ = (current_id..next_id).map(|id| migration_routine(id));
+            <MigrationByType>::mutate(migration_type, |migration| migration.current_id = next_id);
+
+            // ensure migration has finished
+            ensure!(next_id == final_id, Error::<T>::MigrationNotFinished);
+        }
+        Ok(())
+    }
+
     /// Ensure `CuratorGroup` under given id exists
     fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
@@ -1440,10 +1492,13 @@ impl<T: Trait> Module<T> {
 // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
 impl<T: Trait> Module<T> {
     pub fn on_runtime_upgrade() {
-        // Clear VideoById map
-        <VideoById<T>>::remove_all();
-        // Clear ChannelById map
-        <ChannelById<T>>::remove_all();
+        // setting final index triggers migration
+        <MigrationByType>::mutate(MigrationType::Video, |migration| {
+            migration.final_id = <NextVideoId<T>>::get().saturating_sub(One::one()).into()
+        });
+        <MigrationByType>::mutate(MigrationType::Video, |migration| {
+            migration.final_id = <NextChannelId<T>>::get().saturating_sub(One::one()).into()
+        });
     }
 }
 
