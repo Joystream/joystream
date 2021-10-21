@@ -24,6 +24,8 @@
       amazon.aws.ec2_ami:
         instance_id: '{{ instance_id }}'
         wait: yes
+        # How long before wait gives up, in seconds
+        wait_timeout: 3600
         name: '{{ ami_name }}'
         launch_permissions:
           group_names: ['all']
