@@ -1335,7 +1335,7 @@ impl<T: Trait> Module<T> {
 
         if current_id != final_id {
             // perform migration procedure
-            let next_id = std::cmp::min(current_id + elements_per_block, final_id);
+            let next_id = sp_std::cmp::min(current_id + elements_per_block, final_id);
 
             //
             // == MUTATION SAFE ==
