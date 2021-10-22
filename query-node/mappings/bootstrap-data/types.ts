@@ -33,3 +33,19 @@ export type WorkingGroupJson = {
 export type WorkingGroupsJson = {
   [group in 'GATEWAY' | 'STORAGE']?: WorkingGroupJson
 }
+
+export type VideoCategoryJson = {
+  id: string
+  name: string
+  createdInBlock: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type ChannelCategoryJson = {
+  id: string
+  name: string
+  createdInBlock: number
+  createdAt: Date
+  updatedAt: Date
+}
