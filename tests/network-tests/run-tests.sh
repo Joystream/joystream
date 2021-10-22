@@ -76,6 +76,9 @@ trap cleanup EXIT
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
+  # pre migration hook
+  ./pre_migration_hook.sh $1    
+    
   # Copy new runtime wasm file from target joystream/node image
   echo "Extracting wasm blob from target joystream/node image."
   id=`docker create joystream/node:${TARGET_RUNTIME}`
@@ -92,7 +95,8 @@ else
   echo "Runtime upgraded."
 
   echo "Performing migration tests"
-  ./run-migration-tests.sh $1
+  # post migration hook
+  ./post_migration_hook.sh $1
   echo "Done with migrations tests"
 fi
 
