@@ -6,6 +6,9 @@ import fetch from 'cross-fetch'
 type categoryType = {
   id: string
   name: string
+  createdInBlock: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 async function main() {
@@ -41,14 +44,20 @@ async function getCategories(queryNodeProvider, categoryType): Promise<Array<cat
       ${categoryType} {
         id
         name
+        createdInBlock
+        createdAt
+        updatedAt
       }
     }
   `
   const queryResult = await queryNodeProvider.query({ query: GET_ALL_CATEGORY_ITEMS })
-  const categories = queryResult.data[categoryType].map(({ id, name }) => {
+  const categories = queryResult.data[categoryType].map(({ id, name, createdInBlock, createdAt, updatedAt }) => {
     return {
       id,
       name,
+      createdInBlock,
+      createdAt,
+      updatedAt,
     }
   })
   return categories
