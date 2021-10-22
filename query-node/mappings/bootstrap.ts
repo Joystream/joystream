@@ -75,6 +75,10 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
       new ChannelCategory({
         id: m.id,
         name: m.name,
+        channels: [],
+        createdInBlock: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
   )
   await Promise.all(channelCategories.map((m) => store.save<ChannelCategory>(m)))
@@ -84,6 +88,10 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
       new VideoCategory({
         id: m.id,
         name: m.name,
+        videos: [],
+        createdInBlock: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
   )
   await Promise.all(videoCategories.map((m) => store.save<VideoCategory>(m)))
