@@ -1,6 +1,7 @@
 import * as awsx from '@pulumi/awsx'
 import * as aws from '@pulumi/aws'
 import * as eks from '@pulumi/eks'
+import * as docker from '@pulumi/docker'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { CaddyServiceDeployment } from 'pulumi-common'
@@ -15,37 +16,57 @@ const lbReady = config.get('isLoadBalancerReady') === 'true'
 const name = 'storage-node'
 const colossusPort = parseInt(config.get('colossusPort') || '3000')
 const storage = parseInt(config.get('storage') || '40')
+const isMinikube = config.getBoolean('isMinikube')
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
 let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
 let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
-// Create a VPC for our cluster.
-const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
+export let kubeconfig: pulumi.Output<any>
+export let colossusImage: pulumi.Output<string>
+let provider: k8s.Provider
 
-// Create an EKS cluster with the default configuration.
-const cluster = new eks.Cluster('eksctl-storage-node', {
-  vpcId: vpc.id,
-  subnetIds: vpc.publicSubnetIds,
-  instanceType: 't2.medium',
-  providerCredentialOpts: {
-    profileName: awsConfig.get('profile'),
-  },
-})
+if (isMinikube) {
+  provider = new k8s.Provider('local', {})
+  // Create image from local app
+  colossusImage = new docker.Image('joystream/colossus', {
+    build: {
+      context: '../../../',
+      dockerfile: '../../../colossus.Dockerfile',
+    },
+    imageName: 'joystream/colossus:latest',
+    skipPush: true,
+  }).baseImageName
+  // colossusImage = pulumi.interpolate`joystream/colossus:latest`
+} else {
+  // Create a VPC for our cluster.
+  const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
 
-// Export the cluster's kubeconfig.
-export const kubeconfig = cluster.kubeconfig
+  // Create an EKS cluster with the default configuration.
+  const cluster = new eks.Cluster('eksctl-storage-node', {
+    vpcId: vpc.id,
+    subnetIds: vpc.publicSubnetIds,
+    instanceType: 't2.medium',
+    providerCredentialOpts: {
+      profileName: awsConfig.get('profile'),
+    },
+  })
+  provider = cluster.provider
 
-// Create a repository
-const repo = new awsx.ecr.Repository('colossus-image')
+  // Export the cluster's kubeconfig.
+  kubeconfig = cluster.kubeconfig
 
-// Build an image and publish it to our ECR repository.
-export const colossusImage = repo.buildAndPushImage({
-  dockerfile: '../../../colossus.Dockerfile',
-  context: '../../../',
-})
+  // Create a repository
+  const repo = new awsx.ecr.Repository('colossus-image')
 
-const resourceOptions = { provider: cluster.provider }
+  // Build an image and publish it to our ECR repository.
+  colossusImage = repo.buildAndPushImage({
+    dockerfile: '../../../colossus.Dockerfile',
+    context: '../../../',
+  })
+}
+
+const resourceOptions = { provider: provider }
 
 // Create a Kubernetes Namespace
 const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
@@ -88,14 +109,19 @@ const caddyEndpoints = [
 }`,
 ]
 
-const caddy = new CaddyServiceDeployment(
-  'caddy-proxy',
-  { lbReady, namespaceName: namespaceName, caddyEndpoints },
-  resourceOptions
-)
+export let endpoint1: pulumi.Output<string> = pulumi.interpolate``
+export let endpoint2: pulumi.Output<string> = pulumi.interpolate``
 
-export const endpoint1 = caddy.primaryEndpoint
-export const endpoint2 = caddy.secondaryEndpoint
+if (!isMinikube) {
+  const caddy = new CaddyServiceDeployment(
+    'caddy-proxy',
+    { lbReady, namespaceName: namespaceName, caddyEndpoints },
+    resourceOptions
+  )
+
+  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+}
 
 export let appLink: pulumi.Output<string>
 
@@ -180,6 +206,7 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'colossus',
               image: colossusImage,
+              imagePullPolicy: 'IfNotPresent',
               env: [
                 {
                   name: 'WS_PROVIDER_ENDPOINT_URI',
@@ -222,6 +249,7 @@ const service = new k8s.core.v1.Service(
       name: 'storage-node',
     },
     spec: {
+      type: isMinikube ? 'NodePort' : 'ClusterIP',
       ports: [{ name: 'port-1', port: colossusPort }],
       selector: appLabels,
     },

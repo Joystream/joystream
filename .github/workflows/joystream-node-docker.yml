@@ -120,7 +120,7 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/infrastructure/single-instance-docker.yml
+          template: devops/infrastructure/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
@@ -142,8 +142,17 @@ jobs:
                           docker_password=${{ secrets.DOCKERHUB_PASSWORD }} \
                           tag_name=${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} \
                           repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
-                          stack_name=${{ env.STACK_NAME }} platform=${{ matrix.platform }}"
+                          platform=${{ matrix.platform }}"
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Delete CloudFormation Stack
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "Deleting ${{ env.STACK_NAME }} stack"
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
 
   push-manifest:
     name: Create manifest using both the arch images
