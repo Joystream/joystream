@@ -46,9 +46,6 @@ decl_error! {
         /// Operation cannot be perfomed with this Actor
         ActorNotAuthorized,
 
-        /// This content actor cannot own a channel
-        ActorCannotOwnChannel,
-
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
 
@@ -98,11 +95,17 @@ decl_error! {
         /// Royalty Lower Bound Exceeded
         RoyaltyLowerBoundExceeded,
 
-        /// Round time upper bound exceeded
-        RoundTimeUpperBoundExceeded,
+        /// Auction duration upper bound exceeded
+        AuctionDurationUpperBoundExceeded,
 
-        /// Round time lower bound exceeded
-        RoundTimeLowerBoundExceeded,
+        /// Auction duration lower bound exceeded
+        AuctionDurationLowerBoundExceeded,
+
+        /// Auction extension period upper bound exceeded
+        ExtensionPeriodUpperBoundExceeded,
+
+        /// Auction extension period lower bound exceeded
+        ExtensionPeriodLowerBoundExceeded,
 
         /// Bid lock duration upper bound exceeded
         BidLockDurationUpperBoundExceeded,
@@ -132,54 +135,78 @@ decl_error! {
         StartingPriceConstraintViolated,
 
         /// Already active auction cannot be cancelled
-        ActionIsAlreadyActive,
+        ActionHasBidsAlready,
 
         /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// No pending transfers for given NFT
-        PendingTransferDoesNotExist,
+        /// No pending offers for given NFT
+        PendingOfferDoesNotExist,
 
-        // No incoming transfers for given nft origin
-        NoIncomingTransfers,
-
-        // Creator royalty requires reward account to be set.
+        /// Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
-        // Actor, which makes an attempt to finish auction is not a winner
-        CallerIsNotAWinner,
+        /// Actor is not a last bidder
+        ActorIsNotALastBidder,
 
-        // Auction cannot be completed
+        /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
-        // Auction does not have bids
+        /// Auction does not have bids
         LastBidDoesNotExist,
 
-        // Auction starts at lower bound exceeded
+        /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 
-        // Auction starts at upper bound exceeded
+        /// Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
 
-        // Nft is not in auction state
+        /// Nft is not in auction state
         NotInAuctionState,
 
-        // Member is not allowed to participate in auction
+        /// Member is not allowed to participate in auction
         MemberIsNotAllowedToParticipate,
 
-        // Member profile not found
+        /// Member profile not found
         MemberProfileNotFound,
 
-        // Given video nft is not in buy now state
+        /// Given video nft is not in buy now state
         NFTNotInBuyNowState,
 
-        // Auction type is not `Open`
+        /// Auction type is not `Open`
         IsNotOpenAuctionType,
 
-        // Bid lock duration is not expired
+        /// Auction type is not `English`
+        IsNotEnglishAuctionType,
+
+        /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,
 
-        // NFT auction is already expired
-        NFTAuctionIsAlreadyExpired
+        /// NFT auction is already expired
+        NFTAuctionIsAlreadyExpired,
+
+        /// Auction buy now is less then starting price
+        BuyNowIsLessThenStartingPrice,
+
+        /// Max auction whitelist length upper bound exceeded
+        MaxAuctionWhiteListLengthUpperBoundExceeded,
+
+        /// Auction whitelist has only one member
+        WhitelistHasOnlyOneMember,
+
+        /// Extension period is greater then auction duration
+        ExtensionPeriodIsGreaterThenAuctionDuration,
+
+        /// No assets to be removed have been specified
+        NoAssetsSpecified,
+
+        /// Channel assets feasibility
+        InvalidAssetsProvided,
+
+        /// Channel Contains Video
+        ChannelContainsVideos,
+
+        /// Channel Contains Assets
+        ChannelContainsAssets,
     }
 }

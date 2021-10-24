@@ -118,6 +118,8 @@
 
 // Internal Substrate warning (decl_event).
 #![allow(clippy::unused_unit)]
+// needed for step iteration over DataObjectId range
+#![feature(step_trait)]
 
 #[cfg(test)]
 mod tests;
@@ -216,6 +218,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
+    /// Content id representation.
+    type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;
+
     /// Data object ID type.
     type DataObjectId: Parameter
         + Member
@@ -224,7 +229,8 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + iter::Step; // needed for iteration
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
@@ -462,7 +468,7 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct DataObject<Balance> {
-    /// Defines whether the data object was accepted by a liaison.
+    /// Defines whether the data object was accepted by a liason.
     pub accepted: bool,
 
     /// A reward for the data object deletion.
@@ -932,7 +938,7 @@ decl_storage! {
         /// "Max objects size for a storage bucket voucher" number limit.
         pub VoucherMaxObjectsSizeLimit get (fn voucher_max_objects_size_limit): u64;
 
-        /// "Max objects number for a storage bucket voucher" number limit.
+        /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
         /// DynamicBagCreationPolicy by bag type storage map.
@@ -1103,7 +1109,14 @@ decl_event! {
         /// Params
         /// - dynamic bag ID
         /// - optional DynamicBagDeletionPrize instance
-        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>),
+        /// - assigned storage buckets' IDs
+        /// - assigned distribution buckets' IDs
+        DynamicBagCreated(
+            DynamicBagId,
+            Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>,
+            BTreeSet<StorageBucketId>,
+            BTreeSet<DistributionBucketId>,
+        ),
 
         /// Emits on changing the voucher for a storage bucket.
         /// Params
@@ -2716,9 +2729,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = Bag::<T> {
-            stored_by: storage_buckets,
+            stored_by: storage_buckets.clone(),
             deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
-            distributed_by: distribution_buckets,
+            distributed_by: distribution_buckets.clone(),
             ..Default::default()
         };
 
@@ -2726,7 +2739,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
-        Self::deposit_event(RawEvent::DynamicBagCreated(dynamic_bag_id, deletion_prize));
+        Self::deposit_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id,
+            deletion_prize,
+            storage_buckets,
+            distribution_buckets,
+        ));
 
         Ok(())
     }

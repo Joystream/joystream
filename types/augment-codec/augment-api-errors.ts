@@ -71,10 +71,6 @@ declare module '@polkadot/api/types/errors' {
     };
     content: {
       /**
-       * This content actor cannot own a channel
-       **/
-      ActorCannotOwnChannel: AugmentedError<ApiType>;
-      /**
        * Operation cannot be perfomed with this Actor
        **/
       ActorNotAuthorized: AugmentedError<ApiType>;
