@@ -51,7 +51,6 @@ fn make_bid() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Runtime tested state after call
@@ -79,7 +78,6 @@ fn make_bid() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
             false,
         ));
 
@@ -145,7 +143,6 @@ fn make_bid_completes_auction() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Runtime tested state after call
@@ -163,7 +160,6 @@ fn make_bid_completes_auction() {
         let nft_auction_started_event = get_test_event(RawEvent::BidMadeCompletingAuction(
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         ));
 
         // Last event checked
@@ -212,7 +208,6 @@ fn make_bid_auth_failed() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -258,7 +253,6 @@ fn make_bid_insufficient_balance() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -285,7 +279,6 @@ fn make_bid_video_does_not_exist() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -314,7 +307,6 @@ fn make_bid_nft_is_not_issued() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -353,7 +345,6 @@ fn make_bid_nft_is_not_in_auction_state() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -415,7 +406,6 @@ fn make_bid_nft_auction_expired() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -472,7 +462,6 @@ fn make_bid_nft_auction_is_not_started() {
             SECOND_MEMBER_ID,
             video_id,
             starting_price,
-            vec![],
         );
 
         // Failure checked
@@ -533,7 +522,6 @@ fn make_bid_member_is_not_allowed_to_participate() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -593,7 +581,6 @@ fn make_bid_starting_price_constraint_violated() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         );
 
         // Failure checked
@@ -653,7 +640,6 @@ fn make_bid_bid_step_constraint_violated() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         let new_bid = bid + Content::min_bid_step() - 1;
@@ -666,7 +652,6 @@ fn make_bid_bid_step_constraint_violated() {
             SECOND_MEMBER_ID,
             video_id,
             new_bid,
-            vec![],
         );
 
         // Failure checked

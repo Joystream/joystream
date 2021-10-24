@@ -1256,7 +1256,6 @@ decl_module! {
             participant_id: T::MemberId,
             video_id: T::VideoId,
             bid: BalanceOf<T>,
-            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1313,7 +1312,7 @@ decl_module! {
                     VideoById::<T>::insert(video_id, video);
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
+                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id));
                 }
                 _ => {
                     // Make auction bid & update auction data
@@ -1329,7 +1328,7 @@ decl_module! {
                     VideoById::<T>::insert(video_id, video);
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata, is_extended));
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, is_extended));
                 }
             }
         }
@@ -1382,7 +1381,6 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
-            metadata: Metadata,
         ) {
             // Authorize member under given member id
             let account_id = ensure_signed(origin)?;
@@ -1419,7 +1417,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id, metadata));
+            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
         }
 
         /// Accept open auction bid
@@ -1429,7 +1427,6 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            metadata: Metadata,
         ) {
 
             // Ensure given video exists
@@ -1463,7 +1460,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, metadata));
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
         }
 
         /// Offer NFT
@@ -1576,7 +1573,6 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
-            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1605,7 +1601,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id, metadata));
+            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
         }
     }
 }
@@ -1889,17 +1885,17 @@ decl_event!(
             Metadata,
             Option<MemberId>,
         ),
-        AuctionBidMade(MemberId, VideoId, Balance, Metadata, IsExtended),
+        AuctionBidMade(MemberId, VideoId, Balance, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
-        EnglishAuctionCompleted(MemberId, VideoId, Metadata),
-        BidMadeCompletingAuction(MemberId, VideoId, Metadata),
-        OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
+        EnglishAuctionCompleted(MemberId, VideoId),
+        BidMadeCompletingAuction(MemberId, VideoId),
+        OpenAuctionBidAccepted(ContentActor, VideoId),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
         NFTSellOrderMade(VideoId, ContentActor, Balance),
-        NFTBought(VideoId, MemberId, Metadata),
+        NFTBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
     }
 );

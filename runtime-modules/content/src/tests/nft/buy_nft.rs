@@ -50,7 +50,6 @@ fn buy_nft() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         ));
 
         // Runtime tested state after call
@@ -77,8 +76,7 @@ fn buy_nft() {
             })
         ));
 
-        let nft_bought_event =
-            get_test_event(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID, vec![]));
+        let nft_bought_event = get_test_event(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID));
 
         // Last event checked
         assert_event(nft_bought_event, number_of_events_before_call + 3);
@@ -106,7 +104,6 @@ fn buy_nft_video_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         );
 
         // Failure checked
@@ -137,7 +134,6 @@ fn buy_nft_not_issued() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         );
 
         // Failure checked
@@ -182,12 +178,8 @@ fn buy_nft_auth_failed() {
         ));
 
         // Make an attempt to buy nft with wrong credentials
-        let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            UNKNOWN_ID,
-            vec![],
-        );
+        let buy_nft_result =
+            Content::buy_nft(Origin::signed(SECOND_MEMBER_ORIGIN), video_id, UNKNOWN_ID);
 
         // Failure checked
         assert_err!(buy_nft_result, Error::<Test>::MemberAuthFailed);
@@ -227,7 +219,6 @@ fn buy_nft_not_in_buy_now_state() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         );
 
         // Failure checked
@@ -270,7 +261,6 @@ fn buy_nft_insufficient_balance() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         );
 
         // Failure checked
@@ -346,7 +336,6 @@ fn buy_nft_reward_account_is_not_set() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
-            vec![],
         );
 
         // Failure checked

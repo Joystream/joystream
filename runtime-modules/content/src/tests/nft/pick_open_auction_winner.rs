@@ -54,7 +54,6 @@ fn pick_open_auction_winner() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Runtime tested state before call
@@ -67,7 +66,6 @@ fn pick_open_auction_winner() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            vec![],
         ));
 
         // Runtime tested state after call
@@ -84,7 +82,6 @@ fn pick_open_auction_winner() {
         let pick_open_auction_winner_event = get_test_event(RawEvent::OpenAuctionBidAccepted(
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            vec![],
         ));
 
         // Last event checked
@@ -145,7 +142,6 @@ fn pick_open_auction_winner_auth_failed() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Run to the block where auction expires
@@ -156,7 +152,6 @@ fn pick_open_auction_winner_auth_failed() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(UNKNOWN_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -217,7 +212,6 @@ fn pick_open_auction_winner_actor_not_authorized() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Run to the block where auction expires
@@ -228,7 +222,6 @@ fn pick_open_auction_winner_actor_not_authorized() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -252,7 +245,6 @@ fn pick_open_auction_winner_video_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -278,7 +270,6 @@ fn pick_open_auction_winner_nft_is_not_issued() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -314,7 +305,6 @@ fn pick_open_auction_winner_not_in_auction_state() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -376,7 +366,6 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to pick open auction winner for nft which is in english auction state
@@ -384,7 +373,6 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -442,7 +430,6 @@ fn pick_open_auction_winner_last_bid_does_not_exist() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            vec![],
         );
 
         // Failure checked

@@ -55,7 +55,6 @@ fn claim_won_english_auction() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Runtime tested state before call
@@ -71,7 +70,6 @@ fn claim_won_english_auction() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         ));
 
         // Runtime tested state after call
@@ -88,7 +86,6 @@ fn claim_won_english_auction() {
         let claim_won_english_auction_event = get_test_event(RawEvent::EnglishAuctionCompleted(
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         ));
 
         // Last event checked
@@ -150,7 +147,6 @@ fn claim_won_english_auction_cannot_be_completed() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to claim won english auction if it did not expire yet
@@ -158,7 +154,6 @@ fn claim_won_english_auction_cannot_be_completed() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -220,7 +215,6 @@ fn claim_won_english_auction_auth_failed() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Run to the block where auction expires
@@ -231,7 +225,6 @@ fn claim_won_english_auction_auth_failed() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             UNKNOWN_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -255,7 +248,6 @@ fn claim_won_english_auction_video_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -281,7 +273,6 @@ fn claim_won_english_auction_nft_is_not_issued() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -317,7 +308,6 @@ fn claim_won_english_auction_not_in_auction_state() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -378,7 +368,6 @@ fn claim_won_english_auction_is_not_english_auction_type() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to claim won english auction for nft which is not in english auction state
@@ -386,7 +375,6 @@ fn claim_won_english_auction_is_not_english_auction_type() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked
@@ -445,7 +433,6 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ORIGIN),
             SECOND_MEMBER_ID,
             video_id,
-            vec![],
         );
 
         // Failure checked

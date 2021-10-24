@@ -54,7 +54,6 @@ fn cancel_open_auction_bid() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Runtime tested state before call
@@ -144,7 +143,6 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to cancel open auction bid if lock duration did not expire
@@ -212,7 +210,6 @@ fn cancel_open_auction_bid_auth_failed() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Run to the block where bid lock duration expires
@@ -367,7 +364,6 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to cancel open auction bid for nft which is not in open auction state
@@ -492,7 +488,6 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Run to the block where bid lock duration expires

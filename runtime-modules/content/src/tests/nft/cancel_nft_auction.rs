@@ -270,7 +270,6 @@ fn cancel_nft_auction_english_auction_with_bids() {
             SECOND_MEMBER_ID,
             video_id,
             bid,
-            vec![],
         ));
 
         // Make an attempt to cancel an english auction which already contains a bid
