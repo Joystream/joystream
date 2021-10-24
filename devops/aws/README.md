@@ -30,6 +30,12 @@ Copy and edit the file `deploy-config.sample.cfg` and update parameters like AWS
 Run the `deploy-infra.sh` script to deploy the infrastructure
 
 ```
-cd devops/infrastructure
+cd devops/aws
 ./deploy-infra.sh your-deploy-config.cfg
+```
+
+# To tear down a network
+
+```
+./destroy-infra.sh your-deploy-config.cfg
 ```

@@ -1,3 +1,9 @@
+# Deploy inftrastructure required to run a new joystream chain.
+# This is comprised of:
+#   - N validators
+#   - One RPC node
+#   - s3 bucket with a build of Pionner
+
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
@@ -115,6 +121,9 @@ Resources:
 
             # Update all packages
             apt-get update -y
+
+            # Prevent interactive prompts that would interrup the installation
+            export DEBIAN_FRONTEND=noninteractive
 
             # Install the updates except docker, to avoid interactive prompt which blocks the flow of the script
             apt-mark hold docker.io

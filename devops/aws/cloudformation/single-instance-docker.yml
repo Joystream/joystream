@@ -1,3 +1,6 @@
+# Deploys and EC2 node with docker tools suitable for
+# building joystream node docker images
+
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
@@ -57,6 +60,9 @@ Resources:
 
             # Update all packages
             apt-get update -y
+
+            # Prevent interactive prompts that would interrup the installation
+            export DEBIAN_FRONTEND=noninteractive
 
             # Install the updates
             apt-get upgrade -y
