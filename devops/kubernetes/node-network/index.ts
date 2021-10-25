@@ -171,7 +171,9 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
               name: 'raw-chain-spec',
               image: nodeImage,
               command: ['/bin/sh', '-c'],
-              args: [`/joystream/node build-spec --chain ${chainDataPath}/chainspec.json --raw > ${chainSpecPath}`],
+              args: [
+                `sleep 15 && /joystream/node build-spec --chain ${chainDataPath}/chainspec.json --raw > ${chainSpecPath}`,
+              ],
               volumeMounts: [
                 {
                   name: 'config-data',

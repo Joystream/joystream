@@ -71,6 +71,11 @@ After cloning this repo, from this working directory, run these commands:
 
    The GraphQl server is accessible at `https://<ENDPOINT>/server/graphql` and indexer at `https://<ENDPOINT>/indexer/graphql`
 
+1. If you are using Minikube, run `minikube service node-network -n $(pulumi stack output namespaceName)`
+
+   This will setup a proxy for your `query-node` service, which can then be accessed at
+   the URL given in the output
+
 1. Access the Kubernetes Cluster using `kubectl`
 
    To access your new Kubernetes cluster using `kubectl`, we need to set up the

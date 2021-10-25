@@ -56,6 +56,7 @@ if (isMinikube) {
     dockerfile: '../../../apps.Dockerfile',
     context: '../../../',
   })
+  // joystreamAppsImage = pulumi.interpolate`joystream/apps`
 }
 
 const resourceOptions = { provider: provider }
@@ -195,89 +196,7 @@ const migrationJob = new k8s.batch.v1.Job(
   { ...resourceOptions, dependsOn: databaseService }
 )
 
-const membersFilePath = config.get('membersFilePath')
-  ? config.get('membersFilePath')!
-  : '../../../query-node/mappings/bootstrap/data/members.json'
-const workersFilePath = config.get('workersFilePath')
-  ? config.get('workersFilePath')!
-  : '../../../query-node/mappings/bootstrap/data/workers.json'
-
-const dataBucket = new s3Helpers.FileBucket('bootstrap-data', {
-  files: [
-    { path: membersFilePath, name: 'members.json' },
-    { path: workersFilePath, name: 'workers.json' },
-  ],
-  policy: s3Helpers.publicReadPolicy,
-})
-
-const membersUrl = dataBucket.getUrlForFile('members.json')
-const workersUrl = dataBucket.getUrlForFile('workers.json')
-
 const dataPath = '/joystream/query-node/mappings/bootstrap/data'
-
-const processorJob = new k8s.batch.v1.Job(
-  'processor-migration',
-  {
-    metadata: {
-      namespace: namespaceName,
-    },
-    spec: {
-      backoffLimit: 0,
-      template: {
-        spec: {
-          initContainers: [
-            {
-              name: 'curl-init',
-              image: 'appropriate/curl',
-              command: ['/bin/sh', '-c'],
-              args: [
-                pulumi.interpolate`curl -o ${dataPath}/workers.json ${workersUrl}; curl -o ${dataPath}/members.json ${membersUrl}; ls -al ${dataPath};`,
-              ],
-              volumeMounts: [
-                {
-                  name: 'bootstrap-data',
-                  mountPath: dataPath,
-                },
-              ],
-            },
-          ],
-          containers: [
-            {
-              name: 'processor-migration',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              env: [
-                {
-                  name: 'INDEXER_ENDPOINT_URL',
-                  value: `http://localhost:${process.env.WARTHOG_APP_PORT}/graphql`,
-                },
-                { name: 'TYPEORM_HOST', value: 'postgres-db' },
-                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
-                { name: 'DEBUG', value: 'index-builder:*' },
-                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
-              ],
-              volumeMounts: [
-                {
-                  name: 'bootstrap-data',
-                  mountPath: dataPath,
-                },
-              ],
-              args: ['workspace', 'query-node-root', 'processor:bootstrap'],
-            },
-          ],
-          restartPolicy: 'Never',
-          volumes: [
-            {
-              name: 'bootstrap-data',
-              emptyDir: {},
-            },
-          ],
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: migrationJob }
-)
 
 const defsConfig = new configMapFromFile(
   'defs-config',
@@ -295,11 +214,13 @@ const existingIndexer = config.get('indexerURL')
 if (!existingIndexer) {
   indexerContainer.push({
     name: 'indexer',
-    image: 'joystream/hydra-indexer:2.1.0-beta.9',
+    image: 'joystream/hydra-indexer:3.0.0',
     env: [
       { name: 'DB_HOST', value: 'postgres-db' },
       { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
       { name: 'DB_PASS', value: process.env.DB_PASS! },
+      { name: 'DB_USER', value: process.env.DB_USER! },
+      { name: 'DB_PORT', value: process.env.DB_PORT! },
       { name: 'INDEXER_WORKERS', value: '5' },
       { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
       { name: 'DEBUG', value: 'index-builder:*' },
@@ -344,7 +265,7 @@ const deployment = new k8s.apps.v1.Deployment(
             ...indexerContainer,
             {
               name: 'hydra-indexer-gateway',
-              image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
+              image: 'joystream/hydra-indexer-gateway:3.0.0',
               env: [
                 { name: 'WARTHOG_STARTER_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
                 { name: 'WARTHOG_STARTER_DB_HOST', value: 'postgres-db' },
@@ -356,7 +277,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
                 { name: 'DEBUG', value: '*' },
               ],
-              ports: [{ containerPort: 4002 }],
+              ports: [{ name: 'hydra-port', containerPort: Number(process.env.WARTHOG_APP_PORT!) }],
             },
             {
               name: 'graphql-server',
@@ -370,6 +291,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 { name: 'DB_NAME', value: process.env.DB_NAME! },
                 { name: 'GRAPHQL_SERVER_HOST', value: process.env.GRAPHQL_SERVER_HOST! },
                 { name: 'GRAPHQL_SERVER_PORT', value: process.env.GRAPHQL_SERVER_PORT! },
+                { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
               ],
               ports: [{ name: 'graph-ql-port', containerPort: Number(process.env.GRAPHQL_SERVER_PORT!) }],
               args: ['workspace', 'query-node-root', 'query-node:start:prod'],
@@ -387,7 +309,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { ...resourceOptions, dependsOn: processorJob }
+  { ...resourceOptions, dependsOn: migrationJob }
 )
 
 // Export the Deployment name
@@ -405,7 +327,7 @@ const service = new k8s.core.v1.Service(
     spec: {
       ports: [
         { name: 'port-1', port: 8081, targetPort: 'graph-ql-port' },
-        { name: 'port-2', port: 4000, targetPort: 4002 },
+        { name: 'port-2', port: 4000, targetPort: 'hydra-port' },
       ],
       selector: appLabels,
     },
@@ -471,26 +393,32 @@ const processorDeployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { ...resourceOptions, dependsOn: deployment }
+  { ...resourceOptions, dependsOn: service }
 )
 
 const caddyEndpoints = [
-  `/indexer/* {
+  `/indexer* {
     uri strip_prefix /indexer
     reverse_proxy query-node:4000
 }`,
-  `/server/* {
+  `/server* {
     uri strip_prefix /server
     reverse_proxy query-node:8081
 }`,
 ]
 
 const lbReady = config.get('isLoadBalancerReady') === 'true'
-const caddy = new CaddyServiceDeployment(
-  'caddy-proxy',
-  { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
-  resourceOptions
-)
 
-export const endpoint1 = caddy.primaryEndpoint
-export const endpoint2 = caddy.secondaryEndpoint
+export let endpoint1: pulumi.Output<string>
+export let endpoint2: pulumi.Output<string>
+
+if (!isMinikube) {
+  const caddy = new CaddyServiceDeployment(
+    'caddy-proxy',
+    { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
+    resourceOptions
+  )
+
+  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+}
