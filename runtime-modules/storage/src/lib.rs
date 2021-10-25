@@ -587,6 +587,8 @@ pub enum DynamicBagType {
 
     /// Channel dynamic bag type.
     Channel,
+
+    // Modify 'delete_distribution_bucket_family' on adding the new type!
 }
 
 impl Default for DynamicBagType {
