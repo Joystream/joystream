@@ -67,6 +67,12 @@ impl<
         }
     }
 
+    /// Set nft owner
+    pub fn set_owner(mut self, owner: NFTOwner<MemberId>) -> Self {
+        self.owner = owner;
+        self
+    }
+
     /// Get nft auction record
     pub fn ensure_auction_state<T: Trait>(
         &self,
