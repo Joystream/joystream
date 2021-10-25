@@ -3636,7 +3636,7 @@ fn create_distribution_bucket_succeeded() {
 
         assert!(Storage::distribution_bucket_family_by_id(family_id)
             .distribution_buckets
-            .contains_key(&bucket_id));
+            .contains(&bucket_id));
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketCreated(
             family_id,
@@ -3708,10 +3708,7 @@ fn update_distribution_bucket_status_succeeded() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Storage::distribution_bucket_family_by_id(family_id)
-                .distribution_buckets
-                .get(&bucket_id)
-                .unwrap()
+            Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id)
                 .accepting_new_bags,
             new_status
         );
@@ -3743,17 +3740,6 @@ fn update_distribution_bucket_status_fails_with_invalid_distribution_bucket() {
             .with_family_id(family_id)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
-    });
-}
-
-#[test]
-fn update_distribution_bucket_status_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        UpdateDistributionBucketStatusFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
     });
 }
 
@@ -3889,17 +3875,6 @@ fn delete_distribution_bucket_fails_with_non_existing_distribution_bucket() {
 }
 
 #[test]
-fn delete_distribution_bucket_fails_with_non_existing_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        DeleteDistributionBucketFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
-    });
-}
-
-#[test]
 fn update_distribution_buckets_for_bags_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -3976,8 +3951,7 @@ fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_add
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
-        let family = Storage::distribution_bucket_family_by_id(family_id);
-        let bucket = family.distribution_buckets.get(&bucket_id).unwrap();
+        let bucket = Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id);
         assert_eq!(bucket.assigned_bags, 1);
 
         // ******
@@ -3992,8 +3966,7 @@ fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_add
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by.len(), 0);
 
-        let family = Storage::distribution_bucket_family_by_id(family_id);
-        let bucket = family.distribution_buckets.get(&bucket_id).unwrap();
+        let bucket = Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id);
         assert_eq!(bucket.assigned_bags, 0);
     });
 }
@@ -4196,10 +4169,7 @@ fn update_distribution_bucket_mode_succeeded() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Storage::distribution_bucket_family_by_id(family_id)
-                .distribution_buckets
-                .get(&bucket_id)
-                .unwrap()
+            Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id)
                 .accepting_new_bags,
             distributing
         );
@@ -4233,17 +4203,6 @@ fn update_distribution_bucket_mode_fails_with_invalid_distribution_bucket() {
             .with_family_id(family_id)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
-    });
-}
-
-#[test]
-fn update_distribution_bucket_mode_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        UpdateDistributionBucketModeFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
     });
 }
 
@@ -4580,17 +4539,6 @@ fn invite_distribution_bucket_operator_fails_with_invalid_distribution_provider_
 }
 
 #[test]
-fn invite_distribution_bucket_operator_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        CancelDistributionBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
-    });
-}
-
-#[test]
 fn cancel_distribution_bucket_operator_invite_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -4680,17 +4628,6 @@ fn cancel_distribution_bucket_operator_invite_fails_with_non_invited_distributio
 }
 
 #[test]
-fn cancel_distribution_bucket_operator_invite_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        CancelDistributionBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
-    });
-}
-
-#[test]
 fn accept_distribution_bucket_operator_invite_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -4776,17 +4713,6 @@ fn accept_distribution_bucket_operator_invite_fails_with_non_invited_distributio
             .with_family_id(family_id)
             .with_bucket_id(bucket_id)
             .call_and_assert(Err(Error::<Test>::NoDistributionBucketInvitation.into()));
-    });
-}
-
-#[test]
-fn accept_distribution_bucket_operator_invite_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        AcceptDistributionBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
     });
 }
 
@@ -4892,17 +4818,6 @@ fn set_distribution_operator_metadata_fails_with_non_distribution_provider() {
 }
 
 #[test]
-fn set_distribution_operator_metadata_fails_with_invalid_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        SetDistributionBucketMetadataFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
-    });
-}
-
-#[test]
 fn remove_distribution_bucket_operator_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -4956,17 +4871,6 @@ fn remove_distribution_bucket_operator_fails_with_non_leader_origin() {
         RemoveDistributionBucketOperatorFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
             .call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn remove_distribution_bucket_operator_fails_with_non_existing_distribution_bucket_family() {
-    build_test_externalities().execute_with(|| {
-        RemoveDistributionBucketOperatorFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
     });
 }
 
