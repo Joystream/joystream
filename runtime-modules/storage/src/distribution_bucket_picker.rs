@@ -38,13 +38,18 @@ impl<T: Trait> DistributionBucketPicker<T> {
             .filter_map(|(family_id, bucket_num)| {
                 Module::<T>::ensure_distribution_bucket_family_exists(family_id)
                     .ok()
-                    .map(|fam| (fam, bucket_num))
+                    .map(|fam| (family_id, fam, bucket_num))
             })
-            .map(|(family, bucket_num)| {
+            .map(|(family_id, family, bucket_num)| {
                 let filtered_ids = family
                     .distribution_buckets
                     .iter()
-                    .filter_map(|(id, bucket)| bucket.accepting_new_bags.then(|| *id))
+                    .filter_map(|id| {
+                        Module::<T>::ensure_distribution_bucket_exists(family_id, id)
+                            .ok()
+                            .map(|bucket| bucket.accepting_new_bags.then(|| *id))
+                            .flatten()
+                    })
                     .collect::<Vec<_>>();
 
                 (filtered_ids, bucket_num)
