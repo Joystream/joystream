@@ -221,12 +221,12 @@ export class DistributionBucket
   implements IDistributionBucket {}
 
 export type IDistributionBucketFamily = {
-  distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>
+  distribution_buckets: BTreeSet<DistributionBucketId>
 }
 
 export class DistributionBucketFamily
   extends JoyStructDecorated({
-    distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+    distribution_buckets: BTreeSet.with(DistributionBucketId),
   })
   implements IDistributionBucketFamily {}
 

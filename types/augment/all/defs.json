@@ -539,7 +539,7 @@
         "assigned_bags": "u64"
     },
     "DistributionBucketFamily": {
-        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
+        "distribution_buckets": "BTreeSet<DistributionBucketId>"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
