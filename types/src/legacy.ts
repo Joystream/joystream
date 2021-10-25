@@ -88,6 +88,17 @@ export class Operation extends Null {}
 export class ReferenceConstraint extends Null {}
 export class InputEntityValuesMap extends Null {}
 export class FailedAt extends Null {}
+export class ContentId extends Null {}
+export class ContentParameters extends Null {}
+export class DataObjectStorageRelationship extends Null {}
+export class DataObjectStorageRelationshipId extends Null {}
+export class DataObjectType extends Null {}
+export class DataObjectTypeId extends Null {}
+export class NewAsset extends Null {}
+export class ObjectOwner extends Null {}
+export class StorageObjectOwner extends Null {}
+export class UploadingStatus extends Null {}
+export class VoucherLimit extends Null {}
 
 // From discovery_service
 export class IPNSIdentity extends Null {}
@@ -165,6 +176,17 @@ export const legacyTypes: RegistryTypes = {
   FailedAt,
   IPNSIdentity,
   ServiceProviderRecord,
+  ContentId,
+  ContentParameters,
+  DataObjectStorageRelationship,
+  DataObjectStorageRelationshipId,
+  DataObjectType,
+  DataObjectTypeId,
+  NewAsset,
+  ObjectOwner,
+  StorageObjectOwner,
+  UploadingStatus,
+  VoucherLimit,
 }
 
 export default legacyTypes

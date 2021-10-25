@@ -6,14 +6,17 @@ import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
 import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import WGOpeningSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
-import { WorkingGroupOpening as WGOpeningJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
+import WGOpeningSchema from '../../schemas/json/WorkingGroupOpening.schema.json'
+import { WorkingGroupOpening as WGOpeningJson } from '../../schemas/typings/WorkingGroupOpening.schema'
 import _ from 'lodash'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
 import Ajv from 'ajv'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
-import { createType } from '@joystream/types'
+import { CLIError } from '@oclif/errors'
+import { createTypeFromConstructor } from '@joystream/types'
+import { OpeningPolicyCommitment, OpeningType } from '@joystream/types/working-group'
+import { ActivateOpeningAt } from '@joystream/types/hiring'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
@@ -76,10 +79,13 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }
   }
 
-  createTxParams(wgOpeningJson: WGOpeningJson, hrtJson: HRTJson) {
+  createTxParams(
+    wgOpeningJson: WGOpeningJson,
+    hrtJson: HRTJson
+  ): [ActivateOpeningAt, OpeningPolicyCommitment, string, OpeningType] {
     return [
-      wgOpeningJson.activateAt,
-      createType('OpeningPolicyCommitment', {
+      createTypeFromConstructor(ActivateOpeningAt, wgOpeningJson.activateAt),
+      createTypeFromConstructor(OpeningPolicyCommitment, {
         max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
         application_rationing_policy: wgOpeningJson.maxActiveApplicants
           ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }
@@ -100,7 +106,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         exit_role_stake_unstaking_period: wgOpeningJson.leaveRoleUnstakingPeriod,
       }),
       JSON.stringify(hrtJson),
-      createType('OpeningType', 'Worker'),
+      createTypeFromConstructor(OpeningType, 'Worker'),
     ]
   }
 
@@ -210,17 +216,17 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Send the tx
       this.log(chalk.magentaBright('Sending the extrinsic...'))
-      const txSuccess = await this.sendAndFollowTx(
-        account,
-        this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams),
-        true // warnOnly
-      )
-
-      // Display a success message on success or ask to try again on error
-      if (txSuccess) {
+      try {
+        await this.sendAndFollowTx(
+          account,
+          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
+        )
         this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
-      } else {
+      } catch (e) {
+        if (e instanceof CLIError) {
+          this.warn(e.message)
+        }
         tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
       }
     } while (tryAgain)

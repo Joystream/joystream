@@ -104,6 +104,9 @@ pub trait Trait:
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
+
+    /// The storage type used
+    type DataObjectStorage: storage::DataObjectStorage<Self>;
 }
 
 decl_storage! {
@@ -344,27 +347,17 @@ decl_module! {
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // get uploading parameters if assets have to be saved on storage
-            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                &params.assets,
-                &channel_id,
-                &sender,
-            );
-
-            // number of assets succesfully uploaded
-            let num_assets = maybe_upload_parameters
-                .map_or(Ok(0u64), |upload_parameters| {
-                Storage::<T>::upload_data_objects(upload_parameters.clone())
-                    .map(|_| {
-                        upload_parameters
-                        .object_creation_list
-                        .len() as u64
-                })
-            })?;
+            // atomically upload to storage and return the # of uploaded assets
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &sender,
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -380,8 +373,6 @@ decl_module! {
                 num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                // number of assets uploaded
-                num_assets,
                 // setting the channel owner account as the prize funds account
                 deletion_prize_source_account_id: sender,
             };
@@ -400,8 +391,6 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
-
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -411,23 +400,17 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let maybe_upload_parameters = params.assets.clone()
-                .and_then(|assets| {Self::pick_upload_parameters_from_assets(
-                   &assets,
-                    &channel_id,
-            &sender,
-            )});
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
-            // number of assets succesfully uploaded
-            let maybe_num_assets = maybe_upload_parameters.as_ref()
-                    .map_or(
-                        Ok(Some(0u64)),
-                        |upload_parameters| {
-                        Storage::<T>::upload_data_objects(upload_parameters.clone())
-                     .map(|_| {
-                        Some(upload_parameters.object_creation_list.len() as u64)
-             })
-            })?;
+            // atomically upload to storage and return the # of uploaded assets
+            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
@@ -439,23 +422,19 @@ decl_module! {
                 channel.reward_account = reward_account.clone();
             }
 
-            // Maybe update asset num
-            if let Some(num_assets) = maybe_num_assets {
-                channel.num_assets = channel.num_assets.saturating_add(num_assets);
-            }
-
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
-            // extrinsics for channel deletion
+        // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            num_objects_to_delete: u64,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -467,18 +446,41 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // check that channel assets are 0
-            ensure!(channel.num_assets == 0, Error::<T>::ChannelContainsAssets);
-
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-            // delete channel dynamic bag
+            // get bag id for the channel
             let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
-            Storage::<T>::delete_dynamic_bag(
-                channel.deletion_prize_source_account_id,
-                dyn_bag
-            )?;
+            let bag_id = storage::BagIdType::from(dyn_bag.clone());
+
+            // channel has a dynamic bag associated to it -> remove assets from storage
+            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
+                // ensure that bag size provided is valid
+                ensure!(
+                    bag.objects_number == num_objects_to_delete,
+                    Error::<T>::InvalidBagSizeSpecified
+                );
+
+                // construct collection of assets to be removed
+                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
+
+                // remove specified assets from storage
+                Self::remove_assets_from_storage(
+                    &assets_to_remove,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+
+                // delete channel dynamic bag
+                Storage::<T>::delete_dynamic_bag(
+                    channel.deletion_prize_source_account_id,
+                    dyn_bag
+                )?;
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
@@ -487,54 +489,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
 
             Ok(())
-        }
-
-        /// Remove assets of a channel from storage
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_channel_assets(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
-        ) {
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
-                &actor,
-                &channel.owner,
-            )?;
-
-            // ensure that the provided assets are not empty
-            ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
-
-            let num_assets_to_remove = assets.len() as u64;
-
-            // cannot remove more asset than those already present
-            ensure!(
-                num_assets_to_remove <= channel.num_assets,
-                Error::<T>::InvalidAssetsProvided
-            );
-
-            // remove assets from storage
-            Storage::<T>::delete_data_objects(
-                channel.deletion_prize_source_account_id.clone(),
-                Self::bag_id_for_channel(&channel_id),
-                assets.clone(),
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update onchain channel status
-            let mut channel = channel;
-            channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
-            ChannelById::<T>::insert(channel_id, channel.clone());
-
-
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets, channel));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -666,8 +620,6 @@ decl_module! {
             params: VideoCreationParameters<T>,
         ) {
 
-            let sender = ensure_signed(origin.clone())?;
-
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -680,26 +632,14 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            // adding the content to storage node if uploading is needed
-            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                &params.assets,
-                &channel_id,
-        &sender,
-            );
-
-            // if storaged uploading is required save t he object id for the video
-            let maybe_data_objects_ids = maybe_upload_parameters
-                .map_or(
-                    Ok(None),
-                    |upload_parameters| {
-                     // beginning object id
-                        let beg = Storage::<T>::next_data_object_id();
-
-                        // upload objects and return their indexes
-                        Storage::<T>::upload_data_objects(upload_parameters)
-                        .map(|_| Storage::<T>::next_data_object_id()) // ending index
-                        .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
-                })?;
+            // atomically upload to storage and return the # of uploaded assets
+            if let Some(upload_assets) = params.assets.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -715,8 +655,6 @@ decl_module! {
                 is_censored: false,
                 /// Newly created video has no nft
                 nft_status: None,
-                /// storage parameters for later storage deletion
-                maybe_data_objects_id_set: maybe_data_objects_ids,
             };
 
             // add it to the onchain state
@@ -741,39 +679,33 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
-
             // check that video exists, retrieve corresponding channel id.
-            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(&channel_id);
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
-                &Self::channel_by_id(channel_id).owner,
+                &channel.owner,
             )?;
 
-            // Pick the assets to be uploaded to storage frame_system out
-            if let Some(assets) = &params.assets {
-                // adding content to storage if needed
-               let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                   assets,
-                   &channel_id,
-                   &sender,
-               );
+            // remove specified assets from channel bag in storage
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
-              if let Some(upload_parameters) = maybe_upload_parameters{
-                 Storage::<T>::upload_data_objects(upload_parameters)?;
-              }
+            // atomically upload to storage and return the # of uploaded assets
+            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
             }
 
             //
             // == MUTATION SAFE ==
             //
-
-            // increase the number of video the selected channel by 1
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_videos = channel.num_videos.saturating_add(1);
-            });
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
@@ -783,6 +715,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
 
             // check that video exists
@@ -800,19 +733,14 @@ decl_module! {
                 &channel.owner,
             )?;
 
+            // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
             // Ensure nft for this video have not been issued
             video.ensure_nft_is_not_issued::<T>()?;
 
-            // If video is on storage, remove it
-            if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
-                Storage::<T>::delete_data_objects(
-                    channel.deletion_prize_source_account_id,
-                    Self::bag_id_for_channel(&channel_id),
-                    data_objects_id_set,
-                )?;
-            }
+            // remove specified assets from channel bag in storage
+            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -941,7 +869,7 @@ decl_module! {
         pub fn create_person(
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters<NewAssets<T>>,
+            _params: PersonCreationParameters<StorageAssets<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -951,7 +879,7 @@ decl_module! {
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
             _person: T::PersonId,
-            _params: PersonUpdateParameters<NewAssets<T>>,
+            _params: PersonUpdateParameters<StorageAssets<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -1022,7 +950,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, NewAssets<T>>
+            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -1032,7 +960,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, NewAssets<T>>
+            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -1669,28 +1597,24 @@ impl<T: Trait> Module<T> {
     }
 
     fn pick_upload_parameters_from_assets(
-        assets: &NewAssets<T>,
+        assets: &StorageAssets<T>,
         channel_id: &T::ChannelId,
-        sender: &T::AccountId,
-    ) -> Option<UploadParameters<T>> {
+        prize_source_account: &T::AccountId,
+    ) -> UploadParameters<T> {
         // dynamic bag for a media object
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        if !storage::Bags::<T>::contains_key(bag_id.clone()) {
+        if T::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
             Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
 
-        if let NewAssets::<T>::Upload(creation_upload_params) = assets {
-            Some(UploadParametersRecord {
-                bag_id,
-                object_creation_list: creation_upload_params.object_creation_list.clone(),
-                deletion_prize_source_account_id: sender.clone(),
-                expected_data_size_fee: creation_upload_params.expected_data_size_fee,
-            })
-        } else {
-            None
+        UploadParametersRecord {
+            bag_id,
+            object_creation_list: assets.object_creation_list.clone(),
+            deletion_prize_source_account_id: prize_source_account.clone(),
+            expected_data_size_fee: assets.expected_data_size_fee,
         }
     }
 
@@ -1700,17 +1624,10 @@ impl<T: Trait> Module<T> {
         match actor {
             // Lead should use their member or curator role to authorize
             ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
-            ContentActor::Curator(
-                curator_group_id,
-                _curator_id
-            ) => {
+            ContentActor::Curator(curator_group_id, _curator_id) => {
                 Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
-            ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+            ContentActor::Member(member_id) => Ok(ChannelOwner::Member(*member_id)),
         }
     }
 
@@ -1739,6 +1656,48 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
+
+    fn upload_assets_to_storage(
+        assets: &StorageAssets<T>,
+        channel_id: &T::ChannelId,
+        prize_source_account: &T::AccountId,
+    ) -> DispatchResult {
+        // construct upload params
+        let upload_params =
+            Self::pick_upload_parameters_from_assets(assets, channel_id, prize_source_account);
+
+        // attempt to upload objects att
+        Storage::<T>::upload_data_objects(upload_params.clone())?;
+
+        Ok(())
+    }
+
+    fn remove_assets_from_storage(
+        assets: &BTreeSet<DataObjectId<T>>,
+        channel_id: &T::ChannelId,
+        prize_source_account: &T::AccountId,
+    ) -> DispatchResult {
+        // remove assets if any
+        if !assets.is_empty() {
+            Storage::<T>::delete_data_objects(
+                prize_source_account.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets.clone(),
+            )?;
+        }
+        Ok(())
+    }
+}
+
+// Giza:
+// Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
+impl<T: Trait> Module<T> {
+    pub fn on_runtime_upgrade() {
+        // Clear VideoById map
+        <VideoById<T>>::remove_all();
+        // Clear ChannelById map
+        <ChannelById<T>>::remove_all();
+    }
 }
 
 decl_event!(
@@ -1747,7 +1706,7 @@ decl_event!(
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
             <T as ContentActorAuthenticator>::CuratorId,
-            MemberId<T>,
+            <T as common::MembershipTypes>::MemberId,
         >,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
@@ -1763,7 +1722,7 @@ decl_event!(
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        DataObjectId = <T as storage::Trait>::DataObjectId,
+        DataObjectId = DataObjectId<T>,
         IsCensored = bool,
         AuctionParams =
             AuctionParams<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>,
@@ -1772,8 +1731,8 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        NewAssets = NewAssets<T>,
         IsExtended = bool,
+        StorageAssets = StorageAssets<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1847,15 +1806,15 @@ decl_event!(
         SeriesCreated(
             ContentActor,
             SeriesId,
-            NewAssets,
-            SeriesParameters<VideoId, NewAssets>,
+            StorageAssets,
+            SeriesParameters<VideoId, StorageAssets>,
             Series,
         ),
         SeriesUpdated(
             ContentActor,
             SeriesId,
-            NewAssets,
-            SeriesParameters<VideoId, NewAssets>,
+            StorageAssets,
+            SeriesParameters<VideoId, StorageAssets>,
             Series,
         ),
         SeriesDeleted(ContentActor, SeriesId),
@@ -1864,14 +1823,14 @@ decl_event!(
         PersonCreated(
             ContentActor,
             PersonId,
-            NewAssets,
-            PersonCreationParameters<NewAssets>,
+            StorageAssets,
+            PersonCreationParameters<StorageAssets>,
         ),
         PersonUpdated(
             ContentActor,
             PersonId,
-            NewAssets,
-            PersonUpdateParameters<NewAssets>,
+            StorageAssets,
+            PersonUpdateParameters<StorageAssets>,
         ),
         PersonDeleted(ContentActor, PersonId),
         ChannelDeleted(ContentActor, ChannelId),

@@ -1,13 +1,14 @@
 import { getInputJson } from '../../helpers/InputOutput'
 import { ChannelInputParameters } from '../../Types'
-import { metadataToBytes, channelMetadataFromInput } from '../../helpers/serialization'
+import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
-import { CreateInterface } from '@joystream/types'
+import { createTypeFromConstructor } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
-import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
+import { ChannelInputSchema } from '../../schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import chalk from 'chalk'
+import { ChannelMetadata } from '@joystream/metadata-protobuf'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -29,30 +30,28 @@ export default class CreateChannelCommand extends UploadCommandBase {
     }
     const account = await this.getRequiredSelectedAccount()
     const actor = await this.getActor(context)
+    const memberId = await this.getRequiredMemberId(true)
     await this.requestAccountDecoding(account)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
+    const meta = asValidatedMetadata(ChannelMetadata, channelInput)
 
-    const meta = channelMetadataFromInput(channelInput)
     const { coverPhotoPath, avatarPhotoPath } = channelInput
     const assetsPaths = [coverPhotoPath, avatarPhotoPath].filter((v) => v !== undefined) as string[]
-    const inputAssets = await this.prepareInputAssets(assetsPaths, input)
-    const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
+    const resolvedAssets = await this.resolveAndValidateAssets(assetsPaths, input)
     // Set assets indexes in the metadata
-    if (coverPhotoPath) {
-      meta.setCoverPhoto(0)
-    }
-    if (avatarPhotoPath) {
-      meta.setAvatarPhoto(coverPhotoPath ? 1 : 0)
-    }
+    const [coverPhotoIndex, avatarPhotoIndex] = this.assetsIndexes([coverPhotoPath, avatarPhotoPath], assetsPaths)
+    meta.coverPhoto = coverPhotoIndex
+    meta.avatarPhoto = avatarPhotoIndex
 
-    const channelCreationParameters: CreateInterface<ChannelCreationParameters> = {
+    // Preare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const channelCreationParameters = createTypeFromConstructor(ChannelCreationParameters, {
       assets,
-      meta: metadataToBytes(meta),
-      reward_account: channelInput.rewardAccount,
-    }
+      meta: metadataToBytes(ChannelMetadata, meta),
+    })
 
-    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta.toObject() }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
@@ -60,11 +59,21 @@ export default class CreateChannelCommand extends UploadCommandBase {
       actor,
       channelCreationParameters,
     ])
-    if (result) {
-      const event = this.findEvent(result, 'content', 'ChannelCreated')
-      this.log(chalk.green(`Channel with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`))
-    }
 
-    await this.uploadAssets(inputAssets, input)
+    const channelCreatedEvent = this.findEvent(result, 'content', 'ChannelCreated')
+    const channelId = channelCreatedEvent!.data[1]
+    this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
+
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    if (dataObjectsUploadedEvent) {
+      const [objectIds] = dataObjectsUploadedEvent.data
+      await this.uploadAssets(
+        account,
+        memberId,
+        `dynamic:channel:${channelId.toString()}`,
+        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        input
+      )
+    }
   }
 }

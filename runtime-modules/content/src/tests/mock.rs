@@ -19,7 +19,7 @@ use frame_support::assert_ok;
 
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
-pub type MemberId = <Test as membership::Trait>::MemberId;
+pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 pub type VideoId = <Test as Trait>::VideoId;
 pub type VideoCategoryId = <Test as Trait>::VideoCategoryId;
@@ -156,12 +156,15 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type ScreenedMemberMaxInitialBalance = ();
 }
 
@@ -228,7 +231,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
@@ -365,6 +367,9 @@ impl Trait for Test {
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+
+    /// The data object used in storage
+    type DataObjectStorage = storage::Module<Self>;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -507,8 +512,8 @@ type RawEvent = crate::RawEvent<
     ChannelUpdateParameters<Test>,
     VideoCreationParameters<Test>,
     VideoUpdateParameters<Test>,
-    NewAssets<Test>,
     bool,
+    StorageAssets<Test>,
 >;
 
 pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
@@ -526,13 +531,32 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 pub fn create_member_channel() -> ChannelId {
     let channel_id = Content::next_channel_id();
 
+    // 3 assets added at creation
+    let assets = StorageAssetsRecord {
+        object_creation_list: vec![
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"first".to_vec(),
+            },
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"second".to_vec(),
+            },
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"third".to_vec(),
+            },
+        ],
+        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+    };
+
     // Member can create the channel
     assert_ok!(Content::create_channel(
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
         ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
+            assets: Some(assets),
+            meta: Some(vec![]),
             reward_account: None,
         }
     ));
@@ -542,7 +566,7 @@ pub fn create_member_channel() -> ChannelId {
 
 pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
     VideoCreationParametersRecord {
-        assets: NewAssets::<Test>::Upload(CreationUploadParameters {
+        assets: Some(StorageAssetsRecord {
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,
@@ -559,7 +583,7 @@ pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
             ],
             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
         }),
-        meta: b"test".to_vec(),
+        meta: Some(b"test".to_vec()),
     }
 }
 
@@ -594,10 +618,6 @@ pub fn create_channel_mock(
     );
 
     if result.is_ok() {
-        let num_assets = match params.assets.clone() {
-            NewAssets::<Test>::Urls(v) => v.len() as u64,
-            NewAssets::<Test>::Upload(c) => c.object_creation_list.len() as u64,
-        };
         let owner = Content::actor_to_channel_owner(&actor).unwrap();
 
         assert_eq!(
@@ -610,7 +630,6 @@ pub fn create_channel_mock(
                     is_censored: false,
                     reward_account: params.reward_account,
                     deletion_prize_source_account_id: sender,
-                    num_assets: num_assets,
                     num_videos: 0,
                 },
                 params.clone(),
@@ -633,16 +652,12 @@ pub fn update_channel_mock(
             Origin::signed(sender),
             actor.clone(),
             channel_id.clone(),
-            params.clone()
+            params.clone(),
         ),
         result.clone(),
     );
 
     if result.is_ok() {
-        let maybe_num_assets = params.assets.clone().map_or(None, |assets| match assets {
-            NewAssets::<Test>::Urls(v) => Some(v.len() as u64),
-            NewAssets::<Test>::Upload(c) => Some(c.object_creation_list.len() as u64),
-        });
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelUpdated(
@@ -653,50 +668,9 @@ pub fn update_channel_mock(
                     is_censored: channel_pre.is_censored,
                     reward_account: channel_pre.reward_account.clone(),
                     deletion_prize_source_account_id: sender,
-                    num_assets: channel_pre.num_assets + maybe_num_assets.unwrap_or(0),
                     num_videos: channel_pre.num_videos,
                 },
                 params.clone(),
-            ))
-        );
-    }
-}
-
-pub fn delete_channel_assets_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    assets: BTreeSet<<Test as storage::Trait>::DataObjectId>,
-    result: DispatchResult,
-) {
-    let channel_pre = ChannelById::<Test>::get(channel_id.clone());
-
-    assert_eq!(
-        Content::remove_channel_assets(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            assets.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        let num_assets_removed = assets.len();
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelAssetsRemoved(
-                actor.clone(),
-                channel_id,
-                assets.clone(),
-                ChannelRecord {
-                    owner: channel_pre.owner.clone(),
-                    is_censored: channel_pre.is_censored,
-                    reward_account: channel_pre.reward_account.clone(),
-                    deletion_prize_source_account_id: sender,
-                    num_assets: channel_pre.num_assets - (num_assets_removed as u64),
-                    num_videos: channel_pre.num_videos,
-                },
             ))
         );
     }
@@ -706,10 +680,16 @@ pub fn delete_channel_mock(
     sender: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    objects_num: u64,
     result: DispatchResult,
 ) {
     assert_eq!(
-        Content::delete_channel(Origin::signed(sender), actor.clone(), channel_id.clone()),
+        Content::delete_channel(
+            Origin::signed(sender),
+            actor.clone(),
+            channel_id.clone(),
+            objects_num,
+        ),
         result.clone(),
     );
 
@@ -734,9 +714,9 @@ pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
         sender,
         ContentActor::Member(member_id),
         ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
-            reward_account: Some(REWARD_ACCOUNT_ID),
+            assets: None,
+            meta: Some(vec![]),
+            reward_account: None,
         },
         Ok(()),
     );
@@ -805,7 +785,7 @@ pub fn update_video_mock(
             Origin::signed(sender),
             actor.clone(),
             video_id.clone(),
-            params.clone()
+            params.clone(),
         ),
         result.clone(),
     );

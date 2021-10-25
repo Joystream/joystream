@@ -20,6 +20,12 @@ use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
     RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
+
+use crate::{
+    ContentWorkingGroupInstance, DistributionWorkingGroupInstance,
+    OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
+    OperationsWorkingGroupInstanceGamma,
+};
 use frame_support::weights::Weight;
 
 /// The SignedExtension to the basic transaction logic.
@@ -54,10 +60,78 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
+// Alias for the alpha operationsworking group
+pub(crate) type OperationsWorkingGroupAlpha<T> =
+    working_group::Module<T, OperationsWorkingGroupInstanceAlpha>;
+
+// Alias for the beta operations working group
+pub(crate) type OperationsWorkingGroupBeta<T> =
+    working_group::Module<T, OperationsWorkingGroupInstanceBeta>;
+
+// Alias for the gamma operations working group
+pub(crate) type OperationsWorkingGroupGamma<T> =
+    working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
+
+pub(crate) type ContentWorkingGroup<T> = working_group::Module<T, ContentWorkingGroupInstance>;
+
+pub(crate) type DistributionWorkingGroup<T> =
+    working_group::Module<T, DistributionWorkingGroupInstance>;
+
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
+        // initialize content module
+        content::Module::<Runtime>::on_runtime_upgrade();
+
+        // Initialize new groups
+        let default_text_constraint = crate::working_group::default_text_constraint();
+
+        let default_storage_size_constraint =
+            crate::working_group::default_storage_size_constraint();
+
+        let default_content_working_group_mint_capacity = 0;
+
+        OperationsWorkingGroupAlpha::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        OperationsWorkingGroupBeta::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        ContentWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        DistributionWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
         10_000_000 // TODO: adjust weight
     }
 }

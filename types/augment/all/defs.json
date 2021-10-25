@@ -70,6 +70,17 @@
     "FailedAt": "Null",
     "IPNSIdentity": "Null",
     "ServiceProviderRecord": "Null",
+    "ContentId": "Null",
+    "ContentParameters": "Null",
+    "DataObjectStorageRelationship": "Null",
+    "DataObjectStorageRelationshipId": "Null",
+    "DataObjectType": "Null",
+    "DataObjectTypeId": "Null",
+    "NewAsset": "Null",
+    "ObjectOwner": "Null",
+    "StorageObjectOwner": "Null",
+    "UploadingStatus": "Null",
+    "VoucherLimit": "Null",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
@@ -82,10 +93,15 @@
     },
     "WorkingGroup": {
         "_enum": [
+            "_Reserved0",
+            "_Reserved1",
             "Storage",
             "Content",
-            "Operations",
-            "Gateway"
+            "OperationsAlpha",
+            "Gateway",
+            "Distribution",
+            "OperationsBeta",
+            "OperationsGamma"
         ]
     },
     "SlashingTerms": {
@@ -102,7 +118,6 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "ChannelId": "u64",
-    "DAOId": "u64",
     "Url": "Text",
     "EntryMethod": {
         "_enum": {
@@ -367,7 +382,7 @@
     },
     "ActiveOpeningStageVariant": {
         "stage": "ActiveOpeningStage",
-        "applications_added": "Vec<ApplicationId>",
+        "applications_added": "BTreeSet<ApplicationId>",
         "active_application_count": "u32",
         "unstaking_application_count": "u32",
         "deactivated_application_count": "u32"
@@ -445,7 +460,7 @@
     },
     "OpeningOf": {
         "hiring_opening_id": "OpeningId",
-        "applications": "Vec<ApplicationId>",
+        "applications": "BTreeSet<ApplicationId>",
         "policy_commitment": "OpeningPolicyCommitment",
         "opening_type": "OpeningType"
     },
@@ -518,10 +533,11 @@
         "prize": "u128"
     },
     "Bag": {
-        "objects": "BTreeMap<DataObjectId,DataObject>",
-        "stored_by": "StorageBucketIdSet",
-        "distributed_by": "DistributionBucketIdSet",
-        "deletion_prize": "Option<u128>"
+        "stored_by": "BTreeSet<StorageBucketId>",
+        "distributed_by": "BTreeSet<DistributionBucketId>",
+        "deletion_prize": "Option<u128>",
+        "objects_total_size": "u64",
+        "objects_number": "u64"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
@@ -591,8 +607,8 @@
     "DistributionBucket": {
         "accepting_new_bags": "bool",
         "distributing": "bool",
-        "pending_invitations": "Vec<WorkerId>",
-        "operators": "Vec<WorkerId>",
+        "pending_invitations": "BTreeSet<WorkerId>",
+        "operators": "BTreeSet<WorkerId>",
         "assigned_bags": "u64"
     },
     "DistributionBucketFamily": {
@@ -751,7 +767,7 @@
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
     "CuratorGroup": {
-        "curators": "Vec<CuratorId>",
+        "curators": "BTreeSet<CuratorId>",
         "active": "bool"
     },
     "ContentActor": {
@@ -761,25 +777,21 @@
             "Lead": "Null"
         }
     },
-    "NewAsset": {
-        "_enum": {
-            "Upload": "u64",
-            "Urls": "Vec<Url>"
-        }
+    "StorageAssets": {
+        "object_creation_list": "Vec<DataObjectCreationParameters>",
+        "expected_data_size_fee": "u128"
     },
     "Channel": {
         "owner": "ChannelOwner",
-        "videos": "Vec<VideoId>",
-        "playlists": "Vec<PlaylistId>",
-        "series": "Vec<SeriesId>",
+        "num_videos": "u64",
         "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "deletion_prize_source_account_id": "GenericAccountId"
     },
     "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
-            "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
+            "Curators": "CuratorGroupId"
         }
     },
     "ChannelCategoryId": "u64",
@@ -791,14 +803,15 @@
         "new_meta": "Bytes"
     },
     "ChannelCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes",
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>",
         "reward_account": "Option<GenericAccountId>"
     },
     "ChannelUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>"
+        "reward_account": "Option<Option<GenericAccountId>>",
+        "assets_to_remove": "BTreeSet<DataObjectId>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
@@ -822,12 +835,13 @@
         "new_meta": "Bytes"
     },
     "VideoCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>"
     },
     "VideoUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Option<Bytes>"
+        "assets_to_upload": "Option<StorageAssets>",
+        "new_meta": "Option<Bytes>",
+        "assets_to_remove": "BTreeSet<DataObjectId>"
     },
     "Person": {
         "controlled_by": "PersonController"
@@ -846,11 +860,11 @@
         }
     },
     "PersonCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "StorageAssets",
         "meta": "Bytes"
     },
     "PersonUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>"
     },
     "Playlist": {
@@ -872,12 +886,12 @@
         "episodes": "Vec<VideoId>"
     },
     "SeriesParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "seasons": "Option<Vec<Option<SeasonParameters>>>",
         "meta": "Option<Bytes>"
     },
     "SeasonParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "episodes": "Option<Vec<Option<EpisodeParemters>>>",
         "meta": "Option<Bytes>"
     },
@@ -889,5 +903,5 @@
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
-    "ContentId": "u64"
+    "AccountInfo": "AccountInfoWithRefCount"
 }

@@ -14,7 +14,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) v14.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) and docker-compose - _optional_
+- [docker](https://www.docker.com/get-started) and docker-compose - _required_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -25,8 +25,14 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm package dependencies, build packages and docker images
-yarn build
+# build local npm packages
+yarn build:packages
+
+# Build joystream/node image
+yarn build:node:docker
+
+# Build applications docker image
+yarn build:apps:docker
 
 # start a local development network
 yarn start

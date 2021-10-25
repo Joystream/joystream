@@ -1,17 +1,6 @@
 use crate::*;
 
-/// Specifies how a new asset will be provided on creating and updating
-/// Channels, Videos, Series and Person
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NewAssetsRecord<Balance> {
-    /// Upload to the storage frame_system
-    Upload(CreationUploadParameters<Balance>),
-    /// Multiple url strings pointing at an asset
-    Urls(Vec<AssetUrls>),
-}
-
-pub type NewAssets<T> = NewAssetsRecord<<T as balances::Trait>::Balance>;
+pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
@@ -27,7 +16,7 @@ pub enum ChannelOwner<MemberId, CuratorGroupId> {
 // simplification type
 pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
-        <T as membership::Trait>::MemberId,
+        <T as common::MembershipTypes>::MemberId,
         <T as ContentActorAuthenticator>::CuratorGroupId,
     >,
     Error<T>,
@@ -79,8 +68,6 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
     pub reward_account: Option<AccountId>,
     /// Account for withdrawing deletion prize funds
     pub deletion_prize_source_account_id: AccountId,
-    /// Number of asset held in storage
-    pub num_assets: u64,
 }
 
 impl<MemberId, CuratorGroupId, AccountId> ChannelRecord<MemberId, CuratorGroupId, AccountId> {
@@ -96,7 +83,7 @@ impl<MemberId, CuratorGroupId, AccountId> ChannelRecord<MemberId, CuratorGroupId
 
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
-    <T as membership::Trait>::MemberId,
+    <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
 >;
@@ -120,7 +107,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
 // ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as storage::Trait>::ChannelId,
-    <T as membership::Trait>::MemberId,
+    <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
@@ -129,32 +116,37 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<NewAssets, AccountId> {
+pub struct ChannelCreationParametersRecord<StorageAssets, AccountId> {
     /// Asset collection for the channel, referenced by metadata
-    pub assets: NewAssets,
+    pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
-    pub meta: Vec<u8>,
+    pub meta: Option<Vec<u8>>,
     /// optional reward account
     pub reward_account: Option<AccountId>,
 }
 
 pub type ChannelCreationParameters<T> =
-    ChannelCreationParametersRecord<NewAssets<T>, <T as frame_system::Trait>::AccountId>;
+    ChannelCreationParametersRecord<StorageAssets<T>, <T as frame_system::Trait>::AccountId>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<NewAssets, AccountId> {
+pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord> {
     /// Asset collection for the channel, referenced by metadata    
-    pub assets: Option<NewAssets>,
+    pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
     pub new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     pub reward_account: Option<Option<AccountId>>,
+    /// assets to be removed from channel
+    pub assets_to_remove: BTreeSet<DataObjectId>,
 }
 
-pub type ChannelUpdateParameters<T> =
-    ChannelUpdateParametersRecord<NewAssets<T>, <T as frame_system::Trait>::AccountId>;
+pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
+    StorageAssets<T>,
+    <T as frame_system::Trait>::AccountId,
+    DataObjectId<T>,
+>;
 
 /// Information about the video category being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -176,29 +168,44 @@ pub struct CreationUploadParameters<Balance> {
     pub expected_data_size_fee: Balance,
 }
 
+/// Information regarding the content being uploaded
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct StorageAssetsRecord<Balance> {
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
+}
+
+pub type StorageAssets<T> = StorageAssetsRecord<<T as balances::Trait>::Balance>;
+
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParametersRecord<NewAssets> {
+pub struct VideoCreationParametersRecord<StorageAssets> {
     /// Asset collection for the video
-    pub assets: NewAssets,
+    pub assets: Option<StorageAssets>,
     /// Metadata for the video.
-    pub meta: Vec<u8>,
+    pub meta: Option<Vec<u8>>,
 }
 
-pub type VideoCreationParameters<T> = VideoCreationParametersRecord<NewAssets<T>>;
+pub type VideoCreationParameters<T> = VideoCreationParametersRecord<StorageAssets<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParametersRecord<NewAssets> {
+pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
     /// Assets referenced by metadata
-    pub assets: Option<NewAssets>,
+    pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the video.
     pub new_meta: Option<Vec<u8>>,
+    /// video assets to be removed from channel
+    pub assets_to_remove: BTreeSet<DataObjectId>,
 }
 
-pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<NewAssets<T>>;
+pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>>;
 
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -228,9 +235,9 @@ pub struct Playlist<ChannelId> {
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId, NewAssets> {
+pub enum EpisodeParameters<VideoId, StorageAssets> {
     /// A new video is being added as the episode.
-    NewVideo(VideoCreationParametersRecord<NewAssets>),
+    NewVideo(VideoCreationParametersRecord<StorageAssets>),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
@@ -238,15 +245,15 @@ pub enum EpisodeParameters<VideoId, NewAssets> {
 /// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId, NewAssets> {
+pub struct SeasonParameters<VideoId, StorageAssets> {
     /// Season assets referenced by metadata
-    pub assets: Option<NewAssets>,
+    pub assets: Option<StorageAssets>,
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
     /// If set, updates the episodes of a season. Extends the number of episodes in a season
     /// when length of new_episodes is greater than previously set. Last elements must all be
     /// 'Some' in that case.
     /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId, NewAssets>>>>,
+    episodes: Option<Vec<Option<EpisodeParameters<VideoId, StorageAssets>>>>,
 
     pub meta: Option<Vec<u8>>,
 }
@@ -254,14 +261,14 @@ pub struct SeasonParameters<VideoId, NewAssets> {
 /// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId, NewAssets> {
+pub struct SeriesParameters<VideoId, StorageAssets> {
     /// Series assets referenced by metadata
-    pub assets: Option<NewAssets>,
+    pub assets: Option<StorageAssets>,
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
     /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId, NewAssets>>>>,
+    seasons: Option<Vec<Option<SeasonParameters<VideoId, StorageAssets>>>>,
     meta: Option<Vec<u8>>,
 }
 
@@ -309,9 +316,9 @@ impl<MemberId: Default> Default for PersonController<MemberId> {
 /// Information for Person being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PersonCreationParameters<NewAssets> {
+pub struct PersonCreationParameters<StorageAssets> {
     /// Assets referenced by metadata
-    pub assets: NewAssets,
+    pub assets: StorageAssets,
     /// Metadata for person.
     meta: Vec<u8>,
 }
@@ -319,9 +326,9 @@ pub struct PersonCreationParameters<NewAssets> {
 /// Information for Persion being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonUpdateParameters<NewAssets> {
+pub struct PersonUpdateParameters<StorageAssets> {
     /// Assets referenced by metadata
-    pub assets: Option<NewAssets>,
+    pub assets: Option<StorageAssets>,
     /// Metadata to update person.
     new_meta: Option<Vec<u8>>,
 }
@@ -355,7 +362,6 @@ pub struct VideoCategoryCreationParameters {
 pub struct VideoRecord<
     ChannelId,
     SeriesId,
-    DataObjectId: Ord,
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
@@ -367,8 +373,6 @@ pub struct VideoRecord<
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
-    /// storage parameters used during deletion
-    pub maybe_data_objects_id_set: Option<BTreeSet<DataObjectId>>,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, AccountId, Balance>>,
 }
@@ -376,12 +380,11 @@ pub struct VideoRecord<
 impl<
         ChannelId: Clone,
         SeriesId: Clone,
-        DataObjectId: Ord,
         BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + PartialEq + Ord,
         AccountId: Default + Clone + PartialEq + Ord,
         Balance: Clone + Default + BaseArithmetic,
-    > VideoRecord<ChannelId, SeriesId, DataObjectId, BlockNumber, MemberId, AccountId, Balance>
+    > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, AccountId, Balance>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
@@ -423,7 +426,6 @@ impl<
 pub type Video<T> = VideoRecord<
     <T as storage::Trait>::ChannelId,
     <T as Trait>::SeriesId,
-    <T as storage::Trait>::DataObjectId,
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     <T as frame_system::Trait>::AccountId,

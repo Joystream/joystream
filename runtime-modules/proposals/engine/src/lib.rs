@@ -143,7 +143,7 @@ use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 
-type MemberId<T> = <T as membership::Trait>::MemberId;
+type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:

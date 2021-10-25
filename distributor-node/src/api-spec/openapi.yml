@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: Distributor node API
+  description: Distributor node API
+  contact:
+    email: info@joystream.org
+  license:
+    name: GPL-3.0-only
+    url: https://spdx.org/licenses/GPL-3.0-only.html
+  version: 0.1.0
+externalDocs:
+  description: Distributor node API
+  url: https://github.com/Joystream/joystream/issues/2224
+servers:
+  - url: http://localhost:3334/api/v1/
+
+tags:
+  - name: public
+    description: Public distributor node API
+
+paths:
+  /status:
+    get:
+      operationId: public.status
+      description: Returns json object describing current node status.
+      tags:
+        - public
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        500:
+          description: Unexpected server error
+  /buckets:
+    get:
+      operationId: public.buckets
+      description: Returns list of distributed buckets
+      tags:
+        - public
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BucketsResponse'
+        500:
+          description: Unexpected server error
+  /asset/{objectId}:
+    head:
+      operationId: public.assetHead
+      description: Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+      responses:
+        200:
+          description: Object is supported and should be send on GET request.
+          headers:
+            X-Cache:
+              $ref: '#/components/headers/X-Cache'
+        421:
+          description: Misdirected request. Data object not supported by the node.
+        404:
+          description: Data object does not exist.
+        500:
+          description: Unexpected server error
+    get:
+      operationId: public.asset
+      description: Returns a media file.
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+      responses:
+        200:
+          description: Full available object data sent
+          headers:
+            X-Cache:
+              $ref: '#/components/headers/X-Cache'
+            X-Data-Source:
+              $ref: '#/components/headers/X-Data-Source'
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+        206:
+          description: Requested partial object data sent
+          headers:
+            X-Cache:
+              $ref: '#/components/headers/X-Cache'
+            X-Data-Source:
+              $ref: '#/components/headers/X-Data-Source'
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+        421:
+          description: Misdirected request. Data object not supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Data object does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected server error
+
+components:
+  parameters:
+    ObjectId:
+      name: objectId
+      required: true
+      in: path
+      description: Data Object ID
+      schema:
+        type: string
+        pattern: \d+
+  headers:
+    X-Cache:
+      description: Describes cache status of an object.
+        Hit - object is already fully fetched in distributor node's cache.
+        Pending - object is still beeing fetched from the storage node.
+        Miss - object is neither in cache not currently beeing fetched. Fetching from storage node may be triggered.
+      schema:
+        type: string
+        enum: ['hit', 'pending', 'miss']
+    X-Data-Source:
+      description: Describes the source of data stream.
+        External - the request was proxied to a storage node.
+        Local - the data is streamed from local file.
+      schema:
+        type: string
+        enum: ['external', 'local']
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        type:
+          type: string
+        message:
+          type: string
+    StatusResponse:
+      type: object
+      required:
+        - id
+        - objectsInCache
+        - storageLimit
+        - storageUsed
+        - uptime
+        - downloadsInProgress
+      properties:
+        id:
+          type: string
+        objectsInCache:
+          type: integer
+          minimum: 0
+        storageLimit:
+          type: integer
+          minimum: 0
+        storageUsed:
+          type: integer
+          minimum: 0
+        uptime:
+          type: integer
+          minimum: 0
+        downloadsInProgress:
+          type: integer
+          minimum: 0
+    BucketsResponse:
+      oneOf:
+        - type: object
+          required:
+            - 'bucketIds'
+          properties:
+            bucketIds:
+              type: array
+              minItems: 1
+              items:
+                type: integer
+                minimum: 0
+        - type: object
+          required:
+            - 'allByWorkerId'
+          properties:
+            allByWorkerId:
+              type: integer
+              minimum: 0

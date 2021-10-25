@@ -23,8 +23,26 @@ message DistributionBucketOperatorMetadata {
   optional string extra = 3; // Additional information about the node / node operator
 }
 
+message GeographicalArea {
+  enum Continent {
+    AF = 1;
+    NA = 2;
+    OC = 3;
+    AN = 4;
+    AS = 5;
+    EU = 6;
+    SA = 7;
+  }
+  oneof code {
+    Continent continent = 1;
+    string country_code = 2; // ISO 3166-1 alpha-2 country code
+    string subdivision_code = 3; // ISO 3166-2 subdivision code
+  }
+}
+
 message DistributionBucketFamilyMetadata {
   optional string region = 1; // ID / name of the region covered by the distribution family (ie. us-east-1). Should be unique.
   optional string description = 2; // Additional, more specific description of the region
-  repeated GeoCoordiantes boundary = 3; // Geographical boundary of the region, defined as polygon through array of coordinates (providing [{}] will unset the current value)
+  repeated GeographicalArea areas = 3; // Standarized geographical areas covered by the family (providing [{}] will unset the current value)
+  repeated string latency_test_targets = 4; // List of targets (hosts/ips) best suited latency measurements for this family
 }

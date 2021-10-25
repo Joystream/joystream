@@ -208,5 +208,8 @@ decl_error! {
 
         /// Channel Contains Assets
         ChannelContainsAssets,
+
+        /// Bag Size specified is not valid
+        InvalidBagSizeSpecified,
     }
 }

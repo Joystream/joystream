@@ -287,8 +287,8 @@ fn buy_nft_reward_account_is_not_set() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![]),
-                meta: vec![],
+                assets: None,
+                meta: Some(vec![]),
                 reward_account: None,
             },
             Ok(()),
