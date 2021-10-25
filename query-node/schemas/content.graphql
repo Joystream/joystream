@@ -218,7 +218,7 @@ type Auction @entity {
   last_bid: Bid
 
   "Whether auction starts at some predefined time in future"
-  stats_at: Int
+  starts_at: Int
 
   "Auction participants whitelist"
   whitelist: [Int!]
@@ -226,8 +226,11 @@ type Auction @entity {
 
 "Represents bid data"
 type Bid @entity {
-  "Bidder id"
-  bidder: Int!
+  "Bidder membership"
+  bidder: Membership!
+
+  "Bidder account, used to pay for nft"
+  bidderAccount: String
 
   "Amount bidded"
   amount: Int!
