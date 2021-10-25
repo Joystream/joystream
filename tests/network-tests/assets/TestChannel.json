@@ -1,9 +1,10 @@
 {
-  "handle": "Storage node channel",
-  "description": "Storage node channel",
-  "language": { "existing": { "code": "EN" } },
-  "coverPhotoUrl": "",
-  "avatarPhotoUrl": "",
+  "title": "Example Joystream Channel",
+  "description": "This is an awesome example channel!",
   "isPublic": true,
-  "isCensored": false
+  "language": "en",
+  "category": 1,
+  "avatarPhotoPath": "./joystream.png",
+  "coverPhotoPath": "./joystream.png",
+  "rewardAccount": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 }
