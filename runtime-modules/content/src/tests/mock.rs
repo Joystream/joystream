@@ -529,6 +529,12 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 }
 
 pub fn create_member_channel() -> ChannelId {
+    // deposit initial balance
+    let _ = balances::Module::<Test>::deposit_creating(
+        &FIRST_MEMBER_ORIGIN,
+        <Test as balances::Trait>::Balance::from(30u32),
+    );
+
     let channel_id = Content::next_channel_id();
 
     // 3 assets added at creation
@@ -716,7 +722,7 @@ pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
         ChannelCreationParametersRecord {
             assets: None,
             meta: Some(vec![]),
-            reward_account: None,
+            reward_account: Some(REWARD_ACCOUNT_ID),
         },
         Ok(()),
     );
