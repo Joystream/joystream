@@ -8,9 +8,6 @@ set -a
 . ../.env
 set +a
 
-# Start the joystream-node first to allow fetching Olympia metadata during build (typegen)
-docker-compose up -d joystream-node
-
 # Bring up db
 docker-compose up -d db
 

@@ -54,7 +54,11 @@ docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
 
-NETWORK_ARG=
+# Initialize joystream_default network if not already up
+docker network create joystream_default || true
+
+# Attach to joystream_default network by default
+NETWORK_ARG="--network joystream_default --network-alias joystream-node"
 if [ "$ATTACH_TO_NETWORK" != "" ]; then
   NETWORK_ARG="--network ${ATTACH_TO_NETWORK}"
 fi
@@ -69,6 +73,7 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+    yarn workspace query-node-root kill
 }
 
 trap cleanup EXIT
@@ -99,4 +104,7 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-# ./run-test-scenario.sh $1
+# Start the query-node
+yarn workspace query-node-root start
+
+./run-test-scenario.sh $1

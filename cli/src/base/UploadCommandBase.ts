@@ -38,6 +38,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   private fileSizeCache: Map<string, number> = new Map<string, number>()
   private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
+    noTTYOutput: true,
     format: `{barTitle} | {bar} | {value}/{total} KB processed`,
   }
 
@@ -63,8 +64,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     let processedKB = 0
     const fileSizeKB = Math.ceil(fileSize / 1024)
     const progress = multiBar
-      ? multiBar.create(fileSizeKB, processedKB, { barTitle })
+      ? (multiBar.create(fileSizeKB, processedKB, { barTitle }) as SingleBar | undefined)
       : new SingleBar(this.progressBarOptions)
+
+    if (!progress) {
+      throw new Error('Provided multibar does not support noTTY mode!')
+    }
 
     progress.start(fileSizeKB, processedKB, { barTitle })
     return {

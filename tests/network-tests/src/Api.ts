@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
@@ -30,13 +30,19 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ContentId, DataObject } from '@joystream/types/storage'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
+  DistributionWorkingGroup = 'distributionWorkingGroup',
   StorageWorkingGroup = 'storageWorkingGroup',
-  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
+  ContentWorkingGroup = 'contentWorkingGroup',
+}
+
+const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
+  [WorkingGroups.DistributionWorkingGroup]: 'Distribution',
+  [WorkingGroups.StorageWorkingGroup]: 'Storage',
+  [WorkingGroups.ContentWorkingGroup]: 'Content',
 }
 
 export class ApiFactory {
@@ -91,6 +97,9 @@ export class ApiFactory {
   // }
 }
 
+// Global suri by accountId map
+const suriByAccountId = new Map<string, string>()
+
 export class Api {
   private readonly api: ApiPromise
   private readonly sender: Sender
@@ -105,6 +114,18 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
+  getSuri(address: string | AccountId): string {
+    const suri = suriByAccountId.get(address.toString())
+    if (!suri) {
+      throw new Error(`Suri not found for account: ${address}`)
+    }
+    return suri
+  }
+
+  getKeypair(address: string | AccountId): KeyringPair {
+    return this.keyring.getPair(address)
+  }
+
   public enableDebugTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Debug)
   }
@@ -116,21 +137,17 @@ export class Api {
   public createKeyPairs(n: number): KeyringPair[] {
     const nKeyPairs: KeyringPair[] = []
     for (let i = 0; i < n; i++) {
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
+      const suri = i + uuid().substring(0, 8)
+      const pair = this.keyring.addFromUri(suri)
+      nKeyPairs.push(pair)
+      suriByAccountId.set(pair.address, suri)
     }
     return nKeyPairs
   }
 
   // Well known WorkingGroup enum defined in runtime
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
-    switch (workingGroup) {
-      case WorkingGroups.StorageWorkingGroup:
-        return 'Storage'
-      case WorkingGroups.ContentDirectoryWorkingGroup:
-        return 'Content'
-      default:
-        throw new Error(`Invalid working group string representation: ${workingGroup}`)
-    }
+    return workingGroupNameByGroup[workingGroup]
   }
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
@@ -1699,8 +1716,8 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
-    return dataObject.unwrapOr(null)
-  }
+  // async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
+  //   const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
+  //   return dataObject.unwrapOr(null)
+  // }
 }

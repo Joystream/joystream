@@ -8,9 +8,6 @@ set -a
 . ../.env
 set +a
 
-# Start the joystream-node first to allow fetching Olympia metadata during build (typegen)
-docker-compose up -d joystream-node
-
 # Only run codegen if no generated files found
 [ ! -d "generated/" ] && yarn build
 

@@ -21,7 +21,10 @@ export default {
     return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
   },
   content: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+    return manageWorkerAsLead(api, env, WorkingGroups.ContentWorkingGroup)
+  },
+  distribution: async function ({ api, env }: FlowProps): Promise<void> {
+    return manageWorkerAsLead(api, env, WorkingGroups.DistributionWorkingGroup)
   },
 }
 

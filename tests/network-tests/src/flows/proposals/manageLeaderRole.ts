@@ -27,7 +27,10 @@ export default {
     return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.ContentWorkingGroup, lock)
+  },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return manageLeaderRole(api, env, WorkingGroups.DistributionWorkingGroup, lock)
   },
 }
 
