@@ -220,13 +220,23 @@ export class DistributionBucket
   })
   implements IDistributionBucket {}
 
+export type IDistributionBucketState = {
+  accepting_new_bags: bool
+}
+
+export class DistributionBucketState
+  extends JoyStructDecorated({
+    accepting_new_bags: bool,
+  })
+  implements IDistributionBucketState {}
+
 export type IDistributionBucketFamily = {
-  distribution_buckets: BTreeSet<DistributionBucketId>
+  distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketState>
 }
 
 export class DistributionBucketFamily
   extends JoyStructDecorated({
-    distribution_buckets: BTreeSet.with(DistributionBucketId),
+    distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucketState),
   })
   implements IDistributionBucketFamily {}
 

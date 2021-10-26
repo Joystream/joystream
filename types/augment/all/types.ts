@@ -374,7 +374,9 @@ export interface DistributionBucket extends Struct {
 
 /** @name DistributionBucketFamily */
 export interface DistributionBucketFamily extends Struct {
-  readonly distribution_buckets: BTreeSet<DistributionBucketId>;
+  readonly distribution_buckets: BTreeMap<DistributionBucketId, {
+    readonly accepting_new_bags: bool;
+  } & Struct>;
 }
 
 /** @name DistributionBucketFamilyId */
