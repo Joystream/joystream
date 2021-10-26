@@ -3620,7 +3620,7 @@ fn create_distribution_bucket_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let accept_new_bags = false;
+        let accept_new_bags = true;
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -3636,7 +3636,16 @@ fn create_distribution_bucket_succeeded() {
 
         assert!(Storage::distribution_bucket_family_by_id(family_id)
             .distribution_buckets
-            .contains(&bucket_id));
+            .contains_key(&bucket_id));
+
+        assert_eq!(
+            Storage::distribution_bucket_family_by_id(family_id)
+                .distribution_buckets
+                .get(&bucket_id)
+                .unwrap()
+                .accepting_new_bags,
+            accept_new_bags
+        );
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketCreated(
             family_id,
@@ -3709,6 +3718,15 @@ fn update_distribution_bucket_status_succeeded() {
 
         assert_eq!(
             Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id)
+                .accepting_new_bags,
+            new_status
+        );
+
+        assert_eq!(
+            Storage::distribution_bucket_family_by_id(family_id)
+                .distribution_buckets
+                .get(&bucket_id)
+                .unwrap()
                 .accepting_new_bags,
             new_status
         );
