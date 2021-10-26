@@ -26,7 +26,7 @@ On Mac run the command:
 Follow [the official installation guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for your system.
 
 # How to run
-Copy and edit the file `deploy-config.sample.cfg` and update parameters like AWS_KEY_PAIR_NAME, KEY_PATH
+Copy and edit the file `deploy-infra.sample.cfg` and update parameters like AWS_KEY_PAIR_NAME, KEY_PATH
 Run the `deploy-infra.sh` script to deploy the infrastructure
 
 ```
