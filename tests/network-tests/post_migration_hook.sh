@@ -12,6 +12,6 @@ yarn joystream-cli working-groups:overview --group=curators
 yarn joystream-cli working-groups:overview --group=distributors
 
 echo "verify video by id map and channel by id map are cleared"
-yarn joystream-cli content:channel 0
-yarn joystream-cli content:videos 0
+yarn joystream-cli content:channel 1
+yarn joystream-cli content:videos 1
 
