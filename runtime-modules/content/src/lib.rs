@@ -114,15 +114,6 @@ pub trait Trait:
     type ChannelsMigratedEachBlock: Get<u64>;
 }
 
-/// Migration Index used for accessing the on-chain map
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum MigrationType {
-    Video,
-    Channel,
-    //..
-}
-
 /// Data structure in order to keep track of the migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
