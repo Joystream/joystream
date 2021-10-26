@@ -3,7 +3,7 @@ import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
 import { ContentService } from '../services/content/ContentService'
-import { ServerService } from '../services/server/ServerService'
+import { HttpApiService } from '../services/httpApi/HttpApiService'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
@@ -14,7 +14,7 @@ export class App {
   private content: ContentService
   private stateCache: StateCacheService
   private networking: NetworkingService
-  private server: ServerService
+  private httpApi: HttpApiService
   private logging: LoggingService
   private logger: Logger
   private intervals: AppIntervals | undefined
@@ -25,7 +25,7 @@ export class App {
     this.stateCache = new StateCacheService(config, this.logging)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)
     this.content = new ContentService(config, this.logging, this.networking, this.stateCache)
-    this.server = new ServerService(config, this.stateCache, this.content, this.logging, this.networking)
+    this.httpApi = new HttpApiService(config, this.stateCache, this.content, this.logging, this.networking)
     this.logger = this.logging.createLogger('App')
   }
 
@@ -79,7 +79,7 @@ export class App {
       this.stateCache.load()
       await this.content.startupInit()
       this.setIntervals()
-      this.server.start()
+      this.httpApi.start()
     } catch (err) {
       this.logger.error('Node initialization failed!', { err })
       process.exit(-1)
@@ -125,8 +125,8 @@ export class App {
     this.logger.info('Exiting...')
     // Clear intervals
     this.clearIntervals()
-    // Stop the server
-    this.server.stop()
+    // Stop the http api
+    this.httpApi.stop()
     // Save cache
     this.stateCache.saveSync()
     if (signal) {

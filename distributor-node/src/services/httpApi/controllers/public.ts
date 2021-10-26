@@ -1,13 +1,13 @@
 import * as express from 'express'
 import { Logger } from 'winston'
 import send from 'send'
-import { StateCacheService } from '../../../services/cache/StateCacheService'
-import { NetworkingService } from '../../../services/networking'
+import { StateCacheService } from '../../cache/StateCacheService'
+import { NetworkingService } from '../../networking'
 import { AssetRouteParams, BucketsResponse, ErrorResponse, StatusResponse } from '../../../types/api'
 import { LoggingService } from '../../logging'
 import { ContentService, DEFAULT_CONTENT_TYPE } from '../../content/ContentService'
 import proxy from 'express-http-proxy'
-import { ReadonlyConfig } from '../../../types'
+import { DataObjectData, ObjectStatusType, ReadonlyConfig } from '../../../types'
 
 const CACHED_MAX_AGE = 31536000
 const PENDING_MAX_AGE = 180
@@ -31,6 +31,30 @@ export class PublicApiController {
     this.networking = networking
     this.stateCache = stateCache
     this.content = content
+  }
+
+  private createErrorResponse(message: string, type?: string): ErrorResponse {
+    return { type, message }
+  }
+
+  private async serveMissingAsset(
+    req: express.Request<AssetRouteParams>,
+    res: express.Response,
+    next: express.NextFunction,
+    objectData: DataObjectData
+  ): Promise<void> {
+    const { objectId, size, contentHash } = objectData
+
+    const downloadResponse = await this.networking.downloadDataObject({ objectData })
+
+    if (downloadResponse) {
+      // Note: Await will only wait unil the file is created, so we may serve the response from it
+      await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
+      res.setHeader('x-cache', 'miss')
+    } else {
+      res.setHeader('x-cache', 'pending')
+    }
+    return this.servePendingDownloadAsset(req, res, next, objectId)
   }
 
   private serveAssetFromFilesystem(
@@ -85,7 +109,7 @@ export class PublicApiController {
 
     const { promise, objectSize } = pendingDownload
     const response = await promise
-    const source = new URL(response.config.url!)
+    const source = new URL(response.config.url || '')
     const contentType = response.headers['content-type'] || DEFAULT_CONTENT_TYPE
     res.setHeader('content-type', contentType)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
@@ -139,36 +163,39 @@ export class PublicApiController {
   }
 
   public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
-    const objectId = req.params.objectId
-    const pendingDownload = this.stateCache.getPendingDownload(objectId)
+    const { objectId } = req.params
+    const objectStatus = await this.content.objectStatus(objectId)
 
     res.setHeader('timing-allow-origin', '*')
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('content-disposition', 'inline')
 
-    if (!pendingDownload && this.content.exists(objectId)) {
-      res.status(200)
-      res.setHeader('x-cache', 'hit')
-      res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
-      res.setHeader('content-type', this.stateCache.getContentMimeType(objectId) || DEFAULT_CONTENT_TYPE)
-      res.setHeader('content-length', this.content.fileSize(objectId))
-    } else if (pendingDownload) {
-      res.status(200)
-      res.setHeader('x-cache', 'pending')
-      res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
-      res.setHeader('content-length', pendingDownload.objectSize)
-    } else {
-      const objectInfo = await this.networking.dataObjectInfo(objectId)
-      if (!objectInfo.exists) {
+    switch (objectStatus.type) {
+      case ObjectStatusType.Available:
+        res.status(200)
+        res.setHeader('x-cache', 'hit')
+        res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
+        res.setHeader('content-type', this.stateCache.getContentMimeType(objectId) || DEFAULT_CONTENT_TYPE)
+        res.setHeader('content-length', this.content.fileSize(objectId))
+        break
+      case ObjectStatusType.PendingDownload:
+        res.status(200)
+        res.setHeader('x-cache', 'pending')
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('content-length', objectStatus.pendingDownloadData.objectSize)
+        break
+      case ObjectStatusType.NotFound:
         res.status(404)
-      } else if (!objectInfo.isSupported) {
+        break
+      case ObjectStatusType.NotSupported:
         res.status(421)
-      } else {
+        break
+      case ObjectStatusType.Missing:
         res.status(200)
         res.setHeader('x-cache', 'miss')
         res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
-        res.setHeader('content-length', objectInfo.data?.size || 0)
-      }
+        res.setHeader('content-length', objectStatus.objectData.size)
+        break
     }
 
     res.send()
@@ -179,55 +206,30 @@ export class PublicApiController {
     res: express.Response,
     next: express.NextFunction
   ): Promise<void> {
-    const objectId = req.params.objectId
-    const pendingDownload = this.stateCache.getPendingDownload(objectId)
+    const { objectId } = req.params
+    const objectStatus = await this.content.objectStatus(objectId)
 
     this.logger.verbose('Data object requested', {
       objectId,
-      status: pendingDownload && pendingDownload.status,
+      objectStatus,
     })
 
     res.setHeader('timing-allow-origin', '*')
 
-    if (!pendingDownload && this.content.exists(objectId)) {
-      this.logger.verbose('Requested file found in filesystem', { path: this.content.path(objectId) })
-      return this.serveAssetFromFilesystem(req, res, next, objectId)
-    } else if (pendingDownload) {
-      this.logger.verbose('Requested file is in pending download state', { path: this.content.path(objectId) })
-      res.setHeader('x-cache', 'pending')
-      return this.servePendingDownloadAsset(req, res, next, objectId)
-    } else {
-      this.logger.verbose('Requested file not found in filesystem')
-      const objectInfo = await this.networking.dataObjectInfo(objectId)
-      if (!objectInfo.exists) {
-        const errorRes: ErrorResponse = {
-          message: 'Data object does not exist',
-        }
-        res.status(404).json(errorRes)
-      } else if (!objectInfo.isSupported) {
-        const errorRes: ErrorResponse = {
-          message: 'Data object not served by this node',
-        }
-        res.status(421).json(errorRes)
-        // TODO: Try to direct to a node that supports it?
-      } else {
-        const { data: objectData } = objectInfo
-        if (!objectData) {
-          throw new Error('Missing data object data')
-        }
-        const { size, contentHash } = objectData
-
-        const downloadResponse = await this.networking.downloadDataObject({ objectData })
-
-        if (downloadResponse) {
-          // Note: Await will only wait unil the file is created, so we may serve the response from it
-          await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
-          res.setHeader('x-cache', 'miss')
-        } else {
-          res.setHeader('x-cache', 'pending')
-        }
+    switch (objectStatus.type) {
+      case ObjectStatusType.Available:
+        return this.serveAssetFromFilesystem(req, res, next, objectId)
+      case ObjectStatusType.PendingDownload:
+        res.setHeader('x-cache', 'pending')
         return this.servePendingDownloadAsset(req, res, next, objectId)
-      }
+      case ObjectStatusType.NotFound:
+        res.status(404).json(this.createErrorResponse('Data object does not exist'))
+        return
+      case ObjectStatusType.NotSupported:
+        res.status(421).json(this.createErrorResponse('Data object not served by this node'))
+        return
+      case ObjectStatusType.Missing:
+        return this.serveMissingAsset(req, res, next, objectStatus.objectData)
     }
   }
 

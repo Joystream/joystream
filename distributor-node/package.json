@@ -13,7 +13,7 @@
     "@elastic/ecs-winston-format": "^1.1.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
-    "@oclif/plugin-help": "^2",
+    "@oclif/plugin-help": "^3",
     "@apollo/client": "^3.2.5",
     "graphql": "^14.7.0",
     "winston": "^3.3.3",
@@ -75,6 +75,10 @@
   },
   "engines": {
     "node": ">=14.16.1"
+  },
+  "volta": {
+    "node": "14.16.1",
+    "yarn": "1.22.4"
   },
   "files": [
     "/bin",

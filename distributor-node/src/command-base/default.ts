@@ -22,8 +22,8 @@ export const flags = {
   }),
   bagId: oclifFlags.build({
     parse: (value: string) => {
-      const parser = new BagIdParserService()
-      return parser.parseBagId(value)
+      const parser = new BagIdParserService(value)
+      return parser.parse()
     },
     description: `Bag ID. Format: {bag_type}:{sub_type}:{id}.
     - Bag types: 'static', 'dynamic'
@@ -62,7 +62,7 @@ export default abstract class DefaultCommandBase extends Command {
   async init(): Promise<void> {
     const { configPath, yes } = this.parse(this.constructor as typeof DefaultCommandBase).flags
     const configParser = new ConfigParserService()
-    this.appConfig = configParser.loadConfing(configPath) as ReadonlyConfig
+    this.appConfig = configParser.loadConfig(configPath) as ReadonlyConfig
     this.logging = LoggingService.withCLIConfig()
     this.logger = this.logging.createLogger('CLI')
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
@@ -89,11 +89,11 @@ export default abstract class DefaultCommandBase extends Command {
     }
   }
 
-  async finally(err: any): Promise<void> {
+  async finally(err: unknown): Promise<void> {
     if (!err) this.exit(ExitCodes.OK)
     if (process.env.DEBUG === 'true') {
       console.error(err)
     }
-    super.finally(err)
+    super.finally(err as Error)
   }
 }

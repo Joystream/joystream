@@ -5,7 +5,7 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import { HttpError } from 'express-openapi-validator/dist/framework/types'
 import { ReadonlyConfig } from '../../types/config'
 import expressWinston from 'express-winston'
-import { LoggingService } from '../../services/logging'
+import { LoggingService } from '../logging'
 import { PublicApiController } from './controllers/public'
 import { StateCacheService } from '../cache/StateCacheService'
 import { NetworkingService } from '../networking'
@@ -15,7 +15,7 @@ import { Server } from 'http'
 
 const OPENAPI_SPEC_PATH = path.join(__dirname, '../../api-spec/openapi.yml')
 
-export class ServerService {
+export class HttpApiService {
   private config: ReadonlyConfig
   private logger: Logger
   private expressApp: express.Application

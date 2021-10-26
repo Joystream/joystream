@@ -144,7 +144,7 @@ export const configSchema: JSONSchema4 = {
         },
       },
     },
-    port: { description: 'Distributor node http server port', type: 'integer', minimum: 0 },
+    port: { description: 'Distributor node http api port', type: 'integer', minimum: 0 },
     keys: {
       description: 'Specifies the keys available within distributor node CLI.',
       type: 'array',

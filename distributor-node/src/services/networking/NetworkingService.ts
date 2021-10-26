@@ -3,7 +3,7 @@ import { QueryNodeApi } from './query-node/api'
 import { Logger } from 'winston'
 import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
-import { PendingDownloadData, StateCacheService } from '../cache/StateCacheService'
+import { StateCacheService } from '../cache/StateCacheService'
 import { DataObjectDetailsFragment } from './query-node/generated/queries'
 import axios, { AxiosRequestConfig } from 'axios'
 import {
@@ -13,6 +13,8 @@ import {
   DataObjectInfo,
   StorageNodeDownloadResponse,
   DownloadData,
+  PendingDownloadData,
+  PendingDownloadStatus,
 } from '../../types'
 import queue from 'queue'
 import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
@@ -27,7 +29,6 @@ export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 export class NetworkingService {
   private config: ReadonlyConfig
   private queryNodeApi: QueryNodeApi
-  // private runtimeApi: RuntimeApi
   private logging: LoggingService
   private stateCache: StateCacheService
   private logger: Logger
@@ -49,7 +50,6 @@ export class NetworkingService {
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
-    // this.runtimeApi = new RuntimeApi(config.endpoints.substrateNode)
     void this.checkActiveStorageNodeEndpoints()
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
@@ -93,14 +93,10 @@ export class NetworkingService {
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     const endpointsData = details.storageBag.storageAssignments
-      .filter(
-        (a) =>
-          a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' &&
-          a.storageBucket.operatorMetadata?.nodeEndpoint
-      )
+      .filter((a) => a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
       .map((a) => {
-        const rootEndpoint = a.storageBucket.operatorMetadata!.nodeEndpoint!
-        const apiEndpoint = this.getApiEndpoint(rootEndpoint)
+        const rootEndpoint = a.storageBucket.operatorMetadata?.nodeEndpoint
+        const apiEndpoint = rootEndpoint ? this.getApiEndpoint(rootEndpoint) : ''
         return {
           bucketId: a.storageBucket.id,
           endpoint: apiEndpoint,
@@ -116,32 +112,45 @@ export class NetworkingService {
     }
   }
 
+  private getDataObjectActiveDistributorsSet(objectDetails: DataObjectDetailsFragment): Set<number> {
+    const activeDistributorsSet = new Set<number>()
+    const { distirbutionAssignments } = objectDetails.storageBag
+    const distributionBuckets = distirbutionAssignments.map((a) => a.distributionBucket)
+    for (const bucket of distributionBuckets) {
+      for (const operator of bucket.operators) {
+        if (operator.status === DistributionBucketOperatorStatus.Active) {
+          activeDistributorsSet.add(operator.workerId)
+        }
+      }
+    }
+    return activeDistributorsSet
+  }
+
   public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
     const details = await this.queryNodeApi.getDataObjectDetails(objectId)
-    return {
-      exists: !!details,
-      isSupported:
-        (this.config.buckets === 'all' &&
-          details?.storageBag.distirbutionAssignments.some((d) =>
-            d.distributionBucket.operators.some(
-              (o) => o.workerId === this.config.workerId && o.status === DistributionBucketOperatorStatus.Active
-            )
-          )) ||
-        (Array.isArray(this.config.buckets) &&
-          this.config.buckets.some((bucketId) =>
-            details?.storageBag.distirbutionAssignments
-              .map((a) => a.distributionBucket.id)
-              .includes(bucketId.toString())
-          )),
-      data: details
-        ? {
-            objectId,
-            accessPoints: this.parseDataObjectAccessPoints(details),
-            contentHash: details.ipfsHash,
-            size: parseInt(details.size),
-          }
-        : undefined,
+    let exists = false
+    let isSupported = false
+    let data: DataObjectData | undefined
+    if (details) {
+      exists = true
+      if (this.config.buckets === 'all') {
+        const distributors = this.getDataObjectActiveDistributorsSet(details)
+        isSupported = distributors.has(this.config.workerId)
+      } else {
+        const supportedBucketIds = this.config.buckets.map((id) => id.toString())
+        isSupported = details.storageBag.distirbutionAssignments.some((a) =>
+          supportedBucketIds.includes(a.distributionBucket.id)
+        )
+      }
+      data = {
+        objectId,
+        accessPoints: this.parseDataObjectAccessPoints(details),
+        contentHash: details.ipfsHash,
+        size: parseInt(details.size),
+      }
     }
+
+    return { exists, isSupported, data }
   }
 
   private sortEndpointsByMeanResponseTime(endpoints: string[]) {
@@ -164,7 +173,7 @@ export class NetworkingService {
       startAt,
     } = downloadData
 
-    pendingDownload.status = 'LookingForSource'
+    pendingDownload.status = PendingDownloadStatus.LookingForSource
 
     return new Promise<void>((resolve, reject) => {
       // Handlers:
@@ -176,7 +185,7 @@ export class NetworkingService {
 
       const sourceFound = (response: StorageNodeDownloadResponse) => {
         this.logger.info('Download source chosen', { objectId, source: response.config.url })
-        pendingDownload.status = 'Downloading'
+        pendingDownload.status = PendingDownloadStatus.Downloading
         onSourceFound(response)
       }
 
@@ -211,7 +220,7 @@ export class NetworkingService {
           const api = new StorageNodeApi(endpoint, this.logging)
           const available = await api.isObjectAvailable(objectId)
           if (!available) {
-            throw new Error('Not avilable')
+            throw new Error('Not available')
           }
           return endpoint
         })
@@ -308,7 +317,7 @@ export class NetworkingService {
       const endpoints = this.filterStorageNodeEndpoints(
         activeStorageOperators.map(({ id, operatorMetadata }) => ({
           bucketId: id,
-          endpoint: this.getApiEndpoint(operatorMetadata!.nodeEndpoint!),
+          endpoint: operatorMetadata?.nodeEndpoint ? this.getApiEndpoint(operatorMetadata.nodeEndpoint) : '',
         }))
       )
       this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })

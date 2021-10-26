@@ -1,22 +1,13 @@
 import { Logger } from 'winston'
-import { ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
+import { PendingDownloadData, PendingDownloadStatus, ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
 import { LoggingService } from '../logging'
 import _ from 'lodash'
 import fs from 'fs'
 
 // LRU-SP cache parameters
 // Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
-// TODO: Intoduce MAX_CACHED_ITEM_SIZE and skip caching for large objects entirely? (ie. 10 GB objects)
 export const CACHE_GROUP_LOG_BASE = 2
 export const CACHE_GROUPS_COUNT = 24
-
-type PendingDownloadStatus = 'Waiting' | 'LookingForSource' | 'Downloading'
-
-export interface PendingDownloadData {
-  objectSize: number
-  status: PendingDownloadStatus
-  promise: Promise<StorageNodeDownloadResponse>
-}
 
 export interface StorageNodeEndpointData {
   last10ResponseTimes: number[]
@@ -155,7 +146,7 @@ export class StateCacheService {
     promise: Promise<StorageNodeDownloadResponse>
   ): PendingDownloadData {
     const pendingDownload: PendingDownloadData = {
-      status: 'Waiting',
+      status: PendingDownloadStatus.Waiting,
       objectSize,
       promise,
     }

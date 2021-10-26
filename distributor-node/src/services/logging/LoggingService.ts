@@ -66,6 +66,7 @@ export class LoggingService {
         throw new Error('config.endpoints.elasticSearch must be provided when elasticSeach logging is enabled!')
       }
       esTransport = new ElasticsearchTransport({
+        index: 'distributor-node',
         level: config.log.elastic,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         flushInterval: 5000,

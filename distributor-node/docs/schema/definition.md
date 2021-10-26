@@ -131,7 +131,7 @@ Specifies how often periodic tasks (for example cache cleanup) are executed by t
 
 ## port
 
-Distributor node http server port
+Distributor node http api port
 
 `port`
 

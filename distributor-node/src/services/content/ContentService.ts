@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { ReadonlyConfig } from '../../types'
+import { ObjectStatus, ObjectStatusType, ReadonlyConfig } from '../../types'
 import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
@@ -7,10 +7,11 @@ import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileC
 import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
-import { createHash } from 'blake3'
-import * as multihash from 'multihashes'
+import { ContentHash } from '../crypto/ContentHash'
+import readChunk from 'read-chunk'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
+export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
 
 export class ContentService {
   private config: ReadonlyConfig
@@ -159,8 +160,19 @@ export class ContentService {
   }
 
   public async detectMimeType(objectId: string): Promise<string> {
-    const result = await FileType.fromFile(this.path(objectId))
-    return result?.mime || DEFAULT_CONTENT_TYPE
+    const objectPath = this.path(objectId)
+    try {
+      const buffer = await readChunk(objectPath, 0, MIME_TYPE_DETECTION_CHUNK_SIZE)
+      const result = await FileType.fromBuffer(buffer)
+      return result?.mime || DEFAULT_CONTENT_TYPE
+    } catch (err) {
+      this.logger.error(`Error while trying to detect object mimeType: ${err instanceof Error ? err.message : err}`, {
+        err,
+        objectId,
+        objectPath,
+      })
+      return DEFAULT_CONTENT_TYPE
+    }
   }
 
   private async evictCacheUntilFreeSpaceReached(targetFreeSpace: number): Promise<void> {
@@ -207,17 +219,17 @@ export class ContentService {
     return new Promise<void>((resolve, reject) => {
       const fileStream = this.createWriteStream(objectId)
 
-      let bytesRecieved = 0
-      const hash = createHash()
+      let bytesReceived = 0
+      const hash = new ContentHash()
 
       pipeline(dataStream, fileStream, async (err) => {
         const { bytesWritten } = fileStream
-        const finalHash = multihash.toB58String(multihash.encode(hash.digest(), 'blake3'))
+        const finalHash = hash.digest()
         const logMetadata = {
           objectId,
           expectedSize,
           expectedHash,
-          bytesRecieved,
+          bytesReceived,
           bytesWritten,
         }
         if (err) {
@@ -230,8 +242,8 @@ export class ContentService {
           return
         }
 
-        if (bytesWritten !== bytesRecieved || bytesWritten !== expectedSize) {
-          this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
+        if (bytesWritten !== bytesReceived || bytesWritten !== expectedSize) {
+          this.logger.error('Content rejected: Bytes written/received/expected mismatch!', {
             ...logMetadata,
           })
           this.drop(objectId)
@@ -257,13 +269,44 @@ export class ContentService {
       })
 
       dataStream.on('data', (chunk) => {
-        bytesRecieved += chunk.length
+        if (dataStream.destroyed) {
+          return
+        }
+        bytesReceived += chunk.length
         hash.update(chunk)
 
-        if (bytesRecieved > expectedSize) {
-          dataStream.destroy(new Error('Unexpected content size: Too much data recieved from source!'))
+        if (bytesReceived > expectedSize) {
+          dataStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
         }
       })
     })
+  }
+
+  public async objectStatus(objectId: string): Promise<ObjectStatus> {
+    const pendingDownload = this.stateCache.getPendingDownload(objectId)
+
+    if (!pendingDownload && this.exists(objectId)) {
+      return { type: ObjectStatusType.Available, path: this.path(objectId) }
+    }
+
+    if (pendingDownload) {
+      return { type: ObjectStatusType.PendingDownload, pendingDownloadData: pendingDownload }
+    }
+
+    const objectInfo = await this.networking.dataObjectInfo(objectId)
+    if (!objectInfo.exists) {
+      return { type: ObjectStatusType.NotFound }
+    }
+
+    if (!objectInfo.isSupported) {
+      return { type: ObjectStatusType.NotSupported }
+    }
+
+    const { data: objectData } = objectInfo
+    if (!objectData) {
+      throw new Error('Missing data object data')
+    }
+
+    return { type: ObjectStatusType.Missing, objectData }
   }
 }

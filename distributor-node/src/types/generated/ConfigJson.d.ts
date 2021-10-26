@@ -112,7 +112,7 @@ export interface DistributorNodeConfiguration {
     cacheCleanup: number
   }
   /**
-   * Distributor node http server port
+   * Distributor node http api port
    */
   port: number
   /**
