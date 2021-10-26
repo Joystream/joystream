@@ -3,6 +3,8 @@
 set -e
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # Prevent interactive prompts that would interrup the installation
+    export DEBIAN_FRONTEND=noninteractive
     # code build tools
     sudo apt-get update
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python

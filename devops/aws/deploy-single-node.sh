@@ -46,6 +46,6 @@ if [ $? -eq 0 ]; then
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH single-node-playbook.yml \
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-single-node-playbook.yml \
     --extra-vars "binary_file=$BINARY_FILE chain_spec_file=$CHAIN_SPEC_FILE"
 fi
