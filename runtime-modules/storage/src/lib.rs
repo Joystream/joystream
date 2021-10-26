@@ -587,7 +587,6 @@ pub enum DynamicBagType {
 
     /// Channel dynamic bag type.
     Channel,
-
     // Modify 'delete_distribution_bucket_family' on adding the new type!
 }
 
@@ -837,7 +836,28 @@ pub type DistributionBucketFamily<T> =
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct DistributionBucketFamilyRecord<DistributionBucketId: Ord> {
     /// Distribution bucket set.
-    pub distribution_buckets: BTreeSet<DistributionBucketId>,
+    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketState>,
+}
+
+impl<DistributionBucketId: Ord> DistributionBucketFamilyRecord<DistributionBucketId> {
+    // Helper function. Updates distribution bucket state (accepting_new_bag flag)
+    fn set_bag_accepting_for_distribution_bucket(
+        &mut self,
+        bucket_id: &DistributionBucketId,
+        accepting_new_bags: bool,
+    ) {
+        if let Some(state) = self.distribution_buckets.get_mut(bucket_id) {
+            state.accepting_new_bags = accepting_new_bags;
+        }
+    }
+}
+
+/// Distribution bucket state. It serves as a cache for the partial distributed bucket state
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DistributionBucketState {
+    /// Distribution bucket accepts new bags.
+    pub accepting_new_bags: bool,
 }
 
 /// Type alias for the DistributionBucketRecord.
@@ -2068,7 +2088,9 @@ decl_module! {
             let bucket_id = Self::next_distribution_bucket_id();
 
             <DistributionBucketFamilyById<T>>::mutate(family_id, |family|{
-                family.distribution_buckets.insert(bucket_id);
+                family.distribution_buckets.insert(bucket_id, DistributionBucketState {
+                    accepting_new_bags
+                });
             });
 
             <DistributionBucketByFamilyIdById<T>>::insert(family_id, bucket_id, bucket);
@@ -2098,6 +2120,10 @@ decl_module! {
 
             <DistributionBucketByFamilyIdById<T>>::mutate(family_id, bucket_id, |bucket| {
                 bucket.accepting_new_bags = accepting_new_bags;
+            });
+
+            <DistributionBucketFamilyById<T>>::mutate(family_id, |family|{
+                family.set_bag_accepting_for_distribution_bucket(&bucket_id, accepting_new_bags)
             });
 
             Self::deposit_event(
