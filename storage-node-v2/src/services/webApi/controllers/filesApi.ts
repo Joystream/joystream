@@ -6,11 +6,11 @@ import {
   createUploadToken,
   verifyTokenSignature,
 } from '../../helpers/auth'
-import { hashFile } from '../../../services/helpers/hashing'
-import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
-import { getFileInfo } from '../../../services/helpers/fileInfo'
+import { hashFile } from '../../helpers/hashing'
+import { createNonce, getTokenExpirationTime } from '../../helpers/tokenNonceKeeper'
+import { getFileInfo } from '../../helpers/fileInfo'
 import { BagId } from '@joystream/types/storage'
-import logger from '../../../services/logger'
+import logger from '../../logger'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
@@ -30,7 +30,7 @@ import {
   sendResponseWithError,
   getHttpStatusCodeByError,
 } from './common'
-import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
+import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
 

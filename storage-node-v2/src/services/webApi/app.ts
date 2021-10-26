@@ -49,7 +49,7 @@ export type AppConfig = {
   /**
    * Query Node endpoint URL
    */
-  queryNodeUrl: string
+  queryNodeEndpoint: string
 
   /**
    * Enables uploading auth-schema validation
@@ -92,7 +92,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
       res.locals.workerId = config.workerId
       res.locals.api = config.api
       res.locals.config = config.process
-      res.locals.queryNodeUrl = config.queryNodeUrl
+      res.locals.queryNodeUrl = config.queryNodeEndpoint
       next()
     },
     // Setup OpenAPiValidator

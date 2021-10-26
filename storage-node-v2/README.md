@@ -53,7 +53,7 @@ API endpoints:
 
 ### Auth schema description
 
-To reduce the possibility of abuse of the uploading endpoint we implemented a simple authentication schema. On each uploading attempt, the client should receive the auth token first and provide it as a special header. The token has an expiration time and cannot be reused. To receive such token the client should be part of the StorageWorkingGroup and have  `WorkerId`.
+To reduce the possibility of abuse of the uploading endpoint we implemented a simple authentication schema. On each uploading attempt, the client should receive the auth token first and provide it as a special header. The token has an expiration time and cannot be reused. To receive such a token the client should have Joystream Membership and `MemberId`.
 
 
 ### CLI
@@ -142,7 +142,7 @@ $ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Ali
 ### Prerequisites
 - accountURI or keyfile and password
 - workerId from the Storage working group that matches with the account above
-- Joystream Network validator URL
+- Joystream node websocket endpoint URL
 - QueryNode URL
 - (optional) ElasticSearch URL
 - created directory for data uploading

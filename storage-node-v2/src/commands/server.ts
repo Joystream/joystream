@@ -50,10 +50,11 @@ export default class Server extends ApiCommandBase {
       description: 'Interval between synchronizations (in minutes)',
       default: 1,
     }),
-    queryNodeHost: flags.string({
+    queryNodeEndpoint: flags.string({
       char: 'q',
       required: true,
-      description: 'Query node host and port (e.g.: some.com:8081)',
+      default: 'http://localhost:8081/graphql',
+      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
     }),
     syncWorkersNumber: flags.integer({
       char: 'r',
@@ -61,10 +62,10 @@ export default class Server extends ApiCommandBase {
       description: 'Sync workers number (max async operations in progress).',
       default: 20,
     }),
-    elasticSearchHost: flags.string({
+    elasticSearchEndpoint: flags.string({
       char: 'e',
       required: false,
-      description: `Elasticsearch host and port (e.g.: some.com:8081).
+      description: `Elasticsearch endpoint (e.g.: http://some.com:8081).
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
@@ -81,14 +82,11 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     await removeTempDirectory(flags.uploads, TempDirName)
 
-    let elasticUrl
-    if (!_.isEmpty(flags.elasticSearchHost)) {
-      elasticUrl = `http://${flags.elasticSearchHost}`
-      initElasticLogger(elasticUrl)
+    if (!_.isEmpty(flags.elasticSearchEndpoint)) {
+      initElasticLogger(flags.elasticSearchEndpoint ?? '')
     }
 
-    const queryNodeUrl = `http://${flags.queryNodeHost}/graphql`
-    logger.info(`Query node endpoint set: ${queryNodeUrl}`)
+    logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
@@ -101,7 +99,13 @@ Supported values: warn, error, debug, info. Default:debug`,
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
 
-      runSyncWithInterval(flags.worker, queryNodeUrl, flags.uploads, flags.syncWorkersNumber, flags.syncInterval)
+      runSyncWithInterval(
+        flags.worker,
+        flags.queryNodeEndpoint,
+        flags.uploads,
+        flags.syncWorkersNumber,
+        flags.syncInterval
+      )
     }
 
     const account = this.getAccount(flags)
@@ -111,7 +115,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     try {
       const port = flags.port
-      const workerId = flags.worker ?? 0
+      const workerId = flags.worker
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
@@ -123,14 +127,15 @@ Supported values: warn, error, debug, info. Default:debug`,
         uploadsDir: flags.uploads,
         tempDirName: TempDirName,
         process: this.config,
-        queryNodeUrl,
+        queryNodeEndpoint: flags.queryNodeEndpoint,
         enableUploadingAuth: !flags.disableUploadAuth,
-        elasticSearchEndpoint: elasticUrl,
+        elasticSearchEndpoint: flags.elasticSearchEndpoint,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {
       logger.error(`Server error: ${err}`)
+      this.exit(ExitCodes.ServerError)
     }
   }
 
@@ -178,14 +183,14 @@ function runSyncWithInterval(
  * Removes the temporary directory from the uploading directory.
  * All files in the temp directory are deleted.
  *
- * @param uploadsDir - data uploading directory
+ * @param uploadsDirectory - data uploading directory
  * @param tempDirName - temporary directory name within the uploading directory
  * @returns void promise.
  */
-async function removeTempDirectory(uploadsDir: string, tempDirName: string): Promise<void> {
+async function removeTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
   try {
     logger.info(`Removing temp directory ...`)
-    const tempFileUploadingDir = path.join(uploadsDir, tempDirName)
+    const tempFileUploadingDir = path.join(uploadsDirectory, tempDirName)
 
     const rimrafAsync = promisify(rimraf)
     await rimrafAsync(tempFileUploadingDir)
@@ -205,7 +210,7 @@ async function removeTempDirectory(uploadsDir: string, tempDirName: string): Pro
  */
 async function verifyWorkerId(api: ApiPromise, workerId: number, account: KeyringPair): Promise<void> {
   // Cast Codec type to Worker type
-  const workerObj = (await api.query.storageWorkingGroup.workerById(workerId)) as unknown
+  const workerObj = await api.query.storageWorkingGroup.workerById(workerId)
   const worker = workerObj as Worker
 
   if (worker.role_account_id.toString() !== account.address) {

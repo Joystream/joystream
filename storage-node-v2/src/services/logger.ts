@@ -134,13 +134,6 @@ export function errorLogger(): ErrorRequestHandler {
  *
  */
 export function createStdConsoleLogger(): winston.Logger {
-  const levels = {
-    error: 0,
-    warn: 1,
-    info: 2,
-    http: 3,
-    debug: 4,
-  }
   const format = winston.format.printf((info) => `${info.message}`)
 
   const transports = [new winston.transports.Console()]

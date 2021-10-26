@@ -1,6 +1,7 @@
 import { Command, flags } from '@oclif/command'
 import { performSync } from '../../services/sync/synchronizer'
 import logger from '../../services/logger'
+import stringify from 'fast-safe-stringify'
 
 /**
  * CLI command:
@@ -9,7 +10,7 @@ import logger from '../../services/logger'
  *
  * @remarks
  * Should be run only during the development.
- * Shell command: "dev:upload"
+ * Shell command: "dev:sync"
  */
 export default class DevSync extends Command {
   static description =
@@ -27,15 +28,17 @@ export default class DevSync extends Command {
       required: false,
       description: 'Sync workers number (max async operations in progress).',
     }),
-    queryNodeHost: flags.string({
+    queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
       description: 'Query node host and port (e.g.: some.com:8081)',
+      default: 'http://localhost:8081/graphql',
     }),
     dataSourceOperatorUrl: flags.string({
       char: 'o',
       required: false,
       description: 'Storage node url base (e.g.: http://some.com:8081) to get data from.',
+      default: 'http://localhost:3333',
     }),
     uploads: flags.string({
       char: 'd',
@@ -49,17 +52,19 @@ export default class DevSync extends Command {
 
     logger.info('Syncing...')
 
-    const queryNodeHost = flags.queryNodeHost ?? 'localhost:8081'
-    const queryNodeUrl = `http://${queryNodeHost}/graphql`
     const syncWorkersNumber = flags.syncWorkersNumber ?? 20
-    const dataSourceOperatorHost = flags.dataSourceOperatorUrl ?? 'http://localhost:3333'
-    const operatorUrl = `${dataSourceOperatorHost}`
 
     try {
-      await performSync(flags.workerId, syncWorkersNumber, queryNodeUrl, flags.uploads, operatorUrl)
+      await performSync(
+        flags.workerId,
+        syncWorkersNumber,
+        flags.queryNodeEndpoint,
+        flags.uploads,
+        flags.dataSourceOperatorUrl
+      )
     } catch (err) {
       logger.error(err)
-      logger.error(JSON.stringify(err, null, 2))
+      logger.error(stringify(err))
     }
   }
 }
