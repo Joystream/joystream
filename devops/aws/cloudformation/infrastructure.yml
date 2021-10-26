@@ -122,11 +122,10 @@ Resources:
             # Update all packages
             apt-get update -y
 
-            # Prevent interactive prompts that would interrup the installation
+            # Prevent interactive prompts that would interrupt the installation
             export DEBIAN_FRONTEND=noninteractive
 
-            # Install the updates except docker, to avoid interactive prompt which blocks the flow of the script
-            apt-mark hold docker.io
+            # Install the updates
             apt-get upgrade -y
 
             # Get latest cfn scripts and install them;
