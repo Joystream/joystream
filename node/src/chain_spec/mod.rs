@@ -366,11 +366,11 @@ pub fn testnet_genesis(
                 next_series_id: 1,
                 next_person_id: 1,
                 next_channel_transfer_request_id: 1,
-                video_migration: MigrationConfigRecord {
+                video_migration: content::MigrationConfigRecord {
                     current_id: 1,
                     final_id: 1,
                 },
-                channel_migration: MigrationConfigRecord {
+                channel_migration: content::MigrationConfigRecord {
                     current_id: 1,
                     final_id: 1,
                 },

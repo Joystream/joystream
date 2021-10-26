@@ -70,6 +70,9 @@ sc-cli = { package = 'sc-cli', git = 'https://github.com/paritytech/substrate.gi
 frame-benchmarking-cli = { package = 'frame-benchmarking-cli', git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true }
 node-inspect = { package = 'node-inspect', git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true }
 
+# config dependencies
+content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content' }
+
 # WASM-specific dependencies
 wasm-bindgen = { version = "0.2.57", optional = true }
 wasm-bindgen-futures = { version = "0.4.7", optional = true }

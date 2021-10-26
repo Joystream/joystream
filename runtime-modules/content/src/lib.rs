@@ -127,8 +127,8 @@ pub enum MigrationType {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct MigrationConfigRecord<NumericId> {
-    current_id: NumericId,
-    final_id: NumericId,
+    pub current_id: NumericId,
+    pub final_id: NumericId,
 }
 
 type VideoMigrationConfig<T> = MigrationConfigRecord<<T as Trait>::VideoId>;
