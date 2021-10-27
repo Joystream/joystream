@@ -45,6 +45,31 @@ export class PublicApiController {
   ): Promise<void> {
     const { objectId, size, contentHash } = objectData
 
+    const { maxCachedItemSize } = this.config.limits
+    if (maxCachedItemSize && size > maxCachedItemSize) {
+      this.logger.info(`Requested object is above maxCachedItemSize: ${size}/${maxCachedItemSize}`, {
+        objectId,
+        size,
+        maxCachedItemSize,
+      })
+      const sourceRootApiEndpoint = await this.networking.getDataObjectDownloadSource(objectData)
+      const sourceUrl = new URL(`files/${objectId}`, `${sourceRootApiEndpoint}/`)
+      res.setHeader('x-cache', 'miss')
+      res.setHeader('x-data-source', 'external')
+      this.logger.info(`Proxying request to ${sourceUrl.toString()}`, { objectId, sourceUrl: sourceUrl.toString() })
+      return proxy(sourceUrl.origin, {
+        proxyReqPathResolver: () => sourceUrl.pathname,
+        proxyErrorHandler: (err, res, next) => {
+          this.logger.error(`Proxy request to ${sourceUrl} failed!`, {
+            objectId,
+            sourceUrl: sourceUrl.toString(),
+          })
+          this.stateCache.dropCachedDataObjectSource(objectId, sourceRootApiEndpoint)
+          next(err)
+        },
+      })(req, res, next)
+    }
+
     const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
     if (downloadResponse) {

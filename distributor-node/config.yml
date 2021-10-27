@@ -15,7 +15,9 @@ limits:
   storage: 100G
   maxConcurrentStorageNodeDownloads: 100
   maxConcurrentOutboundConnections: 300
-  outboundRequestsTimeout: 5000
+  outboundRequestsTimeoutMs: 5000
+  pendingDownloadTimeoutSec: 3600
+  maxCachedItemSize: 1G
 intervals:
   saveCacheState: 60
   checkStorageNodeResponseTimes: 60

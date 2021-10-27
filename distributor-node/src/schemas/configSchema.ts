@@ -87,7 +87,8 @@ export const configSchema: JSONSchema4 = {
         'storage',
         'maxConcurrentStorageNodeDownloads',
         'maxConcurrentOutboundConnections',
-        'outboundRequestsTimeout',
+        'outboundRequestsTimeoutMs',
+        'pendingDownloadTimeoutSec',
       ],
       description: 'Specifies node limits w.r.t. storage, outbound connections etc.',
       additionalProperties: false,
@@ -103,12 +104,29 @@ export const configSchema: JSONSchema4 = {
           minimum: 1,
         },
         maxConcurrentOutboundConnections: {
-          description: 'Maximum number of total simultaneous outbound connections to storage node(s)',
+          description:
+            'Maximum number of total simultaneous outbound connections to storage node(s) (excluding proxy connections)',
           type: 'integer',
           minimum: 1,
         },
-        outboundRequestsTimeout: {
+        outboundRequestsTimeoutMs: {
           description: 'Timeout for all outbound storage node http requests in miliseconds',
+          type: 'integer',
+          minimum: 1000,
+        },
+        pendingDownloadTimeoutSec: {
+          description: 'Timeout for pending storage node downloads in seconds',
+          type: 'integer',
+          minimum: 60,
+        },
+        maxCachedItemSize: {
+          description: 'Maximum size of a data object allowed to be cached by the node',
+          type: 'string',
+          pattern: bytesizeRegex.source,
+        },
+        dataObjectSourceByObjectIdTTL: {
+          description:
+            'TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node. Defaults to `60` if not specified.',
           type: 'integer',
           minimum: 1,
         },

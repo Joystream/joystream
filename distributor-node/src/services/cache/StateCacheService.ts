@@ -3,11 +3,14 @@ import { PendingDownloadData, PendingDownloadStatus, ReadonlyConfig, StorageNode
 import { LoggingService } from '../logging'
 import _ from 'lodash'
 import fs from 'fs'
+import NodeCache from 'node-cache'
 
 // LRU-SP cache parameters
 // Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
 export const CACHE_GROUP_LOG_BASE = 2
 export const CACHE_GROUPS_COUNT = 24
+
+export const DEFAULT_DATA_OBJECT_SOURCE_CACHE_TTL = 60
 
 export interface StorageNodeEndpointData {
   last10ResponseTimes: number[]
@@ -28,6 +31,9 @@ export class StateCacheService {
     pendingDownloadsByObjectId: new Map<string, PendingDownloadData>(),
     storageNodeEndpointDataByEndpoint: new Map<string, StorageNodeEndpointData>(),
     groupNumberByObjectId: new Map<string, number>(),
+    dataObjectSourceByObjectId: new NodeCache({
+      deleteOnExpire: true,
+    }),
   }
 
   private storedState = {
@@ -199,6 +205,26 @@ export class StateCacheService {
       endpoint,
       this.getStorageNodeEndpointMeanResponseTime(endpoint, max),
     ])
+  }
+
+  public cacheDataObjectSource(objectId: string, source: string): void {
+    this.memoryState.dataObjectSourceByObjectId.set<string>(
+      objectId,
+      source,
+      this.config.limits.dataObjectSourceByObjectIdTTL || DEFAULT_DATA_OBJECT_SOURCE_CACHE_TTL
+    )
+  }
+
+  public getCachedDataObjectSource(objectId: string): string | undefined {
+    return this.memoryState.dataObjectSourceByObjectId.get<string | undefined>(objectId)
+  }
+
+  public dropCachedDataObjectSource(objectId: string, expectedSource?: string): void {
+    const cachedSource = this.memoryState.dataObjectSourceByObjectId.get<string | undefined>(objectId)
+    if (!expectedSource || cachedSource === expectedSource) {
+      this.logger.info('Force-dropping cached dataObjectSource', { objectId, cachedSource, expectedSource })
+      this.memoryState.dataObjectSourceByObjectId.del(objectId)
+    }
   }
 
   private serializeData() {

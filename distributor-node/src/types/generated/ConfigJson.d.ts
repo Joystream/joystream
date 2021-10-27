@@ -86,13 +86,25 @@ export interface DistributorNodeConfiguration {
      */
     maxConcurrentStorageNodeDownloads: number
     /**
-     * Maximum number of total simultaneous outbound connections to storage node(s)
+     * Maximum number of total simultaneous outbound connections to storage node(s) (excluding proxy connections)
      */
     maxConcurrentOutboundConnections: number
     /**
      * Timeout for all outbound storage node http requests in miliseconds
      */
-    outboundRequestsTimeout: number
+    outboundRequestsTimeoutMs: number
+    /**
+     * Timeout for pending storage node downloads in seconds
+     */
+    pendingDownloadTimeoutSec: number
+    /**
+     * Maximum size of a data object allowed to be cached by the node
+     */
+    maxCachedItemSize?: string
+    /**
+     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node
+     */
+    dataObjectSourceByObjectIdTTL?: number
   }
   /**
    * Specifies how often periodic tasks (for example cache cleanup) are executed by the node.

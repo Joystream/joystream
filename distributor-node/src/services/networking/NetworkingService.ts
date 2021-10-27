@@ -5,7 +5,7 @@ import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
 import { StateCacheService } from '../cache/StateCacheService'
 import { DataObjectDetailsFragment } from './query-node/generated/queries'
-import axios, { AxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import {
   StorageNodeEndpointData,
   DataObjectAccessPoints,
@@ -23,7 +23,7 @@ import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 
 // Concurrency limits
-export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
+export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10
 export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 
 export class NetworkingService {
@@ -37,10 +37,10 @@ export class NetworkingService {
   private downloadQueue: queue
 
   constructor(config: ReadonlyConfig, stateCache: StateCacheService, logging: LoggingService) {
-    axios.defaults.timeout = config.limits.outboundRequestsTimeout
+    axios.defaults.timeout = config.limits.outboundRequestsTimeoutMs
     const httpConfig: http.AgentOptions | https.AgentOptions = {
       keepAlive: true,
-      timeout: config.limits.outboundRequestsTimeout,
+      timeout: config.limits.outboundRequestsTimeoutMs,
       maxSockets: config.limits.maxConcurrentOutboundConnections,
     }
     axios.defaults.httpAgent = new http.Agent(httpConfig)
@@ -161,6 +161,91 @@ export class NetworkingService {
     )
   }
 
+  private async checkObjectAvailability(objectId: string, endpoint: string): Promise<void> {
+    const api = new StorageNodeApi(endpoint, this.logging, this.config)
+    const available = await api.isObjectAvailable(objectId)
+    if (!available) {
+      throw new Error('Not available')
+    }
+  }
+
+  private createDataObjectAvailabilityCheckQueue(objectId: string, storageEndpoints: string[]) {
+    const availabilityQueue = queue({
+      concurrency: MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT,
+      autostart: true,
+    })
+
+    storageEndpoints.forEach(async (endpoint) => {
+      availabilityQueue.push(async () => {
+        await this.checkObjectAvailability(objectId, endpoint)
+        return endpoint
+      })
+    })
+
+    return availabilityQueue
+  }
+
+  public async getDataObjectDownloadSource(objectData: DataObjectData): Promise<string> {
+    const { objectId } = objectData
+    const cachedSource = await this.checkCachedDataObjectSource(objectId)
+    if (cachedSource) {
+      this.logger.info(`Found active download source for object ${objectId} in cache`, { objectId, cachedSource })
+      return cachedSource
+    }
+    return this.findDataObjectDownloadSource(objectData)
+  }
+
+  private async checkCachedDataObjectSource(objectId: string): Promise<string | undefined> {
+    const cachedSource = this.stateCache.getCachedDataObjectSource(objectId)
+    if (cachedSource) {
+      try {
+        await this.checkObjectAvailability(objectId, cachedSource)
+      } catch (err) {
+        this.stateCache.dropCachedDataObjectSource(objectId, cachedSource)
+        return undefined
+      }
+      return cachedSource
+    }
+  }
+
+  private findDataObjectDownloadSource({ objectId, accessPoints }: DataObjectData): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const storageEndpoints = this.sortEndpointsByMeanResponseTime(
+        accessPoints?.storageNodes.map((n) => n.endpoint) || []
+      )
+
+      this.logger.info('Looking for data object source', {
+        objectId,
+        possibleSources: storageEndpoints.map((e) => ({
+          endpoint: e,
+          meanResponseTime: this.stateCache.getStorageNodeEndpointMeanResponseTime(e),
+        })),
+      })
+      if (!storageEndpoints.length) {
+        return reject(new Error('No storage endpoints available to download the data object from'))
+      }
+
+      const availabilityQueue = this.createDataObjectAvailabilityCheckQueue(objectId, storageEndpoints)
+
+      availabilityQueue.on('success', (endpoint) => {
+        availabilityQueue.stop()
+        this.stateCache.cacheDataObjectSource(objectId, endpoint)
+        return resolve(endpoint)
+      })
+
+      availabilityQueue.on('error', () => {
+        /*
+        Do nothing.
+        The handler is needed to avoid unhandled promise rejection
+        */
+      })
+
+      availabilityQueue.on('end', () => {
+        return reject(new Error('Failed to find data object download source'))
+      })
+    })
+  }
+
   private downloadJob(
     pendingDownload: PendingDownloadData,
     downloadData: DownloadData,
@@ -209,27 +294,13 @@ export class NetworkingService {
         return fail('No storage endpoints available to download the data object from')
       }
 
-      const availabilityQueue = queue({
-        concurrency: MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD,
-        autostart: true,
-      })
+      const availabilityQueue = this.createDataObjectAvailabilityCheckQueue(objectId, storageEndpoints)
       const objectDownloadQueue = queue({ concurrency: 1, autostart: true })
-
-      storageEndpoints.forEach(async (endpoint) => {
-        availabilityQueue.push(async () => {
-          const api = new StorageNodeApi(endpoint, this.logging)
-          const available = await api.isObjectAvailable(objectId)
-          if (!available) {
-            throw new Error('Not available')
-          }
-          return endpoint
-        })
-      })
 
       availabilityQueue.on('success', (endpoint) => {
         availabilityQueue.stop()
         const job = async () => {
-          const api = new StorageNodeApi(endpoint, this.logging)
+          const api = new StorageNodeApi(endpoint, this.logging, this.config)
           const response = await api.downloadObject(objectId, startAt)
           return response
         }
@@ -336,9 +407,8 @@ export class NetworkingService {
     const start = Date.now()
     this.logger.debug(`Sending storage node response-time check request to: ${endpoint}`, { endpoint })
     try {
-      const api = new StorageNodeApi(endpoint, this.logging)
-      const reqConfig: AxiosRequestConfig = { headers: { connection: 'close' } }
-      await api.stateApi.stateApiGetVersion(reqConfig)
+      const api = new StorageNodeApi(endpoint, this.logging, this.config)
+      await api.getVersion()
       const responseTime = Date.now() - start
       this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
       this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)

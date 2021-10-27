@@ -7,7 +7,8 @@ import _ from 'lodash'
 import configSchema, { bytesizeUnits } from '../../schemas/configSchema'
 import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
 
-const MIN_CACHE_SIZE = 20 * Math.pow(1024, 3)
+const MIN_CACHE_SIZE = '20G'
+const MIN_MAX_CACHED_ITEM_SIZE = '1M'
 
 export class ConfigParserService {
   validator: ValidationService
@@ -143,9 +144,16 @@ export class ConfigParserService {
     const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
     const keys = this.resolveConfigKeysPaths(configJson.keys, configPath)
     const storageLimit = this.parseBytesize(configJson.limits.storage)
+    const maxCachedItemSize = configJson.limits.maxCachedItemSize
+      ? this.parseBytesize(configJson.limits.maxCachedItemSize)
+      : undefined
 
-    if (storageLimit < MIN_CACHE_SIZE) {
-      throw new Error('Cache storage limit should be at least 20G!')
+    if (storageLimit < this.parseBytesize(MIN_CACHE_SIZE)) {
+      throw new Error(`Config.limits.storage should be at least ${MIN_CACHE_SIZE}!`)
+    }
+
+    if (maxCachedItemSize && maxCachedItemSize < this.parseBytesize(MIN_MAX_CACHED_ITEM_SIZE)) {
+      throw new Error(`Config.limits.maxCachedItemSize should be at least ${MIN_MAX_CACHED_ITEM_SIZE}!`)
     }
 
     const parsedConfig: Config = {
@@ -155,6 +163,7 @@ export class ConfigParserService {
       limits: {
         ...configJson.limits,
         storage: storageLimit,
+        maxCachedItemSize,
       },
     }
 
