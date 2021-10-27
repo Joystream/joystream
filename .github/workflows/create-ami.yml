@@ -1,3 +1,5 @@
+# Creates an AWS AMI (system image) with compiled joystream-node and subkey
+# 
 name: Create AWS AMI
 
 on:
@@ -8,7 +10,7 @@ jobs:
     name: Build the code and run setup
     runs-on: ubuntu-latest
     env:
-      STACK_NAME: joystream-github-action-${{ github.run_number }}
+      STACK_NAME: create-joystream-node-ami-ga-${{ github.run_number }}
       KEY_NAME: joystream-github-action-key
     steps:
       - name: Extract branch name
@@ -18,7 +20,7 @@ jobs:
 
       - name: Set AMI Name environment variable
         shell: bash
-        run: echo "ami_name=joystream-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
+        run: echo "ami_name=joystream-node-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
         id: ami_name
 
       - name: Checkout
@@ -36,7 +38,7 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/infrastructure/cloudformation/single-instance.yml
+          template: devops/aws/cloudformation/single-instance.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }}'
 
@@ -46,8 +48,8 @@ jobs:
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: github-action-playbook.yml
-          directory: devops/infrastructure
+          playbook: create-joystream-node-ami-playbook.yml
+          directory: devops/aws
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |

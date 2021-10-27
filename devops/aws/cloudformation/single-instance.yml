@@ -59,6 +59,9 @@ Resources:
             # Update all packages
             apt-get update -y
 
+            # Prevent interactive prompts that would interrupt the installation
+            export DEBIAN_FRONTEND=noninteractive
+
             # Install the updates
             apt-get upgrade -y
 

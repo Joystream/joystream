@@ -1,6 +1,6 @@
 /bin/
 /node_modules/
-kubeconfig.yml
+kubeconfig*
 package-lock.json
 .env
 Pulumi.*.yaml

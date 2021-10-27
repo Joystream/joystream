@@ -6,7 +6,7 @@ source common.sh
 
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
-  echo "Please use ./delete-stack.sh PATH/TO/CONFIG to run this script"
+  echo "Please use ./destroy-infra.sh PATH/TO/CONFIG to run this script"
   exit 1
 else
   echo "Using $1 file for config"

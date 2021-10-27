@@ -71,7 +71,7 @@ jobs:
             platform_tag: 'arm'
             file: 'joystream-node-armv7.Dockerfile'
     env:
-      STACK_NAME: joystream-ga-docker-${{ github.run_number }}-${{ matrix.platform_tag }}
+      STACK_NAME: build-joystream-node-docker-ga-${{ github.run_number }}-${{ matrix.platform_tag }}
     steps:
       - name: Extract branch name
         shell: bash
@@ -120,7 +120,7 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/infrastructure/cloudformation/single-instance-docker.yml
+          template: devops/aws/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
@@ -129,7 +129,7 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: build-arm64-playbook.yml
-          directory: devops/infrastructure
+          directory: devops/aws
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |
