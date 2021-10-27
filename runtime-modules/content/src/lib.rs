@@ -718,7 +718,7 @@ decl_module! {
             params: ChannelUpdateParameters<T>,
         ) {
             // ensure migration is done
-            Self::ensure_channel_migration_done()?;
+            Self::ensure_channel_migration_done(&channel_id)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -767,7 +767,7 @@ decl_module! {
         ) -> DispatchResult {
 
             // ensure migration is done
-            Self::ensure_channel_migration_done()?;
+            Self::ensure_channel_migration_done(&channel_id)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -833,7 +833,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // ensure migration finished
-            Self::ensure_channel_migration_done()?;
+            Self::ensure_channel_migration_done(&channel_id)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -978,6 +978,9 @@ decl_module! {
                 )?;
             }
 
+        // ensure that no channel migration is happening
+        Self::ensure_channel_migration_done(&channel_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -995,10 +998,11 @@ decl_module! {
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
-            // Only increment next video id if adding content was successful
+            // Only increment next video id
             NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
 
             // Add recently added video id to the channel
+
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos = channel.num_videos.saturating_add(1);
             });
@@ -1016,7 +1020,7 @@ decl_module! {
         ) {
 
             // ensure migration is done
-            Self::ensure_video_migration_done()?;
+            Self::ensure_video_migration_done(&video_id)?;
 
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1057,7 +1061,7 @@ decl_module! {
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
             // ensure migration is done
-            Self::ensure_video_migration_done()?;
+            Self::ensure_video_migration_done(&video_id)?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1079,6 +1083,8 @@ decl_module! {
 
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
+
+        Self::ensure_channel_migration_done(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1380,25 +1386,31 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure Channel Migration Finished
-    fn ensure_channel_migration_done() -> DispatchResult {
-        let MigrationConfigRecord {
-            current_id,
-            final_id,
-        } = <ChannelMigration<T>>::get();
-
-        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
-
-        Ok(())
-    }
 
     /// Ensure Video Migration Finished
-    fn ensure_video_migration_done() -> DispatchResult {
+    fn ensure_video_migration_done(video_id: &T::VideoId) -> DispatchResult {
         let MigrationConfigRecord {
             current_id,
             final_id,
         } = <VideoMigration<T>>::get();
 
-        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
+        ensure!(
+            *video_id < current_id || current_id == final_id,
+            Error::<T>::MigrationNotFinished
+        );
+
+        Ok(())
+    }
+    fn ensure_channel_migration_done(channel_id: &T::ChannelId) -> DispatchResult {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <ChannelMigration<T>>::get();
+
+        ensure!(
+            *channel_id < current_id || current_id == final_id,
+            Error::<T>::MigrationNotFinished
+        );
 
         Ok(())
     }
