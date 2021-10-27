@@ -179,7 +179,7 @@ async function updateSingleConnectedAsset<T extends Channel | Video>(
 }
 
 // removes connection between dataObject and other entities
-async function disconnectDataObjectRelations(db: DatabaseManager, dataObject: DataObject) {
+export async function disconnectDataObjectRelations(db: DatabaseManager, dataObject: DataObject) {
   await disconnectSingleDataObjectRelation(db, new Channel(), 'avatarPhoto', dataObject)
   await disconnectSingleDataObjectRelation(db, new Channel(), 'coverPhoto', dataObject)
 
