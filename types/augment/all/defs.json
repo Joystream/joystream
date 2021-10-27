@@ -601,7 +601,10 @@
         "assigned_bags": "u64"
     },
     "DistributionBucketFamily": {
-        "distribution_buckets": "BTreeMap<DistributionBucketId,{\"accepting_new_bags\":\"bool\"}>"
+        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucketState>"
+    },
+    "DistributionBucketState": {
+        "accepting_new_bags": "bool"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
