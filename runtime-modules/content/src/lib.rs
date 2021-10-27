@@ -1068,6 +1068,9 @@ decl_module! {
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
+        // ensure channel migration finished
+        Self::ensure_channel_migration_done(&channel_id)?;
+
             //
             // == MUTATION SAFE ==
             //

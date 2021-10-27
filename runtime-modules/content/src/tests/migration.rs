@@ -3,7 +3,7 @@
 use super::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
-use frame_support::assert_err;
+use frame_support::{assert_err, assert_ok};
 
 #[test]
 fn migration_test() {
@@ -55,28 +55,38 @@ fn migration_test() {
         // only 20 videos migrated so far (specifically 1..=20)
         run_to_block(2);
         assert_err!(
-            Content::delete_video(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                One::one(),
-                BTreeSet::new(),
-            ),
-            Error::<Test>::MigrationNotFinished
+            Content::ensure_video_migration_done(&<Test as Trait>::VideoId::from(50u64)),
+            Error::<Test>::MigrationNotFinished,
         );
         assert_err!(
-            Content::delete_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                One::one(),
-                0u64,
-            ),
-            Error::<Test>::MigrationNotFinished
+            Content::ensure_channel_migration_done(&<Test as storage::Trait>::ChannelId::from(
+                50u64
+            )),
+            Error::<Test>::MigrationNotFinished,
         );
 
         run_to_block(6); // video migration finished 5 blocks later
+        assert_ok!(Content::ensure_video_migration_done(
+            &<Test as Trait>::VideoId::from(50u64)
+        ));
+        assert_err!(
+            Content::ensure_channel_migration_done(&<Test as storage::Trait>::ChannelId::from(
+                60u64
+            )),
+            Error::<Test>::MigrationNotFinished,
+        );
+
+        // cannot update corresponding channel because migration is happening
         assert_eq!(VideoById::<Test>::iter().count(), 0);
 
         run_to_block(11); // channel migration finished 10 blocks later
+        assert_ok!(Content::ensure_video_migration_done(
+            &<Test as Trait>::VideoId::from(50u64)
+        ));
+        assert_ok!(Content::ensure_channel_migration_done(
+            &<Test as storage::Trait>::ChannelId::from(60u64)
+        ));
+
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
     })
 }
