@@ -118,6 +118,10 @@ pub trait Trait:
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct MigrationConfigRecord<NumericId> {
+    // at each block the videos/channels removed will be those with id in the
+    // half open range [current_id, final_id).
+    // when migration is triggered final_id will be updated
+    // when migration is performed current_id will be updated
     pub current_id: NumericId,
     pub final_id: NumericId,
 }
@@ -1318,7 +1322,7 @@ impl<T: Trait> Module<T> {
             final_id,
         } = <VideoMigration<T>>::get();
 
-        if current_id != final_id {
+        if current_id < final_id {
             // perform migration procedure
             let next_id = sp_std::cmp::min(
                 current_id + T::VideosMigrationsEachBlock::get().into(),
@@ -1346,7 +1350,7 @@ impl<T: Trait> Module<T> {
             final_id,
         } = <ChannelMigration<T>>::get();
 
-        if current_id != final_id {
+        if current_id < final_id {
             // perform migration procedure
             let next_id = sp_std::cmp::min(
                 current_id + T::ChannelsMigrationsEachBlock::get().into(),
