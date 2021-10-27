@@ -108,10 +108,10 @@ pub trait Trait:
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
     /// Video migrated in each block during migration
-    type VideosMigratedEachBlock: Get<u64>;
+    type VideosMigrationsEachBlock: Get<u64>;
 
     /// Channel migrated in each block during migration
-    type ChannelsMigratedEachBlock: Get<u64>;
+    type ChannelsMigrationsEachBlock: Get<u64>;
 }
 
 /// Data structure in order to keep track of the migration
@@ -832,6 +832,9 @@ decl_module! {
             is_censored: bool,
             rationale: Vec<u8>,
         ) {
+            // ensure migration finished
+            Self::ensure_channel_migration_done()?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -1330,7 +1333,7 @@ impl<T: Trait> Module<T> {
         if current_id != final_id {
             // perform migration procedure
             let next_id = sp_std::cmp::min(
-                current_id + T::VideosMigratedEachBlock::get().into(),
+                current_id + T::VideosMigrationsEachBlock::get().into(),
                 final_id,
             );
 
@@ -1358,7 +1361,7 @@ impl<T: Trait> Module<T> {
         if current_id != final_id {
             // perform migration procedure
             let next_id = sp_std::cmp::min(
-                current_id + T::ChannelsMigratedEachBlock::get().into(),
+                current_id + T::ChannelsMigrationsEachBlock::get().into(),
                 final_id,
             );
 

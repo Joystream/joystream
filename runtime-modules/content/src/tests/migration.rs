@@ -3,6 +3,7 @@
 use super::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use frame_support::assert_err;
 
 #[test]
 fn migration_test() {
@@ -11,61 +12,71 @@ fn migration_test() {
 
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(10_000u32),
         );
 
-        let channel_id = Content::next_channel_id();
-
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: Some(vec![]),
-                reward_account: None,
-            },
-            Ok(()),
-        );
+        // create 100 channels
+        for _ in 1..101 {
+            create_channel_mock(
+                FIRST_MEMBER_ORIGIN,
+                ContentActor::Member(FIRST_MEMBER_ID),
+                ChannelCreationParametersRecord {
+                    assets: None,
+                    meta: Some(vec![]),
+                    reward_account: None,
+                },
+                Ok(()),
+            );
+        }
 
         let params = VideoCreationParametersRecord {
-            assets: Some(StorageAssetsRecord {
-                object_creation_list: vec![
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"first".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"second".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"third".to_vec(),
-                    },
-                ],
-                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-            }),
-            meta: Some(b"test".to_vec()),
+            assets: None,
+            meta: None,
         };
 
-        create_video_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id,
-            params.clone(),
-            Ok(()),
-        );
+        // create 100 videos
+        for channel_id in 1..101 {
+            create_video_mock(
+                FIRST_MEMBER_ORIGIN,
+                ContentActor::Member(FIRST_MEMBER_ID),
+                channel_id,
+                params.clone(),
+                Ok(()),
+            );
+        }
 
-        // 1 channel & 1 video
-        assert_eq!(VideoById::<Test>::iter().count(), 1);
-        assert_eq!(ChannelById::<Test>::iter().count(), 1);
+        // 1 channel & 100 video
+        assert_eq!(VideoById::<Test>::iter().count(), 100);
+        assert_eq!(ChannelById::<Test>::iter().count(), 100);
 
-        // performing migration
+        // triggering migration
         Content::on_runtime_upgrade();
 
-        // assertions
-        run_to_block(10);
+        // only 20 videos migrated so far (specifically 1..=20)
+        run_to_block(2);
+        assert_err!(
+            Content::delete_video(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Member(FIRST_MEMBER_ID),
+                One::one(),
+                BTreeSet::new(),
+            ),
+            Error::<Test>::MigrationNotFinished
+        );
+        assert_err!(
+            Content::delete_channel(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Member(FIRST_MEMBER_ID),
+                One::one(),
+                0u64,
+            ),
+            Error::<Test>::MigrationNotFinished
+        );
+
+        run_to_block(6); // video migration finished 5 blocks later
         assert_eq!(VideoById::<Test>::iter().count(), 0);
+
+        run_to_block(11); // channel migration finished 10 blocks later
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
     })
 }
