@@ -717,11 +717,8 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
-            // ensure migration is done
-            Self::ensure_channel_migration_done(&channel_id)?;
-
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -766,11 +763,8 @@ decl_module! {
             num_objects_to_delete: u64,
         ) -> DispatchResult {
 
-            // ensure migration is done
-            Self::ensure_channel_migration_done(&channel_id)?;
-
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             // ensure permissions
             ensure_actor_authorized_to_update_channel::<T>(
@@ -832,11 +826,8 @@ decl_module! {
             is_censored: bool,
             rationale: Vec<u8>,
         ) {
-            // ensure migration finished
-            Self::ensure_channel_migration_done(&channel_id)?;
-
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             if channel.is_censored == is_censored {
                 return Ok(())
@@ -958,7 +949,7 @@ decl_module! {
         ) {
 
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -977,9 +968,6 @@ decl_module! {
                     &channel.deletion_prize_source_account_id
                 )?;
             }
-
-        // ensure that no channel migration is happening
-        Self::ensure_channel_migration_done(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1019,11 +1007,8 @@ decl_module! {
             params: VideoUpdateParameters<T>,
         ) {
 
-            // ensure migration is done
-            Self::ensure_video_migration_done(&video_id)?;
-
             // check that video exists, retrieve corresponding channel id.
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
@@ -1060,16 +1045,15 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-            // ensure migration is done
-            Self::ensure_video_migration_done(&video_id)?;
-
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // get information regarding channel
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
 
+        // ensure channel migration is finished
+            Self::ensure_channel_migration_done(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -1083,8 +1067,6 @@ decl_module! {
 
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
-
-        Self::ensure_channel_migration_done(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1265,7 +1247,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             if video.is_censored == is_censored {
                 return Ok(())
@@ -1434,7 +1416,9 @@ impl<T: Trait> Module<T> {
         Ok(Self::curator_group_by_id(curator_group_id))
     }
 
-    fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+    fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+        let _ = Self::ensure_channel_migration_done(channel_id);
+
         ensure!(
             ChannelById::<T>::contains_key(channel_id),
             Error::<T>::ChannelDoesNotExist
@@ -1442,7 +1426,8 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+    fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+        let _ = Self::ensure_video_migration_done(video_id);
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
