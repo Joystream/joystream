@@ -40,9 +40,6 @@ pub use common::{
     AssetUrls, MembershipTypes, StorageOwnership,
 };
 
-// alias for weight type
-type Weight = u64;
-
 type Storage<T> = storage::Module<T>;
 
 /// Type, used in diffrent numeric constraints representations
@@ -1305,11 +1302,11 @@ decl_module! {
             Self::not_implemented()?;
         }
 
-        fn on_initialize(_n: T::BlockNumber) -> Weight {
+        fn on_initialize(_n: T::BlockNumber) -> frame_support::weights::Weight {
             Self::perform_video_migration();
             Self::perform_channel_migration();
 
-            10_000_000
+            10_000_000 // TODO: adjust Weight
         }
     }
 }
