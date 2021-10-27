@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import types from '@joystream/sumer-types/augment/all/defs.json'
+import types from '@joystream/types/augment/all/defs.json'
 
 export default async function createApi(): Promise<ApiPromise> {
   // Get URL to websocket endpoint from environment or connect to local node by default
