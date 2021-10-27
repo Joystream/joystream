@@ -92,13 +92,9 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         let default_content_working_group_mint_capacity = 0;
 
-        OperationsWorkingGroupAlpha::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
+        // Do not init persisted working group module instances
+        // OperationsWorkingGroupAlpha (previously OperationsWorkingGroup)
+        // ContentWorkingGroup (previously ContentDirectoryWorkingGroup)
 
         OperationsWorkingGroupBeta::<Runtime>::initialize_working_group(
             default_text_constraint,
@@ -109,14 +105,6 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
         );
 
         OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        ContentWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
