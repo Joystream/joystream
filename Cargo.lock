@@ -2342,7 +2342,6 @@ dependencies = [
  "joystream-node-runtime",
  "jsonrpc-core",
  "node-inspect",
- "pallet-content",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-transaction-payment",
