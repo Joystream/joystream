@@ -55,24 +55,13 @@ fn migration_test() {
         // only 20 videos migrated so far (specifically 1..=20)
         run_to_block(2);
         assert_err!(
-            Content::ensure_video_migration_done(&<Test as Trait>::VideoId::from(50u64)),
-            Error::<Test>::MigrationNotFinished,
-        );
-        assert_err!(
-            Content::ensure_channel_migration_done(&<Test as storage::Trait>::ChannelId::from(
-                50u64
-            )),
+            Content::ensure_migration_done(),
             Error::<Test>::MigrationNotFinished,
         );
 
         run_to_block(6); // video migration finished 5 blocks later
-        assert_ok!(Content::ensure_video_migration_done(
-            &<Test as Trait>::VideoId::from(50u64)
-        ));
         assert_err!(
-            Content::ensure_channel_migration_done(&<Test as storage::Trait>::ChannelId::from(
-                60u64
-            )),
+            Content::ensure_migration_done(),
             Error::<Test>::MigrationNotFinished,
         );
 
@@ -80,12 +69,7 @@ fn migration_test() {
         assert_eq!(VideoById::<Test>::iter().count(), 0);
 
         run_to_block(11); // channel migration finished 10 blocks later
-        assert_ok!(Content::ensure_video_migration_done(
-            &<Test as Trait>::VideoId::from(50u64)
-        ));
-        assert_ok!(Content::ensure_channel_migration_done(
-            &<Test as storage::Trait>::ChannelId::from(60u64)
-        ));
+        assert_ok!(Content::ensure_migration_done());
 
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
     })

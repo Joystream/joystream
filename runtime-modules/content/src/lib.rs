@@ -662,6 +662,9 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<T>,
         ) {
+            // ensure migration is done
+            Self::ensure_migration_done()?;
+
             ensure_actor_authorized_to_create_channel::<T>(
                 origin.clone(),
                 &actor,
@@ -1052,9 +1055,6 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
 
-        // ensure channel migration is finished
-            Self::ensure_channel_migration_done(&channel_id)?;
-
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
@@ -1067,9 +1067,6 @@ decl_module! {
 
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
-
-        // ensure channel migration finished
-        Self::ensure_channel_migration_done(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1373,29 +1370,20 @@ impl<T: Trait> Module<T> {
     /// Ensure Channel Migration Finished
 
     /// Ensure Video Migration Finished
-    fn ensure_video_migration_done(video_id: &T::VideoId) -> DispatchResult {
+    fn ensure_migration_done() -> DispatchResult {
         let MigrationConfigRecord {
             current_id,
             final_id,
         } = <VideoMigration<T>>::get();
 
-        ensure!(
-            *video_id < current_id || current_id == final_id,
-            Error::<T>::MigrationNotFinished
-        );
+        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
 
-        Ok(())
-    }
-    fn ensure_channel_migration_done(channel_id: &T::ChannelId) -> DispatchResult {
         let MigrationConfigRecord {
             current_id,
             final_id,
         } = <ChannelMigration<T>>::get();
 
-        ensure!(
-            *channel_id < current_id || current_id == final_id,
-            Error::<T>::MigrationNotFinished
-        );
+        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
 
         Ok(())
     }
@@ -1420,7 +1408,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
-        let _ = Self::ensure_channel_migration_done(channel_id);
+        let _ = Self::ensure_migration_done();
 
         ensure!(
             ChannelById::<T>::contains_key(channel_id),
@@ -1430,7 +1418,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
-        let _ = Self::ensure_video_migration_done(video_id);
+        let _ = Self::ensure_migration_done();
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
