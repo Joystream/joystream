@@ -664,7 +664,7 @@ decl_module! {
             params: ChannelCreationParameters<T>,
         ) {
             // ensure migration is done
-            Self::ensure_migration_done()?;
+             ensure!(Self::ensure_migration_done(), Error::<T>::MigrationNotFinished);
 
             ensure_actor_authorized_to_create_channel::<T>(
                 origin.clone(),
@@ -1371,22 +1371,22 @@ impl<T: Trait> Module<T> {
     /// Ensure Channel Migration Finished
 
     /// Ensure Video Migration Finished
-    fn ensure_migration_done() -> DispatchResult {
+    fn ensure_migration_done() -> bool {
         let MigrationConfigRecord {
             current_id,
             final_id,
         } = <VideoMigration<T>>::get();
 
-        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
+        let video_migration_done = current_id == final_id;
 
         let MigrationConfigRecord {
             current_id,
             final_id,
         } = <ChannelMigration<T>>::get();
 
-        ensure!(current_id == final_id, Error::<T>::MigrationNotFinished);
+        let channel_migration_done = current_id == final_id;
 
-        Ok(())
+        return video_migration_done && channel_migration_done;
     }
 
     /// Ensure `CuratorGroup` under given id exists
@@ -1409,8 +1409,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
-        let _ = Self::ensure_migration_done();
+        // ensure migration is done
+        ensure!(
+            Self::ensure_migration_done(),
+            Error::<T>::MigrationNotFinished,
+        );
 
+        // ensure channel exists
         ensure!(
             ChannelById::<T>::contains_key(channel_id),
             Error::<T>::ChannelDoesNotExist
@@ -1419,7 +1424,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
-        let _ = Self::ensure_migration_done();
+        // ensure migration is done
+        ensure!(
+            Self::ensure_migration_done(),
+            Error::<T>::MigrationNotFinished,
+        );
+
+        // ensure video exists
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
