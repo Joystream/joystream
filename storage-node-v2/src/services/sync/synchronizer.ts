@@ -31,6 +31,7 @@ export async function performSync(
   asyncWorkersNumber: number,
   queryNodeUrl: string,
   uploadDirectory: string,
+  tempDirectory: string,
   operatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
@@ -52,9 +53,9 @@ export async function performSync(
 
   let addedTasks: SyncTask[]
   if (operatorUrl === undefined) {
-    addedTasks = await getPrepareDownloadTasks(model, added, uploadDirectory, workingStack)
+    addedTasks = await getPrepareDownloadTasks(model, added, uploadDirectory, tempDirectory, workingStack)
   } else {
-    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory)
+    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory)
   }
 
   logger.debug(`Sync - started processing...`)
@@ -74,50 +75,52 @@ export async function performSync(
  * @param dataObligations - defines the current data obligations for the node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
+ * @param tempDirectory - local directory for temporary data uploading
  * @param taskSink - a destination for the newly created tasks
  */
 async function getPrepareDownloadTasks(
   dataObligations: DataObligations,
   addedIds: string[],
   uploadDirectory: string,
+  tempDirectory: string,
   taskSink: TaskSink
 ): Promise<PrepareDownloadFileTask[]> {
-  const idMap = new Map()
+  const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
-    idMap.set(entry.id, entry.bagId)
+    bagIdByDataObjectId.set(entry.id, entry.bagId)
   }
 
-  const bucketMap = new Map()
+  const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    bucketMap.set(entry.id, entry.operatorUrl)
+    bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
   }
 
-  const bagMap = new Map()
+  const bagOperatorsUrlsById = new Map()
   for (const entry of dataObligations.bags) {
     const operatorUrls = []
 
     for (const bucket of entry.buckets) {
-      if (bucketMap.has(bucket)) {
-        const operatorUrl = bucketMap.get(bucket)
+      if (bucketOperatorUrlById.has(bucket)) {
+        const operatorUrl = bucketOperatorUrlById.get(bucket)
         if (operatorUrl) {
           operatorUrls.push(operatorUrl)
         }
       }
     }
 
-    bagMap.set(entry.id, operatorUrls)
+    bagOperatorsUrlsById.set(entry.id, operatorUrls)
   }
 
   const tasks = addedIds.map((id) => {
     let operatorUrls: string[] = [] // can be empty after look up
-    if (idMap.has(id)) {
-      const bagid = idMap.get(id)
-      if (bagMap.has(bagid)) {
-        operatorUrls = bagMap.get(bagid)
+    if (bagIdByDataObjectId.has(id)) {
+      const bagid = bagIdByDataObjectId.get(id)
+      if (bagOperatorsUrlsById.has(bagid)) {
+        operatorUrls = bagOperatorsUrlsById.get(bagid)
       }
     }
 
-    return new PrepareDownloadFileTask(operatorUrls, id, uploadDirectory, taskSink)
+    return new PrepareDownloadFileTask(operatorUrls, id, uploadDirectory, tempDirectory, taskSink)
   })
 
   return tasks
@@ -129,13 +132,17 @@ async function getPrepareDownloadTasks(
  * @param operatorUrl - defines the data source URL.
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
+ * @param tempDirectory - local directory for temporary data uploading
  */
 async function getDownloadTasks(
   operatorUrl: string,
   addedIds: string[],
-  uploadDirectory: string
+  uploadDirectory: string,
+  tempDirectory: string
 ): Promise<DownloadFileTask[]> {
-  const addedTasks = addedIds.map((fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory))
+  const addedTasks = addedIds.map(
+    (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory, tempDirectory)
+  )
 
   return addedTasks
 }

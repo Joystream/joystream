@@ -54,11 +54,13 @@ export class DeleteLocalFileTask implements SyncTask {
 export class DownloadFileTask implements SyncTask {
   id: string
   uploadsDirectory: string
+  tempDirectory: string
   url: string
 
-  constructor(baseUrl: string, id: string, uploadsDirectory: string) {
+  constructor(baseUrl: string, id: string, uploadsDirectory: string, tempDirectory: string) {
     this.id = id
     this.uploadsDirectory = uploadsDirectory
+    this.tempDirectory = tempDirectory
     this.url = urljoin(baseUrl, 'api/v1/files', id)
   }
 
@@ -78,18 +80,18 @@ export class DownloadFileTask implements SyncTask {
 
       // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
       // This partial downloads will be cleaned up during the next sync iteration.
-      const tempFilePath = path.join(this.uploadsDirectory, uuidv4())
+      const tempFilePath = path.join(this.tempDirectory, uuidv4())
       const fileStream = fs.createWriteStream(tempFilePath)
       await streamPipeline(request, fileStream)
 
       await fsPromises.rename(tempFilePath, filepath)
     } catch (err) {
-      logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
+      logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
       try {
         logger.warn(`Cleaning up file ${filepath}`)
-        await fs.unlinkSync(filepath)
+        await fsPromises.unlink(filepath)
       } catch (err) {
-        logger.error(`Sync - cannot cleanup file ${filepath}: ${err}`)
+        logger.error(`Sync - cannot cleanup file ${filepath}: ${err}`, { err })
       }
     }
   }
@@ -103,12 +105,20 @@ export class PrepareDownloadFileTask implements SyncTask {
   operatorUrlCandidates: string[]
   taskSink: TaskSink
   uploadsDirectory: string
+  tempDirectory: string
 
-  constructor(operatorUrlCandidates: string[], dataObjectId: string, uploadsDirectory: string, taskSink: TaskSink) {
+  constructor(
+    operatorUrlCandidates: string[],
+    dataObjectId: string,
+    uploadsDirectory: string,
+    tempDirectory: string,
+    taskSink: TaskSink
+  ) {
     this.dataObjectId = dataObjectId
     this.taskSink = taskSink
     this.operatorUrlCandidates = operatorUrlCandidates
     this.uploadsDirectory = uploadsDirectory
+    this.tempDirectory = tempDirectory
   }
 
   description(): string {
@@ -139,12 +149,17 @@ export class PrepareDownloadFileTask implements SyncTask {
         const remoteOperatorIds: string[] = await getRemoteDataObjects(chosenBaseUrl)
 
         if (remoteOperatorIds.includes(this.dataObjectId)) {
-          const newTask = new DownloadFileTask(chosenBaseUrl, this.dataObjectId, this.uploadsDirectory)
+          const newTask = new DownloadFileTask(
+            chosenBaseUrl,
+            this.dataObjectId,
+            this.uploadsDirectory,
+            this.tempDirectory
+          )
 
           return this.taskSink.add([newTask])
         }
       } catch (err) {
-        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`)
+        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
       }
     }
 

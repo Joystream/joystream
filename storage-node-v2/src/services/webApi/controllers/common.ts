@@ -2,6 +2,7 @@ import * as express from 'express'
 import { CLIError } from '@oclif/errors'
 import { ExtrinsicFailedError } from '../../runtime/api'
 import { BagIdValidationError } from '../../helpers/bagTypes'
+import logger from '../../logger'
 
 /**
  * Dedicated error for the web api requests.
@@ -113,6 +114,7 @@ export function getCommandConfig(res: express.Response): {
  */
 export function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
   const message = isNofileError(err) ? `File not found.` : err.toString()
+  logger.error(message, { err })
 
   res.status(getHttpStatusCodeByError(err)).json({
     type: errorType,
@@ -147,10 +149,6 @@ export function getHttpStatusCodeByError(err: Error): number {
 
   if (err instanceof WebApiError) {
     return err.httpStatusCode
-  }
-
-  if (err instanceof CLIError) {
-    return 400
   }
 
   if (err instanceof BagIdValidationError) {

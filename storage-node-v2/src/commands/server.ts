@@ -103,6 +103,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         flags.worker,
         flags.queryNodeEndpoint,
         flags.uploads,
+        TempDirName,
         flags.syncWorkersNumber,
         flags.syncInterval
       )
@@ -150,6 +151,7 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @param workerId - worker ID
  * @param queryNodeUrl - Query Node for data fetching
  * @param uploadsDir - data uploading directory
+ * @param tempDirectory - temporary data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync
  * @param syncIntervalMinutes - defines an interval between sync runs
  *
@@ -159,6 +161,7 @@ function runSyncWithInterval(
   workerId: number,
   queryNodeUrl: string,
   uploadsDirectory: string,
+  tempDirectory: string,
   syncWorkersNumber: number,
   syncIntervalMinutes: number
 ) {
@@ -170,12 +173,12 @@ function runSyncWithInterval(
     logger.info(`Resume syncing....`)
 
     try {
-      await performSync(workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory)
+      await performSync(workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory, tempDirectory)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
     }
 
-    runSyncWithInterval(workerId, queryNodeUrl, uploadsDirectory, syncWorkersNumber, syncIntervalMinutes)
+    runSyncWithInterval(workerId, queryNodeUrl, uploadsDirectory, tempDirectory, syncWorkersNumber, syncIntervalMinutes)
   }, 0)
 }
 
