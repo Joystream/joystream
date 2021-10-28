@@ -16,6 +16,7 @@ ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
 # The docker image tag to use for joystream/node as the starting chain
 # that will be upgraded to the latest runtime.
 RUNTIME=${RUNTIME:=latest}
+TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 
 mkdir -p ${DATA_PATH}
 
@@ -70,9 +71,58 @@ function cleanup() {
     docker rm ${CONTAINER_ID}
 }
 
+export AUTO_CONFIRM=true
+function pre_migration_hook() {
+sleep 5 # needed otherwise docker image won't be ready yet
+joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+echo "creating 1 channel"
+joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+echo "adding 1 video to the above channel"
+joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+}
+
+function post_migration_hook() {
+echo "*** verify existence of the 5 new groups ***"
+yarn joystream-cli working-groups:overview --group=operationsAlpha
+yarn joystream-cli working-groups:overview --group=operationsBeta
+yarn joystream-cli working-groups:overview --group=operationsGamma
+yarn joystream-cli working-groups:overview --group=curators
+yarn joystream-cli working-groups:overview --group=distributors
+
+echo "*** verify previously created channel and video are cleared ***"
+yarn joystream-cli content:videos 1
+yarn joystream-cli content:channel 1
+}    
+
 trap cleanup EXIT
+
+if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
+  echo "Not Performing a runtime upgrade."
+else
+    # pre migration hook
+    pre_migration_hook
+    
+  # Copy new runtime wasm file from target joystream/node image
+  echo "Extracting wasm blob from target joystream/node image."
+  id=`docker create joystream/node:${TARGET_RUNTIME}`
+  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
+  docker rm $id
+
+  # Display runtime version before runtime upgrade
+  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
+
+  echo "Performing runtime upgrade."
+  yarn workspace api-scripts tsnode-strict \
+    src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
+
+  echo "Runtime upgraded."
+
+  echo "Performing migration tests"
+  # post migration hook
+  post_migration_hook
+  echo "Done with migrations tests"
+fi
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-./run-test-scenario.sh $1
