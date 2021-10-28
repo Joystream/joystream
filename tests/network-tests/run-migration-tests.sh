@@ -18,6 +18,8 @@ ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
 RUNTIME=${RUNTIME:=latest}
 TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 
+AUTO_CONFIRM=true
+
 mkdir -p ${DATA_PATH}
 
 echo "{
@@ -69,9 +71,11 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+    rm tests/network-tests/assets/TestChannel__rejectedContent.json
+    rm tests/network-tests/assets/TestVideo__rejectedContent.json
+    
 }
 
-export AUTO_CONFIRM=true
 function pre_migration_hook() {
 sleep 5 # needed otherwise docker image won't be ready yet
 joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
