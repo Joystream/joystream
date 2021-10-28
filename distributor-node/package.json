@@ -41,7 +41,9 @@
     "inquirer": "^8.1.2",
     "multihashes": "^4.0.3",
     "blake3": "^2.1.4",
-    "js-image-generator": "^1.0.3"
+    "js-image-generator": "^1.0.3",
+    "url-join": "^4.0.1",
+    "@types/url-join": "^4.0.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

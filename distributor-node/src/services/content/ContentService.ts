@@ -91,6 +91,12 @@ export class ContentService {
         continue
       }
 
+      // Drop files that are missing in the cache
+      if (!this.stateCache.peekContent(objectId)) {
+        this.drop(objectId, 'Missing cache data')
+        continue
+      }
+
       // Compare file size to expected one
       const { size: dataObjectSize } = dataObject
       if (fileSize !== dataObjectSize) {
@@ -222,7 +228,17 @@ export class ContentService {
       let bytesReceived = 0
       const hash = new ContentHash()
 
+      const onData = (chunk: Buffer) => {
+        bytesReceived += chunk.length
+        hash.update(chunk)
+
+        if (bytesReceived > expectedSize) {
+          dataStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
+        }
+      }
+
       pipeline(dataStream, fileStream, async (err) => {
+        dataStream.off('data', onData)
         const { bytesWritten } = fileStream
         const finalHash = hash.digest()
         const logMetadata = {
@@ -267,18 +283,7 @@ export class ContentService {
         // Note: The promise is resolved on "ready" event, since that's what's awaited in the current flow
         resolve()
       })
-
-      dataStream.on('data', (chunk) => {
-        if (dataStream.destroyed) {
-          return
-        }
-        bytesReceived += chunk.length
-        hash.update(chunk)
-
-        if (bytesReceived > expectedSize) {
-          dataStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
-        }
-      })
+      dataStream.on('data', onData)
     })
   }
 
@@ -290,7 +295,7 @@ export class ContentService {
     }
 
     if (pendingDownload) {
-      return { type: ObjectStatusType.PendingDownload, pendingDownloadData: pendingDownload }
+      return { type: ObjectStatusType.PendingDownload, pendingDownload }
     }
 
     const objectInfo = await this.networking.dataObjectInfo(objectId)

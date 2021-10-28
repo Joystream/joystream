@@ -25,6 +25,8 @@ export class HttpApiService {
     handler: (req: express.Request<T>, res: express.Response, next: express.NextFunction) => Promise<void>
   ) {
     return async (req: express.Request<T>, res: express.Response, next: express.NextFunction) => {
+      // Fix for express-winston in order to also log prematurely closed requests
+      res.on('close', () => res.end())
       try {
         await handler(req, res, next)
       } catch (err) {
@@ -78,6 +80,8 @@ export class HttpApiService {
       expressWinston.errorLogger({
         winstonInstance: this.logger,
         level: 'error',
+        metaField: null,
+        exceptionToMeta: (err) => ({ err }),
       })
     )
 

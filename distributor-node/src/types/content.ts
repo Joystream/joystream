@@ -1,5 +1,6 @@
 import { AxiosResponse } from 'axios'
 import { Readable } from 'stream'
+import { PendingDownload } from '../services/networking/PendingDownload'
 
 export type StorageNodeEndpointData = {
   bucketId: string
@@ -30,18 +31,6 @@ export type DataObjectInfo = {
   data?: DataObjectData
 }
 
-export enum PendingDownloadStatus {
-  Waiting = 'Waiting',
-  LookingForSource = 'LookingForSource',
-  Downloading = 'Downloading',
-}
-
-export type PendingDownloadData = {
-  objectSize: number
-  status: PendingDownloadStatus
-  promise: Promise<StorageNodeDownloadResponse>
-}
-
 export enum ObjectStatusType {
   Available = 'Available',
   PendingDownload = 'PendingDownload',
@@ -57,7 +46,7 @@ export type ObjectStatusAvailable = {
 
 export type ObjectStatusPendingDownload = {
   type: ObjectStatusType.PendingDownload
-  pendingDownloadData: PendingDownloadData
+  pendingDownload: PendingDownload
 }
 
 export type ObjectStatusNotFound = {

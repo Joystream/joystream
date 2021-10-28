@@ -22,7 +22,8 @@ const pausedLogs = new NodeCache({
 })
 
 // Pause log for a specified time period
-const pauseFormat: (opts: { id: string }) => Format = winston.format((info, opts: { id: string }) => {
+type PauseFormatOpts = { id: string }
+const pauseFormat: (opts: PauseFormatOpts) => Format = winston.format((info, opts: PauseFormatOpts) => {
   if (info['@pauseFor']) {
     const messageHash = blake2AsHex(`${opts.id}:${info.level}:${info.message}`)
     if (!pausedLogs.has(messageHash)) {
@@ -37,8 +38,20 @@ const pauseFormat: (opts: { id: string }) => Format = winston.format((info, opts
   return info
 })
 
+// Error format applied to specific log meta field
+type ErrorFormatOpts = { filedName: string }
+const errorFormat: (opts: ErrorFormatOpts) => Format = winston.format((info, opts: ErrorFormatOpts) => {
+  if (!info[opts.filedName]) {
+    return info
+  }
+  const formatter = winston.format.errors({ stack: true })
+  info[opts.filedName] = formatter.transform(info[opts.filedName], formatter.options)
+  return info
+})
+
 const cliFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  errorFormat({ filedName: 'err' }),
   winston.format.metadata({ fillExcept: ['label', 'level', 'timestamp', 'message'] }),
   winston.format.colorize({ all: true }),
   winston.format.printf(

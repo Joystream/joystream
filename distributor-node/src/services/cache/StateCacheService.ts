@@ -1,9 +1,10 @@
 import { Logger } from 'winston'
-import { PendingDownloadData, PendingDownloadStatus, ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
+import { ReadonlyConfig } from '../../types'
 import { LoggingService } from '../logging'
 import _ from 'lodash'
 import fs from 'fs'
 import NodeCache from 'node-cache'
+import { PendingDownload } from '../networking/PendingDownload'
 
 // LRU-SP cache parameters
 // Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
@@ -28,7 +29,7 @@ export class StateCacheService {
   private cacheFilePath: string
 
   private memoryState = {
-    pendingDownloadsByObjectId: new Map<string, PendingDownloadData>(),
+    pendingDownloadsByObjectId: new Map<string, PendingDownload>(),
     storageNodeEndpointDataByEndpoint: new Map<string, StorageNodeEndpointData>(),
     groupNumberByObjectId: new Map<string, number>(),
     dataObjectSourceByObjectId: new NodeCache({
@@ -146,17 +147,8 @@ export class StateCacheService {
     return bestCandidate
   }
 
-  public newPendingDownload(
-    objectId: string,
-    objectSize: number,
-    promise: Promise<StorageNodeDownloadResponse>
-  ): PendingDownloadData {
-    const pendingDownload: PendingDownloadData = {
-      status: PendingDownloadStatus.Waiting,
-      objectSize,
-      promise,
-    }
-    this.memoryState.pendingDownloadsByObjectId.set(objectId, pendingDownload)
+  public addPendingDownload(pendingDownload: PendingDownload): PendingDownload {
+    this.memoryState.pendingDownloadsByObjectId.set(pendingDownload.getObjectId(), pendingDownload)
     return pendingDownload
   }
 
@@ -164,12 +156,16 @@ export class StateCacheService {
     return this.memoryState.pendingDownloadsByObjectId.size
   }
 
-  public getPendingDownload(objectId: string): PendingDownloadData | undefined {
+  public getPendingDownload(objectId: string): PendingDownload | undefined {
     return this.memoryState.pendingDownloadsByObjectId.get(objectId)
   }
 
   public dropPendingDownload(objectId: string): void {
-    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    const pendingDownload = this.memoryState.pendingDownloadsByObjectId.get(objectId)
+    if (pendingDownload) {
+      pendingDownload.cleanup()
+      this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    }
   }
 
   public dropById(objectId: string): void {

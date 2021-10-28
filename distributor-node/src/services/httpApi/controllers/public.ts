@@ -8,6 +8,8 @@ import { LoggingService } from '../../logging'
 import { ContentService, DEFAULT_CONTENT_TYPE } from '../../content/ContentService'
 import proxy from 'express-http-proxy'
 import { DataObjectData, ObjectStatusType, ReadonlyConfig } from '../../../types'
+import { PendingDownloadStatusDownloading, PendingDownloadStatusType } from '../../networking/PendingDownload'
+import urljoin from 'url-join'
 
 const CACHED_MAX_AGE = 31536000
 const PENDING_MAX_AGE = 180
@@ -37,6 +39,32 @@ export class PublicApiController {
     return { type, message }
   }
 
+  private async proxyAssetRequest(
+    req: express.Request<AssetRouteParams>,
+    res: express.Response,
+    next: express.NextFunction,
+    objectId: string,
+    sourceApiEndpoint: string
+  ) {
+    const sourceObjectUrl = new URL(urljoin(sourceApiEndpoint, `files/${objectId}`))
+    res.setHeader('x-data-source', 'external')
+    this.logger.verbose(`Forwarding request to ${sourceObjectUrl.toString()}`, {
+      objectId,
+      sourceUrl: sourceObjectUrl.href,
+    })
+    return proxy(sourceObjectUrl.origin, {
+      proxyReqPathResolver: () => sourceObjectUrl.pathname,
+      proxyErrorHandler: (err, res, next) => {
+        this.logger.error(`Proxy request to ${sourceObjectUrl} failed!`, {
+          objectId,
+          sourceObjectUrl: sourceObjectUrl.href,
+        })
+        this.stateCache.dropCachedDataObjectSource(objectId, sourceApiEndpoint)
+        next(err)
+      },
+    })(req, res, next)
+  }
+
   private async serveMissingAsset(
     req: express.Request<AssetRouteParams>,
     res: express.Response,
@@ -52,22 +80,9 @@ export class PublicApiController {
         size,
         maxCachedItemSize,
       })
-      const sourceRootApiEndpoint = await this.networking.getDataObjectDownloadSource(objectData)
-      const sourceUrl = new URL(`files/${objectId}`, `${sourceRootApiEndpoint}/`)
+      const source = await this.networking.getDataObjectDownloadSource(objectData)
       res.setHeader('x-cache', 'miss')
-      res.setHeader('x-data-source', 'external')
-      this.logger.info(`Proxying request to ${sourceUrl.toString()}`, { objectId, sourceUrl: sourceUrl.toString() })
-      return proxy(sourceUrl.origin, {
-        proxyReqPathResolver: () => sourceUrl.pathname,
-        proxyErrorHandler: (err, res, next) => {
-          this.logger.error(`Proxy request to ${sourceUrl} failed!`, {
-            objectId,
-            sourceUrl: sourceUrl.toString(),
-          })
-          this.stateCache.dropCachedDataObjectSource(objectId, sourceRootApiEndpoint)
-          next(err)
-        },
-      })(req, res, next)
+      return this.proxyAssetRequest(req, res, next, objectId, source)
     }
 
     const downloadResponse = await this.networking.downloadDataObject({ objectData })
@@ -88,6 +103,7 @@ export class PublicApiController {
     next: express.NextFunction,
     objectId: string
   ): void {
+    this.logger.verbose('Serving object from filesystem', { objectId })
     // TODO: Limit the number of times useContent is trigerred for similar requests?
     // (for example: same ip, 3 different request within a minute = 1 request)
     this.stateCache.useContent(objectId)
@@ -131,12 +147,13 @@ export class PublicApiController {
     if (!pendingDownload) {
       throw new Error('Trying to serve pending download asset that is not pending download!')
     }
+    const status = pendingDownload.getStatus().type
+    this.logger.verbose('Serving object in pending download state', { objectId, status })
 
-    const { promise, objectSize } = pendingDownload
-    const response = await promise
-    const source = new URL(response.config.url || '')
-    const contentType = response.headers['content-type'] || DEFAULT_CONTENT_TYPE
-    res.setHeader('content-type', contentType)
+    await pendingDownload.untilStatus(PendingDownloadStatusType.Downloading)
+    const objectSize = pendingDownload.getObjectSize()
+    const { source, contentType } = pendingDownload.getStatus() as PendingDownloadStatusDownloading
+    res.setHeader('content-type', contentType || DEFAULT_CONTENT_TYPE)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
     // since the data coming from the source may not be valid
     res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
@@ -155,9 +172,7 @@ export class PublicApiController {
     }
 
     // Range doesn't start from the beginning of the content or the file was not found - froward request to source storage node
-    this.logger.verbose(`Forwarding request to ${source.href}`, { source: source.href })
-    res.setHeader('x-data-source', 'external')
-    return proxy(source.origin, { proxyReqPathResolver: () => source.pathname })(req, res, next)
+    return this.proxyAssetRequest(req, res, next, objectId, source)
   }
 
   private async servePendingDownloadAssetFromFile(
@@ -183,7 +198,7 @@ export class PublicApiController {
     stream.pipe(res)
     req.on('close', () => {
       stream.destroy()
-      res.destroy()
+      res.end()
     })
   }
 
@@ -207,7 +222,7 @@ export class PublicApiController {
         res.status(200)
         res.setHeader('x-cache', 'pending')
         res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
-        res.setHeader('content-length', objectStatus.pendingDownloadData.objectSize)
+        res.setHeader('content-length', objectStatus.pendingDownload.getObjectSize())
         break
       case ObjectStatusType.NotFound:
         res.status(404)
