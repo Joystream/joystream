@@ -6,6 +6,11 @@ use crate::*;
 use frame_support::assert_err;
 
 fn helper_test_all_relevant_extrinsics() {
+    let params = VideoCreationParametersRecord {
+        assets: None,
+        meta: None,
+    };
+
     assert_err!(
         Content::create_video(
             Origin::signed(FIRST_MEMBER_ORIGIN),
