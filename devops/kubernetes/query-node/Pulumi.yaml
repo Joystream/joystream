@@ -13,10 +13,9 @@ template:
     isLoadBalancerReady:
       description: Whether the load balancer service is ready and has been assigned an IP
       default: false
-    membersFilePath:
-      description: Path to members.json file for processor initialization
-    workersFilePath:
-      description: Path to workers.json file for processor initialization
-    indexerURL:
-      description: URL for the indexer endpoint
+    externalIndexerUrl:
+      description: URL for an external indexer. If set this will not deploy an Indexer.
       default: 'http://query-node:4000/graphql'
+    skipProcessor:
+      description: If set to true, will not deploy a processor instance
+      default: false
