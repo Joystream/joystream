@@ -52,7 +52,7 @@ fn migration_test() {
         // triggering migration
         Content::on_runtime_upgrade();
 
-        // only 20 videos migrated so far (specifically 1..=20)
+        // only 20 videos & 10 channels migrated so far
         run_to_block(2);
         assert_eq!(Content::ensure_migration_done(), false,);
 
@@ -144,15 +144,18 @@ fn migration_test() {
             Error::<Test>::MigrationNotFinished
         );
 
-        run_to_block(6); // video migration finished 5 blocks later
-        assert_eq!(Content::ensure_migration_done(), false,);
+        // video migration is finished but channel migration isn't
+        run_to_block(6);
+        assert_eq!(Content::ensure_migration_done(), false);
 
-        // cannot update corresponding channel because migration is happening
+        // assert that video map is cleared
         assert_eq!(VideoById::<Test>::iter().count(), 0);
 
-        run_to_block(11); // channel migration finished 10 blocks later
-        assert_eq!(Content::ensure_migration_done(), true);
+        // channel & video migration finished 10 blocks later
+        run_to_block(11);
 
+        // assert that channel map is cleared & migration is done
+        assert_eq!(Content::ensure_migration_done(), true);
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
     })
 }
