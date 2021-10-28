@@ -26,7 +26,10 @@ export class HttpApiService {
   ) {
     return async (req: express.Request<T>, res: express.Response, next: express.NextFunction) => {
       // Fix for express-winston in order to also log prematurely closed requests
-      res.on('close', () => res.end())
+      res.on('close', () => {
+        res.locals.prematurelyClosed = !res.writableFinished
+        res.end()
+      })
       try {
         await handler(req, res, next)
       } catch (err) {
@@ -56,6 +59,9 @@ export class HttpApiService {
       expressWinston.logger({
         winstonInstance: this.logger,
         level: 'http',
+        dynamicMeta: (req, res) => {
+          return { prematurelyClosed: res.locals.prematurelyClosed ?? false }
+        },
       })
     )
 
