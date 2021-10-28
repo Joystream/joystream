@@ -5,6 +5,95 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency
 use crate::*;
 use frame_support::assert_err;
 
+fn helper_test_all_relevant_extrinsics() {
+    assert_err!(
+        Content::create_video(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            params.clone()
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::create_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: Some(vec![]),
+                reward_account: None,
+            },
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::update_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: Some(vec![]),
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+            },
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::update_video(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            VideoUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: Some(vec![]),
+                assets_to_remove: BTreeSet::new(),
+            },
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::delete_video(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            BTreeSet::new(),
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::delete_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            0u64,
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::update_video_censorship_status(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            false,
+            b"test".to_vec()
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+    assert_err!(
+        Content::update_channel_censorship_status(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            false,
+            b"test".to_vec()
+        ),
+        Error::<Test>::MigrationNotFinished
+    );
+}
+
 #[test]
 fn migration_test() {
     with_default_mock_builder(|| {
@@ -57,96 +146,14 @@ fn migration_test() {
         assert_eq!(Content::ensure_migration_done(), false,);
 
         // migration not done yet : test all relevant extrinsics
-        assert_err!(
-            Content::create_video(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as storage::Trait>::ChannelId::one(),
-                params.clone()
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::create_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                },
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as storage::Trait>::ChannelId::one(),
-                ChannelUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: Some(vec![]),
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                },
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::update_video(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as Trait>::VideoId::one(),
-                VideoUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: Some(vec![]),
-                    assets_to_remove: BTreeSet::new(),
-                },
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::delete_video(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as Trait>::VideoId::one(),
-                BTreeSet::new(),
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::delete_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as storage::Trait>::ChannelId::one(),
-                0u64,
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::update_video_censorship_status(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as Trait>::VideoId::one(),
-                false,
-                b"test".to_vec()
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
-        assert_err!(
-            Content::update_channel_censorship_status(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                <Test as storage::Trait>::ChannelId::one(),
-                false,
-                b"test".to_vec()
-            ),
-            Error::<Test>::MigrationNotFinished
-        );
+        helper_test_all_relevant_extrinsics();
 
         // video migration is finished but channel migration isn't
         run_to_block(6);
         assert_eq!(Content::ensure_migration_done(), false);
+
+        // migration not done yet: test all relevant extrinsics
+        helper_test_all_relevant_extrinsics();
 
         // assert that video map is cleared
         assert_eq!(VideoById::<Test>::iter().count(), 0);
