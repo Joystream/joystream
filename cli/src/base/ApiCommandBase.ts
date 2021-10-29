@@ -58,6 +58,26 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getApi().getUnaugmentedApi()
   }
 
+  async sendAndFollowNamedSudoTx<
+  Module extends keyof AugmentedSubmittables<'promise'>,
+  Method extends keyof AugmentedSubmittables<'promise'>[Module] & string,
+  Submittable extends AugmentedSubmittables<'promise'>[Module][Method]
+>(
+  sudoAccount: KeyringPair,
+  module: Module,
+  method: Method,
+  params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : []
+): Promise<SubmittableResult> {
+  this.log(
+    chalk.magentaBright(
+      `\nSending ${module}.${method} extrinsic from ${sudoAccount.meta.name ? sudoAccount.meta.name : sudoAccount.address}...`
+    )
+  )
+  const tx = await this.getUnaugmentedApi().tx[module][method](...params)
+  const sudoTx = await this.getUnaugmentedApi().tx.sudo.sudo(tx)
+  return await this.sendAndFollowTx(sudoAccount, sudoTx) //, warnOnly)
+}
+
   getTypesRegistry(): Registry {
     return this.getOriginalApi().registry
   }

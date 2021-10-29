@@ -127,6 +127,20 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     return acceptedApplications
   }
 
+  async getOpening(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
+    const opening = await this.getApi().groupOpening(this.group, id)
+
+    if (requiredStatus && opening.stage.status !== requiredStatus) {
+      this.error(
+        `The opening needs to be in "${_.startCase(requiredStatus)}" stage! ` +
+          `This one is: "${_.startCase(opening.stage.status)}"`,
+        { exit: ExitCodes.InvalidInput }
+      )
+    }
+
+    return opening
+  }
+
   async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
     const opening = await this.getApi().groupOpening(this.group, id)
 
