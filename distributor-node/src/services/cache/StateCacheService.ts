@@ -171,7 +171,7 @@ export class StateCacheService {
   public dropById(objectId: string): void {
     this.logger.debug('Dropping all state by object id', { objectId })
     this.storedState.mimeTypeByObjectId.delete(objectId)
-    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    this.dropPendingDownload(objectId)
     const cacheGroupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
     this.logger.debug('Cache group by object id established', { objectId, cacheGroupNumber })
     if (cacheGroupNumber) {
