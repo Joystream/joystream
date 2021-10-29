@@ -129,11 +129,13 @@ export class ContentService {
     })
   }
 
-  public drop(objectId: string, reason?: string): void {
+  public drop(objectId: string, reason?: string, unreserveSpace = true): void {
     if (this.exists(objectId)) {
       const size = this.fileSize(objectId)
       fs.unlinkSync(this.path(objectId))
-      this.contentSizeSum -= size
+      if (unreserveSpace) {
+        this.contentSizeSum -= size
+      }
       this.logger.debug('Dropping content', { objectId, reason, size, contentSizeSum: this.contentSizeSum })
     } else {
       this.logger.warn('Trying to drop content that no loger exists', { objectId, reason })
@@ -221,6 +223,16 @@ export class ContentService {
       newContentSizeSum: this.contentSizeSum,
     })
 
+    const rejectContent = (reason: string, metadata: Record<string, unknown>) => {
+      const msg = `Content rejected: ${reason}`
+      // Drop (without unreserving space, will do that manually)
+      this.drop(objectId, msg, false)
+      // Unreserve reserved space
+      this.contentSizeSum -= expectedSize
+      // Log the error
+      this.logger.error(msg, { ...metadata })
+    }
+
     // Return a promise that resolves when the new file is created
     return new Promise<void>((resolve, reject) => {
       const fileStream = this.createWriteStream(objectId)
@@ -244,31 +256,27 @@ export class ContentService {
         const logMetadata = {
           objectId,
           expectedSize,
-          expectedHash,
           bytesReceived,
           bytesWritten,
+          expectedHash,
+          finalHash,
         }
         if (err) {
-          this.logger.error(`Error while processing content data stream`, {
+          rejectContent(`Error while processing content data stream`, {
             err,
             ...logMetadata,
           })
-          this.drop(objectId)
           reject(err)
           return
         }
 
         if (bytesWritten !== bytesReceived || bytesWritten !== expectedSize) {
-          this.logger.error('Content rejected: Bytes written/received/expected mismatch!', {
-            ...logMetadata,
-          })
-          this.drop(objectId)
+          rejectContent('Bytes written/received/expected mismatch!', { ...logMetadata })
           return
         }
 
         if (finalHash !== expectedHash) {
-          this.logger.error('Content rejected: Hash mismatch!', { ...logMetadata })
-          this.drop(objectId)
+          rejectContent('Hash mismatch!', { ...logMetadata })
           return
         }
 
