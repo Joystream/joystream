@@ -56,6 +56,7 @@ export default class DevSync extends Command {
 
     try {
       await performSync(
+        undefined,
         flags.workerId,
         syncWorkersNumber,
         flags.queryNodeEndpoint,

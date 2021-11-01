@@ -5,6 +5,7 @@ import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
 import fs from 'fs'
 import path from 'path'
+import { ApiPromise } from '@polkadot/api'
 const fsPromises = fs.promises
 
 /**
@@ -18,6 +19,7 @@ export const TempDirName = 'temp'
  * The sync process uses the QueryNode for defining storage obligations and
  * remote storage nodes' URL for data obtaining.
  *
+ * @param api - (optional) runtime API promise
  * @param workerId - current storage provider ID
  * @param asyncWorkersNumber - maximum parallel downloads number
  * @param queryNodeUrl - Query Node endpoint URL
@@ -27,6 +29,7 @@ export const TempDirName = 'temp'
  * Node information about the storage providers.
  */
 export async function performSync(
+  api: ApiPromise | undefined,
   workerId: number,
   asyncWorkersNumber: number,
   queryNodeUrl: string,
@@ -53,7 +56,7 @@ export async function performSync(
 
   let addedTasks: SyncTask[]
   if (operatorUrl === undefined) {
-    addedTasks = await getPrepareDownloadTasks(model, added, uploadDirectory, tempDirectory, workingStack)
+    addedTasks = await getPrepareDownloadTasks(api, model, added, uploadDirectory, tempDirectory, workingStack)
   } else {
     addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory)
   }
@@ -72,6 +75,7 @@ export async function performSync(
 /**
  * Creates the download preparation tasks.
  *
+ * @param api - Runtime API promise
  * @param dataObligations - defines the current data obligations for the node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
@@ -79,6 +83,7 @@ export async function performSync(
  * @param taskSink - a destination for the newly created tasks
  */
 async function getPrepareDownloadTasks(
+  api: ApiPromise | undefined,
   dataObligations: DataObligations,
   addedIds: string[],
   uploadDirectory: string,
@@ -113,14 +118,15 @@ async function getPrepareDownloadTasks(
 
   const tasks = addedIds.map((id) => {
     let operatorUrls: string[] = [] // can be empty after look up
+    let bagId = null
     if (bagIdByDataObjectId.has(id)) {
-      const bagid = bagIdByDataObjectId.get(id)
-      if (bagOperatorsUrlsById.has(bagid)) {
-        operatorUrls = bagOperatorsUrlsById.get(bagid)
+      bagId = bagIdByDataObjectId.get(id)
+      if (bagOperatorsUrlsById.has(bagId)) {
+        operatorUrls = bagOperatorsUrlsById.get(bagId)
       }
     }
 
-    return new PrepareDownloadFileTask(operatorUrls, id, uploadDirectory, tempDirectory, taskSink)
+    return new PrepareDownloadFileTask(operatorUrls, bagId, id, uploadDirectory, tempDirectory, taskSink, api)
   })
 
   return tasks
@@ -141,7 +147,7 @@ async function getDownloadTasks(
   tempDirectory: string
 ): Promise<DownloadFileTask[]> {
   const addedTasks = addedIds.map(
-    (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory, tempDirectory)
+    (fileName) => new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory)
   )
 
   return addedTasks

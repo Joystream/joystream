@@ -43,6 +43,10 @@ export async function getFile(req: express.Request, res: express.Response): Prom
     const uploadsDir = getUploadsDir(res)
     const fullPath = path.resolve(uploadsDir, dataObjectId)
 
+    if (dataObjectId === '1') {
+      throw new Error('Articifial file error')
+    }
+
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 

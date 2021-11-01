@@ -13,6 +13,8 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import ExitCodes from './../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Worker } from '@joystream/types/working-group'
+import fs from 'fs'
+const fsPromises = fs.promises
 
 /**
  * CLI command:
@@ -80,7 +82,7 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    await removeTempDirectory(flags.uploads, TempDirName)
+    await recreateTempDirectory(flags.uploads, TempDirName)
 
     if (!_.isEmpty(flags.elasticSearchEndpoint)) {
       initElasticLogger(flags.elasticSearchEndpoint ?? '')
@@ -96,21 +98,26 @@ Supported values: warn, error, debug, info. Default:debug`,
       logger.warn(`Uploading auth-schema disabled.`)
     }
 
+    const api = await this.getApi()
+
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
-
-      runSyncWithInterval(
-        flags.worker,
-        flags.queryNodeEndpoint,
-        flags.uploads,
-        TempDirName,
-        flags.syncWorkersNumber,
-        flags.syncInterval
+      setTimeout(
+        async () =>
+          runSyncWithInterval(
+            api,
+            flags.worker,
+            flags.queryNodeEndpoint,
+            flags.uploads,
+            TempDirName,
+            flags.syncWorkersNumber,
+            flags.syncInterval
+          ),
+        0
       )
     }
 
     const account = this.getAccount(flags)
-    const api = await this.getApi()
 
     await verifyWorkerId(api, flags.worker, account)
 
@@ -157,7 +164,8 @@ Supported values: warn, error, debug, info. Default:debug`,
  *
  * @returns void promise.
  */
-function runSyncWithInterval(
+async function runSyncWithInterval(
+  api: ApiPromise,
   workerId: number,
   queryNodeUrl: string,
   uploadsDirectory: string,
@@ -165,40 +173,39 @@ function runSyncWithInterval(
   syncWorkersNumber: number,
   syncIntervalMinutes: number
 ) {
-  setTimeout(async () => {
-    const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
-
+  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+  while (true) {
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepIntevalInSeconds)
-    logger.info(`Resume syncing....`)
-
     try {
-      await performSync(workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory, tempDirectory)
+      logger.info(`Resume syncing....`)
+      await performSync(api, workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory, tempDirectory)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
     }
-
-    runSyncWithInterval(workerId, queryNodeUrl, uploadsDirectory, tempDirectory, syncWorkersNumber, syncIntervalMinutes)
-  }, 0)
+  }
 }
 
 /**
- * Removes the temporary directory from the uploading directory.
+ * Removes and recreates the temporary directory from the uploading directory.
  * All files in the temp directory are deleted.
  *
  * @param uploadsDirectory - data uploading directory
  * @param tempDirName - temporary directory name within the uploading directory
  * @returns void promise.
  */
-async function removeTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
+async function recreateTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
   try {
-    logger.info(`Removing temp directory ...`)
     const tempFileUploadingDir = path.join(uploadsDirectory, tempDirName)
 
+    logger.info(`Removing temp directory ...`)
     const rimrafAsync = promisify(rimraf)
     await rimrafAsync(tempFileUploadingDir)
+
+    logger.info(`Creating temp directory ...`)
+    await fsPromises.mkdir(tempFileUploadingDir)
   } catch (err) {
-    logger.error(`Removing temp directory error: ${err}`)
+    logger.error(`Temp directory IO error: ${err}`)
   }
 }
 
