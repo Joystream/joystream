@@ -14,7 +14,10 @@ const config = new pulumi.Config()
 const awsConfig = new pulumi.Config('aws')
 const isMinikube = config.getBoolean('isMinikube')
 const externalIndexerUrl = config.get('externalIndexerUrl')
+const appsImage = config.get('appsImage') || `joystream/apps:latest`
 const skipProcessor = config.getBoolean('skipProcessor')
+const useLocalRepo = config.getBoolean('useLocalRepo') || false
+
 export let kubeconfig: pulumi.Output<any>
 export let joystreamAppsImage: pulumi.Output<string>
 let provider: k8s.Provider
@@ -27,18 +30,15 @@ if (skipProcessor && externalIndexerUrl) {
 if (isMinikube) {
   provider = new k8s.Provider('local', {})
 
-  // Create image from local app
-  joystreamAppsImage = new docker.Image('joystream/apps', {
-    build: {
-      context: '../../../',
-      dockerfile: '../../../apps.Dockerfile',
-    },
-    imageName: 'joystream/apps:latest',
-    skipPush: true,
-  }).baseImageName
-
-  // Uncomment the below line if you want to use a pre built image
-  // joystreamAppsImage = pulumi.interpolate`joystream/apps`
+  if (useLocalRepo) {
+    // Use already existing image in minikube environment
+    joystreamAppsImage = pulumi.interpolate`${appsImage}`
+  } else {
+    // Access image from docker hub
+    joystreamAppsImage = new docker.RemoteImage('apps', {
+      name: appsImage!,
+    }).repoDigest
+  }
 } else {
   // Create a VPC for our cluster.
   const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
@@ -62,13 +62,12 @@ if (isMinikube) {
   // Create a repository
   const repo = new awsx.ecr.Repository('joystream/apps')
 
+  // Build an image from an existing local/docker hub image and push to ECR
   joystreamAppsImage = repo.buildAndPushImage({
-    dockerfile: '../../../apps.Dockerfile',
-    context: '../../../',
+    context: './docker_dummy',
+    dockerfile: './docker_dummy/Dockerfile',
+    args: { SOURCE_IMAGE: appsImage! },
   })
-
-  // Uncomment the below line if you want to use a pre built image
-  // joystreamAppsImage = pulumi.interpolate`joystream/apps`
 }
 
 const resourceOptions = { provider: provider }
@@ -80,8 +79,6 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
-
-let appLabels = { appClass: name }
 
 const defsConfig = new configMapFromFile(
   'defs-config',
