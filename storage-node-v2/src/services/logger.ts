@@ -1,12 +1,8 @@
 import winston, { transport } from 'winston'
+import ecsformat from '@elastic/ecs-winston-format'
 import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
-
-/**
- * ElasticSearch server date format.
- */
-const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
 
 /**
  * Possible log levels.
@@ -50,12 +46,11 @@ function createDefaultLoggerOptions(): winston.LoggerOptions {
   )
 
   // Redirect all logs to the stderr
-  const transports = [new winston.transports.Console({ stderrLevels: Object.keys(levels) })]
+  const transports = [new winston.transports.Console({ stderrLevels: Object.keys(levels), format })]
 
   return {
     level: level(),
     levels,
-    format,
     transports,
   }
 }
@@ -95,7 +90,14 @@ export default proxy
  *
  */
 export function httpLogger(elasticSearchEndpoint?: string): Handler {
-  const transports: winston.transport[] = [new winston.transports.Console()]
+  // ElasticSearch server date format.
+  const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
+
+  const transports: winston.transport[] = [
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.timestamp({ format: elasticDateFormat }), winston.format.json()),
+    }),
+  ]
 
   if (elasticSearchEndpoint) {
     const esTransport = createElasticTransport(elasticSearchEndpoint)
@@ -104,7 +106,6 @@ export function httpLogger(elasticSearchEndpoint?: string): Handler {
 
   const opts: expressWinston.LoggerOptions = {
     transports,
-    format: winston.format.combine(winston.format.timestamp({ format: elasticDateFormat }), winston.format.json()),
     meta: true,
     msg: 'HTTP {{req.method}} {{req.url}}',
     expressFormat: true,
@@ -152,12 +153,6 @@ export function createStdConsoleLogger(): winston.Logger {
  */
 function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
   const loggerOptions = createDefaultLoggerOptions()
-
-  // Formats
-  loggerOptions.format = winston.format.combine(
-    winston.format.timestamp({ format: elasticDateFormat }),
-    winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
-  )
 
   // Transports
   let transports: transport[] = []
@@ -210,6 +205,7 @@ function createElasticTransport(elasticSearchEndpoint: string): winston.transpor
     level: elasticLogLevel,
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
     index: 'storage-node',
+    format: ecsformat(),
   }
   return new ElasticsearchTransport(esTransportOpts)
 }

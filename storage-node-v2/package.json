@@ -9,6 +9,7 @@
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
     "@apollo/client": "^3.3.21",
+    "@elastic/ecs-winston-format": "^1.3.1",
     "@joystream/metadata-protobuf": "^1.0.0",
     "@joystream/types": "^0.17.0",
     "@oclif/command": "^1",
