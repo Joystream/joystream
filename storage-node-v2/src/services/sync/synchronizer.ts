@@ -56,7 +56,15 @@ export async function performSync(
 
   let addedTasks: SyncTask[]
   if (operatorUrl === undefined) {
-    addedTasks = await getPrepareDownloadTasks(api, model, added, uploadDirectory, tempDirectory, workingStack)
+    addedTasks = await getPrepareDownloadTasks(
+      api,
+      model,
+      workerId,
+      added,
+      uploadDirectory,
+      tempDirectory,
+      workingStack
+    )
   } else {
     addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory)
   }
@@ -85,6 +93,7 @@ export async function performSync(
 async function getPrepareDownloadTasks(
   api: ApiPromise | undefined,
   dataObligations: DataObligations,
+  currentWorkerId: number,
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
@@ -97,7 +106,10 @@ async function getPrepareDownloadTasks(
 
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+    // Skip all buckets of the current WorkerId (this storage provider)
+    if (entry.workerId !== currentWorkerId) {
+      bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+    }
   }
 
   const bagOperatorsUrlsById = new Map()

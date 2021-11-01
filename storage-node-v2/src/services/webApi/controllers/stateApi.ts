@@ -9,6 +9,7 @@ import {
   WebApiError,
   getCommandConfig,
   sendResponseWithError,
+  AppConfig,
 } from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
@@ -28,7 +29,10 @@ const dataCache = new NodeCache({
 /**
  * A public endpoint: return all local data objects.
  */
-export async function getAllLocalDataObjects(req: express.Request, res: express.Response): Promise<void> {
+export async function getAllLocalDataObjects(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>
+): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
     const tempFileDir = getTempFileUploadingDir(res)
@@ -46,7 +50,10 @@ export async function getAllLocalDataObjects(req: express.Request, res: express.
  *
  *  @return total size and count of the data objects.
  */
-export async function getLocalDataStats(req: express.Request, res: express.Response): Promise<void> {
+export async function getLocalDataStats(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>
+): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
     const tempFileDir = getTempFileUploadingDir(res)
@@ -89,7 +96,10 @@ export async function getLocalDataStats(req: express.Request, res: express.Respo
 /**
  * A public endpoint: return local data objects for the bag.
  */
-export async function getLocalDataObjectsByBagId(req: express.Request, res: express.Response): Promise<void> {
+export async function getLocalDataObjectsByBagId(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>
+): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
     const tempFileDir = getTempFileUploadingDir(res)
@@ -113,7 +123,7 @@ export async function getLocalDataObjectsByBagId(req: express.Request, res: expr
 /**
  * A public endpoint: return the server version.
  */
-export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
+export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const config = getCommandConfig(res)
 

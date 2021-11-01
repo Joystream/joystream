@@ -7,65 +7,9 @@ import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-vali
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
-import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
+import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
 import { httpLogger, errorLogger } from '../../services/logger'
-
-/**
- * Web application parameters.
- */
-export type AppConfig = {
-  /**
-   * Runtime API promise
-   */
-  api: ApiPromise
-
-  /**
-   * KeyringPair instance
-   */
-  account: KeyringPair
-
-  /**
-   * Storage provider ID (worker ID)
-   */
-  workerId: number
-
-  /**
-   * Directory for the file uploading
-   */
-  uploadsDir: string
-  /**
-   * Directory within the `uploadsDir` for temporary file uploading
-   */
-  tempDirName: string
-
-  /**
-   *  Environment configuration
-   */
-  process: {
-    version: string
-    userAgent: string
-  }
-
-  /**
-   * Query Node endpoint URL
-   */
-  queryNodeEndpoint: string
-
-  /**
-   * Enables uploading auth-schema validation
-   */
-  enableUploadingAuth: boolean
-
-  /**
-   * ElasticSearch logging endpoint URL
-   */
-  elasticSearchEndpoint?: string
-
-  /**
-   * Max file size for uploading limit.
-   */
-  maxFileSize: number
-}
+import { AppConfig } from './controllers/common'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -75,8 +19,6 @@ export type AppConfig = {
  */
 export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
-  const tempFileUploadingDir = path.join(config.uploadsDir, config.tempDirName)
-
   const app = express()
 
   app.use(cors())
@@ -86,13 +28,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
-      res.locals.uploadsDir = config.uploadsDir
-      res.locals.tempFileUploadingDir = tempFileUploadingDir
-      res.locals.storageProviderAccount = config.account
-      res.locals.workerId = config.workerId
-      res.locals.api = config.api
-      res.locals.config = config.process
-      res.locals.queryNodeUrl = config.queryNodeEndpoint
+      res.locals = config
+
       next()
     },
     // Setup OpenAPiValidator
@@ -106,7 +43,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
       fileUploader: {
-        dest: tempFileUploadingDir,
+        dest: config.tempFileUploadingDir,
         // Busboy library settings
         limits: {
           // For multipart forms, the max number of file fields (Default: Infinity)
@@ -115,7 +52,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
           fileSize: config.maxFileSize,
         },
       },
-      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.account),
+      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.storageProviderAccount),
     })
   ) // Required signature.
 

@@ -117,23 +117,24 @@ Supported values: warn, error, debug, info. Default:debug`,
       )
     }
 
-    const account = this.getAccount(flags)
+    const storageProviderAccount = this.getAccount(flags)
 
-    await verifyWorkerId(api, flags.worker, account)
+    await verifyWorkerId(api, flags.worker, storageProviderAccount)
 
     try {
       const port = flags.port
       const workerId = flags.worker
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
+      const tempFileUploadingDir = path.join(flags.uploads, TempDirName)
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
       const app = await createApp({
         api,
-        account,
+        storageProviderAccount,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempDirName: TempDirName,
+        tempFileUploadingDir,
         process: this.config,
         queryNodeEndpoint: flags.queryNodeEndpoint,
         enableUploadingAuth: !flags.disableUploadAuth,

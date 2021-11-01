@@ -9,6 +9,7 @@ import logger from '../../services/logger'
 import _ from 'lodash'
 import { getRemoteDataObjects } from './remoteStorageData'
 import { TaskSink } from './workingProcess'
+import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
 import { parseBagId } from '../helpers/bagTypes'
 import { hexToString } from '@polkadot/util'
@@ -47,6 +48,12 @@ export class DeleteLocalFileTask implements SyncTask {
   }
 
   async execute(): Promise<void> {
+    const dataObjectId = this.filename
+    if (isNewDataObject(dataObjectId)) {
+      logger.warn('Sync - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}')
+      return
+    }
+
     const fullPath = path.join(this.uploadsDirectory, this.filename)
     return fsPromises.unlink(fullPath)
   }
