@@ -26,7 +26,7 @@ export default {
     return workerPayouts(api, env, WorkingGroups.StorageWorkingGroup, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return workerPayouts(api, env, WorkingGroups.ContentWorkingGroup, lock)
   },
 }
 
