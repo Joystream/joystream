@@ -60,6 +60,10 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi config set-all --plaintext useLocalRepo=true --plaintext appsImage=<IMAGE_NAME>
    ```
 
+   NOTE: The docker deamon for minikube is different from that of the docker desktop. To connect your Docker CLI to the docker
+   daemon inside the VM you need to run: `eval $(minikube docker-env)`. To copy the image from your local deamon to minikube run
+   `minikube image load joystream/apps:latest --daemon`.
+
    If not using minikube, just specify the `appsImage` config.
 
 1. Create a `.env` file in this directory (`cp ../../../.env ./.env`) and set the database and other variables in it
