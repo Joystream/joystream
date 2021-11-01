@@ -148,14 +148,14 @@ fn migration_test() {
 
         // only 20 videos & 10 channels migrated so far
         run_to_block(2);
-        assert_eq!(Content::ensure_migration_done(), false,);
+        assert!(!Content::is_migration_done());
 
         // migration not done yet : test all relevant extrinsics
         helper_test_all_relevant_extrinsics();
 
         // video migration is finished but channel migration isn't
         run_to_block(6);
-        assert_eq!(Content::ensure_migration_done(), false);
+        assert!(!Content::is_migration_done());
 
         // migration not done yet: test all relevant extrinsics
         helper_test_all_relevant_extrinsics();
@@ -167,7 +167,7 @@ fn migration_test() {
         run_to_block(11);
 
         // assert that channel map is cleared & migration is done
-        assert_eq!(Content::ensure_migration_done(), true);
+        assert!(Content::is_migration_done());
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
     })
 }

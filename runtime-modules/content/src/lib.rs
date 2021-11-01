@@ -664,7 +664,7 @@ decl_module! {
             params: ChannelCreationParameters<T>,
         ) {
             // ensure migration is done
-             ensure!(Self::ensure_migration_done(), Error::<T>::MigrationNotFinished);
+             ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
 
             ensure_actor_authorized_to_create_channel::<T>(
                 origin.clone(),
@@ -1371,7 +1371,7 @@ impl<T: Trait> Module<T> {
     /// Ensure Channel Migration Finished
 
     /// Ensure Video Migration Finished
-    fn ensure_migration_done() -> bool {
+    fn is_migration_done() -> bool {
         let MigrationConfigRecord {
             current_id,
             final_id,
@@ -1410,10 +1410,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
         // ensure migration is done
-        ensure!(
-            Self::ensure_migration_done(),
-            Error::<T>::MigrationNotFinished,
-        );
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
 
         // ensure channel exists
         ensure!(
@@ -1425,10 +1422,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         // ensure migration is done
-        ensure!(
-            Self::ensure_migration_done(),
-            Error::<T>::MigrationNotFinished,
-        );
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
 
         // ensure video exists
         ensure!(
