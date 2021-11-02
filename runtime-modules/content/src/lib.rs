@@ -706,7 +706,7 @@ decl_module! {
             Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &channel.owner,
+                &channel,
             )?;
 
             Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
@@ -756,7 +756,7 @@ decl_module! {
             Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &channel.owner,
+                &channel,
             )?;
 
             // check that channel videos are 0
@@ -937,7 +937,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            Self::ensure_actor_can_update_channel_content(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
                 &channel,
@@ -997,7 +997,7 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
 
-            Self::ensure_actor_can_update_channel_content(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
                 &channel,
@@ -1036,7 +1036,6 @@ decl_module! {
             // get information regarding channel
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
-
 
             Self::ensure_actor_can_update_channel_content(
                 origin,
@@ -1373,12 +1372,12 @@ impl<T: Trait> Module<T> {
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> ActorToChannelOwnerResult<T> {
         match actor {
-            // Lead should use their member or curator role to create channels
-            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
             ContentActor::Curator(curator_group_id, _curator_id) => {
                 Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
             ContentActor::Member(member_id) => Ok(ChannelOwner::Member(*member_id)),
+            // Lead & collaborators should use their member or curator role to create channels
+            _ => Err(Error::<T>::ActorCannotOwnChannel),
         }
     }
 
@@ -1392,13 +1391,13 @@ impl<T: Trait> Module<T> {
     pub fn ensure_actor_authorized_to_update_channel(
         origin: T::Origin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        channel: &Channel<T>,
     ) -> DispatchResult {
         // Only owner of a channel can update and delete channel assets.
         // Lead can update and delete curator group owned channel assets.
         match actor {
             ContentActor::Lead => {
-                ensure_lead_can_update_assets::<T>(origin, owner)?;
+                ensure_lead_can_update_assets::<T>(origin, &channel.owner)?;
                 Ok(())
             }
             ContentActor::Curator(curator_group_id, curator_id) => {
@@ -1406,12 +1405,18 @@ impl<T: Trait> Module<T> {
                     origin,
                     curator_group_id,
                     curator_id,
-                    owner,
-                )?;
-                Ok(())
+                    &channel.owner,
+                )
             }
             ContentActor::Member(member_id) => {
-                ensure_member_is_channel_owner::<T>(origin, member_id, owner)?;
+                ensure_member_is_channel_owner::<T>(origin, member_id, &channel.owner)?;
+                Ok(())
+            }
+            ContentActor::Collaborator(member_id) => {
+                ensure!(
+                    channel.collaborators.contains(member_id),
+                    Error::<T>::ActorNotAuthorized
+                );
                 Ok(())
             }
         }
@@ -1435,10 +1440,13 @@ impl<T: Trait> Module<T> {
                 )
             }
             ContentActor::Member(member_id) => {
-                let is_owner =
-                    ensure_member_is_channel_owner::<T>(origin, member_id, &channel.owner).is_ok();
-                let is_collab = channel.collaborators.contains(member_id);
-                ensure!(is_owner || is_collab, Error::<T>::ActorNotAuthorized);
+                ensure_member_is_channel_owner::<T>(origin, member_id, &channel.owner)
+            }
+            ContentActor::Collaborator(member_id) => {
+                ensure!(
+                    channel.collaborators.contains(member_id),
+                    Error::<T>::ActorNotAuthorized
+                );
                 Ok(())
             }
         }

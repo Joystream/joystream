@@ -102,8 +102,6 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     match actor {
-        // Lead should use their member or curator role to create or update channel assets.
-        ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel.into()),
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
@@ -115,6 +113,8 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 
             ensure_member_auth_success::<T>(member_id, &sender)
         }
+        // Lead & collaborators should use their member or curator role to create or update channel assets.
+        _ => Err(Error::<T>::ActorCannotOwnChannel.into()),
     }
 }
 
@@ -211,7 +211,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
                 Ok(())
             }
         }
-        ContentActor::Member(_) => {
+        _ => {
             // Members cannot censore channels!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
@@ -234,7 +234,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
             // Authorize curator, performing all checks to ensure curator can act
             CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
         }
-        ContentActor::Member(_) => {
+        _ => {
             // Members cannot censore channels!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
@@ -251,6 +251,7 @@ pub enum ContentActor<
 > {
     Curator(CuratorGroupId, CuratorId),
     Member(MemberId),
+    Collaborator(MemberId),
     Lead,
 }
 
