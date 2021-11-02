@@ -297,7 +297,7 @@ fn lead_cannot_create_channel() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -320,7 +320,7 @@ fn curator_owned_channels() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -338,7 +338,7 @@ fn curator_owned_channels() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -353,7 +353,7 @@ fn curator_owned_channels() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -369,7 +369,7 @@ fn curator_owned_channels() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -390,7 +390,7 @@ fn curator_owned_channels() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ))
         );
@@ -438,7 +438,7 @@ fn member_owned_channels() {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -454,7 +454,7 @@ fn member_owned_channels() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -467,13 +467,13 @@ fn member_owned_channels() {
                     owner: ChannelOwner::Member(FIRST_MEMBER_ID),
                     is_censored: false,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 },
                 ChannelCreationParametersRecord {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: BTreeSet::<MemberId>::new(),
                 }
             ))
         );
@@ -491,7 +491,7 @@ fn member_owned_channels() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
-                maybe_collaborators: Some(collaborators.clone()),
+                collaborators: collaborators.clone(),
             }
         ));
 
@@ -506,13 +506,13 @@ fn member_owned_channels() {
                     reward_account: None,
                     deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
                     num_videos: 0,
-                    collaborators: BTreeSet::new(),
+                    collaborators: collaborators.clone(),
                 },
                 ChannelCreationParametersRecord {
                     assets: None,
                     meta: Some(vec![]),
                     reward_account: None,
-                    maybe_collaborators: Some(collaborators.clone()),
+                    collaborators: collaborators.clone(),
                 }
             ))
         );
@@ -582,7 +582,7 @@ fn member_owned_channels() {
                 assets: assets.clone(),
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                maybe_collaborators: Some(collaborators.clone()),
             },
         ));
 
@@ -598,13 +598,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    maybe_collaborators: Some(collaborators.clone()),
+                    collaborators: collaborators.clone(),
                 },
                 ChannelUpdateParameters {
                     assets: assets,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    maybe_collaborators: Some(collaborators.clone()),
                 }
             ))
         );
@@ -642,7 +642,7 @@ fn channel_censoring() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
@@ -719,7 +719,7 @@ fn channel_censoring() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: BTreeSet::<MemberId>::new(),
             }
         ));
 
