@@ -24,7 +24,7 @@ pub enum WorkingGroup {
     Gateway,
 
     /// Distribution working group: working_group::Instance6.
-    Distributione,
+    Distribution,
 
     /// Operations working group: working_group::Instance7.
     OperationsBeta,
