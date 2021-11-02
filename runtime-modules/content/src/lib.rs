@@ -235,7 +235,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId:
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
-    reward_account: Option<Option<AccountId>>,
+    reward_account: Option<AccountId>,
     /// assets to be removed from channel
     assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set

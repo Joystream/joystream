@@ -404,7 +404,7 @@ fn curator_owned_channels() {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: None,
             }
         ));
 
@@ -417,7 +417,7 @@ fn curator_owned_channels() {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: None,
             }
         ));
     })
@@ -567,13 +567,29 @@ fn member_owned_channels() {
                     assets: assets.clone(),
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: None,
                 },
             ),
             Error::<Test>::ActorNotAuthorized
         );
 
-        // Update channel succeeds because channel_id_2 has collabs
+        // Attempt from a collaborator to update reward account should fail
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelUpdateParameters {
+                    assets: None,
+                    new_meta: None,
+                    reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                    collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        // Update channel assets succeeds because channel_id_2 has collabs
         assert_ok!(Content::update_channel(
             Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
@@ -582,7 +598,7 @@ fn member_owned_channels() {
                 assets: assets.clone(),
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                collaborators: None,
             },
         ));
 
@@ -604,7 +620,7 @@ fn member_owned_channels() {
                     assets: assets,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    collaborators: None,
                 }
             ))
         );
