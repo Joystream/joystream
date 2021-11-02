@@ -80,5 +80,7 @@ decl_error! {
         InvalidBagSizeSpecified,
 
 
+        /// Actor not channel owner
+        ActorNotChannelOwner,
     }
 }
