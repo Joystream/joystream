@@ -728,8 +728,11 @@ decl_module! {
 
             // Maybe update the reward account
             if let Some(reward_account) = &params.reward_account {
-                channel.reward_account = reward_account.clone();
-            }
+                match &actor {
+                    ContentActor::Collaborator(_) => {},
+                    _ => channel.reward_account = reward_account.clone(),
+                }
+            };
 
             // maybe update collaborators set
             if !params.collaborators.is_empty() {
