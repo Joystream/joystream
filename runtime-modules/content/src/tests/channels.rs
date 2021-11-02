@@ -597,7 +597,7 @@ fn member_owned_channels() {
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_2,
                 ChannelUpdateParameters {
-                    assets: None,
+                    assets_to_upload: None,
                     new_meta: None,
                     reward_account: None,
                     new_collaborators: Some(
@@ -628,17 +628,15 @@ fn member_owned_channels() {
                 channel_id_2,
                 ChannelRecord {
                     owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    videos: vec![],
-                    playlists: vec![],
-                    series: vec![],
                     is_censored: false,
                     reward_account: None,
                     collaborators: collaborators.clone(),
                 },
                 ChannelUpdateParameters {
-                    assets: assets,
+                    assets_to_upload: assets,
                     new_meta: None,
                     reward_account: None,
+                    assets_to_remove: BTreeSet::new(),
                     collaborators: None,
                 }
             ))

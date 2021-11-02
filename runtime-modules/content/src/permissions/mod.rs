@@ -122,12 +122,48 @@ pub fn ensure_lead_can_update_assets<T: Trait>(
     origin: T::Origin,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
+    // lead can edit only curator-owned channels
     let sender = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&sender)?;
     if let ChannelOwner::CuratorGroup(_) = owner {
         Ok(())
     } else {
         Err(Error::<T>::ActorNotAuthorized.into())
+    }
+}
+
+// Enure actor can update channels and videos in the channel
+pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> DispatchResult {
+    // Only owner of a channel can update and delete channel assets.
+    // Lead can update and delete curator group owned channel assets.
+    match actor {
+        ContentActor::Lead => {
+            ensure_lead_can_update_assets::<T>(origin, &channel.owner)?;
+            Ok(())
+        }
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            ensure_curator_group_is_channel_owner::<T>(
+                origin,
+                curator_group_id,
+                curator_id,
+                &channel.owner,
+            )
+        }
+        ContentActor::Member(member_id) => {
+            ensure_member_is_channel_owner::<T>(origin, member_id, &channel.owner)?;
+            Ok(())
+        }
+        ContentActor::Collaborator(member_id) => {
+            ensure!(
+                channel.collaborators.contains(member_id),
+                Error::<T>::ActorNotAuthorized
+            );
+            Ok(())
+        }
     }
 }
 
