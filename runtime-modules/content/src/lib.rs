@@ -239,7 +239,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId:
     /// assets to be removed from channel
     assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
-    collaborators: Option<BTreeSet<MemberId>>,
+    collaborators: BTreeSet<MemberId>,
 }
 
 type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -731,10 +731,9 @@ decl_module! {
                 channel.reward_account = reward_account.clone();
             }
 
-
             // maybe update collaborators set
-            if let Some(collabs) = &params.collaborators {
-                channel.collaborators = collabs.clone();
+            if !params.collaborators.is_empty() {
+                channel.collaborators = params.collaborators.clone();
             }
 
             // Update the channel
