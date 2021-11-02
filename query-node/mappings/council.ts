@@ -112,11 +112,32 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
 async function getCurrentElectionRound(store: DatabaseManager): Promise<ElectionRound> {
   const electionRound = await store.get(ElectionRound, { order: { id: 'DESC' } })
 
-  if (!electionRound) {
-    throw new Error('No election cycle found.')
+  if (electionRound) {
+    return electionRound
   }
 
-  return electionRound
+  // create first election round as it's not prepopulated (this shouldn't happen in any other sitaution)
+
+  const electedCouncil = new ElectedCouncil({
+    councilMembers: [],
+    updates: [],
+    electedAtBlock: 0,
+    councilElections: [],
+    nextCouncilElections: [],
+    isResigned: false,
+  })
+  await store.save<ElectedCouncil>(electedCouncil)
+
+  const initialElectionRound = new ElectionRound({
+    cycleId: 0,
+    isFinished: false,
+    castVotes: [],
+    electedCouncil,
+    candidates: [],
+  })
+  await store.save<ElectionRound>(initialElectionRound)
+
+  return initialElectionRound
 }
 
 /*
@@ -182,11 +203,19 @@ function calculateVotePower(accountId: string, stake: BN): BN {
 }
 
 /*
-  Custom typeguard for council stage - election.
+  Custom typeguard for council stage - announcing candidacy.
 */
+function isCouncilStageAnnouncing(councilStage: typeof CouncilStage): councilStage is CouncilStageAnnouncing {
+  return councilStage.isTypeOf == 'CouncilStageAnnouncing'
+}
+
+/*
+  Custom typeguard for council stage - election.
+* /
 function isCouncilStageElection(councilStage: typeof CouncilStage): councilStage is CouncilStageElection {
   return councilStage.isTypeOf == 'CouncilStageElection'
 }
+*/
 
 /////////////////// Common /////////////////////////////////////////////////////
 
@@ -202,7 +231,7 @@ async function updateCouncilStage(
   const councilStageUpdate = new CouncilStageUpdate({
     stage: councilStage,
     changedAt: new BN(blockNumber),
-    electionProblem,
+    electionProblem: electionProblem || new VariantNone(),
   })
 
   await store.save<CouncilStageUpdate>(councilStageUpdate)
@@ -374,17 +403,19 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
 
   // increase candidate count in stage update record
   const lastStageUpdate = await getCurrentStageUpdate(store)
-  if (!isCouncilStageElection(lastStageUpdate.stage)) {
+  if (!isCouncilStageAnnouncing(lastStageUpdate.stage)) {
     throw new Error(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
   }
 
-  lastStageUpdate.stage.candidatesCount = lastStageUpdate.stage.candidatesCount.add(new BN(1))
+  lastStageUpdate.stage.candidatesCount = (new BN(lastStageUpdate.stage.candidatesCount)).add(new BN(1))
   await store.save<CouncilStageUpdate>(lastStageUpdate)
 
   const electionRound = await getCurrentElectionRound(store)
 
   // prepare note metadata record (empty until explicitily set via different extrinsic)
-  const noteMetadata = new CandidacyNoteMetadata({})
+  const noteMetadata = new CandidacyNoteMetadata({
+    bulletPoints: [],
+  })
   await store.save<CandidacyNoteMetadata>(noteMetadata)
 
   // save candidate record
@@ -410,7 +441,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // common event processing
 
   const [memberIds] = new Council.NewCouncilElectedEvent(event).params
-  const members = await store.getMany(Membership, { where: { id_in: memberIds.map((item) => item.toString()) } })
+  const members = await store.getMany(Membership, { where: { id: memberIds.map((item) => item.toString()) } })
 
   const newCouncilElectedEvent = new NewCouncilElectedEvent({
     ...genericEventFields(event),
@@ -442,12 +473,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   await store.save<ElectedCouncil>(electedCouncil)
 
   // end the last election round and start new one
-  const nextElectionRound = await startNextElectionRound(store, electedCouncil, electionRound)
-
-  // update next council elections list
-  // electedCouncil.nextCouncilElections.push(nextElectionRound) // uncomment after solving https://github.com/Joystream/hydra/issues/462
-  electedCouncil.nextCouncilElections = (electedCouncil.nextCouncilElections || []).concat([nextElectionRound])
-  await store.save<ElectedCouncil>(electedCouncil)
+  await startNextElectionRound(store, electedCouncil, electionRound)
 }
 
 /*
@@ -491,7 +517,6 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
   // specific event processing
 
   // update candidate info about stake lock
-  const electionRound = await getCurrentElectionRound(store)
   const candidate = await getCandidate(store, memberId.toString()) // get last member's candidacy record
   candidate.stakeLocked = false
   await store.save<Candidate>(candidate)
@@ -697,10 +722,11 @@ export async function council_RequestFunded({ event, store }: EventContext & Sto
 export async function referendum_ReferendumStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Referendum.ReferendumStartedEvent(event).params
+  const [winningTargetCount] = new Referendum.ReferendumStartedEvent(event).params
 
   const referendumStartedEvent = new ReferendumStartedEvent({
     ...genericEventFields(event),
+    winningTargetCount,
   })
 
   await store.save<ReferendumStartedEvent>(referendumStartedEvent)
@@ -755,7 +781,7 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
   const [optionResultsRaw] = new Referendum.ReferendumFinishedEvent(event).params
 
   const members = await store.getMany(Membership, {
-    where: { id_in: optionResultsRaw.map((item) => item.option_id.toString()) },
+    where: { id: optionResultsRaw.map((item) => item.option_id.toString()) },
   })
 
   const referendumFinishedEvent = new ReferendumFinishedEvent({

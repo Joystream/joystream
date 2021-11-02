@@ -220,11 +220,15 @@ type ElectedCouncil @entity {
   "Block number at which the council reign ended and a new council was elected."
   endedAtBlock: Int
 
+  # it might seem that derived field is wrongly set to `nextElectedCouncil`, but that's how it should be
   "Elections held before the council was rightfully elected."
-  councilElections: [ElectionRound!]! @derivedFrom(field: "electedCouncil")
+  #councilElections: [ElectionRound!]! @derivedFrom(field: "electedCouncil")
+  councilElections: [ElectionRound!]! @derivedFrom(field: "nextElectedCouncil")
 
+  # it might seem that derived field is wrongly set to `electedCouncil`, but that's how it should be
   "Elections held before the next council was or will be rightfully elected."
-  nextCouncilElections: [ElectionRound!]! @derivedFrom(field: "nextElectedCouncil")
+  #nextCouncilElections: [ElectionRound!]! @derivedFrom(field: "nextElectedCouncil")
+  nextCouncilElections: [ElectionRound!]! @derivedFrom(field: "electedCouncil")
 
   "Sign if council is already resigned."
   isResigned: Boolean!
