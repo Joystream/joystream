@@ -723,10 +723,11 @@ decl_module! {
             let mut channel = channel;
 
             // Maybe update the reward account
-            if let Some(reward_account) = &params.reward_account {
+            if params.reward_account.is_some() {
+               // in order to avoid a collaborator to set arbitrary reward account
                 match &actor {
-                    ContentActor::Collaborator(_) => {},
-                    _ => channel.reward_account = reward_account.clone(),
+                          ContentActor::Collaborator(_) => {},
+                    _ => channel.reward_account = params.reward_account.clone(),
                 }
             };
 
@@ -734,6 +735,10 @@ decl_module! {
             if !params.collaborators.is_empty() {
                 channel.collaborators = params.collaborators.clone();
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());

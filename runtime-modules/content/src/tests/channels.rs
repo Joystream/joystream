@@ -600,7 +600,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: Some(
+                    new_collaborators: Some(
                         array::IntoIter::new([COLLABORATOR_MEMBER_ID]).collect()
                     ),
                 },
