@@ -24,11 +24,12 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   // Connect api to the chain
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
-
+  const miniSecret = process.env.SURI_MINI_SECRET || ''
   const apiFactory = await ApiFactory.create(
     provider,
     env.TREASURY_ACCOUNT_URI || '//Alice',
-    env.SUDO_ACCOUNT_URI || '//Alice'
+    env.SUDO_ACCOUNT_URI || '//Alice',
+    miniSecret
   )
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'

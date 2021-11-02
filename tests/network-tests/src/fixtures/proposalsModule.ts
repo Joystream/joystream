@@ -551,7 +551,7 @@ export class SpendingProposalFixture extends BaseFixture {
 
     await this.api.sudoSetCouncilMintCapacity(this.mintCapacity)
 
-    const fundingRecipient = this.api.createKeyPairs(1)[0].address
+    const fundingRecipient = this.api.createKeyPairs(1)[0].key.address
 
     // Proposal creation
     const result = await this.api.proposeSpending(

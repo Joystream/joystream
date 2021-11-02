@@ -42,13 +42,22 @@ export enum WorkingGroups {
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
+  // number used as part of soft key derivation path
+  private keyId = 0
+  // mapping from account address to key id.
+  // To be able to re-derive keypair externally when mini-secret is known.
+  readonly addressesToKeyId: Map<string, number> = new Map()
+  // mini secret used in SURI key derivation path
+  private readonly miniSecret: string
+
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string
+    sudoAccountUri: string,
+    miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
     let connectAttempts = 0
@@ -65,7 +74,7 @@ export class ApiFactory {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -75,32 +84,43 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
+    this.miniSecret = miniSecret
+    this.addressesToKeyId = new Map()
+    this.keyId = 0
   }
 
   public getApi(label: string): Api {
-    return new Api(this.api, this.treasuryAccount, this.keyring, label)
+    return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  // public close(): void {
-  //   this.api.disconnect()
-  // }
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    const keys: { key: KeyringPair; id: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const id = this.keyId++
+      const uri = `${this.miniSecret}//testing/${id}`
+      const key = this.keyring.addFromUri(uri)
+      keys.push({ key, id })
+      this.addressesToKeyId.set(key.address, id)
+    }
+    return keys
+  }
 }
 
 export class Api {
+  private readonly factory: ApiFactory
   private readonly api: ApiPromise
   private readonly sender: Sender
-  private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+  constructor(factory: ApiFactory, api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.factory = factory
     this.api = api
-    this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
   }
@@ -113,12 +133,12 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  public createKeyPairs(n: number): KeyringPair[] {
-    const nKeyPairs: KeyringPair[] = []
-    for (let i = 0; i < n; i++) {
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
-    }
-    return nKeyPairs
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    return this.factory.createKeyPairs(n)
+  }
+
+  public getAccountToKeyIdMappings() {
+    return this.factory.addressesToKeyId
   }
 
   // Well known WorkingGroup enum defined in runtime
