@@ -720,10 +720,6 @@ decl_module! {
                 )?;
             }
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             let mut channel = channel;
 
             // Maybe update the reward account
@@ -743,7 +739,8 @@ decl_module! {
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
-        }
+}
+
 
         // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
