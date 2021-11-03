@@ -1,12 +1,10 @@
 import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
 import logger from '../../services/logger'
+import { getDataObjectIDs } from '../../services/caching/localDataObjects'
 import { SyncTask, DownloadFileTask, DeleteLocalFileTask, PrepareDownloadFileTask } from './tasks'
 import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
-import fs from 'fs'
-import path from 'path'
 import { ApiPromise } from '@polkadot/api'
-const fsPromises = fs.promises
 
 /**
  * Temporary directory name for data uploading.
@@ -40,7 +38,7 @@ export async function performSync(
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
     getStorageObligationsFromRuntime(queryNodeUrl, workerId),
-    getLocalDataObjects(uploadDirectory, TempDirName),
+    getDataObjectIDs(),
   ])
 
   const requiredIds = model.dataObjects.map((obj) => obj.id)
@@ -163,28 +161,4 @@ async function getDownloadTasks(
   )
 
   return addedTasks
-}
-
-/**
- * Returns local data objects info.
- *
- * @param uploadDirectory - local directory to get file names from
- */
-export async function getLocalDataObjects(uploadDirectory: string, tempDirName: string): Promise<string[]> {
-  const localIds = await getLocalFileNames(uploadDirectory)
-
-  // Filter temporary directory name.
-  const tempDirectoryName = path.parse(tempDirName).name
-  const data = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
-
-  return data
-}
-
-/**
- * Returns file names from the local directory.
- *
- * @param directory - local directory to get file names from
- */
-async function getLocalFileNames(directory: string): Promise<string[]> {
-  return fsPromises.readdir(directory)
 }

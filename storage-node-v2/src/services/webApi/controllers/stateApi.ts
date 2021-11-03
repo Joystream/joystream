@@ -1,4 +1,4 @@
-import { getLocalDataObjects } from '../../../services/sync/synchronizer'
+import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
@@ -34,10 +34,7 @@ export async function getAllLocalDataObjects(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
-    const uploadsDir = getUploadsDir(res)
-    const tempFileDir = getTempFileUploadingDir(res)
-
-    const ids = await getCachedLocalDataObjects(uploadsDir, tempFileDir)
+    const ids = await getDataObjectIDs()
 
     res.status(200).json(ids)
   } catch (err) {
@@ -101,14 +98,11 @@ export async function getLocalDataObjectsByBagId(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
-    const uploadsDir = getUploadsDir(res)
-    const tempFileDir = getTempFileUploadingDir(res)
-
     const queryNodeUrl = getQueryNodeUrl(res)
     const bagId = getBagId(req)
 
     const [ids, requiredIds] = await Promise.all([
-      getCachedLocalDataObjects(uploadsDir, tempFileDir),
+      getDataObjectIDs(),
       getCachedDataObjectsObligations(queryNodeUrl, bagId),
     ])
 
@@ -151,22 +145,6 @@ function getBagId(req: express.Request): string {
   }
 
   throw new WebApiError('No bagId provided.', 400)
-}
-
-/**
- * Returns cached data objects IDs from the local data storage. Data could be
- * obsolete until cache expiration.
- *
- */
-async function getCachedLocalDataObjects(uploadsDir: string, tempDirName: string): Promise<string[]> {
-  const entryName = 'local_data_object'
-
-  if (!dataCache.has(entryName)) {
-    const data = await getLocalDataObjects(uploadsDir, tempDirName)
-
-    dataCache.set(entryName, data)
-  }
-  return dataCache.get(entryName) ?? []
 }
 
 /**

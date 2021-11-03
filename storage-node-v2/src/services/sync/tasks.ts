@@ -10,6 +10,7 @@ import _ from 'lodash'
 import { getRemoteDataObjects } from './remoteStorageData'
 import { TaskSink } from './workingProcess'
 import { isNewDataObject } from '../caching/newUploads'
+import { addDataObjectIdToCache, deleteDataObjectIdFromCache } from '../caching/localDataObjects'
 import { hashFile } from '../helpers/hashing'
 import { parseBagId } from '../helpers/bagTypes'
 import { hexToString } from '@polkadot/util'
@@ -50,12 +51,14 @@ export class DeleteLocalFileTask implements SyncTask {
   async execute(): Promise<void> {
     const dataObjectId = this.filename
     if (isNewDataObject(dataObjectId)) {
-      logger.warn('Sync - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}')
+      logger.warn(`Sync - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}`)
       return
     }
 
     const fullPath = path.join(this.uploadsDirectory, this.filename)
-    return fsPromises.unlink(fullPath)
+    await fsPromises.unlink(fullPath)
+
+    await deleteDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -63,7 +66,7 @@ export class DeleteLocalFileTask implements SyncTask {
  * Download the file from the remote storage node to the local storage.
  */
 export class DownloadFileTask implements SyncTask {
-  id: string
+  dataObjectId: string
   expectedHash?: string
   uploadsDirectory: string
   tempDirectory: string
@@ -71,16 +74,16 @@ export class DownloadFileTask implements SyncTask {
 
   constructor(
     baseUrl: string,
-    id: string,
+    dataObjectId: string,
     expectedHash: string | undefined,
     uploadsDirectory: string,
     tempDirectory: string
   ) {
-    this.id = id
+    this.dataObjectId = dataObjectId
     this.expectedHash = expectedHash
     this.uploadsDirectory = uploadsDirectory
     this.tempDirectory = tempDirectory
-    this.url = urljoin(baseUrl, 'api/v1/files', id)
+    this.url = urljoin(baseUrl, 'api/v1/files', dataObjectId)
   }
 
   description(): string {
@@ -89,7 +92,7 @@ export class DownloadFileTask implements SyncTask {
 
   async execute(): Promise<void> {
     const streamPipeline = promisify(pipeline)
-    const filepath = path.join(this.uploadsDirectory, this.id)
+    const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
     const tempFilePath = path.join(this.uploadsDirectory, this.tempDirectory, uuidv4())
@@ -108,6 +111,7 @@ export class DownloadFileTask implements SyncTask {
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)
+      await addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
       logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
       try {

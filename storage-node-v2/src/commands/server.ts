@@ -2,6 +2,7 @@ import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger, { initElasticLogger } from '../services/logger'
+import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import { ApiPromise } from '@polkadot/api'
 import { performSync, TempDirName } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
@@ -83,6 +84,10 @@ Supported values: warn, error, debug, info. Default:debug`,
     const { flags } = this.parse(Server)
 
     await recreateTempDirectory(flags.uploads, TempDirName)
+
+    if (fs.existsSync(flags.uploads)) {
+      await loadDataObjectIdCache(flags.uploads, TempDirName)
+    }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint)) {
       initElasticLogger(flags.elasticSearchEndpoint ?? '')
@@ -174,7 +179,7 @@ async function runSyncWithInterval(
   syncWorkersNumber: number,
   syncIntervalMinutes: number
 ) {
-  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 10
   while (true) {
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepIntevalInSeconds)

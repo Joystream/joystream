@@ -8,6 +8,7 @@ import {
 } from '../../helpers/auth'
 import { hashFile } from '../../helpers/hashing'
 import { registerNewDataObjectId } from '../../caching/newUploads'
+import { addDataObjectIdToCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { getFileInfo } from '../../helpers/fileInfo'
 import { BagId } from '@joystream/types/storage'
@@ -99,7 +100,6 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
-
     const queryNodeUrl = getQueryNodeUrl(res)
     const workerId = getWorkerId(res)
 
@@ -113,10 +113,12 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
+    const dataObjectId = uploadRequest.dataObjectId.toString()
     const uploadsDir = getUploadsDir(res)
-    const newPath = path.join(uploadsDir, uploadRequest.dataObjectId.toString())
+    const newPath = path.join(uploadsDir, dataObjectId)
 
-    registerNewDataObjectId(uploadRequest.dataObjectId.toString())
+    registerNewDataObjectId(dataObjectId)
+    await addDataObjectIdToCache(dataObjectId)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)

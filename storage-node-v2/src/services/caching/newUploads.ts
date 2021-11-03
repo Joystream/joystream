@@ -20,7 +20,7 @@ const newDataObjects = new NodeCache({
  *
  * @returns nonce string.
  */
-export function registerNewDataObjectId(dataObjectId: string) {
+export function registerNewDataObjectId(dataObjectId: string): void {
   newDataObjects.set(dataObjectId, null, ExpirationPeriod)
 }
 
