@@ -16,7 +16,7 @@ import { formatBalance } from '@polkadot/util';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import ReactMarkdown from 'react-markdown';
 import { StakingPolicy } from '@joystream/types/hiring';
-import { WorkingGroup, WorkingGroupKey } from '@joystream/types/common';
+import { WorkingGroup } from '@joystream/types/common';
 import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
 import { LeadInfoFromId } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 import { formatReward } from '@polkadot/joy-utils/functions/format';
