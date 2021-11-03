@@ -179,7 +179,7 @@ async function runSyncWithInterval(
   syncWorkersNumber: number,
   syncIntervalMinutes: number
 ) {
-  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 10
+  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
   while (true) {
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepIntevalInSeconds)

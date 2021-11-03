@@ -340,12 +340,6 @@ export type ChannelWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  ownerMember_eq?: Maybe<Scalars['ID']>
-  ownerMember_in?: Maybe<Array<Scalars['ID']>>
-  ownerCuratorGroup_eq?: Maybe<Scalars['ID']>
-  ownerCuratorGroup_in?: Maybe<Array<Scalars['ID']>>
-  category_eq?: Maybe<Scalars['ID']>
-  category_in?: Maybe<Array<Scalars['ID']>>
   rewardAccount_eq?: Maybe<Scalars['String']>
   rewardAccount_contains?: Maybe<Scalars['String']>
   rewardAccount_startsWith?: Maybe<Scalars['String']>
@@ -361,20 +355,20 @@ export type ChannelWhereInput = {
   description_startsWith?: Maybe<Scalars['String']>
   description_endsWith?: Maybe<Scalars['String']>
   description_in?: Maybe<Array<Scalars['String']>>
-  coverPhotoDataObject_eq?: Maybe<Scalars['ID']>
-  coverPhotoDataObject_in?: Maybe<Array<Scalars['ID']>>
+  coverPhotoUrls_containsAll?: Maybe<Array<Scalars['String']>>
+  coverPhotoUrls_containsNone?: Maybe<Array<Scalars['String']>>
+  coverPhotoUrls_containsAny?: Maybe<Array<Scalars['String']>>
   coverPhotoAvailability_eq?: Maybe<AssetAvailability>
   coverPhotoAvailability_in?: Maybe<Array<AssetAvailability>>
-  avatarPhotoDataObject_eq?: Maybe<Scalars['ID']>
-  avatarPhotoDataObject_in?: Maybe<Array<Scalars['ID']>>
+  avatarPhotoUrls_containsAll?: Maybe<Array<Scalars['String']>>
+  avatarPhotoUrls_containsNone?: Maybe<Array<Scalars['String']>>
+  avatarPhotoUrls_containsAny?: Maybe<Array<Scalars['String']>>
   avatarPhotoAvailability_eq?: Maybe<AssetAvailability>
   avatarPhotoAvailability_in?: Maybe<Array<AssetAvailability>>
   isPublic_eq?: Maybe<Scalars['Boolean']>
   isPublic_in?: Maybe<Array<Scalars['Boolean']>>
   isCensored_eq?: Maybe<Scalars['Boolean']>
   isCensored_in?: Maybe<Array<Scalars['Boolean']>>
-  language_eq?: Maybe<Scalars['ID']>
-  language_in?: Maybe<Array<Scalars['ID']>>
   createdInBlock_eq?: Maybe<Scalars['Int']>
   createdInBlock_gt?: Maybe<Scalars['Int']>
   createdInBlock_gte?: Maybe<Scalars['Int']>
@@ -471,6 +465,9 @@ export type CuratorGroupWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  curatorIds_containsAll?: Maybe<Array<Scalars['Int']>>
+  curatorIds_containsNone?: Maybe<Array<Scalars['Int']>>
+  curatorIds_containsAny?: Maybe<Array<Scalars['Int']>>
   isActive_eq?: Maybe<Scalars['Boolean']>
   isActive_in?: Maybe<Array<Scalars['Boolean']>>
   channels_none?: Maybe<ChannelWhereInput>
@@ -575,163 +572,14 @@ export type DataObjectOwnerChannel = {
   dummy?: Maybe<Scalars['Int']>
 }
 
-export type DataObjectOwnerChannelCreateInput = {
-  channel: Scalars['Float']
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerChannelUpdateInput = {
-  channel?: Maybe<Scalars['Float']>
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerChannelWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  channel_eq?: Maybe<Scalars['Int']>
-  channel_gt?: Maybe<Scalars['Int']>
-  channel_gte?: Maybe<Scalars['Int']>
-  channel_lt?: Maybe<Scalars['Int']>
-  channel_lte?: Maybe<Scalars['Int']>
-  channel_in?: Maybe<Array<Scalars['Int']>>
-  dummy_eq?: Maybe<Scalars['Int']>
-  dummy_gt?: Maybe<Scalars['Int']>
-  dummy_gte?: Maybe<Scalars['Int']>
-  dummy_lt?: Maybe<Scalars['Int']>
-  dummy_lte?: Maybe<Scalars['Int']>
-  dummy_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<DataObjectOwnerChannelWhereInput>>
-  OR?: Maybe<Array<DataObjectOwnerChannelWhereInput>>
-}
-
-export type DataObjectOwnerChannelWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type DataObjectOwnerCouncil = {
   /** Variant needs to have at least one property. This value is not used. */
   dummy?: Maybe<Scalars['Int']>
 }
 
-export type DataObjectOwnerCouncilCreateInput = {
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerCouncilUpdateInput = {
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerCouncilWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  dummy_eq?: Maybe<Scalars['Int']>
-  dummy_gt?: Maybe<Scalars['Int']>
-  dummy_gte?: Maybe<Scalars['Int']>
-  dummy_lt?: Maybe<Scalars['Int']>
-  dummy_lte?: Maybe<Scalars['Int']>
-  dummy_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<DataObjectOwnerCouncilWhereInput>>
-  OR?: Maybe<Array<DataObjectOwnerCouncilWhereInput>>
-}
-
-export type DataObjectOwnerCouncilWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type DataObjectOwnerDao = {
   /** DAO identifier */
   dao: Scalars['Int']
-}
-
-export type DataObjectOwnerDaoCreateInput = {
-  dao: Scalars['Float']
-}
-
-export type DataObjectOwnerDaoUpdateInput = {
-  dao?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerDaoWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  dao_eq?: Maybe<Scalars['Int']>
-  dao_gt?: Maybe<Scalars['Int']>
-  dao_gte?: Maybe<Scalars['Int']>
-  dao_lt?: Maybe<Scalars['Int']>
-  dao_lte?: Maybe<Scalars['Int']>
-  dao_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<DataObjectOwnerDaoWhereInput>>
-  OR?: Maybe<Array<DataObjectOwnerDaoWhereInput>>
-}
-
-export type DataObjectOwnerDaoWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type DataObjectOwnerMember = {
@@ -741,111 +589,9 @@ export type DataObjectOwnerMember = {
   dummy?: Maybe<Scalars['Int']>
 }
 
-export type DataObjectOwnerMemberCreateInput = {
-  member: Scalars['Float']
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerMemberUpdateInput = {
-  member?: Maybe<Scalars['Float']>
-  dummy?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerMemberWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  member_eq?: Maybe<Scalars['Int']>
-  member_gt?: Maybe<Scalars['Int']>
-  member_gte?: Maybe<Scalars['Int']>
-  member_lt?: Maybe<Scalars['Int']>
-  member_lte?: Maybe<Scalars['Int']>
-  member_in?: Maybe<Array<Scalars['Int']>>
-  dummy_eq?: Maybe<Scalars['Int']>
-  dummy_gt?: Maybe<Scalars['Int']>
-  dummy_gte?: Maybe<Scalars['Int']>
-  dummy_lt?: Maybe<Scalars['Int']>
-  dummy_lte?: Maybe<Scalars['Int']>
-  dummy_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<DataObjectOwnerMemberWhereInput>>
-  OR?: Maybe<Array<DataObjectOwnerMemberWhereInput>>
-}
-
-export type DataObjectOwnerMemberWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type DataObjectOwnerWorkingGroup = {
   /** Working group identifier */
   workingGroup: Scalars['Int']
-}
-
-export type DataObjectOwnerWorkingGroupCreateInput = {
-  workingGroup: Scalars['Float']
-}
-
-export type DataObjectOwnerWorkingGroupUpdateInput = {
-  workingGroup?: Maybe<Scalars['Float']>
-}
-
-export type DataObjectOwnerWorkingGroupWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  workingGroup_eq?: Maybe<Scalars['Int']>
-  workingGroup_gt?: Maybe<Scalars['Int']>
-  workingGroup_gte?: Maybe<Scalars['Int']>
-  workingGroup_lt?: Maybe<Scalars['Int']>
-  workingGroup_lte?: Maybe<Scalars['Int']>
-  workingGroup_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<DataObjectOwnerWorkingGroupWhereInput>>
-  OR?: Maybe<Array<DataObjectOwnerWorkingGroupWhereInput>>
-}
-
-export type DataObjectOwnerWorkingGroupWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type DataObjectUpdateInput = {
@@ -903,8 +649,6 @@ export type DataObjectWhereInput = {
   size_lt?: Maybe<Scalars['Int']>
   size_lte?: Maybe<Scalars['Int']>
   size_in?: Maybe<Array<Scalars['Int']>>
-  liaison_eq?: Maybe<Scalars['ID']>
-  liaison_in?: Maybe<Array<Scalars['ID']>>
   liaisonJudgement_eq?: Maybe<LiaisonJudgement>
   liaisonJudgement_in?: Maybe<Array<LiaisonJudgement>>
   ipfsContentId_eq?: Maybe<Scalars['String']>
@@ -1147,8 +891,6 @@ export type DistributionBucketFamilyWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  metadata_eq?: Maybe<Scalars['ID']>
-  metadata_in?: Maybe<Array<Scalars['ID']>>
   metadata?: Maybe<DistributionBucketFamilyMetadataWhereInput>
   buckets_none?: Maybe<DistributionBucketWhereInput>
   buckets_some?: Maybe<DistributionBucketWhereInput>
@@ -1284,8 +1026,6 @@ export type DistributionBucketOperatorMetadataWhereInput = {
   nodeEndpoint_startsWith?: Maybe<Scalars['String']>
   nodeEndpoint_endsWith?: Maybe<Scalars['String']>
   nodeEndpoint_in?: Maybe<Array<Scalars['String']>>
-  nodeLocation_eq?: Maybe<Scalars['ID']>
-  nodeLocation_in?: Maybe<Array<Scalars['ID']>>
   extra_eq?: Maybe<Scalars['String']>
   extra_contains?: Maybe<Scalars['String']>
   extra_startsWith?: Maybe<Scalars['String']>
@@ -1357,8 +1097,6 @@ export type DistributionBucketOperatorWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  distributionBucket_eq?: Maybe<Scalars['ID']>
-  distributionBucket_in?: Maybe<Array<Scalars['ID']>>
   workerId_eq?: Maybe<Scalars['Int']>
   workerId_gt?: Maybe<Scalars['Int']>
   workerId_gte?: Maybe<Scalars['Int']>
@@ -1367,8 +1105,6 @@ export type DistributionBucketOperatorWhereInput = {
   workerId_in?: Maybe<Array<Scalars['Int']>>
   status_eq?: Maybe<DistributionBucketOperatorStatus>
   status_in?: Maybe<Array<DistributionBucketOperatorStatus>>
-  metadata_eq?: Maybe<Scalars['ID']>
-  metadata_in?: Maybe<Array<Scalars['ID']>>
   distributionBucket?: Maybe<DistributionBucketWhereInput>
   metadata?: Maybe<DistributionBucketOperatorMetadataWhereInput>
   AND?: Maybe<Array<DistributionBucketOperatorWhereInput>>
@@ -1425,8 +1161,6 @@ export type DistributionBucketWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  family_eq?: Maybe<Scalars['ID']>
-  family_in?: Maybe<Array<Scalars['ID']>>
   acceptingNewBags_eq?: Maybe<Scalars['Boolean']>
   acceptingNewBags_in?: Maybe<Array<Scalars['Boolean']>>
   distributing_eq?: Maybe<Scalars['Boolean']>
@@ -1537,8 +1271,6 @@ export type GeoCoordinatesWhereInput = {
   longitude_lt?: Maybe<Scalars['Float']>
   longitude_lte?: Maybe<Scalars['Float']>
   longitude_in?: Maybe<Array<Scalars['Float']>>
-  boundarySourceBucketFamilyMeta_eq?: Maybe<Scalars['ID']>
-  boundarySourceBucketFamilyMeta_in?: Maybe<Array<Scalars['ID']>>
   boundarySourceBucketFamilyMeta?: Maybe<DistributionBucketFamilyMetadataWhereInput>
   nodelocationmetadatacoordinates_none?: Maybe<NodeLocationMetadataWhereInput>
   nodelocationmetadatacoordinates_some?: Maybe<NodeLocationMetadataWhereInput>
@@ -2116,8 +1848,6 @@ export type NodeLocationMetadataWhereInput = {
   city_startsWith?: Maybe<Scalars['String']>
   city_endsWith?: Maybe<Scalars['String']>
   city_in?: Maybe<Array<Scalars['String']>>
-  coordinates_eq?: Maybe<Scalars['ID']>
-  coordinates_in?: Maybe<Array<Scalars['ID']>>
   coordinates?: Maybe<GeoCoordinatesWhereInput>
   distributionbucketoperatormetadatanodeLocation_none?: Maybe<DistributionBucketOperatorMetadataWhereInput>
   distributionbucketoperatormetadatanodeLocation_some?: Maybe<DistributionBucketOperatorMetadataWhereInput>
@@ -2925,10 +2655,6 @@ export type StorageBagDistributionAssignmentWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  storageBag_eq?: Maybe<Scalars['ID']>
-  storageBag_in?: Maybe<Array<Scalars['ID']>>
-  distributionBucket_eq?: Maybe<Scalars['ID']>
-  distributionBucket_in?: Maybe<Array<Scalars['ID']>>
   storageBagId_eq?: Maybe<Scalars['String']>
   storageBagId_contains?: Maybe<Scalars['String']>
   storageBagId_startsWith?: Maybe<Scalars['String']>
@@ -2974,254 +2700,20 @@ export type StorageBagOwnerChannel = {
   channelId?: Maybe<Scalars['Int']>
 }
 
-export type StorageBagOwnerChannelCreateInput = {
-  channelId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerChannelUpdateInput = {
-  channelId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerChannelWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  channelId_eq?: Maybe<Scalars['Int']>
-  channelId_gt?: Maybe<Scalars['Int']>
-  channelId_gte?: Maybe<Scalars['Int']>
-  channelId_lt?: Maybe<Scalars['Int']>
-  channelId_lte?: Maybe<Scalars['Int']>
-  channelId_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBagOwnerChannelWhereInput>>
-  OR?: Maybe<Array<StorageBagOwnerChannelWhereInput>>
-}
-
-export type StorageBagOwnerChannelWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type StorageBagOwnerCouncil = {
   phantom?: Maybe<Scalars['Int']>
-}
-
-export type StorageBagOwnerCouncilCreateInput = {
-  phantom?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerCouncilUpdateInput = {
-  phantom?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerCouncilWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  phantom_eq?: Maybe<Scalars['Int']>
-  phantom_gt?: Maybe<Scalars['Int']>
-  phantom_gte?: Maybe<Scalars['Int']>
-  phantom_lt?: Maybe<Scalars['Int']>
-  phantom_lte?: Maybe<Scalars['Int']>
-  phantom_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBagOwnerCouncilWhereInput>>
-  OR?: Maybe<Array<StorageBagOwnerCouncilWhereInput>>
-}
-
-export type StorageBagOwnerCouncilWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type StorageBagOwnerDao = {
   daoId?: Maybe<Scalars['Int']>
 }
 
-export type StorageBagOwnerDaoCreateInput = {
-  daoId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerDaoUpdateInput = {
-  daoId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerDaoWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  daoId_eq?: Maybe<Scalars['Int']>
-  daoId_gt?: Maybe<Scalars['Int']>
-  daoId_gte?: Maybe<Scalars['Int']>
-  daoId_lt?: Maybe<Scalars['Int']>
-  daoId_lte?: Maybe<Scalars['Int']>
-  daoId_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBagOwnerDaoWhereInput>>
-  OR?: Maybe<Array<StorageBagOwnerDaoWhereInput>>
-}
-
-export type StorageBagOwnerDaoWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type StorageBagOwnerMember = {
   memberId?: Maybe<Scalars['Int']>
 }
 
-export type StorageBagOwnerMemberCreateInput = {
-  memberId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerMemberUpdateInput = {
-  memberId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBagOwnerMemberWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  memberId_eq?: Maybe<Scalars['Int']>
-  memberId_gt?: Maybe<Scalars['Int']>
-  memberId_gte?: Maybe<Scalars['Int']>
-  memberId_lt?: Maybe<Scalars['Int']>
-  memberId_lte?: Maybe<Scalars['Int']>
-  memberId_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBagOwnerMemberWhereInput>>
-  OR?: Maybe<Array<StorageBagOwnerMemberWhereInput>>
-}
-
-export type StorageBagOwnerMemberWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type StorageBagOwnerWorkingGroup = {
   workingGroupId?: Maybe<Scalars['String']>
-}
-
-export type StorageBagOwnerWorkingGroupCreateInput = {
-  workingGroupId?: Maybe<Scalars['String']>
-}
-
-export type StorageBagOwnerWorkingGroupUpdateInput = {
-  workingGroupId?: Maybe<Scalars['String']>
-}
-
-export type StorageBagOwnerWorkingGroupWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  workingGroupId_eq?: Maybe<Scalars['String']>
-  workingGroupId_contains?: Maybe<Scalars['String']>
-  workingGroupId_startsWith?: Maybe<Scalars['String']>
-  workingGroupId_endsWith?: Maybe<Scalars['String']>
-  workingGroupId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<StorageBagOwnerWorkingGroupWhereInput>>
-  OR?: Maybe<Array<StorageBagOwnerWorkingGroupWhereInput>>
-}
-
-export type StorageBagOwnerWorkingGroupWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type StorageBagStorageAssignment = BaseGraphQlObject & {
@@ -3306,10 +2798,6 @@ export type StorageBagStorageAssignmentWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  storageBag_eq?: Maybe<Scalars['ID']>
-  storageBag_in?: Maybe<Array<Scalars['ID']>>
-  storageBucket_eq?: Maybe<Scalars['ID']>
-  storageBucket_in?: Maybe<Array<Scalars['ID']>>
   storageBagId_eq?: Maybe<Scalars['String']>
   storageBagId_contains?: Maybe<Scalars['String']>
   storageBagId_startsWith?: Maybe<Scalars['String']>
@@ -3413,10 +2901,10 @@ export type StorageBucketCreateInput = {
   operatorStatus: Scalars['JSONObject']
   operatorMetadata?: Maybe<Scalars['ID']>
   acceptingNewBags: Scalars['Boolean']
-  dataObjectsSizeLimit: Scalars['BigInt']
-  dataObjectCountLimit: Scalars['BigInt']
-  dataObjectsCount: Scalars['BigInt']
-  dataObjectsSize: Scalars['BigInt']
+  dataObjectsSizeLimit: Scalars['String']
+  dataObjectCountLimit: Scalars['String']
+  dataObjectsCount: Scalars['String']
+  dataObjectsSize: Scalars['String']
 }
 
 export type StorageBucketEdge = {
@@ -3510,8 +2998,6 @@ export type StorageBucketOperatorMetadataWhereInput = {
   nodeEndpoint_startsWith?: Maybe<Scalars['String']>
   nodeEndpoint_endsWith?: Maybe<Scalars['String']>
   nodeEndpoint_in?: Maybe<Array<Scalars['String']>>
-  nodeLocation_eq?: Maybe<Scalars['ID']>
-  nodeLocation_in?: Maybe<Array<Scalars['ID']>>
   extra_eq?: Maybe<Scalars['String']>
   extra_contains?: Maybe<Scalars['String']>
   extra_startsWith?: Maybe<Scalars['String']>
@@ -3538,153 +3024,12 @@ export type StorageBucketOperatorStatusActive = {
   workerId: Scalars['Int']
 }
 
-export type StorageBucketOperatorStatusActiveCreateInput = {
-  workerId: Scalars['Float']
-}
-
-export type StorageBucketOperatorStatusActiveUpdateInput = {
-  workerId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBucketOperatorStatusActiveWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  workerId_eq?: Maybe<Scalars['Int']>
-  workerId_gt?: Maybe<Scalars['Int']>
-  workerId_gte?: Maybe<Scalars['Int']>
-  workerId_lt?: Maybe<Scalars['Int']>
-  workerId_lte?: Maybe<Scalars['Int']>
-  workerId_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBucketOperatorStatusActiveWhereInput>>
-  OR?: Maybe<Array<StorageBucketOperatorStatusActiveWhereInput>>
-}
-
-export type StorageBucketOperatorStatusActiveWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type StorageBucketOperatorStatusInvited = {
   workerId: Scalars['Int']
 }
 
-export type StorageBucketOperatorStatusInvitedCreateInput = {
-  workerId: Scalars['Float']
-}
-
-export type StorageBucketOperatorStatusInvitedUpdateInput = {
-  workerId?: Maybe<Scalars['Float']>
-}
-
-export type StorageBucketOperatorStatusInvitedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  workerId_eq?: Maybe<Scalars['Int']>
-  workerId_gt?: Maybe<Scalars['Int']>
-  workerId_gte?: Maybe<Scalars['Int']>
-  workerId_lt?: Maybe<Scalars['Int']>
-  workerId_lte?: Maybe<Scalars['Int']>
-  workerId_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBucketOperatorStatusInvitedWhereInput>>
-  OR?: Maybe<Array<StorageBucketOperatorStatusInvitedWhereInput>>
-}
-
-export type StorageBucketOperatorStatusInvitedWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type StorageBucketOperatorStatusMissing = {
   phantom?: Maybe<Scalars['Int']>
-}
-
-export type StorageBucketOperatorStatusMissingCreateInput = {
-  phantom?: Maybe<Scalars['Float']>
-}
-
-export type StorageBucketOperatorStatusMissingUpdateInput = {
-  phantom?: Maybe<Scalars['Float']>
-}
-
-export type StorageBucketOperatorStatusMissingWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  phantom_eq?: Maybe<Scalars['Int']>
-  phantom_gt?: Maybe<Scalars['Int']>
-  phantom_gte?: Maybe<Scalars['Int']>
-  phantom_lt?: Maybe<Scalars['Int']>
-  phantom_lte?: Maybe<Scalars['Int']>
-  phantom_in?: Maybe<Array<Scalars['Int']>>
-  AND?: Maybe<Array<StorageBucketOperatorStatusMissingWhereInput>>
-  OR?: Maybe<Array<StorageBucketOperatorStatusMissingWhereInput>>
-}
-
-export type StorageBucketOperatorStatusMissingWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export enum StorageBucketOrderByInput {
@@ -3712,10 +3057,10 @@ export type StorageBucketUpdateInput = {
   operatorStatus?: Maybe<Scalars['JSONObject']>
   operatorMetadata?: Maybe<Scalars['ID']>
   acceptingNewBags?: Maybe<Scalars['Boolean']>
-  dataObjectsSizeLimit?: Maybe<Scalars['BigInt']>
-  dataObjectCountLimit?: Maybe<Scalars['BigInt']>
-  dataObjectsCount?: Maybe<Scalars['BigInt']>
-  dataObjectsSize?: Maybe<Scalars['BigInt']>
+  dataObjectsSizeLimit?: Maybe<Scalars['String']>
+  dataObjectCountLimit?: Maybe<Scalars['String']>
+  dataObjectsCount?: Maybe<Scalars['String']>
+  dataObjectsSize?: Maybe<Scalars['String']>
 }
 
 export type StorageBucketWhereInput = {
@@ -3744,8 +3089,6 @@ export type StorageBucketWhereInput = {
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
   operatorStatus_json?: Maybe<Scalars['JSONObject']>
-  operatorMetadata_eq?: Maybe<Scalars['ID']>
-  operatorMetadata_in?: Maybe<Array<Scalars['ID']>>
   acceptingNewBags_eq?: Maybe<Scalars['Boolean']>
   acceptingNewBags_in?: Maybe<Array<Scalars['Boolean']>>
   dataObjectsSizeLimit_eq?: Maybe<Scalars['BigInt']>
@@ -3811,7 +3154,7 @@ export type StorageDataObjectConnection = {
 
 export type StorageDataObjectCreateInput = {
   isAccepted: Scalars['Boolean']
-  size: Scalars['BigInt']
+  size: Scalars['String']
   storageBag: Scalars['ID']
   ipfsHash: Scalars['String']
 }
@@ -3840,7 +3183,7 @@ export enum StorageDataObjectOrderByInput {
 
 export type StorageDataObjectUpdateInput = {
   isAccepted?: Maybe<Scalars['Boolean']>
-  size?: Maybe<Scalars['BigInt']>
+  size?: Maybe<Scalars['String']>
   storageBag?: Maybe<Scalars['ID']>
   ipfsHash?: Maybe<Scalars['String']>
 }
@@ -3878,8 +3221,6 @@ export type StorageDataObjectWhereInput = {
   size_lt?: Maybe<Scalars['BigInt']>
   size_lte?: Maybe<Scalars['BigInt']>
   size_in?: Maybe<Array<Scalars['BigInt']>>
-  storageBag_eq?: Maybe<Scalars['ID']>
-  storageBag_in?: Maybe<Array<Scalars['ID']>>
   ipfsHash_eq?: Maybe<Scalars['String']>
   ipfsHash_contains?: Maybe<Scalars['String']>
   ipfsHash_startsWith?: Maybe<Scalars['String']>
@@ -3931,9 +3272,9 @@ export type StorageSystemParametersCreateInput = {
   storageBucketsPerBagLimit: Scalars['Float']
   distributionBucketsPerBagLimit: Scalars['Float']
   uploadingBlocked: Scalars['Boolean']
-  dataObjectFeePerMb: Scalars['BigInt']
-  storageBucketMaxObjectsCountLimit: Scalars['BigInt']
-  storageBucketMaxObjectsSizeLimit: Scalars['BigInt']
+  dataObjectFeePerMb: Scalars['String']
+  storageBucketMaxObjectsCountLimit: Scalars['String']
+  storageBucketMaxObjectsSizeLimit: Scalars['String']
 }
 
 export type StorageSystemParametersEdge = {
@@ -3967,9 +3308,9 @@ export type StorageSystemParametersUpdateInput = {
   storageBucketsPerBagLimit?: Maybe<Scalars['Float']>
   distributionBucketsPerBagLimit?: Maybe<Scalars['Float']>
   uploadingBlocked?: Maybe<Scalars['Boolean']>
-  dataObjectFeePerMb?: Maybe<Scalars['BigInt']>
-  storageBucketMaxObjectsCountLimit?: Maybe<Scalars['BigInt']>
-  storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb?: Maybe<Scalars['String']>
+  storageBucketMaxObjectsCountLimit?: Maybe<Scalars['String']>
+  storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['String']>
 }
 
 export type StorageSystemParametersWhereInput = {
@@ -3997,6 +3338,9 @@ export type StorageSystemParametersWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  blacklist_containsAll?: Maybe<Array<Scalars['String']>>
+  blacklist_containsNone?: Maybe<Array<Scalars['String']>>
+  blacklist_containsAny?: Maybe<Array<Scalars['String']>>
   storageBucketsPerBagLimit_eq?: Maybe<Scalars['Int']>
   storageBucketsPerBagLimit_gt?: Maybe<Scalars['Int']>
   storageBucketsPerBagLimit_gte?: Maybe<Scalars['Int']>
@@ -4432,8 +3776,6 @@ export type VideoMediaMetadataWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  encoding_eq?: Maybe<Scalars['ID']>
-  encoding_in?: Maybe<Array<Scalars['ID']>>
   pixelWidth_eq?: Maybe<Scalars['Int']>
   pixelWidth_gt?: Maybe<Scalars['Int']>
   pixelWidth_gte?: Maybe<Scalars['Int']>
@@ -4564,10 +3906,6 @@ export type VideoWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  channel_eq?: Maybe<Scalars['ID']>
-  channel_in?: Maybe<Array<Scalars['ID']>>
-  category_eq?: Maybe<Scalars['ID']>
-  category_in?: Maybe<Array<Scalars['ID']>>
   title_eq?: Maybe<Scalars['String']>
   title_contains?: Maybe<Scalars['String']>
   title_startsWith?: Maybe<Scalars['String']>
@@ -4584,12 +3922,11 @@ export type VideoWhereInput = {
   duration_lt?: Maybe<Scalars['Int']>
   duration_lte?: Maybe<Scalars['Int']>
   duration_in?: Maybe<Array<Scalars['Int']>>
-  thumbnailPhotoDataObject_eq?: Maybe<Scalars['ID']>
-  thumbnailPhotoDataObject_in?: Maybe<Array<Scalars['ID']>>
+  thumbnailPhotoUrls_containsAll?: Maybe<Array<Scalars['String']>>
+  thumbnailPhotoUrls_containsNone?: Maybe<Array<Scalars['String']>>
+  thumbnailPhotoUrls_containsAny?: Maybe<Array<Scalars['String']>>
   thumbnailPhotoAvailability_eq?: Maybe<AssetAvailability>
   thumbnailPhotoAvailability_in?: Maybe<Array<AssetAvailability>>
-  language_eq?: Maybe<Scalars['ID']>
-  language_in?: Maybe<Array<Scalars['ID']>>
   hasMarketing_eq?: Maybe<Scalars['Boolean']>
   hasMarketing_in?: Maybe<Array<Scalars['Boolean']>>
   publishedBeforeJoystream_eq?: Maybe<Scalars['DateTime']>
@@ -4603,14 +3940,11 @@ export type VideoWhereInput = {
   isCensored_in?: Maybe<Array<Scalars['Boolean']>>
   isExplicit_eq?: Maybe<Scalars['Boolean']>
   isExplicit_in?: Maybe<Array<Scalars['Boolean']>>
-  license_eq?: Maybe<Scalars['ID']>
-  license_in?: Maybe<Array<Scalars['ID']>>
-  mediaDataObject_eq?: Maybe<Scalars['ID']>
-  mediaDataObject_in?: Maybe<Array<Scalars['ID']>>
+  mediaUrls_containsAll?: Maybe<Array<Scalars['String']>>
+  mediaUrls_containsNone?: Maybe<Array<Scalars['String']>>
+  mediaUrls_containsAny?: Maybe<Array<Scalars['String']>>
   mediaAvailability_eq?: Maybe<AssetAvailability>
   mediaAvailability_in?: Maybe<Array<AssetAvailability>>
-  mediaMetadata_eq?: Maybe<Scalars['ID']>
-  mediaMetadata_in?: Maybe<Array<Scalars['ID']>>
   createdInBlock_eq?: Maybe<Scalars['Int']>
   createdInBlock_gt?: Maybe<Scalars['Int']>
   createdInBlock_gte?: Maybe<Scalars['Int']>
