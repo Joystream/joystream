@@ -4,7 +4,8 @@ import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
 import { configMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
-import * as s3Helpers from './s3Helpers'
+import { IndexerServiceDeployment } from './indexerDeployment'
+import { ProcessorServiceDeployment } from './processorDeployment'
 import { CaddyServiceDeployment } from 'pulumi-common'
 
 require('dotenv').config()
@@ -12,23 +13,32 @@ require('dotenv').config()
 const config = new pulumi.Config()
 const awsConfig = new pulumi.Config('aws')
 const isMinikube = config.getBoolean('isMinikube')
+const externalIndexerUrl = config.get('externalIndexerUrl')
+const appsImage = config.get('appsImage') || `joystream/apps:latest`
+const skipProcessor = config.getBoolean('skipProcessor')
+const useLocalRepo = config.getBoolean('useLocalRepo')
+
 export let kubeconfig: pulumi.Output<any>
 export let joystreamAppsImage: pulumi.Output<string>
 let provider: k8s.Provider
 
+if (skipProcessor && externalIndexerUrl) {
+  pulumi.log.error('Need to deploy atleast one component, Indexer or Processor')
+  throw new Error(`Please check the config settings for skipProcessor and externalIndexerUrl`)
+}
+
 if (isMinikube) {
   provider = new k8s.Provider('local', {})
 
-  // Create image from local app
-  joystreamAppsImage = new docker.Image('joystream/apps', {
-    build: {
-      context: '../../../',
-      dockerfile: '../../../apps.Dockerfile',
-    },
-    imageName: 'joystream/apps:latest',
-    skipPush: true,
-  }).baseImageName
-  // joystreamAppsImage = pulumi.interpolate`joystream/apps`
+  if (useLocalRepo) {
+    // Use already existing image in minikube environment
+    joystreamAppsImage = pulumi.interpolate`${appsImage}`
+  } else {
+    // Access image from docker hub
+    joystreamAppsImage = new docker.RemoteImage('apps', {
+      name: appsImage!,
+    }).name
+  }
 } else {
   // Create a VPC for our cluster.
   const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
@@ -52,9 +62,11 @@ if (isMinikube) {
   // Create a repository
   const repo = new awsx.ecr.Repository('joystream/apps')
 
+  // Build an image from an existing local/docker hub image and push to ECR
   joystreamAppsImage = repo.buildAndPushImage({
-    dockerfile: '../../../apps.Dockerfile',
-    context: '../../../',
+    context: './docker_dummy',
+    dockerfile: './docker_dummy/Dockerfile',
+    args: { SOURCE_IMAGE: appsImage! },
   })
 }
 
@@ -68,217 +80,6 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-const appLabels = { appClass: name }
-
-// Create a Deployment
-const databaseLabels = { app: 'postgres-db' }
-
-const pvc = new k8s.core.v1.PersistentVolumeClaim(
-  `db-pvc`,
-  {
-    metadata: {
-      labels: databaseLabels,
-      namespace: namespaceName,
-      name: `db-pvc`,
-    },
-    spec: {
-      accessModes: ['ReadWriteOnce'],
-      resources: {
-        requests: {
-          storage: `10Gi`,
-        },
-      },
-    },
-  },
-  resourceOptions
-)
-
-const databaseDeployment = new k8s.apps.v1.Deployment(
-  'postgres-db',
-  {
-    metadata: {
-      namespace: namespaceName,
-      labels: databaseLabels,
-    },
-    spec: {
-      selector: { matchLabels: databaseLabels },
-      template: {
-        metadata: { labels: databaseLabels },
-        spec: {
-          containers: [
-            {
-              name: 'postgres-db',
-              image: 'postgres:12',
-              env: [
-                { name: 'POSTGRES_USER', value: process.env.DB_USER! },
-                { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
-                { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
-              ],
-              ports: [{ containerPort: 5432 }],
-              volumeMounts: [
-                {
-                  name: 'postgres-data',
-                  mountPath: '/var/lib/postgresql/data',
-                  subPath: 'postgres',
-                },
-              ],
-            },
-          ],
-          volumes: [
-            {
-              name: 'postgres-data',
-              persistentVolumeClaim: {
-                claimName: `db-pvc`,
-              },
-            },
-          ],
-        },
-      },
-    },
-  },
-  resourceOptions
-)
-
-const databaseService = new k8s.core.v1.Service(
-  'postgres-db',
-  {
-    metadata: {
-      namespace: namespaceName,
-      labels: databaseDeployment.metadata.labels,
-      name: 'postgres-db',
-    },
-    spec: {
-      ports: [{ port: 5432 }],
-      selector: databaseDeployment.spec.template.metadata.labels,
-    },
-  },
-  resourceOptions
-)
-
-const migrationJob = new k8s.batch.v1.Job(
-  'db-migration',
-  {
-    metadata: {
-      namespace: namespaceName,
-    },
-    spec: {
-      backoffLimit: 0,
-      template: {
-        spec: {
-          containers: [
-            {
-              name: 'db-migration',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              resources: { requests: { cpu: '100m', memory: '100Mi' } },
-              env: [
-                {
-                  name: 'WARTHOG_DB_HOST',
-                  value: 'postgres-db',
-                },
-                {
-                  name: 'DB_HOST',
-                  value: 'postgres-db',
-                },
-                { name: 'DB_NAME', value: process.env.DB_NAME! },
-                { name: 'DB_PASS', value: process.env.DB_PASS! },
-              ],
-              command: ['/bin/sh', '-c'],
-              args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
-            },
-          ],
-          restartPolicy: 'Never',
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: databaseService }
-)
-
-const membersFilePath = config.get('membersFilePath')
-  ? config.get('membersFilePath')!
-  : '../../../query-node/mappings/bootstrap/data/members.json'
-const workersFilePath = config.get('workersFilePath')
-  ? config.get('workersFilePath')!
-  : '../../../query-node/mappings/bootstrap/data/workers.json'
-
-const dataBucket = new s3Helpers.FileBucket('bootstrap-data', {
-  files: [
-    { path: membersFilePath, name: 'members.json' },
-    { path: workersFilePath, name: 'workers.json' },
-  ],
-  policy: s3Helpers.publicReadPolicy,
-})
-
-const membersUrl = dataBucket.getUrlForFile('members.json')
-const workersUrl = dataBucket.getUrlForFile('workers.json')
-
-const dataPath = '/joystream/query-node/mappings/bootstrap/data'
-
-const processorJob = new k8s.batch.v1.Job(
-  'processor-migration',
-  {
-    metadata: {
-      namespace: namespaceName,
-    },
-    spec: {
-      backoffLimit: 0,
-      template: {
-        spec: {
-          initContainers: [
-            {
-              name: 'curl-init',
-              image: 'appropriate/curl',
-              command: ['/bin/sh', '-c'],
-              args: [
-                pulumi.interpolate`curl -o ${dataPath}/workers.json ${workersUrl}; curl -o ${dataPath}/members.json ${membersUrl}; ls -al ${dataPath};`,
-              ],
-              volumeMounts: [
-                {
-                  name: 'bootstrap-data',
-                  mountPath: dataPath,
-                },
-              ],
-            },
-          ],
-          containers: [
-            {
-              name: 'processor-migration',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              env: [
-                {
-                  name: 'INDEXER_ENDPOINT_URL',
-                  value: `http://localhost:${process.env.WARTHOG_APP_PORT}/graphql`,
-                },
-                { name: 'TYPEORM_HOST', value: 'postgres-db' },
-                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
-                { name: 'DEBUG', value: 'index-builder:*' },
-                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
-              ],
-              volumeMounts: [
-                {
-                  name: 'bootstrap-data',
-                  mountPath: dataPath,
-                },
-              ],
-              args: ['workspace', 'query-node-root', 'processor:bootstrap'],
-            },
-          ],
-          restartPolicy: 'Never',
-          volumes: [
-            {
-              name: 'bootstrap-data',
-              emptyDir: {},
-            },
-          ],
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: migrationJob }
-)
-
 const defsConfig = new configMapFromFile(
   'defs-config',
   {
@@ -288,209 +89,45 @@ const defsConfig = new configMapFromFile(
   resourceOptions
 ).configName
 
-const indexerContainer = []
-
-const existingIndexer = config.get('indexerURL')
-
-if (!existingIndexer) {
-  indexerContainer.push({
-    name: 'indexer',
-    image: 'joystream/hydra-indexer:2.1.0-beta.9',
-    env: [
-      { name: 'DB_HOST', value: 'postgres-db' },
-      { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
-      { name: 'DB_PASS', value: process.env.DB_PASS! },
-      { name: 'INDEXER_WORKERS', value: '5' },
-      { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
-      { name: 'DEBUG', value: 'index-builder:*' },
-      { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
-      { name: 'TYPES_JSON', value: 'types.json' },
-      { name: 'PGUSER', value: process.env.DB_USER! },
-      { name: 'BLOCK_HEIGHT', value: process.env.BLOCK_HEIGHT! },
-    ],
-    volumeMounts: [
-      {
-        mountPath: '/home/hydra/packages/hydra-indexer/types.json',
-        name: 'indexer-volume',
-        subPath: 'fileData',
-      },
-    ],
-    command: ['/bin/sh', '-c'],
-    args: ['yarn db:bootstrap && yarn start:prod'],
-  })
+if (!externalIndexerUrl) {
+  const indexer = new IndexerServiceDeployment(
+    'indexer',
+    { namespaceName, storage: 10, defsConfig, joystreamAppsImage },
+    resourceOptions
+  )
 }
 
-const deployment = new k8s.apps.v1.Deployment(
-  name,
-  {
-    metadata: {
-      namespace: namespaceName,
-      labels: appLabels,
-    },
-    spec: {
-      replicas: 1,
-      selector: { matchLabels: appLabels },
-      template: {
-        metadata: {
-          labels: appLabels,
-        },
-        spec: {
-          containers: [
-            {
-              name: 'redis',
-              image: 'redis:6.0-alpine',
-              ports: [{ containerPort: 6379 }],
-            },
-            ...indexerContainer,
-            {
-              name: 'hydra-indexer-gateway',
-              image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
-              env: [
-                { name: 'WARTHOG_STARTER_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
-                { name: 'WARTHOG_STARTER_DB_HOST', value: 'postgres-db' },
-                { name: 'WARTHOG_STARTER_DB_PASSWORD', value: process.env.DB_PASS! },
-                { name: 'WARTHOG_STARTER_DB_PORT', value: process.env.DB_PORT! },
-                { name: 'WARTHOG_STARTER_DB_USERNAME', value: process.env.DB_USER! },
-                { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://localhost:6379/0' },
-                { name: 'WARTHOG_APP_PORT', value: process.env.WARTHOG_APP_PORT! },
-                { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
-                { name: 'DEBUG', value: '*' },
-              ],
-              ports: [{ containerPort: 4002 }],
-            },
-            {
-              name: 'graphql-server',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              env: [
-                { name: 'DB_HOST', value: 'postgres-db' },
-                { name: 'DB_PASS', value: process.env.DB_PASS! },
-                { name: 'DB_USER', value: process.env.DB_USER! },
-                { name: 'DB_PORT', value: process.env.DB_PORT! },
-                { name: 'DB_NAME', value: process.env.DB_NAME! },
-                { name: 'GRAPHQL_SERVER_HOST', value: process.env.GRAPHQL_SERVER_HOST! },
-                { name: 'GRAPHQL_SERVER_PORT', value: process.env.GRAPHQL_SERVER_PORT! },
-              ],
-              ports: [{ name: 'graph-ql-port', containerPort: Number(process.env.GRAPHQL_SERVER_PORT!) }],
-              args: ['workspace', 'query-node-root', 'query-node:start:prod'],
-            },
-          ],
-          volumes: [
-            {
-              name: 'indexer-volume',
-              configMap: {
-                name: defsConfig,
-              },
-            },
-          ],
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: processorJob }
-)
-
-// Export the Deployment name
-export const deploymentName = deployment.metadata.name
-
-// Create a LoadBalancer Service for the NGINX Deployment
-const service = new k8s.core.v1.Service(
-  name,
-  {
-    metadata: {
-      labels: appLabels,
-      namespace: namespaceName,
-      name: 'query-node',
-    },
-    spec: {
-      ports: [
-        { name: 'port-1', port: 8081, targetPort: 'graph-ql-port' },
-        { name: 'port-2', port: 4000, targetPort: 4002 },
-      ],
-      selector: appLabels,
-    },
-  },
-  resourceOptions
-)
-
-// Export the Service name
-export const serviceName = service.metadata.name
-
-const indexerURL = config.get('indexerURL') || `http://query-node:4000/graphql`
-
-const processorDeployment = new k8s.apps.v1.Deployment(
-  `processor`,
-  {
-    metadata: {
-      namespace: namespaceName,
-      labels: appLabels,
-    },
-    spec: {
-      replicas: 1,
-      selector: { matchLabels: appLabels },
-      template: {
-        metadata: {
-          labels: appLabels,
-        },
-        spec: {
-          containers: [
-            {
-              name: 'processor',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              env: [
-                {
-                  name: 'INDEXER_ENDPOINT_URL',
-                  value: indexerURL,
-                },
-                { name: 'TYPEORM_HOST', value: 'postgres-db' },
-                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
-                { name: 'DEBUG', value: 'index-builder:*' },
-                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
-              ],
-              volumeMounts: [
-                {
-                  mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
-                  name: 'processor-volume',
-                  subPath: 'fileData',
-                },
-              ],
-              command: ['/bin/sh', '-c'],
-              args: ['cd query-node && yarn hydra-processor run -e ../.env'],
-            },
-          ],
-          volumes: [
-            {
-              name: 'processor-volume',
-              configMap: {
-                name: defsConfig,
-              },
-            },
-          ],
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: deployment }
-)
+if (!skipProcessor) {
+  const processor = new ProcessorServiceDeployment(
+    'processor',
+    { namespaceName, storage: 10, defsConfig, joystreamAppsImage, externalIndexerUrl },
+    resourceOptions
+  )
+}
 
 const caddyEndpoints = [
-  `/indexer/* {
+  `/indexer* {
     uri strip_prefix /indexer
-    reverse_proxy query-node:4000
+    reverse_proxy indexer:4000
 }`,
-  `/server/* {
+  `/server* {
     uri strip_prefix /server
-    reverse_proxy query-node:8081
+    reverse_proxy graphql-server:8081
 }`,
 ]
 
 const lbReady = config.get('isLoadBalancerReady') === 'true'
-const caddy = new CaddyServiceDeployment(
-  'caddy-proxy',
-  { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
-  resourceOptions
-)
 
-export const endpoint1 = caddy.primaryEndpoint
-export const endpoint2 = caddy.secondaryEndpoint
+export let endpoint1: pulumi.Output<string>
+export let endpoint2: pulumi.Output<string>
+
+if (!isMinikube) {
+  const caddy = new CaddyServiceDeployment(
+    'caddy-proxy',
+    { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
+    resourceOptions
+  )
+
+  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+}
