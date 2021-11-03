@@ -269,7 +269,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
         : <ApplicationsDetailsByOpening
           openingId={openingId.toNumber()}
           acceptedIds={[succesfulApplicationId.toNumber()]}
-          group={workingGroup.type as WorkingGroupKey}/>,
+          group={workingGroup.type}/>,
       true
     )
   ],
@@ -280,7 +280,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
       'Lead',
       historical
         ? `#${(leadId as WorkerId).toNumber()}`
-        : <LeadInfoFromId group={(group as WorkingGroup).type as WorkingGroupKey} leadId={(leadId as WorkerId).toNumber()}/>,
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
@@ -291,7 +291,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
       'Lead',
       historical
         ? `#${(leadId as WorkerId).toNumber()}`
-        : <LeadInfoFromId group={(group as WorkingGroup).type as WorkingGroupKey} leadId={(leadId as WorkerId).toNumber()}/>,
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
@@ -302,7 +302,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
       'Lead',
       historical
         ? `#${(leadId as WorkerId).toNumber()}`
-        : <LeadInfoFromId group={(group as WorkingGroup).type as WorkingGroupKey} leadId={(leadId as WorkerId).toNumber()}/>,
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
@@ -321,7 +321,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
         'Lead',
         historical
           ? `#${leadId.toNumber()}`
-          : <LeadInfoFromId group={workingGroup.type as WorkingGroupKey} leadId={leadId.toNumber()}/>,
+          : <LeadInfoFromId group={workingGroup.type} leadId={leadId.toNumber()}/>,
         true
       )
     ];
