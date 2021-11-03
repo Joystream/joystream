@@ -431,7 +431,6 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
     pub const VideosMigrationsEachBlock: u64 = 20;
     pub const ChannelsMigrationsEachBlock: u64 = 10;
-
 }
 
 impl content::Trait for Runtime {

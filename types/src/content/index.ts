@@ -177,6 +177,7 @@ export class ChannelMigrationConfig extends JoyStructDecorated({
   current_id: ChannelId,
   final_id: ChannelId,
 }) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
