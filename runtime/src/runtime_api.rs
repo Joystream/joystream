@@ -22,8 +22,7 @@ use crate::{
 };
 
 use crate::{
-    ContentWorkingGroupInstance, DistributionWorkingGroupInstance,
-    OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
+    DistributionWorkingGroupInstance, OperationsWorkingGroupInstanceBeta,
     OperationsWorkingGroupInstanceGamma,
 };
 use frame_support::weights::Weight;
@@ -60,10 +59,6 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
-// Alias for the alpha operationsworking group
-pub(crate) type OperationsWorkingGroupAlpha<T> =
-    working_group::Module<T, OperationsWorkingGroupInstanceAlpha>;
-
 // Alias for the beta operations working group
 pub(crate) type OperationsWorkingGroupBeta<T> =
     working_group::Module<T, OperationsWorkingGroupInstanceBeta>;
@@ -71,8 +66,6 @@ pub(crate) type OperationsWorkingGroupBeta<T> =
 // Alias for the gamma operations working group
 pub(crate) type OperationsWorkingGroupGamma<T> =
     working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
-
-pub(crate) type ContentWorkingGroup<T> = working_group::Module<T, ContentWorkingGroupInstance>;
 
 pub(crate) type DistributionWorkingGroup<T> =
     working_group::Module<T, DistributionWorkingGroupInstance>;
