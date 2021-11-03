@@ -461,11 +461,13 @@ pub fn create_channel_mock(
                 ChannelRecord {
                     owner: owner,
                     is_censored: false,
-                    reward_account: params.reward_account,
+                    reward_account: params.reward_account.clone(),
                     deletion_prize_source_account_id: sender,
+
+                    collaborators: params.collaborators.clone(),
                     num_videos: 0,
                 },
-                params.clone(),
+                params,
             ))
         );
     }
@@ -499,11 +501,19 @@ pub fn update_channel_mock(
                 ChannelRecord {
                     owner: channel_pre.owner.clone(),
                     is_censored: channel_pre.is_censored,
-                    reward_account: channel_pre.reward_account.clone(),
-                    deletion_prize_source_account_id: sender,
+                    reward_account: params.reward_account.map_or_else(
+                        || channel_pre.reward_account.clone(),
+                        |account| Some(account)
+                    ),
+                    deletion_prize_source_account_id: channel_pre.deletion_prize_source_account_id,
+                    collaborators: if params.collaborators.is_empty() {
+                        channel_pre.collaborators
+                    } else {
+                        params.collaborators.clone()
+                    },
                     num_videos: channel_pre.num_videos,
                 },
-                params.clone(),
+                params,
             ))
         );
     }

@@ -15,7 +15,7 @@ fn create_member_channel() -> ChannelId {
         ContentActor::Member(FIRST_MEMBER_ID),
         ChannelCreationParametersRecord {
             assets: None,
-            meta: Some(vec![]),
+            meta: None,
             reward_account: None,
             collaborators: BTreeSet::<MemberId>::new(),
         }
@@ -42,8 +42,9 @@ fn video_creation_successful() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -96,8 +97,9 @@ fn video_update_successful() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );

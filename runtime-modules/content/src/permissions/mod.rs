@@ -132,6 +132,15 @@ pub fn ensure_lead_can_update_assets<T: Trait>(
     }
 }
 
+pub fn ensure_actor_not_a_collaborator<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    match actor {
+        ContentActor::Collaborator(_) => Err(Error::<T>::ActorNotAuthorized.into()),
+        _ => Ok(()),
+    }
+}
+
 // Enure actor can update channels and videos in the channel
 pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,

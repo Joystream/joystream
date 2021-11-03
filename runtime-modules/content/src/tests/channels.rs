@@ -4,7 +4,6 @@ use super::curators;
 use super::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
-use core::array;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
@@ -47,6 +46,7 @@ fn successful_channel_deletion() {
                 assets: Some(assets),
                 meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -79,6 +79,7 @@ fn successful_channel_deletion() {
                 assets: None,
                 meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -130,8 +131,9 @@ fn successful_channel_assets_deletion() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -149,6 +151,7 @@ fn successful_channel_assets_deletion() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: assets_to_remove,
+                collaborators: BTreeSet::new(),
             },
         ));
     })
@@ -206,8 +209,9 @@ fn succesful_channel_update() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(first_batch),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -219,9 +223,10 @@ fn succesful_channel_update() {
             channel_id,
             ChannelUpdateParametersRecord {
                 assets_to_upload: Some(second_batch),
-                new_meta: Some(vec![]),
+                new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -236,6 +241,7 @@ fn succesful_channel_update() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: first_batch_ids,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -279,8 +285,9 @@ fn succesful_channel_creation() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -296,9 +303,9 @@ fn lead_cannot_create_channel() {
                 ContentActor::Lead,
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -319,9 +326,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -337,9 +344,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -352,9 +359,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -368,9 +375,9 @@ fn curator_owned_channels() {
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-                collaborators: BTreeSet::<MemberId>::new(),
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -389,9 +396,9 @@ fn curator_owned_channels() {
                 },
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
+                    collaborators: BTreeSet::new(),
                 }
             ))
         );
@@ -405,7 +412,8 @@ fn curator_owned_channels() {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
-                collaborators: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -418,7 +426,8 @@ fn curator_owned_channels() {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
-                collaborators: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
             }
         ));
     })
@@ -430,233 +439,142 @@ fn member_owned_channels() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        // Not a member
-        assert_err!(
-            Content::create_channel(
-                Origin::signed(UNKNOWN_ORIGIN),
-                ContentActor::Member(MEMBERS_COUNT + 1),
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
-                }
-            ),
-            Error::<Test>::MemberAuthFailed
+        // give collaborator some funds in order to perform operations
+        let _ = balances::Module::<Test>::deposit_creating(
+            &COLLABORATOR_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
         );
 
-        let channel_id_1 = Content::next_channel_id();
+        // Not a member
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+
+        let channel_no_collab = Content::next_channel_id();
 
         // Member can create the channel
-        assert_ok!(Content::create_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-                collaborators: BTreeSet::<MemberId>::new(),
-            }
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_1,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
-                },
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                    collaborators: BTreeSet::<MemberId>::new(),
-                }
-            ))
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
         );
 
-        let channel_id_2 = Content::next_channel_id();
+        let channel_with_collab = Content::next_channel_id();
 
         let mut collaborators = BTreeSet::new();
         collaborators.insert(COLLABORATOR_MEMBER_ID);
 
         // Member can create the channel
-        assert_ok!(Content::create_channel(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+        create_channel_mock(
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
                 collaborators: collaborators.clone(),
-            }
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                ContentActor::Member(SECOND_MEMBER_ID),
-                channel_id_2,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
-                    num_videos: 0,
-                    collaborators: collaborators.clone(),
-                },
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                    collaborators: collaborators.clone(),
-                }
-            ))
+            },
+            Ok(()),
         );
 
-        // Update channel
-        assert_ok!(Content::update_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+        // Valid collaborator should be able to update channel assets
+        let assets = StorageAssetsRecord {
+            object_creation_list: vec![DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"first".to_vec(),
+            }],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        };
+
+        // Update channel fails because channel_no_collab has no collabs
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_no_collab,
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(assets.clone()),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+
+        // Attempt from a collaborator to update reward account should fail
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_with_collab,
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+
+        // Attempt from a collaborator to update collaboratorSet should fail
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_with_collab,
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+
+        // Update channel assets succeeds because channel_with_collab has collabs
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_with_collab,
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(assets.clone()),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // Member cannot update a channel they do not own
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id_1,
+            channel_with_collab,
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: BTreeSet::new(),
-            }
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_1,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
-                    num_videos: 0,
-                    collaborators: BTreeSet::new(),
-                },
-                ChannelUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: None,
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                    collaborators: BTreeSet::new(),
-                }
-            ))
-        );
-
-        // Valid collaborator should be able to update channel assets
-        let assets = Some(vec![NewAsset::Urls(vec![b"test".to_vec()])]);
-
-        // Update channel fails because channel_id_1 has no collabs
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
-                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-                channel_id_1,
-                ChannelUpdateParameters {
-                    assets: assets.clone(),
-                    new_meta: None,
-                    reward_account: None,
-                    collaborators: None,
-                },
-            ),
-            Error::<Test>::ActorNotAuthorized
-        );
-
-        // Attempt from a collaborator to update reward account should fail
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
-                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-                channel_id_2,
-                ChannelUpdateParameters {
-                    assets: None,
-                    new_meta: None,
-                    reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
-                    collaborators: None,
-                },
-            ),
-            Error::<Test>::ActorNotAuthorized,
-        );
-
-        // Attempt from a collaborator to update collaboratorSet should fail
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
-                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-                channel_id_2,
-                ChannelUpdateParameters {
-                    assets_to_upload: None,
-                    new_meta: None,
-                    reward_account: None,
-                    new_collaborators: Some(
-                        array::IntoIter::new([COLLABORATOR_MEMBER_ID]).collect()
-                    ),
-                },
-            ),
-            Error::<Test>::ActorNotAuthorized,
-        );
-
-        // Update channel assets succeeds because channel_id_2 has collabs
-        assert_ok!(Content::update_channel(
-            Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-            channel_id_2,
-            ChannelUpdateParameters {
-                assets: assets.clone(),
-                new_meta: None,
-                reward_account: None,
-                collaborators: None,
             },
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-                channel_id_2,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    collaborators: collaborators.clone(),
-                },
-                ChannelUpdateParameters {
-                    assets_to_upload: assets,
-                    new_meta: None,
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                    collaborators: None,
-                }
-            ))
-        );
-
-        // Member cannot update a channel they do not own
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_2,
-                ChannelUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: None,
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                    collaborators: BTreeSet::new(),
-                }
-            ),
-            Error::<Test>::ActorNotAuthorized
+            Err(Error::<Test>::ActorNotAuthorized.into()),
         );
     })
 }
@@ -673,9 +591,9 @@ fn channel_censoring() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-                collaborators: BTreeSet::<MemberId>::new(),
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -750,9 +668,9 @@ fn channel_censoring() {
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-                collaborators: BTreeSet::<MemberId>::new(),
+                collaborators: BTreeSet::new(),
             }
         ));
 

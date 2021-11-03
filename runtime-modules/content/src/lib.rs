@@ -722,17 +722,15 @@ decl_module! {
 
             let mut channel = channel;
 
-            // Maybe update the reward account
+            // maybe update the reward account if actor is not a collaborator
             if params.reward_account.is_some() {
-               // in order to avoid a collaborator to set arbitrary reward account
-                match &actor {
-                          ContentActor::Collaborator(_) => {},
-                    _ => channel.reward_account = params.reward_account.clone(),
-                }
-            };
+                ensure_actor_not_a_collaborator::<T>(&actor)?;
+                channel.reward_account = params.reward_account.clone();
+            }
 
-            // maybe update collaborators set
+            // update collaborator set if actor is not a collaborator
             if !params.collaborators.is_empty() {
+                ensure_actor_not_a_collaborator::<T>(&actor)?;
                 channel.collaborators = params.collaborators.clone();
             }
 
