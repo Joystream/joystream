@@ -170,13 +170,14 @@ export class PersonActor extends JoyEnum({
 }) {}
 
 export class VideoMigrationConfig extends JoyStructDecorated({
-    current_id: VideoId,
-    final_id: VideoId,    
+  current_id: VideoId,
+  final_id: VideoId,
 }) {}
 export class ChannelMigrationConfig extends JoyStructDecorated({
-    current_id: ChannelId,
-    final_id: ChannelId,    
+  current_id: ChannelId,
+  final_id: ChannelId,
 }) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -219,6 +220,8 @@ export const contentTypes = {
   EpisodeParemters,
   MaxNumber,
   IsCensored,
+  VideoMigrationConfig,
+  ChannelMigrationConfig,
 }
 
 export default contentTypes

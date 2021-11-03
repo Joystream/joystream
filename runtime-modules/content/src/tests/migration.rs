@@ -172,36 +172,38 @@ fn setup_scenario_with(n_videos: u64, n_channels: u64) -> (u64, u64) {
 #[test]
 fn migration_test() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        const START_MIGRATION_AT_BLOCK: u64 = 1;
+        run_to_block(START_MIGRATION_AT_BLOCK);
 
         // setup scenario
         let (blocks_channels, blocks_videos) = setup_scenario_with(100u64, 100u64);
 
+        // block at which all migrations should be completed
+        let last_migration_block = std::cmp::max(blocks_channels, blocks_videos);
+
+        // ensure we have setup scenario to properly test migration over multiple blocks
+        assert!(last_migration_block > START_MIGRATION_AT_BLOCK);
+
         // triggering migration
         Content::on_runtime_upgrade();
 
-        // only 20 videos & 10 channels migrated so far
-        run_to_block(blocks_videos);
+        // migration should have started
         assert!(!Content::is_migration_done());
 
-        // migration not done yet : test all relevant extrinsics
+        // migration is not complete all extrinsics should fail
         assert_video_and_channel_existrinsics_with(Err(Error::<Test>::MigrationNotFinished.into()));
 
-        // video migration is finished but channel migration isn't
-        run_to_block(1 + blocks_videos);
+        // make progress with migration but should not be complete yet
+        run_to_block(last_migration_block);
         assert!(!Content::is_migration_done());
-
-        // migration not done yet: test all relevant extrinsics
         assert_video_and_channel_existrinsics_with(Err(Error::<Test>::MigrationNotFinished.into()));
 
-        // assert that video map is cleared
-        assert_eq!(VideoById::<Test>::iter().count(), 0);
+        // run migration to expected completion block
+        run_to_block(last_migration_block + 1);
 
-        // channel & video migration finished 10 blocks later
-        run_to_block(1 + blocks_channels);
-
-        // assert that channel map is cleared & migration is done
+        // assert that maps are cleared & migration is done
         assert!(Content::is_migration_done());
+        assert_eq!(VideoById::<Test>::iter().count(), 0);
         assert_eq!(ChannelById::<Test>::iter().count(), 0);
 
         // video and channel extr. now succeed
