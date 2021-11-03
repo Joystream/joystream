@@ -16,7 +16,7 @@ const isMinikube = config.getBoolean('isMinikube')
 const externalIndexerUrl = config.get('externalIndexerUrl')
 const appsImage = config.get('appsImage') || `joystream/apps:latest`
 const skipProcessor = config.getBoolean('skipProcessor')
-const useLocalRepo = config.getBoolean('useLocalRepo') || false
+const useLocalRepo = config.getBoolean('useLocalRepo')
 
 export let kubeconfig: pulumi.Output<any>
 export let joystreamAppsImage: pulumi.Output<string>
@@ -37,7 +37,7 @@ if (isMinikube) {
     // Access image from docker hub
     joystreamAppsImage = new docker.RemoteImage('apps', {
       name: appsImage!,
-    }).repoDigest
+    }).name
   }
 } else {
   // Create a VPC for our cluster.
