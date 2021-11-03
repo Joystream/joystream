@@ -1,0 +1,15 @@
+name: argus
+runtime: nodejs
+description: A Pulumi program to deploy Argus node
+template:
+  config:
+    aws:profile:
+      default: joystream-user
+    aws:region:
+      default: us-east-1
+    isLoadBalancerReady:
+      description: Whether the load balancer service is ready and has been assigned an IP
+      default: false
+    queryNodeHost:
+      description: Query node GraphQL endpoint
+      default: 'https://hydra.joystream.org/graphql'
