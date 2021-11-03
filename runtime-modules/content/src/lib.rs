@@ -60,6 +60,8 @@ pub trait NumericIdentifier:
     + PartialEq
     + Ord
     + Zero
+    + From<u64>
+    + Into<u64>
 {
 }
 
@@ -101,7 +103,28 @@ pub trait Trait:
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
+
+    /// Video migrated in each block during migration
+    type VideosMigrationsEachBlock: Get<u64>;
+
+    /// Channel migrated in each block during migration
+    type ChannelsMigrationsEachBlock: Get<u64>;
 }
+
+/// Data structure in order to keep track of the migration
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct MigrationConfigRecord<NumericId> {
+    // at each block the videos/channels removed will be those with id in the
+    // half open range [current_id, final_id).
+    // when migration is triggered final_id will be updated
+    // when migration is performed current_id will be updated
+    pub current_id: NumericId,
+    pub final_id: NumericId,
+}
+
+type VideoMigrationConfig<T> = MigrationConfigRecord<<T as Trait>::VideoId>;
+type ChannelMigrationConfig<T> = MigrationConfigRecord<<T as storage::Trait>::ChannelId>;
 
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
@@ -490,6 +513,13 @@ decl_storage! {
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+
+        /// Migration config for channels
+        pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
+
+        /// Migration config for videos:
+        pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
+
     }
 }
 
@@ -633,6 +663,9 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<T>,
         ) {
+            // ensure migration is done
+             ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
+
             ensure_actor_authorized_to_create_channel::<T>(
                 origin.clone(),
                 &actor,
@@ -689,7 +722,7 @@ decl_module! {
             params: ChannelUpdateParameters<T>,
         ) {
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -733,8 +766,9 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
+
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             // ensure permissions
             ensure_actor_authorized_to_update_channel::<T>(
@@ -797,7 +831,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             if channel.is_censored == is_censored {
                 return Ok(())
@@ -919,7 +953,7 @@ decl_module! {
         ) {
 
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -956,10 +990,11 @@ decl_module! {
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
-            // Only increment next video id if adding content was successful
+            // Only increment next video id
             NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
 
             // Add recently added video id to the channel
+
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos = channel.num_videos.saturating_add(1);
             });
@@ -975,8 +1010,9 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
+
             // check that video exists, retrieve corresponding channel id.
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
@@ -1013,14 +1049,12 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // get information regarding channel
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
-
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
@@ -1214,7 +1248,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             if video.is_censored == is_censored {
                 return Ok(())
@@ -1267,10 +1301,94 @@ decl_module! {
         ) {
             Self::not_implemented()?;
         }
+
+        fn on_initialize(_n: T::BlockNumber) -> frame_support::weights::Weight {
+            Self::perform_video_migration();
+            Self::perform_channel_migration();
+
+            10_000_000 // TODO: adjust Weight
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
+    /// Migrate Videos
+    fn perform_video_migration() {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <VideoMigration<T>>::get();
+
+        if current_id < final_id {
+            // perform migration procedure
+            let next_id = sp_std::cmp::min(
+                current_id + T::VideosMigrationsEachBlock::get().into(),
+                final_id,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // clear maps: (iterator are lazy and do nothing unless consumed)
+            for id in current_id.into()..next_id.into() {
+                <VideoById<T>>::remove(T::VideoId::from(id));
+            }
+
+            // edit the current id
+            <VideoMigration<T>>::mutate(|value| value.current_id = next_id);
+        }
+    }
+
+    /// Migrate Channels
+    fn perform_channel_migration() {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <ChannelMigration<T>>::get();
+
+        if current_id < final_id {
+            // perform migration procedure
+            let next_id = sp_std::cmp::min(
+                current_id + T::ChannelsMigrationsEachBlock::get().into(),
+                final_id,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // clear maps: (iterator are lazy and do nothing unless consumed)
+            for id in current_id.into()..next_id.into() {
+                <ChannelById<T>>::remove(T::ChannelId::from(id));
+            }
+
+            // edit the current id
+            <ChannelMigration<T>>::mutate(|value| value.current_id = next_id);
+        }
+    }
+
+    /// Ensure Channel Migration Finished
+
+    /// Ensure Video Migration Finished
+    fn is_migration_done() -> bool {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <VideoMigration<T>>::get();
+
+        let video_migration_done = current_id == final_id;
+
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <ChannelMigration<T>>::get();
+
+        let channel_migration_done = current_id == final_id;
+
+        return video_migration_done && channel_migration_done;
+    }
+
     /// Ensure `CuratorGroup` under given id exists
     fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
@@ -1290,7 +1408,11 @@ impl<T: Trait> Module<T> {
         Ok(Self::curator_group_by_id(curator_group_id))
     }
 
-    fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+    fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+        // ensure migration is done
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
+
+        // ensure channel exists
         ensure!(
             ChannelById::<T>::contains_key(channel_id),
             Error::<T>::ChannelDoesNotExist
@@ -1298,7 +1420,11 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+    fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+        // ensure migration is done
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
+
+        // ensure video exists
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
@@ -1413,10 +1539,9 @@ impl<T: Trait> Module<T> {
 // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
 impl<T: Trait> Module<T> {
     pub fn on_runtime_upgrade() {
-        // Clear VideoById map
-        <VideoById<T>>::remove_all();
-        // Clear ChannelById map
-        <ChannelById<T>>::remove_all();
+        // setting final index triggers migration
+        <VideoMigration<T>>::mutate(|config| config.final_id = <NextVideoId<T>>::get());
+        <ChannelMigration<T>>::mutate(|config| config.final_id = <NextChannelId<T>>::get());
     }
 }
 

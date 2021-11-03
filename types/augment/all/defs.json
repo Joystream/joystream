@@ -903,5 +903,13 @@
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
+    "VideoMigrationConfig": {
+        "current_id": "VideoId",
+        "final_id": "VideoId"
+    },
+    "ChannelMigrationConfig": {
+        "current_id": "ChannelId",
+        "final_id": "ChannelId"
+    },
     "AccountInfo": "AccountInfoWithRefCount"
 }
