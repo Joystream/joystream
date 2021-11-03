@@ -93,8 +93,6 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "_Reserved0",
-            "_Reserved1",
             "Storage",
             "Content",
             "OperationsAlpha",
