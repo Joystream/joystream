@@ -36,11 +36,11 @@ services:
       - .env
     environment:
       - COLOSSUS_PORT=3333
-      - QUERY_NODE_HOST=graphql-server-mnt:${GRAPHQL_SERVER_PORT}
+      - QUERY_NODE_ENDPOINT=http://graphql-server-mnt:${GRAPHQL_SERVER_PORT}/graphql
       - WORKER_ID=0
       - ACCOUNT_URI=//Alice
       # enable ElasticSearch server
-      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
+      # - ELASTIC_SEARCH_ENDPOINT=host.docker.internal:9200
   db:
     image: postgres:12
     restart: always

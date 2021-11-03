@@ -223,17 +223,18 @@ USAGE
   $ storage-node dev:sync
 
 OPTIONS
-  -d, --uploads=uploads                                (required) Data uploading directory (absolute path).
-  -h, --help                                           show CLI help
+  -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
+  -h, --help                                         show CLI help
 
-  -o, --dataSourceOperatorHost=dataSourceOperatorHost  Storage node host and port (e.g.: some.com:8081) to get data
-                                                       from.
+  -o, --dataSourceOperatorUrl=dataSourceOperatorUrl  [default: http://localhost:3333] Storage node url base (e.g.:
+                                                     http://some.com:8081) to get data from.
 
-  -p, --syncWorkersNumber=syncWorkersNumber            Sync workers number (max async operations in progress).
+  -p, --syncWorkersNumber=syncWorkersNumber          Sync workers number (max async operations in progress).
 
-  -q, --queryNodeHost=queryNodeHost                    Query node host and port (e.g.: some.com:8081)
+  -q, --queryNodeEndpoint=queryNodeEndpoint          [default: http://localhost:8081/graphql] Query node host and port
+                                                     (e.g.: some.com:8081)
 
-  -w, --workerId=workerId                              (required) Storage node operator worker ID.
+  -w, --workerId=workerId                            (required) Storage node operator worker ID.
 ```
 
 _See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/sync.ts)_
@@ -711,39 +712,45 @@ USAGE
   $ storage-node server
 
 OPTIONS
-  -a, --disableUploadAuth                    Disable uploading authentication (should be used in testing-context only).
-  -d, --uploads=uploads                      (required) Data uploading directory (absolute path).
+  -a, --disableUploadAuth                            Disable uploading authentication (should be used in testing-context
+                                                     only).
 
-  -e, --elasticSearchHost=elasticSearchHost  Elasticsearch host and port (e.g.: some.com:8081).
-                                             Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
-                                             Supported values: warn, error, debug, info. Default:debug
+  -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
 
-  -h, --help                                 show CLI help
+  -e, --elasticSearchEndpoint=elasticSearchEndpoint  Elasticsearch endpoint (e.g.: http://some.com:8081).
+                                                     Log level could be set using the ELASTIC_LOG_LEVEL enviroment
+                                                     variable.
+                                                     Supported values: warn, error, debug, info. Default:debug
 
-  -i, --syncInterval=syncInterval            [default: 1] Interval between synchronizations (in minutes)
+  -h, --help                                         show CLI help
 
-  -k, --keyFile=keyFile                      Key file for the account. Mandatory in non-dev environment.
+  -i, --syncInterval=syncInterval                    [default: 1] Interval between synchronizations (in minutes)
 
-  -m, --dev                                  Use development mode
+  -k, --keyFile=keyFile                              Key file for the account. Mandatory in non-dev environment.
 
-  -o, --port=port                            (required) Server port.
+  -m, --dev                                          Use development mode
 
-  -p, --password=password                    Key file password (optional). Could be overriden by ACCOUNT_PWD environment
-                                             variable.
+  -o, --port=port                                    (required) Server port.
 
-  -q, --queryNodeHost=queryNodeHost          (required) Query node host and port (e.g.: some.com:8081)
+  -p, --password=password                            Key file password (optional). Could be overriden by ACCOUNT_PWD
+                                                     environment variable.
 
-  -r, --syncWorkersNumber=syncWorkersNumber  [default: 20] Sync workers number (max async operations in progress).
+  -q, --queryNodeEndpoint=queryNodeEndpoint          (required) [default: http://localhost:8081/graphql] Query node
+                                                     endpoint (e.g.: http://some.com:8081/graphql)
 
-  -s, --sync                                 Enable data synchronization.
+  -r, --syncWorkersNumber=syncWorkersNumber          [default: 20] Sync workers number (max async operations in
+                                                     progress).
 
-  -u, --apiUrl=apiUrl                        [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev
-                                             environment.
+  -s, --sync                                         Enable data synchronization.
 
-  -w, --worker=worker                        (required) Storage provider worker ID
+  -u, --apiUrl=apiUrl                                [default: ws://localhost:9944] Runtime API URL. Mandatory in
+                                                     non-dev environment.
 
-  -y, --accountUri=accountUri                Account URI (optional). Has a priority over the keyFile and password flags.
-                                             Could be overriden by ACCOUNT_URI environment variable.
+  -w, --worker=worker                                (required) Storage provider worker ID
+
+  -y, --accountUri=accountUri                        Account URI (optional). Has a priority over the keyFile and
+                                                     password flags. Could be overriden by ACCOUNT_URI environment
+                                                     variable.
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
