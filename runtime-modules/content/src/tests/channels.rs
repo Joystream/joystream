@@ -439,9 +439,9 @@ fn member_owned_channels() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        // give collaborator some funds in order to perform operations
+        // give channel owner funds to permit collaborators to update assets
         let _ = balances::Module::<Test>::deposit_creating(
-            &COLLABORATOR_MEMBER_ORIGIN,
+            &SECOND_MEMBER_ORIGIN,
             <Test as balances::Trait>::Balance::from(100u32),
         );
 
@@ -460,7 +460,7 @@ fn member_owned_channels() {
 
         let channel_no_collab = Content::next_channel_id();
 
-        // Member can create the channel
+        // create channel with no collaborators
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -478,7 +478,7 @@ fn member_owned_channels() {
         let mut collaborators = BTreeSet::new();
         collaborators.insert(COLLABORATOR_MEMBER_ID);
 
-        // Member can create the channel
+        // create a channel with 1 collaborator
         create_channel_mock(
             SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),

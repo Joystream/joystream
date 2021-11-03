@@ -711,7 +711,7 @@ decl_module! {
 
             Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
-            // atomically upload to storage and return the # of uploaded assets
+            // atomically upload to storage
             if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
@@ -743,7 +743,6 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
 }
-
 
         // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
