@@ -20,7 +20,7 @@ export default {
     return manageWorkerAsWorker(api, env, WorkingGroups.StorageWorkingGroup)
   },
   content: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsWorker(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+    return manageWorkerAsWorker(api, env, WorkingGroups.ContentWorkingGroup)
   },
 }
 

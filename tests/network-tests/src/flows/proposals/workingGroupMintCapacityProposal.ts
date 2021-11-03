@@ -17,7 +17,7 @@ export default {
   },
 
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentWorkingGroup, lock)
   },
 }
 

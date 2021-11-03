@@ -13,7 +13,7 @@ export default {
     return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
   },
   content: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+    return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup)
   },
 }
 

@@ -30,13 +30,17 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ContentId, DataObject } from '@joystream/types/storage'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
-  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
+  ContentWorkingGroup = 'contentWorkingGroup',
+  DistributionWorkingGroup = 'distributionWorkingGroup',
+  GatewayWorkingGroup = 'gatewayWorkingGroup',
+  OperationsWorkingGroupAlpha = 'operationsWorkingGroupAlpha',
+  OperationsWorkingGroupBeta = 'operationsWorkingGroupBeta',
+  OperationsWorkingGroupGamma = 'operationsWorkingGroupGamma',
 }
 
 export class ApiFactory {
@@ -126,8 +130,16 @@ export class Api {
     switch (workingGroup) {
       case WorkingGroups.StorageWorkingGroup:
         return 'Storage'
-      case WorkingGroups.ContentDirectoryWorkingGroup:
+      case WorkingGroups.ContentWorkingGroup:
         return 'Content'
+      case WorkingGroups.GatewayWorkingGroup:
+        return 'Gateway'
+      case WorkingGroups.OperationsWorkingGroupAlpha:
+        return 'OperationsAlpha'
+      case WorkingGroups.OperationsWorkingGroupBeta:
+        return 'OperationsBeta'
+      case WorkingGroups.OperationsWorkingGroupGamma:
+        return 'OperationsGamma'
       default:
         throw new Error(`Invalid working group string representation: ${workingGroup}`)
     }
@@ -1697,10 +1709,5 @@ export class Api {
 
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
-  }
-
-  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
-    return dataObject.unwrapOr(null)
   }
 }
