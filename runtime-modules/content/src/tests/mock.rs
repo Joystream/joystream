@@ -1,7 +1,7 @@
 #![cfg(test)]
 
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
-
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -49,6 +49,10 @@ pub const SECOND_MEMBER_ID: MemberId = 2;
 // members that act as collaborators
 pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 20;
 pub const COLLABORATOR_MEMBER_ID: MemberId = 21;
+
+/// Constants
+// initial balancer for an account
+pub const INIT_BALANCE: u32 = 500;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -506,11 +510,10 @@ pub fn update_channel_mock(
                         |account| Some(account)
                     ),
                     deletion_prize_source_account_id: channel_pre.deletion_prize_source_account_id,
-                    collaborators: if params.collaborators.is_empty() {
-                        channel_pre.collaborators
-                    } else {
-                        params.collaborators.clone()
-                    },
+                    collaborators: params
+                        .collaborators
+                        .clone()
+                        .unwrap_or(channel_pre.collaborators),
                     num_videos: channel_pre.num_videos,
                 },
                 params,
@@ -608,6 +611,30 @@ pub fn update_video_mock(
                 video_id,
                 params.clone(),
             ))
+        );
+    }
+}
+
+// helper functions
+pub fn helper_generate_storage_assets(sizes: Vec<u64>) -> StorageAssets<Test> {
+    StorageAssetsRecord {
+        object_creation_list: sizes
+            .into_iter()
+            .map(|s| DataObjectCreationParameters {
+                size: s,
+                ipfs_content_id: s.encode(),
+            })
+            .collect::<Vec<_>>(),
+        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+    }
+}
+
+pub fn helper_init_accounts(accounts: Vec<u64>) {
+    // give channel owner funds to permit collaborators to update assets
+    for acc in accounts.iter() {
+        let _ = balances::Module::<Test>::deposit_creating(
+            acc,
+            <Test as balances::Trait>::Balance::from(INIT_BALANCE),
         );
     }
 }

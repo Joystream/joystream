@@ -239,7 +239,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId:
     /// assets to be removed from channel
     assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
-    collaborators: BTreeSet<MemberId>,
+    collaborators: Option<BTreeSet<MemberId>>,
 }
 
 type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -729,9 +729,9 @@ decl_module! {
             }
 
             // update collaborator set if actor is not a collaborator
-            if !params.collaborators.is_empty() {
+            if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_not_a_collaborator::<T>(&actor)?;
-                channel.collaborators = params.collaborators.clone();
+                channel.collaborators = new_collabs.clone();
             }
 
             //
@@ -999,6 +999,7 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
 
+        // Check for permission to update channel assets
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,

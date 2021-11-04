@@ -151,7 +151,7 @@ fn successful_channel_assets_deletion() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: assets_to_remove,
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
         ));
     })
@@ -226,7 +226,7 @@ fn succesful_channel_update() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Ok(()),
         );
@@ -241,7 +241,7 @@ fn succesful_channel_update() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: first_batch_ids,
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Ok(()),
         );
@@ -413,7 +413,7 @@ fn curator_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             }
         ));
 
@@ -427,7 +427,7 @@ fn curator_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             }
         ));
     })
@@ -510,7 +510,7 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Err(Error::<Test>::ActorNotAuthorized.into()),
         );
@@ -525,7 +525,7 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Err(Error::<Test>::ActorNotAuthorized.into()),
         );
@@ -540,9 +540,11 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: vec![COLLABORATOR_MEMBER_ID]
-                    .into_iter()
-                    .collect::<BTreeSet<_>>(),
+                collaborators: Some(
+                    vec![COLLABORATOR_MEMBER_ID]
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                ),
             },
             Err(Error::<Test>::ActorNotAuthorized.into()),
         );
@@ -557,7 +559,7 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Ok(()),
         );
@@ -572,7 +574,7 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-                collaborators: BTreeSet::new(),
+                collaborators: None,
             },
             Err(Error::<Test>::ActorNotAuthorized.into()),
         );
