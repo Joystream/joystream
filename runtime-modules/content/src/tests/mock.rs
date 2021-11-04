@@ -615,6 +615,34 @@ pub fn update_video_mock(
     }
 }
 
+pub fn delete_video_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: <Test as Trait>::VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    result: DispatchResult,
+) {
+    // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
+    // let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
+
+    assert_eq!(
+        Content::delete_video(
+            Origin::signed(sender),
+            actor.clone(),
+            video_id.clone(),
+            assets_to_remove.clone(),
+        ),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoDeleted(actor.clone(), video_id))
+        );
+    }
+}
+
 // helper functions
 pub fn helper_generate_storage_assets(sizes: Vec<u64>) -> StorageAssets<Test> {
     StorageAssetsRecord {
