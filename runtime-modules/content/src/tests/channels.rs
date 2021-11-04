@@ -517,6 +517,123 @@ fn invalid_member_cannot_delete_channel() {
 }
 
 #[test]
+fn non_authorized_collaborators_cannot_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN]);
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // attempt for an non auth. collaborator to update channel assets
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+                collaborators: None,
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+
+        // add collaborators
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: Some(
+                    vec![COLLABORATOR_MEMBER_ID]
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                ),
+            },
+            Ok(()),
+        );
+
+        // attempt for a valid collaborator to update channel fields outside
+        // of his scope
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                assets_to_remove: BTreeSet::new(),
+                collaborators: None,
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn authorized_collaborators_can_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN]);
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+
+        // attempt for an auth. collaborator to update channel assets
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+                collaborators: None,
+            },
+            Ok(()),
+        );
+    })
+}
+
+#[test]
 fn channel_censoring() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
