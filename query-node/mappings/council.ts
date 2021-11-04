@@ -60,9 +60,16 @@ import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 /*
   Retrieves the member record by its id.
 */
-async function getMembership(store: DatabaseManager, memberId: string): Promise<Membership> {
-  // TODO: is this enough to load existing membership? this technic was adpoted from forum mappings (`forum.ts`)
-  const member = new Membership({ id: memberId })
+async function getMembership(
+  store: DatabaseManager,
+  memberId: string,
+  canFail: boolean
+): Promise<Membership | undefined> {
+  const member = await store.get(Membership, { where: { id: memberId } })
+
+  if (!member && !canFail) {
+    throw new Error(`Membership not found. memberId '${memberId}'`)
+  }
 
   return member
 }
@@ -84,7 +91,7 @@ async function getCandidate(
   const candidate = await store.get(Candidate, { where, order: { id: 'DESC' } })
 
   if (!candidate) {
-    throw new Error(`Candidate not found. memberId '${memberId}' electionRound`)
+    throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
   }
 
   return candidate
@@ -387,7 +394,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   // common event processing
 
   const [memberId, stakingAccount, rewardAccount, balance] = new Council.NewCandidateEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembership(store, memberId.toString(), false)
 
   const newCandidateEvent = new NewCandidateEvent({
     ...genericEventFields(event),
@@ -407,7 +414,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     throw new Error(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
   }
 
-  lastStageUpdate.stage.candidatesCount = (new BN(lastStageUpdate.stage.candidatesCount)).add(new BN(1))
+  lastStageUpdate.stage.candidatesCount = new BN(lastStageUpdate.stage.candidatesCount).add(new BN(1))
   await store.save<CouncilStageUpdate>(lastStageUpdate)
 
   const electionRound = await getCurrentElectionRound(store)
@@ -505,7 +512,7 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
   // common event processing
 
   const [memberId] = new Council.CandidacyStakeReleaseEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembership(store, memberId.toString(), false)
 
   const candidacyStakeReleaseEvent = new CandidacyStakeReleaseEvent({
     ...genericEventFields(event),
@@ -529,7 +536,7 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // common event processing
 
   const [memberId] = new Council.CandidacyWithdrawEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembership(store, memberId.toString(), false)
 
   const candidacyWithdrawEvent = new CandidacyWithdrawEvent({
     ...genericEventFields(event),
@@ -554,7 +561,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   // common event processing
 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembership(store, memberId.toString(), false)
 
   // load candidate recored
   const electionRound = await getCurrentElectionRound(store)
@@ -587,7 +594,13 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
   // common event processing
 
   const [memberId, rewardAccount, paidBalance, missingBalance] = new Council.RewardPaymentEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  //const member = await getMembership(store, memberId.toString())
+
+  // tmp to overcome missing bootstrapping for members during test
+  const isTestingEnvironment = !!process.env.QUERY_NODE_TESTS || false
+  const member =
+    (await getMembership(store, memberId.toString(), isTestingEnvironment)) ||
+    (await dirtyTestingMemberBootstrap({ store }, memberId.toString(), event.blockNumber))
 
   const rewardPaymentEvent = new RewardPaymentEvent({
     ...genericEventFields(event),
@@ -841,7 +854,7 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   // common event processing
 
   const [account, memberId, salt] = new Referendum.VoteRevealedEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembership(store, memberId.toString(), false)
 
   const voteRevealedEvent = new VoteRevealedEvent({
     ...genericEventFields(event),
@@ -885,4 +898,70 @@ export async function referendum_StakeReleased({ event, store }: EventContext & 
   castVote.stakeLocked = false
 
   await store.save<CastVote>(castVote)
+}
+
+/////////////////// Dirty membership bootstrapping /////////////////////////////
+
+import { MembershipEntryPaid, MemberMetadata } from 'query-node/dist/model'
+
+async function dirtyTestingMemberBootstrap({ store }: StoreContext, memberId: string, blockNumber: number) {
+  const now = new Date()
+  const account = 'tmpBootstrappedAccount-' + memberId
+  const handle = 'tmpBootstrappedHandle-' + memberId
+
+  const entryMethod = new MembershipEntryPaid()
+
+  const metadataEntity = new MemberMetadata({
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  const member = new Membership({
+    createdAt: now,
+    updatedAt: now,
+    id: memberId,
+    rootAccount: account,
+    controllerAccount: account,
+    handle: handle,
+    metadata: metadataEntity,
+    entry: entryMethod,
+    referredBy: undefined,
+    isVerified: false,
+    inviteCount: 0,
+    boundAccounts: [],
+    invitees: [],
+    referredMembers: [],
+    invitedBy: undefined,
+    isFoundingMember: false,
+    isCouncilMember: false,
+  })
+
+  await store.save<MemberMetadata>(member.metadata)
+  await store.save<Membership>(member)
+
+  ////////////////////////////////////////////ú
+
+  const dummyStake = 1000
+
+  const councilMember = new CouncilMember({
+    // id: candidate.id // TODO: are ids needed?
+    stakingAccountId: account,
+    rewardAccountId: account,
+    member: member,
+    stake: new BN(dummyStake),
+
+    lastPaymentBlock: new BN(blockNumber),
+
+    accumulatedReward: new BN(0),
+  })
+
+  await store.save<CouncilMember>(councilMember)
+
+  // inject member to current council
+  const electedCouncil = (await getCurrentElectedCouncil(store, false)) as ElectedCouncil
+  electedCouncil.councilMembers = (electedCouncil.councilMembers as CouncilMember[]).concat([councilMember])
+
+  await store.save<ElectedCouncil>(electedCouncil)
+
+  return member
 }
