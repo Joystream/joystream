@@ -457,36 +457,19 @@ fn non_authorized_collaborators_cannot_update_video() {
                 assets: Some(helper_generate_storage_assets(vec![2, 3])),
                 meta: None,
                 reward_account: None,
-                collaborators: vec![COLLABORATOR_MEMBER_ID]
-                    .into_iter()
-                    .collect::<BTreeSet<_>>(),
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
 
         // create video
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
                 assets: Some(helper_generate_storage_assets(vec![1, 2])),
                 meta: None,
-            },
-            Ok(()),
-        );
-
-        // remove collaborator
-        update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            <Test as storage::Trait>::ChannelId::one(),
-            ChannelUpdateParametersRecord {
-                assets_to_upload: None,
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: Some(BTreeSet::new()), // empty collaborator set
             },
             Ok(()),
         );
@@ -523,36 +506,19 @@ fn non_authorized_collaborators_cannot_delete_video() {
                 assets: Some(helper_generate_storage_assets(vec![2, 3])),
                 meta: None,
                 reward_account: None,
-                collaborators: vec![COLLABORATOR_MEMBER_ID]
-                    .into_iter()
-                    .collect::<BTreeSet<_>>(),
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
 
         // create video
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
                 assets: Some(helper_generate_storage_assets(vec![1, 2])),
                 meta: None,
-            },
-            Ok(()),
-        );
-
-        // remove collaborator
-        update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            <Test as storage::Trait>::ChannelId::one(),
-            ChannelUpdateParametersRecord {
-                assets_to_upload: None,
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: Some(BTreeSet::new()), // empty collaborator set
             },
             Ok(()),
         );
