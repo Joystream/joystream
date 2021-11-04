@@ -434,16 +434,10 @@ fn curator_owned_channels() {
 }
 
 #[test]
-fn member_owned_channels() {
+fn invalid_member_cannot_create_channel() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-
-        // give channel owner funds to permit collaborators to update assets
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
-        );
 
         // Not a member
         create_channel_mock(
@@ -457,10 +451,15 @@ fn member_owned_channels() {
             },
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
+    })
+}
 
-        let channel_no_collab = Content::next_channel_id();
+#[test]
+fn invalid_member_cannot_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
 
-        // create channel with no collaborators
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -473,110 +472,46 @@ fn member_owned_channels() {
             Ok(()),
         );
 
-        let channel_with_collab = Content::next_channel_id();
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                collaborators: None,
+                assets_to_remove: BTreeSet::new(),
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+    })
+}
 
-        let mut collaborators = BTreeSet::new();
-        collaborators.insert(COLLABORATOR_MEMBER_ID);
+#[test]
+fn invalid_member_cannot_delete_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
 
-        // create a channel with 1 collaborator
         create_channel_mock(
-            SECOND_MEMBER_ORIGIN,
-            ContentActor::Member(SECOND_MEMBER_ID),
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
                 reward_account: None,
-                collaborators: collaborators.clone(),
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
 
-        // Valid collaborator should be able to update channel assets
-        let assets = StorageAssetsRecord {
-            object_creation_list: vec![DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"first".to_vec(),
-            }],
-            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-        };
-
-        // Update channel fails because channel_no_collab has no collabs
-        update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-            channel_no_collab,
-            ChannelUpdateParametersRecord {
-                assets_to_upload: Some(assets.clone()),
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: None,
-            },
-            Err(Error::<Test>::ActorNotAuthorized.into()),
-        );
-
-        // Attempt from a collaborator to update reward account should fail
-        update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-            channel_with_collab,
-            ChannelUpdateParametersRecord {
-                assets_to_upload: None,
-                new_meta: None,
-                reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
-                assets_to_remove: BTreeSet::new(),
-                collaborators: None,
-            },
-            Err(Error::<Test>::ActorNotAuthorized.into()),
-        );
-
-        // Attempt from a collaborator to update collaboratorSet should fail
-        update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-            channel_with_collab,
-            ChannelUpdateParametersRecord {
-                assets_to_upload: None,
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: Some(
-                    vec![COLLABORATOR_MEMBER_ID]
-                        .into_iter()
-                        .collect::<BTreeSet<_>>(),
-                ),
-            },
-            Err(Error::<Test>::ActorNotAuthorized.into()),
-        );
-
-        // Update channel assets succeeds because channel_with_collab has collabs
-        update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
-            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
-            channel_with_collab,
-            ChannelUpdateParametersRecord {
-                assets_to_upload: Some(assets.clone()),
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: None,
-            },
-            Ok(()),
-        );
-
-        // Member cannot update a channel they do not own
-        update_channel_mock(
+        delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_with_collab,
-            ChannelUpdateParametersRecord {
-                assets_to_upload: None,
-                new_meta: None,
-                reward_account: None,
-                assets_to_remove: BTreeSet::new(),
-                collaborators: None,
-            },
-            Err(Error::<Test>::ActorNotAuthorized.into()),
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            0u64,
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
 }
