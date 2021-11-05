@@ -43,7 +43,7 @@ export enum WorkingGroups {
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
-  // number used as part of soft key derivation path
+  // number used as part of key derivation path
   private keyId = 0
   // mapping from account address to key id.
   // To be able to re-derive keypair externally when mini-secret is known.
@@ -103,7 +103,7 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const uri = `${this.miniSecret}//testing/${id}`
+      const uri = `${this.miniSecret}//testing//${id}`
       const key = this.keyring.addFromUri(uri)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
