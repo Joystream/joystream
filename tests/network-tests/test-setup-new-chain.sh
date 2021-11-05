@@ -63,7 +63,7 @@ fi
 echo "starting joystream-node container"
 # Start a chain with generated chain spec
 # Add "-l ws=trace,ws::handler=info" to get websocket trace logs
-CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 ${NETWORK_ARG} joystream/node:${RUNTIME} \
+CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 ${NETWORK_ARG} --name joystream-node joystream/node:${RUNTIME} \
   --validator --alice --unsafe-ws-external --rpc-cors=all -l runtime \
   --chain /data/chain-spec-raw.json`
 

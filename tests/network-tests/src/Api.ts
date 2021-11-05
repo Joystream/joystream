@@ -29,10 +29,11 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-import { v4 as uuid } from 'uuid'
 import { ContentId, DataObject } from '@joystream/types/storage'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
+import { VideoId } from '@joystream/types/content'
+import { ChannelId } from '@joystream/types/common'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -109,6 +110,15 @@ export class ApiFactory {
     }
     return keys
   }
+
+  public keyGenInfo(): string {
+    const start = 0
+    const final = this.keyId
+    return JSON.stringify({
+      start,
+      final,
+    })
+  }
 }
 
 export class Api {
@@ -137,8 +147,8 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public getAccountToKeyIdMappings() {
-    return this.factory.addressesToKeyId
+  public keyGenInfo(): string {
+    return this.factory.keyGenInfo()
   }
 
   // Well known WorkingGroup enum defined in runtime
@@ -1722,5 +1732,63 @@ export class Api {
   async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
     const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
+  }
+
+  async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
+    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId | null> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a channel without any assets
+    const tx = this.api.tx.content.createChannel(
+      { Member: memberId },
+      {
+        assets: [],
+        meta: null,
+        reward_account: null,
+      }
+    )
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const record = this.findEventRecord(result.events, 'content', 'ChannelCreated')
+    if (record) {
+      return record.event.data[1] as ChannelId
+    }
+
+    return null
+  }
+
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string
+  ): Promise<VideoId | null> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a video without any assets
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
+      assets: [],
+      meta: null,
+    })
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const record = this.findEventRecord(result.events, 'content', 'VideoCreated')
+    if (record) {
+      return record.event.data[2] as VideoId
+    }
+
+    return null
   }
 }

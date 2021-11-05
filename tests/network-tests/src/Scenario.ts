@@ -24,13 +24,21 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   // Connect api to the chain
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
-  const miniSecret = process.env.SURI_MINI_SECRET || ''
+  const miniSecret = env.SURI_MINI_SECRET || ''
   const apiFactory = await ApiFactory.create(
     provider,
     env.TREASURY_ACCOUNT_URI || '//Alice',
     env.SUDO_ACCOUNT_URI || '//Alice',
     miniSecret
   )
+
+  const api = apiFactory.getApi('Key Generation')
+
+  // Generate all key ids before START_KEY_ID
+  const startKeyId = parseInt(env.START_KEY_ID || '0')
+  if (startKeyId) {
+    api.createKeyPairs(startKeyId)
+  }
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 
@@ -50,12 +58,16 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const resources = new ResourceManager()
 
+  let exitCode = 0
+
   try {
     await jobs.run(resources)
   } catch (err) {
     console.error(err)
-    process.exit(-1)
+    exitCode = -1
   }
+
+  console.log(api.keyGenInfo())
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
@@ -63,5 +75,5 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   // RPC-CORE: getStorage(key: StorageKey, at?: BlockHash): StorageData:: disconnected from ws://127.0.0.1:9944: 1000:: Normal connection closure
   // Are there subsciptions somewhere?
   // apiFactory.close()
-  process.exit()
+  process.exit(exitCode)
 }
