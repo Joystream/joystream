@@ -1,0 +1,200 @@
+import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { VideoFieldsFragment } from './sumer-query-node/generated/queries'
+import _ from 'lodash'
+import { createType } from '@joystream/types'
+import Long from 'long'
+import { VideoCreationParameters, VideoId } from '@joystream/types/content'
+import moment from 'moment'
+import { VIDEO_THUMB_TARGET_SIZE } from './ImageResizer'
+import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from './AssetsMigration'
+import { MigrationResult } from './BaseMigration'
+
+export type VideosMigrationConfig = AssetsMigrationConfig & {
+  videoBatchSize: number
+}
+
+export type VideosMigrationParams = AssetsMigrationParams & {
+  config: VideosMigrationConfig
+  videoIds: number[]
+  categoriesMap: Map<number, number>
+  channelsMap: Map<number, number>
+}
+
+export class VideosMigration extends AssetsMigration {
+  name = 'Videos migration'
+  protected config: VideosMigrationConfig
+  protected categoriesMap: Map<number, number>
+  protected channelsMap: Map<number, number>
+  protected videoIds: number[]
+
+  public constructor({ api, queryNodeApi, config, videoIds, categoriesMap, channelsMap }: VideosMigrationParams) {
+    super({ api, queryNodeApi, config })
+    this.config = config
+    this.categoriesMap = categoriesMap
+    this.channelsMap = channelsMap
+    this.videoIds = videoIds
+  }
+
+  private getNewCategoryId(oldCategoryId: string | null | undefined): Long | undefined {
+    if (typeof oldCategoryId !== 'string') {
+      return undefined
+    }
+    const newCategoryId = this.categoriesMap.get(parseInt(oldCategoryId))
+    return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
+  }
+
+  private getNewChannelId(oldChannelId: number): number {
+    const newChannelId = this.channelsMap.get(oldChannelId)
+    if (!newChannelId) {
+      throw new Error(`Missing new channel id for channel ${oldChannelId} in the channelMap!`)
+    }
+    return newChannelId
+  }
+
+  public async run(): Promise<MigrationResult> {
+    await this.init()
+    const {
+      api,
+      videoIds,
+      config: { videoBatchSize },
+    } = this
+    const idsToMigrate = videoIds.filter((id) => !this.idsMap.has(id)).sort((a, b) => a - b)
+    if (idsToMigrate.length < videoIds.length) {
+      const alreadyMigratedVideosNum = videoIds.length - idsToMigrate.length
+      console.log(
+        (idsToMigrate.length ? `${alreadyMigratedVideosNum}/${videoIds.length}` : 'All') +
+          ' videos already migrated, skippping...'
+      )
+    }
+    while (idsToMigrate.length) {
+      const idsBatch = idsToMigrate.splice(0, videoBatchSize)
+      console.log(`Fetching a batch of ${idsBatch.length} videos...`)
+      const videosBatch = (await this.queryNodeApi.getVideosByIds(idsBatch)).sort(
+        (a, b) => parseInt(a.id) - parseInt(b.id)
+      )
+      if (videosBatch.length < idsBatch.length) {
+        console.error(
+          `Some videos were not be found: ${_.difference(
+            idsBatch,
+            videosBatch.map((v) => parseInt(v.id))
+          )}`
+        )
+      }
+      const txs = _.flatten(await Promise.all(videosBatch.map((v) => this.prepareVideo(v))))
+      const result = await api.sendExtrinsic(this.sudo, api.tx.utility.batch(txs))
+      const videoCreatedEvents = api.findEvents(result, 'content', 'VideoCreated')
+      const newVideoIds: VideoId[] = videoCreatedEvents.map((e) => e.data[2])
+      if (videoCreatedEvents.length !== videosBatch.length) {
+        this.extractFailedSudoAsMigrations(result, videosBatch)
+      }
+
+      const dataObjectsUploadedEvents = api.findEvents(result, 'storage', 'DataObjectsUploaded')
+      const newVideoMapEntries: [number, number][] = []
+      let newVideoIdIndex = 0
+      videosBatch.forEach(({ id }) => {
+        if (this.failedMigrations.has(parseInt(id))) {
+          return
+        }
+        const newVideoId = newVideoIds[newVideoIdIndex++].toNumber()
+        this.idsMap.set(parseInt(id), newVideoId)
+        newVideoMapEntries.push([parseInt(id), newVideoId])
+      })
+      if (newVideoMapEntries.length) {
+        console.log('Video map entries added!', newVideoMapEntries)
+        await this.assetsManager.uploadFromEvents(dataObjectsUploadedEvents)
+      }
+    }
+    return this.getResult()
+  }
+
+  private getVideoData(video: VideoFieldsFragment) {
+    const { id, channel } = video
+
+    if (!channel) {
+      throw new Error(`Channel data missing for video: ${id}`)
+    }
+
+    if (!channel.ownerMember) {
+      throw new Error(`Channel ownerMember missing for video ${id}`)
+    }
+
+    let { ownerMember } = channel
+    if (this.config.dev) {
+      ownerMember = { id: '0', controllerAccount: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY' }
+    }
+
+    return { ...video, channel: { ...channel, ownerMember } }
+  }
+
+  private async prepareVideo(video: VideoFieldsFragment) {
+    const { api } = this
+
+    const {
+      categoryId,
+      description,
+      duration,
+      hasMarketing,
+      isExplicit,
+      isPublic,
+      language,
+      license,
+      mediaDataObject,
+      mediaMetadata,
+      publishedBeforeJoystream,
+      thumbnailPhotoDataObject,
+      title,
+      channel: { ownerMember, id: oldChannelId },
+    } = this.getVideoData(video)
+
+    const channelId = this.getNewChannelId(parseInt(oldChannelId))
+
+    const assetsToPrepare = {
+      thumbnail: { data: thumbnailPhotoDataObject || undefined, targetSize: VIDEO_THUMB_TARGET_SIZE },
+      video: { data: mediaDataObject || undefined },
+    }
+    const preparedAssets = await this.assetsManager.prepareAssets(assetsToPrepare)
+    const meta = new VideoMetadata({
+      title,
+      description,
+      category: this.getNewCategoryId(categoryId),
+      duration,
+      hasMarketing,
+      isExplicit,
+      isPublic,
+      language: language?.iso,
+      license: license,
+      mediaPixelHeight: mediaMetadata?.pixelHeight,
+      mediaPixelWidth: mediaMetadata?.pixelWidth,
+      mediaType: mediaMetadata?.encoding,
+      publishedBeforeJoystream: {
+        isPublished: !!publishedBeforeJoystream,
+        date: moment(publishedBeforeJoystream).format('YYYY-MM-DD'),
+      },
+      thumbnailPhoto: preparedAssets.thumbnail?.index,
+      video: preparedAssets.video?.index,
+    })
+    const assetsParams = Object.values(preparedAssets)
+      .sort((a, b) => a.index - b.index)
+      .map((a) => a.params)
+    const videoCreationParams = createType<VideoCreationParameters, 'VideoCreationParameters'>(
+      'VideoCreationParameters',
+      {
+        assets: assetsParams.length
+          ? {
+              object_creation_list: assetsParams,
+              expected_data_size_fee: this.assetsManager.dataObjectFeePerMB,
+            }
+          : null,
+        meta: `0x${Buffer.from(VideoMetadata.encode(meta).finish()).toString('hex')}`,
+      }
+    )
+    const feesToCover = this.assetsManager.calcDataObjectsFee(assetsParams)
+    return [
+      api.tx.balances.transferKeepAlive(ownerMember.controllerAccount, feesToCover),
+      api.tx.sudo.sudoAs(
+        ownerMember.controllerAccount,
+        api.tx.content.createVideo({ Member: ownerMember.id }, channelId, videoCreationParams)
+      ),
+    ]
+  }
+}
