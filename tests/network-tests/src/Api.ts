@@ -119,6 +119,10 @@ export class ApiFactory {
       final,
     })
   }
+
+  public dumpAccounts(): void {
+    console.log(this.addressesToKeyId)
+  }
 }
 
 export class Api {
@@ -149,6 +153,10 @@ export class Api {
 
   public keyGenInfo(): string {
     return this.factory.keyGenInfo()
+  }
+
+  public dumpAccounts(): void {
+    this.factory.dumpAccounts()
   }
 
   // Well known WorkingGroup enum defined in runtime

@@ -67,6 +67,10 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     exitCode = -1
   }
 
+  // print out address to key id map
+  api.dumpAccounts()
+
+  // print out the first and last key id used to generate keys in this scenario
   console.log(api.keyGenInfo())
 
   // Note: disconnecting and then reconnecting to the chain in the same process
