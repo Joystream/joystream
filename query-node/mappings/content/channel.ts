@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { AccountId } from '@polkadot/types/interfaces'
 import { Option } from '@polkadot/types/codec'
