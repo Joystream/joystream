@@ -80,10 +80,11 @@ minikube delete
 Our cluster configuration will try to listen on port 80 so there cannot be another service running on that port.
 
 ```
-# optionally save cluster config in specific location, remember to set this again when using kubectl command
-# to access the cluster
+# optionally save cluster config in specific location,
+# remember to set this again when using kubectl command to access the cluster.
 export KUBECONFIG=$(PWD)/kubeconfig
-# create the cluster
+
+# create the cluster with custom configuration
 kind create cluster --config ./kind-cluster.yaml --name joystream
 ```
 
