@@ -34,7 +34,7 @@ import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 import { VideoId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
-import { ChannelCategoryMetadata } from '@joystream/content-metadata-protobuf'
+import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/content-metadata-protobuf'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -1833,10 +1833,10 @@ export class Api {
     }
 
     const account = lead?.role_account_id
-    const meta = new ChannelCategoryMetadata()
+    const meta = new VideoCategoryMetadata()
     meta.setName(name)
     return this.sender.signAndSend(
-      this.api.tx.content.createChannelCategory({ Lead: null }, { meta: this.encodeMetadata(meta) }),
+      this.api.tx.content.createVideoCategory({ Lead: null }, { meta: this.encodeMetadata(meta) }),
       account?.toString()
     )
   }
