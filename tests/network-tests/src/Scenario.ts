@@ -9,6 +9,7 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
+import fs from 'fs'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -67,11 +68,19 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     exitCode = -1
   }
 
-  // print out address to key id map
-  api.dumpAccounts()
+  // account to key ids
+  const accounts = api.getAllgeneratedAccounts()
 
-  // print out the first and last key id used to generate keys in this scenario
-  console.log(api.keyGenInfo())
+  // first and last key id used to generate keys in this scenario
+  const keyIds = api.keyGenInfo()
+
+  const output = {
+    accounts,
+    keyIds,
+    miniSecret,
+  }
+
+  fs.writeFileSync('output.json', JSON.stringify(output, undefined, 2))
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

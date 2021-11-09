@@ -111,17 +111,17 @@ export class ApiFactory {
     return keys
   }
 
-  public keyGenInfo(): string {
+  public keyGenInfo(): { start: number; final: number } {
     const start = 0
     const final = this.keyId
-    return JSON.stringify({
+    return {
       start,
       final,
-    })
+    }
   }
 
-  public dumpAccounts(): void {
-    console.log(this.addressesToKeyId)
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return Object.fromEntries(this.addressesToKeyId)
   }
 }
 
@@ -151,12 +151,12 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public keyGenInfo(): string {
+  public keyGenInfo(): { start: number; final: number } {
     return this.factory.keyGenInfo()
   }
 
-  public dumpAccounts(): void {
-    this.factory.dumpAccounts()
+  public getAllgeneratedAccounts(): { [k: string]: number } {
+    return this.factory.getAllGeneratedAccounts()
   }
 
   // Well known WorkingGroup enum defined in runtime
