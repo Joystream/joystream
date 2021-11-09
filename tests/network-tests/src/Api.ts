@@ -29,9 +29,13 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-import { v4 as uuid } from 'uuid'
+// import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
+import { VideoId } from '@joystream/types/content'
+import { ChannelId } from '@joystream/types/common'
+import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -43,16 +47,29 @@ export enum WorkingGroups {
   OperationsWorkingGroupGamma = 'operationsWorkingGroupGamma',
 }
 
+type AnyMetadata = {
+  serializeBinary(): Uint8Array
+}
+
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
+  // number used as part of key derivation path
+  private keyId = 0
+  // mapping from account address to key id.
+  // To be able to re-derive keypair externally when mini-secret is known.
+  readonly addressesToKeyId: Map<string, number> = new Map()
+  // mini secret used in SURI key derivation path
+  private readonly miniSecret: string
+
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string
+    sudoAccountUri: string,
+    miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
     let connectAttempts = 0
@@ -69,7 +86,7 @@ export class ApiFactory {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -79,32 +96,56 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
+    this.miniSecret = miniSecret
+    this.addressesToKeyId = new Map()
+    this.keyId = 0
   }
 
   public getApi(label: string): Api {
-    return new Api(this.api, this.treasuryAccount, this.keyring, label)
+    return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  // public close(): void {
-  //   this.api.disconnect()
-  // }
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    const keys: { key: KeyringPair; id: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const id = this.keyId++
+      const uri = `${this.miniSecret}//testing//${id}`
+      const key = this.keyring.addFromUri(uri)
+      keys.push({ key, id })
+      this.addressesToKeyId.set(key.address, id)
+    }
+    return keys
+  }
+
+  public keyGenInfo(): { start: number; final: number } {
+    const start = 0
+    const final = this.keyId
+    return {
+      start,
+      final,
+    }
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return Object.fromEntries(this.addressesToKeyId)
+  }
 }
 
 export class Api {
+  private readonly factory: ApiFactory
   private readonly api: ApiPromise
   private readonly sender: Sender
-  private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+  constructor(factory: ApiFactory, api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.factory = factory
     this.api = api
-    this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
   }
@@ -117,12 +158,16 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  public createKeyPairs(n: number): KeyringPair[] {
-    const nKeyPairs: KeyringPair[] = []
-    for (let i = 0; i < n; i++) {
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
-    }
-    return nKeyPairs
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    return this.factory.createKeyPairs(n)
+  }
+
+  public keyGenInfo(): { start: number; final: number } {
+    return this.factory.keyGenInfo()
+  }
+
+  public getAllgeneratedAccounts(): { [k: string]: number } {
+    return this.factory.getAllGeneratedAccounts()
   }
 
   // Well known WorkingGroup enum defined in runtime
@@ -1709,5 +1754,102 @@ export class Api {
 
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
+  }
+
+  async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
+    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId | null> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a channel without any assets
+    const tx = this.api.tx.content.createChannel(
+      { Member: memberId },
+      {
+        assets: [],
+        meta: null,
+        reward_account: null,
+      }
+    )
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const record = this.findEventRecord(result.events, 'content', 'ChannelCreated')
+    if (record) {
+      return record.event.data[1] as ChannelId
+    }
+
+    return null
+  }
+
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string
+  ): Promise<VideoId | null> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a video without any assets
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
+      assets: [],
+      meta: null,
+    })
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const record = this.findEventRecord(result.events, 'content', 'VideoCreated')
+    if (record) {
+      return record.event.data[2] as VideoId
+    }
+
+    return null
+  }
+
+  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentWorkingGroup)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new ChannelCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createChannelCategory(
+        { Lead: null },
+        { meta: metadataToBytes(ChannelCategoryMetadata, meta) }
+      ),
+      account?.toString()
+    )
+  }
+
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentWorkingGroup)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new VideoCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createVideoCategory({ Lead: null }, { meta: metadataToBytes(VideoCategoryMetadata, meta) }),
+      account?.toString()
+    )
   }
 }

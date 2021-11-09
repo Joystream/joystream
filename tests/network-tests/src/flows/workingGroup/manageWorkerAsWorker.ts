@@ -41,7 +41,7 @@ async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: Wor
   const lead = await api.getGroupLead(group)
   assert(lead)
 
-  const newMembers = api.createKeyPairs(1).map((key) => key.address)
+  const newMembers = api.createKeyPairs(1).map(({ key }) => key.address)
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
