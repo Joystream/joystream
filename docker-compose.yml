@@ -128,8 +128,6 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    environment:
-      - QUERY_NODE_TESTS=${QUERY_NODE_TESTS} # needed until proper membership bootstrapping for tests is created
     command: ["yarn", "workspace", "query-node-root", "processor:start"]
 
   indexer:

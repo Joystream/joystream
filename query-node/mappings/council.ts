@@ -60,14 +60,10 @@ import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 /*
   Retrieves the member record by its id.
 */
-async function getMembership(
-  store: DatabaseManager,
-  memberId: string,
-  canFail: boolean
-): Promise<Membership | undefined> {
+async function getMembership(store: DatabaseManager, memberId: string): Promise<Membership | undefined> {
   const member = await store.get(Membership, { where: { id: memberId } })
 
-  if (!member && !canFail) {
+  if (!member) {
     throw new Error(`Membership not found. memberId '${memberId}'`)
   }
 
@@ -296,19 +292,21 @@ async function convertCandidatesToCouncilMembers(
   const councilMembers = await candidates.reduce(async (councilMembersPromise, candidate) => {
     const councilMembers = await councilMembersPromise
 
+    // cast to any needed because member is not eagerly loaded into candidate object
+    const member = new Membership({ id: (candidate as any).memberId.toString() })
+
     const councilMember = new CouncilMember({
       // id: candidate.id // TODO: are ids needed?
       stakingAccountId: candidate.stakingAccountId,
       rewardAccountId: candidate.rewardAccountId,
-      member: candidate.member,
+      member,
       stake: candidate.stake,
 
       lastPaymentBlock: new BN(blockNumber),
 
+      unpaidReward: new BN(0),
       accumulatedReward: new BN(0),
     })
-
-    await store.save<CouncilMember>(councilMember)
 
     return [...councilMembers, councilMember]
   }, Promise.resolve([] as CouncilMember[]))
@@ -394,7 +392,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   // common event processing
 
   const [memberId, stakingAccount, rewardAccount, balance] = new Council.NewCandidateEvent(event).params
-  const member = await getMembership(store, memberId.toString(), false)
+  const member = await getMembership(store, memberId.toString())
 
   const newCandidateEvent = new NewCandidateEvent({
     ...genericEventFields(event),
@@ -459,16 +457,21 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // specific event processing
 
+  // mark old council as resinged
   const oldElectedCouncil = await getCurrentElectedCouncil(store, true)
   if (oldElectedCouncil) {
     oldElectedCouncil.isResigned = true
     await store.save<ElectedCouncil>(oldElectedCouncil)
   }
 
-  // create new council record
+  // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
+
+  const candidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id } })
+
+  // create new council record
   const electedCouncil = new ElectedCouncil({
-    councilMembers: await convertCandidatesToCouncilMembers(store, electionRound.candidates || [], event.blockNumber),
+    councilMembers: await convertCandidatesToCouncilMembers(store, candidates, event.blockNumber),
     updates: [],
     electedAtBlock: event.blockNumber,
     endedAtBlock: event.blockNumber,
@@ -478,6 +481,15 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   })
 
   await store.save<ElectedCouncil>(electedCouncil)
+
+  // save new council members
+  await Promise.all(
+    (electedCouncil.councilMembers || []).map(async (councilMember) => {
+      councilMember.electedInCouncil = electedCouncil
+
+      await store.save<CouncilMember>(councilMember)
+    })
+  )
 
   // end the last election round and start new one
   await startNextElectionRound(store, electedCouncil, electionRound)
@@ -512,7 +524,7 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
   // common event processing
 
   const [memberId] = new Council.CandidacyStakeReleaseEvent(event).params
-  const member = await getMembership(store, memberId.toString(), false)
+  const member = await getMembership(store, memberId.toString())
 
   const candidacyStakeReleaseEvent = new CandidacyStakeReleaseEvent({
     ...genericEventFields(event),
@@ -536,7 +548,7 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // common event processing
 
   const [memberId] = new Council.CandidacyWithdrawEvent(event).params
-  const member = await getMembership(store, memberId.toString(), false)
+  const member = await getMembership(store, memberId.toString())
 
   const candidacyWithdrawEvent = new CandidacyWithdrawEvent({
     ...genericEventFields(event),
@@ -561,7 +573,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   // common event processing
 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
-  const member = await getMembership(store, memberId.toString(), false)
+  const member = await getMembership(store, memberId.toString())
 
   // load candidate recored
   const electionRound = await getCurrentElectionRound(store)
@@ -594,13 +606,7 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
   // common event processing
 
   const [memberId, rewardAccount, paidBalance, missingBalance] = new Council.RewardPaymentEvent(event).params
-  //const member = await getMembership(store, memberId.toString())
-
-  // tmp to overcome missing bootstrapping for members during test
-  const isTestingEnvironment = !!process.env.QUERY_NODE_TESTS || false
-  const member =
-    (await getMembership(store, memberId.toString(), isTestingEnvironment)) ||
-    (await dirtyTestingMemberBootstrap({ store }, memberId.toString(), event.blockNumber))
+  const member = await getMembership(store, memberId.toString())
 
   const rewardPaymentEvent = new RewardPaymentEvent({
     ...genericEventFields(event),
@@ -854,7 +860,7 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   // common event processing
 
   const [account, memberId, salt] = new Referendum.VoteRevealedEvent(event).params
-  const member = await getMembership(store, memberId.toString(), false)
+  const member = await getMembership(store, memberId.toString())
 
   const voteRevealedEvent = new VoteRevealedEvent({
     ...genericEventFields(event),
@@ -898,70 +904,4 @@ export async function referendum_StakeReleased({ event, store }: EventContext & 
   castVote.stakeLocked = false
 
   await store.save<CastVote>(castVote)
-}
-
-/////////////////// Dirty membership bootstrapping /////////////////////////////
-
-import { MembershipEntryPaid, MemberMetadata } from 'query-node/dist/model'
-
-async function dirtyTestingMemberBootstrap({ store }: StoreContext, memberId: string, blockNumber: number) {
-  const now = new Date()
-  const account = 'tmpBootstrappedAccount-' + memberId
-  const handle = 'tmpBootstrappedHandle-' + memberId
-
-  const entryMethod = new MembershipEntryPaid()
-
-  const metadataEntity = new MemberMetadata({
-    createdAt: now,
-    updatedAt: now,
-  })
-
-  const member = new Membership({
-    createdAt: now,
-    updatedAt: now,
-    id: memberId,
-    rootAccount: account,
-    controllerAccount: account,
-    handle: handle,
-    metadata: metadataEntity,
-    entry: entryMethod,
-    referredBy: undefined,
-    isVerified: false,
-    inviteCount: 0,
-    boundAccounts: [],
-    invitees: [],
-    referredMembers: [],
-    invitedBy: undefined,
-    isFoundingMember: false,
-    isCouncilMember: false,
-  })
-
-  await store.save<MemberMetadata>(member.metadata)
-  await store.save<Membership>(member)
-
-  ////////////////////////////////////////////ú
-
-  const dummyStake = 1000
-
-  const councilMember = new CouncilMember({
-    // id: candidate.id // TODO: are ids needed?
-    stakingAccountId: account,
-    rewardAccountId: account,
-    member: member,
-    stake: new BN(dummyStake),
-
-    lastPaymentBlock: new BN(blockNumber),
-
-    accumulatedReward: new BN(0),
-  })
-
-  await store.save<CouncilMember>(councilMember)
-
-  // inject member to current council
-  const electedCouncil = (await getCurrentElectedCouncil(store, false)) as ElectedCouncil
-  electedCouncil.councilMembers = (electedCouncil.councilMembers as CouncilMember[]).concat([councilMember])
-
-  await store.save<ElectedCouncil>(electedCouncil)
-
-  return member
 }
