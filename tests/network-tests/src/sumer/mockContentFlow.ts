@@ -3,6 +3,7 @@
 import { CreateChannelsAsMemberFixture } from './createChannelsAsMemberFixture'
 import { CreateVideosAsMemberFixture } from './createVideosAsMemberFixture'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+import { CreateMockCategories } from './createCategories'
 
 import { FlowProps } from '../Flow'
 import { FixtureRunner } from '../Fixture'
@@ -13,7 +14,10 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
 
-  // TODO: create categories with lead
+  // create categories with lead
+  const createCategories = new CreateMockCategories(api)
+  debug('Creating Categories')
+  await new FixtureRunner(createCategories).run()
 
   const memberAccount = api.createKeyPairs(1)[0].key.address
   const createMember: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
@@ -21,7 +25,8 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
     [memberAccount],
     api.createPaidTermId(new BN(0))
   )
-  await createMember.runner()
+  await new FixtureRunner(createMember).run()
+
   const memberId = createMember.getCreatedMembers()[0].toNumber()
 
   // If we are too "aggressive" seeing

@@ -34,10 +34,15 @@ import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 import { VideoId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
+import { ChannelCategoryMetadata } from '@joystream/content-metadata-protobuf'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
   ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
+}
+
+type AnyMetadata = {
+  serializeBinary(): Uint8Array
 }
 
 export class ApiFactory {
@@ -157,6 +162,10 @@ export class Api {
 
   public getAllgeneratedAccounts(): { [k: string]: number } {
     return this.factory.getAllGeneratedAccounts()
+  }
+
+  public encodeMetadata(metadata: AnyMetadata): Bytes {
+    return this.api.createType('Bytes', '0x' + Buffer.from(metadata.serializeBinary()).toString('hex'))
   }
 
   // Well known WorkingGroup enum defined in runtime
@@ -1798,5 +1807,37 @@ export class Api {
     }
 
     return null
+  }
+
+  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new ChannelCategoryMetadata()
+    meta.setName(name)
+    return this.sender.signAndSend(
+      this.api.tx.content.createChannelCategory({ Lead: null }, { meta: this.encodeMetadata(meta) }),
+      account?.toString()
+    )
+  }
+
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new ChannelCategoryMetadata()
+    meta.setName(name)
+    return this.sender.signAndSend(
+      this.api.tx.content.createChannelCategory({ Lead: null }, { meta: this.encodeMetadata(meta) }),
+      account?.toString()
+    )
   }
 }

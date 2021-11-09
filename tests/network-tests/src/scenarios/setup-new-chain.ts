@@ -10,5 +10,5 @@ scenario(async ({ job }) => {
   const leads = job('Setup WorkingGroup Leads', [leaderSetup.storage, leaderSetup.content])
 
   // Create some mock content in content directory - without assets or any real metadata
-  const mockContent = job('Create Mock Content', mockContentFlow)
+  const mockContent = job('Create Mock Content', mockContentFlow).after(leads)
 })
