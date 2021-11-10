@@ -61,8 +61,8 @@ export default abstract class DefaultCommandBase extends Command {
 
   async init(): Promise<void> {
     const { configPath, yes } = this.parse(this.constructor as typeof DefaultCommandBase).flags
-    const configParser = new ConfigParserService()
-    this.appConfig = configParser.loadConfig(configPath) as ReadonlyConfig
+    const configParser = new ConfigParserService(configPath)
+    this.appConfig = configParser.parse() as ReadonlyConfig
     this.logging = LoggingService.withCLIConfig()
     this.logger = this.logging.createLogger('CLI')
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)

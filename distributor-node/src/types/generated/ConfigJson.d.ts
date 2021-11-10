@@ -6,9 +6,13 @@
  */
 
 /**
+ * Minimum level of logs sent to this output
+ */
+export type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+/**
  * List of distribution bucket ids
  */
-export type BucketIds = [number, ...number[]]
+export type BucketIds = number[]
 /**
  * Distribute all buckets assigned to worker specified in `workerId`
  */
@@ -34,10 +38,6 @@ export interface DistributorNodeConfiguration {
      * Joystream node websocket api uri (for example: ws://localhost:9944)
      */
     joystreamNodeWs: string
-    /**
-     * Elasticsearch uri used for submitting the distributor node logs (if enabled via `log.elastic`)
-     */
-    elasticSearch?: string
   }
   /**
    * Specifies paths where node's data will be stored
@@ -51,27 +51,50 @@ export interface DistributorNodeConfiguration {
      * Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)
      */
     cacheState: string
-    /**
-     * Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).
-     */
-    logs?: string
   }
   /**
-   * Specifies minimum log levels by supported log outputs
+   * Specifies the logging configuration
    */
-  log?: {
-    /**
-     * Minimum level of logs written to a file specified in `directories.logs`
-     */
-    file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
-    /**
-     * Minimum level of logs outputted to a console
-     */
-    console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
-    /**
-     * Minimum level of logs sent to elasticsearch endpoint specified in `endpoints.elasticSearch`
-     */
-    elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
+  logs?: {
+    file?:
+      | {
+          level: LogLevel
+          /**
+           * Path where the logs will be stored (absolute or relative to config file)
+           */
+          path: string
+          /**
+           * Maximum number of log files to create
+           */
+          maxFiles?: number
+          /**
+           * Maximum size of a single log file in bytes
+           */
+          maxSize?: number
+          /**
+           * The frequency of creating new log files (regardless of maxSize)
+           */
+          frequency?: 'yearly' | 'monthly' | 'daily' | 'hourly'
+          /**
+           * Whether to archive old logs
+           */
+          archive?: boolean
+        }
+      | 'off'
+    console?:
+      | {
+          level: LogLevel
+        }
+      | 'off'
+    elastic?:
+      | {
+          level: LogLevel
+          /**
+           * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
+           */
+          endpoint: string
+        }
+      | 'off'
   }
   /**
    * Specifies node limits w.r.t. storage, outbound connections etc.
@@ -130,7 +153,7 @@ export interface DistributorNodeConfiguration {
   /**
    * Specifies the keys available within distributor node CLI.
    */
-  keys: [SubstrateUri | MnemonicPhrase | JSONBackupFile, ...(SubstrateUri | MnemonicPhrase | JSONBackupFile)[]]
+  keys: (SubstrateUri | MnemonicPhrase | JSONBackupFile)[]
   /**
    * Specifies the buckets distributed by the node
    */

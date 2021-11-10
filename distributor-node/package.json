@@ -43,7 +43,8 @@
     "blake3": "^2.1.4",
     "js-image-generator": "^1.0.3",
     "url-join": "^4.0.1",
-    "@types/url-join": "^4.0.1"
+    "@types/url-join": "^4.0.1",
+    "winston-daily-rotate-file": "^4.5.5"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

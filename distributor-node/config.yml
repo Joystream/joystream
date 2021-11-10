@@ -2,15 +2,20 @@ id: test-node
 endpoints:
   queryNode: http://localhost:8081/graphql
   joystreamNodeWs: ws://localhost:9944
-  # elasticSearch: http://localhost:9200
 directories:
   assets: ./local/data
   cacheState: ./local/cache
-  logs: ./local/logs
-log:
-  file: debug
-  console: verbose
-  # elastic: info
+logs:
+  file:
+    level: debug
+    path: ./local/logs
+    maxFiles: 5
+    maxSize: 1000000
+  console:
+    level: verbose
+  # elastic:
+  #   level: info
+  #   endpoint: http://localhost:9200
 limits:
   storage: 100G
   maxConcurrentStorageNodeDownloads: 100

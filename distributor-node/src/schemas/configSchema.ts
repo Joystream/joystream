@@ -31,10 +31,6 @@ export const configSchema: JSONSchema4 = {
           description: 'Joystream node websocket api uri (for example: ws://localhost:9944)',
           type: 'string',
         },
-        elasticSearch: {
-          description: 'Elasticsearch uri used for submitting the distributor node logs (if enabled via `log.elastic`)',
-          type: 'string',
-        },
       },
     },
     directories: {
@@ -52,32 +48,92 @@ export const configSchema: JSONSchema4 = {
             'Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)',
           type: 'string',
         },
-        logs: {
-          description:
-            'Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).',
-          type: 'string',
-        },
       },
     },
-    log: {
+    logs: {
       type: 'object',
       additionalProperties: false,
-      description: 'Specifies minimum log levels by supported log outputs',
+      description: 'Specifies the logging configuration',
       properties: {
         file: {
-          description: 'Minimum level of logs written to a file specified in `directories.logs`',
-          type: 'string',
-          enum: [...Object.keys(winston.config.npm.levels), 'off'],
+          oneOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['level', 'path'],
+              description: 'File logging options',
+              properties: {
+                level: { $ref: '#/definitions/logLevel' },
+                path: {
+                  description: 'Path where the logs will be stored (absolute or relative to config file)',
+                  type: 'string',
+                },
+                maxFiles: {
+                  description: 'Maximum number of log files to store',
+                  type: 'integer',
+                  minimum: 1,
+                },
+                maxSize: {
+                  description: 'Maximum size of a single log file in bytes',
+                  type: 'integer',
+                  minimum: 1024,
+                },
+                frequency: {
+                  description: 'The frequency of creating new log files (regardless of maxSize)',
+                  default: 'daily',
+                  type: 'string',
+                  enum: ['yearly', 'monthly', 'daily', 'hourly'],
+                },
+                archive: {
+                  description: 'Whether to archive old logs',
+                  default: false,
+                  type: 'boolean',
+                },
+              },
+            },
+            {
+              type: 'string',
+              enum: ['off'],
+            },
+          ],
         },
         console: {
-          description: 'Minimum level of logs outputted to a console',
-          type: 'string',
-          enum: [...Object.keys(winston.config.npm.levels), 'off'],
+          oneOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['level'],
+              description: 'Console logging options',
+              properties: {
+                level: { $ref: '#/definitions/logLevel' },
+              },
+            },
+            {
+              type: 'string',
+              enum: ['off'],
+            },
+          ],
         },
         elastic: {
-          description: 'Minimum level of logs sent to elasticsearch endpoint specified in `endpoints.elasticSearch`',
-          type: 'string',
-          enum: [...Object.keys(winston.config.npm.levels), 'off'],
+          oneOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['level', 'endpoint'],
+              description: 'Elasticsearch logging options',
+              properties: {
+                level: { $ref: '#/definitions/logLevel' },
+                endpoint: {
+                  description: 'Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)',
+                  type: 'string',
+                },
+              },
+            },
+            {
+              type: 'string',
+              enum: ['off'],
+            },
+          ],
         },
       },
     },
@@ -226,6 +282,13 @@ export const configSchema: JSONSchema4 = {
       description: 'ID of the node operator (distribution working group worker)',
       type: 'integer',
       minimum: 0,
+    },
+  },
+  definitions: {
+    logLevel: {
+      description: 'Minimum level of logs sent to this output',
+      type: 'string',
+      enum: [...Object.keys(winston.config.npm.levels)],
     },
   },
 }

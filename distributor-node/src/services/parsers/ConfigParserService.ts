@@ -11,22 +11,24 @@ const MIN_CACHE_SIZE = '20G'
 const MIN_MAX_CACHED_ITEM_SIZE = '1M'
 
 export class ConfigParserService {
-  validator: ValidationService
+  private configPath: string
+  private validator: ValidationService
 
-  constructor() {
+  constructor(configPath: string) {
     this.validator = new ValidationService()
+    this.configPath = configPath
   }
 
-  public resolveConfigDirectoryPaths(paths: Config['directories'], configFilePath: string): Config['directories'] {
-    return _.mapValues(paths, (v) =>
-      typeof v === 'string' ? path.resolve(path.dirname(configFilePath), v) : v
-    ) as Config['directories']
+  public resolvePath(p: string): string {
+    return path.resolve(path.dirname(this.configPath), p)
   }
 
-  public resolveConfigKeysPaths(keys: Config['keys'], configFilePath: string): Config['keys'] {
-    return keys.map((k) =>
-      'keyfile' in k ? { keyfile: path.resolve(path.dirname(configFilePath), k.keyfile) } : k
-    ) as Config['keys']
+  public resolveConfigDirectoryPaths(paths: Config['directories']): Config['directories'] {
+    return _.mapValues(paths, (p) => this.resolvePath(p))
+  }
+
+  public resolveConfigKeysPaths(keys: Config['keys']): Config['keys'] {
+    return keys.map((k) => ('keyfile' in k ? { keyfile: this.resolvePath(k.keyfile) } : k))
   }
 
   private parseBytesize(bytesize: string) {
@@ -120,7 +122,8 @@ export class ConfigParserService {
       })
   }
 
-  public loadConfig(configPath: string): Config {
+  public parse(): Config {
+    const { configPath } = this
     let inputConfig: Record<string, unknown> = {}
     // Try to load config from file if exists
     if (fs.existsSync(configPath)) {
@@ -141,13 +144,14 @@ export class ConfigParserService {
     const configJson = this.validator.validate('Config', inputConfig)
 
     // Normalize values
-    const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
-    const keys = this.resolveConfigKeysPaths(configJson.keys, configPath)
+    const directories = this.resolveConfigDirectoryPaths(configJson.directories)
+    const keys = this.resolveConfigKeysPaths(configJson.keys)
     const storageLimit = this.parseBytesize(configJson.limits.storage)
     const maxCachedItemSize = configJson.limits.maxCachedItemSize
       ? this.parseBytesize(configJson.limits.maxCachedItemSize)
       : undefined
 
+    // Additional validation:
     if (storageLimit < this.parseBytesize(MIN_CACHE_SIZE)) {
       throw new Error(`Config.limits.storage should be at least ${MIN_CACHE_SIZE}!`)
     }

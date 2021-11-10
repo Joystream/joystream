@@ -6,6 +6,8 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { Format } from 'logform'
 import stringify from 'fast-safe-stringify'
 import NodeCache from 'node-cache'
+import path from 'path'
+import 'winston-daily-rotate-file'
 
 const cliColors = {
   error: 'red',
@@ -74,40 +76,44 @@ export class LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
     let esTransport: ElasticsearchTransport | undefined
-    if (config.log?.elastic && config.log.elastic !== 'off') {
-      if (!config.endpoints.elasticSearch) {
-        throw new Error('config.endpoints.elasticSearch must be provided when elasticSeach logging is enabled!')
-      }
+    if (config.logs?.elastic && config.logs.elastic !== 'off') {
       esTransport = new ElasticsearchTransport({
         index: 'distributor-node',
-        level: config.log.elastic,
+        level: config.logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         flushInterval: 5000,
         source: config.id,
         clientOpts: {
           node: {
-            url: new URL(config.endpoints.elasticSearch),
+            url: new URL(config.logs.elastic.endpoint),
           },
         },
       })
       transports.push(esTransport)
     }
 
-    if (config.log?.file && config.log.file !== 'off') {
-      if (!config.directories.logs) {
-        throw new Error('config.directories.logs must be provided when file logging is enabled!')
+    if (config.logs?.file && config.logs.file !== 'off') {
+      const datePatternByFrequency = {
+        yearly: 'YYYY',
+        monthly: 'YYYY-MM',
+        daily: 'YYYY-MM-DD',
+        hourly: 'YYYY-MM-DD-HH',
       }
-      const fileTransport = new winston.transports.File({
-        filename: `${config.directories.logs}/logs.json`,
-        level: config.log.file,
+      const fileTransport = new winston.transports.DailyRotateFile({
+        filename: path.join(config.logs.file.path, 'argus-%DATE%.log'),
+        datePattern: datePatternByFrequency[config.logs.file.frequency || 'daily'],
+        zippedArchive: config.logs.file.archive,
+        maxSize: config.logs.file.maxSize,
+        maxFiles: config.logs.file.maxFiles,
+        level: config.logs.file.level,
         format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
       })
       transports.push(fileTransport)
     }
 
-    if (config.log?.console && config.log.console !== 'off') {
+    if (config.logs?.console && config.logs.console !== 'off') {
       const consoleTransport = new winston.transports.Console({
-        level: config.log.console,
+        level: config.logs.console.level,
         format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
       })
       transports.push(consoleTransport)
