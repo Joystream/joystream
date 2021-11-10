@@ -57,10 +57,14 @@ async function leaderSetup(
   const debug = extendDebug(`flow:leaderSetup:${group}`)
   debug('Started')
 
-  if (!skipIfAlreadySet) {
-    const existingLead = await api.getGroupLead(group)
-    assert.equal(existingLead, undefined, 'Lead is already set')
+  const existingLead = await api.getGroupLead(group)
+
+  if (skipIfAlreadySet && existingLead !== undefined) {
+    debug('Skipping create lead, already exists.')
+    return
   }
+
+  assert.equal(existingLead, undefined, 'Lead is already set')
 
   const leadKeyPair = api.createKeyPairs(1)[0].key
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
