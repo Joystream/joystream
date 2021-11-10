@@ -11,28 +11,17 @@ const config = new pulumi.Config()
 
 const queryNodeHost = config.require('queryNodeHost')
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
+let configArgusImage = config.require('argusImage')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const name = 'argus-node'
 const isMinikube = config.getBoolean('isMinikube')
 
 export let kubeconfig: pulumi.Output<any>
-export let argusImage: pulumi.Output<string>
+export let argusImage: pulumi.Output<string> = pulumi.interpolate`${configArgusImage}`
 let provider: k8s.Provider
 
 if (isMinikube) {
   provider = new k8s.Provider('local', {})
-  // Create image from local app
-  argusImage = new docker.Image('joystream/distributor-node', {
-    build: {
-      context: '../../../',
-      dockerfile: '../../../distributor-node.Dockerfile',
-    },
-    imageName: 'joystream/distributor-node:latest',
-    skipPush: true,
-  }).baseImageName
-
-  // Uncomment the below line to use an existing image
-  // argusImage = pulumi.interpolate`joystream/distributor-node:latest`
 } else {
   // Create a VPC for our cluster.
   const vpc = new awsx.ec2.Vpc('argus-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
@@ -58,8 +47,9 @@ if (isMinikube) {
 
   // Build an image and publish it to our ECR repository.
   argusImage = repo.buildAndPushImage({
-    dockerfile: '../../../distributor-node.Dockerfile',
-    context: '../../../',
+    context: './docker_dummy',
+    dockerfile: './docker_dummy/Dockerfile',
+    args: { SOURCE_IMAGE: argusImage! },
   })
 
   // Uncomment the below line to use an existing image
@@ -75,6 +65,26 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
+
+const pvc = new k8s.core.v1.PersistentVolumeClaim(
+  `${name}-pvc`,
+  {
+    metadata: {
+      labels: appLabels,
+      namespace: namespaceName,
+      name: `${name}-pvc`,
+    },
+    spec: {
+      accessModes: ['ReadWriteOnce'],
+      resources: {
+        requests: {
+          storage: `10Gi`,
+        },
+      },
+    },
+  },
+  resourceOptions
+)
 
 // Create a Deployment
 const deployment = new k8s.apps.v1.Deployment(
@@ -109,6 +119,28 @@ const deployment = new k8s.apps.v1.Deployment(
               ],
               args: ['start'],
               ports: [{ containerPort: 3334 }],
+              volumeMounts: [
+                {
+                  name: 'persistent-data',
+                  mountPath: '/data',
+                },
+                {
+                  name: 'persistent-data',
+                  mountPath: '/cache',
+                },
+                {
+                  name: 'persistent-data',
+                  mountPath: '/logs',
+                },
+              ],
+            },
+          ],
+          volumes: [
+            {
+              name: 'persistent-data',
+              persistentVolumeClaim: {
+                claimName: `${name}-pvc`,
+              },
             },
           ],
         },
