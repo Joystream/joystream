@@ -128,7 +128,11 @@ export class App {
     // Stop the http api
     this.httpApi.stop()
     // Save cache
-    this.stateCache.saveSync()
+    try {
+      this.stateCache.saveSync()
+    } catch (err) {
+      this.logger.error('Failed to save the cache state on exit!', { err })
+    }
     if (signal) {
       // Async exit can be executed
       this.exitGracefully()
