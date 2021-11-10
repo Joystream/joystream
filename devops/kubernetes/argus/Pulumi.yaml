@@ -13,3 +13,6 @@ template:
     queryNodeHost:
       description: Query node GraphQL endpoint
       default: 'https://hydra.joystream.org/graphql'
+    wsProviderEndpointURI:
+      description: Chain RPC endpoint
+      default: 'wss://rome-rpc-endpoint.joystream.org:9944/'

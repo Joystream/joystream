@@ -10,6 +10,7 @@ const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
 
 const queryNodeHost = config.require('queryNodeHost')
+const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const name = 'argus-node'
 const isMinikube = config.getBoolean('isMinikube')
@@ -100,6 +101,10 @@ const deployment = new k8s.apps.v1.Deployment(
                 {
                   name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE',
                   value: queryNodeHost,
+                },
+                {
+                  name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS',
+                  value: wsProviderEndpointURI,
                 },
               ],
               args: ['start'],
