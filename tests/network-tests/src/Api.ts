@@ -1771,7 +1771,7 @@ export class Api {
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
       {
-        assets: [],
+        assets: null,
         meta: null,
         reward_account: null,
       }
@@ -1800,7 +1800,7 @@ export class Api {
 
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
-      assets: [],
+      assets: null,
       meta: null,
     })
 
