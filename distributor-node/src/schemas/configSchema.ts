@@ -1,11 +1,25 @@
 import { JSONSchema4 } from 'json-schema'
 import winston from 'winston'
 import { MAX_CONCURRENT_RESPONSE_TIME_CHECKS } from '../services/networking/NetworkingService'
+import { objectSchema } from './utils'
 
 export const bytesizeUnits = ['B', 'K', 'M', 'G', 'T']
 export const bytesizeRegex = new RegExp(`^[0-9]+(${bytesizeUnits.join('|')})$`)
 
+const logLevelSchema: JSONSchema4 = {
+  description: 'Minimum level of logs sent to this output',
+  type: 'string',
+  enum: [...Object.keys(winston.config.npm.levels)],
+}
+
+const offSwitch: JSONSchema4 = {
+  title: 'Switch off',
+  type: 'string',
+  enum: ['off'],
+}
+
 export const configSchema: JSONSchema4 = {
+  '$id': 'https://joystream.org/schemas/argus/config',
   title: 'Distributor node configuration',
   description: 'Configuration schema for distirubtor CLI and node',
   type: 'object',
@@ -17,11 +31,8 @@ export const configSchema: JSONSchema4 = {
       description: 'Node identifier used when sending elasticsearch logs and exposed on /status endpoint',
       minLength: 1,
     },
-    endpoints: {
-      type: 'object',
+    endpoints: objectSchema({
       description: 'Specifies external endpoints that the distributor node will connect to',
-      additionalProperties: false,
-      required: ['queryNode', 'joystreamNodeWs'],
       properties: {
         queryNode: {
           description: 'Query node graphql server uri (for example: http://localhost:8081/graphql)',
@@ -32,11 +43,9 @@ export const configSchema: JSONSchema4 = {
           type: 'string',
         },
       },
-    },
-    directories: {
-      type: 'object',
-      required: ['assets', 'cacheState'],
-      additionalProperties: false,
+      required: ['queryNode', 'joystreamNodeWs'],
+    }),
+    directories: objectSchema({
       description: "Specifies paths where node's data will be stored",
       properties: {
         assets: {
@@ -49,21 +58,17 @@ export const configSchema: JSONSchema4 = {
           type: 'string',
         },
       },
-    },
-    logs: {
-      type: 'object',
-      additionalProperties: false,
+      required: ['assets', 'cacheState'],
+    }),
+    logs: objectSchema({
       description: 'Specifies the logging configuration',
       properties: {
         file: {
           oneOf: [
-            {
-              type: 'object',
-              additionalProperties: false,
-              required: ['level', 'path'],
-              description: 'File logging options',
+            objectSchema({
+              title: 'File logging options',
               properties: {
-                level: { $ref: '#/definitions/logLevel' },
+                level: logLevelSchema,
                 path: {
                   description: 'Path where the logs will be stored (absolute or relative to config file)',
                   type: 'string',
@@ -90,64 +95,42 @@ export const configSchema: JSONSchema4 = {
                   type: 'boolean',
                 },
               },
-            },
-            {
-              type: 'string',
-              enum: ['off'],
-            },
+              required: ['level', 'path'],
+            }),
+            offSwitch,
           ],
         },
         console: {
           oneOf: [
-            {
-              type: 'object',
-              additionalProperties: false,
+            objectSchema({
+              title: 'Console logging options',
+              properties: { level: logLevelSchema },
               required: ['level'],
-              description: 'Console logging options',
-              properties: {
-                level: { $ref: '#/definitions/logLevel' },
-              },
-            },
-            {
-              type: 'string',
-              enum: ['off'],
-            },
+            }),
+            offSwitch,
           ],
         },
         elastic: {
           oneOf: [
-            {
-              type: 'object',
-              additionalProperties: false,
-              required: ['level', 'endpoint'],
-              description: 'Elasticsearch logging options',
+            objectSchema({
+              title: 'Elasticsearch logging options',
               properties: {
-                level: { $ref: '#/definitions/logLevel' },
+                level: logLevelSchema,
                 endpoint: {
                   description: 'Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)',
                   type: 'string',
                 },
               },
-            },
-            {
-              type: 'string',
-              enum: ['off'],
-            },
+              required: ['level', 'endpoint'],
+            }),
+            offSwitch,
           ],
         },
       },
-    },
-    limits: {
-      type: 'object',
-      required: [
-        'storage',
-        'maxConcurrentStorageNodeDownloads',
-        'maxConcurrentOutboundConnections',
-        'outboundRequestsTimeoutMs',
-        'pendingDownloadTimeoutSec',
-      ],
+      required: [],
+    }),
+    limits: objectSchema({
       description: 'Specifies node limits w.r.t. storage, outbound connections etc.',
-      additionalProperties: false,
       properties: {
         storage: {
           description: 'Maximum total size of all (cached) assets stored in `directories.assets`',
@@ -182,16 +165,21 @@ export const configSchema: JSONSchema4 = {
         },
         dataObjectSourceByObjectIdTTL: {
           description:
-            'TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node. Defaults to `60` if not specified.',
+            'TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node.',
+          default: 60,
           type: 'integer',
           minimum: 1,
         },
       },
-    },
-    intervals: {
-      type: 'object',
-      required: ['saveCacheState', 'checkStorageNodeResponseTimes', 'cacheCleanup'],
-      additionalProperties: false,
+      required: [
+        'storage',
+        'maxConcurrentStorageNodeDownloads',
+        'maxConcurrentOutboundConnections',
+        'outboundRequestsTimeoutMs',
+        'pendingDownloadTimeoutSec',
+      ],
+    }),
+    intervals: objectSchema({
       description: 'Specifies how often periodic tasks (for example cache cleanup) are executed by the node.',
       properties: {
         saveCacheState: {
@@ -217,45 +205,40 @@ export const configSchema: JSONSchema4 = {
           minimum: 1,
         },
       },
-    },
+      required: ['saveCacheState', 'checkStorageNodeResponseTimes', 'cacheCleanup'],
+    }),
     port: { description: 'Distributor node http api port', type: 'integer', minimum: 0 },
     keys: {
       description: 'Specifies the keys available within distributor node CLI.',
       type: 'array',
       items: {
         oneOf: [
-          {
-            type: 'object',
+          objectSchema({
             title: 'Substrate uri',
             description: "Keypair's substrate uri (for example: //Alice)",
-            required: ['suri'],
-            additionalProperties: false,
             properties: {
               type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
               suri: { type: 'string' },
             },
-          },
-          {
-            type: 'object',
+            required: ['suri'],
+          }),
+          objectSchema({
             title: 'Mnemonic phrase',
             description: 'Menomonic phrase',
-            required: ['mnemonic'],
-            additionalProperties: false,
             properties: {
               type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
               mnemonic: { type: 'string' },
             },
-          },
-          {
-            type: 'object',
+            required: ['mnemonic'],
+          }),
+          objectSchema({
             title: 'JSON backup file',
             description: 'Path to JSON backup file from polkadot signer / polakdot/apps (relative to config file path)',
-            required: ['keyfile'],
-            additionalProperties: false,
             properties: {
               keyfile: { type: 'string' },
             },
-          },
+            required: ['keyfile'],
+          }),
         ],
       },
       minItems: 1,
@@ -282,13 +265,6 @@ export const configSchema: JSONSchema4 = {
       description: 'ID of the node operator (distribution working group worker)',
       type: 'integer',
       minimum: 0,
-    },
-  },
-  definitions: {
-    logLevel: {
-      description: 'Minimum level of logs sent to this output',
-      type: 'string',
-      enum: [...Object.keys(winston.config.npm.levels)],
     },
   },
 }

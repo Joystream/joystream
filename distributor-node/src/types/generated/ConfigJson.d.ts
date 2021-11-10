@@ -6,10 +6,6 @@
  */
 
 /**
- * Minimum level of logs sent to this output
- */
-export type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-/**
  * List of distribution bucket ids
  */
 export type BucketIds = number[]
@@ -58,13 +54,16 @@ export interface DistributorNodeConfiguration {
   logs?: {
     file?:
       | {
-          level: LogLevel
+          /**
+           * Minimum level of logs sent to this output
+           */
+          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
           /**
            * Path where the logs will be stored (absolute or relative to config file)
            */
           path: string
           /**
-           * Maximum number of log files to create
+           * Maximum number of log files to store
            */
           maxFiles?: number
           /**
@@ -83,12 +82,18 @@ export interface DistributorNodeConfiguration {
       | 'off'
     console?:
       | {
-          level: LogLevel
+          /**
+           * Minimum level of logs sent to this output
+           */
+          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
         }
       | 'off'
     elastic?:
       | {
-          level: LogLevel
+          /**
+           * Minimum level of logs sent to this output
+           */
+          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
           /**
            * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
            */
@@ -125,7 +130,7 @@ export interface DistributorNodeConfiguration {
      */
     maxCachedItemSize?: string
     /**
-     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node. Defaults to `60` if not specified.
+     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node.
      */
     dataObjectSourceByObjectIdTTL?: number
   }

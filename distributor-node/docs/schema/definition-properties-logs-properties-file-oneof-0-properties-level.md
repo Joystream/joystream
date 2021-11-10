@@ -1,8 +1,8 @@
-## file Type
+## level Type
 
 `string`
 
-## file Constraints
+## level Constraints
 
 **enum**: the value of this property must be equal to one of the following values:
 
@@ -15,4 +15,3 @@
 | `"verbose"` |             |
 | `"debug"`   |             |
 | `"silly"`   |             |
-| `"off"`     |             |

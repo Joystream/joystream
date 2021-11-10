@@ -4,18 +4,18 @@
 
 # Distributor node configuration Properties
 
-| Property                    | Type      | Required | Nullable       | Defined by                                                                                                 |
-| :-------------------------- | :-------- | :------- | :------------- | :--------------------------------------------------------------------------------------------------------- |
-| [id](#id)                   | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-id.md "undefined#/properties/id")                   |
-| [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "undefined#/properties/endpoints")     |
-| [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "undefined#/properties/directories") |
-| [log](#log)                 | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-log.md "undefined#/properties/log")                 |
-| [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "undefined#/properties/limits")           |
-| [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "undefined#/properties/intervals")     |
-| [port](#port)               | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-port.md "undefined#/properties/port")               |
-| [keys](#keys)               | `array`   | Required | cannot be null | [Distributor node configuration](definition-properties-keys.md "undefined#/properties/keys")               |
-| [buckets](#buckets)         | Merged    | Required | cannot be null | [Distributor node configuration](definition-properties-buckets.md "undefined#/properties/buckets")         |
-| [workerId](#workerid)       | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-workerid.md "undefined#/properties/workerId")       |
+| Property                    | Type      | Required | Nullable       | Defined by                                                                                                                                  |
+| :-------------------------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| [id](#id)                   | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-id.md "https://joystream.org/schemas/argus/config#/properties/id")                   |
+| [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/argus/config#/properties/endpoints")     |
+| [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "https://joystream.org/schemas/argus/config#/properties/directories") |
+| [logs](#logs)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")               |
+| [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")           |
+| [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")     |
+| [port](#port)               | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-port.md "https://joystream.org/schemas/argus/config#/properties/port")               |
+| [keys](#keys)               | `array`   | Required | cannot be null | [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")               |
+| [buckets](#buckets)         | Merged    | Required | cannot be null | [Distributor node configuration](definition-properties-buckets.md "https://joystream.org/schemas/argus/config#/properties/buckets")         |
+| [workerId](#workerid)       | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")       |
 
 ## id
 
@@ -29,7 +29,7 @@ Node identifier used when sending elasticsearch logs and exposed on /status endp
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-id.md "undefined#/properties/id")
+*   defined in: [Distributor node configuration](definition-properties-id.md "https://joystream.org/schemas/argus/config#/properties/id")
 
 ### id Type
 
@@ -51,7 +51,7 @@ Specifies external endpoints that the distributor node will connect to
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-endpoints.md "undefined#/properties/endpoints")
+*   defined in: [Distributor node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/argus/config#/properties/endpoints")
 
 ### endpoints Type
 
@@ -69,29 +69,29 @@ Specifies paths where node's data will be stored
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-directories.md "undefined#/properties/directories")
+*   defined in: [Distributor node configuration](definition-properties-directories.md "https://joystream.org/schemas/argus/config#/properties/directories")
 
 ### directories Type
 
 `object` ([Details](definition-properties-directories.md))
 
-## log
+## logs
 
-Specifies minimum log levels by supported log outputs
+Specifies the logging configuration
 
-`log`
+`logs`
 
 *   is optional
 
-*   Type: `object` ([Details](definition-properties-log.md))
+*   Type: `object` ([Details](definition-properties-logs.md))
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-log.md "undefined#/properties/log")
+*   defined in: [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")
 
-### log Type
+### logs Type
 
-`object` ([Details](definition-properties-log.md))
+`object` ([Details](definition-properties-logs.md))
 
 ## limits
 
@@ -105,7 +105,7 @@ Specifies node limits w\.r.t. storage, outbound connections etc.
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits.md "undefined#/properties/limits")
+*   defined in: [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")
 
 ### limits Type
 
@@ -123,7 +123,7 @@ Specifies how often periodic tasks (for example cache cleanup) are executed by t
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-intervals.md "undefined#/properties/intervals")
+*   defined in: [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")
 
 ### intervals Type
 
@@ -141,7 +141,7 @@ Distributor node http api port
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-port.md "undefined#/properties/port")
+*   defined in: [Distributor node configuration](definition-properties-port.md "https://joystream.org/schemas/argus/config#/properties/port")
 
 ### port Type
 
@@ -163,7 +163,7 @@ Specifies the keys available within distributor node CLI.
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-keys.md "undefined#/properties/keys")
+*   defined in: [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")
 
 ### keys Type
 
@@ -185,7 +185,7 @@ Specifies the buckets distributed by the node
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-buckets.md "undefined#/properties/buckets")
+*   defined in: [Distributor node configuration](definition-properties-buckets.md "https://joystream.org/schemas/argus/config#/properties/buckets")
 
 ### buckets Type
 
@@ -209,7 +209,7 @@ ID of the node operator (distribution working group worker)
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-workerid.md "undefined#/properties/workerId")
+*   defined in: [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")
 
 ### workerId Type
 

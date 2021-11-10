@@ -4,15 +4,15 @@
 
 # limits Properties
 
-| Property                                                                | Type      | Required | Nullable       | Defined by                                                                                                                                                                                 |
-| :---------------------------------------------------------------------- | :-------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [storage](#storage)                                                     | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-storage.md "undefined#/properties/limits/properties/storage")                                                     |
-| [maxConcurrentStorageNodeDownloads](#maxconcurrentstoragenodedownloads) | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxconcurrentstoragenodedownloads.md "undefined#/properties/limits/properties/maxConcurrentStorageNodeDownloads") |
-| [maxConcurrentOutboundConnections](#maxconcurrentoutboundconnections)   | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxconcurrentoutboundconnections.md "undefined#/properties/limits/properties/maxConcurrentOutboundConnections")   |
-| [outboundRequestsTimeoutMs](#outboundrequeststimeoutms)                 | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-outboundrequeststimeoutms.md "undefined#/properties/limits/properties/outboundRequestsTimeoutMs")                 |
-| [pendingDownloadTimeoutSec](#pendingdownloadtimeoutsec)                 | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-pendingdownloadtimeoutsec.md "undefined#/properties/limits/properties/pendingDownloadTimeoutSec")                 |
-| [maxCachedItemSize](#maxcacheditemsize)                                 | `string`  | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxcacheditemsize.md "undefined#/properties/limits/properties/maxCachedItemSize")                                 |
-| [dataObjectSourceByObjectIdTTL](#dataobjectsourcebyobjectidttl)         | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-dataobjectsourcebyobjectidttl.md "undefined#/properties/limits/properties/dataObjectSourceByObjectIdTTL")         |
+| Property                                                                | Type      | Required | Nullable       | Defined by                                                                                                                                                                                                                  |
+| :---------------------------------------------------------------------- | :-------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [storage](#storage)                                                     | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-storage.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/storage")                                                     |
+| [maxConcurrentStorageNodeDownloads](#maxconcurrentstoragenodedownloads) | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxconcurrentstoragenodedownloads.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxConcurrentStorageNodeDownloads") |
+| [maxConcurrentOutboundConnections](#maxconcurrentoutboundconnections)   | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxconcurrentoutboundconnections.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxConcurrentOutboundConnections")   |
+| [outboundRequestsTimeoutMs](#outboundrequeststimeoutms)                 | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-outboundrequeststimeoutms.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/outboundRequestsTimeoutMs")                 |
+| [pendingDownloadTimeoutSec](#pendingdownloadtimeoutsec)                 | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-pendingdownloadtimeoutsec.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/pendingDownloadTimeoutSec")                 |
+| [maxCachedItemSize](#maxcacheditemsize)                                 | `string`  | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxcacheditemsize.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxCachedItemSize")                                 |
+| [dataObjectSourceByObjectIdTTL](#dataobjectsourcebyobjectidttl)         | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-dataobjectsourcebyobjectidttl.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/dataObjectSourceByObjectIdTTL")         |
 
 ## storage
 
@@ -26,7 +26,7 @@ Maximum total size of all (cached) assets stored in `directories.assets`
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-storage.md "undefined#/properties/limits/properties/storage")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-storage.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/storage")
 
 ### storage Type
 
@@ -54,7 +54,7 @@ Maximum number of concurrent downloads from the storage node(s)
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxconcurrentstoragenodedownloads.md "undefined#/properties/limits/properties/maxConcurrentStorageNodeDownloads")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxconcurrentstoragenodedownloads.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxConcurrentStorageNodeDownloads")
 
 ### maxConcurrentStorageNodeDownloads Type
 
@@ -76,7 +76,7 @@ Maximum number of total simultaneous outbound connections to storage node(s) (ex
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxconcurrentoutboundconnections.md "undefined#/properties/limits/properties/maxConcurrentOutboundConnections")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxconcurrentoutboundconnections.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxConcurrentOutboundConnections")
 
 ### maxConcurrentOutboundConnections Type
 
@@ -98,7 +98,7 @@ Timeout for all outbound storage node http requests in miliseconds
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-outboundrequeststimeoutms.md "undefined#/properties/limits/properties/outboundRequestsTimeoutMs")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-outboundrequeststimeoutms.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/outboundRequestsTimeoutMs")
 
 ### outboundRequestsTimeoutMs Type
 
@@ -120,7 +120,7 @@ Timeout for pending storage node downloads in seconds
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-pendingdownloadtimeoutsec.md "undefined#/properties/limits/properties/pendingDownloadTimeoutSec")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-pendingdownloadtimeoutsec.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/pendingDownloadTimeoutSec")
 
 ### pendingDownloadTimeoutSec Type
 
@@ -142,7 +142,7 @@ Maximum size of a data object allowed to be cached by the node
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxcacheditemsize.md "undefined#/properties/limits/properties/maxCachedItemSize")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-maxcacheditemsize.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxCachedItemSize")
 
 ### maxCachedItemSize Type
 
@@ -160,7 +160,7 @@ Maximum size of a data object allowed to be cached by the node
 
 ## dataObjectSourceByObjectIdTTL
 
-TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node. Defaults to `60` if not specified.
+TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node.
 
 `dataObjectSourceByObjectIdTTL`
 
@@ -170,7 +170,7 @@ TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-limits-properties-dataobjectsourcebyobjectidttl.md "undefined#/properties/limits/properties/dataObjectSourceByObjectIdTTL")
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-dataobjectsourcebyobjectidttl.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/dataObjectSourceByObjectIdTTL")
 
 ### dataObjectSourceByObjectIdTTL Type
 
@@ -179,3 +179,11 @@ TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects
 ### dataObjectSourceByObjectIdTTL Constraints
 
 **minimum**: the value of this number must greater than or equal to: `1`
+
+### dataObjectSourceByObjectIdTTL Default Value
+
+The default value is:
+
+```json
+60
+```

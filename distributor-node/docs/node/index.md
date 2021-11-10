@@ -378,10 +378,10 @@ No-longer-distributed data objects are dropped from the cache periodically every
 
 The distributor node supports detailed logging with [winston](https://www.npmjs.com/package/winston) library. [NPM log levels](https://www.npmjs.com/package/winston#logging-levels) are used to specify the log priority.
 
-The logs can be directed to some of the 3 available outputs, depending on the [`log`](../schema/definition-properties-log.md) configuration settings:
-- console
-- a log file inside [`directories.logs`](../schema/definition-properties-directories.md#logs)
-- an elasticsearch endpoint specified via [`endpoints.elasticsearch`](../schema/definition-properties-endpoints.md#elasticsearch)
+The logs can be directed to some of the 3 available outputs, depending on the [`logs`](../schema/definition-properties-logs.md) configuration settings:
+- console ([`logs.console`](../schema/definition-properties-logs-properties-console.md))
+- log file(s) ([`logs.file`](../schema/definition-properties-logs-properties-file.md))
+- an elasticsearch endpoint ([`logs.elastic`](../schema/definition-properties-logs-properties-elastic.md))
 
 # Query node integration
 
