@@ -187,7 +187,7 @@ This operation does not require authentication
 
 ```javascript
 
-fetch('http://localhost:3334/api/v1/asset/{objectId}',
+fetch('http://localhost:3334/api/v1/assets/{objectId}',
 {
   method: 'HEAD'
 
@@ -202,11 +202,11 @@ fetch('http://localhost:3334/api/v1/asset/{objectId}',
 
 ```shell
 # You can also use wget
-curl -X HEAD http://localhost:3334/api/v1/asset/{objectId}
+curl -X HEAD http://localhost:3334/api/v1/assets/{objectId}
 
 ```
 
-`HEAD /asset/{objectId}`
+`HEAD /assets/{objectId}`
 
 Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
 
@@ -247,7 +247,7 @@ const headers = {
   'Accept':'image/*'
 };
 
-fetch('http://localhost:3334/api/v1/asset/{objectId}',
+fetch('http://localhost:3334/api/v1/assets/{objectId}',
 {
   method: 'GET',
 
@@ -263,12 +263,12 @@ fetch('http://localhost:3334/api/v1/asset/{objectId}',
 
 ```shell
 # You can also use wget
-curl -X GET http://localhost:3334/api/v1/asset/{objectId} \
+curl -X GET http://localhost:3334/api/v1/assets/{objectId} \
   -H 'Accept: image/*'
 
 ```
 
-`GET /asset/{objectId}`
+`GET /assets/{objectId}`
 
 Returns a media file.
 

@@ -102,7 +102,7 @@ export interface DistributorNodeConfiguration {
      */
     maxCachedItemSize?: string
     /**
-     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node
+     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node. Defaults to `60` if not specified.
      */
     dataObjectSourceByObjectIdTTL?: number
   }

@@ -76,8 +76,8 @@ export class HttpApiService {
     )
 
     // Routes
-    app.head('/api/v1/asset/:objectId', this.routeWrapper(publicController.assetHead.bind(publicController)))
-    app.get('/api/v1/asset/:objectId', this.routeWrapper(publicController.asset.bind(publicController)))
+    app.head('/api/v1/assets/:objectId', this.routeWrapper(publicController.assetHead.bind(publicController)))
+    app.get('/api/v1/assets/:objectId', this.routeWrapper(publicController.asset.bind(publicController)))
     app.get('/api/v1/status', this.routeWrapper(publicController.status.bind(publicController)))
     app.get('/api/v1/buckets', this.routeWrapper(publicController.buckets.bind(publicController)))
 

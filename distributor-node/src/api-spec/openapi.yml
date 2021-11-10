@@ -49,7 +49,7 @@ paths:
                 $ref: '#/components/schemas/BucketsResponse'
         500:
           description: Unexpected server error
-  /asset/{objectId}:
+  /assets/{objectId}:
     head:
       operationId: public.assetHead
       description: Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)

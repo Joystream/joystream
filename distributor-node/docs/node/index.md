@@ -44,7 +44,7 @@ The api is described by an [OpenAPI](https://swagger.io/specification/) schema l
 
 ## Requesting assets
 
-The assets are requested from the distributor node by using a `GET` request to [`/asset/{objectId}`](../api/index.md#opIdpublic.asset) endpoint.
+The assets are requested from the distributor node by using a `GET` request to [`/assets/{objectId}`](../api/index.md#opIdpublic.asset) endpoint.
 
 There are multiple scenarios of how a distributor will act upon that request, depending on its current state:
 
@@ -120,7 +120,7 @@ In this case
 
 ## Checking asset status
 
-It is possible to check an asset status without affecting the distributor node state in any way (for example - by triggering the process of [fetching the missing data object](#data-fetching)), by sending a [`HEAD` request to `/asset/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
+It is possible to check an asset status without affecting the distributor node state in any way (for example - by triggering the process of [fetching the missing data object](#data-fetching)), by sending a [`HEAD` request to `/assets/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
 
 If the request is valid, the node will respond with, among others, the `x-cache`, `content-length`, `cache-control` headers.
 

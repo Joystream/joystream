@@ -12,7 +12,7 @@ export interface paths {
     /** Returns list of distributed buckets */
     'get': operations['public.buckets']
   }
-  '/asset/{objectId}': {
+  '/assets/{objectId}': {
     /** Returns a media file. */
     'get': operations['public.asset']
     /** Returns asset response headers (cache status, content type and/or length, accepted ranges etc.) */
