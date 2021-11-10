@@ -12,18 +12,55 @@ export default {
   storage: async function ({ api, env }: FlowProps): Promise<void> {
     return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
   },
+  storageIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup, true)
+  },
   content: async function ({ api, env }: FlowProps): Promise<void> {
     return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup)
+  },
+  contentIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup, true)
+  },
+  distribution: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.DistributionWorkingGroup)
+  },
+  distributionIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.DistributionWorkingGroup, true)
+  },
+  operationsAlpha: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupAlpha)
+  },
+  operationsAlphaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupAlpha, true)
+  },
+  operationsBeta: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupBeta)
+  },
+  operationsBetaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupBeta, true)
+  },
+  operationsGamma: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupGamma)
+  },
+  operationsGammaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupGamma, true)
   },
 }
 
 // Worker application happy case scenario
-async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+async function leaderSetup(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  group: WorkingGroups,
+  skipIfAlreadySet = false
+): Promise<void> {
   const debug = extendDebug(`flow:leaderSetup:${group}`)
   debug('Started')
 
-  const existingLead = await api.getGroupLead(group)
-  assert.equal(existingLead, undefined, 'Lead is already set')
+  if (!skipIfAlreadySet) {
+    const existingLead = await api.getGroupLead(group)
+    assert.equal(existingLead, undefined, 'Lead is already set')
+  }
 
   const leadKeyPair = api.createKeyPairs(1)[0].key
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))

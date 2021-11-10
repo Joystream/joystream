@@ -7,8 +7,16 @@ import { scenario } from '../Scenario'
 scenario(async ({ job }) => {
   const council = job('Create Council', councilSetup)
 
-  const leads = job('Setup WorkingGroup Leads', [leaderSetup.storage, leaderSetup.content])
+  const contentLead = job('Set Content Lead', leaderSetup.contentIfNotSet)
 
   // Create some mock content in content directory - without assets or any real metadata
-  const mockContent = job('Create Mock Content', mockContentFlow).after(leads)
+  const mockContent = job('Create Mock Content', mockContentFlow).after(contentLead)
+
+  const otherLeads = job('Set WorkingGroup Leads', [
+    leaderSetup.storageIfNotSet,
+    leaderSetup.distributionIfNotSet,
+    leaderSetup.operationsAlphaIfNotSet,
+    leaderSetup.operationsBetaIfNotSet,
+    leaderSetup.operationsGammaIfNotSet,
+  ])
 })
