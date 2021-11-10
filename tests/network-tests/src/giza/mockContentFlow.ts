@@ -14,10 +14,18 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
 
-  // create categories with lead
-  const createCategories = new CreateMockCategories(api)
-  debug('Creating Categories')
-  await new FixtureRunner(createCategories).run()
+  // Check to avoid creating duplicate categories
+  const nextVideoCategoryId = await api.query.content.nextVideoCategoryId()
+  const nextChannelCategoryId = await api.query.content.nextVideoCategoryId()
+
+  if (nextChannelCategoryId.toNumber() === 1 && nextVideoCategoryId.toNumber() === 1) {
+    // create categories with lead
+    const createCategories = new CreateMockCategories(api)
+    debug('Creating Categories')
+    await new FixtureRunner(createCategories).run()
+  } else {
+    debug('Skipping Category Creation')
+  }
 
   const memberAccount = api.createKeyPairs(1)[0].key.address
   const createMember: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
