@@ -150,6 +150,11 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
+  // expose only direct ability to query chain
+  get query() {
+    return this.api.query
+  }
+
   public enableDebugTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Debug)
   }
