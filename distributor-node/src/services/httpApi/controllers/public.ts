@@ -104,8 +104,6 @@ export class PublicApiController {
     objectId: string
   ): void {
     this.logger.verbose('Serving object from filesystem', { objectId })
-    // TODO: Limit the number of times useContent is trigerred for similar requests?
-    // (for example: same ip, 3 different request within a minute = 1 request)
     this.stateCache.useContent(objectId)
 
     const path = this.content.path(objectId)

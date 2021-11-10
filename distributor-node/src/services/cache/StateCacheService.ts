@@ -231,7 +231,7 @@ export class StateCacheService {
         mimeTypeByObjectId: Array.from(mimeTypeByObjectId.entries()),
       },
       null,
-      2 // TODO: Only for debugging
+      2
     )
   }
 
