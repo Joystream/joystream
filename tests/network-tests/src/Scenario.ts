@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory } from './Api'
+import { ApiFactory, Api } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -15,6 +15,24 @@ export type ScenarioProps = {
   env: NodeJS.ProcessEnv
   debug: Debugger.Debugger
   job: (label: string, flows: Flow[] | Flow) => Job
+}
+
+function writeOutput(api: Api, miniSecret: string) {
+  const outputFilename = 'output.json'
+  console.error('Writing generated account to', outputFilename)
+  // account to key ids
+  const accounts = api.getAllgeneratedAccounts()
+
+  // first and last key id used to generate keys in this scenario
+  const keyIds = api.keyGenInfo()
+
+  const output = {
+    accounts,
+    keyIds,
+    miniSecret,
+  }
+
+  fs.writeFileSync(outputFilename, JSON.stringify(output, undefined, 2))
 }
 
 export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
@@ -59,6 +77,12 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const resources = new ResourceManager()
 
+  process.on('SIGINT', () => {
+    console.error('Aborting scenario')
+    writeOutput(api, miniSecret)
+    process.exit(0)
+  })
+
   let exitCode = 0
 
   try {
@@ -68,19 +92,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     exitCode = -1
   }
 
-  // account to key ids
-  const accounts = api.getAllgeneratedAccounts()
-
-  // first and last key id used to generate keys in this scenario
-  const keyIds = api.keyGenInfo()
-
-  const output = {
-    accounts,
-    keyIds,
-    miniSecret,
-  }
-
-  fs.writeFileSync('output.json', JSON.stringify(output, undefined, 2))
+  writeOutput(api, miniSecret)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
