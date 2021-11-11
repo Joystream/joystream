@@ -1,6 +1,6 @@
 import createApi from './api'
 import { ApiPromise } from '@polkadot/api'
-import { MemberId, Membership } from '@joystream/types/augment/all'
+import { MemberId, Membership } from '@joystream/sumer-types/augment/all'
 import { BlockHash } from '@polkadot/types/interfaces'
 import { MemberJson } from '../types'
 import fs from 'fs'
