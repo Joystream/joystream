@@ -296,8 +296,8 @@ pub enum ContentActor<
 > {
     Curator(CuratorGroupId, CuratorId),
     Member(MemberId),
-    Collaborator(MemberId),
     Lead,
+    Collaborator(MemberId),
 }
 
 impl<
