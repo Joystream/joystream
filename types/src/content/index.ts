@@ -28,6 +28,7 @@ export class CuratorGroup extends JoyStructDecorated({
 }) {}
 
 export class ContentActor extends JoyEnum({
+  Collaborator: MemberId,
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
@@ -44,12 +45,14 @@ export class Channel extends JoyStructDecorated({
   is_censored: bool,
   reward_account: Option.with(AccountId),
   deletion_prize_source_account_id: AccountId,
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
   reward_account: Option.with(AccountId),
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
@@ -57,6 +60,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
   assets_to_remove: BTreeSet.with(DataObjectId),
+  collaborators: Option.with(BTreeSet.with(MemberId)),    
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
