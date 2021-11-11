@@ -7,7 +7,8 @@ import path from 'path'
 
 export enum WorkingGroups {
   Storage = 'storageWorkingGroup',
-  Gateway = 'gatewayWorkingGroup',
+  Content = 'contentDirectoryWorkingGroup', // -> contentWorkingGroup
+  Operations = 'operationsWorkingGroup', // -> operationsWorkingGroupAlpha
 }
 
 // export flow
@@ -22,13 +23,15 @@ async function main() {
   // get results for all relevant groups
   const workingGroups: WorkingGroupsJson = {
     STORAGE: await getWorkingGroupData(api, WorkingGroups.Storage, hash, now),
-    GATEWAY: await getWorkingGroupData(api, WorkingGroups.Gateway, hash, now),
+    CONTENT: await getWorkingGroupData(api, WorkingGroups.Content, hash, now),
+    OPERATIONS_ALPHA: await getWorkingGroupData(api, WorkingGroups.Operations, hash, now),
   }
 
   // output results
   fs.writeFileSync(path.resolve(__dirname, '../data/workingGroups.json'), JSON.stringify(workingGroups, undefined, 4))
-  console.log(`${workingGroups.GATEWAY?.workers.length || 0} GATEWAY workers exported & saved!`)
   console.log(`${workingGroups.STORAGE?.workers.length || 0} STORAGE workers exported & saved!`)
+  console.log(`${workingGroups.CONTENT?.workers.length || 0} CONTENT workers exported & saved!`)
+  console.log(`${workingGroups.OPERATIONS_ALPHA?.workers.length || 0} OPERATIONS workers exported & saved!`)
 
   // disconnect api
   api.disconnect()

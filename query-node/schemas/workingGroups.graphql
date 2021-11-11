@@ -1,6 +1,11 @@
 enum WorkerType {
-  GATEWAY
   STORAGE
+  CONTENT
+  OPERATIONS_ALPHA
+  GATEWAY
+  DISTRIBUTOR
+  OPERATIONS_BETA
+  OPERATIONS_GAMMA
 }
 
 type Worker @entity {

@@ -51,7 +51,7 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
 
   // Workers
   let workers: Worker[] = []
-  ;(['GATEWAY', 'STORAGE'] as const).map((group) => {
+  ;(['STORAGE', 'CONTENT', 'OPERATIONS_ALPHA'] as const).map((group) => {
     const workersJson = workingGroupsData[group]?.workers || []
     workers = workers.concat(
       workersJson.map(

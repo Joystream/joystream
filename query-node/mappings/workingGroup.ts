@@ -108,6 +108,26 @@ function getWorkerType(event: SubstrateEvent): WorkerType | null {
     return WorkerType.GATEWAY
   }
 
+  if (eventSection === 'contentWorkingGroup') {
+    return WorkerType.CONTENT
+  }
+
+  if (eventSection === 'distributionWorkingGroup') {
+    return WorkerType.DISTRIBUTOR
+  }
+
+  if (eventSection === 'operationsWorkingGroupAlpha') {
+    return WorkerType.OPERATIONS_ALPHA
+  }
+
+  if (eventSection === 'operationsWorkingGroupBeta') {
+    return WorkerType.OPERATIONS_BETA
+  }
+
+  if (eventSection === 'operationsWorkingGroupGamma') {
+    return WorkerType.OPERATIONS_GAMMA
+  }
+
   return null
 }
 

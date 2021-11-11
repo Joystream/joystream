@@ -31,7 +31,7 @@ export type WorkingGroupJson = {
 }
 
 export type WorkingGroupsJson = {
-  [group in 'GATEWAY' | 'STORAGE']?: WorkingGroupJson
+  [group in 'STORAGE' | 'CONTENT' | 'OPERATIONS_ALPHA']?: WorkingGroupJson
 }
 
 export type VideoCategoryJson = {
