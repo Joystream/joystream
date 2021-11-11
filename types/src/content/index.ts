@@ -28,10 +28,10 @@ export class CuratorGroup extends JoyStructDecorated({
 }) {}
 
 export class ContentActor extends JoyEnum({
-  Collaborator: MemberId,
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
+  Collaborator: MemberId,    
 }) {}
 
 export class ChannelOwner extends JoyEnum({
