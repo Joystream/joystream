@@ -582,7 +582,7 @@ fn non_authorized_collaborators_cannot_update_channel() {
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
                 new_meta: None,
-                reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                reward_account: Some(Some(COLLABORATOR_MEMBER_ORIGIN)),
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
             },

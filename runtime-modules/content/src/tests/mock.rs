@@ -505,10 +505,9 @@ pub fn update_channel_mock(
                 ChannelRecord {
                     owner: channel_pre.owner.clone(),
                     is_censored: channel_pre.is_censored,
-                    reward_account: params.reward_account.map_or_else(
-                        || channel_pre.reward_account.clone(),
-                        |account| Some(account)
-                    ),
+                    reward_account: params
+                        .reward_account
+                        .map_or_else(|| channel_pre.reward_account.clone(), |account| account),
                     deletion_prize_source_account_id: channel_pre.deletion_prize_source_account_id,
                     collaborators: params
                         .collaborators

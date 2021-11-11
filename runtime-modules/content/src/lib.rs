@@ -235,7 +235,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId:
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
-    reward_account: Option<AccountId>,
+    reward_account: Option<Option<AccountId>>,
     /// assets to be removed from channel
     assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
@@ -723,9 +723,9 @@ decl_module! {
             let mut channel = channel;
 
             // maybe update the reward account if actor is not a collaborator
-            if params.reward_account.is_some() {
+            if let Some(reward_account) = params.reward_account.as_ref() {
                 ensure_actor_not_a_collaborator::<T>(&actor)?;
-                channel.reward_account = params.reward_account.clone();
+                channel.reward_account = reward_account.clone();
             }
 
             // update collaborator set if actor is not a collaborator
