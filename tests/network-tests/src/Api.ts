@@ -196,8 +196,18 @@ export class Api {
     )
   }
 
-  public getMemberIds(address: string): Promise<MemberId[]> {
-    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+  // Many calls in the testing framework take an account id instead of a member id when an action
+  // is intended to be in the context of the member. This function is used to do a reverse lookup.
+  // There is an underlying assumption that each member has a unique controller account even
+  // though the runtime does not place that constraint. But for the purpose of the tests we throw
+  // if that condition is found to be false to esnure the tests do not fail. As long as all memberships
+  // are created through the membership fixture this should not happen.
+  public async getMemberId(address: string): Promise<MemberId> {
+    const ids = await this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+    if (ids.length > 1) {
+      throw new Error('More than one member with same controller account was detected')
+    }
+    return ids[0]
   }
 
   public async getBalance(address: string): Promise<Balance> {
@@ -678,7 +688,7 @@ export class Api {
     description: string,
     runtime: Bytes | string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
       account
@@ -692,7 +702,7 @@ export class Api {
     description: string,
     text: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
       account
@@ -707,7 +717,7 @@ export class Api {
     balance: BN,
     destination: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
       account
@@ -721,7 +731,7 @@ export class Api {
     stake: BN,
     validatorCount: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
       account
@@ -742,7 +752,7 @@ export class Api {
     minCouncilStake: BN,
     minVotingStake: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, {
         announcing_period: announcingPeriod,
@@ -766,7 +776,7 @@ export class Api {
     openingId: OpeningId,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
@@ -788,7 +798,7 @@ export class Api {
     const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
       councilAccounts.map(async (account) => {
-        const memberId: MemberId = (await this.getMemberIds(account))[0]
+        const memberId: MemberId = await this.getMemberId(account)
         return this.approveProposal(account, memberId, proposal)
       })
     )
@@ -1203,7 +1213,7 @@ export class Api {
       ),
     })
 
-    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(leaderOpening.account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
@@ -1233,7 +1243,7 @@ export class Api {
     payoutInterval: BN
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(fillOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(fillOpening.account)
 
     const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: fillOpening.openingId,
@@ -1268,7 +1278,7 @@ export class Api {
     slash: boolean,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
@@ -1295,7 +1305,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
@@ -1319,7 +1329,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1343,7 +1353,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1366,7 +1376,7 @@ export class Api {
     mintCapacity: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
@@ -1419,7 +1429,7 @@ export class Api {
     text: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account
