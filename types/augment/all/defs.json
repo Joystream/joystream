@@ -759,10 +759,10 @@
     },
     "ContentActor": {
         "_enum": {
-            "Collaborator": "MemberId",
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
-            "Lead": "Null"
+            "Lead": "Null",
+            "Collaborator": "MemberId"
         }
     },
     "StorageAssets": {

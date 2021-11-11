@@ -307,13 +307,13 @@ export interface ClassPropertyValue extends Null {}
 
 /** @name ContentActor */
 export interface ContentActor extends Enum {
-  readonly isCollaborator: boolean;
-  readonly asCollaborator: MemberId;
   readonly isCurator: boolean;
   readonly asCurator: ITuple<[CuratorGroupId, CuratorId]>;
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
+  readonly isCollaborator: boolean;
+  readonly asCollaborator: MemberId;
 }
 
 /** @name ContentIdSet */
