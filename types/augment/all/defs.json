@@ -759,9 +759,9 @@
     },
     "ContentActor": {
         "_enum": {
+            "Collaborator": "MemberId",
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
-	    "Collaborator": "MemberId",
             "Lead": "Null"
         }
     },
