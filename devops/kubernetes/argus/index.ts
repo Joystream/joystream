@@ -13,6 +13,9 @@ const queryNodeHost = config.require('queryNodeHost')
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 let configArgusImage = config.require('argusImage')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
+const keys = config.get('keys') || '[{ "suri": "//Alice" }]'
+const buckets = config.get('buckets') || 'all'
+const workerId = config.get('workerId') || '0'
 const name = 'argus-node'
 const isMinikube = config.getBoolean('isMinikube')
 
@@ -116,6 +119,18 @@ const deployment = new k8s.apps.v1.Deployment(
                   name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS',
                   value: wsProviderEndpointURI,
                 },
+                {
+                  name: 'JOYSTREAM_DISTRIBUTOR__KEYS',
+                  value: keys,
+                },
+                {
+                  name: 'JOYSTREAM_DISTRIBUTOR__BUCKETS',
+                  value: buckets,
+                },
+                {
+                  name: 'JOYSTREAM_DISTRIBUTOR__WORKER_ID',
+                  value: workerId,
+                },
               ],
               args: ['start'],
               ports: [{ containerPort: 3334 }],
@@ -123,14 +138,17 @@ const deployment = new k8s.apps.v1.Deployment(
                 {
                   name: 'persistent-data',
                   mountPath: '/data',
-                },
-                {
-                  name: 'persistent-data',
-                  mountPath: '/cache',
+                  subPath: 'data',
                 },
                 {
                   name: 'persistent-data',
                   mountPath: '/logs',
+                  subPath: 'logs',
+                },
+                {
+                  name: 'persistent-data',
+                  mountPath: '/cache',
+                  subPath: 'cache',
                 },
               ],
             },
