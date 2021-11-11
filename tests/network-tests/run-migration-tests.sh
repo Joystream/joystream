@@ -78,11 +78,11 @@ function cleanup() {
 
 function pre_migration_hook() {
 sleep 5 # needed otherwise docker image won't be ready yet
-joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
 echo "creating 1 channel"
-joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
 echo "adding 1 video to the above channel"
-joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
 }
 
 function post_migration_hook() {
