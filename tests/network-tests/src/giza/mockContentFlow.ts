@@ -3,7 +3,7 @@
 import { CreateChannelsAsMemberFixture } from './createChannelsAsMemberFixture'
 import { CreateVideosAsMemberFixture } from './createVideosAsMemberFixture'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
-import { CreateMockCategories } from './createCategories'
+import { CreateMockCategories } from './createCategoriesFixture'
 
 import { FlowProps } from '../Flow'
 import { FixtureRunner } from '../Fixture'

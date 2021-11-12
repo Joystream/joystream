@@ -26,17 +26,17 @@ echo "{
 }" > ${DATA_PATH}/initial-balances.json
 
 # Make Alice a member
-echo '
-  [{
-    "member_id":0,
-    "root_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "controller_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "handle":"alice",
-    "avatar_uri":"https://alice.com/avatar.png",
-    "about":"Alice",
-    "registered_at_time":0
-  }]
-' > ${DATA_PATH}/initial-members.json
+# echo '
+#   [{
+#     "member_id":0,
+#     "root_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+#     "controller_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+#     "handle":"alice",
+#     "avatar_uri":"https://alice.com/avatar.png",
+#     "about":"Alice",
+#     "registered_at_time":0
+#   }]
+# ' > ${DATA_PATH}/initial-members.json
 
 # Create a chain spec file
 docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
@@ -45,8 +45,8 @@ docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystrea
   --sudo-account  5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
   --deployment dev \
   --chain-spec-path /data/chain-spec.json \
-  --initial-balances-path /data/initial-balances.json \
-  --initial-members-path /data/initial-members.json
+  --initial-balances-path /data/initial-balances.json
+# --initial-members-path /data/initial-members.json
 
 # Convert the chain spec file to a raw chainspec file
 docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \

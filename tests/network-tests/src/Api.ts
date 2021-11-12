@@ -36,6 +36,7 @@ import { VideoId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
+import { assert } from 'chai'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -114,12 +115,16 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const uri = `${this.miniSecret}//testing//${id}`
-      const key = this.keyring.addFromUri(uri)
+      const key = this.createCustomKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
     return keys
+  }
+
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    const uri = `${this.miniSecret}//testing//${customPath}`
+    return this.keyring.addFromUri(uri)
   }
 
   public keyGenInfo(): { start: number; final: number } {
@@ -167,6 +172,10 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
+  public createCustomKeyPair(path: string): KeyringPair {
+    return this.factory.createCustomKeyPair(path)
+  }
+
   public keyGenInfo(): { start: number; final: number } {
     return this.factory.keyGenInfo()
   }
@@ -200,6 +209,11 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
   }
 
+  public async makeSudoAsCall(who: string, tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
+    const sudo = await this.api.query.sudo.key()
+    return this.sender.signAndSend(this.api.tx.sudo.sudoAs(who, tx), sudo)
+  }
+
   public createPaidTermId(value: BN): PaidTermId {
     return this.api.createType('PaidTermId', value)
   }
@@ -211,8 +225,18 @@ export class Api {
     )
   }
 
-  public getMemberIds(address: string): Promise<MemberId[]> {
-    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+  // Many calls in the testing framework take an account id instead of a member id when an action
+  // is intended to be in the context of the member. This function is used to do a reverse lookup.
+  // There is an underlying assumption that each member has a unique controller account even
+  // though the runtime does not place that constraint. But for the purpose of the tests we throw
+  // if that condition is found to be false to esnure the tests do not fail. As long as all memberships
+  // are created through the membership fixture this should not happen.
+  public async getMemberId(address: string): Promise<MemberId> {
+    const ids = await this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+    if (ids.length > 1) {
+      throw new Error('More than one member with same controller account was detected')
+    }
+    return ids[0]
   }
 
   public async getBalance(address: string): Promise<Balance> {
@@ -693,7 +717,7 @@ export class Api {
     description: string,
     runtime: Bytes | string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
       account
@@ -707,7 +731,7 @@ export class Api {
     description: string,
     text: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
       account
@@ -722,7 +746,7 @@ export class Api {
     balance: BN,
     destination: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
       account
@@ -736,7 +760,7 @@ export class Api {
     stake: BN,
     validatorCount: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
       account
@@ -757,7 +781,7 @@ export class Api {
     minCouncilStake: BN,
     minVotingStake: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, {
         announcing_period: announcingPeriod,
@@ -781,7 +805,7 @@ export class Api {
     openingId: OpeningId,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
@@ -803,7 +827,7 @@ export class Api {
     const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
       councilAccounts.map(async (account) => {
-        const memberId: MemberId = (await this.getMemberIds(account))[0]
+        const memberId: MemberId = await this.getMemberId(account)
         return this.approveProposal(account, memberId, proposal)
       })
     )
@@ -1218,7 +1242,7 @@ export class Api {
       ),
     })
 
-    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(leaderOpening.account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
@@ -1248,7 +1272,7 @@ export class Api {
     payoutInterval: BN
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(fillOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(fillOpening.account)
 
     const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: fillOpening.openingId,
@@ -1283,7 +1307,7 @@ export class Api {
     slash: boolean,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
@@ -1310,7 +1334,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
@@ -1334,7 +1358,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1358,7 +1382,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1381,7 +1405,7 @@ export class Api {
     mintCapacity: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
@@ -1434,7 +1458,7 @@ export class Api {
     text: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account
@@ -1856,5 +1880,38 @@ export class Api {
       this.api.tx.content.createVideoCategory({ Lead: null }, { meta: metadataToBytes(VideoCategoryMetadata, meta) }),
       account?.toString()
     )
+  }
+
+  async assignWorkerRoleAccount(
+    group: WorkingGroups,
+    workerId: WorkerId,
+    account: string
+  ): Promise<ISubmittableResult> {
+    if (!(await this.isWorker(workerId, group))) {
+      throw new Error('Worker not found')
+    }
+    const worker = await this.getWorkerById(workerId, group)
+
+    const memberController = await this.getMemberControllerAccount(worker.member_id.toNumber())
+    // there cannot be a worker associated with member that does not exist
+    assert(memberController, 'Member controller not found')
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of caller to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    return this.makeSudoAsCall(memberController!, updateRoleAccountCall)
+  }
+
+  async assignWorkerWellknownAccount(group: WorkingGroups, workerId: WorkerId): Promise<ISubmittableResult> {
+    // path to append to base SURI
+    const uri = `worker//${this.getWorkingGroupString(group)}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return this.assignWorkerRoleAccount(group, workerId, account)
+  }
+
+  async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
+    const setCouncilCall = this.api.tx.council.setCouncil(accounts)
+    return this.makeSudoCall(setCouncilCall)
   }
 }
