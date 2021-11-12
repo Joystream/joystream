@@ -35,6 +35,7 @@ import { InvertedPromise } from './InvertedPromise'
 import { VideoId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/content-metadata-protobuf'
+import { assert } from 'chai'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -108,12 +109,16 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const uri = `${this.miniSecret}//testing//${id}`
-      const key = this.keyring.addFromUri(uri)
+      const key = this.createCustomKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
     return keys
+  }
+
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    const uri = `${this.miniSecret}//testing//${customPath}`
+    return this.keyring.addFromUri(uri)
   }
 
   public keyGenInfo(): { start: number; final: number } {
@@ -156,6 +161,10 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
+  public createCustomKeyPair(path: string): KeyringPair {
+    return this.factory.createCustomKeyPair(path)
+  }
+
   public keyGenInfo(): { start: number; final: number } {
     return this.factory.keyGenInfo()
   }
@@ -183,6 +192,11 @@ export class Api {
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
     return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
+  }
+
+  public async makeSudoAsCall(who: string, tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
+    const sudo = await this.api.query.sudo.key()
+    return this.sender.signAndSend(this.api.tx.sudo.sudoAs(who, tx), sudo)
   }
 
   public createPaidTermId(value: BN): PaidTermId {
@@ -1849,5 +1863,33 @@ export class Api {
       this.api.tx.content.createVideoCategory({ Lead: null }, { meta: this.encodeMetadata(meta) }),
       account?.toString()
     )
+  }
+
+  async assignWorkerRoleAccount(
+    group: WorkingGroups,
+    workerId: WorkerId,
+    account: string
+  ): Promise<ISubmittableResult> {
+    if (!(await this.isWorker(workerId, group))) {
+      throw new Error('Worker not found')
+    }
+    const worker = await this.getWorkerById(workerId, group)
+
+    const memberController = await this.getMemberControllerAccount(worker.member_id.toNumber())
+    // there cannot be a worker associated with member that does not exist
+    assert(memberController, 'Member controller not found')
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of called to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    return this.makeSudoAsCall(memberController!, updateRoleAccountCall)
+  }
+
+  async assignWorkerWellknownAccount(group: WorkingGroups, workerId: WorkerId): Promise<ISubmittableResult> {
+    // path to append to base SURI
+    const uri = `worker//${this.getWorkingGroupString(group)}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return this.assignWorkerRoleAccount(group, workerId, account)
   }
 }
