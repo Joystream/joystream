@@ -1,0 +1,853 @@
+{
+    "StorageBucketsPerBagValueConstraint": "Null",
+    "Bag":"Null",
+    "BagId":"Null",
+    "Cid": "Null",
+    "DataObjectId":"Null",
+    "DistributionBucketFamily":"Null",
+    "DistributionBucketFamilyId":"Null",
+    "DistributionBucketId":"Null",
+    "DynamicBagCreationPolicy":"Null",
+    "DynamicBagDeletionPrize":"Null",
+    "DynamicBagDeletionPrizeRecord":"Null",
+    "DynamicBagId": "Null",
+    "DynamicBagType":"Null",
+    "StorageAssets":"Null",
+    "StorageBucket":"Null",
+    "StorageBucketId":"Null",
+    "UploadParameters":"Null",
+    "ChannelMigrationConfig": "Null",
+    "VideoMigrationConfig": "Null",
+
+    "ChannelContentType": "Null",
+    "ChannelCurationStatus": "Null",
+    "ChannelPublicationStatus": "Null",
+    "CurationActor": "Null",
+    "Curator": "Null",
+    "CuratorApplication": "Null",
+    "CuratorApplicationId": "Null",
+    "CuratorApplicationIdSet": "Null",
+    "CuratorApplicationIdToCuratorIdMap": "Null",
+    "CuratorOpening": "Null",
+    "CuratorOpeningId": "Null",
+    "Lead": "Null",
+    "LeadId": "Null",
+    "OptionalText": "Null",
+    "Principal": "Null",
+    "PrincipalId": "Null",
+    "WorkingGroupUnstaker": "Null",
+    "Credential": "Null",
+    "CredentialSet": "Null",
+    "Nonce": "Null",
+    "EntityId": "Null",
+    "ClassId": "Null",
+    "VecMaxLength": "Null",
+    "TextMaxLength": "Null",
+    "HashedTextMaxLength": "Null",
+    "PropertyId": "Null",
+    "SchemaId": "Null",
+    "SameController": "Null",
+    "ClassPermissions": "Null",
+    "PropertyTypeSingle": "Null",
+    "PropertyTypeVector": "Null",
+    "PropertyType": "Null",
+    "PropertyLockingPolicy": "Null",
+    "Property": "Null",
+    "Schema": "Null",
+    "Class": "Null",
+    "ClassOf": "Null",
+    "EntityController": "Null",
+    "EntityPermissions": "Null",
+    "StoredValue": "Null",
+    "VecStoredValue": "Null",
+    "VecStoredPropertyValue": "Null",
+    "StoredPropertyValue": "Null",
+    "InboundReferenceCounter": "Null",
+    "Entity": "Null",
+    "EntityOf": "Null",
+    "EntityCreationVoucher": "Null",
+    "Actor": "Null",
+    "EntityReferenceCounterSideEffect": "Null",
+    "ReferenceCounterSideEffects": "Null",
+    "SideEffects": "Null",
+    "SideEffect": "Null",
+    "Status": "Null",
+    "InputValue": "Null",
+    "VecInputValue": "Null",
+    "InputPropertyValue": "Null",
+    "ParameterizedEntity": "Null",
+    "ParametrizedPropertyValue": "Null",
+    "ParametrizedClassPropertyValue": "Null",
+    "CreateEntityOperation": "Null",
+    "UpdatePropertyValuesOperation": "Null",
+    "AddSchemaSupportToEntityOperation": "Null",
+    "OperationType": "Null",
+    "InputEntityValuesMap": "Null",
+    "ClassPermissionsType": "Null",
+    "ClassPropertyValue": "Null",
+    "Operation": "Null",
+    "ReferenceConstraint": "Null",
+    "FailedAt": "Null",
+    "IPNSIdentity": "Null",
+    "ServiceProviderRecord": "Null",
+
+    "BlockAndTime": {
+        "block": "u32",
+        "time": "u64"
+    },
+    "ThreadId": "u64",
+    "PostId": "u64",
+    "InputValidationLengthConstraint": {
+        "min": "u16",
+        "max_min_diff": "u16"
+    },
+    "WorkingGroup": {
+        "_enum": [
+            "Storage",
+            "Content",
+            "Operations",
+            "Gateway"
+        ]
+    },
+    "SlashingTerms": {
+        "_enum": {
+            "Unslashable": "Null",
+            "Slashable": "SlashableTerms"
+        }
+    },
+    "SlashableTerms": {
+        "max_count": "u16",
+        "max_percent_pts_per_time": "u16"
+    },
+    "MemoText": "Text",
+    "Address": "AccountId",
+    "LookupSource": "AccountId",
+    "ChannelId": "u64",
+    "DAOId": "u64",
+    "Url": "Text",
+    "EntryMethod": {
+        "_enum": {
+            "Paid": "u64",
+            "Screening": "AccountId",
+            "Genesis": "Null"
+        }
+    },
+    "MemberId": "u64",
+    "PaidTermId": "u64",
+    "SubscriptionId": "u64",
+    "Membership": {
+        "handle": "Text",
+        "avatar_uri": "Text",
+        "about": "Text",
+        "registered_at_block": "u32",
+        "registered_at_time": "u64",
+        "entry": "EntryMethod",
+        "suspended": "bool",
+        "subscription": "Option<SubscriptionId>",
+        "root_account": "GenericAccountId",
+        "controller_account": "GenericAccountId"
+    },
+    "PaidMembershipTerms": {
+        "fee": "u128",
+        "text": "Text"
+    },
+    "ActorId": "u64",
+    "ElectionStage": {
+        "_enum": {
+            "Announcing": "u32",
+            "Voting": "u32",
+            "Revealing": "u32"
+        }
+    },
+    "ElectionStake": {
+        "new": "u128",
+        "transferred": "u128"
+    },
+    "SealedVote": {
+        "voter": "GenericAccountId",
+        "commitment": "Hash",
+        "stake": "ElectionStake",
+        "vote": "Option<GenericAccountId>"
+    },
+    "TransferableStake": {
+        "seat": "u128",
+        "backing": "u128"
+    },
+    "ElectionParameters": {
+        "announcing_period": "u32",
+        "voting_period": "u32",
+        "revealing_period": "u32",
+        "council_size": "u32",
+        "candidacy_limit": "u32",
+        "new_term_duration": "u32",
+        "min_council_stake": "u128",
+        "min_voting_stake": "u128"
+    },
+    "Seat": {
+        "member": "GenericAccountId",
+        "stake": "u128",
+        "backers": "Backers"
+    },
+    "Seats": "Vec<Seat>",
+    "Backer": {
+        "member": "GenericAccountId",
+        "stake": "u128"
+    },
+    "Backers": "Vec<Backer>",
+    "RoleParameters": {
+        "min_stake": "u128",
+        "min_actors": "u32",
+        "max_actors": "u32",
+        "reward": "u128",
+        "reward_period": "u32",
+        "bonding_period": "u32",
+        "unbonding_period": "u32",
+        "min_service_period": "u32",
+        "startup_grace_period": "u32",
+        "entry_request_fee": "u128"
+    },
+    "PostTextChange": {
+        "expired_at": "BlockAndTime",
+        "text": "Text"
+    },
+    "ModerationAction": {
+        "moderated_at": "BlockAndTime",
+        "moderator_id": "GenericAccountId",
+        "rationale": "Text"
+    },
+    "ChildPositionInParentCategory": {
+        "parent_id": "CategoryId",
+        "child_nr_in_parent_category": "u32"
+    },
+    "CategoryId": "u64",
+    "Category": {
+        "id": "CategoryId",
+        "title": "Text",
+        "description": "Text",
+        "created_at": "BlockAndTime",
+        "deleted": "bool",
+        "archived": "bool",
+        "num_direct_subcategories": "u32",
+        "num_direct_unmoderated_threads": "u32",
+        "num_direct_moderated_threads": "u32",
+        "position_in_parent_category": "Option<ChildPositionInParentCategory>",
+        "moderator_id": "GenericAccountId"
+    },
+    "Thread": {
+        "id": "ThreadId",
+        "title": "Text",
+        "category_id": "CategoryId",
+        "nr_in_category": "u32",
+        "moderation": "Option<ModerationAction>",
+        "num_unmoderated_posts": "u32",
+        "num_moderated_posts": "u32",
+        "created_at": "BlockAndTime",
+        "author_id": "GenericAccountId"
+    },
+    "Post": {
+        "id": "PostId",
+        "thread_id": "ThreadId",
+        "nr_in_thread": "u32",
+        "current_text": "Text",
+        "moderation": "Option<ModerationAction>",
+        "text_change_history": "Vec<PostTextChange>",
+        "created_at": "BlockAndTime",
+        "author_id": "GenericAccountId"
+    },
+    "ReplyId": "u64",
+    "Reply": {
+        "owner": "GenericAccountId",
+        "thread_id": "ThreadId",
+        "text": "Text",
+        "moderation": "Option<ModerationAction>"
+    },
+    "StakeId": "u64",
+    "Stake": {
+        "created": "u32",
+        "staking_status": "StakingStatus"
+    },
+    "StakingStatus": {
+        "_enum": {
+            "NotStaked": "Null",
+            "Staked": "Staked"
+        }
+    },
+    "Staked": {
+        "staked_amount": "u128",
+        "staked_status": "StakedStatus",
+        "next_slash_id": "u64",
+        "ongoing_slashes": "BTreeMap<u64,Slash>"
+    },
+    "StakedStatus": {
+        "_enum": {
+            "Normal": "Null",
+            "Unstaking": "Unstaking"
+        }
+    },
+    "Unstaking": {
+        "started_at_block": "u32",
+        "is_active": "bool",
+        "blocks_remaining_in_active_period_for_unstaking": "u32"
+    },
+    "Slash": {
+        "started_at_block": "u32",
+        "is_active": "bool",
+        "blocks_remaining_in_active_period_for_slashing": "u32",
+        "slash_amount": "u128"
+    },
+    "MintId": "u64",
+    "Mint": {
+        "capacity": "u128",
+        "next_adjustment": "Option<NextAdjustment>",
+        "created_at": "u32",
+        "total_minted": "u128"
+    },
+    "MintBalanceOf": "u128",
+    "BalanceOfMint": "u128",
+    "NextAdjustment": {
+        "adjustment": "AdjustOnInterval",
+        "at_block": "u32"
+    },
+    "AdjustOnInterval": {
+        "block_interval": "u32",
+        "adjustment_type": "AdjustCapacityBy"
+    },
+    "AdjustCapacityBy": {
+        "_enum": {
+            "Setting": "u128",
+            "Adding": "u128",
+            "Reducing": "u128"
+        }
+    },
+    "RecipientId": "u64",
+    "RewardRelationshipId": "u64",
+    "Recipient": {
+        "total_reward_received": "u128",
+        "total_reward_missed": "u128"
+    },
+    "RewardRelationship": {
+        "recipient": "RecipientId",
+        "mint_id": "MintId",
+        "account": "GenericAccountId",
+        "amount_per_payout": "u128",
+        "next_payment_at_block": "Option<u32>",
+        "payout_interval": "Option<u32>",
+        "total_reward_received": "u128",
+        "total_reward_missed": "u128"
+    },
+    "ApplicationId": "u64",
+    "OpeningId": "u64",
+    "Application": {
+        "opening_id": "OpeningId",
+        "application_index_in_opening": "u32",
+        "add_to_opening_in_block": "u32",
+        "active_role_staking_id": "Option<StakeId>",
+        "active_application_staking_id": "Option<StakeId>",
+        "stage": "ApplicationStage",
+        "human_readable_text": "Text"
+    },
+    "ApplicationStage": {
+        "_enum": {
+            "Active": "Null",
+            "Unstaking": "UnstakingApplicationStage",
+            "Inactive": "InactiveApplicationStage"
+        }
+    },
+    "ActivateOpeningAt": {
+        "_enum": {
+            "CurrentBlock": "Null",
+            "ExactBlock": "u32"
+        }
+    },
+    "ApplicationRationingPolicy": {
+        "max_active_applicants": "u32"
+    },
+    "OpeningStage": {
+        "_enum": {
+            "WaitingToBegin": "WaitingToBeingOpeningStageVariant",
+            "Active": "ActiveOpeningStageVariant"
+        }
+    },
+    "StakingPolicy": {
+        "amount": "u128",
+        "amount_mode": "StakingAmountLimitMode",
+        "crowded_out_unstaking_period_length": "Option<u32>",
+        "review_period_expired_unstaking_period_length": "Option<u32>"
+    },
+    "Opening": {
+        "created": "u32",
+        "stage": "OpeningStage",
+        "max_review_period_length": "u32",
+        "application_rationing_policy": "Option<ApplicationRationingPolicy>",
+        "application_staking_policy": "Option<StakingPolicy>",
+        "role_staking_policy": "Option<StakingPolicy>",
+        "human_readable_text": "Text"
+    },
+    "WaitingToBeingOpeningStageVariant": {
+        "begins_at_block": "u32"
+    },
+    "ActiveOpeningStageVariant": {
+        "stage": "ActiveOpeningStage",
+        "applications_added": "Vec<ApplicationId>",
+        "active_application_count": "u32",
+        "unstaking_application_count": "u32",
+        "deactivated_application_count": "u32"
+    },
+    "ActiveOpeningStage": {
+        "_enum": {
+            "AcceptingApplications": "AcceptingApplications",
+            "ReviewPeriod": "ReviewPeriod",
+            "Deactivated": "Deactivated"
+        }
+    },
+    "AcceptingApplications": {
+        "started_accepting_applicants_at_block": "u32"
+    },
+    "ReviewPeriod": {
+        "started_accepting_applicants_at_block": "u32",
+        "started_review_period_at_block": "u32"
+    },
+    "Deactivated": {
+        "cause": "OpeningDeactivationCause",
+        "deactivated_at_block": "u32",
+        "started_accepting_applicants_at_block": "u32",
+        "started_review_period_at_block": "Option<u32>"
+    },
+    "OpeningDeactivationCause": {
+        "_enum": [
+            "CancelledBeforeActivation",
+            "CancelledAcceptingApplications",
+            "CancelledInReviewPeriod",
+            "ReviewPeriodExpired",
+            "Filled"
+        ]
+    },
+    "InactiveApplicationStage": {
+        "deactivation_initiated": "u32",
+        "deactivated": "u32",
+        "cause": "ApplicationDeactivationCause"
+    },
+    "UnstakingApplicationStage": {
+        "deactivation_initiated": "u32",
+        "cause": "ApplicationDeactivationCause"
+    },
+    "ApplicationDeactivationCause": {
+        "_enum": [
+            "External",
+            "Hired",
+            "NotHired",
+            "CrowdedOut",
+            "OpeningCancelled",
+            "ReviewPeriodExpired",
+            "OpeningFilled"
+        ]
+    },
+    "StakingAmountLimitMode": {
+        "_enum": [
+            "AtLeast",
+            "Exact"
+        ]
+    },
+    "RationaleText": "Bytes",
+    "ApplicationOf": {
+        "role_account_id": "GenericAccountId",
+        "opening_id": "OpeningId",
+        "member_id": "MemberId",
+        "application_id": "ApplicationId"
+    },
+    "ApplicationIdSet": "BTreeSet<ApplicationId>",
+    "ApplicationIdToWorkerIdMap": "BTreeMap<ApplicationId,WorkerId>",
+    "WorkerId": "u64",
+    "WorkerOf": {
+        "member_id": "MemberId",
+        "role_account_id": "GenericAccountId",
+        "reward_relationship": "Option<RewardRelationshipId>",
+        "role_stake_profile": "Option<RoleStakeProfile>"
+    },
+    "OpeningOf": {
+        "hiring_opening_id": "OpeningId",
+        "applications": "Vec<ApplicationId>",
+        "policy_commitment": "OpeningPolicyCommitment",
+        "opening_type": "OpeningType"
+    },
+    "StorageProviderId": "u64",
+    "OpeningType": {
+        "_enum": {
+            "Leader": "Null",
+            "Worker": "Null"
+        }
+    },
+    "HiringApplicationId": "u64",
+    "RewardPolicy": {
+        "amount_per_payout": "u128",
+        "next_payment_at_block": "u32",
+        "payout_interval": "Option<u32>"
+    },
+    "OpeningPolicyCommitment": {
+        "application_rationing_policy": "Option<ApplicationRationingPolicy>",
+        "max_review_period_length": "u32",
+        "application_staking_policy": "Option<StakingPolicy>",
+        "role_staking_policy": "Option<StakingPolicy>",
+        "role_slashing_terms": "SlashingTerms",
+        "fill_opening_successful_applicant_application_stake_unstaking_period": "Option<u32>",
+        "fill_opening_failed_applicant_application_stake_unstaking_period": "Option<u32>",
+        "fill_opening_failed_applicant_role_stake_unstaking_period": "Option<u32>",
+        "terminate_application_stake_unstaking_period": "Option<u32>",
+        "terminate_role_stake_unstaking_period": "Option<u32>",
+        "exit_role_application_stake_unstaking_period": "Option<u32>",
+        "exit_role_stake_unstaking_period": "Option<u32>"
+    },
+    "RoleStakeProfile": {
+        "stake_id": "StakeId",
+        "termination_unstaking_period": "Option<u32>",
+        "exit_unstaking_period": "Option<u32>"
+    },
+    "ContentId": "[u8;32]",
+    "LiaisonJudgement": {
+        "_enum": [
+            "Pending",
+            "Accepted"
+        ]
+    },
+    "DataObject": {
+        "owner": "StorageObjectOwner",
+        "added_at": "BlockAndTime",
+        "type_id": "DataObjectTypeId",
+        "size": "u64",
+        "liaison": "Option<StorageProviderId>",
+        "liaison_judgement": "LiaisonJudgement",
+        "ipfs_content_id": "Text"
+    },
+    "DataObjectStorageRelationshipId": "u64",
+    "DataObjectStorageRelationship": {
+        "content_id": "ContentId",
+        "storage_provider": "StorageProviderId",
+        "ready": "bool"
+    },
+    "DataObjectTypeId": "u64",
+    "DataObjectType": {
+        "description": "Text",
+        "active": "bool"
+    },
+    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "ContentParameters": {
+        "content_id": "ContentId",
+        "type_id": "DataObjectTypeId",
+        "size": "u64",
+        "ipfs_content_id": "Bytes"
+    },
+    "StorageObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "ObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Voucher": {
+        "size_limit": "u64",
+        "objects_limit": "u64",
+        "size_used": "u64",
+        "objects_used": "u64"
+    },
+    "VoucherLimit": "u64",
+    "UploadingStatus": "bool",
+    "ProposalId": "u32",
+    "ProposalStatus": {
+        "_enum": {
+            "Active": "Option<ActiveStake>",
+            "Finalized": "Finalized"
+        }
+    },
+    "ProposalOf": {
+        "parameters": "ProposalParameters",
+        "proposerId": "MemberId",
+        "title": "Text",
+        "description": "Text",
+        "createdAt": "u32",
+        "status": "ProposalStatus",
+        "votingResults": "VotingResults"
+    },
+    "ProposalDetails": {
+        "_enum": {
+            "Text": "Text",
+            "RuntimeUpgrade": "Bytes",
+            "SetElectionParameters": "ElectionParameters",
+            "Spending": "(Balance,AccountId)",
+            "SetLead": "Option<SetLeadParams>",
+            "SetContentWorkingGroupMintCapacity": "u128",
+            "EvictStorageProvider": "GenericAccountId",
+            "SetValidatorCount": "u32",
+            "SetStorageRoleParameters": "RoleParameters",
+            "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
+            "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
+            "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
+            "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
+            "SlashWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
+            "SetWorkingGroupLeaderReward": "(WorkerId,Balance,WorkingGroup)",
+            "TerminateWorkingGroupLeaderRole": "TerminateRoleParameters"
+        }
+    },
+    "ProposalDetailsOf": {
+        "_enum": {
+            "Text": "Text",
+            "RuntimeUpgrade": "Bytes",
+            "SetElectionParameters": "ElectionParameters",
+            "Spending": "(Balance,AccountId)",
+            "SetLead": "Option<SetLeadParams>",
+            "SetContentWorkingGroupMintCapacity": "u128",
+            "EvictStorageProvider": "GenericAccountId",
+            "SetValidatorCount": "u32",
+            "SetStorageRoleParameters": "RoleParameters",
+            "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
+            "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
+            "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
+            "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
+            "SlashWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
+            "SetWorkingGroupLeaderReward": "(WorkerId,Balance,WorkingGroup)",
+            "TerminateWorkingGroupLeaderRole": "TerminateRoleParameters"
+        }
+    },
+    "VotingResults": {
+        "abstensions": "u32",
+        "approvals": "u32",
+        "rejections": "u32",
+        "slashes": "u32"
+    },
+    "ProposalParameters": {
+        "votingPeriod": "u32",
+        "gracePeriod": "u32",
+        "approvalQuorumPercentage": "u32",
+        "approvalThresholdPercentage": "u32",
+        "slashingQuorumPercentage": "u32",
+        "slashingThresholdPercentage": "u32",
+        "requiredStake": "Option<u128>"
+    },
+    "VoteKind": {
+        "_enum": [
+            "Approve",
+            "Reject",
+            "Slash",
+            "Abstain"
+        ]
+    },
+    "ThreadCounter": {
+        "author_id": "MemberId",
+        "counter": "u32"
+    },
+    "DiscussionThread": {
+        "title": "Bytes",
+        "created_at": "u32",
+        "author_id": "MemberId"
+    },
+    "DiscussionPost": {
+        "text": "Bytes",
+        "created_at": "u32",
+        "updated_at": "u32",
+        "author_id": "MemberId",
+        "thread_id": "ThreadId",
+        "edition_number": "u32"
+    },
+    "AddOpeningParameters": {
+        "activate_at": "ActivateOpeningAt",
+        "commitment": "OpeningPolicyCommitment",
+        "human_readable_text": "Bytes",
+        "working_group": "WorkingGroup"
+    },
+    "FillOpeningParameters": {
+        "opening_id": "OpeningId",
+        "successful_application_id": "ApplicationId",
+        "reward_policy": "Option<RewardPolicy>",
+        "working_group": "WorkingGroup"
+    },
+    "TerminateRoleParameters": {
+        "worker_id": "WorkerId",
+        "rationale": "Bytes",
+        "slash": "bool",
+        "working_group": "WorkingGroup"
+    },
+    "ActiveStake": {
+        "stake_id": "StakeId",
+        "source_account_id": "GenericAccountId"
+    },
+    "Finalized": {
+        "proposalStatus": "ProposalDecisionStatus",
+        "finalizedAt": "u32",
+        "encodedUnstakingErrorDueToBrokenRuntime": "Option<Vec<u8>>",
+        "stakeDataAfterUnstakingError": "Option<ActiveStake>"
+    },
+    "ProposalDecisionStatus": {
+        "_enum": {
+            "Canceled": "Null",
+            "Vetoed": "Null",
+            "Rejected": "Null",
+            "Slashed": "Null",
+            "Expired": "Null",
+            "Approved": "Approved"
+        }
+    },
+    "ExecutionFailed": {
+        "error": "Text"
+    },
+    "Approved": {
+        "_enum": {
+            "PendingExecution": "Null",
+            "Executed": "Null",
+            "ExecutionFailed": "ExecutionFailed"
+        }
+    },
+    "SetLeadParams": "(MemberId,GenericAccountId)",
+    "CuratorId": "u64",
+    "CuratorGroupId": "u64",
+    "CuratorGroup": {
+        "curators": "Vec<CuratorId>",
+        "active": "bool"
+    },
+    "ContentActor": {
+        "_enum": {
+            "Curator": "(CuratorGroupId,CuratorId)",
+            "Member": "MemberId",
+            "Lead": "Null"
+        }
+    },
+    "NewAsset": {
+        "_enum": {
+            "Upload": "ContentParameters",
+            "Urls": "Vec<Url>"
+        }
+    },
+    "Channel": {
+        "owner": "ChannelOwner",
+        "videos": "Vec<VideoId>",
+        "playlists": "Vec<PlaylistId>",
+        "series": "Vec<SeriesId>",
+        "is_censored": "bool",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curators": "CuratorGroupId",
+            "Dao": "DAOId"
+        }
+    },
+    "ChannelCategoryId": "u64",
+    "ChannelCategory": {},
+    "ChannelCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "ChannelCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "ChannelCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "new_meta": "Option<Bytes>",
+        "reward_account": "Option<Option<GenericAccountId>>"
+    },
+    "ChannelOwnershipTransferRequestId": "u64",
+    "ChannelOwnershipTransferRequest": {
+        "channel_id": "ChannelId",
+        "new_owner": "ChannelOwner",
+        "payment": "u128",
+        "new_reward_account": "Option<GenericAccountId>"
+    },
+    "Video": {
+        "in_channel": "ChannelId",
+        "in_series": "Option<SeriesId>",
+        "is_censored": "bool"
+    },
+    "VideoId": "u64",
+    "VideoCategoryId": "u64",
+    "VideoCategory": {},
+    "VideoCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "VideoCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "VideoCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes"
+    },
+    "VideoUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "new_meta": "Option<Bytes>"
+    },
+    "Person": {
+        "controlled_by": "PersonController"
+    },
+    "PersonId": "u64",
+    "PersonController": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curators": "Null"
+        }
+    },
+    "PersonActor": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curator": "CuratorId"
+        }
+    },
+    "PersonCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes"
+    },
+    "PersonUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "meta": "Option<Bytes>"
+    },
+    "Playlist": {
+        "in_channel": "ChannelId"
+    },
+    "PlaylistId": "u64",
+    "PlaylistCreationParameters": {
+        "meta": "Bytes"
+    },
+    "PlaylistUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "SeriesId": "u64",
+    "Series": {
+        "in_channel": "ChannelId",
+        "seasons": "Vec<Season>"
+    },
+    "Season": {
+        "episodes": "Vec<VideoId>"
+    },
+    "SeriesParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "seasons": "Option<Vec<Option<SeasonParameters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "SeasonParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "EpisodeParemters": {
+        "_enum": {
+            "NewVideo": "VideoCreationParameters",
+            "ExistingVideo": "VideoId"
+        }
+    },
+    "MaxNumber": "u32",
+    "IsCensored": "bool"
+}

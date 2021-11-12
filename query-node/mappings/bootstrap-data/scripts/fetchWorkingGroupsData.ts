@@ -5,10 +5,12 @@ import { WorkerJson, WorkingGroupJson, WorkingGroupsJson } from '../types'
 import fs from 'fs'
 import path from 'path'
 
+// New names of groups can be used only after the runtime upgrade
+// This is acceptable since the script is most conveniently run after the upgrade
 export enum WorkingGroups {
   Storage = 'storageWorkingGroup',
-  Content = 'contentDirectoryWorkingGroup', // -> contentWorkingGroup
-  Operations = 'operationsWorkingGroup', // -> operationsWorkingGroupAlpha
+  Content = 'contentWorkingGroup',
+  Operations = 'operationsWorkingGroupAlpha',
 }
 
 // export flow

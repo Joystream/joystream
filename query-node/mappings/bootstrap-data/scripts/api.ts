@@ -1,5 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import types from '@joystream/sumer-types/augment/all/defs.json'
+// Type from sumer and placeholder "null" types from Giza to allow
+// api to query old sumer state for a chain that is already upgraded to Giza
+import types from '../pre-giza-types.json'
 
 export default async function createApi(): Promise<ApiPromise> {
   // Get URL to websocket endpoint from environment or connect to local node by default
