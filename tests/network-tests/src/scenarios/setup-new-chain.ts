@@ -1,4 +1,4 @@
-import councilSetup from '../flows/council/setup'
+import assignCouncil from '../flows/council/assign'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import mockContentFlow from '../sumer/mockContentFlow'
 import updateAccountsFlow from '../sumer/updateAllWorkerRoleAccountsFlow'
@@ -6,7 +6,7 @@ import updateAccountsFlow from '../sumer/updateAllWorkerRoleAccountsFlow'
 import { scenario } from '../Scenario'
 
 scenario(async ({ job }) => {
-  const council = job('Create Council', councilSetup)
+  const council = job('Create Council', assignCouncil)
 
   const leads = job('Setup WorkingGroup Leads', [leaderSetup.storage, leaderSetup.content])
 

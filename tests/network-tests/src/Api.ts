@@ -1892,4 +1892,9 @@ export class Api {
     const account = this.createCustomKeyPair(uri).address
     return this.assignWorkerRoleAccount(group, workerId, account)
   }
+
+  async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
+    const setCouncilCall = this.api.tx.council.setCouncil(accounts)
+    return this.makeSudoCall(setCouncilCall)
+  }
 }
