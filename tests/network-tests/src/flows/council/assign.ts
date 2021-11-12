@@ -7,7 +7,13 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { Resource } from '../../Resources'
 
-export default async function assignCoundil({ api, env, lock }: FlowProps): Promise<void> {
+export default function createAssignCouncil(size = 1) {
+  return async function (props: FlowProps): Promise<void> {
+    return assignCouncil(props, size)
+  }
+}
+
+async function assignCouncil({ api, env, lock }: FlowProps, size: number): Promise<void> {
   const label = 'assignCouncil'
   const debug = extendDebug(`flow:${label}`)
 
@@ -20,10 +26,12 @@ export default async function assignCoundil({ api, env, lock }: FlowProps): Prom
     return debug('Skipping council setup. A Council is already elected')
   }
 
-  debug('Assigning new council')
+  const councilSize = size || (await api.getCouncilSize()).toNumber()
 
-  const councilSize = (await api.getCouncilSize()).toNumber()
+  debug('Assigning new council of size', councilSize)
+
   const council = []
+
   for (let i = 0; i < councilSize; i++) {
     council.push(api.createCustomKeyPair(`CouncilMember//${i}`).address)
   }

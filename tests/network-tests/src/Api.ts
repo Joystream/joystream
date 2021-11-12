@@ -1880,7 +1880,7 @@ export class Api {
     assert(memberController, 'Member controller not found')
 
     // Expect membercontroller key is already added to keyring
-    // Is is responsibility of called to ensure this is the case!
+    // Is is responsibility of caller to ensure this is the case!
 
     const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
     return this.makeSudoAsCall(memberController!, updateRoleAccountCall)
