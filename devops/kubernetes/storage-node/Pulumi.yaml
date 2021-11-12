@@ -7,27 +7,35 @@ template:
       default: joystream-user
     aws:region:
       default: us-east-1
+    isMinikube:
+      description: Whether you are deploying to minikube
+      default: false
     wsProviderEndpointURI:
       description: Chain RPC endpoint
       default: 'wss://rome-rpc-endpoint.joystream.org:9944/'
-    isAnonymous:
-      description: Whether you are deploying an anonymous storage node
-      default: true
     isLoadBalancerReady:
       description: Whether the load balancer service is ready and has been assigned an IP
       default: false
     colossusPort:
       description: Port that is exposed for the colossus container
-      default: 3000
+      default: 3333
     storage:
       description: Amount of storage in gigabytes for ipfs volume
       default: 40
-    providerId:
-      description: StorageProviderId assigned to you in working group
     keyFile:
-      description: Path to JSON key export file to use as the storage provider (role account)
-    publicURL:
-      description: API Public URL to announce
+      description: Key file for the account
     passphrase:
       description: Optional passphrase to use to decrypt the key-file
       secret: true
+    colossusImage:
+      description: The colossus image to use for running the storage node
+      default: joystream/colossus:latest
+    queryNodeHost:
+      description: Query node GraphQL endpoint
+      default: 'https://hydra.joystream.org/graphql'
+    workerId:
+      description: ID of the node operator (distribution working group worker)
+      default: 0
+    accountURI:
+      description: Account URI
+      default: '//Alice'

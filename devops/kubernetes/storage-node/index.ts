@@ -4,40 +4,32 @@ import * as eks from '@pulumi/eks'
 import * as docker from '@pulumi/docker'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
-import { CaddyServiceDeployment } from 'pulumi-common'
+import { CaddyServiceDeployment, configMapFromFile } from 'pulumi-common'
 import * as fs from 'fs'
 
 const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
 
-const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
-const isAnonymous = config.require('isAnonymous') === 'true'
-const lbReady = config.get('isLoadBalancerReady') === 'true'
 const name = 'storage-node'
-const colossusPort = parseInt(config.get('colossusPort') || '3000')
+
+const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
+const queryNodeHost = config.require('queryNodeHost')
+const workerId = config.get('workerId') || '0'
+const accountURI = config.get('accountURI') || '//Alice'
+const lbReady = config.get('isLoadBalancerReady') === 'true'
+const configColossusImage = config.get('colossusImage') || `joystream/colossus:latest`
+const colossusPort = parseInt(config.get('colossusPort') || '3333')
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
-let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
-let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
 export let kubeconfig: pulumi.Output<any>
-export let colossusImage: pulumi.Output<string>
+export let colossusImage: pulumi.Output<string> = pulumi.interpolate`${configColossusImage}`
 let provider: k8s.Provider
 
 if (isMinikube) {
   provider = new k8s.Provider('local', {})
-  // Create image from local app
-  colossusImage = new docker.Image('joystream/colossus', {
-    build: {
-      context: '../../../',
-      dockerfile: '../../../colossus.Dockerfile',
-    },
-    imageName: 'joystream/colossus:latest',
-    skipPush: true,
-  }).baseImageName
-  // colossusImage = pulumi.interpolate`joystream/colossus:latest`
 } else {
   // Create a VPC for our cluster.
   const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
@@ -61,8 +53,9 @@ if (isMinikube) {
 
   // Build an image and publish it to our ECR repository.
   colossusImage = repo.buildAndPushImage({
-    dockerfile: '../../../colossus.Dockerfile',
-    context: '../../../',
+    context: './docker_dummy',
+    dockerfile: './docker_dummy/Dockerfile',
+    args: { SOURCE_IMAGE: colossusImage! },
   })
 }
 
@@ -96,74 +89,22 @@ const pvc = new k8s.core.v1.PersistentVolumeClaim(
   resourceOptions
 )
 
-volumes.push({
-  name: 'ipfs-data',
-  persistentVolumeClaim: {
-    claimName: `${name}-pvc`,
+const keyFile = config.require('keyFile')
+const keyConfigName = new configMapFromFile(
+  'key-config',
+  {
+    filePath: keyFile,
+    namespaceName: namespaceName,
   },
-})
+  resourceOptions
+).configName
 
-const caddyEndpoints = [
-  ` {
-    reverse_proxy storage-node:${colossusPort}
-}`,
-]
+const remoteKeyFilePath = '/joystream/key-file.json'
+additionalParams = ['--key-file', remoteKeyFilePath]
 
-export let endpoint1: pulumi.Output<string> = pulumi.interpolate``
-export let endpoint2: pulumi.Output<string> = pulumi.interpolate``
-
-if (!isMinikube) {
-  const caddy = new CaddyServiceDeployment(
-    'caddy-proxy',
-    { lbReady, namespaceName: namespaceName, caddyEndpoints },
-    resourceOptions
-  )
-
-  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
-  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
-}
-
-export let appLink: pulumi.Output<string>
-
-if (lbReady) {
-  appLink = pulumi.interpolate`https://${endpoint1}`
-
-  if (!isAnonymous) {
-    const remoteKeyFilePath = '/joystream/key-file.json'
-    const providerId = config.require('providerId')
-    const keyFile = config.require('keyFile')
-    const publicUrl = config.get('publicURL') ? config.get('publicURL')! : appLink
-
-    const keyConfig = new k8s.core.v1.ConfigMap('key-config', {
-      metadata: { namespace: namespaceName, labels: appLabels },
-      data: { 'fileData': fs.readFileSync(keyFile).toString() },
-    })
-    const keyConfigName = keyConfig.metadata.apply((m) => m.name)
-
-    additionalParams = ['--provider-id', providerId, '--key-file', remoteKeyFilePath, '--public-url', publicUrl]
-
-    volumeMounts.push({
-      mountPath: remoteKeyFilePath,
-      name: 'keyfile-volume',
-      subPath: 'fileData',
-    })
-
-    volumes.push({
-      name: 'keyfile-volume',
-      configMap: {
-        name: keyConfigName,
-      },
-    })
-
-    const passphrase = config.get('passphrase')
-    if (passphrase) {
-      additionalParams.push('--passphrase', passphrase)
-    }
-  }
-}
-
-if (isAnonymous) {
-  additionalParams.push('--anonymous')
+const passphrase = config.get('passphrase')
+if (passphrase) {
+  additionalParams.push('--password', passphrase)
 }
 
 // Create a Deployment
@@ -182,27 +123,7 @@ const deployment = new k8s.apps.v1.Deployment(
           labels: appLabels,
         },
         spec: {
-          hostname: 'ipfs',
           containers: [
-            {
-              name: 'ipfs',
-              image: 'ipfs/go-ipfs:latest',
-              ports: [{ containerPort: 5001 }, { containerPort: 8080 }],
-              command: ['/bin/sh', '-c'],
-              args: [
-                'set -e; \
-                /usr/local/bin/start_ipfs config profile apply lowpower; \
-                /usr/local/bin/start_ipfs config --json Gateway.PublicGateways \'{"localhost": null }\'; \
-                /usr/local/bin/start_ipfs config Datastore.StorageMax 200GB; \
-                /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true',
-              ],
-              volumeMounts: [
-                {
-                  name: 'ipfs-data',
-                  mountPath: '/data/ipfs',
-                },
-              ],
-            },
             {
               name: 'colossus',
               image: colossusImage,
@@ -217,21 +138,57 @@ const deployment = new k8s.apps.v1.Deployment(
                   name: 'DEBUG',
                   value: 'joystream:*',
                 },
+                {
+                  name: 'COLOSSUS_PORT',
+                  value: `${colossusPort}`,
+                },
+                {
+                  name: 'QUERY_NODE_HOST',
+                  value: queryNodeHost,
+                },
+                {
+                  name: 'WORKER_ID',
+                  value: workerId,
+                },
+                {
+                  name: 'ACCOUNT_URI',
+                  value: accountURI,
+                },
               ],
-              volumeMounts,
-              command: [
-                'yarn',
-                'colossus',
-                '--ws-provider',
-                wsProviderEndpointURI,
-                '--ipfs-host',
-                'ipfs',
-                ...additionalParams,
+              volumeMounts: [
+                {
+                  name: 'colossus-data',
+                  mountPath: '/data',
+                  subPath: 'data',
+                },
+                {
+                  name: 'colossus-data',
+                  mountPath: '/keystore',
+                  subPath: 'keystore',
+                },
+                {
+                  mountPath: remoteKeyFilePath,
+                  name: 'keyfile-volume',
+                  subPath: 'fileData',
+                },
               ],
               ports: [{ containerPort: colossusPort }],
             },
           ],
-          volumes,
+          volumes: [
+            {
+              name: 'colossus-data',
+              persistentVolumeClaim: {
+                claimName: `${name}-pvc`,
+              },
+            },
+            {
+              name: 'keyfile-volume',
+              configMap: {
+                name: keyConfigName,
+              },
+            },
+          ],
         },
       },
     },
@@ -262,3 +219,23 @@ export const serviceName = service.metadata.name
 
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
+
+const caddyEndpoints = [
+  ` {
+    reverse_proxy storage-node:${colossusPort}
+}`,
+]
+
+export let endpoint1: pulumi.Output<string> = pulumi.interpolate``
+export let endpoint2: pulumi.Output<string> = pulumi.interpolate``
+
+if (!isMinikube) {
+  const caddy = new CaddyServiceDeployment(
+    'caddy-proxy',
+    { lbReady, namespaceName: namespaceName, caddyEndpoints },
+    resourceOptions
+  )
+
+  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+}
