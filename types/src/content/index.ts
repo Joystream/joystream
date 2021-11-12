@@ -1,7 +1,7 @@
 import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
+
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 

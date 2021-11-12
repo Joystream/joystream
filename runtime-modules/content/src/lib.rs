@@ -658,7 +658,11 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // atomically upload to storage and return the # of uploaded assets
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // upload to storage
             if let Some(upload_assets) = params.assets.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
@@ -666,10 +670,6 @@ decl_module! {
                     &sender,
                 )?;
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -709,17 +709,6 @@ decl_module! {
                 &channel,
             )?;
 
-            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
-
-            // atomically upload to storage
-            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
-                Self::upload_assets_to_storage(
-                    upload_assets,
-                    &channel_id,
-                    &channel.deletion_prize_source_account_id
-                )?;
-            }
-
             let mut channel = channel;
 
             // maybe update the reward account if actor is not a collaborator
@@ -737,6 +726,18 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // upload assets to storage
+            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
+                Self::upload_assets_to_storage(
+                    upload_assets,
+                    &channel_id,
+                    &channel.deletion_prize_source_account_id
+                )?;
+            }
+
+            // remove eassets from storage
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -776,6 +777,10 @@ decl_module! {
                     Error::<T>::InvalidBagSizeSpecified
                 );
 
+                //
+                // == MUTATION SAFE ==
+                //
+
                 // construct collection of assets to be removed
                 let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
@@ -792,10 +797,6 @@ decl_module! {
                     dyn_bag
                 )?;
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
@@ -948,7 +949,11 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            // atomically upload to storage and return the # of uploaded assets
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // upload to storage
             if let Some(upload_assets) = params.assets.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
@@ -956,10 +961,6 @@ decl_module! {
                     &channel.deletion_prize_source_account_id
                 )?;
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -999,12 +1000,16 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
 
-        // Check for permission to update channel assets
+            // Check for permission to update channel assets
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 &channel,
             )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // remove specified assets from channel bag in storage
             Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
@@ -1017,10 +1022,6 @@ decl_module! {
                     &channel.deletion_prize_source_account_id
                 )?;
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
@@ -1049,12 +1050,12 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
-            // remove specified assets from channel bag in storage
-            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
-
             //
             // == MUTATION SAFE ==
             //
+
+            // remove specified assets from channel bag in storage
+            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
 
             // Remove video
             VideoById::<T>::remove(video_id);
