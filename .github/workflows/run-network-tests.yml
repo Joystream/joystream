@@ -129,6 +129,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -156,6 +157,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/cli build
       - name: Ensure query-node builds
         run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
@@ -167,45 +169,3 @@ jobs:
           docker-compose up -d joystream-node
           query-node/run-tests.sh
 
-  storage_node:
-    name: Storage Node Tests
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '14.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-      - name: Build storage node
-        run: yarn workspace storage-node build
-      - name: Start Services
-        run: |
-          docker-compose up -d ipfs
-          docker-compose up -d joystream-node
-      - name: Configure and start development storage node
-        run: |
-          DEBUG=joystream:* yarn storage-cli dev-init
-          docker-compose up -d colossus
-      - name: Test uploading
-        run: |
-          sleep 6
-          export DEBUG=joystream:*
-          yarn storage-cli upload ./tests/network-tests/assets/joystream.MOV 1 0
-          # Wait for storage-node to set status Accepted on uploaded content
-          sleep 6
-          cd utils/api-scripts/
-          # Assume only one accepted data object was created
-          CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
-          yarn storage-cli download ${CONTENT_ID} ./joystream.mov
