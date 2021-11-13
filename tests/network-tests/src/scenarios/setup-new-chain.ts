@@ -1,7 +1,7 @@
 import assignCouncil from '../flows/council/assign'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
-import mockContentFlow from '../giza/mockContentFlow'
-import updateAccountsFlow from '../giza/updateAllWorkerRoleAccountsFlow'
+import mockContentFlow from '../misc/mockContentFlow'
+import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
 import { AllWorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
