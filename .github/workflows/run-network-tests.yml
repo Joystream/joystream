@@ -128,7 +128,7 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
-          yarn workspace @joystream/content-metadata-protobuf build:ts
+          yarn workspace @joystream/metadata-protobuf build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
