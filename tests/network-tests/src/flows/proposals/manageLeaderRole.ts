@@ -1,5 +1,6 @@
 import BN from 'bn.js'
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
@@ -24,10 +25,10 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Content, lock)
   },
 }
 

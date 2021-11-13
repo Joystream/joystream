@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
@@ -8,43 +9,10 @@ import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import { extendDebug } from '../../Debugger'
 
-export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
-  },
-  storageIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup, true)
-  },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup)
-  },
-  contentIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup, true)
-  },
-  distribution: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.DistributionWorkingGroup)
-  },
-  distributionIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.DistributionWorkingGroup, true)
-  },
-  operationsAlpha: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupAlpha)
-  },
-  operationsAlphaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupAlpha, true)
-  },
-  operationsBeta: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupBeta)
-  },
-  operationsBetaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupBeta, true)
-  },
-  operationsGamma: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupGamma)
-  },
-  operationsGammaIfNotSet: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.OperationsWorkingGroupGamma, true)
-  },
+export default function (group: WorkingGroups, canSkip = false) {
+  return async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, group, canSkip)
+  }
 }
 
 // Worker application happy case scenario

@@ -1,6 +1,7 @@
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { v4 as uuid } from 'uuid'
 import { RewardRelationship } from '@joystream/types/recurring-rewards'

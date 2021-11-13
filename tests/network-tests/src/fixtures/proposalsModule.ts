@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { ProposalId } from '@joystream/types/proposals'

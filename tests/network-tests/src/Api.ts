@@ -37,16 +37,7 @@ import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
-
-export enum WorkingGroups {
-  StorageWorkingGroup = 'storageWorkingGroup',
-  ContentWorkingGroup = 'contentWorkingGroup',
-  DistributionWorkingGroup = 'distributionWorkingGroup',
-  GatewayWorkingGroup = 'gatewayWorkingGroup',
-  OperationsWorkingGroupAlpha = 'operationsWorkingGroupAlpha',
-  OperationsWorkingGroupBeta = 'operationsWorkingGroupBeta',
-  OperationsWorkingGroupGamma = 'operationsWorkingGroupGamma',
-}
+import { WorkingGroups } from './WorkingGroups'
 
 type AnyMetadata = {
   serializeBinary(): Uint8Array
@@ -187,18 +178,20 @@ export class Api {
   // Well known WorkingGroup enum defined in runtime
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
     switch (workingGroup) {
-      case WorkingGroups.StorageWorkingGroup:
+      case WorkingGroups.Storage:
         return 'Storage'
-      case WorkingGroups.ContentWorkingGroup:
+      case WorkingGroups.Content:
         return 'Content'
-      case WorkingGroups.GatewayWorkingGroup:
+      case WorkingGroups.Gateway:
         return 'Gateway'
-      case WorkingGroups.OperationsWorkingGroupAlpha:
+      case WorkingGroups.OperationsAlpha:
         return 'OperationsAlpha'
-      case WorkingGroups.OperationsWorkingGroupBeta:
+      case WorkingGroups.OperationsBeta:
         return 'OperationsBeta'
-      case WorkingGroups.OperationsWorkingGroupGamma:
+      case WorkingGroups.OperationsGamma:
         return 'OperationsGamma'
+      case WorkingGroups.Distribution:
+        return 'Distribution'
       default:
         throw new Error(`Invalid working group string representation: ${workingGroup}`)
     }
@@ -1676,6 +1669,16 @@ export class Api {
     return await this.api.query[group].openingById<WorkingGroupOpening>(id)
   }
 
+  public async getActiveWorkerIds(module: WorkingGroups): Promise<WorkerId[]> {
+    return (await this.api.query[module].workerById.entries<Worker>()).map(
+      ([
+        {
+          args: [id],
+        },
+      ]) => id
+    )
+  }
+
   public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
     return (await this.api.query[module].workerById.entries<Worker>()).map((workerWithId) => workerWithId[1])
   }
@@ -1844,7 +1847,7 @@ export class Api {
   }
 
   async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentWorkingGroup)
+    const lead = await this.getGroupLead(WorkingGroups.Content)
 
     if (!lead) {
       throw new Error('No Content Lead asigned, cannot create channel category')
@@ -1865,7 +1868,7 @@ export class Api {
   }
 
   async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentWorkingGroup)
+    const lead = await this.getGroupLead(WorkingGroups.Content)
 
     if (!lead) {
       throw new Error('No Content Lead asigned, cannot create channel category')

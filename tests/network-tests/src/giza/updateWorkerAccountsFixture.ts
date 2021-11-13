@@ -1,16 +1,14 @@
 import { BaseFixture } from '../Fixture'
-import { WorkingGroups } from '../Api'
+import { AllWorkingGroups } from '../WorkingGroups'
 
-export class UpdateLeadWorkerAccountsFixture extends BaseFixture {
+export class UpdateWorkerAccountsFixture extends BaseFixture {
   public async execute(): Promise<void> {
-    const storageLead = await this.api.getLeadWorkerId(WorkingGroups.StorageWorkingGroup)
-    if (storageLead) {
-      await this.api.assignWorkerWellknownAccount(WorkingGroups.StorageWorkingGroup, storageLead)
-    }
-
-    const contentLead = await this.api.getLeadWorkerId(WorkingGroups.ContentWorkingGroup)
-    if (contentLead) {
-      await this.api.assignWorkerWellknownAccount(WorkingGroups.ContentWorkingGroup, contentLead)
-    }
+    await Promise.all(
+      AllWorkingGroups.map(async (group) =>
+        Promise.all(
+          (await this.api.getActiveWorkerIds(group)).map((id) => this.api.assignWorkerWellknownAccount(group, id))
+        )
+      )
+    )
   }
 }
