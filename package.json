@@ -5,7 +5,6 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build:node:docker": "./build-node-docker.sh",
-    "build:storage:docker": "./build-storage-docker.sh",
     "build:packages": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
