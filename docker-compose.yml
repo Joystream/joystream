@@ -38,7 +38,7 @@ services:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=//testing//worker//Storage//0
     command: [
-      'yarn', 'storage-node', 'server', '--worker=1', '--port=3333', '--uploads=/data',
+      'yarn', 'storage-node', 'server', '--worker=0', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeHost=graphql-server:${GRAPHQL_SERVER_PORT}',
       '--apiUrl=ws://joystream-node:9944/'
