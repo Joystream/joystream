@@ -32,7 +32,7 @@ export class ContentActor extends JoyEnum({
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
-  Collaborator: MemberId,    
+  Collaborator: MemberId,
 }) {}
 
 export class ChannelOwner extends JoyEnum({
@@ -61,7 +61,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
   assets_to_remove: BTreeSet.with(DataObjectId),
-  collaborators: Option.with(BTreeSet.with(MemberId)),    
+  collaborators: Option.with(BTreeSet.with(MemberId)),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
