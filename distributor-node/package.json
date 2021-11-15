@@ -40,7 +40,7 @@
     "cors": "^2.8.5",
     "inquirer": "^8.1.2",
     "multihashes": "^4.0.3",
-    "blake3": "^2.1.4",
+    "blake3-wasm": "^2.1.5",
     "js-image-generator": "^1.0.3"
   },
   "devDependencies": {

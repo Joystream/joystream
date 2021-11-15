@@ -1,6 +1,6 @@
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
-import { hash } from 'blake3'
+import { hash } from 'blake3-wasm'
 import { FilesApi, Configuration, TokenRequest } from '../../services/networking/storage-node/generated'
 import { u8aToHex } from '@polkadot/util'
 import * as multihash from 'multihashes'

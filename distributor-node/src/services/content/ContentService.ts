@@ -7,7 +7,7 @@ import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileC
 import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
-import { createHash } from 'blake3'
+import { createHash } from 'blake3-wasm'
 import * as multihash from 'multihashes'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
