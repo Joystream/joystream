@@ -1,6 +1,6 @@
 id: distributor-node-docker
 endpoints:
-  queryNode: http://graphql-server-mnt:4002/graphql
+  queryNode: http://graphql-server:4001/graphql
   joystreamNodeWs: ws://joystream-node:9944
   # elasticSearch: http://elasticsearch:9200
 directories:
