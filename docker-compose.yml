@@ -19,43 +19,44 @@ services:
       - '127.0.0.1:9933:9933'
 
   colossus-1:
-    image: joystream/colossus:latest
+    image: node:14
     container_name: colossus-1
     restart: on-failure
-    build:
-      context: .
-      dockerfile: colossus.Dockerfile
-    depends_on:
-      - graphql-server
     volumes:
       - /data
       - /keystore
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream/storage-node-v2
     ports:
       - '127.0.0.1:3333:3333'
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - COLOSSUS_PORT=3333
-      - QUERY_NODE_HOST=graphql-server:${GRAPHQL_SERVER_PORT}
-      - WORKER_ID=0
+      # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=//testing//worker//Storage//0
-      # enable ElasticSearch server
-      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
+    command: [
+      'yarn', 'storage-node', 'server', '--worker=1', '--port=3333', '--uploads=/data',
+      '--sync', '--syncInterval=1',
+      '--queryNodeHost=graphql-server:${GRAPHQL_SERVER_PORT}',
+      '--apiUrl=ws://joystream-node:9944/'
+    ]
 
   distributor-1:
-    image: joystream/distributor-node
+    image: node:14
     container_name: distributor-1
     restart: on-failure
-    build:
-      context: .
-      dockerfile: distributor-node.Dockerfile
-    depends_on:
-      - graphql-server
     volumes:
       - /data
       - /cache
       - /logs
+      - type: bind
+        source: .
+        target: /joystream
+    # let the working_dir be the distributor node to pickup the config.yml file
+    working_dir: /joystream/distributor-node
     ports:
       - 127.0.0.1:3334:3334
     # Node configuration can be overriden via env, for exampe:
@@ -65,7 +66,7 @@ services:
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//0\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
       JOYSTREAM_DISTRIBUTOR__PORT: 3334
-    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: sn-endpoint
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ws://joystream-node:9944/
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: assets-dir
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: cache-state-dir
@@ -75,46 +76,47 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
-    command: ["start"]
+    command: ['yarn', 'joystream-distributor']
 
   colossus-2:
-    image: joystream/colossus:latest
+    image: node:14
     container_name: colossus-2
     restart: on-failure
-    build:
-      context: .
-      dockerfile: colossus.Dockerfile
-    depends_on:
-      - graphql-server
     volumes:
       - /data
       - /keystore
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream/storage-node-v2
     ports:
       - '127.0.0.1:3335:3333'
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - COLOSSUS_PORT=3333
-      - QUERY_NODE_HOST=graphql-server:${GRAPHQL_SERVER_PORT}
-      - WORKER_ID=1
+      # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=//testing//worker//Storage//1
-      # enable ElasticSearch server
-      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
+    command: [
+      'yarn', 'storage-node', 'server', '--worker=1', '--port=3333', '--uploads=/data',
+      '--sync', '--syncInterval=1',
+      '--queryNodeHost=graphql-server:${GRAPHQL_SERVER_PORT}',
+      '--apiUrl=ws://joystream-node:9944/'
+    ]
 
   distributor-2:
-    image: joystream/distributor-node
+    image: node:14
     container_name: distributor-2
     restart: on-failure
-    build:
-      context: .
-      dockerfile: distributor-node.Dockerfile
-    depends_on:
-      - graphql-server
     volumes:
       - /data
       - /cache
       - /logs
+      - type: bind
+        source: .
+        target: /joystream
+    # let the working_dir be the distributor node to pickup the config.yml file
+    working_dir: /joystream/distributor-node
     ports:
       - 127.0.0.1:3336:3334
     # Node configuration can be overriden via env, for exampe:
@@ -124,7 +126,7 @@ services:
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//1\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: 1
       JOYSTREAM_DISTRIBUTOR__PORT: 3334
-    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: sn-endpoint
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ws://joystream-node:9944/
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: assets-dir
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: cache-state-dir
@@ -134,7 +136,7 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
-    command: ["start"]
+    command: ['yarn', 'joystream-distributor']
 
   db:
     image: postgres:12
@@ -219,7 +221,7 @@ services:
       - .env
     environment:
       - WARTHOG_STARTER_DB_DATABASE=${INDEXER_DB_NAME}
-      - WARTHOG_STARTER_DB_HOST=db
+      - WARTHOG_STARTER_DB_HOST=${DB_HOST}
       - WARTHOG_STARTER_DB_PASSWORD=${DB_PASS}
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
@@ -250,3 +252,15 @@ services:
       - "127.0.0.1:3000:80"
     environment:
       - NGINX_PORT=80
+  
+  # Used to for building native npm packages that will work in the container
+  # yarn cache folder isn't mounted so packages will be downloaded
+  # yarn-build-packages:
+  #   image: node:14
+  #   restart: never
+  #   volumes:
+  #     - type: bind
+  #       source: .
+  #       target: /joystream
+  #   working_dir: /joystream
+  #   command: ['yarn', 'build:packages']

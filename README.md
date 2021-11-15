@@ -31,9 +31,6 @@ yarn build:packages
 # Build joystream/node docker image
 yarn build:node:docker
 
-# Build storage inftrasrucure docker images
-yarn build:storage:docker
-
 # start a local development network
 yarn start
 ```

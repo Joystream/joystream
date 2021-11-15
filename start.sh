@@ -20,13 +20,13 @@ function down()
 
 trap down EXIT
 
-# Run a local development chain
+## Run a local development chain
 docker-compose up -d joystream-node
 
 WS_PROVIDER_ENDPOINT_URI=ws://localhost:9944 SKIP_MOCK_CONTENT=true \
   ./tests/network-tests/run-test-scenario.sh setup-new-chain
 
-# Set sudo as the membership screening authority
+## Set sudo as the membership screening authority
 yarn workspace api-scripts set-sudo-as-screening-auth
 
 ## Query Node Infrastructure
@@ -49,17 +49,10 @@ docker-compose up -d processor
 docker-compose up -d graphql-server
 
 ## Storage Infrastructure
-docker-compose run -d --name colossus-1 --entrypoint sh colossus-1 -c "\
-  yarn storage-node server --queryNodeHost ${GRAPHQL_SERVER_HOST}:${GRAPHQL_SERVER_PORT} \
-  --port ${COLOSSUS_CONTAINER_PORT} \
-  --uploads /data --worker 0 \
-  --accountUri=//testing//worker//Storage//0 \
-  --apiUrl ${WS_PROVIDER_ENDPOINT_URI} \
-  --sync --syncInterval=1 \
-  --elasticSearchHost=${ELASTIC_SEARCH_HOST}"
-
+docker-compose up -d colossus-1
 docker-compose up -d distributor-1
 
+## Pioneer UI
 docker-compose up -d pioneer
 
 echo "use Ctrl+C to shutdown the development network."
