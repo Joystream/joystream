@@ -16,8 +16,10 @@ scenario(async ({ job }) => {
 
   const updateWorkerAccounts = job('Update worker accounts', updateAccountsFlow).after(leads)
 
-  // Create some mock content in content directory - without assets or any real metadata
-  job('Create Mock Content', mockContentFlow).after(updateWorkerAccounts)
+  if (!process.env.SKIP_MOCK_CONTENT) {
+    // Create some mock content in content directory - without assets or any real metadata
+    job('Create Mock Content', mockContentFlow).after(updateWorkerAccounts)
+  }
 
   // assign members known accounts?
   // assign council known accounts?

@@ -28,11 +28,11 @@ After cloning the repo run the following initialization scripts:
 # build local npm packages
 yarn build:packages
 
-# Build joystream/node image
+# Build joystream/node docker image
 yarn build:node:docker
 
-# Build applications docker image
-yarn build:apps:docker
+# Build storage inftrasrucure docker images
+yarn build:storage:docker
 
 # start a local development network
 yarn start
