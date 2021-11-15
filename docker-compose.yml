@@ -59,9 +59,12 @@ services:
     working_dir: /joystream/distributor-node
     ports:
       - 127.0.0.1:3334:3334
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     # Node configuration can be overriden via env, for exampe:
     environment:
-      # JOYSTREAM_DISTRIBUTOR__ID: node-id
+      JOYSTREAM_DISTRIBUTOR__ID: distributor-1
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server:${WARTHOG_APP_PORT}/graphql
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//0\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
@@ -119,9 +122,12 @@ services:
     working_dir: /joystream/distributor-node
     ports:
       - 127.0.0.1:3336:3334
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     # Node configuration can be overriden via env, for exampe:
     environment:
-      # JOYSTREAM_DISTRIBUTOR__ID: node-id
+      JOYSTREAM_DISTRIBUTOR__ID: distributor-2
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server:${WARTHOG_APP_PORT}/graphql
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//1\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: 1
@@ -253,15 +259,3 @@ services:
       - "127.0.0.1:3000:80"
     environment:
       - NGINX_PORT=80
-  
-  # Used to for building native npm packages that will work in the container
-  # yarn cache folder isn't mounted so packages will be downloaded
-  # yarn-build-packages:
-  #   image: node:14
-  #   restart: never
-  #   volumes:
-  #     - type: bind
-  #       source: .
-  #       target: /joystream
-  #   working_dir: /joystream
-  #   command: ['yarn', 'build:packages']
