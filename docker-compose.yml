@@ -76,7 +76,7 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
-    command: ['yarn', 'joystream-distributor']
+    command: ['yarn', 'joystream-distributor', 'start']
 
   colossus-2:
     image: node:14
@@ -136,7 +136,7 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
-    command: ['yarn', 'joystream-distributor']
+    command: ['yarn', 'joystream-distributor', 'start']
 
   db:
     image: postgres:12
