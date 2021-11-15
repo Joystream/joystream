@@ -23,5 +23,5 @@ export function isPlatformMinikube(): boolean {
   const clusterStackRef = new pulumi.StackReference(config.require('clusterStackRef'))
 
   const platform = pulumi.interpolate`${clusterStackRef.requireOutput('platform')}`
-  return platform === pulumi.interpolate`minikube` ? false : true
+  return platform === pulumi.interpolate`minikube` ? true : false
 }

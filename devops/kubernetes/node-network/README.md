@@ -1,6 +1,6 @@
 # Query Node automated deployment
 
-Deploys a Joystream node network on EKS Kubernetes cluster
+Deploys a Joystream node network on a Kubernetes cluster
 
 ## Deploying the App
 
@@ -16,6 +16,7 @@ To deploy your infrastructure, follow the below steps.
 
 ### Steps
 
+Make sure you have already created a Kubernetes cluster. Refer to the README in the `cluster` folder.
 After cloning this repo, from this working directory, run these commands:
 
 1. Install the required Node.js packages:
@@ -37,21 +38,19 @@ After cloning this repo, from this working directory, run these commands:
 1. Set the required configuration variables in `Pulumi.<stack>.yaml`
 
    ```bash
-   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext numberOfValidators=2 --plaintext isMinikube=true --plaintext networkSuffix=8122 \
+   $ pulumi config set-all --plaintext numberOfValidators=2 --plaintext networkSuffix=8122 \
     --plaintext nodeImage=joystream/node:latest --plaintext encryptionKey=password
    ```
 
-   If you want to build the stack on AWS set the `isMinikube` config to `false`
+   Set the `clusterStackRef` config variable based on the name of the stack used to deploy the cluster
 
    ```bash
-   $ pulumi config set isMinikube false
+   $ pulumi config set clusterStackRef <USERNAME>/kubernetes-cluster/<STACK_NAME>
    ```
 
-1. Stand up the Kubernetes cluster:
+1. Stand up the deployments:
 
-   Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
-   new EKS cluster takes between 10-15 minutes.
+   Running `pulumi up -y` will deploy the stack on your platform's Kubernetes cluster
 
 1. Once the stack is up and running, we will modify the Caddy config to get SSL certificate for the load balancer for AWS
 
@@ -73,16 +72,6 @@ After cloning this repo, from this working directory, run these commands:
    the URL given in the output
 
 1. Access the Kubernetes Cluster using `kubectl`
-
-   To access your new Kubernetes cluster using `kubectl`, we need to set up the
-   `kubeconfig` file and download `kubectl`. We can leverage the Pulumi
-   stack output in the CLI, as Pulumi facilitates exporting these objects for us.
-
-   ```bash
-   $ pulumi stack output kubeconfig --show-secrets > kubeconfig
-   $ export KUBECONFIG=$PWD/kubeconfig
-   $ kubectl get nodes
-   ```
 
    We can also use the stack output to query the cluster for our newly created Deployment:
 

@@ -1,44 +1,18 @@
-import * as awsx from '@pulumi/awsx'
-import * as eks from '@pulumi/eks'
 import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
-import { CaddyServiceDeployment } from 'pulumi-common'
+import { CaddyServiceDeployment, getProvider, isPlatformMinikube } from 'pulumi-common'
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
-// const { exec } = require('child_process')
 
 const config = new pulumi.Config()
-const awsConfig = new pulumi.Config('aws')
-const isMinikube = config.getBoolean('isMinikube')
+const isMinikube = isPlatformMinikube()
 
 export let kubeconfig: pulumi.Output<any>
 
-let provider: k8s.Provider
-
-if (isMinikube) {
-  provider = new k8s.Provider('local', {})
-} else {
-  // Create a VPC for our cluster.
-  const vpc = new awsx.ec2.Vpc('joystream-node-vpc', { numberOfAvailabilityZones: 2 })
-
-  // Create an EKS cluster with the default configuration.
-  const cluster = new eks.Cluster('eksctl-node-network', {
-    vpcId: vpc.id,
-    subnetIds: vpc.publicSubnetIds,
-    desiredCapacity: 2,
-    maxSize: 2,
-    instanceType: 't2.medium',
-    providerCredentialOpts: {
-      profileName: awsConfig.get('profile'),
-    },
-  })
-  provider = cluster.provider
-
-  // Export the cluster's kubeconfig.
-  kubeconfig = cluster.kubeconfig
-}
+// Get's the Cluster provider based on clusterStackRef platform config
+let provider: k8s.Provider = getProvider()
 
 const resourceOptions = { provider: provider }
 
