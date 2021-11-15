@@ -31,9 +31,7 @@
     "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen manifest.yml --debug",
     "mappings:build": "yarn workspace query-node-mappings build",
     "start:dev": "./start.sh",
-    "start": "./start-img.sh",
-    "kill:dev": "./kill.sh",
-    "kill": "./kill-img.sh"
+    "kill:dev": "./kill.sh"
   },
   "author": "",
   "license": "ISC",
