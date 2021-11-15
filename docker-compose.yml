@@ -36,12 +36,12 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=//testing//worker//Storage//0
+      - ACCOUNT_URI=${COLOSSUS_1_ACCOUNT_URI}
     command: [
-      'yarn', 'storage-node', 'server', '--worker=0', '--port=3333', '--uploads=/data',
+      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=graphql-server:${WARTHOG_APP_PORT}',
-      '--apiUrl=ws://joystream-node:9944/'
+      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
   distributor-1:
@@ -65,11 +65,11 @@ services:
     # Node configuration can be overriden via env, for exampe:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-1
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server:${WARTHOG_APP_PORT}/graphql
-      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//0\"}]"
-      JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_1_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_1_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PORT: 3334
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ws://joystream-node:9944/
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: assets-dir
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: cache-state-dir
@@ -99,12 +99,12 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=//testing//worker//Storage//1
+      - ACCOUNT_URI=${COLOSSUS_2_ACCOUNT_URI}
     command: [
-      'yarn', 'storage-node', 'server', '--worker=1', '--port=3333', '--uploads=/data',
+      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=graphql-server:${WARTHOG_APP_PORT}',
-      '--apiUrl=ws://joystream-node:9944/'
+      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
   distributor-2:
@@ -128,11 +128,11 @@ services:
     # Node configuration can be overriden via env, for exampe:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-2
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server:${WARTHOG_APP_PORT}/graphql
-      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//testing//workers//Distribution//1\"}]"
-      JOYSTREAM_DISTRIBUTOR__WORKER_ID: 1
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_2_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_2_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PORT: 3334
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ws://joystream-node:9944/
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: assets-dir
     #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: cache-state-dir
@@ -149,7 +149,7 @@ services:
     container_name: db
     restart: always
     ports:
-      - '127.0.0.1:${DB_PORT}:5432'
+      - '127.0.0.1:${DB_PORT}:${DB_PORT}'
     volumes:
       - /var/lib/postgresql/data
     env_file:
@@ -167,6 +167,8 @@ services:
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
+    environment:
+      - DB_HOST=db
     ports:
       - '127.0.0.1:8081:${WARTHOG_APP_PORT}'
     depends_on:
@@ -186,11 +188,11 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - INDEXER_ENDPOINT_URL=http://hydra-indexer-gateway:${WARTHOG_APP_PORT}/graphql
-      - TYPEORM_HOST=${DB_HOST}
+      - INDEXER_ENDPOINT_URL=${PROCESSOR_INDEXER_GATEWAY}
+      - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
     depends_on:
-      - hydra-indexer-gateway
+      - db
     volumes:
       - type: bind
         source: .
@@ -210,7 +212,8 @@ services:
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
       - TYPES_JSON=types.json
-      - WS_PROVIDER_ENDPOINT_URI=${INDEXER_WS_PROVIDER_ENDPOINT_URI}
+      - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
+      - DB_HOST=db
     depends_on:
       - db
       - redis
@@ -228,7 +231,7 @@ services:
       - .env
     environment:
       - WARTHOG_STARTER_DB_DATABASE=${INDEXER_DB_NAME}
-      - WARTHOG_STARTER_DB_HOST=${DB_HOST}
+      - WARTHOG_STARTER_DB_HOST=db
       - WARTHOG_STARTER_DB_PASSWORD=${DB_PASS}
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
@@ -239,9 +242,8 @@ services:
     ports:
       - '127.0.0.1:4000:${WARTHOG_APP_PORT}'
     depends_on:
-      - redis
       - db
-      - indexer
+      - redis
 
   redis:
     image: redis:6.0-alpine

@@ -5,10 +5,6 @@ set -e
 # Make sure to run build-docker-images.sh prior to running this script to use
 # the local build.
 
-set -a
-. .env
-set +a
-
 # Clean start!
 docker-compose down -v
 
@@ -23,8 +19,8 @@ trap down EXIT
 ## Run a local development chain
 docker-compose up -d joystream-node
 
-WS_PROVIDER_ENDPOINT_URI=ws://localhost:9944 SKIP_MOCK_CONTENT=true \
-  ./tests/network-tests/run-test-scenario.sh setup-new-chain
+## Init the chain with some state
+SKIP_MOCK_CONTENT=true ./tests/network-tests/run-test-scenario.sh setup-new-chain
 
 ## Set sudo as the membership screening authority
 yarn workspace api-scripts set-sudo-as-screening-auth
@@ -34,15 +30,15 @@ yarn workspace api-scripts set-sudo-as-screening-auth
 # Initialize a new database for the query node infrastructure
 docker-compose up -d db
 
-# Override DB_HOST for db setup
 # Make sure we use dev config for db migrations (prevents "Cannot create database..." and some other errors)
-export DB_HOST=localhost
-yarn workspace query-node config:dev
+docker-compose run --rm --entrypoint sh graphql-server -c "yarn workspace query-node config:dev"
 # Migrate the databases
-yarn workspace query-node-root db:prepare
-yarn workspace query-node-root db:migrate
-# Set DB_HOST back to docker-service one
-export DB_HOST=db
+docker-compose run --rm --entrypoint sh graphql-server -c "yarn workspace query-node-root db:prepare"
+docker-compose run --rm --entrypoint sh graphql-server -c "yarn workspace query-node-root db:migrate"
+
+# Start indexer and gateway
+docker-compose up -d indexer
+docker-compose up -d hydra-indexer-gateway
 
 # Start processor and graphql server
 docker-compose up -d processor

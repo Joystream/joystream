@@ -30,6 +30,10 @@ yarn workspace query-node-root db:migrate
 # Set DB_HOST back to docker-service one
 export DB_HOST=db
 
+# Start indexer and gateway
+docker-compose up -d indexer
+docker-compose up -d hydra-indexer-gateway
+
 # Start processor and graphql server
 docker-compose up -d processor
 docker-compose up -d graphql-server
