@@ -5,15 +5,10 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type SwitchOff = 'off'
 /**
- * List of distribution bucket ids
+ * Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.
  */
 export type BucketIds = number[]
-/**
- * Distribute all buckets assigned to worker specified in `workerId`
- */
-export type AllBuckets = 'all'
 
 /**
  * Configuration schema for distirubtor CLI and node
@@ -53,9 +48,9 @@ export interface DistributorNodeConfiguration {
    * Specifies the logging configuration
    */
   logs?: {
-    file?: FileLoggingOptions | SwitchOff
-    console?: ConsoleLoggingOptions | SwitchOff
-    elastic?: ElasticsearchLoggingOptions | SwitchOff
+    file?: FileLoggingOptions
+    console?: ConsoleLoggingOptions
+    elastic?: ElasticsearchLoggingOptions
   }
   /**
    * Specifies node limits w.r.t. storage, outbound connections etc.
@@ -132,15 +127,12 @@ export interface DistributorNodeConfiguration {
   /**
    * Specifies the keys available within distributor node CLI.
    */
-  keys: (SubstrateUri | MnemonicPhrase | JSONBackupFile)[]
-  /**
-   * Specifies the buckets distributed by the node
-   */
-  buckets: BucketIds | AllBuckets
+  keys?: (SubstrateUri | MnemonicPhrase | JSONBackupFile)[]
+  buckets?: BucketIds
   /**
    * ID of the node operator (distribution working group worker)
    */
-  workerId: number
+  workerId?: number
 }
 export interface FileLoggingOptions {
   /**

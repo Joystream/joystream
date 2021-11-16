@@ -124,7 +124,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
   initKeyring(): void {
     this.keyring = new Keyring(KEYRING_OPTIONS)
-    this.appConfig.keys.forEach((keyData) => {
+    this.appConfig.keys?.forEach((keyData) => {
       if ('suri' in keyData) {
         this.keyring.addFromUri(keyData.suri, undefined, keyData.type)
       }

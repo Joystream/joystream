@@ -66,10 +66,13 @@ export class OperatorApiController {
     res: express.Response
   ): Promise<void> {
     const { buckets } = req.body
-    this.logger.info(`Updating buckets to ${JSON.stringify(buckets)} on operator request from ${req.ip}`, {
-      buckets,
-      ip: req.ip,
-    })
+    this.logger.info(
+      `Updating buckets to ${buckets ? JSON.stringify(buckets) : '"all"'} on operator request from ${req.ip}`,
+      {
+        buckets,
+        ip: req.ip,
+      }
+    )
     this.config.buckets = buckets
     res.status(200).send()
   }

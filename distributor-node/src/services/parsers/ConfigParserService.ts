@@ -28,7 +28,7 @@ export class ConfigParserService {
   }
 
   public resolveConfigKeysPaths(keys: Config['keys']): Config['keys'] {
-    return keys.map((k) => ('keyfile' in k ? { keyfile: this.resolvePath(k.keyfile) } : k))
+    return keys?.map((k) => ('keyfile' in k ? { keyfile: this.resolvePath(k.keyfile) } : k))
   }
 
   private parseBytesize(bytesize: string) {
@@ -71,30 +71,34 @@ export class ConfigParserService {
 
     for (const i in possibleTypes) {
       try {
-        switch (possibleTypes[i]) {
-          case undefined:
-            // Invalid key - skip
-            break
-          case 'integer':
-            _.set(config, path, parseInt(envValue || ''))
-            break
-          case 'number':
-            _.set(config, path, parseFloat(envValue || ''))
-            break
-          case 'boolean':
-            _.set(config, path, !!envValue)
-            break
-          case 'array':
-          case 'object':
-            try {
-              const parsed = JSON.parse(envValue || 'undefined')
-              _.set(config, path, parsed)
-            } catch (e) {
-              throw new ValidationError(`Invalid env value of ${envKey}: Not a valid JSON`, null)
-            }
-            break
-          default:
-            _.set(config, path, envValue)
+        if (envValue === 'off' || envValue === 'null' || envValue === 'undefined') {
+          _.set(config, path, undefined)
+        } else {
+          switch (possibleTypes[i]) {
+            case undefined:
+              // Invalid key - skip
+              break
+            case 'integer':
+              _.set(config, path, parseInt(envValue || ''))
+              break
+            case 'number':
+              _.set(config, path, parseFloat(envValue || ''))
+              break
+            case 'boolean':
+              _.set(config, path, !!envValue)
+              break
+            case 'array':
+            case 'object':
+              try {
+                const parsed = JSON.parse(envValue || 'undefined')
+                _.set(config, path, parsed)
+              } catch (e) {
+                throw new ValidationError(`Invalid env value of ${envKey}: Not a valid JSON`, null)
+              }
+              break
+            default:
+              _.set(config, path, envValue)
+          }
         }
         const errors = this.validator.errorsByProperty('Config', path.join('.'), config)
         if (errors) {

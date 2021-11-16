@@ -76,7 +76,7 @@ export class LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
     let esTransport: ElasticsearchTransport | undefined
-    if (config.logs?.elastic && config.logs.elastic !== 'off') {
+    if (config.logs?.elastic) {
       esTransport = new ElasticsearchTransport({
         index: 'distributor-node',
         level: config.logs.elastic.level,
@@ -92,7 +92,7 @@ export class LoggingService {
       transports.push(esTransport)
     }
 
-    if (config.logs?.file && config.logs.file !== 'off') {
+    if (config.logs?.file) {
       const datePatternByFrequency = {
         yearly: 'YYYY',
         monthly: 'YYYY-MM',
@@ -111,7 +111,7 @@ export class LoggingService {
       transports.push(fileTransport)
     }
 
-    if (config.logs?.console && config.logs.console !== 'off') {
+    if (config.logs?.console) {
       const consoleTransport = new winston.transports.Console({
         level: config.logs.console.level,
         format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),

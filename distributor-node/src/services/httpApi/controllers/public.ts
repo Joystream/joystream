@@ -294,9 +294,11 @@ export class PublicApiController {
     res
       .status(200)
       .json(
-        this.config.buckets === 'all'
+        this.config.buckets
+          ? { bucketIds: [...this.config.buckets] }
+          : this.config.workerId
           ? { allByWorkerId: this.config.workerId }
-          : { bucketIds: [...this.config.buckets] }
+          : { bucketIds: [] }
       )
   }
 }

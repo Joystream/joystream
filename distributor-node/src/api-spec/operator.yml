@@ -104,19 +104,15 @@ components:
           minimum: 0
     SetBucketsOperation:
       type: object
-      required:
-        - buckets
       properties:
         buckets:
-          oneOf:
-            - type: string
-              enum: ['all']
-              description: All buckets assigned to configured workerId.
-            - type: array
-              minItems: 1
-              items:
-                type: integer
-                minimum: 0
+          description: "Set of bucket ids to be distributed by the node.
+            If not provided - all buckets assigned to currently configured worker will be distributed."
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            minimum: 0
 
 security:
   - OperatorAuth: []

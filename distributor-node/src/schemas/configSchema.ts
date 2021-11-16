@@ -12,17 +12,11 @@ const logLevelSchema: JSONSchema4 = {
   enum: [...Object.keys(winston.config.npm.levels)],
 }
 
-const offSwitch: JSONSchema4 = {
-  title: 'Switch off',
-  type: 'string',
-  enum: ['off'],
-}
-
 export const configSchema: JSONSchema4 = objectSchema({
   '$id': 'https://joystream.org/schemas/argus/config',
   title: 'Distributor node configuration',
   description: 'Configuration schema for distirubtor CLI and node',
-  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'workerId', 'limits', 'intervals', 'publicApi'],
+  required: ['id', 'endpoints', 'directories', 'limits', 'intervals', 'publicApi'],
   properties: {
     id: {
       type: 'string',
@@ -61,69 +55,54 @@ export const configSchema: JSONSchema4 = objectSchema({
     logs: objectSchema({
       description: 'Specifies the logging configuration',
       properties: {
-        file: {
-          oneOf: [
-            objectSchema({
-              title: 'File logging options',
-              properties: {
-                level: logLevelSchema,
-                path: {
-                  description: 'Path where the logs will be stored (absolute or relative to config file)',
-                  type: 'string',
-                },
-                maxFiles: {
-                  description: 'Maximum number of log files to store',
-                  type: 'integer',
-                  minimum: 1,
-                },
-                maxSize: {
-                  description: 'Maximum size of a single log file in bytes',
-                  type: 'integer',
-                  minimum: 1024,
-                },
-                frequency: {
-                  description: 'The frequency of creating new log files (regardless of maxSize)',
-                  default: 'daily',
-                  type: 'string',
-                  enum: ['yearly', 'monthly', 'daily', 'hourly'],
-                },
-                archive: {
-                  description: 'Whether to archive old logs',
-                  default: false,
-                  type: 'boolean',
-                },
-              },
-              required: ['level', 'path'],
-            }),
-            offSwitch,
-          ],
-        },
-        console: {
-          oneOf: [
-            objectSchema({
-              title: 'Console logging options',
-              properties: { level: logLevelSchema },
-              required: ['level'],
-            }),
-            offSwitch,
-          ],
-        },
-        elastic: {
-          oneOf: [
-            objectSchema({
-              title: 'Elasticsearch logging options',
-              properties: {
-                level: logLevelSchema,
-                endpoint: {
-                  description: 'Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)',
-                  type: 'string',
-                },
-              },
-              required: ['level', 'endpoint'],
-            }),
-            offSwitch,
-          ],
-        },
+        file: objectSchema({
+          title: 'File logging options',
+          properties: {
+            level: logLevelSchema,
+            path: {
+              description: 'Path where the logs will be stored (absolute or relative to config file)',
+              type: 'string',
+            },
+            maxFiles: {
+              description: 'Maximum number of log files to store',
+              type: 'integer',
+              minimum: 1,
+            },
+            maxSize: {
+              description: 'Maximum size of a single log file in bytes',
+              type: 'integer',
+              minimum: 1024,
+            },
+            frequency: {
+              description: 'The frequency of creating new log files (regardless of maxSize)',
+              default: 'daily',
+              type: 'string',
+              enum: ['yearly', 'monthly', 'daily', 'hourly'],
+            },
+            archive: {
+              description: 'Whether to archive old logs',
+              default: false,
+              type: 'boolean',
+            },
+          },
+          required: ['level', 'path'],
+        }),
+        console: objectSchema({
+          title: 'Console logging options',
+          properties: { level: logLevelSchema },
+          required: ['level'],
+        }),
+        elastic: objectSchema({
+          title: 'Elasticsearch logging options',
+          properties: {
+            level: logLevelSchema,
+            endpoint: {
+              description: 'Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)',
+              type: 'string',
+            },
+          },
+          required: ['level', 'endpoint'],
+        }),
       },
       required: [],
     }),
@@ -256,22 +235,13 @@ export const configSchema: JSONSchema4 = objectSchema({
       minItems: 1,
     },
     buckets: {
-      description: 'Specifies the buckets distributed by the node',
-      oneOf: [
-        {
-          title: 'Bucket ids',
-          description: 'List of distribution bucket ids',
-          type: 'array',
-          items: { type: 'integer', minimum: 0 },
-          minItems: 1,
-        },
-        {
-          title: 'All buckets',
-          description: 'Distribute all buckets assigned to worker specified in `workerId`',
-          type: 'string',
-          enum: ['all'],
-        },
-      ],
+      description:
+        'Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.',
+      title: 'Bucket ids',
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'integer', minimum: 0 },
+      minItems: 1,
     },
     workerId: {
       description: 'ID of the node operator (distribution working group worker)',

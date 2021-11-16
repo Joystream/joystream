@@ -32,8 +32,10 @@ export default class NodeSetBucketsCommand extends NodeCommandBase {
     if (!all && !bucketIds) {
       this.error('You must provide either --bucketIds or --all flag!', { exit: ExitCodes.InvalidInput })
     }
-    return {
-      buckets: all ? 'all' : bucketIds,
-    }
+    return all
+      ? {}
+      : {
+          buckets: bucketIds,
+        }
   }
 }

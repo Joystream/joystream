@@ -52,32 +52,32 @@ export class App {
     }
   }
 
-  private checkConfigDirectories(): void {
-    Object.entries(this.config.directories).forEach(([name, path]) => {
-      if (path === undefined) {
-        return
-      }
-      const dirInfo = `${name} directory (${path})`
-      if (!fs.existsSync(path)) {
-        try {
-          fs.mkdirSync(path, { recursive: true })
-        } catch (e) {
-          throw new Error(`${dirInfo} doesn't exist and cannot be created!`)
-        }
-      }
+  private checkConfigDir(name: string, path: string): void {
+    const dirInfo = `${name} directory (${path})`
+    if (!fs.existsSync(path)) {
       try {
-        fs.accessSync(path, fs.constants.R_OK)
+        fs.mkdirSync(path, { recursive: true })
       } catch (e) {
-        throw new Error(`${dirInfo} is not readable`)
+        throw new Error(`${dirInfo} doesn't exist and cannot be created!`)
       }
-      try {
-        fs.accessSync(path, fs.constants.W_OK)
-      } catch (e) {
-        throw new Error(`${dirInfo} is not writable`)
-      }
-    })
+    }
+    try {
+      fs.accessSync(path, fs.constants.R_OK)
+    } catch (e) {
+      throw new Error(`${dirInfo} is not readable`)
+    }
+    try {
+      fs.accessSync(path, fs.constants.W_OK)
+    } catch (e) {
+      throw new Error(`${dirInfo} is not writable`)
+    }
+  }
 
-    // TODO: Logging dir if specified
+  private checkConfigDirectories(): void {
+    Object.entries(this.config.directories).forEach(([name, path]) => this.checkConfigDir(name, path))
+    if (this.config.logs?.file) {
+      this.checkConfigDir('logs.file.path', this.config.logs.file.path)
+    }
   }
 
   public async start(): Promise<void> {

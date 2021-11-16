@@ -135,9 +135,9 @@ export class NetworkingService {
     let data: DataObjectData | undefined
     if (details) {
       exists = true
-      if (this.config.buckets === 'all') {
+      if (!this.config.buckets) {
         const distributors = this.getDataObjectActiveDistributorsSet(details)
-        isSupported = distributors.has(this.config.workerId)
+        isSupported = this.config.workerId ? distributors.has(this.config.workerId) : false
       } else {
         const supportedBucketIds = this.config.buckets.map((id) => id.toString())
         isSupported = details.storageBag.distirbutionAssignments.some((a) =>
@@ -358,10 +358,11 @@ export class NetworkingService {
   }
 
   async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
-    const data =
-      this.config.buckets === 'all'
-        ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
-        : await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
+    const data = this.config.buckets
+      ? await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
+      : this.config.workerId
+      ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
+      : []
     const objectsData = new Map<string, DataObjectData>()
     data.forEach((bucket) => {
       bucket.bagAssignments.forEach((a) => {

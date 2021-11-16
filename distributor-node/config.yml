@@ -37,5 +37,4 @@ keys:
   # - mnemonic: "escape naive annual throw tragic achieve grunt verify cram note harvest problem"
   #   type: ed25519
   # - keyfile: "/path/to/keyfile.json"
-buckets: 'all'
 workerId: 0

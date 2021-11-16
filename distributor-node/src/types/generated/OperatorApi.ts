@@ -32,7 +32,8 @@ export interface components {
       'workerId': number
     }
     'SetBucketsOperation': {
-      'buckets': 'all' | number[]
+      /** Set of bucket ids to be distributed by the node. If not provided - all buckets assigned to currently configured worker will be distributed. */
+      'buckets'?: number[]
     }
   }
 }
