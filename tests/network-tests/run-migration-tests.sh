@@ -4,95 +4,51 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-# Location that will be mounted as the /data volume in containers
-# This is how we access the initial members and balances files from
-# the containers and where generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=~/tmp}
+# Location to store runtime WASM for runtime upgrade
+DATA_PATH=${DATA_PATH:=$(PWD)/data}
 
-# Initial account balance for Alice
-# Alice is the source of funds for all new accounts that are created in the tests.
-ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
+# The djoystream/node ocker image tag to start chain
+export RUNTIME=${RUNTIME:=latest}
 
-# The docker image tag to use for joystream/node as the starting chain
-# that will be upgraded to the latest runtime.
-RUNTIME=${RUNTIME:=latest}
+# The joystream/node docker image tag which contains WASM runtime to upgrade chain with
 TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 
-AUTO_CONFIRM=true
+# Prevent joystream cli from prompting
+export AUTO_CONFIRM=true
 
-mkdir -p ${DATA_PATH}
-
-echo "{
-  \"balances\":[
-    [\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\", ${ALICE_INITIAL_BALANCE}]
-  ]
-}" > ${DATA_PATH}/initial-balances.json
-
-# Make Alice a member
-echo '
-  [{
-    "member_id":0,
-    "root_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "controller_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "handle":"alice",
-    "avatar_uri":"https://alice.com/avatar.png",
-    "about":"Alice",
-    "registered_at_time":0
-  }]
-' > ${DATA_PATH}/initial-members.json
-
-# Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
-  new \
-  --authority-seeds Alice \
-  --sudo-account  5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
-  --deployment dev \
-  --chain-spec-path /data/chain-spec.json \
-  --initial-balances-path /data/initial-balances.json \
-  --initial-members-path /data/initial-members.json
-
-# Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
-  --raw --disable-default-bootnode \
-  --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
-
-# Start a chain with generated chain spec
-export JOYSTREAM_NODE_TAG=${RUNTIME}
-CONTAINER_ID=`docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/data --name joystream-node \
-  -p 9944:9944 -p 9933:9933 joystream-node \
-  --alice --validator --unsafe-ws-external --unsafe-rpc-external \
-  --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /data/chain-spec-raw.json`
+CONTAINER_ID=`MAKE_SUDO_MEMBER=true ./run-test-node-docker.sh`
 
 function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-    # docker-compose -f ../../docker-compose.yml down -v
-    rm tests/network-tests/assets/TestChannel__rejectedContent.json
-    rm tests/network-tests/assets/TestVideo__rejectedContent.json
+    docker-compose -f ../../docker-compose.yml down -v
+    rm ./assets/TestChannel__rejectedContent.json || true
+    rm ./assets/TestVideo__rejectedContent.json || true
 }
 
 function pre_migration_hook() {
-sleep 5 # needed otherwise docker image won't be ready yet
-yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
-echo "creating 1 channel"
-yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
-echo "adding 1 video to the above channel"
-yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+  sleep 10 # needed otherwise docker image won't be ready yet
+  # Display runtime version
+  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
+
+  yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+  echo "creating 1 channel"
+  yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+  echo "adding 1 video to the above channel"
+  yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
 }
 
 function post_migration_hook() {
-echo "*** verify existence of the 5 new groups ***"
-yarn joystream-cli working-groups:overview --group=operationsAlpha
-yarn joystream-cli working-groups:overview --group=operationsBeta
-yarn joystream-cli working-groups:overview --group=operationsGamma
-yarn joystream-cli working-groups:overview --group=curators
-yarn joystream-cli working-groups:overview --group=distributors
+  echo "*** verify existence of the 5 new groups ***"
+  yarn joystream-cli working-groups:overview --group=operationsAlpha
+  yarn joystream-cli working-groups:overview --group=operationsBeta
+  yarn joystream-cli working-groups:overview --group=operationsGamma
+  yarn joystream-cli working-groups:overview --group=curators
+  yarn joystream-cli working-groups:overview --group=distributors
 
-echo "*** verify previously created channel and video are cleared ***"
-yarn joystream-cli content:videos 1
-yarn joystream-cli content:channel 1
+  echo "*** verify previously created channel and video are cleared ***"
+  # FIXME: assert these fail as expected
+  yarn joystream-cli content:videos 1 || true
+  yarn joystream-cli content:channel 1 || true
 }    
 
 trap cleanup EXIT
@@ -100,12 +56,12 @@ trap cleanup EXIT
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
-  # pre migration hook
+  # FIXME: code against old runtime will fail running from newer runtime code
   pre_migration_hook
 
   # Copy new runtime wasm file from target joystream/node image
   echo "Extracting wasm blob from target joystream/node image."
-  id=`docker create joystream/node:${TARGET_RUNTIME}`
+  id=$(docker create joystream/node:${TARGET_RUNTIME})
   docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
   docker rm $id
 
@@ -126,4 +82,3 @@ fi
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
