@@ -147,13 +147,6 @@ components:
         type: string
         enum: ['external', 'local']
   schemas:
-    SetConfigBody:
-      type: object
-      properties:
-        path:
-          description: Config setting path (ie. limits.storage)
-          type: string
-
     ErrorResponse:
       type: object
       required:

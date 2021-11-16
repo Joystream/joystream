@@ -22,5 +22,4 @@ intervals:
 port: 3334
 keys:
   - suri: //Alice
-buckets: 'all'
 workerId: 0

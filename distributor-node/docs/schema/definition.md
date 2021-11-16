@@ -12,10 +12,11 @@
 | [logs](#logs)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")               |
 | [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")           |
 | [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")     |
-| [port](#port)               | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-port.md "https://joystream.org/schemas/argus/config#/properties/port")               |
-| [keys](#keys)               | `array`   | Required | cannot be null | [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")               |
-| [buckets](#buckets)         | Merged    | Required | cannot be null | [Distributor node configuration](definition-properties-buckets.md "https://joystream.org/schemas/argus/config#/properties/buckets")         |
-| [workerId](#workerid)       | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")       |
+| [publicApi](#publicapi)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-publicapi.md "https://joystream.org/schemas/argus/config#/properties/publicApi")     |
+| [operatorApi](#operatorapi) | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-operatorapi.md "https://joystream.org/schemas/argus/config#/properties/operatorApi") |
+| [keys](#keys)               | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")               |
+| [buckets](#buckets)         | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-bucket-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets")      |
+| [workerId](#workerid)       | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")       |
 
 ## id
 
@@ -129,27 +130,41 @@ Specifies how often periodic tasks (for example cache cleanup) are executed by t
 
 `object` ([Details](definition-properties-intervals.md))
 
-## port
+## publicApi
 
-Distributor node http api port
+Public api configuration
 
-`port`
+`publicApi`
 
 *   is required
 
-*   Type: `integer`
+*   Type: `object` ([Details](definition-properties-publicapi.md))
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-port.md "https://joystream.org/schemas/argus/config#/properties/port")
+*   defined in: [Distributor node configuration](definition-properties-publicapi.md "https://joystream.org/schemas/argus/config#/properties/publicApi")
 
-### port Type
+### publicApi Type
 
-`integer`
+`object` ([Details](definition-properties-publicapi.md))
 
-### port Constraints
+## operatorApi
 
-**minimum**: the value of this number must greater than or equal to: `0`
+Operator api configuration
+
+`operatorApi`
+
+*   is optional
+
+*   Type: `object` ([Details](definition-properties-operatorapi.md))
+
+*   cannot be null
+
+*   defined in: [Distributor node configuration](definition-properties-operatorapi.md "https://joystream.org/schemas/argus/config#/properties/operatorApi")
+
+### operatorApi Type
+
+`object` ([Details](definition-properties-operatorapi.md))
 
 ## keys
 
@@ -157,7 +172,7 @@ Specifies the keys available within distributor node CLI.
 
 `keys`
 
-*   is required
+*   is optional
 
 *   Type: an array of merged types ([Details](definition-properties-keys-items.md))
 
@@ -175,27 +190,27 @@ an array of merged types ([Details](definition-properties-keys-items.md))
 
 ## buckets
 
-Specifies the buckets distributed by the node
+Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.
 
 `buckets`
 
-*   is required
+*   is optional
 
-*   Type: merged type ([Details](definition-properties-buckets.md))
+*   Type: `integer[]`
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-buckets.md "https://joystream.org/schemas/argus/config#/properties/buckets")
+*   defined in: [Distributor node configuration](definition-properties-bucket-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets")
 
 ### buckets Type
 
-merged type ([Details](definition-properties-buckets.md))
+`integer[]`
 
-one (and only one) of
+### buckets Constraints
 
-*   [Bucket ids](definition-properties-buckets-oneof-bucket-ids.md "check type definition")
+**minimum number of items**: the minimum number of items for this array is: `1`
 
-*   [All buckets](definition-properties-buckets-oneof-all-buckets.md "check type definition")
+**unique items**: all items in this array must be unique. Duplicates are not allowed.
 
 ## workerId
 
@@ -203,7 +218,7 @@ ID of the node operator (distribution working group worker)
 
 `workerId`
 
-*   is required
+*   is optional
 
 *   Type: `integer`
 

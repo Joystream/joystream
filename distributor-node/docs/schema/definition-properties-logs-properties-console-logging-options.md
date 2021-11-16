@@ -1,12 +1,12 @@
-## 0 Type
+## console Type
 
-`object` ([Details](definition-properties-logs-properties-console-oneof-0.md))
+`object` ([Console logging options](definition-properties-logs-properties-console-logging-options.md))
 
-# 0 Properties
+# console Properties
 
 | Property        | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                         |
 | :-------------- | :------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [level](#level) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-file-oneof-0-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/console/oneOf/0/properties/level") |
+| [level](#level) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-file-logging-options-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/console/properties/level") |
 
 ## level
 
@@ -20,7 +20,7 @@ Minimum level of logs sent to this output
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-logs-properties-file-oneof-0-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/console/oneOf/0/properties/level")
+*   defined in: [Distributor node configuration](definition-properties-logs-properties-file-logging-options-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/console/properties/level")
 
 ### level Type
 

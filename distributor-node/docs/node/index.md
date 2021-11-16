@@ -1,5 +1,7 @@
 <!-- AUTO-GENERATED-CONTENT:START (TOC:firsth1=true) -->
-- [The API](#the-api)
+- [API](#api)
+  - [Public API](#public-api)
+  - [Operator API](#operator-api)
   - [Requesting assets](#requesting-assets)
     - [Scenario 1 (cache hit)](#scenario-1-cache-hit)
     - [Scenario 2 (pending)](#scenario-2-pending)
@@ -32,13 +34,26 @@
 
 <a name="the-api"></a>
 
-# The API
+# API
 
-The Distributor Node exposes an HTTP api implemented with [ExpressJS](https://expressjs.com/).
+The Distributor Node, depending on the configuration, can expose either one or two HTTP APIs, both implemented with [ExpressJS](https://expressjs.com/).
 
-The api is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/openapi.yml](../../src/api-spec/openapi.yml)_
+## Public API
 
-**Current, detailed api documentation can be found [here](../api/index.md)**
+Public API is enabled by default and can be used to retrieve assets from the node as well as some basic information about its current status.
+
+Public API is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/public.yml](../../src/api-spec/public.yml)_
+
+**Full public API documentation can be found [here](../api/public/index.md)**
+
+## Operator API
+
+Secured operator API can be enabled with [`config.operatorApi`](../schema/definition-properties-operatorapi.md).
+Operator API makes it possible to remotely execute some operations on a running node (ie. changing supported buckets).
+
+Operator API is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/operator.yml](../../src/api-spec/operator.yml)_
+
+**Full operator API documentation can be found [here](../api/operator/index.md)**
 
 <a name="requesting-assets"></a>
 
