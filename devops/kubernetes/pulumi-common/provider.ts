@@ -1,24 +1,15 @@
 import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 
-export function getProvider(clusterStackRef: pulumi.StackReference): k8s.Provider {
-  let provider: k8s.Provider
-  let kubeconfig: pulumi.Output<any>
+export async function getProvider(clusterStackRef: pulumi.StackReference): Promise<k8s.Provider> {
+  const kubeconfig = await clusterStackRef.getOutputValue('kubeconfig')
+  const platform = await clusterStackRef.getOutputValue('platform')
 
-  const platform = pulumi.interpolate`${clusterStackRef.requireOutput('platform')}`
-
-  if (platform === pulumi.interpolate`aws`) {
-    kubeconfig = clusterStackRef.requireOutput('kubeconfig')
-    provider = new k8s.Provider('aws', { kubeconfig })
-  } else {
-    provider = new k8s.Provider('local', {})
-  }
-  return provider
+  // Create the k8s provider with the kubeconfig.
+  return new k8s.Provider(platform, { kubeconfig })
 }
 
-export function isPlatformMinikube(clusterStackRef: pulumi.StackReference): pulumi.OutputInstance<boolean> {
-  const isMinikube = clusterStackRef.requireOutput('platform').apply((platform) => {
-    return platform === 'minikube' ? true : false
-  })
-  return isMinikube
+export async function isPlatformMinikube(clusterStackRef: pulumi.StackReference): Promise<boolean> {
+  const platform = await clusterStackRef.getOutputValue('platform')
+  return platform === 'minikube' ? true : false
 }

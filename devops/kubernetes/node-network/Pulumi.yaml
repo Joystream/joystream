@@ -3,13 +3,6 @@ runtime: nodejs
 description: Kubernetes IaC for Joystream RPC and Validator nodes
 template:
   config:
-    aws:profile:
-      default: joystream-user
-    aws:region:
-      default: us-east-1
-    isMinikube:
-      description: Whether you are deploying to minikube
-      default: false
     numberOfValidators:
       description: Number of validators as starting nodes
       default: 2
