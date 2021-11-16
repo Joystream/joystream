@@ -13,7 +13,7 @@ mkdir -p ${DATA_PATH}
 # Will be the source of funds for all new accounts that are created in the tests.
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
 export SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(subkey inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+SUDO_ACCOUNT=$(docker run -it --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 export TREASURY_ACCOUNT_URI=${SUDO_ACCOUNT_URI}
 
 # The docker image tag to use for joystream/node
@@ -67,6 +67,7 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+    # docker-compose -f ../../docker-compose.yml down -v
 }
 
 trap cleanup EXIT
