@@ -43,7 +43,7 @@ After cloning this repo, from this working directory, run these commands:
     --plaintext platform=aws
    ```
 
-   If deploying on minikube
+   If deploying on minikube:
 
    ```bash
    $ pulumi config set-all --plaintext platform=minikube

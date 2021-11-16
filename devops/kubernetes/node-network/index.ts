@@ -7,12 +7,11 @@ import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
 
 const config = new pulumi.Config()
-const isMinikube = isPlatformMinikube()
 
-export let kubeconfig: pulumi.Output<any>
-
-// Get's the Cluster provider based on clusterStackRef platform config
-let provider: k8s.Provider = getProvider()
+// Get's the Cluster provider and platform based on clusterStackRef platform config
+const clusterStackRef = new pulumi.StackReference(config.require('clusterStackRef'))
+const isMinikube = isPlatformMinikube(clusterStackRef)
+let provider: k8s.Provider = getProvider(clusterStackRef)
 
 const resourceOptions = { provider: provider }
 
