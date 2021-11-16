@@ -22,6 +22,10 @@ export interface paths {
 
 export interface components {
   schemas: {
+    'SetConfigBody': {
+      /** Config setting path (ie. limits.storage) */
+      'path'?: string
+    }
     'ErrorResponse': {
       'type'?: string
       'message': string

@@ -44,7 +44,8 @@
     "js-image-generator": "^1.0.3",
     "url-join": "^4.0.1",
     "@types/url-join": "^4.0.1",
-    "winston-daily-rotate-file": "^4.5.5"
+    "winston-daily-rotate-file": "^4.5.5",
+    "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
@@ -108,6 +109,9 @@
       "operator": {
         "description": "Commands for performing node operator (Distribution Working Group worker) on-chain duties (like accepting bucket invitations, setting node metadata)"
       },
+      "node": {
+        "description": "Commands for interacting with a running distributor node through OperatorApi"
+      },
       "dev": {
         "description":"Developer utility commands"
       }
@@ -125,13 +129,15 @@
     "version": "generate:docs:cli && git add docs/cli/*",
     "generate:types:json-schema": "yarn ts-node ./src/schemas/scripts/generateTypes.ts",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/networking/query-node/codegen.yml",
-    "generate:types:openapi": "yarn openapi-typescript ./src/api-spec/openapi.yml -o ./src/types/generated/OpenApi.ts -c ../prettierrc.js",
-    "generate:types:all": "yarn generate:types:json-schema && yarn generate:types:graphql && yarn generate:types:openapi",
+    "generate:types:public-api": "yarn openapi-typescript ./src/api-spec/public.yml -o ./src/types/generated/PublicApi.ts -c ../prettierrc.js",
+    "generate:types:operator-api": "yarn openapi-typescript ./src/api-spec/operator.yml -o ./src/types/generated/OperatorApi.ts -c ../prettierrc.js",
+    "generate:types:api": "yarn generate:types:public-api && yarn generate:types:operator-api",
+    "generate:types:all": "yarn generate:types:json-schema && yarn generate:types:graphql && yarn generate:types:api",
     "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../storage-node-v2/src/api-spec/openapi.yaml -g typescript-axios -o ./src/services/networking/storage-node/generated",
     "generate:api:all": "yarn generate:api:storage-node",
     "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./docs/commands",
     "generate:docs:config": "yarn ts-node --transpile-only ./src/schemas/scripts/generateConfigDoc.ts",
-    "generate:docs:api": "yarn widdershins ./src/api-spec/openapi.yml --language_tabs javascript:JavaScript shell:Shell -o ./docs/api/index.md -u ./docs/api/templates",
+    "generate:docs:public-api": "yarn widdershins ./src/api-spec/public.yml --language_tabs javascript:JavaScript shell:Shell -o ./docs/api/index.md -u ./docs/api/templates",
     "generate:docs:toc": "yarn md-magic --path ./docs/**/*.md",
     "generate:docs:all": "yarn generate:docs:cli && yarn generate:docs:config && yarn generate:docs:api && yarn generate:docs:toc",
     "generate:all": "yarn generate:types:all && yarn generate:api:all && yarn generate:docs:all",

@@ -1,31 +1,37 @@
-import { ReadonlyConfig } from '../types'
+import { Config } from '../types'
 import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
 import { ContentService } from '../services/content/ContentService'
-import { HttpApiService } from '../services/httpApi/HttpApiService'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
 import { AppIntervals } from '../types/app'
+import { PublicApiService } from '../services/httpApi/PublicApiService'
+import { OperatorApiService } from '../services/httpApi/OperatorApiService'
 
 export class App {
-  private config: ReadonlyConfig
+  private config: Config
   private content: ContentService
   private stateCache: StateCacheService
   private networking: NetworkingService
-  private httpApi: HttpApiService
+  private publicApi: PublicApiService
+  private operatorApi: OperatorApiService | undefined
   private logging: LoggingService
   private logger: Logger
   private intervals: AppIntervals | undefined
+  private isStopping = false
 
-  constructor(config: ReadonlyConfig) {
+  constructor(config: Config) {
     this.config = config
     this.logging = LoggingService.withAppConfig(config)
     this.stateCache = new StateCacheService(config, this.logging)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)
     this.content = new ContentService(config, this.logging, this.networking, this.stateCache)
-    this.httpApi = new HttpApiService(config, this.stateCache, this.content, this.logging, this.networking)
+    this.publicApi = new PublicApiService(config, this.stateCache, this.content, this.logging, this.networking)
+    if (this.config.operatorApi) {
+      this.operatorApi = new OperatorApiService(config, this, this.logging, this.publicApi)
+    }
     this.logger = this.logging.createLogger('App')
   }
 
@@ -70,6 +76,8 @@ export class App {
         throw new Error(`${dirInfo} is not writable`)
       }
     })
+
+    // TODO: Logging dir if specified
   }
 
   public async start(): Promise<void> {
@@ -79,12 +87,28 @@ export class App {
       this.stateCache.load()
       await this.content.startupInit()
       this.setIntervals()
-      this.httpApi.start()
+      this.publicApi.start()
+      this.operatorApi?.start()
     } catch (err) {
       this.logger.error('Node initialization failed!', { err })
       process.exit(-1)
     }
     nodeCleanup(this.exitHandler.bind(this))
+  }
+
+  public stop(timeoutSec?: number): boolean {
+    if (this.isStopping) {
+      return false
+    }
+    this.logger.info(`Stopping the app${timeoutSec ? ` in ${timeoutSec} sec...` : ''}`)
+    this.isStopping = true
+    if (timeoutSec) {
+      setTimeout(() => process.kill(process.pid, 'SIGINT'), timeoutSec * 1000)
+    } else {
+      process.kill(process.pid, 'SIGINT')
+    }
+
+    return true
   }
 
   private async exitGracefully(): Promise<void> {
@@ -125,8 +149,9 @@ export class App {
     this.logger.info('Exiting...')
     // Clear intervals
     this.clearIntervals()
-    // Stop the http api
-    this.httpApi.stop()
+    // Stop the http apis
+    this.publicApi.stop()
+    this.operatorApi?.stop()
     // Save cache
     try {
       this.stateCache.saveSync()

@@ -3,11 +3,18 @@ import { Logger } from 'winston'
 import send from 'send'
 import { StateCacheService } from '../../cache/StateCacheService'
 import { NetworkingService } from '../../networking'
-import { AssetRouteParams, BucketsResponse, ErrorResponse, StatusResponse } from '../../../types/api'
+import {
+  AssetRouteParams,
+  BucketsResponse,
+  ErrorResponse,
+  StatusResponse,
+  DataObjectData,
+  ObjectStatusType,
+  ReadonlyConfig,
+} from '../../../types'
 import { LoggingService } from '../../logging'
 import { ContentService, DEFAULT_CONTENT_TYPE } from '../../content/ContentService'
 import proxy from 'express-http-proxy'
-import { DataObjectData, ObjectStatusType, ReadonlyConfig } from '../../../types'
 import { PendingDownloadStatusDownloading, PendingDownloadStatusType } from '../../networking/PendingDownload'
 import urljoin from 'url-join'
 

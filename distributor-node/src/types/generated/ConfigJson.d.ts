@@ -5,6 +5,7 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type SwitchOff = 'off'
 /**
  * List of distribution bucket ids
  */
@@ -52,54 +53,9 @@ export interface DistributorNodeConfiguration {
    * Specifies the logging configuration
    */
   logs?: {
-    file?:
-      | {
-          /**
-           * Minimum level of logs sent to this output
-           */
-          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-          /**
-           * Path where the logs will be stored (absolute or relative to config file)
-           */
-          path: string
-          /**
-           * Maximum number of log files to store
-           */
-          maxFiles?: number
-          /**
-           * Maximum size of a single log file in bytes
-           */
-          maxSize?: number
-          /**
-           * The frequency of creating new log files (regardless of maxSize)
-           */
-          frequency?: 'yearly' | 'monthly' | 'daily' | 'hourly'
-          /**
-           * Whether to archive old logs
-           */
-          archive?: boolean
-        }
-      | 'off'
-    console?:
-      | {
-          /**
-           * Minimum level of logs sent to this output
-           */
-          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-        }
-      | 'off'
-    elastic?:
-      | {
-          /**
-           * Minimum level of logs sent to this output
-           */
-          level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-          /**
-           * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
-           */
-          endpoint: string
-        }
-      | 'off'
+    file?: FileLoggingOptions | SwitchOff
+    console?: ConsoleLoggingOptions | SwitchOff
+    elastic?: ElasticsearchLoggingOptions | SwitchOff
   }
   /**
    * Specifies node limits w.r.t. storage, outbound connections etc.
@@ -152,9 +108,27 @@ export interface DistributorNodeConfiguration {
     cacheCleanup: number
   }
   /**
-   * Distributor node http api port
+   * Public api configuration
    */
-  port: number
+  publicApi: {
+    /**
+     * Distributor node public api port
+     */
+    port: number
+  }
+  /**
+   * Operator api configuration
+   */
+  operatorApi?: {
+    /**
+     * Distributor node operator api port
+     */
+    port: number
+    /**
+     * HMAC (HS256) secret key used for JWT authorization
+     */
+    hmacSecret: string
+  }
   /**
    * Specifies the keys available within distributor node CLI.
    */
@@ -167,6 +141,48 @@ export interface DistributorNodeConfiguration {
    * ID of the node operator (distribution working group worker)
    */
   workerId: number
+}
+export interface FileLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+  /**
+   * Path where the logs will be stored (absolute or relative to config file)
+   */
+  path: string
+  /**
+   * Maximum number of log files to store
+   */
+  maxFiles?: number
+  /**
+   * Maximum size of a single log file in bytes
+   */
+  maxSize?: number
+  /**
+   * The frequency of creating new log files (regardless of maxSize)
+   */
+  frequency?: 'yearly' | 'monthly' | 'daily' | 'hourly'
+  /**
+   * Whether to archive old logs
+   */
+  archive?: boolean
+}
+export interface ConsoleLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+}
+export interface ElasticsearchLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+  /**
+   * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
+   */
+  endpoint: string
 }
 /**
  * Keypair's substrate uri (for example: //Alice)

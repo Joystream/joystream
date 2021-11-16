@@ -18,13 +18,11 @@ const offSwitch: JSONSchema4 = {
   enum: ['off'],
 }
 
-export const configSchema: JSONSchema4 = {
+export const configSchema: JSONSchema4 = objectSchema({
   '$id': 'https://joystream.org/schemas/argus/config',
   title: 'Distributor node configuration',
   description: 'Configuration schema for distirubtor CLI and node',
-  type: 'object',
-  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits', 'intervals'],
-  additionalProperties: false,
+  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'workerId', 'limits', 'intervals', 'publicApi'],
   properties: {
     id: {
       type: 'string',
@@ -207,7 +205,21 @@ export const configSchema: JSONSchema4 = {
       },
       required: ['saveCacheState', 'checkStorageNodeResponseTimes', 'cacheCleanup'],
     }),
-    port: { description: 'Distributor node http api port', type: 'integer', minimum: 0 },
+    publicApi: objectSchema({
+      description: 'Public api configuration',
+      properties: {
+        port: { description: 'Distributor node public api port', type: 'integer', minimum: 0 },
+      },
+      required: ['port'],
+    }),
+    operatorApi: objectSchema({
+      description: 'Operator api configuration',
+      properties: {
+        port: { description: 'Distributor node operator api port', type: 'integer', minimum: 0 },
+        hmacSecret: { description: 'HMAC (HS256) secret key used for JWT authorization', type: 'string' },
+      },
+      required: ['port', 'hmacSecret'],
+    }),
     keys: {
       description: 'Specifies the keys available within distributor node CLI.',
       type: 'array',
@@ -267,6 +279,6 @@ export const configSchema: JSONSchema4 = {
       minimum: 0,
     },
   },
-}
+})
 
 export default configSchema

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Distributor node API
-  description: Distributor node API
+  title: Distributor node public API
+  description: Distributor node public API
   contact:
     email: info@joystream.org
   license:
@@ -9,22 +9,16 @@ info:
     url: https://spdx.org/licenses/GPL-3.0-only.html
   version: 0.1.0
 externalDocs:
-  description: Distributor node API
+  description: Distributor node public API
   url: https://github.com/Joystream/joystream/issues/2224
 servers:
   - url: http://localhost:3334/api/v1/
-
-tags:
-  - name: public
-    description: Public distributor node API
 
 paths:
   /status:
     get:
       operationId: public.status
       description: Returns json object describing current node status.
-      tags:
-        - public
       responses:
         200:
           description: OK
@@ -38,8 +32,6 @@ paths:
     get:
       operationId: public.buckets
       description: Returns list of distributed buckets
-      tags:
-        - public
       responses:
         200:
           description: OK
@@ -53,8 +45,6 @@ paths:
     head:
       operationId: public.assetHead
       description: Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
-      tags:
-        - public
       parameters:
         - $ref: '#/components/parameters/ObjectId'
       responses:
@@ -72,8 +62,6 @@ paths:
     get:
       operationId: public.asset
       description: Returns a media file.
-      tags:
-        - public
       parameters:
         - $ref: '#/components/parameters/ObjectId'
       responses:
@@ -159,6 +147,13 @@ components:
         type: string
         enum: ['external', 'local']
   schemas:
+    SetConfigBody:
+      type: object
+      properties:
+        path:
+          description: Config setting path (ie. limits.storage)
+          type: string
+
     ErrorResponse:
       type: object
       required:

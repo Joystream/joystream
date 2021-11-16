@@ -1,0 +1,123 @@
+openapi: 3.0.3
+info:
+  title: Distributor node operator API
+  description: Distributor node operator API
+  contact:
+    email: info@joystream.org
+  license:
+    name: GPL-3.0-only
+    url: https://spdx.org/licenses/GPL-3.0-only.html
+  version: 0.1.0
+servers:
+  - url: http://localhost:3335/api/v1/
+
+paths:
+  /stop-api:
+    post:
+      operationId: operator.stopApi
+      description: Turns off the public api.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Not authorized
+        409:
+          description: Already stopped
+        500:
+          description: Unexpected server error
+  /start-api:
+    post:
+      operationId: operator.startApi
+      description: Turns on the public api.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Not authorized
+        409:
+          description: Already started
+        500:
+          description: Unexpected server error
+  /shutdown:
+    post:
+      operationId: operator.shutdown
+      description: Shuts down the node.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Not authorized
+        409:
+          description: Already shutting down
+        500:
+          description: Unexpected server error
+  /set-worker:
+    post:
+      operationId: operator.setWorker
+      description: Updates the operator worker id.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetWorkerOperation'
+      responses:
+        200:
+          description: OK
+        401:
+          description: Not authorized
+        500:
+          description: Unexpected server error
+  /set-buckets:
+    post:
+      operationId: operator.setBuckets
+      description: Updates buckets supported by the node.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetBucketsOperation'
+      responses:
+        200:
+          description: OK
+        401:
+          description: Not authorized
+        500:
+          description: Unexpected server error
+
+components:
+  securitySchemes:
+    OperatorAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "JWT signed with HMAC (HS256) secret key specified in distributor node's `config.operator.hmacSecret`.
+        The payload should include:
+        - `reqBody` - content of the request body
+        - `reqUrl` - request url (only pathname + query string, without origin. For example: `/api/v1/set-buckets`)"
+  schemas:
+    SetWorkerOperation:
+      type: object
+      required:
+        - workerId
+      properties:
+        workerId:
+          type: integer
+          minimum: 0
+    SetBucketsOperation:
+      type: object
+      required:
+        - buckets
+      properties:
+        buckets:
+          oneOf:
+            - type: string
+              enum: ['all']
+              description: All buckets assigned to configured workerId.
+            - type: array
+              minItems: 1
+              items:
+                type: integer
+                minimum: 0
+
+security:
+  - OperatorAuth: []
+

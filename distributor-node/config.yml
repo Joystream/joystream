@@ -27,7 +27,11 @@ intervals:
   saveCacheState: 60
   checkStorageNodeResponseTimes: 60
   cacheCleanup: 60
-port: 3334
+publicApi:
+  port: 3334
+operatorApi:
+  port: 3335
+  hmacSecret: this-is-not-so-secret
 keys:
   - suri: //Alice
   # - mnemonic: "escape naive annual throw tragic achieve grunt verify cram note harvest problem"
