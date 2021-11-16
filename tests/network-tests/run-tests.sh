@@ -65,11 +65,18 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+    # docker-compose -f ../../docker-compose.yml down -v
 }
 
 trap cleanup EXIT
 
+sleep 3
+
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
+# Start any other services we want
+# docker-compose -f ../../docker-compose.yml up -d colossus-1
+
+# Execute tests
 ./run-test-scenario.sh $1

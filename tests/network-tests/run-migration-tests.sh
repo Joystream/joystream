@@ -68,9 +68,9 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+    # docker-compose -f ../../docker-compose.yml down -v
     rm tests/network-tests/assets/TestChannel__rejectedContent.json
     rm tests/network-tests/assets/TestVideo__rejectedContent.json
-    
 }
 
 function pre_migration_hook() {
@@ -100,9 +100,9 @@ trap cleanup EXIT
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
-    # pre migration hook
-    pre_migration_hook
-    
+  # pre migration hook
+  pre_migration_hook
+
   # Copy new runtime wasm file from target joystream/node image
   echo "Extracting wasm blob from target joystream/node image."
   id=`docker create joystream/node:${TARGET_RUNTIME}`
