@@ -55,16 +55,12 @@ docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
 
-NETWORK_ARG=
-if [ "$ATTACH_TO_NETWORK" != "" ]; then
-  NETWORK_ARG="--network ${ATTACH_TO_NETWORK}"
-fi
-
-echo "starting joystream-node container"
 # Start a chain with generated chain spec
-# Add "-l ws=trace,ws::handler=info" to get websocket trace logs
-CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 ${NETWORK_ARG} --name joystream-node joystream/node:${RUNTIME} \
-  --validator --alice --unsafe-ws-external --rpc-cors=all -l runtime \
+export JOYSTREAM_NODE_TAG=${RUNTIME}
+CONTAINER_ID=`docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/data --name joystream-node \
+  -p 9944:9944 -p 9933:9933 joystream-node \
+  --alice --validator --unsafe-ws-external --unsafe-rpc-external \
+  --rpc-methods Unsafe --rpc-cors=all -l runtime \
   --chain /data/chain-spec-raw.json`
 
 function cleanup() {
