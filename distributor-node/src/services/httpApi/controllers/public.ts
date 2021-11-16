@@ -296,7 +296,7 @@ export class PublicApiController {
       .json(
         this.config.buckets
           ? { bucketIds: [...this.config.buckets] }
-          : this.config.workerId
+          : typeof this.config.workerId === 'number'
           ? { allByWorkerId: this.config.workerId }
           : { bucketIds: [] }
       )

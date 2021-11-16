@@ -137,7 +137,7 @@ export class NetworkingService {
       exists = true
       if (!this.config.buckets) {
         const distributors = this.getDataObjectActiveDistributorsSet(details)
-        isSupported = this.config.workerId ? distributors.has(this.config.workerId) : false
+        isSupported = typeof this.config.workerId === 'number' ? distributors.has(this.config.workerId) : false
       } else {
         const supportedBucketIds = this.config.buckets.map((id) => id.toString())
         isSupported = details.storageBag.distirbutionAssignments.some((a) =>
@@ -360,7 +360,7 @@ export class NetworkingService {
   async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
     const data = this.config.buckets
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
-      : this.config.workerId
+      : typeof this.config.workerId === 'number'
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
       : []
     const objectsData = new Map<string, DataObjectData>()
