@@ -16,6 +16,7 @@ TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 # Prevent joystream cli from prompting
 export AUTO_CONFIRM=true
 
+# Create chainspec with Alice (sudo) as member so we can use her in joystream-cli
 CONTAINER_ID=`MAKE_SUDO_MEMBER=true ./run-test-node-docker.sh`
 
 function cleanup() {
