@@ -135,8 +135,8 @@ jobs:
       - name: Execute network tests
         run: tests/network-tests/run-tests.sh full
 
-  query_node:
-    name: Query Node Integration Tests
+  new_chain_setup:
+    name: Initialize new chain
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -165,7 +165,5 @@ jobs:
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
-        run: |
-          docker-compose up -d joystream-node
-          query-node/run-tests.sh
+        run: tests/network-tests/test-setup-new-chain.sh
 

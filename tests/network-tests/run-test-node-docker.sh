@@ -12,9 +12,8 @@ mkdir -p ${DATA_PATH}
 # Initial account balance for sudo account
 # Will be the source of funds for all new accounts that are created in the tests.
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
-export SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
+SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
 SUDO_ACCOUNT=$(docker run -it --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
-export TREASURY_ACCOUNT_URI=${SUDO_ACCOUNT_URI}
 
 # The docker image tag to use for joystream/node
 RUNTIME=${RUNTIME:=latest}
