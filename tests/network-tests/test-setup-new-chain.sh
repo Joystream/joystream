@@ -19,5 +19,4 @@ sleep 3
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
 # Init chain state
-echo 'executing scenario'
 ./run-test-scenario.sh setup-new-chain

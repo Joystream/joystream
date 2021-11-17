@@ -36,8 +36,8 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 # First scenario..
 ./run-test-scenario.sh $1
 
-# In between pickup generated keys from first scenario or bootstrap scene will all well known
-# keys for roles and members..
+# In between pickup generated keys from first scenario or bootstrap scene with all well known
+# keys for workers and members..
 
 # Second scenario..
 # ./run-test-scenario.sh $2
