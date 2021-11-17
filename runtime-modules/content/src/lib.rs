@@ -167,8 +167,6 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId> {
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
-    /// Account for withdrawing deletion prize funds
-    deletion_prize_source_account_id: AccountId,
     /// collaborator set
     collaborators: BTreeSet<MemberId>,
 }
@@ -684,8 +682,6 @@ decl_module! {
                 num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                // setting the channel owner account as the prize funds account
-                deletion_prize_source_account_id: sender,
                 collaborators: params.collaborators.clone(),
             };
 
@@ -703,6 +699,8 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -739,12 +737,12 @@ decl_module! {
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
-                    &channel.deletion_prize_source_account_id
+                    &sender,
                 )?;
             }
 
             // remove eassets from storage
-            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &sender)?;
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -760,6 +758,8 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
+
+            let sender = ensure_signed(origin.clone())?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -795,13 +795,13 @@ decl_module! {
                 Self::remove_assets_from_storage(
                     &assets_to_remove,
                     &channel_id,
-                    &channel.deletion_prize_source_account_id
+                    &sender,
                 )?;
 
                 // delete channel dynamic bag
                 Storage::<T>::delete_dynamic_bag(
-                    channel.deletion_prize_source_account_id,
-                    dyn_bag
+                    sender,
+                    dyn_bag,
                 )?;
             }
 
@@ -943,6 +943,7 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -965,7 +966,7 @@ decl_module! {
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
-                    &channel.deletion_prize_source_account_id
+                    &sender,
                 )?;
             }
 
@@ -1001,6 +1002,8 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
+
+            let sender = ensure_signed(origin.clone())?;
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1019,14 +1022,14 @@ decl_module! {
             //
 
             // remove specified assets from channel bag in storage
-            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &sender)?;
 
             // atomically upload to storage and return the # of uploaded assets
             if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
-                    &channel.deletion_prize_source_account_id
+                    &sender,
                 )?;
             }
 
@@ -1040,6 +1043,8 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
+
+           let sender = ensure_signed(origin.clone())?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1062,7 +1067,7 @@ decl_module! {
             //
 
             // remove specified assets from channel bag in storage
-            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &channel.deletion_prize_source_account_id)?;
+            Self::remove_assets_from_storage(&assets_to_remove, &channel_id, &sender)?;
 
             // Remove video
             VideoById::<T>::remove(video_id);

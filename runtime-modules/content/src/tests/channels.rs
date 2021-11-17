@@ -390,7 +390,6 @@ fn curator_owned_channels() {
                     owner: ChannelOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
                     is_censored: false,
                     reward_account: None,
-                    deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                     num_videos: 0,
                     collaborators: BTreeSet::new(),
                 },
@@ -522,7 +521,7 @@ fn non_authorized_collaborators_cannot_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
         // create channel
         create_channel_mock(
@@ -597,7 +596,7 @@ fn authorized_collaborators_can_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
         // create channel
         create_channel_mock(

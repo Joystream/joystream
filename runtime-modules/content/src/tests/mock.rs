@@ -471,7 +471,6 @@ pub fn create_channel_mock(
                     owner: owner,
                     is_censored: false,
                     reward_account: params.reward_account.clone(),
-                    deletion_prize_source_account_id: sender,
 
                     collaborators: params.collaborators.clone(),
                     num_videos: 0,
@@ -513,7 +512,6 @@ pub fn update_channel_mock(
                     reward_account: params
                         .reward_account
                         .map_or_else(|| channel_pre.reward_account.clone(), |account| account),
-                    deletion_prize_source_account_id: channel_pre.deletion_prize_source_account_id,
                     collaborators: params
                         .collaborators
                         .clone()
