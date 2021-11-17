@@ -674,6 +674,9 @@ decl_module! {
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
+           // ensure collaborator member ids are valid
+            Self::validate_collaborator_set(&params.collaborators)?;
+
             // channel creation
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
@@ -720,6 +723,10 @@ decl_module! {
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_not_a_collaborator::<T>(&actor)?;
+
+                // ensure collaborator member ids are valid
+                Self::validate_collaborator_set(new_collabs)?;
+
                 channel.collaborators = new_collabs.clone();
             }
 
@@ -1423,6 +1430,15 @@ impl<T: Trait> Module<T> {
                 assets.clone(),
             )?;
         }
+        Ok(())
+    }
+
+    fn validate_collaborator_set(collaborators: &BTreeSet<T::MemberId>) -> DispatchResult {
+        // check if all members are valid
+        let res = collaborators.iter().fold(true, |acc, member_id| {
+            acc && <T as ContentActorAuthenticator>::validate_member_id(member_id)
+        });
+        ensure!(res, Error::<T>::CollaboratorIsNotValidMember);
         Ok(())
     }
 }

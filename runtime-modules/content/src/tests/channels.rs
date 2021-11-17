@@ -442,7 +442,7 @@ fn invalid_member_cannot_create_channel() {
         // Not a member
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
@@ -474,7 +474,7 @@ fn invalid_member_cannot_update_channel() {
 
         update_channel_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
@@ -508,7 +508,7 @@ fn invalid_member_cannot_delete_channel() {
 
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             0u64,
             Err(Error::<Test>::MemberAuthFailed.into()),

@@ -31,6 +31,7 @@ pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
+pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
@@ -47,8 +48,8 @@ pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
 
 // members that act as collaborators
-pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 20;
-pub const COLLABORATOR_MEMBER_ID: MemberId = 21;
+pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 8;
+pub const COLLABORATOR_MEMBER_ID: MemberId = 9;
 
 /// Constants
 // initial balancer for an account
@@ -169,6 +170,10 @@ impl membership::Trait for Test {
 impl ContentActorAuthenticator for Test {
     type CuratorId = u64;
     type CuratorGroupId = u64;
+
+    fn validate_member_id(member_id: &Self::MemberId) -> bool {
+        *member_id < MEMBERS_COUNT
+    }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();

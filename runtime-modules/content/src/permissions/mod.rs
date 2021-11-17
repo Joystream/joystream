@@ -51,6 +51,9 @@ pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
 
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
+
+    /// Ensure member id is valid
+    fn validate_member_id(member_id: &Self::MemberId) -> bool;
 }
 
 pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
