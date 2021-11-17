@@ -169,8 +169,9 @@ services:
       - .env
     environment:
       - DB_HOST=db
+      - WARTHOG_APP_PORT=${GRAPHQL_SERVER_PORT}
     ports:
-      - '127.0.0.1:8081:${WARTHOG_APP_PORT}'
+      - '127.0.0.1:${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}'
     depends_on:
       - db
     volumes:
@@ -236,11 +237,11 @@ services:
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
-      - WARTHOG_APP_PORT=${WARTHOG_APP_PORT}
-      - PORT=${WARTHOG_APP_PORT}
+      - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
+      - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - DEBUG=*
     ports:
-      - '127.0.0.1:4000:${WARTHOG_APP_PORT}'
+      - '127.0.0.1:${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}'
     depends_on:
       - db
       - redis
