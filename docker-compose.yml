@@ -159,6 +159,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
+      PGPORT: ${DB_PORT}
 
   graphql-server:
     image: node:14
