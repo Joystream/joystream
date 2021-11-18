@@ -774,7 +774,6 @@
         "num_videos": "u64",
         "is_censored": "bool",
         "reward_account": "Option<GenericAccountId>",
-        "deletion_prize_source_account_id": "GenericAccountId",
         "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelOwner": {
