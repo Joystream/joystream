@@ -22,7 +22,5 @@ RUN \
   yarn --frozen-lockfile --production &&\
   yarn cache clean
 
-ENV CONFIG_PATH ./distributor-node/config/docker/config.docker.yml
-
 ENTRYPOINT ["yarn", "joystream-distributor"]
 CMD ["start"]
