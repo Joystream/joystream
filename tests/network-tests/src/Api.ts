@@ -226,9 +226,7 @@ export class Api {
   // are created through the membership fixture this should not happen.
   public async getMemberId(address: string): Promise<MemberId> {
     const ids = await this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
-    if (ids.length > 1) {
-      throw new Error('More than one member with same controller account was detected')
-    }
+    assert.equal(ids.length, 1, 'Only a single member with same controller account is allowed')
     return ids[0]
   }
 
