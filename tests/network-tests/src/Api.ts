@@ -1897,13 +1897,15 @@ export class Api {
 
     const memberController = await this.getMemberControllerAccount(worker.member_id.toNumber())
     // there cannot be a worker associated with member that does not exist
-    assert(memberController, 'Member controller not found')
+    if (!memberController) {
+      throw new Error('Member controller not found')
+    }
 
     // Expect membercontroller key is already added to keyring
     // Is is responsibility of caller to ensure this is the case!
 
     const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
-    return this.makeSudoAsCall(memberController!, updateRoleAccountCall)
+    return this.makeSudoAsCall(memberController, updateRoleAccountCall)
   }
 
   async assignWorkerWellknownAccount(group: WorkingGroups, workerId: WorkerId): Promise<ISubmittableResult> {
