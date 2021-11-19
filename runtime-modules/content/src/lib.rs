@@ -656,6 +656,9 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
+            // ensure collaborator member ids are valid
+            Self::validate_collaborator_set(&params.collaborators)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -672,8 +675,6 @@ decl_module! {
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
-           // ensure collaborator member ids are valid
-            Self::validate_collaborator_set(&params.collaborators)?;
 
             // channel creation
             let channel: Channel<T> = ChannelRecord {
