@@ -21,7 +21,7 @@ function writeOutput(api: Api, miniSecret: string) {
   const outputFilename = 'output.json'
   console.error('Writing generated account to', outputFilename)
   // account to key ids
-  const accounts = api.getAllgeneratedAccounts()
+  const accounts = api.getAllGeneratedAccounts()
 
   // first and last key id used to generate keys in this scenario
   const keyIds = api.keyGenInfo()

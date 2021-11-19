@@ -171,7 +171,7 @@ export class Api {
     return this.factory.keyGenInfo()
   }
 
-  public getAllgeneratedAccounts(): { [k: string]: number } {
+  public getAllGeneratedAccounts(): { [k: string]: number } {
     return this.factory.getAllGeneratedAccounts()
   }
 
