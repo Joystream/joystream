@@ -63,11 +63,15 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
+    let memberId
     try {
-      await this.api.getMemberId(this.account)
-      assert(false, 'Account must not be associated with a member')
+      memberId = await this.api.getMemberId(this.account)
     } catch (err) {
       // member id not found
+    }
+
+    if (memberId) {
+      throw new Error('Account must not be associated with a member')
     }
 
     // Fee estimation and transfer
