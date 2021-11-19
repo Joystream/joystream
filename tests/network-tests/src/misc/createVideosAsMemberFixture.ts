@@ -1,8 +1,5 @@
 import { BaseFixture } from '../Fixture'
 import { Api } from '../Api'
-// import { MemberId } from '@joystream/types/members'
-// import { ChannelId } from '@joystream/types/common'
-import { assert } from 'chai'
 
 export class CreateVideosAsMemberFixture extends BaseFixture {
   // Member that will be channel owner
@@ -25,8 +22,6 @@ export class CreateVideosAsMemberFixture extends BaseFixture {
       videos.push(this.api.createMockVideo(this.memberId, this.channelId, account))
     }
 
-    const videoIds = await Promise.all(videos)
-    const created = videoIds.filter((id) => id !== null).length
-    assert.equal(created, this.numVideos)
+    await Promise.all(videos)
   }
 }

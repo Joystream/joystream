@@ -1790,7 +1790,8 @@ export class Api {
     return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
   }
 
-  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId | null> {
+  // Create a mock channel, throws on failure
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
@@ -1814,14 +1815,12 @@ export class Api {
       return record.event.data[1] as ChannelId
     }
 
-    return null
+    // TODO: get error from 'result'
+    throw new Error('Failed to create channel')
   }
 
-  async createMockVideo(
-    memberId: number,
-    channelId: number,
-    memberControllerAccount?: string
-  ): Promise<VideoId | null> {
+  // Create a mock video, throws on failure
+  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
@@ -1841,7 +1840,8 @@ export class Api {
       return record.event.data[2] as VideoId
     }
 
-    return null
+    // TODO: get error from 'result'
+    throw new Error('Failed to create video')
   }
 
   async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
