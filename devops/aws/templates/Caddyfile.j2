@@ -1,0 +1,30 @@
+{{ nip_domain }}/ws-rpc {
+    reverse_proxy localhost:9944
+}
+
+{{ nip_domain }}/http-rpc {
+    reverse_proxy localhost:9933
+}
+
+{{ nip_domain }}/pioneer* {
+    uri strip_prefix /pioneer
+    reverse_proxy localhost:3000
+}
+
+{{ nip_domain }}/colossus {
+    reverse_proxy localhost:3333
+}
+
+{{ nip_domain }}/distributor {
+    reverse_proxy localhost:3334
+}
+
+{{ nip_domain }}/graphql* {
+    uri strip_prefix /graphql
+    reverse_proxy localhost:8081
+}
+
+{{ nip_domain }}/indexer* {
+    uri strip_prefix /indexer
+    reverse_proxy localhost:4000
+}
