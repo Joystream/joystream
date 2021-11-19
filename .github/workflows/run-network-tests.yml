@@ -104,8 +104,10 @@ jobs:
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
+      - name: Install joystream-cli @joystream/cli/0.5.1
+        run: npm -g install @joystream/cli
       - name: Execute network tests
-        run: RUNTIME=sumer tests/network-tests/run-migration-tests.sh full
+        run: RUNTIME=sumer HOME=$(pwd) tests/network-tests/run-migration-tests.sh full
 
   basic_runtime:
     name: Integration Tests (New Chain)

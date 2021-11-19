@@ -7,7 +7,7 @@ cd $SCRIPT_PATH
 # Location to store runtime WASM for runtime upgrade
 DATA_PATH=${DATA_PATH:=$(pwd)/data}
 
-# The djoystream/node ocker image tag to start chain
+# The joystream/node docker image tag to start chain
 export RUNTIME=${RUNTIME:=latest}
 
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
@@ -31,11 +31,19 @@ function pre_migration_hook() {
   # Display runtime version
   yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-  yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+  # assume older version of joystream-cli is installed globally. So we run these commands to
+  # work against older runtime. Assert it is version  `@joystream/cli/0.5.1` ?
+  joystream-cli --version
+
+  joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
   echo "creating 1 channel"
-  yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+  joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
   echo "adding 1 video to the above channel"
-  yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+  joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+
+  # Confirm channel and video created successfully
+  joystream-cli content:videos 1
+  joystream-cli content:channel 1
 }
 
 function post_migration_hook() {
@@ -47,9 +55,19 @@ function post_migration_hook() {
   yarn joystream-cli working-groups:overview --group=distributors
 
   echo "*** verify previously created channel and video are cleared ***"
-  # FIXME: assert these fail as expected
-  yarn joystream-cli content:videos 1 || true
-  yarn joystream-cli content:channel 1 || true
+  # Allow a few blocks for migration to complete
+  sleep 12
+  
+  # FIXME: Howto assert these fail as expected. They should report video and channel do no exist
+  # Can we get json output to more easily parse result of query?
+  set +e
+  yarn joystream-cli content:channel 1
+  if [ $? -eq 0 ]; then
+    echo "Unexpected channel was found"
+    exit -1
+  fi
+  # This cammand doesn't give error exit code if videos not found in a channel
+  yarn joystream-cli content:videos 1
 }    
 
 trap cleanup EXIT
@@ -57,7 +75,6 @@ trap cleanup EXIT
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
-  # FIXME: code against old runtime will fail running from newer runtime code
   pre_migration_hook
 
   # Copy new runtime wasm file from target joystream/node image
@@ -66,20 +83,18 @@ else
   docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
   docker rm $id
 
-  # Display runtime version before runtime upgrade
-  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
   echo "Performing runtime upgrade."
   yarn workspace api-scripts tsnode-strict \
     src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
 
   echo "Runtime upgraded."
 
+  # Display runtime version
+  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
+
   echo "Performing migration tests"
-  # post migration hook
+
   post_migration_hook
+
   echo "Done with migrations tests"
 fi
-
-# Display runtime version
-yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
