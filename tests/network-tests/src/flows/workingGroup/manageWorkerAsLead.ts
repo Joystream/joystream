@@ -41,7 +41,7 @@ async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: Worki
   const lead = await api.getGroupLead(group)
   assert(lead)
 
-  const applicants = api.createKeyPairs(5).map((key) => key.address)
+  const applicants = api.createKeyPairs(5).map(({ key }) => key.address)
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, applicants, paidTerms)
   await new FixtureRunner(memberSetFixture).run()
 
