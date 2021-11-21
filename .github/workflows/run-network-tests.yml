@@ -107,7 +107,11 @@ jobs:
       - name: Install joystream-cli @joystream/cli/0.5.1
         run: npm -g install @joystream/cli
       - name: Execute network tests
-        run: RUNTIME=sumer HOME=$(pwd) tests/network-tests/run-migration-tests.sh full
+        run: |
+          export HOME=$(pwd)
+          mkdir -p ${HOME}/.local/share/joystream-cli
+          export RUNTIME=sumer
+          tests/network-tests/run-migration-tests.sh
 
   basic_runtime:
     name: Integration Tests (New Chain)
