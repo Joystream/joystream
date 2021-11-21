@@ -51,7 +51,7 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
   for (let n = 0; n < numberOfRoundsChannel; n++) {
     const createChannels = new CreateChannelsAsMemberFixture(api, memberId, numberOfChannelsPerRound)
     await new FixtureRunner(createChannels).run()
-    createChannels.getCreatedChannels().forEach((id) => channelIds.push(id!.toNumber()))
+    createChannels.getCreatedChannels().forEach((id) => channelIds.push(id.toNumber()))
   }
 
   // Create all videos in same channel
