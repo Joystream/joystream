@@ -110,6 +110,7 @@ jobs:
         run: |
           export HOME=$(pwd)
           mkdir -p ${HOME}/.local/share/joystream-cli
+          joystream-cli api:setUri ws://localhost:9944
           export RUNTIME=sumer
           tests/network-tests/run-migration-tests.sh
 
