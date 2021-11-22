@@ -12,8 +12,9 @@
     "format": "prettier ./ --write ",
     "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../../storage-node-v2/src/api-spec/openapi.yaml -g typescript-axios -o ./src/apis/storageNode",
     "generate:api:distributor-node": "yarn openapi-generator-cli generate -i ../../distributor-node/src/api-spec/openapi.yml -g typescript-axios -o ./src/apis/distributorNode",
+    "generate:api:all": "yarn generate:api:storage-node && yarn generate:api:distributor-node && yarn format",
     "generate:types:graphql": "graphql-codegen",
-    "generate:all": "yarn generate:types:graphql && yarn generate:api:storage-node && yarn generate:api:distributor-node"
+    "generate:all": "yarn generate:types:graphql && yarn generate:api:all"
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",

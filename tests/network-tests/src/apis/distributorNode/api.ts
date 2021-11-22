@@ -12,108 +12,118 @@
  * Do not edit the class manually.
  */
 
-
-import { Configuration } from './configuration';
-import globalAxios, { AxiosPromise, AxiosInstance } from 'axios';
+import { Configuration } from './configuration'
+import globalAxios, { AxiosPromise, AxiosInstance } from 'axios'
 // Some imports not used depending on template conditions
 // @ts-ignore
-import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObject, setBearerAuthToObject, setOAuthToObject, setSearchParams, serializeDataIfNeeded, toPathString, createRequestFunction } from './common';
+import {
+  DUMMY_BASE_URL,
+  assertParamExists,
+  setApiKeyToObject,
+  setBasicAuthToObject,
+  setBearerAuthToObject,
+  setOAuthToObject,
+  setSearchParams,
+  serializeDataIfNeeded,
+  toPathString,
+  createRequestFunction,
+} from './common'
 // @ts-ignore
-import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
+import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base'
 
 /**
  * @type BucketsResponse
  * @export
  */
-export type BucketsResponse = BucketsResponseOneOf | BucketsResponseOneOf1;
+export type BucketsResponse = BucketsResponseOneOf | BucketsResponseOneOf1
 
 /**
- * 
+ *
  * @export
  * @interface BucketsResponseOneOf
  */
 export interface BucketsResponseOneOf {
-    /**
-     * 
-     * @type {Array<number>}
-     * @memberof BucketsResponseOneOf
-     */
-    bucketIds: Array<number>;
+  /**
+   *
+   * @type {Array<number>}
+   * @memberof BucketsResponseOneOf
+   */
+  bucketIds: Array<number>
 }
 /**
- * 
+ *
  * @export
  * @interface BucketsResponseOneOf1
  */
 export interface BucketsResponseOneOf1 {
-    /**
-     * 
-     * @type {number}
-     * @memberof BucketsResponseOneOf1
-     */
-    allByWorkerId: number;
+  /**
+   *
+   * @type {number}
+   * @memberof BucketsResponseOneOf1
+   */
+  allByWorkerId: number
 }
 /**
- * 
+ *
  * @export
  * @interface ErrorResponse
  */
 export interface ErrorResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof ErrorResponse
-     */
-    type?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ErrorResponse
-     */
-    message: string;
+  /**
+   *
+   * @type {string}
+   * @memberof ErrorResponse
+   */
+  type?: string
+  /**
+   *
+   * @type {string}
+   * @memberof ErrorResponse
+   */
+  message: string
 }
 /**
- * 
+ *
  * @export
  * @interface StatusResponse
  */
 export interface StatusResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof StatusResponse
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof StatusResponse
-     */
-    objectsInCache: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof StatusResponse
-     */
-    storageLimit: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof StatusResponse
-     */
-    storageUsed: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof StatusResponse
-     */
-    uptime: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof StatusResponse
-     */
-    downloadsInProgress: number;
+  /**
+   *
+   * @type {string}
+   * @memberof StatusResponse
+   */
+  id: string
+  /**
+   *
+   * @type {number}
+   * @memberof StatusResponse
+   */
+  objectsInCache: number
+  /**
+   *
+   * @type {number}
+   * @memberof StatusResponse
+   */
+  storageLimit: number
+  /**
+   *
+   * @type {number}
+   * @memberof StatusResponse
+   */
+  storageUsed: number
+  /**
+   *
+   * @type {number}
+   * @memberof StatusResponse
+   */
+  uptime: number
+  /**
+   *
+   * @type {number}
+   * @memberof StatusResponse
+   */
+  downloadsInProgress: number
 }
 
 /**
@@ -121,225 +131,225 @@ export interface StatusResponse {
  * @export
  */
 export const PublicApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * Returns a media file.
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicAsset: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'objectId' is not null or undefined
-            assertParamExists('publicAsset', 'objectId', objectId)
-            const localVarPath = `/asset/{objectId}`
-                .replace(`{${"objectId"}}`, encodeURIComponent(String(objectId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
+  return {
+    /**
+     * Returns a media file.
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicAsset: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
+      // verify required parameter 'objectId' is not null or undefined
+      assertParamExists('publicAsset', 'objectId', objectId)
+      const localVarPath = `/asset/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
+      // use dummy base URL string because the URL constructor only accepts absolute URLs.
+      const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
+      let baseOptions
+      if (configuration) {
+        baseOptions = configuration.baseOptions
+      }
 
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
+      const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options }
+      const localVarHeaderParameter = {} as any
+      const localVarQueryParameter = {} as any
 
+      setSearchParams(localVarUrlObj, localVarQueryParameter, options.query)
+      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
+      localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers }
 
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+      return {
+        url: toPathString(localVarUrlObj),
+        options: localVarRequestOptions,
+      }
+    },
+    /**
+     * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicAssetHead: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
+      // verify required parameter 'objectId' is not null or undefined
+      assertParamExists('publicAssetHead', 'objectId', objectId)
+      const localVarPath = `/asset/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
+      // use dummy base URL string because the URL constructor only accepts absolute URLs.
+      const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
+      let baseOptions
+      if (configuration) {
+        baseOptions = configuration.baseOptions
+      }
 
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicAssetHead: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'objectId' is not null or undefined
-            assertParamExists('publicAssetHead', 'objectId', objectId)
-            const localVarPath = `/asset/{objectId}`
-                .replace(`{${"objectId"}}`, encodeURIComponent(String(objectId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
+      const localVarRequestOptions = { method: 'HEAD', ...baseOptions, ...options }
+      const localVarHeaderParameter = {} as any
+      const localVarQueryParameter = {} as any
 
-            const localVarRequestOptions = { method: 'HEAD', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
+      setSearchParams(localVarUrlObj, localVarQueryParameter, options.query)
+      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
+      localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers }
 
+      return {
+        url: toPathString(localVarUrlObj),
+        options: localVarRequestOptions,
+      }
+    },
+    /**
+     * Returns list of distributed buckets
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicBuckets: async (options: any = {}): Promise<RequestArgs> => {
+      const localVarPath = `/buckets`
+      // use dummy base URL string because the URL constructor only accepts absolute URLs.
+      const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
+      let baseOptions
+      if (configuration) {
+        baseOptions = configuration.baseOptions
+      }
 
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+      const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options }
+      const localVarHeaderParameter = {} as any
+      const localVarQueryParameter = {} as any
 
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Returns list of distributed buckets
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicBuckets: async (options: any = {}): Promise<RequestArgs> => {
-            const localVarPath = `/buckets`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
+      setSearchParams(localVarUrlObj, localVarQueryParameter, options.query)
+      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
+      localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers }
 
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
+      return {
+        url: toPathString(localVarUrlObj),
+        options: localVarRequestOptions,
+      }
+    },
+    /**
+     * Returns json object describing current node status.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicStatus: async (options: any = {}): Promise<RequestArgs> => {
+      const localVarPath = `/status`
+      // use dummy base URL string because the URL constructor only accepts absolute URLs.
+      const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
+      let baseOptions
+      if (configuration) {
+        baseOptions = configuration.baseOptions
+      }
 
+      const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options }
+      const localVarHeaderParameter = {} as any
+      const localVarQueryParameter = {} as any
 
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+      setSearchParams(localVarUrlObj, localVarQueryParameter, options.query)
+      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
+      localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers }
 
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicStatus: async (options: any = {}): Promise<RequestArgs> => {
-            const localVarPath = `/status`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
+      return {
+        url: toPathString(localVarUrlObj),
+        options: localVarRequestOptions,
+      }
+    },
+  }
+}
 
 /**
  * PublicApi - functional programming interface
  * @export
  */
-export const PublicApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = PublicApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * Returns a media file.
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async publicAsset(objectId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAsset(objectId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async publicAssetHead(objectId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicAssetHead(objectId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * Returns list of distributed buckets
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async publicBuckets(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BucketsResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicBuckets(options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async publicStatus(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<StatusResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.publicStatus(options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-    }
-};
+export const PublicApiFp = function (configuration?: Configuration) {
+  const localVarAxiosParamCreator = PublicApiAxiosParamCreator(configuration)
+  return {
+    /**
+     * Returns a media file.
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    async publicAsset(
+      objectId: string,
+      options?: any
+    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+      const localVarAxiosArgs = await localVarAxiosParamCreator.publicAsset(objectId, options)
+      return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
+    },
+    /**
+     * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    async publicAssetHead(
+      objectId: string,
+      options?: any
+    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+      const localVarAxiosArgs = await localVarAxiosParamCreator.publicAssetHead(objectId, options)
+      return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
+    },
+    /**
+     * Returns list of distributed buckets
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    async publicBuckets(
+      options?: any
+    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BucketsResponse>> {
+      const localVarAxiosArgs = await localVarAxiosParamCreator.publicBuckets(options)
+      return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
+    },
+    /**
+     * Returns json object describing current node status.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    async publicStatus(
+      options?: any
+    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<StatusResponse>> {
+      const localVarAxiosArgs = await localVarAxiosParamCreator.publicStatus(options)
+      return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
+    },
+  }
+}
 
 /**
  * PublicApi - factory interface
  * @export
  */
 export const PublicApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = PublicApiFp(configuration)
-    return {
-        /**
-         * Returns a media file.
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicAsset(objectId: string, options?: any): AxiosPromise<any> {
-            return localVarFp.publicAsset(objectId, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
-         * @param {string} objectId Data Object ID
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicAssetHead(objectId: string, options?: any): AxiosPromise<void> {
-            return localVarFp.publicAssetHead(objectId, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Returns list of distributed buckets
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicBuckets(options?: any): AxiosPromise<BucketsResponse> {
-            return localVarFp.publicBuckets(options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        publicStatus(options?: any): AxiosPromise<StatusResponse> {
-            return localVarFp.publicStatus(options).then((request) => request(axios, basePath));
-        },
-    };
-};
+  const localVarFp = PublicApiFp(configuration)
+  return {
+    /**
+     * Returns a media file.
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicAsset(objectId: string, options?: any): AxiosPromise<any> {
+      return localVarFp.publicAsset(objectId, options).then((request) => request(axios, basePath))
+    },
+    /**
+     * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+     * @param {string} objectId Data Object ID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicAssetHead(objectId: string, options?: any): AxiosPromise<void> {
+      return localVarFp.publicAssetHead(objectId, options).then((request) => request(axios, basePath))
+    },
+    /**
+     * Returns list of distributed buckets
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicBuckets(options?: any): AxiosPromise<BucketsResponse> {
+      return localVarFp.publicBuckets(options).then((request) => request(axios, basePath))
+    },
+    /**
+     * Returns json object describing current node status.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    publicStatus(options?: any): AxiosPromise<StatusResponse> {
+      return localVarFp.publicStatus(options).then((request) => request(axios, basePath))
+    },
+  }
+}
 
 /**
  * PublicApi - object-oriented interface
@@ -348,47 +358,53 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
  * @extends {BaseAPI}
  */
 export class PublicApi extends BaseAPI {
-    /**
-     * Returns a media file.
-     * @param {string} objectId Data Object ID
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PublicApi
-     */
-    public publicAsset(objectId: string, options?: any) {
-        return PublicApiFp(this.configuration).publicAsset(objectId, options).then((request) => request(this.axios, this.basePath));
-    }
+  /**
+   * Returns a media file.
+   * @param {string} objectId Data Object ID
+   * @param {*} [options] Override http request option.
+   * @throws {RequiredError}
+   * @memberof PublicApi
+   */
+  public publicAsset(objectId: string, options?: any) {
+    return PublicApiFp(this.configuration)
+      .publicAsset(objectId, options)
+      .then((request) => request(this.axios, this.basePath))
+  }
 
-    /**
-     * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
-     * @param {string} objectId Data Object ID
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PublicApi
-     */
-    public publicAssetHead(objectId: string, options?: any) {
-        return PublicApiFp(this.configuration).publicAssetHead(objectId, options).then((request) => request(this.axios, this.basePath));
-    }
+  /**
+   * Returns asset response headers (cache status, content type and/or length, accepted ranges etc.)
+   * @param {string} objectId Data Object ID
+   * @param {*} [options] Override http request option.
+   * @throws {RequiredError}
+   * @memberof PublicApi
+   */
+  public publicAssetHead(objectId: string, options?: any) {
+    return PublicApiFp(this.configuration)
+      .publicAssetHead(objectId, options)
+      .then((request) => request(this.axios, this.basePath))
+  }
 
-    /**
-     * Returns list of distributed buckets
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PublicApi
-     */
-    public publicBuckets(options?: any) {
-        return PublicApiFp(this.configuration).publicBuckets(options).then((request) => request(this.axios, this.basePath));
-    }
+  /**
+   * Returns list of distributed buckets
+   * @param {*} [options] Override http request option.
+   * @throws {RequiredError}
+   * @memberof PublicApi
+   */
+  public publicBuckets(options?: any) {
+    return PublicApiFp(this.configuration)
+      .publicBuckets(options)
+      .then((request) => request(this.axios, this.basePath))
+  }
 
-    /**
-     * Returns json object describing current node status.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PublicApi
-     */
-    public publicStatus(options?: any) {
-        return PublicApiFp(this.configuration).publicStatus(options).then((request) => request(this.axios, this.basePath));
-    }
+  /**
+   * Returns json object describing current node status.
+   * @param {*} [options] Override http request option.
+   * @throws {RequiredError}
+   * @memberof PublicApi
+   */
+  public publicStatus(options?: any) {
+    return PublicApiFp(this.configuration)
+      .publicStatus(options)
+      .then((request) => request(this.axios, this.basePath))
+  }
 }
-
-
