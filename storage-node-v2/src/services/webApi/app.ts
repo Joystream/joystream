@@ -8,8 +8,8 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
-import { httpLogger, errorLogger } from '../../services/logger'
 import { AppConfig } from './controllers/common'
+import { createExpressLoggerOptions, httpLogger, errorLogger } from '../../services/logger'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -20,10 +20,11 @@ import { AppConfig } from './controllers/common'
 export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
   const app = express()
+  const expressLoggerOptions = createExpressLoggerOptions(config.elasticSearchEndpoint, config.logSource)
 
   app.use(cors())
   app.use(express.json())
-  app.use(httpLogger(config.logSource, config.elasticSearchEndpoint))
+  app.use(httpLogger(expressLoggerOptions))
 
   app.use(
     // Set parameters for each request.
@@ -56,7 +57,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
     })
   ) // Required signature.
 
-  app.use(errorLogger())
+  // Error logger
+  app.use(errorLogger(expressLoggerOptions))
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

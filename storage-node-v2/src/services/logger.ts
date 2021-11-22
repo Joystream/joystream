@@ -3,7 +3,6 @@ import ecsformat from '@elastic/ecs-winston-format'
 import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
-
 /**
  * Possible log levels.
  */
@@ -83,13 +82,17 @@ const proxy = new Proxy(InnerLogger, {
 export default proxy
 
 /**
- * Creates Express-Winston logger handler.
+ * Creates Express-Winston logger options.
  * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint (optional).
- * @returns  Express-Winston logger handler
+ * @returns  Express-Winston logger options
  *
  */
-export function httpLogger(logSource: string, elasticSearchEndpoint?: string): Handler {
+export function createExpressLoggerOptions(
+  elasticSearchEndpoint?: string,
+  filename?: string,
+logSource: string
+): expressWinston.LoggerOptions {
   // ElasticSearch server date format.
   const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
 
@@ -100,8 +103,10 @@ export function httpLogger(logSource: string, elasticSearchEndpoint?: string): H
   ]
 
   if (elasticSearchEndpoint) {
-    const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
-    transports.push(esTransport)
+    transports.push(createElasticTransport(elasticSearchEndpoint, logSource))
+  }
+  if (filename) {
+    transports.push(createFileTransport(filename))
   }
 
   const opts: expressWinston.LoggerOptions = {
@@ -112,47 +117,39 @@ export function httpLogger(logSource: string, elasticSearchEndpoint?: string): H
     colorize: false,
   }
 
-  return expressWinston.logger(opts)
+  return opts
 }
 
 /**
  * Creates Express-Winston error logger.
  *
+ * @param options - express winston logger options.
  * @returns  Express-Winston error logger
  *
  */
-export function errorLogger(): ErrorRequestHandler {
-  return expressWinston.errorLogger({
-    transports: [new winston.transports.Console()],
-    format: winston.format.combine(winston.format.json()),
-  })
+export function errorLogger(options: expressWinston.LoggerOptions): ErrorRequestHandler {
+  return expressWinston.errorLogger(options)
 }
 
 /**
- * Creates clean Console Winston logger for standard output.
+ * Creates Express-Winston logger handler.
  *
- * @returns Winston logger
+ * @param options - express winston logger options.
+ * @returns  Express-Winston logger handler
  *
  */
-export function createStdConsoleLogger(): winston.Logger {
-  const format = winston.format.printf((info) => `${info.message}`)
-
-  const transports = [new winston.transports.Console()]
-
-  return winston.createLogger({
-    levels,
-    format,
-    transports,
-  })
+export function httpLogger(options: expressWinston.LoggerOptions): Handler {
+  return expressWinston.logger(options)
 }
+
 /**
- * Creates Winston logger with Elastic search.
+ * Creates Winston logger with ElasticSearch and File transports.
  * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns Winston logger
  *
  */
-function createElasticLogger(logSource: string, elasticSearchEndpoint: string): winston.Logger {
+function createCustomLogger(customOptions: { logSource: string, elasticSearchEndpoint?: string; filename?: string }): winston.Logger {
   const loggerOptions = createDefaultLoggerOptions()
 
   // Transports
@@ -161,8 +158,12 @@ function createElasticLogger(logSource: string, elasticSearchEndpoint: string): 
     transports = Array.isArray(loggerOptions.transports) ? loggerOptions.transports : [loggerOptions.transports]
   }
 
-  const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
-  transports.push(esTransport)
+  if (customOptions.elasticSearchEndpoint) {
+    transports.push(createElasticTransport(logSource, customOptions.elasticSearchEndpoint))
+  }
+  if (customOptions.filename) {
+    transports.push(createFileTransport(customOptions.filename))
+  }
 
   // Logger
   const logger = winston.createLogger(loggerOptions)
@@ -182,9 +183,10 @@ function createElasticLogger(logSource: string, elasticSearchEndpoint: string): 
  *
  * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint.
+ * @param filename - absolute path to the log file.
  */
-export function initElasticLogger(logSource: string, elasticSearchEndpoint: string): void {
-  InnerLogger = createElasticLogger(logSource, elasticSearchEndpoint)
+export function initNewLogger(options: { logSource: string,elasticSearchEndpoint?: string; filename?: string }): void {
+  InnerLogger = createCustomLogger(options)
 }
 
 /**
@@ -212,4 +214,21 @@ function createElasticTransport(logSource: string, elasticSearchEndpoint: string
     source: logSource,
   }
   return new ElasticsearchTransport(esTransportOpts)
+}
+
+/**
+ * Creates winston logger file transport.
+ *
+ * @param fileName - log file name.
+ * @returns winston file transport
+ */
+function createFileTransport(filename: string): winston.transport {
+  const options = {
+    filename,
+    maxsize: 50000000, // 50 MB
+    maxFiles: 3,
+    level: 'debug',
+    format: ecsformat(),
+  }
+  return new winston.transports.File(options)
 }
