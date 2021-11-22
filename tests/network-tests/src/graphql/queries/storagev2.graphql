@@ -1,0 +1,18 @@
+fragment StorageDataObjectFields on StorageDataObject {
+  id
+  ipfsHash
+  isAccepted
+  size
+  type {
+    __typename
+  }
+  deletionPrize
+  unsetAt
+  storageBagId
+}
+
+query getDataObjectsByIds($ids: [ID!]) {
+  storageDataObjects(where: { id_in: $ids }) {
+    ...StorageDataObjectFields
+  }
+}

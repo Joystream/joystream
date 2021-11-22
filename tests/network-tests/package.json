@@ -12,7 +12,8 @@
     "format": "prettier ./ --write ",
     "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../../storage-node-v2/src/api-spec/openapi.yaml -g typescript-axios -o ./src/apis/storageNode",
     "generate:api:distributor-node": "yarn openapi-generator-cli generate -i ../../distributor-node/src/api-spec/openapi.yml -g typescript-axios -o ./src/apis/distributorNode",
-    "generate:all": "yarn generate:api:storage-node && yarn generate:api:distributor-node"
+    "generate:types:graphql": "graphql-codegen",
+    "generate:all": "yarn generate:types:graphql && yarn generate:api:storage-node && yarn generate:api:distributor-node"
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
@@ -40,7 +41,12 @@
     "prettier": "^2.2.1",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3",
-    "@openapitools/openapi-generator-cli": "^2.3.6"
+    "@openapitools/openapi-generator-cli": "^2.3.6",
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
   },
   "volta": {
     "extends": "../../package.json"
