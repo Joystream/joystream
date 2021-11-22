@@ -93,7 +93,7 @@ type Membership @entity {
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
 
   "Referendum results for the member."
-  referendumStageRevealingOptionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "optionId")
+  referendumStageRevealingOptionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "option")
 
   "Votes recieved in referendums by this member."
   votesRecieved: [CastVote!] @derivedFrom(field: "voteFor")

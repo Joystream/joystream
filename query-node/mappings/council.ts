@@ -84,7 +84,7 @@ async function getCandidate(
     where.electionRound = electionRound
   }
 
-  const candidate = await store.get(Candidate, { where, order: { id: 'DESC' } })
+  const candidate = await store.get(Candidate, { where, order: { createdAt: 'DESC' } })
 
   if (!candidate) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
@@ -99,7 +99,7 @@ async function getCandidate(
 async function getCouncilMember(store: DatabaseManager, memberId: string): Promise<CouncilMember> {
   const councilMember = await store.get(CouncilMember, {
     where: { memberId: memberId },
-    order: { id: 'DESC' },
+    order: { createdAt: 'DESC' },
   })
 
   if (!councilMember) {
@@ -113,41 +113,20 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
   Returns the current election round record.
 */
 async function getCurrentElectionRound(store: DatabaseManager): Promise<ElectionRound> {
-  const electionRound = await store.get(ElectionRound, { order: { id: 'DESC' } })
+  const electionRound = await store.get(ElectionRound, { order: { cycleId: 'DESC' } })
 
-  if (electionRound) {
-    return electionRound
+  if (!electionRound) {
+    throw new Error(`No election round found`)
   }
 
-  // create first election round as it's not prepopulated (this shouldn't happen in any other sitaution)
-
-  const electedCouncil = new ElectedCouncil({
-    councilMembers: [],
-    updates: [],
-    electedAtBlock: 0,
-    councilElections: [],
-    nextCouncilElections: [],
-    isResigned: false,
-  })
-  await store.save<ElectedCouncil>(electedCouncil)
-
-  const initialElectionRound = new ElectionRound({
-    cycleId: 0,
-    isFinished: false,
-    castVotes: [],
-    electedCouncil,
-    candidates: [],
-  })
-  await store.save<ElectionRound>(initialElectionRound)
-
-  return initialElectionRound
+  return electionRound
 }
 
 /*
   Returns the last council stage update.
 */
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
-  const stageUpdate = await store.get(CouncilStageUpdate, { order: { id: 'DESC' } })
+  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } })
 
   if (!stageUpdate) {
     throw new Error('No stage update found.')
@@ -163,7 +142,7 @@ async function getCurrentElectedCouncil(
   store: DatabaseManager,
   canFail: boolean = false
 ): Promise<ElectedCouncil | undefined> {
-  const electedCouncil = await store.get(ElectedCouncil, { order: { id: 'DESC' } })
+  const electedCouncil = await store.get(ElectedCouncil, { order: { electedAtBlock: 'DESC' } })
 
   if (!electedCouncil && !canFail) {
     throw new Error('No council is elected.')
@@ -186,7 +165,7 @@ async function getAccountCastVote(
     where.electionRound = electionRound
   }
 
-  const castVote = await store.get(CastVote, { where, order: { id: 'DESC' } })
+  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } })
 
   if (!castVote) {
     throw new Error(
@@ -211,14 +190,6 @@ function calculateVotePower(accountId: string, stake: BN): BN {
 function isCouncilStageAnnouncing(councilStage: typeof CouncilStage): councilStage is CouncilStageAnnouncing {
   return councilStage.isTypeOf == 'CouncilStageAnnouncing'
 }
-
-/*
-  Custom typeguard for council stage - election.
-* /
-function isCouncilStageElection(councilStage: typeof CouncilStage): councilStage is CouncilStageElection {
-  return councilStage.isTypeOf == 'CouncilStageElection'
-}
-*/
 
 /////////////////// Common /////////////////////////////////////////////////////
 
@@ -380,7 +351,7 @@ export async function council_VotingPeriodStarted({ event, store }: EventContext
 
   // add stage update record
   const stage = new CouncilStageElection()
-  stage.candidatesCount = new BN(0)
+  stage.candidatesCount = numOfCandidates
 
   await updateCouncilStage(store, stage, event.blockNumber)
 }
@@ -474,7 +445,6 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
     councilMembers: await convertCandidatesToCouncilMembers(store, candidates, event.blockNumber),
     updates: [],
     electedAtBlock: event.blockNumber,
-    endedAtBlock: event.blockNumber,
     councilElections: oldElectedCouncil?.nextCouncilElections || [],
     nextCouncilElections: [],
     isResigned: false,
@@ -624,6 +594,7 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
   const councilMember = await getCouncilMember(store, memberId.toString())
   councilMember.accumulatedReward = councilMember.accumulatedReward.add(paidBalance)
   councilMember.unpaidReward = missingBalance
+  councilMember.lastPaymentBlock = new BN(event.blockNumber)
   await store.save<CouncilMember>(councilMember)
 }
 
@@ -667,10 +638,11 @@ export async function council_BudgetRefill({ event, store }: EventContext & Stor
 export async function council_BudgetRefillPlanned({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Council.BudgetRefillPlannedEvent(event).params
+  const [nextRefillInBlock] = new Council.BudgetRefillPlannedEvent(event).params
 
   const budgetRefillPlannedEvent = new BudgetRefillPlannedEvent({
     ...genericEventFields(event),
+    nextRefillInBlock: nextRefillInBlock.toNumber(),
   })
 
   await store.save<BudgetRefillPlannedEvent>(budgetRefillPlannedEvent)
@@ -809,7 +781,7 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
       (item, index) =>
         new ReferendumStageRevealingOptionResult({
           votePower: item.vote_power,
-          optionId: members[index],
+          option: members[index],
         })
     ),
   })
@@ -876,6 +848,10 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   // read vote info
   const electionRound = await getCurrentElectionRound(store)
   const castVote = await getAccountCastVote(store, account.toString(), electionRound)
+
+  // update cast vote's voteFor info
+  castVote.voteFor = member
+  await store.save<CastVote>(castVote)
 
   const candidate = await getCandidate(store, memberId.toString(), electionRound)
   candidate.votePower = candidate.votePower.add(castVote.votePower)

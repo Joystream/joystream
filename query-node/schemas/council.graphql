@@ -164,7 +164,7 @@ type ReferendumStageRevealing @variant {
 
 type ReferendumStageRevealingOptionResult @entity {
   "Member that received votes."
-  optionId: Membership!
+  option: Membership!
 
   "Sum of votes' power received."
   votePower: BigInt!

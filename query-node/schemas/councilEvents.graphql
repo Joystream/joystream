@@ -319,6 +319,8 @@ type BudgetRefillPlannedEvent implements Event @entity {
   indexInBlock: Int!
 
   ### SPECIFIC DATA ###
+
+  nextRefillInBlock: Int!
 }
 
 type BudgetIncrementUpdatedEvent implements Event @entity {
