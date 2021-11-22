@@ -266,6 +266,38 @@ services:
     environment:
       - NGINX_PORT=80
 
+  faucet:
+    image: joystream/faucet:giza
+    restart: on-failure
+    container_name: faucet
+    environment:
+      - SCREENING_AUTHORITY_SEED=//Alice
+      - PORT=3002
+      - PROVIDER=ws://joystream-node:9944
+      - ENDOWMENT=0
+    ports:
+      - "127.0.0.1:3002:3002"
+
+  orion:
+    container_name: orion
+    image: joystream/orion
+    environment:
+      - ORION_PORT=6116
+      - ORION_MONGO_HOSTNAME=mongo
+      - ORION_FEATURED_CONTENT_SECRET=password123
+    ports:
+      - "6116:6116"
+    depends_on:
+      - mongo
+    restart: always
+
+  mongo:
+    restart: always
+    container_name: mongo
+    image: library/mongo:4.4
+    volumes:
+      - orion-mongo-data:/data/db
+
 volumes:
   chain-data:
     driver: local
@@ -290,4 +322,6 @@ volumes:
   distributor-2-cache:
     driver: local
   distributor-2-data:
+    driver: local
+  orion-mongo-data:
     driver: local
