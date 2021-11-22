@@ -37,12 +37,20 @@ export enum WorkingGroups {
   DistributionWorkingGroup = 'distributionWorkingGroup',
   StorageWorkingGroup = 'storageWorkingGroup',
   ContentWorkingGroup = 'contentWorkingGroup',
+  GatewayWorkingGroup = 'gatewayWorkingGroup',
+  OperationsWorkingGroupAlpha = 'operationsWorkingGroupAlpha',
+  OperationsWorkingGroupBeta = 'operationsWorkingGroupBeta',
+  OperationsWorkingGroupGamma = 'operationsWorkingGroupGamma',
 }
 
 const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.DistributionWorkingGroup]: 'Distribution',
   [WorkingGroups.StorageWorkingGroup]: 'Storage',
   [WorkingGroups.ContentWorkingGroup]: 'Content',
+  [WorkingGroups.GatewayWorkingGroup]: 'Gateway',
+  [WorkingGroups.OperationsWorkingGroupAlpha]: 'OperationsAlpha',
+  [WorkingGroups.OperationsWorkingGroupBeta]: 'OperationsBeta',
+  [WorkingGroups.OperationsWorkingGroupGamma]: 'OperationsGamma',
 }
 
 export class ApiFactory {
@@ -1715,9 +1723,4 @@ export class Api {
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
-
-  // async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
-  //   const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
-  //   return dataObject.unwrapOr(null)
-  // }
 }

@@ -1,8 +1,22 @@
 import { StoreContext } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import { Membership, MembershipEntryMethod, StorageSystemParameters, Worker, WorkerType } from 'query-node/dist/model'
+import {
+  Membership,
+  MembershipEntryMethod,
+  StorageSystemParameters,
+  Worker,
+  WorkerType,
+  ChannelCategory,
+  VideoCategory,
+} from 'query-node/dist/model'
 import { workerEntityId } from './workingGroup'
-import { storageSystemData, membersData, workingGroupsData } from './bootstrap-data'
+import {
+  storageSystemData,
+  membersData,
+  workingGroupsData,
+  videoCategoriesData,
+  channelCategoriesData,
+} from './bootstrap-data'
 
 export async function bootstrapData({ store }: StoreContext): Promise<void> {
   // Storage system
@@ -55,4 +69,30 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
     )
   })
   await Promise.all(workers.map((w) => store.save<Worker>(w)))
+
+  const channelCategories = channelCategoriesData.map(
+    (m) =>
+      new ChannelCategory({
+        id: m.id,
+        name: m.name,
+        channels: [],
+        createdInBlock: m.createdInBlock,
+        createdAt: new Date(m.createdAt),
+        updatedAt: new Date(m.updatedAt),
+      })
+  )
+  await Promise.all(channelCategories.map((m) => store.save<ChannelCategory>(m)))
+
+  const videoCategories = videoCategoriesData.map(
+    (m) =>
+      new VideoCategory({
+        id: m.id,
+        name: m.name,
+        videos: [],
+        createdInBlock: m.createdInBlock,
+        createdAt: new Date(m.createdAt),
+        updatedAt: new Date(m.updatedAt),
+      })
+  )
+  await Promise.all(videoCategories.map((m) => store.save<VideoCategory>(m)))
 }

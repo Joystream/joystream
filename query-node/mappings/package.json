@@ -12,17 +12,18 @@
     "checks": "prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",
     "bootstrap-data:fetch:members": "yarn ts-node ./bootstrap-data/scripts/fetchMembersData.ts",
+    "bootstrap-data:fetch:categories": "yarn ts-node ./bootstrap-data/scripts/fetchCategories.ts",
     "bootstrap-data:fetch:workingGroups": "yarn ts-node ./bootstrap-data/scripts/fetchWorkingGroupsData.ts",
-    "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups"
+    "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups && yarn bootstrap-data:fetch:categories"
   },
   "dependencies": {
     "@polkadot/types": "5.9.1",
     "@joystream/hydra-common": "3.1.0-alpha.1",
     "@joystream/hydra-db-utils": "3.1.0-alpha.1",
     "@joystream/metadata-protobuf": "^1.0.0",
-    "@joystream/sumer-types": "npm:@joystream/types@^0.16.0",
     "@joystream/types": "^0.17.0",
-    "@joystream/warthog": "2.35.0"
+    "@joystream/warthog": "2.35.0",
+    "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
     "prettier": "^2.2.1",

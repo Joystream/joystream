@@ -46,9 +46,6 @@ export interface ActiveStake extends Struct {
   readonly source_account_id: GenericAccountId;
 }
 
-/** @name Actor */
-export interface Actor extends Null {}
-
 /** @name ActorId */
 export interface ActorId extends u64 {}
 
@@ -62,9 +59,6 @@ export interface AddOpeningParameters extends Struct {
 
 /** @name Address */
 export interface Address extends AccountId {}
-
-/** @name AddSchemaSupportToEntityOperation */
-export interface AddSchemaSupportToEntityOperation extends Null {}
 
 /** @name AdjustCapacityBy */
 export interface AdjustCapacityBy extends Enum {
@@ -229,9 +223,6 @@ export interface ChannelCategoryUpdateParameters extends Struct {
   readonly new_meta: Bytes;
 }
 
-/** @name ChannelContentType */
-export interface ChannelContentType extends Null {}
-
 /** @name ChannelCreationParameters */
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
@@ -239,11 +230,14 @@ export interface ChannelCreationParameters extends Struct {
   readonly reward_account: Option<GenericAccountId>;
 }
 
-/** @name ChannelCurationStatus */
-export interface ChannelCurationStatus extends Null {}
-
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
+
+/** @name ChannelMigrationConfig */
+export interface ChannelMigrationConfig extends Struct {
+  readonly current_id: ChannelId;
+  readonly final_id: ChannelId;
+}
 
 /** @name ChannelOwner */
 export interface ChannelOwner extends Enum {
@@ -264,9 +258,6 @@ export interface ChannelOwnershipTransferRequest extends Struct {
 /** @name ChannelOwnershipTransferRequestId */
 export interface ChannelOwnershipTransferRequestId extends u64 {}
 
-/** @name ChannelPublicationStatus */
-export interface ChannelPublicationStatus extends Null {}
-
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
@@ -283,24 +274,6 @@ export interface ChildPositionInParentCategory extends Struct {
 
 /** @name Cid */
 export interface Cid extends Bytes {}
-
-/** @name Class */
-export interface Class extends Null {}
-
-/** @name ClassId */
-export interface ClassId extends Null {}
-
-/** @name ClassOf */
-export interface ClassOf extends Null {}
-
-/** @name ClassPermissions */
-export interface ClassPermissions extends Null {}
-
-/** @name ClassPermissionsType */
-export interface ClassPermissionsType extends Null {}
-
-/** @name ClassPropertyValue */
-export interface ClassPropertyValue extends Null {}
 
 /** @name ContentActor */
 export interface ContentActor extends Enum {
@@ -320,33 +293,6 @@ export interface ContentIdSet extends BTreeSet<Cid> {}
 /** @name ContentParameters */
 export interface ContentParameters extends Null {}
 
-/** @name CreateEntityOperation */
-export interface CreateEntityOperation extends Null {}
-
-/** @name Credential */
-export interface Credential extends Null {}
-
-/** @name CredentialSet */
-export interface CredentialSet extends Null {}
-
-/** @name CurationActor */
-export interface CurationActor extends Null {}
-
-/** @name Curator */
-export interface Curator extends Null {}
-
-/** @name CuratorApplication */
-export interface CuratorApplication extends Null {}
-
-/** @name CuratorApplicationId */
-export interface CuratorApplicationId extends Null {}
-
-/** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends Null {}
-
-/** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends Null {}
-
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
   readonly curators: BTreeSet<CuratorId>;
@@ -358,12 +304,6 @@ export interface CuratorGroupId extends u64 {}
 
 /** @name CuratorId */
 export interface CuratorId extends u64 {}
-
-/** @name CuratorOpening */
-export interface CuratorOpening extends Null {}
-
-/** @name CuratorOpeningId */
-export interface CuratorOpeningId extends Null {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -517,27 +457,6 @@ export interface ElectionStake extends Struct {
   readonly transferred: u128;
 }
 
-/** @name Entity */
-export interface Entity extends Null {}
-
-/** @name EntityController */
-export interface EntityController extends Null {}
-
-/** @name EntityCreationVoucher */
-export interface EntityCreationVoucher extends Null {}
-
-/** @name EntityId */
-export interface EntityId extends Null {}
-
-/** @name EntityOf */
-export interface EntityOf extends Null {}
-
-/** @name EntityPermissions */
-export interface EntityPermissions extends Null {}
-
-/** @name EntityReferenceCounterSideEffect */
-export interface EntityReferenceCounterSideEffect extends Null {}
-
 /** @name EntryMethod */
 export interface EntryMethod extends Enum {
   readonly isPaid: boolean;
@@ -560,9 +479,6 @@ export interface ExecutionFailed extends Struct {
   readonly error: Text;
 }
 
-/** @name FailedAt */
-export interface FailedAt extends Null {}
-
 /** @name FillOpeningParameters */
 export interface FillOpeningParameters extends Struct {
   readonly opening_id: OpeningId;
@@ -579,9 +495,6 @@ export interface Finalized extends Struct {
   readonly stakeDataAfterUnstakingError: Option<ActiveStake>;
 }
 
-/** @name HashedTextMaxLength */
-export interface HashedTextMaxLength extends Null {}
-
 /** @name HiringApplicationId */
 export interface HiringApplicationId extends u64 {}
 
@@ -592,35 +505,14 @@ export interface InactiveApplicationStage extends Struct {
   readonly cause: ApplicationDeactivationCause;
 }
 
-/** @name InboundReferenceCounter */
-export interface InboundReferenceCounter extends Null {}
-
-/** @name InputEntityValuesMap */
-export interface InputEntityValuesMap extends Null {}
-
-/** @name InputPropertyValue */
-export interface InputPropertyValue extends Null {}
-
 /** @name InputValidationLengthConstraint */
 export interface InputValidationLengthConstraint extends Struct {
   readonly min: u16;
   readonly max_min_diff: u16;
 }
 
-/** @name InputValue */
-export interface InputValue extends Null {}
-
-/** @name IPNSIdentity */
-export interface IPNSIdentity extends Null {}
-
 /** @name IsCensored */
 export interface IsCensored extends bool {}
-
-/** @name Lead */
-export interface Lead extends Null {}
-
-/** @name LeadId */
-export interface LeadId extends Null {}
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
@@ -677,9 +569,6 @@ export interface NextAdjustment extends Struct {
   readonly adjustment: AdjustOnInterval;
   readonly at_block: u32;
 }
-
-/** @name Nonce */
-export interface Nonce extends Null {}
 
 /** @name ObjectOwner */
 export interface ObjectOwner extends Null {}
@@ -745,15 +634,6 @@ export interface OpeningType extends Enum {
   readonly isWorker: boolean;
 }
 
-/** @name Operation */
-export interface Operation extends Null {}
-
-/** @name OperationType */
-export interface OperationType extends Null {}
-
-/** @name OptionalText */
-export interface OptionalText extends Null {}
-
 /** @name PaidMembershipTerms */
 export interface PaidMembershipTerms extends Struct {
   readonly fee: u128;
@@ -762,15 +642,6 @@ export interface PaidMembershipTerms extends Struct {
 
 /** @name PaidTermId */
 export interface PaidTermId extends u64 {}
-
-/** @name ParameterizedEntity */
-export interface ParameterizedEntity extends Null {}
-
-/** @name ParametrizedClassPropertyValue */
-export interface ParametrizedClassPropertyValue extends Null {}
-
-/** @name ParametrizedPropertyValue */
-export interface ParametrizedPropertyValue extends Null {}
 
 /** @name Person */
 export interface Person extends Struct {
@@ -845,30 +716,6 @@ export interface PostTextChange extends Struct {
   readonly expired_at: BlockAndTime;
   readonly text: Text;
 }
-
-/** @name Principal */
-export interface Principal extends Null {}
-
-/** @name PrincipalId */
-export interface PrincipalId extends Null {}
-
-/** @name Property */
-export interface Property extends Null {}
-
-/** @name PropertyId */
-export interface PropertyId extends Null {}
-
-/** @name PropertyLockingPolicy */
-export interface PropertyLockingPolicy extends Null {}
-
-/** @name PropertyType */
-export interface PropertyType extends Null {}
-
-/** @name PropertyTypeSingle */
-export interface PropertyTypeSingle extends Null {}
-
-/** @name PropertyTypeVector */
-export interface PropertyTypeVector extends Null {}
 
 /** @name ProposalDecisionStatus */
 export interface ProposalDecisionStatus extends Enum {
@@ -1002,12 +849,6 @@ export interface Recipient extends Struct {
 /** @name RecipientId */
 export interface RecipientId extends u64 {}
 
-/** @name ReferenceConstraint */
-export interface ReferenceConstraint extends Null {}
-
-/** @name ReferenceCounterSideEffects */
-export interface ReferenceCounterSideEffects extends Null {}
-
 /** @name Reply */
 export interface Reply extends Struct {
   readonly owner: GenericAccountId;
@@ -1068,15 +909,6 @@ export interface RoleStakeProfile extends Struct {
   readonly exit_unstaking_period: Option<u32>;
 }
 
-/** @name SameController */
-export interface SameController extends Null {}
-
-/** @name Schema */
-export interface Schema extends Null {}
-
-/** @name SchemaId */
-export interface SchemaId extends Null {}
-
 /** @name SealedVote */
 export interface SealedVote extends Struct {
   readonly voter: GenericAccountId;
@@ -1123,17 +955,8 @@ export interface SeriesParameters extends Struct {
   readonly meta: Option<Bytes>;
 }
 
-/** @name ServiceProviderRecord */
-export interface ServiceProviderRecord extends Null {}
-
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
-
-/** @name SideEffect */
-export interface SideEffect extends Null {}
-
-/** @name SideEffects */
-export interface SideEffects extends Null {}
 
 /** @name Slash */
 export interface Slash extends Struct {
@@ -1215,9 +1038,6 @@ export interface StaticBagId extends Enum {
   readonly asWorkingGroup: WorkingGroup;
 }
 
-/** @name Status */
-export interface Status extends Null {}
-
 /** @name StorageAssets */
 export interface StorageAssets extends Struct {
   readonly object_creation_list: Vec<DataObjectCreationParameters>;
@@ -1259,12 +1079,6 @@ export interface StorageObjectOwner extends Null {}
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
 
-/** @name StoredPropertyValue */
-export interface StoredPropertyValue extends Null {}
-
-/** @name StoredValue */
-export interface StoredValue extends Null {}
-
 /** @name SubscriptionId */
 export interface SubscriptionId extends u64 {}
 
@@ -1275,9 +1089,6 @@ export interface TerminateRoleParameters extends Struct {
   readonly slash: bool;
   readonly working_group: WorkingGroup;
 }
-
-/** @name TextMaxLength */
-export interface TextMaxLength extends Null {}
 
 /** @name Thread */
 export interface Thread extends Struct {
@@ -1320,9 +1131,6 @@ export interface UnstakingApplicationStage extends Struct {
   readonly cause: ApplicationDeactivationCause;
 }
 
-/** @name UpdatePropertyValuesOperation */
-export interface UpdatePropertyValuesOperation extends Null {}
-
 /** @name UploadingStatus */
 export interface UploadingStatus extends Null {}
 
@@ -1336,18 +1144,6 @@ export interface UploadParameters extends Struct {
 
 /** @name Url */
 export interface Url extends Text {}
-
-/** @name VecInputValue */
-export interface VecInputValue extends Null {}
-
-/** @name VecMaxLength */
-export interface VecMaxLength extends Null {}
-
-/** @name VecStoredPropertyValue */
-export interface VecStoredPropertyValue extends Null {}
-
-/** @name VecStoredValue */
-export interface VecStoredValue extends Null {}
 
 /** @name Video */
 export interface Video extends Struct {
@@ -1380,6 +1176,12 @@ export interface VideoCreationParameters extends Struct {
 
 /** @name VideoId */
 export interface VideoId extends u64 {}
+
+/** @name VideoMigrationConfig */
+export interface VideoMigrationConfig extends Struct {
+  readonly current_id: VideoId;
+  readonly final_id: VideoId;
+}
 
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
@@ -1433,8 +1235,6 @@ export interface WorkerOf extends Struct {
 
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
-  readonly isReserved0: boolean;
-  readonly isReserved1: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
   readonly isOperationsAlpha: boolean;
@@ -1443,8 +1243,5 @@ export interface WorkingGroup extends Enum {
   readonly isOperationsBeta: boolean;
   readonly isOperationsGamma: boolean;
 }
-
-/** @name WorkingGroupUnstaker */
-export interface WorkingGroupUnstaker extends Null {}
 
 export type PHANTOM_ALL = 'all';

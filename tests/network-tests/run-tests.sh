@@ -16,7 +16,6 @@ ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
 # The docker image tag to use for joystream/node as the starting chain
 # that will be upgraded to the latest runtime.
 RUNTIME=${RUNTIME:=latest}
-TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 
 mkdir -p ${DATA_PATH}
 
@@ -77,29 +76,6 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-
-if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
-  echo "Not Performing a runtime upgrade."
-else
-  # Copy new runtime wasm file from target joystream/node image
-  echo "Extracting wasm blob from target joystream/node image."
-  id=`docker create joystream/node:${TARGET_RUNTIME}`
-  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
-  docker rm $id
-
-  # Display runtime version before runtime upgrade
-  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
-  echo "Performing runtime upgrade."
-  yarn workspace api-scripts tsnode-strict \
-    src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
-
-  echo "Runtime upgraded."
-
-  echo "Performing migration tests"
-  ./run-migration-tests.sh $1
-  echo "Done with migrations tests"
-fi
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
