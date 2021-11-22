@@ -5,6 +5,7 @@ version: '3.4'
 services:
   joystream-node:
     image: joystream/node:$JOYSTREAM_NODE_TAG
+    restart: unless-stopped
     build:
       # context is relative to the compose file
       context: .
@@ -147,7 +148,7 @@ services:
   db:
     image: postgres:12
     container_name: db
-    restart: always
+    restart: unless-stopped
     ports:
       - '127.0.0.1:${DB_PORT}:${DB_PORT}'
     volumes:
@@ -250,13 +251,14 @@ services:
   redis:
     image: redis:6.0-alpine
     container_name: redis
-    restart: always
+    restart: unless-stopped
     ports:
       - '127.0.0.1:6379:6379'
 
   pioneer:
     image: nginx
     container_name: pioneer
+    restart: unless-stopped
     volumes:
       - ./pioneer/packages/apps/build:/usr/share/nginx/html
     ports:
