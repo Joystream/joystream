@@ -389,7 +389,7 @@ type RequestFundedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Funding account."
+  "Target account."
   account: String!
 
   "Funding amount."

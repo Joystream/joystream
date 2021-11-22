@@ -23,7 +23,7 @@ trap cleanup EXIT
 # Clean start
 docker-compose down -v
 
-QUERY_NODE_TESTS=1 ./start.sh
+./start.sh
 
 # pass the scenario name without .ts extension
 SCENARIO=$1

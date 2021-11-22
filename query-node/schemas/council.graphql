@@ -15,7 +15,7 @@ type CouncilStageUpdate @entity {
   "Block number at which change happened."
   changedAt: BigInt!
 
-  "Council elected in this stage update if any."
+  "Council term during which the update happened (if any)."
   electedCouncil: ElectedCouncil
 
   "Election not completed due to insufficient candidates or winners."
