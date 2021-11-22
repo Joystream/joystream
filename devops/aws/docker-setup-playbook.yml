@@ -47,8 +47,8 @@
       command: yarn start
       args:
         chdir: '{{ remote_code_path }}'
-      async: 180
-      poll: 0
+      environment:
+        PERSIST: true
 
     - name: Set nip.io domain with IP
       set_fact:
@@ -64,3 +64,15 @@
         caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
         caddy_systemd_capabilities_enabled: true
         caddy_update: false
+
+    - name: Print endpoints
+      debug:
+        msg:
+          - 'The services should now be accesible at:'
+          - 'Pioneer: {{ nip_domain }}/pioneer/'
+          - 'WebSocket RPC: {{ nip_domain }}/ws-rpc'
+          - 'HTTP RPC: {{ nip_domain }}/http-rpc'
+          - 'Colossus: {{ nip_domain }}/colossus'
+          - 'Distributor: {{ nip_domain }}/distributor'
+          - 'GraphQL server: {{ nip_domain }}/graphql'
+          - 'Indexer: {{ nip_domain }}/indexer'
