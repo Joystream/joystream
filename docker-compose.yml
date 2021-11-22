@@ -12,7 +12,7 @@ services:
       dockerfile: joystream-node.Dockerfile
     container_name: joystream-node
     volumes:
-      - /data
+      - chain-data:/data
     command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
     ports:
       - '127.0.0.1:9944:9944'
@@ -23,8 +23,8 @@ services:
     container_name: colossus-1
     restart: on-failure
     volumes:
-      - /data
-      - /keystore
+      - colossus-1-data:/data
+      - colossus-1-keystore:/keystore
       - type: bind
         source: .
         target: /joystream
@@ -49,9 +49,9 @@ services:
     container_name: distributor-1
     restart: on-failure
     volumes:
-      - /data
-      - /cache
-      - /logs
+      - distributor-1-data:/data
+      - distributor-1-cache:/cache
+      - distributor-1-logs:/logs
       - type: bind
         source: .
         target: /joystream
@@ -86,8 +86,8 @@ services:
     container_name: colossus-2
     restart: on-failure
     volumes:
-      - /data
-      - /keystore
+      - colossus-2-data:/data
+      - colossus-2-keystore:/keystore
       - type: bind
         source: .
         target: /joystream
@@ -112,9 +112,9 @@ services:
     container_name: distributor-2
     restart: on-failure
     volumes:
-      - /data
-      - /cache
-      - /logs
+      - distributor-2-data:/data
+      - distributor-2-cache:/cache
+      - distributor-2-logs:/logs
       - type: bind
         source: .
         target: /joystream
@@ -151,7 +151,7 @@ services:
     ports:
       - '127.0.0.1:${DB_PORT}:${DB_PORT}'
     volumes:
-      - /var/lib/postgresql/data
+      - query-node-data:/var/lib/postgresql/data
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -263,3 +263,29 @@ services:
       - "127.0.0.1:3000:80"
     environment:
       - NGINX_PORT=80
+
+volumes:
+  chain-data:
+    driver: local
+  query-node-data:
+    driver: local
+  colossus-1-data:
+    driver: local
+  colossus-1-keystore:
+    driver: local
+  colossus-2-data:
+    driver: local
+  colossus-2-keystore:
+    driver: local
+  distributor-1-logs:
+    driver: local
+  distributor-1-cache:
+    driver: local
+  distributor-1-data:
+    driver: local
+  distributor-2-logs:
+    driver: local
+  distributor-2-cache:
+    driver: local
+  distributor-2-data:
+    driver: local

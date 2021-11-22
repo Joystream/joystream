@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
 set -e
 
-# Run a complete joystream development network on your machine using docker.
-# Make sure to run build-docker-images.sh prior to running this script to use
-# the local build.
+# Run a complete joystream development network on your machine using docker
 
-# Clean start!
-docker-compose down -v
+INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setup-new-chain}
 
-function down()
-{
-    # Stop containers and clear volumes
-    docker-compose down -v
-}
+if [ "${PERSIST}" == true ]
+then
+  echo "Services startup up.."
+else
+  # Clean start!
+  docker-compose down -v
 
-trap down EXIT
+  function down()
+  {
+      # Stop containers and clear volumes
+      docker-compose down -v
+  }
+
+  trap down EXIT
+fi
 
 ## Run a local development chain
 docker-compose up -d joystream-node
 
 ## Init the chain with some state
-SKIP_MOCK_CONTENT=true ./tests/network-tests/run-test-scenario.sh setup-new-chain
+export SKIP_MOCK_CONTENT=true
+./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
 ## Set sudo as the membership screening authority
 yarn workspace api-scripts set-sudo-as-screening-auth
@@ -35,8 +41,12 @@ docker-compose up -d distributor-1
 ## Pioneer UI
 docker-compose up -d pioneer
 
-echo "use Ctrl+C to shutdown the development network."
-
-while true; do 
-  read
-done
+if [ "${PERSIST}" == true ]
+then
+  echo "All services started in the background"
+else
+  echo "use Ctrl+C to shutdown the development network."
+  while true; do
+    read
+  done
+fi
