@@ -2,6 +2,15 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { PostgresServiceDeployment } from 'pulumi-common'
 
+const config = new pulumi.Config()
+const DB_PASS = config.require('dbPassword')
+const BLOCK_HEIGHT = config.require('blockHeight') || '0'
+const WS_PROVIDER_ENDPOINT_URI = config.require('joystreamWsEndpoint')
+
+const DB_USERNAME = 'postgres'
+const INDEXER_DATABASE_NAME = 'indexer'
+const DB_PORT = '5432'
+
 /**
  * ServiceDeployment is an example abstraction that uses a class to fold together the common pattern of a
  * Kubernetes Deployment and its associated Service object.
@@ -16,7 +25,7 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
 
     // Name passed in the constructor will be the endpoint for accessing the service
     const serviceName = name
-    let appLabels = { appClass: 'indexer' }
+    const appLabels = { appClass: 'indexer' }
 
     const indexerDbName = 'indexer-db'
     const indexerDb = new PostgresServiceDeployment(
@@ -24,54 +33,14 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
       {
         namespaceName: args.namespaceName,
         env: [
-          { name: 'POSTGRES_USER', value: process.env.DB_USER! },
-          { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
-          { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
+          { name: 'POSTGRES_USER', value: DB_USERNAME },
+          { name: 'POSTGRES_PASSWORD', value: DB_PASS },
+          { name: 'POSTGRES_DB', value: INDEXER_DATABASE_NAME },
+          { name: 'PGPORT', value: DB_PORT },
         ],
         storage: args.storage,
       },
       { parent: this }
-    )
-
-    const indexerMigrationJob = new k8s.batch.v1.Job(
-      'indexer-db-migration',
-      {
-        metadata: {
-          namespace: args.namespaceName,
-        },
-        spec: {
-          backoffLimit: 0,
-          template: {
-            spec: {
-              containers: [
-                {
-                  name: 'db-migration',
-                  image: args.joystreamAppsImage,
-                  imagePullPolicy: 'IfNotPresent',
-                  resources: { requests: { cpu: '100m', memory: '100Mi' } },
-                  env: [
-                    {
-                      name: 'WARTHOG_DB_HOST',
-                      value: indexerDbName,
-                    },
-                    {
-                      name: 'DB_HOST',
-                      value: indexerDbName,
-                    },
-                    { name: 'WARTHOG_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
-                    { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
-                    { name: 'DB_PASS', value: process.env.DB_PASS! },
-                  ],
-                  command: ['/bin/sh', '-c'],
-                  args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
-                },
-              ],
-              restartPolicy: 'Never',
-            },
-          },
-        },
-      },
-      { parent: this, dependsOn: indexerDb.service }
     )
 
     this.deployment = new k8s.apps.v1.Deployment(
@@ -100,17 +69,18 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
                   image: 'joystream/hydra-indexer:3.0.0',
                   env: [
                     { name: 'DB_HOST', value: indexerDbName },
-                    { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
-                    { name: 'DB_PASS', value: process.env.DB_PASS! },
-                    { name: 'DB_USER', value: process.env.DB_USER! },
-                    { name: 'DB_PORT', value: process.env.DB_PORT! },
+                    { name: 'DB_NAME', value: INDEXER_DATABASE_NAME },
+                    { name: 'DB_PASS', value: DB_PASS },
+                    { name: 'DB_USER', value: DB_USERNAME },
+                    { name: 'DB_PORT', value: DB_PORT },
                     { name: 'INDEXER_WORKERS', value: '5' },
+                    // Why localhost works and we didn't have to use the container name 'redis'
                     { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
                     { name: 'DEBUG', value: 'index-builder:*' },
-                    { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
+                    { name: 'WS_PROVIDER_ENDPOINT_URI', value: WS_PROVIDER_ENDPOINT_URI },
                     { name: 'TYPES_JSON', value: 'types.json' },
-                    { name: 'PGUSER', value: process.env.DB_USER! },
-                    { name: 'BLOCK_HEIGHT', value: process.env.BLOCK_HEIGHT! },
+                    { name: 'PGUSER', value: DB_USERNAME },
+                    { name: 'BLOCK_HEIGHT', value: BLOCK_HEIGHT },
                   ],
                   volumeMounts: [
                     {
@@ -126,17 +96,18 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
                   name: 'hydra-indexer-gateway',
                   image: 'joystream/hydra-indexer-gateway:3.0.0',
                   env: [
-                    { name: 'WARTHOG_STARTER_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
+                    { name: 'WARTHOG_STARTER_DB_DATABASE', value: INDEXER_DATABASE_NAME },
                     { name: 'WARTHOG_STARTER_DB_HOST', value: indexerDbName },
-                    { name: 'WARTHOG_STARTER_DB_PASSWORD', value: process.env.DB_PASS! },
-                    { name: 'WARTHOG_STARTER_DB_PORT', value: process.env.DB_PORT! },
-                    { name: 'WARTHOG_STARTER_DB_USERNAME', value: process.env.DB_USER! },
+                    { name: 'WARTHOG_STARTER_DB_PASSWORD', value: DB_PASS },
+                    { name: 'WARTHOG_STARTER_DB_PORT', value: DB_PORT },
+                    { name: 'WARTHOG_STARTER_DB_USERNAME', value: DB_USERNAME },
+                    // Why localhost works and we didn't have to use the container name 'redis'
                     { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://localhost:6379/0' },
-                    { name: 'WARTHOG_APP_PORT', value: process.env.WARTHOG_APP_PORT! },
-                    { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
+                    { name: 'WARTHOG_APP_PORT', value: '4001' },
+                    { name: 'PORT', value: '4001' },
                     { name: 'DEBUG', value: '*' },
                   ],
-                  ports: [{ name: 'hydra-port', containerPort: Number(process.env.WARTHOG_APP_PORT!) }],
+                  ports: [{ name: 'hydra-port', containerPort: 4001 }],
                 },
               ],
               volumes: [
@@ -151,7 +122,7 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
           },
         },
       },
-      { parent: this, dependsOn: indexerMigrationJob }
+      { parent: this, dependsOn: indexerDb.service }
     )
 
     // Create a Service for the Indexer
@@ -183,5 +154,5 @@ export interface ServiceDeploymentArgs {
   joystreamAppsImage: pulumi.Output<string>
   defsConfig: pulumi.Output<string> | undefined
   env?: Environment[]
-  storage: Number
+  storage: number
 }

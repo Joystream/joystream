@@ -2,13 +2,11 @@ import * as awsx from '@pulumi/awsx'
 import * as eks from '@pulumi/eks'
 import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
-import { configMapFromFile } from './configMap'
+import { ConfigMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
 import { IndexerServiceDeployment } from './indexerDeployment'
 import { ProcessorServiceDeployment } from './processorDeployment'
 import { CaddyServiceDeployment } from 'pulumi-common'
-
-require('dotenv').config()
 
 const config = new pulumi.Config()
 const awsConfig = new pulumi.Config('aws')
@@ -66,7 +64,7 @@ if (isMinikube) {
   joystreamAppsImage = repo.buildAndPushImage({
     context: './docker_dummy',
     dockerfile: './docker_dummy/Dockerfile',
-    args: { SOURCE_IMAGE: appsImage! },
+    args: { SOURCE_IMAGE: appsImage },
   })
 }
 
@@ -80,7 +78,7 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-const defsConfig = new configMapFromFile(
+const defsConfig = new ConfigMapFromFile(
   'defs-config',
   {
     filePath: '../../../types/augment/all/defs.json',

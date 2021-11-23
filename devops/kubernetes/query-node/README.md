@@ -38,6 +38,8 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
+    --plaintext dbPassword=password --plaintext blockHeight=0 \
+    --plaintext joystreamWsEndpoint=ws://endpoint.somewhere.net:9944 \
     --plaintext isMinikube=true --plaintext skipProcessor=false
    ```
 
@@ -65,10 +67,6 @@ After cloning this repo, from this working directory, run these commands:
    `minikube image load joystream/apps:latest --daemon`.
 
    If not using minikube, just specify the `appsImage` config.
-
-1. Create a `.env` file in this directory (`cp ../../../.env ./.env`) and set the database and other variables in it
-
-   Make sure to set `GRAPHQL_SERVER_PORT=4001`
 
 1. Stand up the Kubernetes cluster:
 

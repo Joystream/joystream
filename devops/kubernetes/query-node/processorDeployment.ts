@@ -2,6 +2,12 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { PostgresServiceDeployment } from 'pulumi-common'
 
+const config = new pulumi.Config()
+const DB_PASS = config.require('dbPassword')
+const DB_USERNAME = 'postgres'
+const PROCESSOR_DATABASE_NAME = 'processor'
+const DB_PORT = '5432'
+
 /**
  * ServiceDeployment is an example abstraction that uses a class to fold together the common pattern of a
  * Kubernetes Deployment and its associated Service object.
@@ -24,9 +30,10 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
       {
         namespaceName: args.namespaceName,
         env: [
-          { name: 'POSTGRES_USER', value: process.env.DB_USER! },
-          { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
-          { name: 'POSTGRES_DB', value: process.env.DB_NAME! },
+          { name: 'POSTGRES_USER', value: DB_USERNAME },
+          { name: 'POSTGRES_PASSWORD', value: DB_PASS },
+          { name: 'POSTGRES_DB', value: PROCESSOR_DATABASE_NAME },
+          { name: 'PGPORT', value: DB_PORT },
         ],
         storage: args.storage,
       },
@@ -58,12 +65,20 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                       name: 'DB_HOST',
                       value: processorDbName,
                     },
-                    { name: 'WARTHOG_DB_DATABASE', value: process.env.DB_NAME! },
-                    { name: 'DB_NAME', value: process.env.DB_NAME! },
-                    { name: 'DB_PASS', value: process.env.DB_PASS! },
+                    { name: 'WARTHOG_DB_DATABASE', value: PROCESSOR_DATABASE_NAME },
+                    { name: 'WARTHOG_DB_USERNAME', value: DB_USERNAME },
+                    { name: 'WARTHOG_DB_PASSWORD', value: DB_PASS },
+                    { name: 'WARTHOG_DB_PORT', value: DB_PORT },
+                    { name: 'DB_NAME', value: PROCESSOR_DATABASE_NAME },
+                    { name: 'DB_PASS', value: DB_PASS },
+                    { name: 'DB_USER', value: DB_USERNAME },
+                    { name: 'DB_PORT', value: DB_PORT },
                   ],
                   command: ['/bin/sh', '-c'],
-                  args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
+                  args: [
+                    // 'yarn workspace query-node config:dev;',
+                    'yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate',
+                  ],
                 },
               ],
               restartPolicy: 'Never',
@@ -98,15 +113,18 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                   imagePullPolicy: 'IfNotPresent',
                   env: [
                     { name: 'DB_HOST', value: processorDbName },
-                    { name: 'DB_PASS', value: process.env.DB_PASS! },
-                    { name: 'DB_USER', value: process.env.DB_USER! },
-                    { name: 'DB_PORT', value: process.env.DB_PORT! },
-                    { name: 'DB_NAME', value: process.env.DB_NAME! },
-                    { name: 'GRAPHQL_SERVER_HOST', value: process.env.GRAPHQL_SERVER_HOST! },
-                    { name: 'GRAPHQL_SERVER_PORT', value: process.env.GRAPHQL_SERVER_PORT! },
-                    { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
+                    { name: 'DB_PASS', value: DB_PASS },
+                    { name: 'DB_USER', value: DB_USERNAME },
+                    { name: 'DB_PORT', value: DB_PORT },
+                    { name: 'DB_NAME', value: PROCESSOR_DATABASE_NAME },
+                    { name: 'WARTHOG_DB_DATABASE', value: PROCESSOR_DATABASE_NAME },
+                    { name: 'WARTHOG_DB_USERNAME', value: DB_USERNAME },
+                    { name: 'WARTHOG_DB_PASSWORD', value: DB_PASS },
+                    { name: 'WARTHOG_APP_PORT', value: '4002' },
+                    // Why do we need this anyway?
+                    { name: 'GRAPHQL_SERVER_HOST', value: 'graphql-server' },
                   ],
-                  ports: [{ name: 'graph-ql-port', containerPort: Number(process.env.GRAPHQL_SERVER_PORT!) }],
+                  ports: [{ name: 'graph-ql-port', containerPort: 4002 }],
                   args: ['workspace', 'query-node-root', 'query-node:start:prod'],
                 },
               ],
@@ -163,9 +181,19 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                       value: indexerURL,
                     },
                     { name: 'TYPEORM_HOST', value: processorDbName },
-                    { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
+                    { name: 'TYPEORM_DATABASE', value: PROCESSOR_DATABASE_NAME },
                     { name: 'DEBUG', value: 'index-builder:*' },
                     { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
+                    { name: 'DB_PASS', value: DB_PASS },
+                    { name: 'DB_USER', value: DB_USERNAME },
+                    { name: 'DB_PORT', value: DB_PORT },
+                    { name: 'WARTHOG_DB_DATABASE', value: PROCESSOR_DATABASE_NAME },
+                    { name: 'WARTHOG_DB_USERNAME', value: DB_USERNAME },
+                    { name: 'WARTHOG_DB_PASSWORD', value: DB_PASS },
+                    { name: 'WARTHOG_DB_PORT', value: DB_PORT },
+                    // What do these have to do with processor and why are they required!
+                    { name: 'WARTHOG_APP_HOST', value: 'graphql-server' },
+                    { name: 'WARTHOG_APP_PORT', value: '4002' },
                   ],
                   volumeMounts: [
                     {
@@ -175,6 +203,8 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                     },
                   ],
                   command: ['/bin/sh', '-c'],
+                  // Should we really use "-e ../.env" args could there be some env vars we have not
+                  // correctly overridden for this container?
                   args: ['cd query-node && yarn hydra-processor run -e ../.env'],
                 },
               ],
@@ -206,5 +236,5 @@ export interface ServiceDeploymentArgs {
   defsConfig: pulumi.Output<string> | undefined
   externalIndexerUrl: string | undefined
   env?: Environment[]
-  storage: Number
+  storage: number
 }
