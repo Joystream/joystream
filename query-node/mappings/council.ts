@@ -455,6 +455,26 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // end the last election round and start new one
   await startNextElectionRound(store, electedCouncil, electionRound)
 
+  // unset `isCouncilMember` sign for old council's members
+  const oldElectedMembers = await store.getMany(Membership, { where: { isCouncilMember: true } })
+  await Promise.all(
+    oldElectedMembers.map(async (member) => {
+      member.isCouncilMember = false
+
+      await store.save<Membership>(member)
+    })
+  )
+
+  // set `isCouncilMember` sign for new council's members
+  await Promise.all(
+    (electedCouncil.councilMembers || []).map(async (councilMember) => {
+      const member = councilMember.member
+      member.isCouncilMember = true
+
+      await store.save<Membership>(member)
+    })
+  )
+
   // common event processing - save
 
   const newCouncilElectedEvent = new NewCouncilElectedEvent({
@@ -566,7 +586,10 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
     ...genericEventFields(event),
     member,
-    noteMetadata,
+    header: metadata?.header || undefined,
+    bulletPoints: metadata?.bulletPoints || [],
+    bannerImageUri: metadata?.bannerImageUri || undefined,
+    description: metadata?.description || undefined,
   })
 
   await store.save<CandidacyNoteSetEvent>(candidacyNoteSetEvent)

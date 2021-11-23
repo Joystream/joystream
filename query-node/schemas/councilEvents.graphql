@@ -215,8 +215,17 @@ type CandidacyNoteSetEvent implements Event @entity {
   "Candidate's membership."
   member: Membership!
 
-  "The metadata contained in note."
-  noteMetadata: CandidacyNoteMetadata!
+  "Candidacy header text."
+  header: String
+
+  "Candidate program in form of bullet points."
+  bulletPoints: [String!]!
+
+  "Image uri of candidate's banner."
+  bannerImageUri: String
+
+  "Candidacy description (Markdown-formatted)."
+  description: String
 }
 
 type RewardPaymentEvent implements Event @entity {
