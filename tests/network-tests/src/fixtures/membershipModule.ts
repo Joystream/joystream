@@ -40,7 +40,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
         )
       )
     )
-      .map(({ events }) => this.api.findMemberRegisteredEvent(events))
+      .map((r) => this.api.findEvent(r, 'members', 'MemberRegistered')?.data[0])
       .filter((id) => id !== undefined) as MemberId[]
 
     this.debug(`Registered ${this.memberIds.length} new members`)

@@ -5,6 +5,10 @@ import BN from 'bn.js'
 import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
 import { Seat } from '@joystream/types/council'
+import { metaToObject } from '@joystream/metadata-protobuf/utils'
+import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { createType } from '@joystream/types'
+import { Bytes } from '@polkadot/types'
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
@@ -49,5 +53,14 @@ export class Utils {
 
   public static camelToSnakeCase(key: string): string {
     return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
+
+  public static metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
+    return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
+  }
+
+  public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {
+    // We use `toObject()` to get rid of .prototype defaults for optional fields
+    return metaToObject(metaClass, metaClass.decode(bytes.toU8a(true)))
   }
 }

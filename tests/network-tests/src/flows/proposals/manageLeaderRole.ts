@@ -86,8 +86,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
 
-  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
-  assert(openingId)
+  const openingId = api.getEvent(voteForCreateOpeningProposalFixture.events, group, 'OpeningAdded')?.data[0]
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
     api,
@@ -153,9 +152,8 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   const leadId = (await api.getLeadWorkerId(group)) as WorkerId
   assert(leadId)
-  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.events, group, leadId) as WorkerId
-  assert(workerId)
-  assert(leadId!.eq(workerId))
+  const workerId = api.getEvent(voteForeLeaderRewardFixture.events, group, 'WorkerRewardAmountUpdated').data[0]
+  assert(workerId.eq(leadId))
   const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
   assert(rewardRelationship.amount_per_payout.eq(alteredPayoutAmount))
 

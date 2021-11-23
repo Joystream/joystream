@@ -1,12 +1,11 @@
-import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
+import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
-import { Codec, ISubmittableResult } from '@polkadot/types/types'
+import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
   Application,
-  ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
   OpeningPolicyCommitment,
@@ -15,7 +14,7 @@ import {
 import { ElectionStake, Seat } from '@joystream/types/council'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@joystream/types/stake'
@@ -52,6 +51,13 @@ const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.OperationsWorkingGroupBeta]: 'OperationsBeta',
   [WorkingGroups.OperationsWorkingGroupGamma]: 'OperationsGamma',
 }
+
+type EventSection = keyof ApiPromise['events'] & string
+type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -120,6 +126,28 @@ export class Api {
     this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
+  }
+
+  public get tx(): ApiPromise['tx'] {
+    return this.api.tx
+  }
+
+  public signAndSend(tx: SubmittableExtrinsic<'promise'>, account: string | AccountId): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(tx, account)
+  }
+
+  public signAndSendMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    account: string | AccountId
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx) => this.sender.signAndSend(tx, account)))
+  }
+
+  public signAndSendManyByMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    accounts: string[] | AccountId[]
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx, i) => this.sender.signAndSend(tx, accounts[i])))
   }
 
   getSuri(address: string | AccountId): string {
@@ -780,79 +808,52 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
-  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
-    return events.find((record) => record.event.section === section && record.event.method === method)
-  }
-
-  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public findEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> | undefined {
+    if (Array.isArray(result)) {
+      return result.find(({ event }) => event.section === section && event.method === method)?.event as
+        | EventType<S, M>
+        | undefined
     }
+    return result.findRecord(section, method)?.event as EventType<S, M> | undefined
   }
 
-  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
-    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
-    if (record) {
-      return record.event.data[1] as ProposalId
+  public getEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> {
+    const event = this.findEvent(result, section, method)
+    if (!event) {
+      throw new Error(
+        `Cannot find expected ${section}.${method} event in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}`
+      )
     }
+    return event
   }
 
-  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
-    if (record) {
-      return record.event.data[0] as OpeningId
+  public findEvents<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M,
+    expectedCount?: number
+  ): EventType<S, M>[] {
+    const events = Array.isArray(result)
+      ? result.filter(({ event }) => event.section === section && event.method === method).map(({ event }) => event)
+      : result.filterRecords(section, method).map((r) => r.event)
+    if (expectedCount && events.length !== expectedCount) {
+      throw new Error(
+        `Unexpected count of ${section}.${method} events in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
+      )
     }
-  }
-
-  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
-    if (record) {
-      return (record.event.data as unknown) as WorkerId
-    }
-  }
-
-  public findBeganApplicationReviewEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
-  }
-
-  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
-  }
-
-  public findWorkerRewardAmountUpdatedEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups,
-    workerId: WorkerId
-  ): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
-    if (record) {
-      const id = (record.event.data[0] as unknown) as WorkerId
-      if (id.eq(workerId)) {
-        return workerId
-      }
-    }
-  }
-
-  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
-  }
-
-  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
-  }
-
-  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
-    if (record) {
-      return (record.event.data[1] as unknown) as BN
-    }
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
@@ -885,26 +886,6 @@ export class Api {
     })
 
     return invertedPromise
-  }
-
-  public findOpeningFilledEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationIdToWorkerIdMap | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
-    if (record) {
-      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
-    }
-  }
-
-  public findApplicationReviewBeganEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
@@ -1671,11 +1652,11 @@ export class Api {
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
+    const entries: [StorageKey<[WorkerId]>, Worker][] = await this.api.query[module].workerById.entries<Worker>()
 
     return entries
       .filter(([idKey]) => {
-        return workerIds.includes(idKey.args[0] as WorkerId)
+        return workerIds.some((id) => id.eq(idKey.args[0]))
       })
       .map(([, worker]) => worker.role_account_id.toString())
   }
