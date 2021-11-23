@@ -97,9 +97,6 @@ type Membership @entity {
 
   "Votes recieved in referendums by this member."
   votesRecieved: [CastVote!] @derivedFrom(field: "voteFor")
-
-  "Events announcing council being elected."
-  electedCouncilEvents: [NewCouncilElectedEvent!] @derivedFrom(field: "electedMembers")
 }
 
 type MembershipSystemSnapshot @entity {

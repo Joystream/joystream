@@ -41,21 +41,10 @@ type CouncilStageIdle @variant {
 
 union CouncilStage = CouncilStageAnnouncing | CouncilStageElection | CouncilStageIdle | VariantNone
 
-type ElectionProblemNotEnoughCandidates @variant {
-  # no properties
-
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
+enum ElectionProblem {
+  NOT_ENOUGH_CANDIDATES
+  NEW_COUNCIL_NOT_ELECTED
 }
-
-type ElectionProblemNewCouncilNotElected @variant {
-  # no properties
-
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
-}
-
-union ElectionProblem = ElectionProblemNotEnoughCandidates | ElectionProblemNewCouncilNotElected | VariantNone
 
 type Candidate @entity {
   "Account used for staking currency needed for the candidacy."
@@ -179,11 +168,16 @@ type ReferendumStageRevealingOptionResult @entity {
   referendumFinishedEvent: ReferendumFinishedEvent!
 }
 
+# This section is not useful before referencing variant is solved.
+# See commented reference in ElectionRound, for example.
+# Uncomment after solving the issue or delete if it can't be solved or is not needed
+# in the future.
+#
 # TODO: this maybe needs to be @entity - so it's saved in db
-union ReferendumStage = ReferendumStageInactive | ReferendumStageVoting | ReferendumStageRevealing | VariantNone
+#union ReferendumStage = ReferendumStageInactive | ReferendumStageVoting | ReferendumStageRevealing | VariantNone
 
 type CastVote @entity {
-  "Hashed vote that was casted before being revealed."
+  "Hashed vote that was casted before being revealed. Hex format."
   commitment: String!
 
   "Election round."
@@ -258,6 +252,8 @@ type ElectionRound @entity {
   candidates: [Candidate!]! @derivedFrom(field: "electionRound")
 }
 
+# Not yet sure if this will be needed by apps using query node.
+#
 #type Budget @entity {
 #  "Block number at which the next rewards will be paid."
 #  nextRewardPaymentsAt: BigInt!

@@ -1,5 +1,5 @@
 import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
-import { bytesToString, deserializeMetadata, genericEventFields } from './common'
+import { deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
 import { FindConditions } from 'typeorm'
 
@@ -35,7 +35,6 @@ import {
   ReferendumStageRevealingOptionResult,
 
   // Council & referendum schema types
-  ElectionProblemNotEnoughCandidates,
   CouncilStageUpdate,
   CouncilStageAnnouncing,
   CouncilStage,
@@ -54,6 +53,7 @@ import {
 } from 'query-node/dist/model'
 import { Council, Referendum } from './generated/types'
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
 /////////////////// Common - Gets //////////////////////////////////////////////
 
@@ -200,25 +200,21 @@ async function updateCouncilStage(
   store: DatabaseManager,
   councilStage: typeof CouncilStage,
   blockNumber: number,
-  electionProblem?: typeof ElectionProblem
+  electionProblem?: ElectionProblem
 ): Promise<void> {
-  const councilStageUpdate = new CouncilStageUpdate({
-    stage: councilStage,
-    changedAt: new BN(blockNumber),
-    electionProblem: electionProblem || new VariantNone(),
-  })
-
-  await store.save<CouncilStageUpdate>(councilStageUpdate)
-
-  // update council record
   const electedCouncil = await getCurrentElectedCouncil(store, true)
   if (!electedCouncil) {
     return
   }
 
-  // electedCouncil.updates.push(councilStageUpdate) // uncomment after solving https://github.com/Joystream/hydra/issues/462
-  electedCouncil.updates = (electedCouncil.updates || []).concat([councilStageUpdate])
-  await store.save<ElectedCouncil>(electedCouncil)
+  const councilStageUpdate = new CouncilStageUpdate({
+    stage: councilStage,
+    changedAt: new BN(blockNumber),
+    electionProblem,
+    electedCouncil,
+  })
+
+  await store.save<CouncilStageUpdate>(councilStageUpdate)
 }
 
 /*
@@ -329,7 +325,7 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
   const stage = new CouncilStageAnnouncing()
   stage.candidatesCount = new BN(0)
 
-  await updateCouncilStage(store, stage, event.blockNumber, new ElectionProblemNotEnoughCandidates())
+  await updateCouncilStage(store, stage, event.blockNumber, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
 /*
@@ -360,20 +356,10 @@ export async function council_VotingPeriodStarted({ event, store }: EventContext
   The event is emitted when a member announces candidacy to the council.
 */
 export async function council_NewCandidate({ event, store }: EventContext & StoreContext): Promise<void> {
-  // common event processing
+  // common event processing - init
 
   const [memberId, stakingAccount, rewardAccount, balance] = new Council.NewCandidateEvent(event).params
   const member = await getMembership(store, memberId.toString())
-
-  const newCandidateEvent = new NewCandidateEvent({
-    ...genericEventFields(event),
-    member,
-    stakingAccount: stakingAccount.toString(),
-    rewardAccount: rewardAccount.toString(),
-    balance,
-  })
-
-  await store.save<NewCandidateEvent>(newCandidateEvent)
 
   // specific event processing
 
@@ -408,23 +394,28 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     noteMetadata,
   })
   await store.save<Candidate>(candidate)
+
+  // common event processing - save
+
+  const newCandidateEvent = new NewCandidateEvent({
+    ...genericEventFields(event),
+    candidate,
+    stakingAccount: stakingAccount.toString(),
+    rewardAccount: rewardAccount.toString(),
+    balance,
+  })
+
+  await store.save<NewCandidateEvent>(newCandidateEvent)
 }
 
 /*
   The event is emitted when the new council is elected. Sufficient members were elected and there is no other problem.
 */
 export async function council_NewCouncilElected({ event, store }: EventContext & StoreContext): Promise<void> {
-  // common event processing
+  // common event processing - init
 
   const [memberIds] = new Council.NewCouncilElectedEvent(event).params
   const members = await store.getMany(Membership, { where: { id: memberIds.map((item) => item.toString()) } })
-
-  const newCouncilElectedEvent = new NewCouncilElectedEvent({
-    ...genericEventFields(event),
-    electedMembers: members,
-  })
-
-  await store.save<NewCouncilElectedEvent>(newCouncilElectedEvent)
 
   // specific event processing
 
@@ -463,6 +454,15 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // end the last election round and start new one
   await startNextElectionRound(store, electedCouncil, electionRound)
+
+  // common event processing - save
+
+  const newCouncilElectedEvent = new NewCouncilElectedEvent({
+    ...genericEventFields(event),
+    electedCouncil,
+  })
+
+  await store.save<NewCouncilElectedEvent>(newCouncilElectedEvent)
 }
 
 /*
@@ -495,10 +495,11 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
 
   const [memberId] = new Council.CandidacyStakeReleaseEvent(event).params
   const member = await getMembership(store, memberId.toString())
+  const candidate = await getCandidate(store, memberId.toString()) // get last member's candidacy record
 
   const candidacyStakeReleaseEvent = new CandidacyStakeReleaseEvent({
     ...genericEventFields(event),
-    member,
+    candidate,
   })
 
   await store.save<CandidacyStakeReleaseEvent>(candidacyStakeReleaseEvent)
@@ -506,7 +507,6 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
   // specific event processing
 
   // update candidate info about stake lock
-  const candidate = await getCandidate(store, memberId.toString()) // get last member's candidacy record
   candidate.stakeLocked = false
   await store.save<Candidate>(candidate)
 }
@@ -552,10 +552,15 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   // unpack note's metadata and save it to db
   const metadata = deserializeMetadata(CouncilCandidacyNoteMetadata, note)
   const noteMetadata = candidate.noteMetadata
-  noteMetadata.header = metadata?.header || undefined
+  // `XXX || (null as any)` construct clears metadata if requested (see https://github.com/Joystream/hydra/issues/435)
+  noteMetadata.header = isSet(metadata?.header) ? metadata?.header || (null as any) : metadata?.header
   noteMetadata.bulletPoints = metadata?.bulletPoints || []
-  noteMetadata.bannerImageUri = metadata?.bannerImageUri || undefined
-  noteMetadata.description = metadata?.description || undefined
+  noteMetadata.bannerImageUri = isSet(metadata?.bannerImageUri)
+    ? metadata?.bannerImageUri || (null as any)
+    : metadata?.bannerImageUri
+  noteMetadata.description = isSet(metadata?.description)
+    ? metadata?.description || (null as any)
+    : metadata?.description
   await store.save<CandidacyNoteMetadata>(noteMetadata)
 
   const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
@@ -781,7 +786,7 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
       (item, index) =>
         new ReferendumStageRevealingOptionResult({
           votePower: item.vote_power,
-          option: members[index],
+          option: members.find((tmpMember) => tmpMember.id.toString() == optionResultsRaw[index].option_id.toString()),
         })
     ),
   })
@@ -795,27 +800,17 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
   The event is emitted when a vote is casted in the council election.
 */
 export async function referendum_VoteCast({ event, store }: EventContext & StoreContext): Promise<void> {
-  // common event processing
+  // common event processing - init
 
   const [account, hash, stake] = new Referendum.VoteCastEvent(event).params
   const votePower = calculateVotePower(account.toString(), stake)
-  const hashString = bytesToString(hash)
-
-  const voteCastEvent = new VoteCastEvent({
-    ...genericEventFields(event),
-    account: account.toString(),
-    hash: hashString,
-    votePower,
-  })
-
-  await store.save<VoteCastEvent>(voteCastEvent)
 
   // specific event processing
 
   const electionRound = await getCurrentElectionRound(store)
 
   const castVote = new CastVote({
-    commitment: hashString,
+    commitment: hash.toString(),
     electionRound,
     stake,
     stakeLocked: true,
@@ -823,25 +818,25 @@ export async function referendum_VoteCast({ event, store }: EventContext & Store
     votePower: votePower,
   })
   await store.save<CastVote>(castVote)
+
+  // common event processing - save
+
+  const voteCastEvent = new VoteCastEvent({
+    ...genericEventFields(event),
+    castVote,
+  })
+
+  await store.save<VoteCastEvent>(voteCastEvent)
 }
 
 /*
   The event is emitted when a previously casted vote is revealed.
 */
 export async function referendum_VoteRevealed({ event, store }: EventContext & StoreContext): Promise<void> {
-  // common event processing
+  // common event processing - init
 
   const [account, memberId, salt] = new Referendum.VoteRevealedEvent(event).params
   const member = await getMembership(store, memberId.toString())
-
-  const voteRevealedEvent = new VoteRevealedEvent({
-    ...genericEventFields(event),
-    account: account.toString(),
-    member: member,
-    salt: bytesToString(salt),
-  })
-
-  await store.save<VoteRevealedEvent>(voteRevealedEvent)
 
   // specific event processing
 
@@ -856,6 +851,15 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   const candidate = await getCandidate(store, memberId.toString(), electionRound)
   candidate.votePower = candidate.votePower.add(castVote.votePower)
   await store.save<Candidate>(candidate)
+
+  // common event processing - save
+
+  const voteRevealedEvent = new VoteRevealedEvent({
+    ...genericEventFields(event),
+    castVote,
+  })
+
+  await store.save<VoteRevealedEvent>(voteRevealedEvent)
 }
 
 /*

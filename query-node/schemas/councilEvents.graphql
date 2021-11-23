@@ -86,8 +86,8 @@ type NewCandidateEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidate's membership."
-  member: Membership!
+  "Related candidate."
+  candidate: Candidate!
 
   "Candidate's account used to stake currency."
   stakingAccount: String!
@@ -119,8 +119,8 @@ type NewCouncilElectedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidates' memberships."
-  electedMembers: [Membership!]
+  "Newly elected council."
+  electedCouncil: ElectedCouncil!
 }
 
 type NewCouncilNotElectedEvent implements Event @entity {
@@ -164,8 +164,8 @@ type CandidacyStakeReleaseEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidate's membership."
-  member: Membership!
+  "Related candidate."
+  candidate: Candidate!
 }
 
 type CandidacyWithdrawEvent implements Event @entity {
@@ -513,14 +513,8 @@ type VoteCastEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Account that cast the vote."
-  account: String!
-
-  "Hash of sealed vote."
-  hash: String!
-
-  "Vote power decided by amount staked."
-  votePower: BigInt!
+  "Vote cast."
+  castVote: CastVote!
 }
 
 type VoteRevealedEvent implements Event @entity {
@@ -543,14 +537,8 @@ type VoteRevealedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Account that cast a vote."
-  account: String!
-
-  "Membership of user that cast the vote."
-  member: Membership!
-
-  "Salt that has been used for the vote's hash creation."
-  salt: String!
+  "Vote cast."
+  castVote: CastVote!
 }
 
 type StakeReleasedEvent implements Event @entity {
