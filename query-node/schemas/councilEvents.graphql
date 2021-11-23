@@ -188,8 +188,8 @@ type CandidacyWithdrawEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidate's membership."
-  member: Membership!
+  "Related candidate."
+  candidate: Candidate!
 }
 
 type CandidacyNoteSetEvent implements Event @entity {
@@ -212,20 +212,11 @@ type CandidacyNoteSetEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidate's membership."
-  member: Membership!
+  "Related candidate."
+  candidate: Candidate!
 
-  "Candidacy header text."
-  header: String
-
-  "Candidate program in form of bullet points."
-  bulletPoints: [String!]!
-
-  "Image uri of candidate's banner."
-  bannerImageUri: String
-
-  "Candidacy description (Markdown-formatted)."
-  description: String
+  "The metadata contained in note."
+  noteMetadata: CandidacyNoteMetadata!
 }
 
 type RewardPaymentEvent implements Event @entity {
@@ -248,8 +239,8 @@ type RewardPaymentEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Candidate's membership."
-  member: Membership!
+  "Related council member."
+  councilMember: CouncilMember!
 
   "Candidate's account that will be recieving rewards if candidate's elected."
   rewardAccount: String!

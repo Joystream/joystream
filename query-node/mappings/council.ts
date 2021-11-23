@@ -347,7 +347,7 @@ export async function council_VotingPeriodStarted({ event, store }: EventContext
 
   // add stage update record
   const stage = new CouncilStageElection()
-  stage.candidatesCount = numOfCandidates
+  stage.candidatesCount = new BN(numOfCandidates.toString()) // toString() is needed to duplicate BN
 
   await updateCouncilStage(store, stage, event.blockNumber)
 }
@@ -392,6 +392,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     candidacyWithdrawn: false,
     votePower: new BN(0),
     noteMetadata,
+    votesRecieved: [],
   })
   await store.save<Candidate>(candidate)
 
@@ -423,6 +424,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   const oldElectedCouncil = await getCurrentElectedCouncil(store, true)
   if (oldElectedCouncil) {
     oldElectedCouncil.isResigned = true
+    oldElectedCouncil.endedAtBlock = event.blockNumber
     await store.save<ElectedCouncil>(oldElectedCouncil)
   }
 
@@ -514,7 +516,6 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
   // common event processing
 
   const [memberId] = new Council.CandidacyStakeReleaseEvent(event).params
-  const member = await getMembership(store, memberId.toString())
   const candidate = await getCandidate(store, memberId.toString()) // get last member's candidacy record
 
   const candidacyStakeReleaseEvent = new CandidacyStakeReleaseEvent({
@@ -538,11 +539,11 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // common event processing
 
   const [memberId] = new Council.CandidacyWithdrawEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const candidate = await getCandidate(store, memberId.toString())
 
   const candidacyWithdrawEvent = new CandidacyWithdrawEvent({
     ...genericEventFields(event),
-    member,
+    candidate,
   })
 
   await store.save<CandidacyWithdrawEvent>(candidacyWithdrawEvent)
@@ -551,7 +552,6 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
 
   // mark candidacy as withdrawn
   const electionRound = await getCurrentElectionRound(store)
-  const candidate = await getCandidate(store, memberId.toString(), electionRound)
   candidate.candidacyWithdrawn = true
   await store.save<Candidate>(candidate)
 }
@@ -563,7 +563,6 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   // common event processing
 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
-  const member = await getMembership(store, memberId.toString())
 
   // load candidate recored
   const electionRound = await getCurrentElectionRound(store)
@@ -583,13 +582,20 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
     : metadata?.description
   await store.save<CandidacyNoteMetadata>(noteMetadata)
 
-  const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
-    ...genericEventFields(event),
-    member,
+  // save metadata set by this event
+  const noteMetadataSnapshot = new CandidacyNoteMetadata({
     header: metadata?.header || undefined,
     bulletPoints: metadata?.bulletPoints || [],
     bannerImageUri: metadata?.bannerImageUri || undefined,
     description: metadata?.description || undefined,
+  })
+
+  await store.save<CandidacyNoteMetadata>(noteMetadataSnapshot)
+
+  const candidacyNoteSetEvent = new CandidacyNoteSetEvent({
+    ...genericEventFields(event),
+    candidate,
+    noteMetadata: noteMetadataSnapshot,
   })
 
   await store.save<CandidacyNoteSetEvent>(candidacyNoteSetEvent)
@@ -604,11 +610,11 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
   // common event processing
 
   const [memberId, rewardAccount, paidBalance, missingBalance] = new Council.RewardPaymentEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const councilMember = await getCouncilMember(store, memberId.toString())
 
   const rewardPaymentEvent = new RewardPaymentEvent({
     ...genericEventFields(event),
-    member,
+    councilMember,
     rewardAccount: rewardAccount.toString(),
     paidBalance,
     missingBalance,
@@ -619,7 +625,6 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
   // specific event processing
 
   // update (un)paid reward info
-  const councilMember = await getCouncilMember(store, memberId.toString())
   councilMember.accumulatedReward = councilMember.accumulatedReward.add(paidBalance)
   councilMember.unpaidReward = missingBalance
   councilMember.lastPaymentBlock = new BN(event.blockNumber)
@@ -865,13 +870,13 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
 
   // read vote info
   const electionRound = await getCurrentElectionRound(store)
+  const candidate = await getCandidate(store, memberId.toString(), electionRound)
   const castVote = await getAccountCastVote(store, account.toString(), electionRound)
 
   // update cast vote's voteFor info
-  castVote.voteFor = member
+  castVote.voteFor = candidate
   await store.save<CastVote>(castVote)
 
-  const candidate = await getCandidate(store, memberId.toString(), electionRound)
   candidate.votePower = candidate.votePower.add(castVote.votePower)
   await store.save<Candidate>(candidate)
 

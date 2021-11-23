@@ -73,6 +73,9 @@ type Candidate @entity {
 
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
+
+  "Votes recieved in referendums by this member."
+  votesRecieved: [CastVote!]! @derivedFrom(field: "voteFor")
 }
 
 type CouncilMember @entity {
@@ -119,37 +122,42 @@ type CandidacyNoteMetadata @entity {
 
 ################### Referendum #################################################
 
-type ReferendumStageInactive @variant {
-  # no properties
-
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
-}
-
-type ReferendumStageVoting @variant {
-  "Block in which referendum started."
-  started: BigInt!
-
-  "Target number of winners."
-  winningTargetCount: BigInt!
-
-  "Index of current election"
-  electionRound: ElectionRound!
-}
-
-type ReferendumStageRevealing @variant {
-  "Block in which referendum started"
-  started: BigInt!
-
-  "Target number of winners"
-  winningTargetCount: BigInt!
-
-  "Intermediate winning options"
-  intermediateWinners: [ReferendumStageRevealingOptionResult!]!
-
-  "Index of current election"
-  electionRound: ElectionRound!
-}
+# This section (ReferendumStage*) is not useful before referencing variant is solved.
+# See commented reference in ElectionRound, for example.
+# Uncomment after solving the issue or delete if it can't be solved or is not needed
+# in the future.
+#
+#type ReferendumStageInactive @variant {
+#  # no properties
+#
+#  # TODO: remove me - variant needs to have at least 1 property now
+#  dummy: Int
+#}
+#
+#type ReferendumStageVoting @variant {
+#  "Block in which referendum started."
+#  started: BigInt!
+#
+#  "Target number of winners."
+#  winningTargetCount: BigInt!
+#
+#  "Index of current election"
+#  electionRound: ElectionRound!
+#}
+#
+#type ReferendumStageRevealing @variant {
+#  "Block in which referendum started"
+#  started: BigInt!
+#
+#  "Target number of winners"
+#  winningTargetCount: BigInt!
+#
+#  "Intermediate winning options"
+#  intermediateWinners: [ReferendumStageRevealingOptionResult!]!
+#
+#  "Index of current election"
+#  electionRound: ElectionRound!
+#}
 
 type ReferendumStageRevealingOptionResult @entity {
   "Member that received votes."
@@ -168,11 +176,6 @@ type ReferendumStageRevealingOptionResult @entity {
   referendumFinishedEvent: ReferendumFinishedEvent!
 }
 
-# This section is not useful before referencing variant is solved.
-# See commented reference in ElectionRound, for example.
-# Uncomment after solving the issue or delete if it can't be solved or is not needed
-# in the future.
-#
 # TODO: this maybe needs to be @entity - so it's saved in db
 #union ReferendumStage = ReferendumStageInactive | ReferendumStageVoting | ReferendumStageRevealing | VariantNone
 
@@ -193,7 +196,7 @@ type CastVote @entity {
   castBy: String!
 
   "Member receiving the vote."
-  voteFor: Membership
+  voteFor: Candidate
 
   "Vote's power."
   votePower: BigInt!

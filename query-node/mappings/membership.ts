@@ -108,7 +108,6 @@ async function createNewMemberFromParams(
 
     councilMembers: [],
     referendumStageRevealingOptionResults: [],
-    votesRecieved: [],
   })
 
   await store.save<MemberMetadata>(member.metadata)
