@@ -9,7 +9,7 @@ entities:
   - generated/graphql-server/dist/src/modules/**/*.model.js
 typegen:
   metadata:
-    source: ${TYPEGEN_WS_URI}
+    source: ../chain-metadata.json
   events:
     # Membership
     - members.MembershipBought

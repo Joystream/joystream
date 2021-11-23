@@ -17,7 +17,6 @@ yarn
 cd ..
 
 # Generate types and server code
-TYPEGEN_WS_URI="${TYPEGEN_WS_URI:-ws://localhost:9944}" yarn typegen:configure
 yarn typegen
 yarn codegen:noinstall
 yarn format

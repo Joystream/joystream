@@ -5,6 +5,7 @@
   "scripts": {
     "build": "./build.sh",
     "start": "./start.sh",
+    "kill": "./kill.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
     "lint": "echo \"Skippinng\"",
     "clean": "rm -rf ./generated",
@@ -26,8 +27,7 @@
     "hydra-typegen": "./codegen/node_modules/.bin/hydra-typegen",
     "codegen": "yarn hydra-cli codegen --schema ../../schemas/",
     "codegen:noinstall": "yarn codegen --no-install",
-    "typegen:configure": "TYPEGEN_WS_URI=${TYPEGEN_WS_URI:-ws://localhost:9944} yarn envsub manifest.yml typegen.yml",
-    "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen typegen.yml --debug",
+    "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen manifest.yml --debug",
     "mappings:build": "yarn workspace query-node-mappings build",
     "docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
     "docker:db:up": "(cd ../ && docker-compose up -d db)",
