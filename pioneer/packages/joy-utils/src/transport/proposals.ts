@@ -118,8 +118,8 @@ export default class ProposalsTransport extends BaseTransport {
 
     return {
       id,
-      title: rawProposal.title.toString(),
-      description: rawProposal.description.toString(),
+      title: bytesToString(rawProposal.title),
+      description: bytesToString(rawProposal.description),
       parameters: rawProposal.parameters,
       votingResults: rawProposal.votingResults,
       proposerId: rawProposal.proposerId.toNumber(),
