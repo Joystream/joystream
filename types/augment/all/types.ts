@@ -464,7 +464,7 @@ export interface EpisodeParemters extends Enum {
 
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
-  readonly error: Text;
+  readonly error: Bytes;
 }
 
 /** @name FailedAt */
@@ -812,7 +812,7 @@ export interface ProposalDecisionStatus extends Enum {
 /** @name ProposalDetails */
 export interface ProposalDetails extends Enum {
   readonly isText: boolean;
-  readonly asText: Text;
+  readonly asText: Bytes;
   readonly isRuntimeUpgrade: boolean;
   readonly asRuntimeUpgrade: Bytes;
   readonly isSetElectionParameters: boolean;
@@ -850,7 +850,7 @@ export interface ProposalDetails extends Enum {
 /** @name ProposalDetailsOf */
 export interface ProposalDetailsOf extends Enum {
   readonly isText: boolean;
-  readonly asText: Text;
+  readonly asText: Bytes;
   readonly isRuntimeUpgrade: boolean;
   readonly asRuntimeUpgrade: Bytes;
   readonly isSetElectionParameters: boolean;
@@ -892,8 +892,8 @@ export interface ProposalId extends u32 {}
 export interface ProposalOf extends Struct {
   readonly parameters: ProposalParameters;
   readonly proposerId: MemberId;
-  readonly title: Text;
-  readonly description: Text;
+  readonly title: Bytes;
+  readonly description: Bytes;
   readonly createdAt: u32;
   readonly status: ProposalStatus;
   readonly votingResults: VotingResults;

@@ -551,15 +551,15 @@
     "ProposalOf": {
         "parameters": "ProposalParameters",
         "proposerId": "MemberId",
-        "title": "Text",
-        "description": "Text",
+        "title": "Bytes",
+        "description": "Bytes",
         "createdAt": "u32",
         "status": "ProposalStatus",
         "votingResults": "VotingResults"
     },
     "ProposalDetails": {
         "_enum": {
-            "Text": "Text",
+            "Text": "Bytes",
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
@@ -580,7 +580,7 @@
     },
     "ProposalDetailsOf": {
         "_enum": {
-            "Text": "Text",
+            "Text": "Bytes",
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
@@ -678,7 +678,7 @@
         }
     },
     "ExecutionFailed": {
-        "error": "Text"
+        "error": "Bytes"
     },
     "Approved": {
         "_enum": {
