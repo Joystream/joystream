@@ -37,6 +37,19 @@
       command: yarn build:packages
       args:
         chdir: '{{ remote_code_path }}'
+      async: 3600
+      poll: 0
+      register: build_result
+
+    - name: Check on build async task
+      async_status:
+        jid: '{{ build_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 36
+      # Check for the status every 100s
+      delay: 100
 
     - name: Build Node image
       command: yarn build:node:docker
@@ -48,7 +61,20 @@
       args:
         chdir: '{{ remote_code_path }}'
       environment:
-        PERSIST: true
+        PERSIST: 'true'
+      async: 1800
+      poll: 0
+      register: compose_result
+
+    - name: Check on yarn start task
+      async_status:
+        jid: '{{ compose_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 18
+      # Check for the status every 100s
+      delay: 100
 
     - name: Set nip.io domain with IP
       set_fact:
