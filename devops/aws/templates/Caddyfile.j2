@@ -24,7 +24,6 @@
 }
 
 {{ nip_domain }}/graphql* {
-    uri strip_prefix /graphql
     reverse_proxy localhost:8081
 }
 
