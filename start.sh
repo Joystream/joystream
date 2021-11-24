@@ -31,6 +31,8 @@ export SKIP_MOCK_CONTENT=true
 ## Set sudo as the membership screening authority
 yarn workspace api-scripts set-sudo-as-screening-auth
 
+docker-compose up -d faucet
+
 ## Query Node Infrastructure
 ./query-node/start.sh
 
@@ -40,6 +42,8 @@ docker-compose up -d distributor-1
 
 ## Pioneer UI
 docker-compose up -d pioneer
+
+docker-compose up -d orion
 
 if [ "${PERSIST}" == true ]
 then
