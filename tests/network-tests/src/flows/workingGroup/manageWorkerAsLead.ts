@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import {
   ApplyForOpeningFixture,
@@ -15,19 +16,30 @@ import { OpeningId } from '@joystream/types/hiring'
 import { assert } from 'chai'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { WorkerId } from '@joystream/types/working-group'
 
-export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
-  },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsLead(api, env, WorkingGroups.ContentWorkingGroup)
-  },
+export function manageWorkerFlow(group: WorkingGroups) {
+  return async function ({ api, env }: FlowProps): Promise<void> {
+    await manageWorkerAsLead(api, env, group)
+  }
 }
 
-async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = extendDebug(`flow:manageWorkerAsLead:${group}`)
+export function hireWorkersFlow(group: WorkingGroups, numWorkers = 1) {
+  return async function ({ api, env }: FlowProps): Promise<void> {
+    await hireWorkersAsLead(api, env, group, numWorkers, numWorkers)
+  }
+}
+
+async function hireWorkersAsLead(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  group: WorkingGroups,
+  numApplications = 1,
+  numHires = 1
+): Promise<WorkerId[]> {
+  const debug = extendDebug(`flow:hireWorkers:${group}`)
   debug('Started')
+  numHires = Math.min(numApplications, numHires)
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
@@ -41,7 +53,7 @@ async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: Worki
   const lead = await api.getGroupLead(group)
   assert(lead)
 
-  const applicants = api.createKeyPairs(5).map((key) => key.address)
+  const applicants = api.createKeyPairs(numApplications).map(({ key }) => key.address)
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, applicants, paidTerms)
   await new FixtureRunner(memberSetFixture).run()
 
@@ -70,7 +82,7 @@ async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: Worki
   const applicationIds = applyForWorkerOpeningFixture.getApplicationIds()
   assert.equal(applicants.length, applicationIds.length)
 
-  const applicationIdsToHire = applicationIds.slice(0, 2)
+  const applicationIdsToHire = applicationIds.slice(0, numHires)
 
   // Begin application review
   const beginApplicationReviewFixture = new BeginApplicationReviewFixture(
@@ -92,7 +104,15 @@ async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: Worki
   )
   await new FixtureRunner(fillOpeningFixture).run()
 
-  const firstWorkerId = fillOpeningFixture.getWorkerIds()[0]
+  debug('Done')
+  return fillOpeningFixture.getWorkerIds()
+}
+
+async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+  const debug = extendDebug(`flow:manageWorkerAsLead:${group}`)
+  debug('Started')
+
+  const firstWorkerId = (await hireWorkersAsLead(api, env, group, 3, 1))[0]
 
   const decreaseStakeFixture = new DecreaseStakeFixture(api, firstWorkerId, group)
   // Decrease worker stake

@@ -16,7 +16,7 @@ VOLUME ["/data", "/keystore"]
 ENV WS_PROVIDER_ENDPOINT_URI=ws://not-set
 ENV COLOSSUS_PORT=3333
 ENV QUERY_NODE_HOST=not-set
-ENV WORKER_ID=not-set
+ENV WORKER_ID=
 # - set external key file using the `/keystore` volume
 ENV ACCOUNT_KEYFILE=
 ENV ACCOUNT_PWD=
@@ -32,4 +32,9 @@ ENV ACCOUNT_URI=
 EXPOSE ${COLOSSUS_PORT}
 
 WORKDIR /joystream/storage-node-v2
-ENTRYPOINT yarn storage-node server --queryNodeHost ${QUERY_NODE_HOST} --port ${COLOSSUS_PORT} --uploads /data --worker ${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} --keyFile=${ACCOUNT_KEYFILE} --elasticSearchHost=${ELASTIC_SEARCH_HOST}
+ENTRYPOINT yarn storage-node server --queryNodeHost ${QUERY_NODE_HOST} \
+    --port ${COLOSSUS_PORT} --uploads /data  \
+    --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} \
+    --elasticSearchHost=${ELASTIC_SEARCH_HOST} \
+    --accountUri=${ACCOUNT_URI} \
+    --worker ${WORKER_ID}
