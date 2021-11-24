@@ -39,7 +39,7 @@ This script script will:
 - Start the GraphQL server service (`docker-compose up -d graphql-server`)
 - Start the Hydra Processor responsible for processing the runtime events and running the mappings' functions (`docker-compose up -d processor`)
 
-## 4. Stoping the node and removing all associated containers
+## 4. Stopping the node and removing all associated containers
 
 You can stop the query-node and remove all associated docker containers without affecting any other services by running:
 
