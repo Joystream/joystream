@@ -715,13 +715,13 @@ decl_module! {
 
             // maybe update the reward account if actor is not a collaborator
             if let Some(reward_account) = params.reward_account.as_ref() {
-                ensure_actor_not_a_collaborator::<T>(&actor)?;
+                ensure_actor_can_manage_reward_account::<T>(&channel, &actor)?;
                 channel.reward_account = reward_account.clone();
             }
 
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
-                ensure_actor_not_a_collaborator::<T>(&actor)?;
+                ensure_actor_can_manage_collaborators::<T>(&actor)?;
 
                 // ensure collaborator member ids are valid
                 Self::validate_collaborator_set(new_collabs)?;

@@ -675,7 +675,7 @@ pub struct UploadParametersRecord<MemberId, ChannelId, AccountId, Balance> {
     /// Account for the data object deletion prize.
     pub deletion_prize_source_account_id: AccountId,
 
-    ///a Expected data size fee value for this extrinsic call.
+    /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
 }
 
