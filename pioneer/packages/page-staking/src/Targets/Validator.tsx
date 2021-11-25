@@ -10,7 +10,7 @@ import { ApiPromise } from '@polkadot/api';
 import { AddressSmall, Badge, Checkbox, Icon } from '@polkadot/react-components';
 import { FormatBalance } from '@polkadot/react-query';
 import { useApi, useCall } from '@polkadot/react-hooks';
-import { formatNumber } from '@polkadot/util';
+import { formatNumber, isFunction } from '@polkadot/util';
 import keyring from '@polkadot/ui-keyring';
 
 import MaxBadge from '../MaxBadge';
@@ -34,7 +34,7 @@ function checkIdentity (api: ApiPromise, accountInfo: DeriveAccountInfo): boolea
 
   const { accountId, identity, nickname } = accountInfo;
 
-  if (api.query.identity && api.query.identity.identityOf) {
+  if (api.query.identity && isFunction(api.query.identity.identityOf)) {
     hasIdentity = !!(identity?.display && identity.display.toString());
   } else if (nickname) {
     hasIdentity = !!nickname.toString();

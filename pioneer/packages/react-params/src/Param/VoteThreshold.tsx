@@ -5,7 +5,6 @@
 import { Props } from '../types';
 
 import React, { useCallback } from 'react';
-import { ClassOf } from '@polkadot/types';
 import { registry } from '@polkadot/react-api';
 import { Dropdown } from '@polkadot/react-components';
 import { bnToBn } from '@polkadot/util';
@@ -36,7 +35,7 @@ function VoteThresholdParam ({ className = '', defaultValue: { value }, isDisabl
     [onChange]
   );
 
-  const defaultValue = value instanceof ClassOf(registry, 'VoteThreshold')
+  const defaultValue = value instanceof registry.createClass('VoteThreshold')
     ? value.toNumber()
     : bnToBn(value as number).toNumber();
 

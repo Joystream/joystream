@@ -154,7 +154,7 @@ export function withEasyForm<OuterProps, FormValues>
         setSubmitting(false);
       };
 
-      const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
+      const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | Error | null) => {
         setSubmitting(false);
 
         if (txResult === null) {

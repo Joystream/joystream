@@ -11,6 +11,7 @@ import { isUndefined } from '@polkadot/util';
 
 import findComponent from './findComponent';
 import Static from './Static';
+import { registry } from '@joystream/types';
 
 function Param ({ className = '', defaultValue, isDisabled, isInOption, isOptional, name, onChange, onEnter, onEscape, overrides, type }: Props): React.ReactElement<Props> | null {
   const compRef = useRef<React.ComponentType<CProps> | null>(findComponent(type, overrides));
@@ -20,8 +21,8 @@ function Param ({ className = '', defaultValue, isDisabled, isInOption, isOption
   }
 
   const label = isUndefined(name)
-    ? encodeTypeDef(type)
-    : `${name}: ${encodeTypeDef(type)}`;
+    ? encodeTypeDef(registry, type)
+    : `${name}: ${encodeTypeDef(registry, type)}`;
 
   return isOptional
     ? (

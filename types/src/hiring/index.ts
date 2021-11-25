@@ -1,6 +1,6 @@
 import { Null, u128, u64, u32, Option, Text, BTreeSet } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from '../common'
+import { JoyEnum, JoyStructDecorated } from '../common'
 import { StakeId } from '../stake'
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
@@ -173,7 +173,7 @@ export type ActiveOpeningStageVariantType = {
 }
 export class ActiveOpeningStageVariant extends JoyStructDecorated({
   stage: ActiveOpeningStage,
-  applications_added: JoyBTreeSet(ApplicationId),
+  applications_added: BTreeSet.with(ApplicationId),
   active_application_count: u32,
   unstaking_application_count: u32,
   deactivated_application_count: u32,
@@ -276,7 +276,7 @@ export class Opening
       }
       console.log('parse_human_readable_text JSON schema validation failed:', schemaValidator.errors)
     } catch (e) {
-      console.log('parse_human_readable_text JSON schema validation failed:', e.toString())
+      console.log('parse_human_readable_text JSON schema validation failed:', e instanceof Error ? e.toString() : e)
     }
 
     return str
