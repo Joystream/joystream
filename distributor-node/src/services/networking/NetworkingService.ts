@@ -94,13 +94,13 @@ export class NetworkingService {
   }
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
-    const endpointsData = details.storageBag.storageAssignments
-      .filter((a) => a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
-      .map((a) => {
-        const rootEndpoint = a.storageBucket.operatorMetadata?.nodeEndpoint
+    const endpointsData = details.storageBag.storageBuckets
+      .filter((bucket) => bucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
+      .map((bucket) => {
+        const rootEndpoint = bucket.operatorMetadata?.nodeEndpoint
         const apiEndpoint = rootEndpoint ? this.getApiEndpoint(rootEndpoint) : ''
         return {
-          bucketId: a.storageBucket.id,
+          bucketId: bucket.id,
           endpoint: apiEndpoint,
         }
       })
@@ -116,8 +116,7 @@ export class NetworkingService {
 
   private getDataObjectActiveDistributorsSet(objectDetails: DataObjectDetailsFragment): Set<number> {
     const activeDistributorsSet = new Set<number>()
-    const { distirbutionAssignments } = objectDetails.storageBag
-    const distributionBuckets = distirbutionAssignments.map((a) => a.distributionBucket)
+    const { distributionBuckets } = objectDetails.storageBag
     for (const bucket of distributionBuckets) {
       for (const operator of bucket.operators) {
         if (operator.status === DistributionBucketOperatorStatus.Active) {
@@ -140,9 +139,7 @@ export class NetworkingService {
         isSupported = typeof this.config.workerId === 'number' ? distributors.has(this.config.workerId) : false
       } else {
         const supportedBucketIds = this.config.buckets.map((id) => id.toString())
-        isSupported = details.storageBag.distirbutionAssignments.some((a) =>
-          supportedBucketIds.includes(a.distributionBucket.id)
-        )
+        isSupported = details.storageBag.distributionBuckets.some((b) => supportedBucketIds.includes(b.id))
       }
       data = {
         objectId,
@@ -365,8 +362,8 @@ export class NetworkingService {
       : []
     const objectsData = new Map<string, DataObjectData>()
     data.forEach((bucket) => {
-      bucket.bagAssignments.forEach((a) => {
-        a.storageBag.objects.forEach((object) => {
+      bucket.bags.forEach((bag) => {
+        bag.objects.forEach((object) => {
           const { ipfsHash, id, size } = object
           objectsData.set(id, { contentHash: ipfsHash, objectId: id, size: parseInt(size) })
         })

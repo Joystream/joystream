@@ -26,15 +26,11 @@ fragment DataObjectDetails on StorageDataObject {
   ipfsHash
   isAccepted
   storageBag {
-    storageAssignments {
-      storageBucket {
-        ...StorageBucketDetails
-      }
+    storageBuckets {
+      ...StorageBucketDetails
     }
-    distirbutionAssignments {
-      distributionBucket {
-        ...DistributionBucketDetails
-      }
+    distributionBuckets {
+      ...DistributionBucketDetails
     }
   }
 }
@@ -47,13 +43,11 @@ query getDataObjectDetails($id: ID!) {
 
 fragment DistirubtionBucketWithObjects on DistributionBucket {
   id
-  bagAssignments {
-    storageBag {
-      objects {
-        id
-        size
-        ipfsHash
-      }
+  bags {
+    objects {
+      id
+      size
+      ipfsHash
     }
   }
 }
