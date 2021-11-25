@@ -1,8 +1,8 @@
 #![cfg(test)]
 use super::curators;
 use super::mock::*;
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok};
 
 fn create_member_channel() -> ChannelId {

@@ -1,9 +1,8 @@
 #![cfg(test)]
 
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{

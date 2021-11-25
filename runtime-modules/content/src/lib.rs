@@ -712,15 +712,13 @@ decl_module! {
             let sender = ensure_signed(origin.clone())?;
 
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let mut channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
                 &actor,
                 &channel,
             )?;
-
-            let mut channel = channel;
 
             // maybe update the reward account if actor is not a collaborator
             if let Some(reward_account) = params.reward_account.as_ref() {
@@ -1449,9 +1447,9 @@ impl<T: Trait> Module<T> {
 
     fn validate_collaborator_set(collaborators: &BTreeSet<T::MemberId>) -> DispatchResult {
         // check if all members are valid
-        let res = collaborators.iter().fold(true, |acc, member_id| {
-            acc && <T as ContentActorAuthenticator>::validate_member_id(member_id)
-        });
+        let res = collaborators
+            .iter()
+            .any(|member_id| !<T as ContentActorAuthenticator>::validate_member_id(member_id));
         ensure!(res, Error::<T>::CollaboratorIsNotValidMember);
         Ok(())
     }
@@ -1485,7 +1483,6 @@ decl_event!(
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
         StorageAssets = StorageAssets<T>,
-        //        CollaboratorsSetType = BTreeSet<<T as MembershipTypes>::MemberId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
