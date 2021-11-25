@@ -15,6 +15,8 @@ pub type TransactionPriority = u64;
 pub type ContentId = sp_core::H256;
 
 /// Alias for DAOId, used in various places.
+// Allow DAOId alias to avoid breaking api/types names
+#[allow(clippy::upper_case_acronyms)]
 pub type DAOId = u64;
 
 /// Alias for DataObjectTypeId, used in various places.
