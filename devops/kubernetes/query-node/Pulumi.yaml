@@ -1,0 +1,22 @@
+name: query-node
+runtime: nodejs
+description: Kubernetes IaC for Query Node
+template:
+  config:
+    aws:profile:
+      default: joystream-user
+    aws:region:
+      default: us-east-1
+    isMinikube:
+      description: Whether you are deploying to minikube
+      default: false
+    isLoadBalancerReady:
+      description: Whether the load balancer service is ready and has been assigned an IP
+      default: false
+    membersFilePath:
+      description: Path to members.json file for processor initialization
+    workersFilePath:
+      description: Path to workers.json file for processor initialization
+    indexerURL:
+      description: URL for the indexer endpoint
+      default: 'http://query-node:4000/graphql'

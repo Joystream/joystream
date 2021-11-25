@@ -36,7 +36,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   debug('Started')
   await lock(Resource.Proposals)
 
-  const leaderAccount = api.createKeyPairs(1)[0].address
+  const leaderAccount = api.createKeyPairs(1)[0].key.address
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

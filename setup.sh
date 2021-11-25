@@ -3,6 +3,8 @@
 set -e
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # Prevent interactive prompts that would interrup the installation
+    export DEBIAN_FRONTEND=noninteractive
     # code build tools
     sudo apt-get update
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
@@ -27,10 +29,8 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
-rustup install nightly-2021-03-24
-rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
-
-rustup default nightly-2021-03-24
+rustup install nightly-2021-02-20
+rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
 
 rustup component add rustfmt clippy
 

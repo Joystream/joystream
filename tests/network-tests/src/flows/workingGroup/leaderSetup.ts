@@ -25,7 +25,7 @@ async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroup
   const existingLead = await api.getGroupLead(group)
   assert.equal(existingLead, undefined, 'Lead is already set')
 
-  const leadKeyPair = api.createKeyPairs(1)[0]
+  const leadKeyPair = api.createKeyPairs(1)[0].key
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
