@@ -523,8 +523,9 @@ decl_module! {
             origin,
         ) {
 
+        let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
+            ensure_lead_auth_success::<T>(&sender)?;
 
             //
             // == MUTATION SAFE ==
@@ -551,7 +552,10 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
+        let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
+
 
             // Ensure curator group under provided curator_group_id already exist
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
@@ -578,7 +582,10 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
+        let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
+
 
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
@@ -614,7 +621,9 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
+        let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
 
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
@@ -642,13 +651,13 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<T>,
         ) {
-            ensure_actor_authorized_to_create_channel::<T>(
-                origin.clone(),
-                &actor,
-            )?;
-
             // channel creator account
             let sender = ensure_signed(origin)?;
+
+            ensure_actor_authorized_to_create_channel::<T>(
+                &sender,
+                &actor,
+            )?;
 
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
@@ -705,8 +714,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+            ensure_actor_authorized_to_update_channel_assets::<T>(
+                &sender,
                 &actor,
                 &channel,
             )?;
@@ -715,14 +724,13 @@ decl_module! {
 
             // maybe update the reward account if actor is not a collaborator
             if let Some(reward_account) = params.reward_account.as_ref() {
-                ensure_actor_can_manage_reward_account::<T>(&channel, &actor)?;
+                ensure_actor_can_manage_reward_account::<T>(&sender, &channel.owner, &actor)?;
                 channel.reward_account = reward_account.clone();
             }
 
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
-                ensure_actor_can_manage_collaborators::<T>(&actor)?;
-
+                ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
                 // ensure collaborator member ids are valid
                 Self::validate_collaborator_set(new_collabs)?;
 
@@ -764,8 +772,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+            ensure_actor_authorized_to_update_channel_assets::<T>(
+                &sender,
                 &actor,
                 &channel,
             )?;
@@ -949,8 +957,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+            ensure_actor_authorized_to_update_channel_assets::<T>(
+                &sender,
                 &actor,
                 &channel,
             )?;
@@ -1012,8 +1020,8 @@ decl_module! {
             let channel = ChannelById::<T>::get(&channel_id);
 
             // Check for permission to update channel assets
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+            ensure_actor_authorized_to_update_channel_assets::<T>(
+                &sender,
                 &actor,
                 &channel,
             )?;
@@ -1054,8 +1062,8 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
 
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+            ensure_actor_authorized_to_update_channel_assets::<T>(
+                &sender,
                 &actor,
                 &channel,
             )?;
