@@ -25,6 +25,8 @@ pub(crate) type ContentId<T> = <T as common::StorageOwnership>::ContentId;
 pub(crate) type ChannelId<T> = <T as common::StorageOwnership>::ChannelId;
 
 // Alias for the dao id.
+// Allow DAOId alias to avoid breaking api/types names
+#[allow(clippy::upper_case_acronyms)]
 pub(crate) type DAOId<T> = <T as common::StorageOwnership>::DAOId;
 
 /// DAO object type id.
