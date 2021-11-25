@@ -1,3 +1,20 @@
+/*
+* The following table summarizes the permissions in the content subsystem.
+* - Actor role as columns, controller account is Tx sender.
+* - operations on a given channel (=channel=) are rows, which are basically the guards to be
+*   implemented
+* - Entries are conditions to be verified / assertions
+*
+* |                       | *Lead*                   | *Curator*                | *Member*                | *Collaborator*                   |
+* |-----------------------+--------------------------+--------------------------+-------------------------+----------------------------------|
+* | *assets mgmt*         | channel.owner is curator | curator is channel.owner | member is channel.owner | collaborators in channel.collabs |
+* | *censorship mgmt*     | channel.owner is curator | curator is channel.owner | false                   | false                            |
+* | *category mgmt*       | true                     | true                     | false                   | false                            |
+* | *collab. set mgmt*    | channel.owner is curator | curator is channel.owner | member is channel.owner | false                            |
+* | *reward account mgmt* | false                    | curator is channel.owner | member is channel.owner | false                            |
+* | *create channel*      | false                    | true                     | true                    | false                            |
+* | *delete channel*      | false                    | curator is channel.owner | member is channel.owner | false                            |
+*/
 mod curator_group;
 
 pub use curator_group::*;
@@ -94,6 +111,7 @@ pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Dispatch
     Ok(())
 }
 
+/// Ensure actor is authorized to create a channel
 pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -109,6 +127,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     }
 }
 
+/// Ensure actor is authorized to delete channel
 pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -138,6 +157,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
     }
 }
 
+/// Ensure actor is authorized to manage collaborator set for a channel
 pub fn ensure_actor_can_manage_collaborators<T: Trait>(
     sender: &T::AccountId,
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -174,6 +194,7 @@ pub fn ensure_actor_can_manage_collaborators<T: Trait>(
     }
 }
 
+/// Ensure actor is authorized to manage reward account for a channel
 pub fn ensure_actor_can_manage_reward_account<T: Trait>(
     sender: &T::AccountId,
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -203,7 +224,7 @@ pub fn ensure_actor_can_manage_reward_account<T: Trait>(
     }
 }
 
-// Enure actor can update channels and videos in the channel
+/// Ensure actor is authorized to manage channel assets, video also qualify as assets
 pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -243,6 +264,7 @@ pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
     }
 }
 
+/// Ensure channel is owned by some curators
 pub fn ensure_channel_is_owned_by_curators<T: Trait>(
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
@@ -252,6 +274,7 @@ pub fn ensure_channel_is_owned_by_curators<T: Trait>(
     }
 }
 
+/// Ensure specified valid curator group is channel owner
 pub fn ensure_curator_group_is_channel_owner<T: Trait>(
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
     group_id: &T::CuratorGroupId,
@@ -264,6 +287,7 @@ pub fn ensure_curator_group_is_channel_owner<T: Trait>(
     Ok(())
 }
 
+/// Ensure specified valid member is channel owner
 pub fn ensure_member_is_channel_owner<T: Trait>(
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
     member_id: &T::MemberId,
@@ -276,7 +300,7 @@ pub fn ensure_member_is_channel_owner<T: Trait>(
     Ok(())
 }
 
-// Enure actor can update or delete channels and videos
+/// Ensure actor can set featured videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -290,6 +314,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     }
 }
 
+/// Ensure actor can censor
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -326,6 +351,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
     }
 }
 
+/// Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
