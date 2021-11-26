@@ -20,7 +20,7 @@ POST_MIGRATION_CLI_ASSERTIONS=${POST_MIGRATION_CLI_ASSERTIONS=$true}
 POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$false}
 
 # source common function used for node setup
-source ./node_utils.sh
+source ./node-utils.sh
 source ./.env
 
 
