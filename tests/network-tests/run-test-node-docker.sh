@@ -9,7 +9,7 @@ cd $SCRIPT_PATH
 
 # Location that will be mounted as the /data volume in containers
 # This is where the initial members and balances files and generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=$(pwd)/data}
+DATA_PATH=${DATA_PATH:=$PWD/data}
 mkdir -p ${DATA_PATH}
 
 # Initial account balance for sudo account
