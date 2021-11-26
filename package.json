@@ -50,7 +50,8 @@
     "rxjs": "^7.4.0",
     "typeorm": "^0.2.31",
     "pg": "^8.4.0",
-    "chalk": "^4.0.0"
+    "chalk": "^4.0.0",
+    "@joystream/warthog": "2.39.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",
