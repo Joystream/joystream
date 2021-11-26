@@ -3,6 +3,8 @@
 set -e
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # Prevent interactive prompts that would interrup the installation
+    export DEBIAN_FRONTEND=noninteractive
     # code build tools
     sudo apt-get update
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
@@ -15,7 +17,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install coreutils gnu-tar jq curl
+    brew install coreutils gnu-tar jq curl llvm || :
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
     echo "It is also recommended to install qemu emulators with following command:"
     echo "docker run --privileged --rm tonistiigi/binfmt --install all"
@@ -30,9 +32,11 @@ source ~/.cargo/env
 rustup install nightly-2021-03-24
 rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 
-rustup default nightly-2021-03-24
-
 rustup component add rustfmt clippy
+
+# Install substrate keychain tool - install doesn't seem to work lately.
+# cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.1 --locked
+# You can use docker instead https://github.com/paritytech/substrate/tree/master/bin/utils/subkey#run-in-a-container
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash

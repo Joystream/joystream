@@ -1,0 +1,3 @@
+## suri Type
+
+`string`

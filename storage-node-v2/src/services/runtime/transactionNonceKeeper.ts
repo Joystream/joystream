@@ -4,8 +4,18 @@ import BN from 'bn.js'
 import AwaitLock from 'await-lock'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../logger'
+import NodeCache from 'node-cache'
 
-let nonce: Index | null = null
+// Expiration period in seconds for the nonce cache.
+const NonceExpirationPeriod = 180 // seconds
+
+// Local in-memory cache for nonces.
+const nonceCache = new NodeCache({
+  stdTTL: NonceExpirationPeriod,
+  deleteOnExpire: true,
+})
+
+const nonceEntryName = 'transaction_nonce'
 const lock = new AwaitLock()
 
 /**
@@ -16,19 +26,36 @@ const lock = new AwaitLock()
  * @returns promise with transaction nonce for a given account.
  *
  */
-export async function getNonce(api: ApiPromise, account: KeyringPair): Promise<Index> {
+export async function getTransactionNonce(api: ApiPromise, account: KeyringPair): Promise<Index> {
   await lock.acquireAsync()
   try {
-    if (nonce === null) {
+    let nonce: Index | undefined = nonceCache.get(nonceEntryName)
+    if (nonce === undefined) {
       nonce = await api.rpc.system.accountNextIndex(account.address)
     } else {
       nonce = nonce.add(new BN(1)) as Index
     }
+
+    nonceCache.set(nonceEntryName, nonce)
+
+    logger.debug(`Last transaction nonce:${nonce}`)
+    return nonce as Index
   } finally {
     lock.release()
   }
+}
 
-  logger.debug(`Last transaction nonce:${nonce}`)
+/**
+ * Drops the transaction nonce cache.
+ *
+ * @returns empty promise.
+ *
+ */
+export async function resetTransactionNonceCache(): Promise<void> {
+  await lock.acquireAsync()
+  nonceCache.del(nonceEntryName)
 
-  return nonce as Index
+  logger.debug(`Transaction node cache was dropped.`)
+
+  lock.release()
 }

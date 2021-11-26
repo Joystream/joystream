@@ -1,0 +1,139 @@
+{
+  "name": "@joystream/distributor-cli",
+  "description": "Joystream distributor node CLI",
+  "version": "0.1.0",
+  "author": "Joystream contributors",
+  "bin": {
+    "joystream-distributor": "./bin/run"
+  },
+  "bugs": "https://github.com/Joystream/joystream/issues",
+  "dependencies": {
+    "@apollo/client": "^3.2.5",
+    "@elastic/ecs-winston-format": "^1.1.0",
+    "@joystream/metadata-protobuf": "^1.0.0",
+    "@joystream/types": "^0.17.0",
+    "@oclif/command": "^1",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^3.2.4",
+    "ajv": "^7",
+    "axios": "^0.21.1",
+    "blake3-wasm": "^2.1.5",
+    "cors": "^2.8.5",
+    "cross-fetch": "^3.1.4",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
+    "express-openapi-validator": "^4.12.4",
+    "express-winston": "^4.1.0",
+    "fast-safe-stringify": "^2.1.1",
+    "file-type": "^16.5.1",
+    "graphql": "^14.7.0",
+    "inquirer": "^8.1.2",
+    "js-image-generator": "^1.0.3",
+    "lodash": "^4.17.21",
+    "lru-cache": "^6.0.0",
+    "multihashes": "^4.0.3",
+    "node-cache": "^5.1.2",
+    "node-cleanup": "^2.1.2",
+    "proper-lockfile": "^4.1.2",
+    "queue": "^6.0.2",
+    "read-chunk": "^3.2.0",
+    "send": "^0.17.1",
+    "tslib": "^1",
+    "winston": "^3.3.3",
+    "winston-elasticsearch": "^0.15.8",
+    "yaml": "^1.10.2"
+  },
+  "devDependencies": {
+    "@adobe/jsonschema2md": "https://github.com/adobe/jsonschema2md",
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@oclif/dev-cli": "^1",
+    "@oclif/test": "^1",
+    "@openapitools/openapi-generator-cli": "^2.3.6",
+    "@types/chai": "^4",
+    "@types/cors": "^2.8.12",
+    "@types/express-http-proxy": "^1.6.2",
+    "@types/inquirer": "^8.1.1",
+    "@types/mocha": "^5",
+    "@types/node": "^14",
+    "@types/node-cache": "^4.2.5",
+    "@types/node-cleanup": "^2.1.1",
+    "@types/send": "^0.17.0",
+    "chai": "^4",
+    "globby": "^10",
+    "json-schema-to-typescript": "^10.1.4",
+    "markdown-magic": "^2.5.2",
+    "mocha": "^5",
+    "nyc": "^14",
+    "openapi-typescript": "^4.0.2",
+    "ts-node": "^8",
+    "typescript": "^3.3",
+    "widdershins": "^4.0.1"
+  },
+  "engines": {
+    "node": ">=14.16.1"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/Joystream/joystream",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "GPL-3.0-only",
+  "main": "lib/index.js",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "joystream-distributor",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {
+      "leader": {
+        "description": "Commands for performing Distribution Working Group leader on-chain duties (like setting distribution module limits and parameters, assigning bags and buckets etc.)"
+      },
+      "operator": {
+        "description": "Commands for performing node operator (Distribution Working Group worker) on-chain duties (like accepting bucket invitations, setting node metadata)"
+      },
+      "dev": {
+        "description": "Developer utility commands"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream",
+    "directory": "distributor-node"
+  },
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && generate:all",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "generate:docs:cli && git add docs/cli/*",
+    "generate:types:json-schema": "yarn ts-node ./src/schemas/scripts/generateTypes.ts",
+    "generate:types:graphql": "yarn graphql-codegen -c ./src/services/networking/query-node/codegen.yml",
+    "generate:types:openapi": "yarn openapi-typescript ./src/api-spec/openapi.yml -o ./src/types/generated/OpenApi.ts -c ../prettierrc.js",
+    "generate:types:all": "yarn generate:types:json-schema && yarn generate:types:graphql && yarn generate:types:openapi",
+    "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../storage-node-v2/src/api-spec/openapi.yaml -g typescript-axios -o ./src/services/networking/storage-node/generated",
+    "generate:api:distributor-node": "yarn openapi-generator-cli generate -i ./src/api-spec/openapi.yml -g typescript-axios -o ./src/services/networking/distributor-node/generated",
+    "generate:api:all": "yarn generate:api:storage-node && yarn generate:api:distributor-node",
+    "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./docs/commands",
+    "generate:docs:config": "yarn ts-node --transpile-only ./src/schemas/scripts/generateConfigDoc.ts",
+    "generate:docs:api": "yarn widdershins ./src/api-spec/openapi.yml --language_tabs javascript:JavaScript shell:Shell -o ./docs/api/index.md -u ./docs/api/templates",
+    "generate:docs:toc": "yarn md-magic --path ./docs/**/*.md",
+    "generate:docs:all": "yarn generate:docs:cli && yarn generate:docs:config && yarn generate:docs:api && yarn generate:docs:toc",
+    "generate:all": "yarn generate:types:all && yarn generate:api:all && yarn generate:docs:all",
+    "build": "rm -rf lib && tsc --build tsconfig.json && cp -r ./src/api-spec ./lib/api-spec",
+    "lint": "eslint ./src --ext .ts",
+    "format": "prettier ./ --write",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "cli": "./bin/run"
+  },
+  "types": "lib/index.d.ts"
+}

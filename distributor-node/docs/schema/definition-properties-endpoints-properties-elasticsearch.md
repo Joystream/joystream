@@ -1,0 +1,3 @@
+## elasticSearch Type
+
+`string`

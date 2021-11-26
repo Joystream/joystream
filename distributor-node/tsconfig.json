@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "importHelpers": true,
+    "module": "commonjs",
+    "outDir": "lib",
+    "rootDir": "src",
+    "strict": true,
+    "target": "es2020",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "types" : [ "node", "mocha" ],
+    "resolveJsonModule": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": false, // FIXME: Temporarly disabled during initial development
+    "noUnusedParameters": false, // FIXME: Temporarly disabled during initial development
+    "paths": {
+      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
+      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
+    },
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
+
+

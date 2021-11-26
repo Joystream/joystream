@@ -12,6 +12,10 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 export default class DevInit extends ApiCommandBase {
   static description = 'Initialize development environment. Sets Alice as storage working group leader.'
 
+  static flags = {
+    ...ApiCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     await this.ensureDevelopmentChain()
 
