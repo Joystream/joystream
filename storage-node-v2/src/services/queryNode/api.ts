@@ -54,7 +54,7 @@ export class QueryNodeApi {
       link: new HttpLink({ uri: endpoint, fetch }),
       cache: new InMemoryCache(),
       defaultOptions: {
-        query: { fetchPolicy: 'no-cache', errorPolicy: 'all' },
+        query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
       },
     })
   }

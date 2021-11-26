@@ -44,10 +44,10 @@ export type GetStorageBucketDetailsQueryVariables = Types.Exact<{
 
 export type GetStorageBucketDetailsQuery = { storageBuckets: Array<StorageBucketDetailsFragment> }
 
-export type StorageBagDetailsFragment = { id: string; storageAssignments: Array<{ storageBucket: { id: string } }> }
+export type StorageBagDetailsFragment = { id: string; storageBuckets: Array<{ id: string }> }
 
 export type GetStorageBagDetailsQueryVariables = Types.Exact<{
-  bucketIds?: Types.Maybe<Array<Types.Scalars['String']> | Types.Scalars['String']>
+  bucketIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
   offset?: Types.Maybe<Types.Scalars['Int']>
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
@@ -55,7 +55,7 @@ export type GetStorageBagDetailsQueryVariables = Types.Exact<{
 export type GetStorageBagDetailsQuery = { storageBags: Array<StorageBagDetailsFragment> }
 
 export type GetBagConnectionQueryVariables = Types.Exact<{
-  bucketIds?: Types.Maybe<Array<Types.Scalars['String']> | Types.Scalars['String']>
+  bucketIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
   limit?: Types.Maybe<Types.Scalars['Int']>
   cursor?: Types.Maybe<Types.Scalars['String']>
 }>
@@ -109,10 +109,8 @@ export const StorageBucketDetails = gql`
 export const StorageBagDetails = gql`
   fragment StorageBagDetails on StorageBag {
     id
-    storageAssignments {
-      storageBucket {
-        id
-      }
+    storageBuckets {
+      id
     }
   }
 `
@@ -171,24 +169,16 @@ export const GetStorageBucketDetails = gql`
   ${StorageBucketDetails}
 `
 export const GetStorageBagDetails = gql`
-  query getStorageBagDetails($bucketIds: [String!], $offset: Int, $limit: Int) {
-    storageBags(
-      offset: $offset
-      limit: $limit
-      where: { storageAssignments_some: { storageBucketId_in: $bucketIds } }
-    ) {
+  query getStorageBagDetails($bucketIds: [ID!], $offset: Int, $limit: Int) {
+    storageBags(offset: $offset, limit: $limit, where: { storageBuckets_some: { id_in: $bucketIds } }) {
       ...StorageBagDetails
     }
   }
   ${StorageBagDetails}
 `
 export const GetBagConnection = gql`
-  query getBagConnection($bucketIds: [String!], $limit: Int, $cursor: String) {
-    storageBagsConnection(
-      first: $limit
-      after: $cursor
-      where: { storageAssignments_some: { storageBucketId_in: $bucketIds } }
-    ) {
+  query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
+    storageBagsConnection(first: $limit, after: $cursor, where: { storageBuckets_some: { id_in: $bucketIds } }) {
       edges {
         cursor
         node {

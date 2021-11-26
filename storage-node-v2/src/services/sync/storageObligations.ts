@@ -108,7 +108,7 @@ export async function getStorageObligationsFromRuntime(
     })),
     bags: assignedBags.map((bag) => ({
       id: bag.id,
-      buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.storageBucket.id),
+      buckets: bag.storageBuckets.map((bucketInBag) => bucketInBag.id),
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       id: dataObject.id,
