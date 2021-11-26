@@ -1,5 +1,6 @@
 import BN from 'bn.js'
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
@@ -24,10 +25,10 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Content, lock)
   },
 }
 
@@ -36,7 +37,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   debug('Started')
   await lock(Resource.Proposals)
 
-  const leaderAccount = api.createKeyPairs(1)[0].address
+  const leaderAccount = api.createKeyPairs(1)[0].key.address
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
