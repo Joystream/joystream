@@ -19,23 +19,14 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
         'ID': channelId.toString(),
         'Owner': JSON.stringify(channel.owner.toJSON()),
         'IsCensored': channel.is_censored.toString(),
-        'RewardAccount': channel.reward_account ? channel.reward_account.toString() : 'NONE',
+        'RewardAccount': channel.reward_account.unwrapOr('NONE').toString(),
+        'DeletionPrizeAccount': channel.deletion_prize_source_account_id.toString(),
       })
 
       displayHeader(`Media`)
 
       displayCollapsedRow({
-        'NumberOfVideos': channel.videos.length,
-        'NumberOfPlaylists': channel.playlists.length,
-        'NumberOfSeries': channel.series.length,
-      })
-
-      displayHeader(`MediaData`)
-
-      displayCollapsedRow({
-        'Videos': JSON.stringify(channel.videos.toJSON()),
-        'Playlists': JSON.stringify(channel.playlists.toJSON()),
-        'Series': JSON.stringify(channel.series.toJSON()),
+        'NumberOfVideos': channel.num_videos.toNumber(),
       })
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)

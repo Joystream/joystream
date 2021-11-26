@@ -79,8 +79,8 @@ async function main() {
             const err = result.asError
             console.log('Error:', err.toHuman())
             if (err.isModule) {
-              const { name, documentation } = (api.registry as TypeRegistry).findMetaError(err.asModule)
-              console.log(`${name}\n${documentation}`)
+              const { name } = (api.registry as TypeRegistry).findMetaError(err.asModule)
+              console.log(`${name}\n`)
             }
             process.exit(5)
           } else {

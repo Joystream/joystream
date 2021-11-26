@@ -58,7 +58,9 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     }
 
     if (rationale === undefined) {
-      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
+      rationale = (await this.simplePrompt({
+        message: 'Please provide the rationale for updating the status',
+      })) as string
     }
 
     await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannelCensorshipStatus', [

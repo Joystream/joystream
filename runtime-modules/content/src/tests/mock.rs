@@ -325,6 +325,8 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const VideosMigrationsEachBlock: u64 = 20;
+    pub const ChannelsMigrationsEachBlock: u64 = 10;
 }
 
 impl Trait for Test {
@@ -360,6 +362,9 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
+
+    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
+    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -375,6 +380,8 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    video_migration: VideoMigrationConfig<Test>,
+    channel_migration: ChannelMigrationConfig<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -389,6 +396,14 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            video_migration: MigrationConfigRecord {
+                current_id: 1,
+                final_id: 1,
+            },
+            channel_migration: MigrationConfigRecord {
+                current_id: 1,
+                final_id: 1,
+            },
         }
     }
 }
@@ -409,6 +424,8 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            video_migration: self.video_migration,
+            channel_migration: self.channel_migration,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -425,9 +442,9 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
     while System::block_number() < n {
-        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <Content as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
-        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 

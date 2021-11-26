@@ -1,5 +1,4 @@
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { ExtrinsicFailedError } from '../../runtime/api'
 import {
   RequestData,
   UploadTokenRequest,
@@ -10,7 +9,6 @@ import {
 import { hashFile } from '../../../services/helpers/hashing'
 import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
-import { parseBagId } from '../../helpers/bagTypes'
 import { BagId } from '@joystream/types/storage'
 import logger from '../../../services/logger'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -19,40 +17,31 @@ import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
 import send from 'send'
-import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
+import { parseBagId } from '../../helpers/bagTypes'
+import { timeout } from 'promise-timeout'
+import {
+  getUploadsDir,
+  getWorkerId,
+  getQueryNodeUrl,
+  WebApiError,
+  ServerError,
+  getCommandConfig,
+  sendResponseWithError,
+  getHttpStatusCodeByError,
+} from './common'
+import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
+import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
 
 /**
- * Dedicated error for the web api requests.
- */
-export class WebApiError extends CLIError {
-  httpStatusCode: number
-
-  constructor(err: string, httpStatusCode: number) {
-    super(err)
-
-    this.httpStatusCode = httpStatusCode
-  }
-}
-
-/**
- * Dedicated server error for the web api requests.
- */
-export class ServerError extends WebApiError {
-  constructor(err: string) {
-    super(err, 500)
-  }
-}
-
-/**
- * A public endpoint: serves files by CID.
+ * A public endpoint: serves files by data object ID.
  */
 export async function getFile(req: express.Request, res: express.Response): Promise<void> {
   try {
-    const cid = getCid(req)
+    const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
-    const fullPath = path.resolve(uploadsDir, cid)
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
 
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -77,13 +66,13 @@ export async function getFile(req: express.Request, res: express.Response): Prom
 }
 
 /**
- * A public endpoint: sends file headers by CID.
+ * A public endpoint: sends file headers by data object ID.
  */
 export async function getFileHeaders(req: express.Request, res: express.Response): Promise<void> {
   try {
-    const cid = getCid(req)
+    const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
-    const fullPath = path.resolve(uploadsDir, cid)
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
@@ -109,22 +98,26 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
+    const queryNodeUrl = getQueryNodeUrl(res)
+    const workerId = getWorkerId(res)
+
+    const [, hash] = await Promise.all([
+      verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
+      hashFile(fileObj.path),
+    ])
+
     const api = getApi(res)
-    await verifyFileMimeType(fileObj.path)
-
-    const hash = await hashFile(fileObj.path)
-    const bagId = parseBagId(api, uploadRequest.bagId)
-
+    const bagId = parseBagId(uploadRequest.bagId)
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
-    const newPath = fileObj.path.replace(fileObj.filename, hash)
+    const uploadsDir = getUploadsDir(res)
+    const newPath = path.join(uploadsDir, uploadRequest.dataObjectId.toString())
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    const workerId = getWorkerId(res)
     if (!accepted) {
       await acceptPendingDataObjects(api, bagId, getAccount(res), workerId, uploadRequest.storageBucketId, [
         uploadRequest.dataObjectId,
@@ -175,7 +168,7 @@ export async function authTokenForUploading(req: express.Request, res: express.R
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getFileObject(req: express.Request): Express.Multer.File {
   if (req.file) {
@@ -191,41 +184,11 @@ function getFileObject(req: express.Request): Express.Multer.File {
 }
 
 /**
- * Returns worker ID from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getWorkerId(res: express.Response): number {
-  if (res.locals.workerId || res.locals.workerId === 0) {
-    return res.locals.workerId
-  }
-
-  throw new ServerError('No Joystream worker ID loaded.')
-}
-
-/**
- * Returns a directory for file uploading from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
- */
-function getUploadsDir(res: express.Response): string {
-  if (res.locals.uploadsDir) {
-    return res.locals.uploadsDir
-  }
-
-  throw new ServerError('No upload directory path loaded.')
-}
-
-/**
  * Returns a KeyPair instance from the response.
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getAccount(res: express.Response): KeyringPair {
   if (res.locals.storageProviderAccount) {
@@ -240,7 +203,7 @@ function getAccount(res: express.Response): KeyringPair {
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getApi(res: express.Response): ApiPromise {
   if (res.locals.api) {
@@ -251,19 +214,19 @@ function getApi(res: express.Response): ApiPromise {
 }
 
 /**
- * Returns Content ID from the request.
+ * Returns data object ID from the request.
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
-function getCid(req: express.Request): string {
-  const cid = req.params.cid || ''
-  if (cid.length > 0) {
-    return cid
+function getDataObjectId(req: express.Request): string {
+  const id = req.params.id || ''
+  if (id.length > 0) {
+    return id
   }
 
-  throw new WebApiError('No CID provided.', 400)
+  throw new WebApiError('No data object ID provided.', 400)
 }
 
 /**
@@ -271,7 +234,7 @@ function getCid(req: express.Request): string {
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getTokenRequest(req: express.Request): UploadTokenRequest {
   const tokenRequest = req.body as UploadTokenRequest
@@ -297,7 +260,10 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
     throw new WebApiError('Invalid upload token request signature.', 401)
   }
 
-  const membership = await api.query.members.membershipById(tokenRequest.data.memberId)
+  const membershipPromise = api.query.members.membershipById(tokenRequest.data.memberId)
+
+  const membership = (await timeout(membershipPromise, 5000)) as Membership
+
   if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
     throw new WebApiError(`Provided controller account and member id don't match.`, 401)
   }
@@ -359,73 +325,38 @@ async function cleanupFileOnError(cleanupFileName: string, error: string): Promi
 }
 
 /**
- * Verifies the mime type of the file by its content. It throws an exception
- * if the mime type differs from allowed list ('image/', 'video/', 'audio/').
+ * A public endpoint: return the server version.
+ */
+export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
+  try {
+    const config = getCommandConfig(res)
+
+    // Copy from an object, because the actual object could contain more data.
+    res.status(200).json({
+      version: config.version,
+      userAgent: config.userAgent,
+    })
+  } catch (err) {
+    res.status(500).json({
+      type: 'version',
+      message: err.toString(),
+    })
+  }
+}
+
+/**
+ * Validates the storage bucket ID obligations for the worker (storage provider).
+ * It throws an error when storage bucket doesn't belong to the worker.
  *
- * @param filePath - file path to detect mime types
- * @param error - external error
+ * @param queryNodeUrl - Query Node URL
+ * @param workerId - worker(storage provider) ID
+ * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-async function verifyFileMimeType(filePath: string): Promise<void> {
-  const allowedMimeTypes = ['image/', 'video/', 'audio/']
+async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
+  const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
-  const fileInfo = await getFileInfo(filePath)
-  const correctMimeType = allowedMimeTypes.some((allowedType) => fileInfo.mimeType.startsWith(allowedType))
-
-  if (!correctMimeType) {
-    throw new WebApiError(`Incorrect mime type detected: ${fileInfo.mimeType}`, 400)
+  if (!bucketIds.includes(bucketId.toString())) {
+    throw new WebApiError('Incorrect storage bucket ID.', 400)
   }
-}
-
-/**
- * Handles errors and sends a response.
- *
- * @param res - Response instance
- * @param err - error
- * @param errorType - defines request type
- * @returns void promise.
- */
-function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
-  const message = isNofileError(err) ? `File not found.` : err.toString()
-
-  res.status(getHttpStatusCodeByError(err)).json({
-    type: errorType,
-    message,
-  })
-}
-
-/**
- * Checks the error for 'no-file' error (ENOENT).
- *
- * @param err - error
- * @returns true when error code contains 'ENOENT'.
- */
-function isNofileError(err: Error): boolean {
-  return err.toString().includes('ENOENT')
-}
-
-/**
- * Get the status code by error.
- *
- * @param err - error
- * @returns HTTP status code
- */
-function getHttpStatusCodeByError(err: Error): number {
-  if (isNofileError(err)) {
-    return 404
-  }
-
-  if (err instanceof ExtrinsicFailedError) {
-    return 400
-  }
-
-  if (err instanceof WebApiError) {
-    return err.httpStatusCode
-  }
-
-  if (err instanceof CLIError) {
-    return 400
-  }
-
-  return 500
 }

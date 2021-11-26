@@ -3,7 +3,7 @@ import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
-
+import { createType } from '@joystream/types'
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   static description = "Allows filling working group opening that's currently in review. Requires lead access."
   static args = [
@@ -35,7 +35,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
 
     await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
       openingId,
-      applicationIds,
+      createType('BTreeSet<ApplicationId>', applicationIds),
       rewardPolicyOpt,
     ])
 
