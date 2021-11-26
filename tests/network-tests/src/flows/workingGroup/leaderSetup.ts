@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
@@ -8,27 +9,32 @@ import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import { extendDebug } from '../../Debugger'
 
-export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
-  },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.ContentWorkingGroup)
-  },
-  distribution: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.DistributionWorkingGroup)
-  },
+export default function (group: WorkingGroups, canSkip = false) {
+  return async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, group, canSkip)
+  }
 }
 
 // Worker application happy case scenario
-async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+async function leaderSetup(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  group: WorkingGroups,
+  skipIfAlreadySet = false
+): Promise<void> {
   const debug = extendDebug(`flow:leaderSetup:${group}`)
   debug('Started')
 
   const existingLead = await api.getGroupLead(group)
+
+  if (skipIfAlreadySet && existingLead !== undefined) {
+    debug('Skipping create lead, already exists.')
+    return
+  }
+
   assert.equal(existingLead, undefined, 'Lead is already set')
 
-  const leadKeyPair = api.createKeyPairs(1)[0]
+  const leadKeyPair = api.createKeyPairs(1)[0].key
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)

@@ -1,6 +1,6 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import {
   DistributionBucketFamilyMetadata,
   DistributionBucketOperatorMetadata,
@@ -76,8 +76,8 @@ export default function createFlow({ families }: InitDistributionConfig) {
     debug('Started')
 
     // Get working group leaders
-    const distributionLeaderId = await api.getLeadWorkerId(WorkingGroups.DistributionWorkingGroup)
-    const distributionLeader = await api.getGroupLead(WorkingGroups.DistributionWorkingGroup)
+    const distributionLeaderId = await api.getLeadWorkerId(WorkingGroups.Distribution)
+    const distributionLeader = await api.getGroupLead(WorkingGroups.Distribution)
     if (!distributionLeaderId || !distributionLeader) {
       throw new Error('Active distributor leader is required in this flow!')
     }
@@ -86,7 +86,7 @@ export default function createFlow({ families }: InitDistributionConfig) {
     const totalBucketsNum = families.reduce((a, b) => a + b.buckets.length, 0)
 
     // Hire operators
-    // const hireWorkersFixture = new HireWorkesFixture(api, totalBucketsNum, WorkingGroups.DistributionWorkingGroup)
+    // const hireWorkersFixture = new HireWorkesFixture(api, totalBucketsNum, WorkingGroups.Distribution)
     // await new FixtureRunner(hireWorkersFixture).run()
     // const operatorIds = hireWorkersFixture.getHiredWorkers()
 
@@ -94,7 +94,7 @@ export default function createFlow({ families }: InitDistributionConfig) {
       (ids, { buckets }) => ids.concat(buckets.map((b) => createType('WorkerId', b.operatorId))),
       [] as WorkerId[]
     )
-    const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, WorkingGroups.DistributionWorkingGroup)
+    const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, WorkingGroups.Distribution)
 
     // Create families, set buckets per bag limit
     const createFamilyTxs = families.map(() => api.tx.storage.createDistributionBucketFamily())

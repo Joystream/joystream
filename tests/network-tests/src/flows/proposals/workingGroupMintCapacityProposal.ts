@@ -1,5 +1,6 @@
 import BN from 'bn.js'
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import {
   VoteForProposalAndExpectExecutionFixture,
@@ -13,14 +14,14 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return workingGroupMintCapactiy(api, env, WorkingGroups.Storage, lock)
   },
 
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentWorkingGroup, lock)
+    return workingGroupMintCapactiy(api, env, WorkingGroups.Content, lock)
   },
   distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.DistributionWorkingGroup, lock)
+    return workingGroupMintCapactiy(api, env, WorkingGroups.Distribution, lock)
   },
 }
 

@@ -1,6 +1,6 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { DistributorCLI } from '../../cli/distributor'
 import { JoystreamCLI } from '../../cli/joystream'
 import { StorageCLI } from '../../cli/storage'
@@ -16,10 +16,10 @@ export default async function createChannel({ api, env }: FlowProps): Promise<vo
   debug('Started')
 
   // Get working group leaders
-  const distributionLeaderId = await api.getLeadWorkerId(WorkingGroups.DistributionWorkingGroup)
-  const distributionLeader = await api.getGroupLead(WorkingGroups.DistributionWorkingGroup)
-  const storageLeaderId = await api.getLeadWorkerId(WorkingGroups.StorageWorkingGroup)
-  const storageLeader = await api.getGroupLead(WorkingGroups.StorageWorkingGroup)
+  const distributionLeaderId = await api.getLeadWorkerId(WorkingGroups.Distribution)
+  const distributionLeader = await api.getGroupLead(WorkingGroups.Distribution)
+  const storageLeaderId = await api.getLeadWorkerId(WorkingGroups.Storage)
+  const storageLeader = await api.getGroupLead(WorkingGroups.Storage)
   if (!distributionLeaderId || !distributionLeader || !storageLeaderId || !storageLeader) {
     throw new Error('Active storage and distributor leaders are required in this flow!')
   }
@@ -29,12 +29,12 @@ export default async function createChannel({ api, env }: FlowProps): Promise<vo
   // Create channel owner membership
   const [channelOwnerKeypair] = await api.createKeyPairs(1)
   const paidTermId = api.createPaidTermId(new BN(+(env.MEMBERSHIP_PAID_TERMS || 0)))
-  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, [channelOwnerKeypair.address], paidTermId)
+  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, [channelOwnerKeypair.key.address], paidTermId)
   await new FixtureRunner(buyMembershipFixture).run()
 
   // Send some funds to pay the deletion_prize
   const channelOwnerBalance = new BN(100)
-  await api.treasuryTransferBalance(channelOwnerKeypair.address, channelOwnerBalance)
+  await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
   // Create CLI's
   const distributorCli = new DistributorCLI([distributionLeaderSuri])
@@ -46,8 +46,8 @@ export default async function createChannel({ api, env }: FlowProps): Promise<vo
   const distributorServerProcess = await distributorCli.spawnServer(distributionLeaderId)
 
   // Import & select channel owner key in Joystream CLI
-  await joystreamCli.importKey(channelOwnerKeypair)
-  await joystreamCli.run('account:choose', ['--address', channelOwnerKeypair.address])
+  await joystreamCli.importKey(channelOwnerKeypair.key)
+  await joystreamCli.run('account:choose', ['--address', channelOwnerKeypair.key.address])
 
   // Create channel
   const { out: createChannelOut } = await joystreamCli.createChannel(
@@ -58,7 +58,7 @@ export default async function createChannel({ api, env }: FlowProps): Promise<vo
       description: 'This is a test channel',
       isPublic: true,
       language: 'EN',
-      rewardAccount: channelOwnerKeypair.address,
+      rewardAccount: channelOwnerKeypair.key.address,
     },
     ['--context', 'Member']
   )

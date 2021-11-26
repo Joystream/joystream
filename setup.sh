@@ -34,6 +34,10 @@ rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 
 rustup component add rustfmt clippy
 
+# Install substrate keychain tool - install doesn't seem to work lately.
+# cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.1 --locked
+# You can use docker instead https://github.com/paritytech/substrate/tree/master/bin/utils/subkey#run-in-a-container
+
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 

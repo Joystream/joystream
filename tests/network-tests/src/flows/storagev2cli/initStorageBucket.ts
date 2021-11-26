@@ -1,14 +1,14 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { StorageCLI } from '../../cli/storage'
 
 export default async function initStorageBucket({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:initStorageBucket')
   debug('Started')
 
-  const leaderId = await api.getLeadWorkerId(WorkingGroups.StorageWorkingGroup)
-  const leader = await api.getGroupLead(WorkingGroups.StorageWorkingGroup)
+  const leaderId = await api.getLeadWorkerId(WorkingGroups.Storage)
+  const leader = await api.getGroupLead(WorkingGroups.Storage)
   if (!leaderId || !leader) {
     throw new Error('Active storage leader is required in this flow!')
   }
