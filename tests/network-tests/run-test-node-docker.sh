@@ -7,9 +7,9 @@ cd $SCRIPT_PATH
 # Log only to stderr
 # Only output from this script should be the container id of the node at the very end
 
-# Location that will be mounted as the /data volume in containers
+# Location that will be mounted to /spec in containers
 # This is where the initial members and balances files and generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=$(pwd)/data}
+DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # Initial account balance for sudo account
@@ -55,24 +55,24 @@ else
 fi
 
 # Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
   --authority-seeds Alice \
   --sudo-account ${SUDO_ACCOUNT} \
   --deployment dev \
-  --chain-spec-path /data/chain-spec.json \
-  --initial-balances-path /data/initial-balances.json \
-  --initial-members-path /data/initial-members.json
+  --chain-spec-path /spec/chain-spec.json \
+  --initial-balances-path /spec/initial-balances.json \
+  --initial-members-path /spec/initial-members.json
 
 # Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
+docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
-  --chain /data/chain-spec.json > ${DATA_PATH}/chain-spec-raw.json
+  --chain /spec/chain-spec.json > ${DATA_PATH}/chain-spec-raw.json
 
 # Start a chain with generated chain spec
 export JOYSTREAM_NODE_TAG=${RUNTIME}
-docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/data --name joystream-node \
+docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
   -p 9944:9944 -p 9933:9933 joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /data/chain-spec-raw.json
+  --chain /spec/chain-spec-raw.json
