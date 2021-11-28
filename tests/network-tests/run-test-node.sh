@@ -7,7 +7,7 @@ cd $SCRIPT_PATH
 # Location that will be mounted as the /data volume in containers
 # This is how we access the initial members and balances files from
 # the containers and where generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=./data}
+DATA_PATH=./data
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.

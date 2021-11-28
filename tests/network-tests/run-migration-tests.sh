@@ -5,7 +5,7 @@ SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 # Location to store runtime WASM for runtime upgrade
-DATA_PATH=${DATA_PATH:=$PWD/data}
+DATA_PATH=$PWD/data
 
 # The joystream/node docker image tag to start chain
 export RUNTIME=${RUNTIME:=latest}
