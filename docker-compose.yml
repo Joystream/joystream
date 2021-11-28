@@ -14,7 +14,7 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
       - 9944:9944
       - 9933:9933
