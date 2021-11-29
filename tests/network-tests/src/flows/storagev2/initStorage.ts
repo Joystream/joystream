@@ -52,8 +52,6 @@ export const defaultSingleBucketConfig: InitStorageConfig = {
 
 export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageConfig) {
   return async function initDistribution({ api }: FlowProps): Promise<void> {
-    api.enableVerboseTxLogs()
-
     const debug = extendDebug('flow:initStorage')
     debug('Started')
 
@@ -103,13 +101,13 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     })
 
     // Invite bucket operators
-    const bucketInviteTxs = _.keys(bucketById).map((bucketId, i) =>
+    const bucketInviteTxs = Array.from(bucketById.keys()).map((bucketId, i) =>
       api.tx.storage.inviteStorageBucketOperator(bucketId, operatorIds[i])
     )
     await api.signAndSendMany(bucketInviteTxs, storageLeaderKey)
 
     // Accept invitations
-    const acceptInvitationTxs = _.keys(bucketById).map((bucketId, i) =>
+    const acceptInvitationTxs = Array.from(bucketById.keys()).map((bucketId, i) =>
       api.tx.storage.acceptStorageBucketInvitation(operatorIds[i], bucketId)
     )
     await api.signAndSendManyByMany(acceptInvitationTxs, operatorKeys)

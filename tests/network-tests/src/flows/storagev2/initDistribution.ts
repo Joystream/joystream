@@ -70,8 +70,6 @@ export const defaultSingleBucketConfig: InitDistributionConfig = {
 
 export default function createFlow({ families }: InitDistributionConfig) {
   return async function initDistribution({ api }: FlowProps): Promise<void> {
-    api.enableVerboseTxLogs()
-
     const debug = extendDebug('flow:initDistribution')
     debug('Started')
 

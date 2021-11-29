@@ -2,6 +2,10 @@ import assignCouncil from '../flows/council/assign'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import mockContentFlow from '../misc/mockContentFlow'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
+import initStorage, { defaultSingleBucketConfig as defaultStorageConfig } from '../flows/storagev2/initStorage'
+import initDistribution, {
+  defaultSingleBucketConfig as defaultDistributionConfig,
+} from '../flows/storagev2/initDistribution'
 import { AllWorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
@@ -15,6 +19,11 @@ scenario(async ({ job }) => {
   )
 
   const updateWorkerAccounts = job('Update worker accounts', updateAccountsFlow).after(leads)
+
+  if (!process.env.SKIP_STORAGE_AND_DISTRIBUTION) {
+    job('initialize storage system', initStorage(defaultStorageConfig)).requires(updateWorkerAccounts)
+    job('initialize distribution system', initDistribution(defaultDistributionConfig)).requires(updateWorkerAccounts)
+  }
 
   if (!process.env.SKIP_MOCK_CONTENT) {
     // Create some mock content in content directory - without assets or any real metadata
