@@ -1,0 +1,35 @@
+name: Deploy Playground
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRepo:
+        description: 'Code repository'
+        required: false
+        default: 'https://github.com/Joystream/joystream.git'
+      branchName:
+        description: 'Branch to deploy'
+        required: false
+        default: 'master'
+      keyName:
+        description: 'SSH key pair on AWS'
+        required: false
+        default: 'joystream-github-action-key'
+      instanceType:
+        description: 'AWS EC2 instance type (t2.micro, t2.large)'
+        required: false
+        default: 't2.micro'
+
+defaults:
+  run:
+    working-directory: devops/aws
+
+jobs:
+  deploy-playground:
+    name: Create an EC2 instance and configure docker-compose stack
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: joystream-playground-{{ github.event.inputs.branchName }}-${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
