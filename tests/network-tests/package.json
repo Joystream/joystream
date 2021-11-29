@@ -2,7 +2,7 @@
   "name": "network-tests",
   "version": "0.1.0",
   "license": "GPL-3.0-only",
-  "scripts": {
+    "scripts": {
     "build": "tsc --noEmit",
     "test": "./run-tests.sh",
     "run-test-scenario": "./run-test-scenario.sh",
