@@ -1,31 +1,37 @@
-import { ReadonlyConfig } from '../types'
+import { Config } from '../types'
 import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
 import { ContentService } from '../services/content/ContentService'
-import { ServerService } from '../services/server/ServerService'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
 import { AppIntervals } from '../types/app'
+import { PublicApiService } from '../services/httpApi/PublicApiService'
+import { OperatorApiService } from '../services/httpApi/OperatorApiService'
 
 export class App {
-  private config: ReadonlyConfig
+  private config: Config
   private content: ContentService
   private stateCache: StateCacheService
   private networking: NetworkingService
-  private server: ServerService
+  private publicApi: PublicApiService
+  private operatorApi: OperatorApiService | undefined
   private logging: LoggingService
   private logger: Logger
   private intervals: AppIntervals | undefined
+  private isStopping = false
 
-  constructor(config: ReadonlyConfig) {
+  constructor(config: Config) {
     this.config = config
     this.logging = LoggingService.withAppConfig(config)
     this.stateCache = new StateCacheService(config, this.logging)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)
     this.content = new ContentService(config, this.logging, this.networking, this.stateCache)
-    this.server = new ServerService(config, this.stateCache, this.content, this.logging, this.networking)
+    this.publicApi = new PublicApiService(config, this.stateCache, this.content, this.logging, this.networking)
+    if (this.config.operatorApi) {
+      this.operatorApi = new OperatorApiService(config, this, this.logging, this.publicApi)
+    }
     this.logger = this.logging.createLogger('App')
   }
 
@@ -46,30 +52,32 @@ export class App {
     }
   }
 
+  private checkConfigDir(name: string, path: string): void {
+    const dirInfo = `${name} directory (${path})`
+    if (!fs.existsSync(path)) {
+      try {
+        fs.mkdirSync(path, { recursive: true })
+      } catch (e) {
+        throw new Error(`${dirInfo} doesn't exist and cannot be created!`)
+      }
+    }
+    try {
+      fs.accessSync(path, fs.constants.R_OK)
+    } catch (e) {
+      throw new Error(`${dirInfo} is not readable`)
+    }
+    try {
+      fs.accessSync(path, fs.constants.W_OK)
+    } catch (e) {
+      throw new Error(`${dirInfo} is not writable`)
+    }
+  }
+
   private checkConfigDirectories(): void {
-    Object.entries(this.config.directories).forEach(([name, path]) => {
-      if (path === undefined) {
-        return
-      }
-      const dirInfo = `${name} directory (${path})`
-      if (!fs.existsSync(path)) {
-        try {
-          fs.mkdirSync(path, { recursive: true })
-        } catch (e) {
-          throw new Error(`${dirInfo} doesn't exist and cannot be created!`)
-        }
-      }
-      try {
-        fs.accessSync(path, fs.constants.R_OK)
-      } catch (e) {
-        throw new Error(`${dirInfo} is not readable`)
-      }
-      try {
-        fs.accessSync(path, fs.constants.W_OK)
-      } catch (e) {
-        throw new Error(`${dirInfo} is not writable`)
-      }
-    })
+    Object.entries(this.config.directories).forEach(([name, path]) => this.checkConfigDir(name, path))
+    if (this.config.logs?.file) {
+      this.checkConfigDir('logs.file.path', this.config.logs.file.path)
+    }
   }
 
   public async start(): Promise<void> {
@@ -79,12 +87,28 @@ export class App {
       this.stateCache.load()
       await this.content.startupInit()
       this.setIntervals()
-      this.server.start()
+      this.publicApi.start()
+      this.operatorApi?.start()
     } catch (err) {
       this.logger.error('Node initialization failed!', { err })
       process.exit(-1)
     }
     nodeCleanup(this.exitHandler.bind(this))
+  }
+
+  public stop(timeoutSec?: number): boolean {
+    if (this.isStopping) {
+      return false
+    }
+    this.logger.info(`Stopping the app${timeoutSec ? ` in ${timeoutSec} sec...` : ''}`)
+    this.isStopping = true
+    if (timeoutSec) {
+      setTimeout(() => process.kill(process.pid, 'SIGINT'), timeoutSec * 1000)
+    } else {
+      process.kill(process.pid, 'SIGINT')
+    }
+
+    return true
   }
 
   private async exitGracefully(): Promise<void> {
@@ -125,10 +149,15 @@ export class App {
     this.logger.info('Exiting...')
     // Clear intervals
     this.clearIntervals()
-    // Stop the server
-    this.server.stop()
+    // Stop the http apis
+    this.publicApi.stop()
+    this.operatorApi?.stop()
     // Save cache
-    this.stateCache.saveSync()
+    try {
+      this.stateCache.saveSync()
+    } catch (err) {
+      this.logger.error('Failed to save the cache state on exit!', { err })
+    }
     if (signal) {
       // Async exit can be executed
       this.exitGracefully()

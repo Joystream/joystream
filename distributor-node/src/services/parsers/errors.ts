@@ -1,14 +1,24 @@
-import { AxiosError } from 'axios'
+import { AxiosError, AxiosResponse } from 'axios'
 
-export function parseAxiosError(e: AxiosError) {
-  return {
-    message: e.message,
-    stack: e.stack,
-    response: {
-      data: e.response?.data,
-      status: e.response?.status,
-      statusText: e.response?.statusText,
-      headers: e.response?.headers,
-    },
+type ParsedAxiosErrorResponse = Pick<AxiosResponse, 'data' | 'status' | 'statusText' | 'headers'>
+
+type ParsedAxiosError = Pick<AxiosError, 'message' | 'stack'> & {
+  response?: ParsedAxiosErrorResponse
+}
+
+export function parseAxiosError({ message, stack, response }: AxiosError): ParsedAxiosError {
+  const parsedError: ParsedAxiosError = {
+    message,
+    stack,
   }
+  if (response) {
+    const { data, status, statusText, headers } = response
+    parsedError.response = {
+      data,
+      status,
+      statusText,
+      headers,
+    }
+  }
+  return parsedError
 }

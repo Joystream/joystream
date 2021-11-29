@@ -14,10 +14,10 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
-      - '127.0.0.1:9944:9944'
-      - '127.0.0.1:9933:9933'
+      - 9944:9944
+      - 9933:9933
 
   colossus-1:
     image: node:14
@@ -31,7 +31,7 @@ services:
         target: /joystream
     working_dir: /joystream/storage-node-v2
     ports:
-      - '127.0.0.1:3333:3333'
+      - 3333:3333
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -41,7 +41,7 @@ services:
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
@@ -59,7 +59,8 @@ services:
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
-      - 127.0.0.1:3334:3334
+      - 3334:3334
+      - 127.0.0.1:4334:4334
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -69,15 +70,16 @@ services:
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_1_ACCOUNT_URI}\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_1_WORKER_ID}
-      JOYSTREAM_DISTRIBUTOR__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
-      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__LOGS: /logs
+      JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
-    #   JOYSTREAM_DISTRIBUTOR__LOG__CONSOLE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOG__FILE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
     command: ['yarn', 'joystream-distributor', 'start']
@@ -94,7 +96,7 @@ services:
         target: /joystream
     working_dir: /joystream/storage-node-v2
     ports:
-      - '127.0.0.1:3335:3333'
+      - 3335:3333
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -104,7 +106,7 @@ services:
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
@@ -122,7 +124,8 @@ services:
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
-      - 127.0.0.1:3336:3334
+      - 3336:3334
+      - 127.0.0.1:4336:4334
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -132,15 +135,16 @@ services:
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_2_ACCOUNT_URI}\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_2_WORKER_ID}
-      JOYSTREAM_DISTRIBUTOR__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
-      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__LOGS: /logs
+      JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
     #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
-    #   JOYSTREAM_DISTRIBUTOR__LOG__CONSOLE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOG__FILE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
     command: ['yarn', 'joystream-distributor', 'start']

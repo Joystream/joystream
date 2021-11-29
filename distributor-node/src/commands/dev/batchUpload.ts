@@ -1,18 +1,17 @@
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
-import { hash } from 'blake3-wasm'
 import { FilesApi, Configuration, TokenRequest } from '../../services/networking/storage-node/generated'
 import { u8aToHex } from '@polkadot/util'
-import * as multihash from 'multihashes'
 import FormData from 'form-data'
 import imgGen from 'js-image-generator'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { BagIdParserService } from '../../services/parsers/BagIdParserService'
 import axios from 'axios'
+import { ContentHash } from '../../services/crypto/ContentHash'
 
 async function generateRandomImage(): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    imgGen.generateImage(10, 10, 80, function (err: any, image: any) {
+    imgGen.generateImage(10, 10, 80, function (err: unknown, image: { data: Buffer }) {
       if (err) {
         reject(err)
       } else {
@@ -61,7 +60,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
       const batch: [SubmittableExtrinsic<'promise'>, Buffer][] = []
       for (let j = 0; j < batchSize; ++j) {
         const dataObject = await generateRandomImage()
-        const dataHash = multihash.toB58String(multihash.encode(hash(dataObject) as Buffer, 'blake3'))
+        const dataHash = new ContentHash().update(dataObject).digest()
         batch.push([
           api.tx.sudo.sudo(
             api.tx.storage.sudoUploadDataObjects({
@@ -73,7 +72,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
                 },
               ],
               expectedDataSizeFee: dataFee,
-              bagId: new BagIdParserService().parseBagId(bagId),
+              bagId: new BagIdParserService(bagId).parse(),
             })
           ),
           dataObject,
@@ -102,7 +101,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
             signature,
           })
           if (!token) {
-            throw new Error('Recieved empty token!')
+            throw new Error('Received empty token!')
           }
 
           const formData = new FormData()

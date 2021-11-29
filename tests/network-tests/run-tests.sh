@@ -4,7 +4,7 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-CONTAINER_ID=`./run-test-node-docker.sh`
+CONTAINER_ID=$(./run-test-node-docker.sh)
 
 function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15

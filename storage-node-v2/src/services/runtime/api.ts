@@ -6,10 +6,11 @@ import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
-import { getTransactionNonce, resetTransactionNonceCache } from './transactionNonceKeeper'
+import { getTransactionNonce, resetTransactionNonceCache } from '../caching/transactionNonceKeeper'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
+import stringify from 'fast-safe-stringify'
 
 /**
  * Dedicated error for the failed extrinsics.
@@ -24,12 +25,12 @@ export class ExtrinsicFailedError extends CLIError {}
  */
 export async function createApi(apiUrl: string): Promise<ApiPromise> {
   const provider = new WsProvider(apiUrl)
-  provider.on('error', (err) => logger.error(`Api provider error: ${err.target?._url}`))
+  provider.on('error', (err) => logger.error(`Api provider error: ${err.target?._url}`, { err }))
 
   const api = new ApiPromise({ provider, types })
   await api.isReadyOrError
 
-  api.on('error', (err) => logger.error(`Api promise error: ${err.target?._url}`))
+  api.on('error', (err) => logger.error(`Api promise error: ${err.target?._url}`, { err }))
 
   return api
 }
@@ -109,7 +110,7 @@ function sendExtrinsic(
       .then((unsubFunc) => (unsubscribe = unsubFunc))
       .catch((e) =>
         reject(
-          new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`, {
+          new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : stringify(e)}`, {
             exit: ExitCodes.ApiError,
           })
         )

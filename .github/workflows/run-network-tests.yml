@@ -108,7 +108,7 @@ jobs:
         run: npm -g install @joystream/cli
       - name: Execute network tests
         run: |
-          export HOME=$(pwd)
+          export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           joystream-cli api:setUri ws://localhost:9944
           export RUNTIME=sumer

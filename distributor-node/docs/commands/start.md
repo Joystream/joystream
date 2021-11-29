@@ -10,8 +10,6 @@ Start the node
 Start the node
 
 ```
-Start the node
-
 USAGE
   $ joystream-distributor start
 

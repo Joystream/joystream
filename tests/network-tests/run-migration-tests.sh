@@ -5,7 +5,7 @@ SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 # Location to store runtime WASM for runtime upgrade
-DATA_PATH=${DATA_PATH:=$(pwd)/data}
+DATA_PATH=$PWD/data
 
 # The joystream/node docker image tag to start chain
 export RUNTIME=${RUNTIME:=latest}
@@ -17,7 +17,7 @@ TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 export AUTO_CONFIRM=true
 
 # Create chainspec with Alice (sudo) as member so we can use her in joystream-cli
-CONTAINER_ID=`MAKE_SUDO_MEMBER=true ./run-test-node-docker.sh`
+CONTAINER_ID=$(MAKE_SUDO_MEMBER=true ./run-test-node-docker.sh)
 
 function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15

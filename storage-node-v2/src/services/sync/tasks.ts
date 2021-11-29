@@ -9,6 +9,12 @@ import logger from '../../services/logger'
 import _ from 'lodash'
 import { getRemoteDataObjects } from './remoteStorageData'
 import { TaskSink } from './workingProcess'
+import { isNewDataObject } from '../caching/newUploads'
+import { addDataObjectIdToCache, deleteDataObjectIdFromCache } from '../caching/localDataObjects'
+import { hashFile } from '../helpers/hashing'
+import { parseBagId } from '../helpers/bagTypes'
+import { hexToString } from '@polkadot/util'
+import { ApiPromise } from '@polkadot/api'
 const fsPromises = fs.promises
 
 /**
@@ -43,8 +49,16 @@ export class DeleteLocalFileTask implements SyncTask {
   }
 
   async execute(): Promise<void> {
+    const dataObjectId = this.filename
+    if (isNewDataObject(dataObjectId)) {
+      logger.warn(`Sync - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}`)
+      return
+    }
+
     const fullPath = path.join(this.uploadsDirectory, this.filename)
-    return fsPromises.unlink(fullPath)
+    await fsPromises.unlink(fullPath)
+
+    await deleteDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -52,14 +66,24 @@ export class DeleteLocalFileTask implements SyncTask {
  * Download the file from the remote storage node to the local storage.
  */
 export class DownloadFileTask implements SyncTask {
-  id: string
+  dataObjectId: string
+  expectedHash?: string
   uploadsDirectory: string
+  tempDirectory: string
   url: string
 
-  constructor(baseUrl: string, id: string, uploadsDirectory: string) {
-    this.id = id
+  constructor(
+    baseUrl: string,
+    dataObjectId: string,
+    expectedHash: string | undefined,
+    uploadsDirectory: string,
+    tempDirectory: string
+  ) {
+    this.dataObjectId = dataObjectId
+    this.expectedHash = expectedHash
     this.uploadsDirectory = uploadsDirectory
-    this.url = urljoin(baseUrl, 'api/v1/files', id)
+    this.tempDirectory = tempDirectory
+    this.url = urljoin(baseUrl, 'api/v1/files', dataObjectId)
   }
 
   description(): string {
@@ -68,28 +92,47 @@ export class DownloadFileTask implements SyncTask {
 
   async execute(): Promise<void> {
     const streamPipeline = promisify(pipeline)
-    const filepath = path.join(this.uploadsDirectory, this.id)
-
+    const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
+    // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
+    // This partial downloads will be cleaned up during the next sync iteration.
+    const tempFilePath = path.join(this.uploadsDirectory, this.tempDirectory, uuidv4())
     try {
       const timeoutMs = 30 * 60 * 1000 // 30 min for large files (~ 10 GB)
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
       const request = superagent.get(this.url).timeout(timeoutMs) as unknown as NodeJS.ReadableStream
-
-      // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
-      // This partial downloads will be cleaned up during the next sync iteration.
-      const tempFilePath = path.join(this.uploadsDirectory, uuidv4())
       const fileStream = fs.createWriteStream(tempFilePath)
-      await streamPipeline(request, fileStream)
 
+      request.on('response', (res) => {
+        if (!res.ok) {
+          logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
+        }
+      })
+      await streamPipeline(request, fileStream)
+      await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)
+      await addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
-      logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
+      logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
       try {
-        logger.warn(`Cleaning up file ${filepath}`)
-        await fs.unlinkSync(filepath)
+        logger.warn(`Cleaning up file ${tempFilePath}`)
+        await fsPromises.unlink(tempFilePath)
       } catch (err) {
-        logger.error(`Sync - cannot cleanup file ${filepath}: ${err}`)
+        logger.error(`Sync - cannot cleanup file ${tempFilePath}: ${err}`, { err })
+      }
+    }
+  }
+
+  /** Compares expected and real IPFS hashes
+   *
+   * @param filePath downloaded file path
+   */
+  async verifyDownloadedFile(filePath: string): Promise<void> {
+    if (!_.isEmpty(this.expectedHash)) {
+      const hash = await hashFile(filePath)
+
+      if (hash !== this.expectedHash) {
+        throw new Error(`Invalid file hash. Expected: ${this.expectedHash} - real: ${hash}`)
       }
     }
   }
@@ -99,16 +142,30 @@ export class DownloadFileTask implements SyncTask {
  * Resolve remote storage node URLs and creates file downloading tasks (DownloadFileTask).
  */
 export class PrepareDownloadFileTask implements SyncTask {
+  bagId: string
   dataObjectId: string
   operatorUrlCandidates: string[]
   taskSink: TaskSink
   uploadsDirectory: string
+  tempDirectory: string
+  api?: ApiPromise
 
-  constructor(operatorUrlCandidates: string[], dataObjectId: string, uploadsDirectory: string, taskSink: TaskSink) {
+  constructor(
+    operatorUrlCandidates: string[],
+    bagId: string,
+    dataObjectId: string,
+    uploadsDirectory: string,
+    tempDirectory: string,
+    taskSink: TaskSink,
+    api?: ApiPromise
+  ) {
+    this.api = api
+    this.bagId = bagId
     this.dataObjectId = dataObjectId
     this.taskSink = taskSink
     this.operatorUrlCandidates = operatorUrlCandidates
     this.uploadsDirectory = uploadsDirectory
+    this.tempDirectory = tempDirectory
   }
 
   description(): string {
@@ -120,6 +177,11 @@ export class PrepareDownloadFileTask implements SyncTask {
     // cannot use the original array because we shouldn't modify the original data.
     // And cloning it seems like a heavy operation.
     const operatorUrlIndices: number[] = [...Array(this.operatorUrlCandidates.length).keys()]
+
+    if (_.isEmpty(this.bagId)) {
+      logger.error(`Sync - invalid task - no bagId for ${this.dataObjectId}`)
+      return
+    }
 
     while (!_.isEmpty(operatorUrlIndices)) {
       const randomUrlIndex = _.sample(operatorUrlIndices)
@@ -136,18 +198,37 @@ export class PrepareDownloadFileTask implements SyncTask {
 
       try {
         const chosenBaseUrl = randomUrl
-        const remoteOperatorIds: string[] = await getRemoteDataObjects(chosenBaseUrl)
+        const [remoteOperatorIds, hash] = await Promise.all([
+          getRemoteDataObjects(chosenBaseUrl),
+          this.getExpectedHash(),
+        ])
 
         if (remoteOperatorIds.includes(this.dataObjectId)) {
-          const newTask = new DownloadFileTask(chosenBaseUrl, this.dataObjectId, this.uploadsDirectory)
+          const newTask = new DownloadFileTask(
+            chosenBaseUrl,
+            this.dataObjectId,
+            hash,
+            this.uploadsDirectory,
+            this.tempDirectory
+          )
 
           return this.taskSink.add([newTask])
         }
       } catch (err) {
-        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`)
+        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
       }
     }
 
     logger.warn(`Sync - cannot get operator URLs for ${this.dataObjectId}`)
+  }
+
+  async getExpectedHash(): Promise<string | undefined> {
+    if (this.api !== undefined) {
+      const convertedBagId = parseBagId(this.bagId)
+      const dataObject = await this.api.query.storage.dataObjectsById(convertedBagId, this.dataObjectId)
+      return hexToString(dataObject.ipfsContentId.toString())
+    }
+
+    return undefined
   }
 }

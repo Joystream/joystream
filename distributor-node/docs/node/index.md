@@ -1,5 +1,7 @@
 <!-- AUTO-GENERATED-CONTENT:START (TOC:firsth1=true) -->
-- [The API](#the-api)
+- [API](#api)
+  - [Public API](#public-api)
+  - [Operator API](#operator-api)
   - [Requesting assets](#requesting-assets)
     - [Scenario 1 (cache hit)](#scenario-1-cache-hit)
     - [Scenario 2 (pending)](#scenario-2-pending)
@@ -32,19 +34,32 @@
 
 <a name="the-api"></a>
 
-# The API
+# API
 
-The Distributor Node exposes an HTTP api implemented with [ExpressJS](https://expressjs.com/).
+The Distributor Node, depending on the configuration, can expose either one or two HTTP APIs, both implemented with [ExpressJS](https://expressjs.com/).
 
-The api is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/openapi.yml](../../src/api-spec/openapi.yml)_
+## Public API
 
-**Current, detailed api documentation can be found [here](../api/index.md)**
+Public API is enabled by default and can be used to retrieve assets from the node as well as some basic information about its current status.
+
+Public API is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/public.yml](../../src/api-spec/public.yml)_
+
+**Full public API documentation can be found [here](../api/public/index.md)**
+
+## Operator API
+
+Secured operator API can be enabled with [`config.operatorApi`](../schema/definition-properties-operatorapi.md).
+Operator API makes it possible to remotely execute some operations on a running node (ie. changing supported buckets).
+
+Operator API is described by an [OpenAPI](https://swagger.io/specification/) schema located at _[src/api-spec/operator.yml](../../src/api-spec/operator.yml)_
+
+**Full operator API documentation can be found [here](../api/operator/index.md)**
 
 <a name="requesting-assets"></a>
 
 ## Requesting assets
 
-The assets are requested from the distributor node by using a `GET` request to [`/asset/{objectId}`](../api/index.md#opIdpublic.asset) endpoint.
+The assets are requested from the distributor node by using a `GET` request to [`/assets/{objectId}`](../api/index.md#opIdpublic.asset) endpoint.
 
 There are multiple scenarios of how a distributor will act upon that request, depending on its current state:
 
@@ -120,7 +135,7 @@ In this case
 
 ## Checking asset status
 
-It is possible to check an asset status without affecting the distributor node state in any way (for example - by triggering the process of [fetching the missing data object](#data-fetching)), by sending a [`HEAD` request to `/asset/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
+It is possible to check an asset status without affecting the distributor node state in any way (for example - by triggering the process of [fetching the missing data object](#data-fetching)), by sending a [`HEAD` request to `/assets/{objectId}`](../api/index.md#opIdpublic.assetHead) endpoint.
 
 If the request is valid, the node will respond with, among others, the `x-cache`, `content-length`, `cache-control` headers.
 
@@ -378,10 +393,10 @@ No-longer-distributed data objects are dropped from the cache periodically every
 
 The distributor node supports detailed logging with [winston](https://www.npmjs.com/package/winston) library. [NPM log levels](https://www.npmjs.com/package/winston#logging-levels) are used to specify the log priority.
 
-The logs can be directed to some of the 3 available outputs, depending on the [`log`](../schema/definition-properties-log.md) configuration settings:
-- console
-- a log file inside [`directories.logs`](../schema/definition-properties-directories.md#logs)
-- an elasticsearch endpoint specified via [`endpoints.elasticsearch`](../schema/definition-properties-endpoints.md#elasticsearch)
+The logs can be directed to some of the 3 available outputs, depending on the [`logs`](../schema/definition-properties-logs.md) configuration settings:
+- console ([`logs.console`](../schema/definition-properties-logs-properties-console.md))
+- log file(s) ([`logs.file`](../schema/definition-properties-logs-properties-file.md))
+- an elasticsearch endpoint ([`logs.elastic`](../schema/definition-properties-logs-properties-elastic.md))
 
 # Query node integration
 

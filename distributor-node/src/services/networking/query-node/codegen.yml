@@ -16,8 +16,8 @@ generates:
   src/services/networking/query-node/generated/schema.ts:
     hooks:
       afterOneFileWrite:
-        - prettier --write
-        - eslint --fix
+        - yarn prettier --write
+        - yarn eslint --fix
     plugins:
       - typescript
   src/services/networking/query-node/generated/queries.ts:
@@ -26,8 +26,8 @@ generates:
       typesPath: ./schema
     hooks:
       afterOneFileWrite:
-        - prettier --write
-        - eslint --fix
+        - yarn prettier --write
+        - yarn eslint --fix
     plugins:
       - typescript-operations
       - typescript-document-nodes

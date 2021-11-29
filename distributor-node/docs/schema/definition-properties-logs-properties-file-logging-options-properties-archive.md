@@ -1,0 +1,3 @@
+## archive Type
+
+`boolean`
