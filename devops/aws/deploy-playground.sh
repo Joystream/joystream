@@ -6,7 +6,7 @@ source common.sh
 
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
-  echo "Please use ./deploy-single-node.sh PATH/TO/CONFIG to run this script"
+  echo "Please use ./deploy-playground.sh PATH/TO/CONFIG to run this script"
   exit 1
 else
   echo "Using $1 file for config"
@@ -24,7 +24,7 @@ aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
   --stack-name $SINGLE_NODE_STACK_NAME \
-  --template-file cloudformation/single-instance.yml \
+  --template-file cloudformation/single-instance-docker.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
@@ -41,6 +41,6 @@ if [ $? -eq 0 ]; then
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-single-node-playbook.yml \
-    --extra-vars "binary_file=$BINARY_FILE chain_spec_file=$CHAIN_SPEC_FILE"
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-playground-playbook.yml \
+    --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO"
 fi

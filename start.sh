@@ -31,6 +31,9 @@ export SKIP_MOCK_CONTENT=true
 ## Set sudo as the membership screening authority
 yarn workspace api-scripts set-sudo-as-screening-auth
 
+## Member faucet
+docker-compose up -d faucet
+
 ## Storage Infrastructure Configuration
 ./storage-playground-config.sh
 
@@ -43,6 +46,9 @@ docker-compose up -d distributor-1
 
 ## Pioneer UI
 docker-compose up -d pioneer
+
+## Orion
+docker-compose up -d orion
 
 if [ "${PERSIST}" == true ]
 then
