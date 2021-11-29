@@ -131,7 +131,7 @@ function fork_off_init() {
     docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
 #    cat ${DATA_PATH}/runtime.wasm | hexdump -ve '/1 "%02x"\' > ${DATA_PATH}/runtime.hex
     
-    npm start
+    yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 #######################################
 # create initial-balances.json & initial-members.json files
