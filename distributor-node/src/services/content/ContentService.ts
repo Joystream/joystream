@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { ReadonlyConfig } from '../../types'
+import { ObjectStatus, ObjectStatusType, ReadonlyConfig } from '../../types'
 import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
@@ -7,10 +7,11 @@ import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileC
 import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
-import { createHash } from 'blake3-wasm'
-import * as multihash from 'multihashes'
+import { ContentHash } from '../crypto/ContentHash'
+import readChunk from 'read-chunk'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
+export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
 
 export class ContentService {
   private config: ReadonlyConfig
@@ -90,6 +91,12 @@ export class ContentService {
         continue
       }
 
+      // Drop files that are missing in the cache
+      if (!this.stateCache.peekContent(objectId)) {
+        this.drop(objectId, 'Missing cache data')
+        continue
+      }
+
       // Compare file size to expected one
       const { size: dataObjectSize } = dataObject
       if (fileSize !== dataObjectSize) {
@@ -122,11 +129,13 @@ export class ContentService {
     })
   }
 
-  public drop(objectId: string, reason?: string): void {
+  public drop(objectId: string, reason?: string, unreserveSpace = true): void {
     if (this.exists(objectId)) {
       const size = this.fileSize(objectId)
       fs.unlinkSync(this.path(objectId))
-      this.contentSizeSum -= size
+      if (unreserveSpace) {
+        this.contentSizeSum -= size
+      }
       this.logger.debug('Dropping content', { objectId, reason, size, contentSizeSum: this.contentSizeSum })
     } else {
       this.logger.warn('Trying to drop content that no loger exists', { objectId, reason })
@@ -159,8 +168,19 @@ export class ContentService {
   }
 
   public async detectMimeType(objectId: string): Promise<string> {
-    const result = await FileType.fromFile(this.path(objectId))
-    return result?.mime || DEFAULT_CONTENT_TYPE
+    const objectPath = this.path(objectId)
+    try {
+      const buffer = await readChunk(objectPath, 0, MIME_TYPE_DETECTION_CHUNK_SIZE)
+      const result = await FileType.fromBuffer(buffer)
+      return result?.mime || DEFAULT_CONTENT_TYPE
+    } catch (err) {
+      this.logger.error(`Error while trying to detect object mimeType: ${err instanceof Error ? err.message : err}`, {
+        err,
+        objectId,
+        objectPath,
+      })
+      return DEFAULT_CONTENT_TYPE
+    }
   }
 
   private async evictCacheUntilFreeSpaceReached(targetFreeSpace: number): Promise<void> {
@@ -203,44 +223,60 @@ export class ContentService {
       newContentSizeSum: this.contentSizeSum,
     })
 
+    const rejectContent = (reason: string, metadata: Record<string, unknown>) => {
+      const msg = `Content rejected: ${reason}`
+      // Drop (without unreserving space, will do that manually)
+      this.drop(objectId, msg, false)
+      // Unreserve reserved space
+      this.contentSizeSum -= expectedSize
+      // Log the error
+      this.logger.error(msg, { ...metadata })
+    }
+
     // Return a promise that resolves when the new file is created
     return new Promise<void>((resolve, reject) => {
       const fileStream = this.createWriteStream(objectId)
 
-      let bytesRecieved = 0
-      const hash = createHash()
+      let bytesReceived = 0
+      const hash = new ContentHash()
+
+      const onData = (chunk: Buffer) => {
+        bytesReceived += chunk.length
+        hash.update(chunk)
+
+        if (bytesReceived > expectedSize) {
+          dataStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
+        }
+      }
 
       pipeline(dataStream, fileStream, async (err) => {
+        dataStream.off('data', onData)
         const { bytesWritten } = fileStream
-        const finalHash = multihash.toB58String(multihash.encode(hash.digest(), 'blake3'))
+        const finalHash = hash.digest()
         const logMetadata = {
           objectId,
           expectedSize,
-          expectedHash,
-          bytesRecieved,
+          bytesReceived,
           bytesWritten,
+          expectedHash,
+          finalHash,
         }
         if (err) {
-          this.logger.error(`Error while processing content data stream`, {
+          rejectContent(`Error while processing content data stream`, {
             err,
             ...logMetadata,
           })
-          this.drop(objectId)
           reject(err)
           return
         }
 
-        if (bytesWritten !== bytesRecieved || bytesWritten !== expectedSize) {
-          this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
-            ...logMetadata,
-          })
-          this.drop(objectId)
+        if (bytesWritten !== bytesReceived || bytesWritten !== expectedSize) {
+          rejectContent('Bytes written/received/expected mismatch!', { ...logMetadata })
           return
         }
 
         if (finalHash !== expectedHash) {
-          this.logger.error('Content rejected: Hash mismatch!', { ...logMetadata })
-          this.drop(objectId)
+          rejectContent('Hash mismatch!', { ...logMetadata })
           return
         }
 
@@ -255,15 +291,35 @@ export class ContentService {
         // Note: The promise is resolved on "ready" event, since that's what's awaited in the current flow
         resolve()
       })
-
-      dataStream.on('data', (chunk) => {
-        bytesRecieved += chunk.length
-        hash.update(chunk)
-
-        if (bytesRecieved > expectedSize) {
-          dataStream.destroy(new Error('Unexpected content size: Too much data recieved from source!'))
-        }
-      })
+      dataStream.on('data', onData)
     })
+  }
+
+  public async objectStatus(objectId: string): Promise<ObjectStatus> {
+    const pendingDownload = this.stateCache.getPendingDownload(objectId)
+
+    if (!pendingDownload && this.exists(objectId)) {
+      return { type: ObjectStatusType.Available, path: this.path(objectId) }
+    }
+
+    if (pendingDownload) {
+      return { type: ObjectStatusType.PendingDownload, pendingDownload }
+    }
+
+    const objectInfo = await this.networking.dataObjectInfo(objectId)
+    if (!objectInfo.exists) {
+      return { type: ObjectStatusType.NotFound }
+    }
+
+    if (!objectInfo.isSupported) {
+      return { type: ObjectStatusType.NotSupported }
+    }
+
+    const { data: objectData } = objectInfo
+    if (!objectData) {
+      throw new Error('Missing data object data')
+    }
+
+    return { type: ObjectStatusType.Missing, objectData }
   }
 }

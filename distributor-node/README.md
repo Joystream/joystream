@@ -27,7 +27,9 @@ To determine environment variable name based on a config key, for example `inter
 - replace all dots with `__`: `INTERVALS.CACHE_CLEANUP` => `INTERVALS__CACHE_CLEANUP`
 - add `JOYSTREAM_DISTRIBUTOR__` prefix: `INTERVALS__CACHE_CLEANUP` => `JOYSTREAM_DISTRIBUTOR__INTERVALS__CACHE_CLEANUP`
 
-In case of arrays, the values must be provided as json string, for example `JOYSTREAM_DISTRIBUTOR__KEYS="[{\"suri\":\"//Bob\"}]"`.
+In case of arrays or `oneOf` objects (ie. `keys`), the values must be provided as json string, for example `JOYSTREAM_DISTRIBUTOR__KEYS="[{\"suri\":\"//Bob\"}]"`.
+
+In order to unset a value you can use one of the following strings as env variable value: `"off"` `"null"`, `"undefined"`, for example: `JOYSTREAM_DISTRIBUTOR__LOGS__FILE="off"`.
 
 For more envirnoment variable examples see the `distributor-node` service configuration in [docker-compose.yml](../docker-compose.yml).
 

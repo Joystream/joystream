@@ -7,7 +7,7 @@ export type StorageNodeInfoFragment = {
 }
 
 export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
-  bagId?: Types.Maybe<Types.Scalars['String']>
+  bagId?: Types.Maybe<Types.Scalars['ID']>
 }>
 
 export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
@@ -81,11 +81,11 @@ export const DataObjectInfo = gql`
   }
 `
 export const GetStorageNodesInfoByBagId = gql`
-  query getStorageNodesInfoByBagId($bagId: String) {
+  query getStorageNodesInfoByBagId($bagId: ID) {
     storageBuckets(
       where: {
         operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-        bagAssignments_some: { storageBagId_eq: $bagId }
+        bags_some: { id_eq: $bagId }
         operatorMetadata: { nodeEndpoint_contains: "http" }
       }
     ) {

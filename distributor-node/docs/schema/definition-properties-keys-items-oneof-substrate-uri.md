@@ -4,10 +4,10 @@
 
 # 0 Properties
 
-| Property      | Type     | Required | Nullable       | Defined by                                                                                                                                                           |
-| :------------ | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [type](#type) | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-type.md "undefined#/properties/keys/items/oneOf/0/properties/type") |
-| [suri](#suri) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-suri.md "undefined#/properties/keys/items/oneOf/0/properties/suri") |
+| Property      | Type     | Required | Nullable       | Defined by                                                                                                                                                                                            |
+| :------------ | :------- | :------- | :------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [type](#type) | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-type.md "https://joystream.org/schemas/argus/config#/properties/keys/items/oneOf/0/properties/type") |
+| [suri](#suri) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-suri.md "https://joystream.org/schemas/argus/config#/properties/keys/items/oneOf/0/properties/suri") |
 
 ## type
 
@@ -21,7 +21,7 @@
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-type.md "undefined#/properties/keys/items/oneOf/0/properties/type")
+*   defined in: [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-type.md "https://joystream.org/schemas/argus/config#/properties/keys/items/oneOf/0/properties/type")
 
 ### type Type
 
@@ -57,7 +57,7 @@ The default value is:
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-suri.md "undefined#/properties/keys/items/oneOf/0/properties/suri")
+*   defined in: [Distributor node configuration](definition-properties-keys-items-oneof-substrate-uri-properties-suri.md "https://joystream.org/schemas/argus/config#/properties/keys/items/oneOf/0/properties/suri")
 
 ### suri Type
 
