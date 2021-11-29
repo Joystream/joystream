@@ -23,6 +23,11 @@
     reverse_proxy localhost:3334
 }
 
+# newer versions of graphql-server seems to expect this url also
+{{ nip_domain }}/@apollographql/* {
+    reverse_proxy localhost:8081
+}
+
 {{ nip_domain }}/query-node/server* {
     uri strip_prefix /query-node/server
     reverse_proxy localhost:8081
