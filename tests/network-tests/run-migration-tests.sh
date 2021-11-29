@@ -23,7 +23,20 @@ POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$false}
 source ./node-utils.sh
 source ./.env
 
-
+#######################################
+# use fork-off to generate a chainspec file with the current s
+# Globals:
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function fork_off_init() {
+    if [[ -z ${DATA_PATH}/storage.json ]]; then
+	sudo scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json \
+	     ${DATA_PATH}/storage.json
+    fi
+    npm start
+}
 #######################################
 # create initial-balances.json & initial-members.json files
 # Globals:
@@ -115,46 +128,19 @@ function main {
 
     CONTAINER_ID=""
 
-    # starting a node with sumer runtime is needed if at least one of the following is true:
-    # a. I want to add extra content using cli
-    # b. I want to add extra content using typescript
-    # c. I don't want to clone the current live chain state
-    export EXTRA_SETUP=$PRE_MIGRATION_CLI_SETUP || \
-	$PRE_MIGRATION_ASYNC_SETUP || (! ($CLONE_CURRENT_STATE))
+    echo "**** CREATING EMPTY CHAINSPEC ****"
+    create_initial_config
+    create_chainspec_file
+    convert_chainspec
+    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-    if [[ $CLONE_CURRENT_STATE ]]; then
-	# fork_off output_chainspec.json
-	echo "**** USING FORK-OFF ****"
-    else
-	echo "**** CREATING DEFAULT CHAINSPEC ****"
-	create_initial_config
-	create_chainspec_file
-	convert_chainspec
-	echo "**** DEFAULT CHAINSPEC CREATED SUCCESSFULLY ****"	
-    fi
+    # use forkoff
+    fork_off_init
 
-    if [[ $EXTRA_SETUP ]]; then
-        echo "******* STARTING ${JOYSTREAM_NODE_TAG} ********"		
-	# start node binary with sumer runtime
-	CONTAINER_ID=$(start_node)
-        echo "******* JS BINARY STARTED CONTAINER_ID: $CONTAINER_ID ********"
-	
-	if [[ $PRE_MIGRATION_CLI_SETUP ]]; then
-	    pre_migration_cli
-	fi
-	
-	if [[ $PRE_MIGRATION_ASYNC_SETUP ]]; then
-	    # add content using scenarios
-	    yarn workspace network-tests node-ts-strict src/scenarios/setup_new_chain.ts
-	fi
-    else
-	# if no node has been started until now:
-	# start joystream node with target runtime
-	JOYSTREAM_NODE_TAG=${TARGET_RUNTIME_TAG}
-        echo "******* STARTING ${JOYSTREAM_NODE_TAG} ********"	
-	CONTAINER_ID=$(start_node)
-        echo "******* JS BINARY STARTED CONTAINER_ID: $CONTAINER_ID ********"	
-    fi
+    JOYSTREAM_NODE_TAG=${TARGET_RUNTIME_TAG}
+    echo "******* STARTING ${JOYSTREAM_NODE_TAG} ********"	
+    CONTAINER_ID=$(start_node)
+    echo "******* JS BINARY STARTED CONTAINER_ID: $CONTAINER_ID ********"	
 
     # Section B: migration
     upgrade_runtime
