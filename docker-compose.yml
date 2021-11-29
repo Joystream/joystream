@@ -14,10 +14,10 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
-      - '127.0.0.1:9944:9944'
-      - '127.0.0.1:9933:9933'
+      - 9944:9944
+      - 9933:9933
 
   colossus-1:
     image: node:14
@@ -31,7 +31,7 @@ services:
         target: /joystream
     working_dir: /joystream/storage-node-v2
     ports:
-      - '127.0.0.1:3333:3333'
+      - 3333:3333
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -59,7 +59,7 @@ services:
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
-      - 127.0.0.1:3334:3334
+      - 3334:3334
       - 127.0.0.1:4334:4334
     env_file:
       # relative to working directory where docker-compose was run from
@@ -96,7 +96,7 @@ services:
         target: /joystream
     working_dir: /joystream/storage-node-v2
     ports:
-      - '127.0.0.1:3335:3333'
+      - 3335:3333
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -124,7 +124,7 @@ services:
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
-      - 127.0.0.1:3336:3334
+      - 3336:3334
       - 127.0.0.1:4336:4334
     env_file:
       # relative to working directory where docker-compose was run from
