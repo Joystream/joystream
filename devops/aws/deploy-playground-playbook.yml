@@ -62,6 +62,8 @@
         chdir: '{{ remote_code_path }}'
       environment:
         PERSIST: 'true'
+        COLOSSUS_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
+        DISTRIBUTOR_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
       async: 1800
       poll: 0
       register: compose_result
@@ -87,7 +89,7 @@
         apply:
           become: yes
       vars:
-        caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
+        caddy_config: "{{ lookup('template', 'templates/Playground-Caddyfile.j2') }}"
         caddy_systemd_capabilities_enabled: true
         caddy_update: false
 
@@ -98,7 +100,9 @@
           - 'Pioneer: {{ nip_domain }}/pioneer/'
           - 'WebSocket RPC: {{ nip_domain }}/ws-rpc'
           - 'HTTP RPC: {{ nip_domain }}/http-rpc'
-          - 'Colossus: {{ nip_domain }}/colossus'
-          - 'Distributor: {{ nip_domain }}/distributor'
-          - 'GraphQL server: {{ nip_domain }}/graphql'
-          - 'Indexer: {{ nip_domain }}/indexer'
+          - 'Colossus: {{ nip_domain }}/colossus-1'
+          - 'Distributor: {{ nip_domain }}/distributor-1'
+          - 'GraphQL server: {{ nip_domain }}/query-node/server/graphql'
+          - 'Indexer: {{ nip_domain }}/query-node/indexer/graphql'
+          - 'Member Faucet: {{ nip_domain }}/member-faucet/register'
+          - 'Orion: {{ nip_domain }}/orion/graphql'

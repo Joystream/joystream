@@ -6,7 +6,7 @@ source common.sh
 
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
-  echo "Please use ./deploy-single-node.sh PATH/TO/CONFIG to run this script"
+  echo "Please use ./deploy-playground.sh PATH/TO/CONFIG to run this script"
   exit 1
 else
   echo "Using $1 file for config"
@@ -41,6 +41,6 @@ if [ $? -eq 0 ]; then
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH docker-setup-playbook.yml \
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-playground-playbook.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO"
 fi
