@@ -5,11 +5,11 @@ fragment StorageNodeInfo on StorageBucket {
   }
 }
 
-query getStorageNodesInfoByBagId($bagId: String) {
+query getStorageNodesInfoByBagId($bagId: ID) {
   storageBuckets(
     where: {
       operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-      bagAssignments_some: { storageBagId_eq: $bagId }
+      bags_some: { id_eq: $bagId }
       operatorMetadata: { nodeEndpoint_contains: "http" }
     }
   ) {
