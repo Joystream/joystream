@@ -2,7 +2,7 @@ import { types } from '@joystream/types/'
 import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Balance } from '@polkadot/types/interfaces'
+import { Balance, Call } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
 import { IEvent } from '@polkadot/types/types'
 import { DispatchError } from '@polkadot/types/interfaces/system'
@@ -26,13 +26,13 @@ export class RuntimeApi {
   static async create(
     logging: LoggingService,
     apiUri: string,
-    metadataCache?: Record<string, any>
+    metadataCache?: Record<string, string>
   ): Promise<RuntimeApi> {
     const { api, chainType } = await RuntimeApi.initApi(apiUri, metadataCache)
     return new RuntimeApi(logging, api, chainType.isDevelopment || chainType.isLocal)
   }
 
-  private static async initApi(apiUri: string, metadataCache?: Record<string, any>) {
+  private static async initApi(apiUri: string, metadataCache?: Record<string, string>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
     const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
 
@@ -100,8 +100,22 @@ export class RuntimeApi {
     return (event as unknown) as EventType
   }
 
+  private formatDispatchError(err: DispatchError): string {
+    try {
+      const { name, docs } = this._api.registry.findMetaError(err.asModule)
+      return `${name} (${docs.join(', ')})`
+    } catch (e) {
+      return err.toString()
+    }
+  }
+
   sendExtrinsic(keyPair: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
-    this.logger.info(`Sending ${tx.method.section}.${tx.method.method} extrinsic from ${keyPair.address}`)
+    let txName = `${tx.method.section}.${tx.method.method}`
+    if (txName === 'sudo.sudo') {
+      const innerCall = tx.args[0] as Call
+      txName = `sudo.sudo(${innerCall.section}.${innerCall.method})`
+    }
+    this.logger.info(`Sending ${txName} extrinsic from ${keyPair.address}`)
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(keyPair, {}, (result) => {
@@ -117,19 +131,26 @@ export class RuntimeApi {
             .forEach(({ event }) => {
               if (event.method === 'ExtrinsicFailed') {
                 const dispatchError = event.data[0] as DispatchError
-                let errorMsg = dispatchError.toString()
-                if (dispatchError.isModule) {
-                  try {
-                    const { name, docs } = this._api.registry.findMetaError(dispatchError.asModule)
-                    errorMsg = `${name} (${docs.join(', ')})`
-                  } catch (e) {
-                    // This probably means we don't have this error in the metadata
-                    // In this case - continue (we'll just display dispatchError.toString())
-                  }
-                }
-                reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
+                reject(
+                  new ExtrinsicFailedError(`Extrinsic execution error: ${this.formatDispatchError(dispatchError)}`)
+                )
               } else if (event.method === 'ExtrinsicSuccess') {
-                resolve(result)
+                const sudidEvent = this.findEvent(result, 'sudo', 'Sudid')
+
+                if (sudidEvent) {
+                  const [dispatchResult] = sudidEvent.data
+                  if (dispatchResult.isOk) {
+                    resolve(result)
+                  } else {
+                    reject(
+                      new ExtrinsicFailedError(
+                        `Sudo extrinsic execution error! ${this.formatDispatchError(dispatchResult.asErr)}`
+                      )
+                    )
+                  }
+                } else {
+                  resolve(result)
+                }
               }
             })
         } else if (result.isError) {

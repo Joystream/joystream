@@ -23,6 +23,9 @@ yarn ts-node --project ./mappings/tsconfig.json ./mappings/scripts/postCodegen.t
 # and are inline with root workspace resolutions
 yarn
 
+# Add missing typeorm binary symlink
+ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
+
 yarn workspace query-node codegen
 yarn workspace query-node build
 

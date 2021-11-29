@@ -17,7 +17,7 @@ import {
   DistributionBucketFamily,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { bytesToString, inconsistentState, getById } from '../common'
+import { bytesToString, inconsistentState, getById, RelationsArr } from '../common'
 import { In } from 'typeorm'
 import { unsetAssetRelations } from '../content/utils'
 
@@ -101,7 +101,7 @@ export function getBagId(bagId: BagId) {
 export async function getDynamicBag(
   store: DatabaseManager,
   bagId: DynamicBagId,
-  relations?: 'objects'[]
+  relations?: RelationsArr<StorageBag>
 ): Promise<StorageBag> {
   return getById(store, StorageBag, getDynamicBagId(bagId), relations)
 }
@@ -109,7 +109,7 @@ export async function getDynamicBag(
 export async function getStaticBag(
   store: DatabaseManager,
   bagId: StaticBagId,
-  relations?: 'objects'[]
+  relations?: RelationsArr<StorageBag>
 ): Promise<StorageBag> {
   const id = getStaticBagId(bagId)
   const bag = await store.get(StorageBag, { where: { id }, relations })
@@ -125,7 +125,11 @@ export async function getStaticBag(
   return bag
 }
 
-export async function getBag(store: DatabaseManager, bagId: BagId, relations?: 'objects'[]): Promise<StorageBag> {
+export async function getBag(
+  store: DatabaseManager,
+  bagId: BagId,
+  relations?: RelationsArr<StorageBag>
+): Promise<StorageBag> {
   return bagId.isStatic
     ? getStaticBag(store, bagId.asStatic, relations)
     : getDynamicBag(store, bagId.asDynamic, relations)

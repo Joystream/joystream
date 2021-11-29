@@ -1,22 +1,17 @@
 import { Logger } from 'winston'
-import { ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
+import { ReadonlyConfig } from '../../types'
 import { LoggingService } from '../logging'
 import _ from 'lodash'
 import fs from 'fs'
+import NodeCache from 'node-cache'
+import { PendingDownload } from '../networking/PendingDownload'
 
 // LRU-SP cache parameters
 // Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
-// TODO: Intoduce MAX_CACHED_ITEM_SIZE and skip caching for large objects entirely? (ie. 10 GB objects)
 export const CACHE_GROUP_LOG_BASE = 2
 export const CACHE_GROUPS_COUNT = 24
 
-type PendingDownloadStatus = 'Waiting' | 'LookingForSource' | 'Downloading'
-
-export interface PendingDownloadData {
-  objectSize: number
-  status: PendingDownloadStatus
-  promise: Promise<StorageNodeDownloadResponse>
-}
+export const DEFAULT_DATA_OBJECT_SOURCE_CACHE_TTL = 60
 
 export interface StorageNodeEndpointData {
   last10ResponseTimes: number[]
@@ -34,9 +29,12 @@ export class StateCacheService {
   private cacheFilePath: string
 
   private memoryState = {
-    pendingDownloadsByObjectId: new Map<string, PendingDownloadData>(),
+    pendingDownloadsByObjectId: new Map<string, PendingDownload>(),
     storageNodeEndpointDataByEndpoint: new Map<string, StorageNodeEndpointData>(),
     groupNumberByObjectId: new Map<string, number>(),
+    dataObjectSourceByObjectId: new NodeCache({
+      deleteOnExpire: true,
+    }),
   }
 
   private storedState = {
@@ -149,17 +147,8 @@ export class StateCacheService {
     return bestCandidate
   }
 
-  public newPendingDownload(
-    objectId: string,
-    objectSize: number,
-    promise: Promise<StorageNodeDownloadResponse>
-  ): PendingDownloadData {
-    const pendingDownload: PendingDownloadData = {
-      status: 'Waiting',
-      objectSize,
-      promise,
-    }
-    this.memoryState.pendingDownloadsByObjectId.set(objectId, pendingDownload)
+  public addPendingDownload(pendingDownload: PendingDownload): PendingDownload {
+    this.memoryState.pendingDownloadsByObjectId.set(pendingDownload.getObjectId(), pendingDownload)
     return pendingDownload
   }
 
@@ -167,18 +156,22 @@ export class StateCacheService {
     return this.memoryState.pendingDownloadsByObjectId.size
   }
 
-  public getPendingDownload(objectId: string): PendingDownloadData | undefined {
+  public getPendingDownload(objectId: string): PendingDownload | undefined {
     return this.memoryState.pendingDownloadsByObjectId.get(objectId)
   }
 
   public dropPendingDownload(objectId: string): void {
-    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    const pendingDownload = this.memoryState.pendingDownloadsByObjectId.get(objectId)
+    if (pendingDownload) {
+      pendingDownload.cleanup()
+      this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    }
   }
 
   public dropById(objectId: string): void {
     this.logger.debug('Dropping all state by object id', { objectId })
     this.storedState.mimeTypeByObjectId.delete(objectId)
-    this.memoryState.pendingDownloadsByObjectId.delete(objectId)
+    this.dropPendingDownload(objectId)
     const cacheGroupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
     this.logger.debug('Cache group by object id established', { objectId, cacheGroupNumber })
     if (cacheGroupNumber) {
@@ -210,6 +203,26 @@ export class StateCacheService {
     ])
   }
 
+  public cacheDataObjectSource(objectId: string, source: string): void {
+    this.memoryState.dataObjectSourceByObjectId.set<string>(
+      objectId,
+      source,
+      this.config.limits.dataObjectSourceByObjectIdTTL || DEFAULT_DATA_OBJECT_SOURCE_CACHE_TTL
+    )
+  }
+
+  public getCachedDataObjectSource(objectId: string): string | undefined {
+    return this.memoryState.dataObjectSourceByObjectId.get<string | undefined>(objectId)
+  }
+
+  public dropCachedDataObjectSource(objectId: string, expectedSource?: string): void {
+    const cachedSource = this.memoryState.dataObjectSourceByObjectId.get<string | undefined>(objectId)
+    if (!expectedSource || cachedSource === expectedSource) {
+      this.logger.info('Force-dropping cached dataObjectSource', { objectId, cachedSource, expectedSource })
+      this.memoryState.dataObjectSourceByObjectId.del(objectId)
+    }
+  }
+
   private serializeData() {
     const { lruCacheGroups, mimeTypeByObjectId } = this.storedState
     return JSON.stringify(
@@ -218,7 +231,7 @@ export class StateCacheService {
         mimeTypeByObjectId: Array.from(mimeTypeByObjectId.entries()),
       },
       null,
-      2 // TODO: Only for debugging
+      2
     )
   }
 
