@@ -184,7 +184,7 @@ export default function createFlow({ families }: InitDistributionConfig) {
           return api.tx.storage.updateDistributionBucketsForBag(
             createType<BagId, 'BagId'>('BagId', { Static: sBagId }),
             familyId,
-            createType('DistributionBucketIdSet', [[bucketId.toNumber()]]),
+            createType('DistributionBucketIdSet', [bucketId.toNumber()]),
             createType('DistributionBucketIdSet', [])
           )
         })
