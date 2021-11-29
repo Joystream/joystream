@@ -1,28 +1,36 @@
+fragment DistributionBucketOperatorDetails on DistributionBucketOperator {
+  workerId
+  status
+}
+
+fragment DistributionBucketDetails on DistributionBucket {
+  id
+  operators {
+    ...DistributionBucketOperatorDetails
+  }
+}
+
+fragment StorageBucketDetails on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+  operatorStatus {
+    __typename
+  }
+}
+
 fragment DataObjectDetails on StorageDataObject {
   id
   size
   ipfsHash
   isAccepted
   storageBag {
-    storageAssignments {
-      storageBucket {
-        id
-        operatorMetadata {
-          nodeEndpoint
-        }
-        operatorStatus {
-          __typename
-        }
-      }
+    storageBuckets {
+      ...StorageBucketDetails
     }
-    distirbutionAssignments {
-      distributionBucket {
-        id
-        operators {
-          workerId
-          status
-        }
-      }
+    distributionBuckets {
+      ...DistributionBucketDetails
     }
   }
 }
@@ -35,13 +43,11 @@ query getDataObjectDetails($id: ID!) {
 
 fragment DistirubtionBucketWithObjects on DistributionBucket {
   id
-  bagAssignments {
-    storageBag {
-      objects {
-        id
-        size
-        ipfsHash
-      }
+  bags {
+    objects {
+      id
+      size
+      ipfsHash
     }
   }
 }
@@ -65,14 +71,24 @@ fragment StorageBucketOperatorFields on StorageBucket {
   }
 }
 
-query getActiveStorageBucketOperatorsData {
-  storageBuckets(
-    where: {
-      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-      operatorMetadata: { nodeEndpoint_contains: "http" }
+fragment StorageBucketsConnectionFields on StorageBucketConnection {
+  edges {
+    node {
+      ...StorageBucketOperatorFields
     }
-    limit: 9999
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
+query getActiveStorageBucketOperatorsData($limit: Int!, $lastCursor: String) {
+  storageBucketsConnection(
+    first: $limit
+    after: $lastCursor
+    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
   ) {
-    ...StorageBucketOperatorFields
+    ...StorageBucketsConnectionFields
   }
 }

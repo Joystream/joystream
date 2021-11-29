@@ -4,11 +4,11 @@
 
 # intervals Properties
 
-| Property                                                        | Type      | Required | Nullable       | Defined by                                                                                                                                                                               |
-| :-------------------------------------------------------------- | :-------- | :------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [saveCacheState](#savecachestate)                               | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-savecachestate.md "undefined#/properties/intervals/properties/saveCacheState")                               |
-| [checkStorageNodeResponseTimes](#checkstoragenoderesponsetimes) | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-checkstoragenoderesponsetimes.md "undefined#/properties/intervals/properties/checkStorageNodeResponseTimes") |
-| [cacheCleanup](#cachecleanup)                                   | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-cachecleanup.md "undefined#/properties/intervals/properties/cacheCleanup")                                   |
+| Property                                                        | Type      | Required | Nullable       | Defined by                                                                                                                                                                                                                |
+| :-------------------------------------------------------------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [saveCacheState](#savecachestate)                               | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-savecachestate.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/saveCacheState")                               |
+| [checkStorageNodeResponseTimes](#checkstoragenoderesponsetimes) | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-checkstoragenoderesponsetimes.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/checkStorageNodeResponseTimes") |
+| [cacheCleanup](#cachecleanup)                                   | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-intervals-properties-cachecleanup.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/cacheCleanup")                                   |
 
 ## saveCacheState
 
@@ -22,7 +22,7 @@ How often, in seconds, will the cache state be saved in `directories.state`. Ind
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-intervals-properties-savecachestate.md "undefined#/properties/intervals/properties/saveCacheState")
+*   defined in: [Distributor node configuration](definition-properties-intervals-properties-savecachestate.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/saveCacheState")
 
 ### saveCacheState Type
 
@@ -44,7 +44,7 @@ How often, in seconds, will the distributor node attempt to send requests to all
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-intervals-properties-checkstoragenoderesponsetimes.md "undefined#/properties/intervals/properties/checkStorageNodeResponseTimes")
+*   defined in: [Distributor node configuration](definition-properties-intervals-properties-checkstoragenoderesponsetimes.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/checkStorageNodeResponseTimes")
 
 ### checkStorageNodeResponseTimes Type
 
@@ -66,7 +66,7 @@ How often, in seconds, will the distributor node fetch data about all its distri
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-intervals-properties-cachecleanup.md "undefined#/properties/intervals/properties/cacheCleanup")
+*   defined in: [Distributor node configuration](definition-properties-intervals-properties-cachecleanup.md "https://joystream.org/schemas/argus/config#/properties/intervals/properties/cacheCleanup")
 
 ### cacheCleanup Type
 

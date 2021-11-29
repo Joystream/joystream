@@ -1,7 +1,7 @@
 import ApiCommandBase from './api'
 import { AccountId } from '@polkadot/types/interfaces'
 import { Keyring } from '@polkadot/api'
-import { KeyringInstance, KeyringOptions, KeyringPair } from '@polkadot/keyring/types'
+import { KeyringInstance, KeyringOptions, KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 import { CLIError } from '@oclif/errors'
 import ExitCodes from './ExitCodes'
 import fs from 'fs'
@@ -30,7 +30,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         exit: ExitCodes.InvalidFile,
       })
     }
-    let accountJsonObj: any
+    let accountJsonObj: unknown
     try {
       accountJsonObj = require(jsonBackupFilePath)
     } catch (e) {
@@ -48,8 +48,8 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     let account: KeyringPair
     try {
       // Try adding and retrieving the keys in order to validate that the backup file is correct
-      keyring.addFromJson(accountJsonObj)
-      account = keyring.getPair(accountJsonObj.address)
+      keyring.addFromJson(accountJsonObj as KeyringPair$Json)
+      account = keyring.getPair((accountJsonObj as KeyringPair$Json).address)
     } catch (e) {
       throw new CLIError(`Keypair backup json file is is not valid: ${jsonBackupFilePath}`, {
         exit: ExitCodes.InvalidFile,
@@ -124,7 +124,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
   initKeyring(): void {
     this.keyring = new Keyring(KEYRING_OPTIONS)
-    this.appConfig.keys.forEach((keyData) => {
+    this.appConfig.keys?.forEach((keyData) => {
       if ('suri' in keyData) {
         this.keyring.addFromUri(keyData.suri, undefined, keyData.type)
       }
