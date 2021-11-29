@@ -100,7 +100,7 @@ export class DownloadFileTask implements SyncTask {
       const timeoutMs = 30 * 60 * 1000 // 30 min for large files (~ 10 GB)
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
-      const request = superagent.get(this.url).timeout(timeoutMs) as unknown as NodeJS.ReadableStream
+      const request = (superagent.get(this.url).timeout(timeoutMs) as unknown) as NodeJS.ReadableStream
       const fileStream = fs.createWriteStream(tempFilePath)
 
       request.on('response', (res) => {

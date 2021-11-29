@@ -129,7 +129,7 @@ export async function getStorageObligationsFromRuntime(
 export async function getStorageBucketIdsByWorkerId(queryNodeUrl: string, workerId: number): Promise<string[]> {
   const api = new QueryNodeApi(queryNodeUrl)
 
-  const idFragments = await api.getStorageBucketDetailsByWorkerId(workerId.toString())
+  const idFragments = await api.getStorageBucketIdsByWorkerId(workerId.toString())
   const ids = idFragments.map((frag) => frag.id)
 
   return ids
@@ -161,7 +161,7 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
 
   return await getAllObjectsWithPaging(
     'get all storage buckets',
-    async (offset, limit) => await api.getStorageBucketDetails(ids, offset, limit)
+    async (offset, limit) => await api.getStorageBucketDetails(ids.slice(offset, offset + limit), 0, limit)
   )
 }
 
@@ -209,8 +209,6 @@ async function getAllObjectsWithPaging<T>(
     resultPart = await query(offset, limit)
     offset += limit
     result.push(...resultPart)
-
-    if (resultPart.length < limit) break
   } while (resultPart.length > 0)
 
   return result

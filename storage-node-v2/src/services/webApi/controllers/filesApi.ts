@@ -13,7 +13,6 @@ import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKee
 import { getFileInfo } from '../../helpers/fileInfo'
 import { BagId } from '@joystream/types/storage'
 import logger from '../../logger'
-import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
 import fs from 'fs'
@@ -22,17 +21,7 @@ import send from 'send'
 import { hexToString } from '@polkadot/util'
 import { parseBagId } from '../../helpers/bagTypes'
 import { timeout } from 'promise-timeout'
-import {
-  getUploadsDir,
-  getWorkerId,
-  getQueryNodeUrl,
-  WebApiError,
-  ServerError,
-  getCommandConfig,
-  sendResponseWithError,
-  getHttpStatusCodeByError,
-  AppConfig,
-} from './common'
+import { WebApiError, sendResponseWithError, getHttpStatusCodeByError, AppConfig } from './common'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
@@ -43,7 +32,7 @@ const fsPromises = fs.promises
 export async function getFile(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const dataObjectId = getDataObjectId(req)
-    const uploadsDir = getUploadsDir(res)
+    const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
 
     const fileInfo = await getFileInfo(fullPath)
@@ -74,7 +63,7 @@ export async function getFile(req: express.Request, res: express.Response<unknow
 export async function getFileHeaders(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const dataObjectId = getDataObjectId(req)
-    const uploadsDir = getUploadsDir(res)
+    const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -100,21 +89,21 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
-    const queryNodeUrl = getQueryNodeUrl(res)
-    const workerId = getWorkerId(res)
+    const queryNodeUrl = res.locals.queryNodeEndpoint
+    const workerId = res.locals.workerId
 
     const [, hash] = await Promise.all([
       verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
       hashFile(fileObj.path),
     ])
 
-    const api = getApi(res)
+    const api = res.locals.api
     const bagId = parseBagId(uploadRequest.bagId)
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId.toString()
-    const uploadsDir = getUploadsDir(res)
+    const uploadsDir = res.locals.uploadsDir
     const newPath = path.join(uploadsDir, dataObjectId)
 
     registerNewDataObjectId(dataObjectId)
@@ -125,9 +114,14 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
     cleanupFileName = newPath
 
     if (!accepted) {
-      await acceptPendingDataObjects(api, bagId, getAccount(res), workerId, uploadRequest.storageBucketId, [
-        uploadRequest.dataObjectId,
-      ])
+      await acceptPendingDataObjects(
+        api,
+        bagId,
+        res.locals.storageProviderAccount,
+        workerId,
+        uploadRequest.storageBucketId,
+        [uploadRequest.dataObjectId]
+      )
     } else {
       logger.warn(
         `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
@@ -152,9 +146,9 @@ export async function authTokenForUploading(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
-    const account = getAccount(res)
+    const account = res.locals.storageProviderAccount
     const tokenRequest = getTokenRequest(req)
-    const api = getApi(res)
+    const api = res.locals.api
 
     await validateTokenRequest(api, tokenRequest)
 
@@ -191,36 +185,6 @@ function getFileObject(req: express.Request): Express.Multer.File {
   }
 
   throw new WebApiError('No file uploaded', 400)
-}
-
-/**
- * Returns a KeyPair instance from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getAccount(res: express.Response<unknown, AppConfig>): KeyringPair {
-  if (res.locals.storageProviderAccount) {
-    return res.locals.storageProviderAccount
-  }
-
-  throw new ServerError('No Joystream account loaded.')
-}
-
-/**
- * Returns API promise from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getApi(res: express.Response<unknown, AppConfig>): ApiPromise {
-  if (res.locals.api) {
-    return res.locals.api
-  }
-
-  throw new ServerError('No Joystream API loaded.')
 }
 
 /**
@@ -339,7 +303,7 @@ async function cleanupFileOnError(cleanupFileName: string, error: string): Promi
  */
 export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
-    const config = getCommandConfig(res)
+    const config = res.locals.process
 
     // Copy from an object, because the actual object could contain more data.
     res.status(200).json({
