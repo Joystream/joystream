@@ -6,11 +6,13 @@ import {
   createUploadToken,
   verifyTokenSignature,
 } from '../../helpers/auth'
-import { hashFile } from '../../../services/helpers/hashing'
-import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
-import { getFileInfo } from '../../../services/helpers/fileInfo'
+import { hashFile } from '../../helpers/hashing'
+import { registerNewDataObjectId } from '../../caching/newUploads'
+import { addDataObjectIdToCache } from '../../caching/localDataObjects'
+import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
+import { getFileInfo } from '../../helpers/fileInfo'
 import { BagId } from '@joystream/types/storage'
-import logger from '../../../services/logger'
+import logger from '../../logger'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
@@ -29,15 +31,16 @@ import {
   getCommandConfig,
   sendResponseWithError,
   getHttpStatusCodeByError,
+  AppConfig,
 } from './common'
-import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
+import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
 
 /**
  * A public endpoint: serves files by data object ID.
  */
-export async function getFile(req: express.Request, res: express.Response): Promise<void> {
+export async function getFile(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
@@ -68,7 +71,7 @@ export async function getFile(req: express.Request, res: express.Response): Prom
 /**
  * A public endpoint: sends file headers by data object ID.
  */
-export async function getFileHeaders(req: express.Request, res: express.Response): Promise<void> {
+export async function getFileHeaders(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
@@ -89,7 +92,7 @@ export async function getFileHeaders(req: express.Request, res: express.Response
 /**
  * A public endpoint: receives file.
  */
-export async function uploadFile(req: express.Request, res: express.Response): Promise<void> {
+export async function uploadFile(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   const uploadRequest: RequestData = req.body
 
   // saved filename to delete on verification or extrinsic errors
@@ -97,7 +100,6 @@ export async function uploadFile(req: express.Request, res: express.Response): P
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
-
     const queryNodeUrl = getQueryNodeUrl(res)
     const workerId = getWorkerId(res)
 
@@ -111,8 +113,12 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
+    const dataObjectId = uploadRequest.dataObjectId.toString()
     const uploadsDir = getUploadsDir(res)
-    const newPath = path.join(uploadsDir, uploadRequest.dataObjectId.toString())
+    const newPath = path.join(uploadsDir, dataObjectId)
+
+    registerNewDataObjectId(dataObjectId)
+    await addDataObjectIdToCache(dataObjectId)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
@@ -127,6 +133,7 @@ export async function uploadFile(req: express.Request, res: express.Response): P
         `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
       )
     }
+
     res.status(201).json({
       id: hash,
     })
@@ -140,7 +147,10 @@ export async function uploadFile(req: express.Request, res: express.Response): P
 /**
  * A public endpoint: creates auth token for file uploads.
  */
-export async function authTokenForUploading(req: express.Request, res: express.Response): Promise<void> {
+export async function authTokenForUploading(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>
+): Promise<void> {
   try {
     const account = getAccount(res)
     const tokenRequest = getTokenRequest(req)
@@ -190,7 +200,7 @@ function getFileObject(req: express.Request): Express.Multer.File {
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
-function getAccount(res: express.Response): KeyringPair {
+function getAccount(res: express.Response<unknown, AppConfig>): KeyringPair {
   if (res.locals.storageProviderAccount) {
     return res.locals.storageProviderAccount
   }
@@ -205,7 +215,7 @@ function getAccount(res: express.Response): KeyringPair {
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
-function getApi(res: express.Response): ApiPromise {
+function getApi(res: express.Response<unknown, AppConfig>): ApiPromise {
   if (res.locals.api) {
     return res.locals.api
   }
@@ -327,7 +337,7 @@ async function cleanupFileOnError(cleanupFileName: string, error: string): Promi
 /**
  * A public endpoint: return the server version.
  */
-export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
+export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
     const config = getCommandConfig(res)
 
