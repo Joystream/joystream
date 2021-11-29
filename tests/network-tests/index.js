@@ -11,6 +11,7 @@ const execSync = require('child_process').execSync;
 
 // paths
 const schemaPath = path.join(process.env.DATA_PATH, 'schema.json');
+const wasmPath = path.join(process.env.DATA_PATH, 'runtime.wasm');
 const hexPath = path.join(process.env.DATA_PATH, 'runtime.hex');
 const specPath = path.join(process.env.DATA_PATH, 'chain-spec-raw.json');
 const storagePath = path.join(process.env.DATA_PATH, 'storage.json');
@@ -41,6 +42,10 @@ async function fixParachinStates (api, forkedSpec) {
 }
 
 async function main() {
+
+    // hexdump of runtime wasm binary
+    execSync('cat ' + wasmPath + ' | hexdump -ve \'/1 "%02x"\' > ' + hexPath);
+    
     let api;
     console.log(chalk.green('We are intentionally using the HTTP endpoint. If you see any warnings about that, please ignore them.'));
     if (!fs.existsSync(schemaPath)) {

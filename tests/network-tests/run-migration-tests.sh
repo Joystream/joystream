@@ -117,19 +117,19 @@ source ./.env
 function fork_off_init() {
     # chain-spec-raw already existing
     
-    if [[ -z ${DATA_PATH}/storage.json ]]; then
-	sudo scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json \
-	     ${DATA_PATH}/storage.json
+    if ! [[ -f "$(pwd)/storage.json" ]]; then
+	scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json ./storage.json
+	cp ./storage.json ${DATA_PATH}/storage.json
     fi
     
-    if [[ -z ${DATA_PATH}/schema.json ]]; then
+    if ! [[ -f ${DATA_PATH}/schema.json ]]; then
 	cp ../../types/augment/all/defs.json \
 	     ${DATA_PATH}/schema.json
     fi
 
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
     docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
-    cat ${DATA_PATH}/runtime.wasm | hexdump -ve \'/1 "%02x"\ > ${DATA_PATH}/runtime.hex
+#    cat ${DATA_PATH}/runtime.wasm | hexdump -ve '/1 "%02x"\' > ${DATA_PATH}/runtime.hex
     
     npm start
 }
