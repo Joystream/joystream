@@ -1,4 +1,4 @@
-import { WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
@@ -18,7 +18,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
 
   // Pre-conditions
   // A hired lead
-  const lead = await api.getGroupLead(WorkingGroups.StorageWorkingGroup)
+  const lead = await api.getGroupLead(WorkingGroups.Storage)
   assert.notEqual(lead, undefined)
 
   const addWorkerOpeningWithoutStakeFixture = new AddWorkerOpeningFixture(
@@ -27,7 +27,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
     new BN(0),
     openingActivationDelay,
     unstakingPeriod,
-    WorkingGroups.StorageWorkingGroup
+    WorkingGroups.Storage
   )
 
   // Add worker opening with 0 stake, expect failure!
@@ -45,7 +45,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
     roleStake,
     openingActivationDelay,
     new BN(0),
-    WorkingGroups.StorageWorkingGroup
+    WorkingGroups.Storage
   )
 
   // Add worker opening with 0 unstaking period, expect failure!

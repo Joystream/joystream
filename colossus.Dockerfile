@@ -32,4 +32,9 @@ ENV ACCOUNT_URI=
 EXPOSE ${COLOSSUS_PORT}
 
 WORKDIR /joystream/storage-node-v2
-ENTRYPOINT yarn storage-node server --queryNodeEndpoint ${QUERY_NODE_ENDPOINT} --port ${COLOSSUS_PORT} --uploads /data --worker ${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} --keyFile=${ACCOUNT_KEYFILE} --elasticSearchEndpoint=${ELASTIC_SEARCH_ENDPOINT}
+ENTRYPOINT yarn storage-node server --queryNodeEndpoint ${QUERY_NODE_ENDPOINT} \
+    --port ${COLOSSUS_PORT} --uploads /data  \
+    --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} \
+    --elasticSearchHost=${ELASTIC_SEARCH_HOST} \
+    --accountUri=${ACCOUNT_URI} \
+    --worker ${WORKER_ID}

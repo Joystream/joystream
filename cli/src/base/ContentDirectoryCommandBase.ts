@@ -4,7 +4,7 @@ import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createType } from '@joystream/types'
+import { createTypeFromConstructor } from '@joystream/types'
 import { flags } from '@oclif/command'
 
 // TODO: Rework the contexts
@@ -110,7 +110,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       if (!group.active.valueOf()) {
         this.error(`Curator group ${requiredGroupId.toString()} is no longer active`, { exit: ExitCodes.AccessDenied })
       }
-      if (!group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))) {
+      if (!Array.from(group.curators).some((curatorId) => curatorId.eq(curator.workerId))) {
         this.error(`You don't belong to required curator group (ID: ${requiredGroupId.toString()})`, {
           exit: ExitCodes.AccessDenied,
         })
@@ -121,7 +121,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       const availableGroupIds = groups
         .filter(
           ([, group]) =>
-            group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
+            group.active.valueOf() && Array.from(group.curators).some((curatorId) => curatorId.eq(curator.workerId))
         )
         .map(([id]) => id)
 
@@ -134,7 +134,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       }
     }
 
-    return createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] })
+    return createTypeFromConstructor(ContentActor, { Curator: [groupId, curator.workerId.toNumber()] })
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
@@ -145,7 +145,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         name:
           `Group ${id.toString()} (` +
           `${group.active.valueOf() ? 'Active' : 'Inactive'}, ` +
-          `${group.curators.toArray().length} member(s)), `,
+          `${Array.from(group.curators).length} member(s)), `,
         value: id.toNumber(),
       }))
   }

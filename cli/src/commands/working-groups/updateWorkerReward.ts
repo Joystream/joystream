@@ -6,6 +6,7 @@ import { Reward } from '../../Types'
 import { positiveInt } from '../../validators/common'
 import { createParamOptions } from '../../helpers/promptOptions'
 import ExitCodes from '../../ExitCodes'
+import { BalanceOfMint } from '@joystream/types/mint'
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."
@@ -48,10 +49,10 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
     console.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
-    const newRewardValue = await this.promptForParam(
+    const newRewardValue = (await this.promptForParam(
       'BalanceOfMint',
       createParamOptions('new_amount', undefined, positiveInt())
-    )
+    )) as BalanceOfMint
 
     await this.requestAccountDecoding(account)
 
