@@ -41,7 +41,7 @@ services:
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
@@ -106,7 +106,7 @@ services:
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
-      '--queryNodeHost=${COLOSSUS_QUERY_NODE_HOST}',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}'
     ]
 
