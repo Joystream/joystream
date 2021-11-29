@@ -3,7 +3,7 @@ FROM --platform=linux/x86-64 node:14 as builder
 WORKDIR /joystream
 COPY . /joystream
 
-RUN yarn
+RUN yarn --frozen-lockfile
 
 RUN yarn workspace @joystream/types build
 RUN yarn workspace @joystream/metadata-protobuf build
@@ -15,14 +15,14 @@ VOLUME ["/data", "/keystore"]
 # Required variables
 ENV WS_PROVIDER_ENDPOINT_URI=ws://not-set
 ENV COLOSSUS_PORT=3333
-ENV QUERY_NODE_HOST=not-set
-ENV WORKER_ID=
+ENV QUERY_NODE_ENDPOINT=http://not-set/graphql
+ENV WORKER_ID=not-set
 # - set external key file using the `/keystore` volume
 ENV ACCOUNT_KEYFILE=
 ENV ACCOUNT_PWD=
 # Optional variables
 ENV SYNC_INTERVAL=1
-ENV ELASTIC_SEARCH_HOST=
+ENV ELASTIC_SEARCH_ENDPOINT=
 # warn, error, debug, info
 ENV ELASTIC_LOG_LEVEL=debug
 # - overrides account key file

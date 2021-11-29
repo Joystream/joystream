@@ -1,8 +1,6 @@
 import { BagId, DynamicBagType, DynamicBagTypeKey, Static, Dynamic } from '@joystream/types/storage'
 import { WorkingGroup } from '@joystream/types/common'
-import { registry } from '@joystream/types'
-import { createType } from '@polkadot/types'
-import { DetectCodec, Codec } from '@polkadot/types/types'
+import { createType } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
@@ -29,7 +27,7 @@ export class BagIdValidationError extends CLIError {
  * @returns The DynamicBagType instance.
  */
 export function parseDynamicBagType(bagType: DynamicBagTypeKey): DynamicBagType {
-  return createJoystreamType('DynamicBagType', bagType)
+  return createType('DynamicBagType', bagType)
 }
 
 /**
@@ -89,8 +87,8 @@ class BagIdParser {
     // Try to construct static council bag ID.
     if (this.bagIdParts[1] === 'council') {
       if (this.bagIdParts.length === 2) {
-        const staticBagId: Static = createJoystreamType('Static', 'Council')
-        const constructedBagId: BagId = createJoystreamType('BagId', {
+        const staticBagId: Static = createType('Static', 'Council')
+        const constructedBagId: BagId = createType('BagId', {
           'Static': staticBagId,
         })
 
@@ -106,11 +104,11 @@ class BagIdParser {
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup: WorkingGroup = createJoystreamType('WorkingGroup', group)
-            const staticBagId: Static = createJoystreamType('Static', {
+            const workingGroup: WorkingGroup = createType('WorkingGroup', group)
+            const staticBagId: Static = createType('Static', {
               'WorkingGroup': workingGroup,
             })
-            const constructedBagId: BagId = createJoystreamType('BagId', {
+            const constructedBagId: BagId = createType('BagId', {
               'Static': staticBagId,
             })
 
@@ -142,8 +140,8 @@ class BagIdParser {
             const dynamic = {} as Record<DynamicBagTypeKey, number>
             dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
 
-            const dynamicBagId: Dynamic = createJoystreamType('Dynamic', dynamic)
-            const constructedBagId: BagId = createJoystreamType('BagId', {
+            const dynamicBagId: Dynamic = createType('Dynamic', dynamic)
+            const constructedBagId: BagId = createType('BagId', {
               'Dynamic': dynamicBagId,
             })
 
@@ -155,14 +153,4 @@ class BagIdParser {
 
     throw new BagIdValidationError(`Invalid dynamic bagId: ${this.bagId}`)
   }
-}
-
-/**
- * Creates Joystream type using type registry.
- */
-function createJoystreamType<T extends Codec = Codec, K extends string = string>(
-  type: K,
-  value: unknown
-): DetectCodec<T, K> {
-  return createType(registry, type, value)
 }
