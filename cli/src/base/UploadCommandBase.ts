@@ -338,16 +338,22 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
   async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
+    const { dataObjectDeletionPrize } = this.getOriginalApi().consts.storage
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
           return a.add(b.parameters.getField('size'))
         }, new BN(0))
         .toNumber()
-      const totalFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
+      const totalStorageFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
+      const totalDeletionPrize = dataObjectDeletionPrize.muln(resolvedAssets.length)
       await this.requireConfirmation(
-        `Total fee of ${chalk.cyan(formatBalance(totalFee))} ` +
-          `will have to be paid in order to store the provided assets. Are you sure you want to continue?`
+        `Some additional costs will be associated with this operation:\n` +
+          `Total data storage fee: ${chalk.cyan(formatBalance(totalStorageFee))}\n` +
+          `Total deletion prize: ${chalk.cyan(
+            formatBalance(totalDeletionPrize)
+          )} (recoverable on data object(s) removal)\n` +
+          `Are you sure you want to continue?`
       )
       return createTypeFromConstructor(StorageAssets, {
         expected_data_size_fee: feePerMB,
