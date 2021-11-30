@@ -74,7 +74,7 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
                     { name: 'DB_USER', value: DB_USERNAME },
                     { name: 'DB_PORT', value: DB_PORT },
                     { name: 'INDEXER_WORKERS', value: '5' },
-                    // Why localhost works and we didn't have to use the container name 'redis'
+                    // localhost for redis should work since it is in the same deployment
                     { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
                     { name: 'DEBUG', value: 'index-builder:*' },
                     { name: 'WS_PROVIDER_ENDPOINT_URI', value: WS_PROVIDER_ENDPOINT_URI },
@@ -101,7 +101,7 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
                     { name: 'WARTHOG_STARTER_DB_PASSWORD', value: DB_PASS },
                     { name: 'WARTHOG_STARTER_DB_PORT', value: DB_PORT },
                     { name: 'WARTHOG_STARTER_DB_USERNAME', value: DB_USERNAME },
-                    // Why localhost works and we didn't have to use the container name 'redis'
+                    // localhost for redis should work since it is in the same deployment
                     { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://localhost:6379/0' },
                     { name: 'WARTHOG_APP_PORT', value: '4001' },
                     { name: 'PORT', value: '4001' },

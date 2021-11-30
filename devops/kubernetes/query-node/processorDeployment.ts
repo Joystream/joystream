@@ -191,9 +191,9 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                     { name: 'WARTHOG_DB_USERNAME', value: DB_USERNAME },
                     { name: 'WARTHOG_DB_PASSWORD', value: DB_PASS },
                     { name: 'WARTHOG_DB_PORT', value: DB_PORT },
-                    // What do these have to do with processor and why are they required!
-                    { name: 'WARTHOG_APP_HOST', value: 'graphql-server' },
-                    { name: 'WARTHOG_APP_PORT', value: '4002' },
+                    // These are note required
+                    // { name: 'WARTHOG_APP_HOST', value: 'graphql-server' },
+                    // { name: 'WARTHOG_APP_PORT', value: '4002' },
                   ],
                   volumeMounts: [
                     {
