@@ -273,7 +273,7 @@ export async function inviteStorageBucketOperator(
 async function extrinsicWrapper(
   extrinsic: () => Promise<void>,
   throwErr = false,
-  timeoutMs = 10000 // 10s - default extrinsic timeout
+  timeoutMs = 25000 // 25s - default extrinsic timeout
 ): Promise<boolean> {
   try {
     await timeout(extrinsic(), timeoutMs)

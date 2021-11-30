@@ -28,11 +28,8 @@ After cloning the repo run the following initialization scripts:
 # build local npm packages
 yarn build:packages
 
-# Build joystream/node image
+# Build joystream/node docker image
 yarn build:node:docker
-
-# Build applications docker image
-yarn build:apps:docker
 
 # start a local development network
 yarn start
@@ -95,7 +92,7 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2021-03-24 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-5.json
 ```
 

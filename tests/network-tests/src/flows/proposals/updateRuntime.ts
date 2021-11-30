@@ -28,7 +28,7 @@ export default async function updateRuntime({ api, env, lock }: FlowProps): Prom
   // Some tests after runtime update
   const createMembershipsFixture = new BuyMembershipHappyCaseFixture(
     api,
-    api.createKeyPairs(1).map((key) => key.address),
+    api.createKeyPairs(1).map(({ key }) => key.address),
     paidTerms
   )
   await new FixtureRunner(createMembershipsFixture).run()

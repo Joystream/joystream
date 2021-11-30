@@ -104,8 +104,15 @@ jobs:
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
+      - name: Install joystream-cli @joystream/cli/0.5.1
+        run: npm -g install @joystream/cli
       - name: Execute network tests
-        run: RUNTIME=sumer tests/network-tests/run-migration-tests.sh full
+        run: |
+          export HOME=${PWD}
+          mkdir -p ${HOME}/.local/share/joystream-cli
+          joystream-cli api:setUri ws://localhost:9944
+          export RUNTIME=sumer
+          tests/network-tests/run-migration-tests.sh
 
   basic_runtime:
     name: Integration Tests (New Chain)
@@ -128,13 +135,15 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
+          yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
         run: tests/network-tests/run-tests.sh full
 
-  query_node:
-    name: Query Node Integration Tests
+  new_chain_setup:
+    name: Initialize new chain
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -155,6 +164,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/cli build
       - name: Ensure query-node builds
         run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
@@ -162,49 +172,5 @@ jobs:
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
-        run: |
-          docker-compose up -d joystream-node
-          query-node/run-tests.sh
+        run: tests/network-tests/test-setup-new-chain.sh
 
-  storage_node:
-    name: Storage Node Tests
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '14.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-      - name: Build storage node
-        run: yarn workspace storage-node build
-      - name: Start Services
-        run: |
-          docker-compose up -d ipfs
-          docker-compose up -d joystream-node
-      - name: Configure and start development storage node
-        run: |
-          DEBUG=joystream:* yarn storage-cli dev-init
-          docker-compose up -d colossus
-      - name: Test uploading
-        run: |
-          sleep 6
-          export DEBUG=joystream:*
-          yarn storage-cli upload ./tests/network-tests/assets/joystream.MOV 1 0
-          # Wait for storage-node to set status Accepted on uploaded content
-          sleep 6
-          cd utils/api-scripts/
-          # Assume only one accepted data object was created
-          CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
-          yarn storage-cli download ${CONTENT_ID} ./joystream.mov

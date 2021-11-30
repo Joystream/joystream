@@ -1,5 +1,6 @@
 import DefaultCommandBase from '../command-base/default'
 import { App } from '../app'
+import { Config } from '../types'
 
 export default class StartNode extends DefaultCommandBase {
   static description = 'Start the node'
@@ -9,7 +10,7 @@ export default class StartNode extends DefaultCommandBase {
   }
 
   async run(): Promise<void> {
-    const app = new App(this.appConfig)
+    const app = new App(this.appConfig as Config)
     await app.start()
   }
 

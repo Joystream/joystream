@@ -68,10 +68,12 @@ export class WorkingStack implements TaskSink, TaskSource {
 export class TaskProcessor {
   taskSource: TaskSource
   exitOnCompletion: boolean
+  sleepTime: number
 
-  constructor(taskSource: TaskSource, exitOnCompletion = true) {
+  constructor(taskSource: TaskSource, exitOnCompletion = true, sleepTime = 3000) {
     this.taskSource = taskSource
     this.exitOnCompletion = exitOnCompletion
+    this.sleepTime = sleepTime
   }
 
   /**
@@ -93,7 +95,7 @@ export class TaskProcessor {
           return
         }
 
-        await sleep(3000)
+        await sleep(this.sleepTime)
       }
     }
   }

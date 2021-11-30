@@ -28,7 +28,7 @@ export default class ApiSetQueryNodeEndpoint extends ApiCommandBase {
     } else {
       newEndpoint = await this.promptForQueryNodeUri()
     }
-    await this.setPreservedState({ queryNodeUri: endpoint })
+    await this.setPreservedState({ queryNodeUri: newEndpoint })
     this.log(
       chalk.greenBright('Query node endpoint successfuly changed! New endpoint: ') + chalk.magentaBright(newEndpoint)
     )

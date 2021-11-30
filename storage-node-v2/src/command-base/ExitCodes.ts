@@ -10,6 +10,7 @@ enum ExitCodes {
   FileError,
   InvalidWorkerId,
   InvalidIntegerArray,
+  ServerError,
   ApiError = 200,
   UnsuccessfulRuntimeCall,
 }
