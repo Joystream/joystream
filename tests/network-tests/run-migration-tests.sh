@@ -103,6 +103,8 @@ POST_MIGRATION_CLI_ASSERTIONS=${POST_MIGRATION_CLI_ASSERTIONS=$true}
 # Post migration assertions by means of typescript scenarios required
 POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$false}
 
+export WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
+    
 # source common function used for node setup
 source ./node-utils.sh
 source ./.env
@@ -117,16 +119,13 @@ source ./.env
 function fork_off_init() {
     # chain-spec-raw already existing
 
-    WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
-    
-    if ! [[ -f "$(pwd)/storage.json" ]]; then
+    if ! [[ -f $(pwd)/storage.json ]]; then
 	scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json ./storage.json
-	cp ./storage.json ${DATA_PATH}/storage.json
     fi
+	cp $(pwd)/storage.json ${DATA_PATH}/storage.json    
 
     if ! [[ -f ${DATA_PATH}/schema.json ]]; then
-	cp $(pwd)/../../types/augment/all/defs.json \
-	     ${DATA_PATH}/schema.json
+	cp $(pwd)/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
     fi
 
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
@@ -233,18 +232,16 @@ function main {
     convert_chainspec
     echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-    if ( $CLONE_LIVE_STATE ); then
-	# use forkoff to update chainspec with the live state + update runtime code
-	fork_off_init
-    else
-	# use the uprade_runtime to upgrade runtime code
-	upgrade_runtime
-    fi
-    
+    # use forkoff to update chainspec with the live state + update runtime code
+    # fork_off_init
+
+    echo "***** STARTING NODE WITH FORKED STATE *****"
+    JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
+    CONTAINER_ID=$(start_node)
 
     # Section C: assertions
     # verify that the number of outstanding channels & videos == 0
-    if [[ $POST_MIGRATION_CLI_ASSERTIONS ]]; then
+    if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
 	# verify assertion using cli
 	echo "***** POST MIGRATION CLI *****"
 	post_migration_cli
