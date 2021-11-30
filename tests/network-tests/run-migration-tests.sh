@@ -32,14 +32,16 @@ source ./.env
 #######################################
 function fork_off_init() {
     # chain-spec-raw already existing
+
+    WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
     
     if ! [[ -f "$(pwd)/storage.json" ]]; then
 	scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json ./storage.json
 	cp ./storage.json ${DATA_PATH}/storage.json
     fi
-    
+
     if ! [[ -f ${DATA_PATH}/schema.json ]]; then
-	cp ../../types/augment/all/defs.json \
+	cp $(pwd)/../../types/augment/all/defs.json \
 	     ${DATA_PATH}/schema.json
     fi
 
