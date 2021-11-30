@@ -231,19 +231,14 @@ function main {
     convert_chainspec
     echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-    # use forkoff
     if ( $CLONE_LIVE_STATE ); then
+	# use forkoff to update chainspec with the live state + update runtime code
 	fork_off_init
+    else
+	# use the uprade_runtime to upgrade runtime code
+	upgrade_runtime
     fi
-
-    # node has to be started because upgrade runtime uses signAndSend to update code on storage
-    JOYSTREAM_NODE_TAG=${TARGET_RUNTIME_TAG}
-    echo "******* STARTING ${JOYSTREAM_NODE_TAG} ********"	
-    CONTAINER_ID=$(start_node)
-    echo "******* JS BINARY STARTED CONTAINER_ID: $CONTAINER_ID ********"	
-
-    # Section B: migration
-    upgrade_runtime
+    
 
     # Section C: assertions
     # verify that the number of outstanding channels & videos == 0
