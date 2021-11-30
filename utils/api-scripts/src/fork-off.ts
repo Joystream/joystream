@@ -31,14 +31,15 @@ const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'http://localhost
 let prefixes = ['0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9' /* System.Account */];
 const skippedModulesPrefix = ['System', 'Session', 'Babe', 'Grandpa', 'GrandpaFinality', 'FinalityTracker', 'Authorship'];
 
-async function fixParachinStates(api: ApiPromise, chainSpec: any) {
-    const skippedKeys = [
-        api.query["parasScheduler"].sessionStartBlock.key()
-    ];
-    for (const k of skippedKeys) {
-        delete chainSpec.genesis.raw.top[k];
-    }
-}
+// Apparently not needed: To review
+// async function fixParachinStates(api: ApiPromise, chainSpec: any) {
+//     const skippedKeys = [
+//         api.query["parasScheduler"].sessionStartBlock.key()
+//     ];
+//     for (const k of skippedKeys) {
+//         delete chainSpec.genesis.raw.top[k];
+//     }
+// }
 
 async function main() {
 
@@ -89,7 +90,7 @@ async function main() {
     // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
     delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8'];
 
-    fixParachinStates(api, chainSpec);
+    //    fixParachinStates(api, chainSpec);
 
     // Set the code to the current runtime code: this replaces the set code transaction
     chainSpec.genesis.raw.top['0x3a636f6465'] = '0x' + fs.readFileSync(hexPath, 'utf8').trim();
@@ -104,7 +105,7 @@ async function main() {
 
     fs.writeFileSync(specPath, JSON.stringify(chainSpec, null, 4));
 
-    console.log('Forked genesis generated successfully. Find it at ./data/fork.json');
+    console.log('****** INITIAL CHAINSPEC UPDATED TO REFLECT LIVE STATE ******');
     process.exit();
 }
 
