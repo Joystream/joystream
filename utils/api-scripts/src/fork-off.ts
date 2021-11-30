@@ -6,7 +6,6 @@ const execSync = require('child_process').execSync;
 
 // paths & env variables
 let alice = process.env.SUDO_ACCOUNT
-
 // bad error handling TODO: fix process.env
 let schemaPath = path.join(process.env.DATA_PATH || "", 'schema.json');
 let wasmPath = path.join(process.env.DATA_PATH || "", 'runtime.wasm') || "";
@@ -34,7 +33,7 @@ const skippedModulesPrefix = ['System', 'Session', 'Babe', 'Grandpa', 'GrandpaFi
 
 async function fixParachinStates(api: ApiPromise, chainSpec: any) {
     const skippedKeys = [
-        api.query.parasScheduler.sessionStartBlock.key()
+        api.query["parasScheduler"].sessionStartBlock.key()
     ];
     for (const k of skippedKeys) {
         delete chainSpec.genesis.raw.top[k];
@@ -62,11 +61,11 @@ async function main() {
 
     let metadata = await api.rpc.state.getMetadata();
     // Populate the prefixes array
-    let modules: Array<Module> = metadata.asLatest.pallets;
+    let modules = metadata.asLatest.modules;
     modules.forEach((module) => {
         if (module.storage) {
-            if (!skippedModulesPrefix.includes(module.name)) {
-                prefixes.push(xxhashAsHex(module.name, 128));
+            if (!skippedModulesPrefix.includes(module.name.toString())) {
+                prefixes.push(xxhashAsHex(module.name.toString(), 128));
             }
         }
     });
@@ -119,7 +118,3 @@ interface Storage {
     "id": string,
 }
 
-interface Module {
-    "name": string,
-    "storage": string,
-}

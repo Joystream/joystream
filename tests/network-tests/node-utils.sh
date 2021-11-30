@@ -12,7 +12,7 @@ cd $SCRIPT_PATH
 
 # Location that will be mounted as the /data volume in containers
 # This is where the initial members and balances files and generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=$(pwd)/data}
+export DATA_PATH=${DATA_PATH:=$(pwd)/data}
 mkdir -p ${DATA_PATH}
 
 # Initial account balance for sudo account
@@ -115,9 +115,9 @@ function convert_chainspec {
 #   None
 #######################################
 function cleanup() {
-    if [[ -z $CONTAINER_ID ]]; then
-	docker logs ${CONTAINER_ID} --tail 15
-    fi
+    # if [[ -z $CONTAINER_ID ]]; then
+    # 	docker logs ${CONTAINER_ID} --tail 15
+    # fi
     docker-compose -f ../../docker-compose.yml down -v
     find ./assets/ -name '[A-Z0-9]*__rejectedContent.json' -delete
 }
