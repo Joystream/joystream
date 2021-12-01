@@ -623,9 +623,6 @@ pub fn delete_video_mock(
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
     result: DispatchResult,
 ) {
-    // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
-    // let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
-
     assert_eq!(
         Content::delete_video(
             Origin::signed(sender),
