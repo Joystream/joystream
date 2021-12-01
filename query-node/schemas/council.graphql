@@ -74,7 +74,7 @@ type CandidacyStatusLost @variant {
   dummy: Int
 }
 
-union CandidacyStatus = CandidacyStatusActive | CandidacyStatusElected | CandidacyStatusLost
+union CandidacyStatus = CandidacyStatusActive | CandidacyStatusWithdrawn | CandidacyStatusElected | CandidacyStatusLost
 
 type Candidate @entity {
   "Account used for staking currency needed for the candidacy."
@@ -97,9 +97,6 @@ type Candidate @entity {
 
   "Current candidate status"
   status: CandidacyStatus!
-
-  "Reflects if the candidacy was withdrawn before voting started."
-  candidacyWithdrawn: Boolean!
 
   "Sum of power of all votes received."
   votePower: BigInt!
