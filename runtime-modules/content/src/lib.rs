@@ -770,10 +770,10 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_delete_channel::<T>(
+            ensure_actor_authorized_to_delete_channel::<T>(
                 &sender,
                 &actor,
-                &channel,
+                &channel.owner,
             )?;
 
             // check that channel videos are 0

@@ -137,7 +137,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
             // ensure lead is valid
             ensure_lead_auth_success::<T>(sender)?;
             // ensure curator
-            ensure_channel_is_owned_by_curators::<T>(&channel.owner)?;
+            ensure_channel_is_owned_by_curators::<T>(channel_owner)?;
             Ok(())
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
