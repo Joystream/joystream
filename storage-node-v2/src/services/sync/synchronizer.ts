@@ -1,7 +1,7 @@
 import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
 import logger from '../../services/logger'
 import { getDataObjectIDs } from '../../services/caching/localDataObjects'
-import { SyncTask, DownloadFileTask, DeleteLocalFileTask, PrepareDownloadFileTask } from './tasks'
+import { SyncTask, DownloadFileTask, PrepareDownloadFileTask } from './tasks'
 import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
 import { ApiPromise } from '@polkadot/api'
@@ -46,11 +46,10 @@ export async function performSync(
   const added = _.difference(requiredIds, files)
   const deleted = _.difference(files, requiredIds)
 
-  logger.debug(`Sync - added objects: ${added.length}`)
-  logger.debug(`Sync - deleted objects: ${deleted.length}`)
+  logger.debug(`Sync - new objects: ${added.length}`)
+  logger.debug(`Sync - obsolete objects: ${deleted.length}`)
 
   const workingStack = new WorkingStack()
-  const deletedTasks = deleted.map((fileName) => new DeleteLocalFileTask(uploadDirectory, fileName))
 
   let addedTasks: SyncTask[]
   if (operatorUrl === undefined) {
@@ -72,7 +71,6 @@ export async function performSync(
   const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
   await workingStack.add(addedTasks)
-  await workingStack.add(deletedTasks)
 
   await processSpawner.process()
   logger.info('Sync ended.')
