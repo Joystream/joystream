@@ -709,7 +709,7 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let mut channel = Self::ensure_channel_exists(&channel_id)?;
@@ -766,7 +766,7 @@ decl_module! {
             num_objects_to_delete: u64,
         ) -> DispatchResult {
 
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
