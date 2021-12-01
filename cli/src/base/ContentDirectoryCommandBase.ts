@@ -21,8 +21,6 @@ type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
  * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
-  group = WorkingGroups.Curators // override group for RolesCommandBase
-
   static contextFlag = flags.enum({
     name: 'context',
     required: false,
@@ -43,6 +41,11 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     description: `Actor context to execute the command in (${CATEGORIES_CONTEXTS.join('/')})`,
     options: [...CATEGORIES_CONTEXTS],
   })
+
+  async init(): Promise<void> {
+    await super.init()
+    this.group = WorkingGroups.Curators // override group for RolesCommandBase
+  }
 
   async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
     return this.simplePrompt({
@@ -226,7 +229,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return group
   }
 
-  async getActor(context: typeof CONTEXTS[number]) {
+  async getActor(context: typeof CONTEXTS[number]): Promise<ContentActor> {
     let actor: ContentActor
     if (context === 'Member') {
       const memberId = await this.getRequiredMemberId()

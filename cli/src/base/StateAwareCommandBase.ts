@@ -90,7 +90,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
 
   private initStateFs(): void {
     if (!fs.existsSync(this.getAppDataPath())) {
-      fs.mkdirSync(this.getAppDataPath())
+      fs.mkdirSync(this.getAppDataPath(), { recursive: true })
     }
     if (!fs.existsSync(this.getStateFilePath())) {
       fs.writeFileSync(this.getStateFilePath(), JSON.stringify(DEFAULT_STATE))

@@ -13,17 +13,15 @@ import {
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
-import { IConfig } from '@oclif/config'
 
 /**
  * Abstract base class for commands that need to use gates based on user's roles
  */
 export abstract class RolesCommandBase extends AccountsCommandBase {
-  group: WorkingGroups
+  group!: WorkingGroups
 
-  constructor(argv: string[], config: IConfig) {
-    super(argv, config)
-    // Can be modified by child class constructor
+  async init(): Promise<void> {
+    await super.init()
     this.group = this.getPreservedState().defaultWorkingGroup
   }
 
@@ -95,13 +93,6 @@ export abstract class RolesCommandBase extends AccountsCommandBase {
  * Abstract base class for commands directly related to working groups
  */
 export default abstract class WorkingGroupsCommandBase extends RolesCommandBase {
-  group: WorkingGroups
-
-  constructor(argv: string[], config: IConfig) {
-    super(argv, config)
-    this.group = this.getPreservedState().defaultWorkingGroup
-  }
-
   static flags = {
     group: flags.enum({
       char: 'g',
@@ -167,7 +158,7 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     return application
   }
 
-  async getWorkerForLeadAction(id: number, requireStakeProfile = false) {
+  async getWorkerForLeadAction(id: number, requireStakeProfile = false): Promise<GroupMember> {
     const groupMember = await this.getApi().groupMember(this.group, id)
     const groupLead = await this.getApi().groupLead(this.group)
 
@@ -184,11 +175,11 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
 
   // Helper for better TS handling.
   // We could also use some magic with conditional types instead, but those don't seem be very well supported yet.
-  async getWorkerWithStakeForLeadAction(id: number) {
+  async getWorkerWithStakeForLeadAction(id: number): Promise<GroupMember & Required<Pick<GroupMember, 'stake'>>> {
     return (await this.getWorkerForLeadAction(id, true)) as GroupMember & Required<Pick<GroupMember, 'stake'>>
   }
 
-  async init() {
+  async init(): Promise<void> {
     await super.init()
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
     if (flags.group) {
