@@ -1383,9 +1383,6 @@ decl_error! {
         /// Distribution bucket family doesn't exist.
         DistributionBucketFamilyDoesntExist,
 
-        /// Max distribution bucket number per family limit exceeded.
-        MaxDistributionBucketNumberPerFamilyLimitExceeded,
-
         /// Distribution bucket doesn't exist.
         DistributionBucketDoesntExist,
 
@@ -3599,8 +3596,8 @@ impl<T: Trait> Module<T> {
             .all(|b| b.no_bags_assigned())
     }
 
-    // Helper function: creates distribution bucket ID from family ID and bucket index.
-    fn create_distribution_bucket_id(
+    // Creates distribution bucket ID from family ID and bucket index.
+    pub(crate) fn create_distribution_bucket_id(
         distribution_bucket_family_id: T::DistributionBucketFamilyId,
         distribution_bucket_index: T::DistributionBucketIndex,
     ) -> DistributionBucketId<T> {
