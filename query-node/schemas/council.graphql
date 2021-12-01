@@ -46,6 +46,36 @@ enum ElectionProblem {
   NEW_COUNCIL_NOT_ELECTED
 }
 
+type CandidacyStatusActive @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+type CandidacyStatusWithdrawn @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+type CandidacyStatusElected @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+type CandidacyStatusLost @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+union CandidacyStatus = CandidacyStatusActive | CandidacyStatusElected | CandidacyStatusLost
+
 type Candidate @entity {
   "Account used for staking currency needed for the candidacy."
   stakingAccountId: String!
@@ -64,6 +94,9 @@ type Candidate @entity {
 
   "Reflects if the stake is still locked for candidacy or has been already released by the member."
   stakeLocked: Boolean!
+
+  "Current candidate status"
+  status: CandidacyStatus!
 
   "Reflects if the candidacy was withdrawn before voting started."
   candidacyWithdrawn: Boolean!
