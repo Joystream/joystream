@@ -107,11 +107,14 @@ const caddyEndpoints = [
   `/indexer* {
     uri strip_prefix /indexer
     reverse_proxy indexer:4000
-}`,
+  }`,
   `/server* {
     uri strip_prefix /server
     reverse_proxy graphql-server:8081
-}`,
+  }`,
+  `/@apollographql/* {
+    reverse_proxy graphql-server:8081
+  }`,
 ]
 
 const lbReady = config.get('isLoadBalancerReady') === 'true'
