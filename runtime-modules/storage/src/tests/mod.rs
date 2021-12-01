@@ -15,20 +15,20 @@ use common::working_group::WorkingGroup;
 
 use crate::{
     BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
-    DynamicBagCreationPolicy, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, Error,
-    ModuleAccount, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
-    UploadParameters, Voucher,
+    DistributionBucketId, DynamicBagCreationPolicy, DynamicBagDeletionPrize, DynamicBagId,
+    DynamicBagType, Error, ModuleAccount, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    StorageTreasury, UploadParameters, Voucher,
 };
 
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
-    MaxDistributionBucketNumberPerFamily, MaxRandomIterationNumber, Storage, Test,
-    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
-    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
-    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
+    MaxRandomIterationNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
+    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -3521,15 +3521,19 @@ fn delete_distribution_bucket_family_fails_with_assgined_bags() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+        let add_buckets_ids = BTreeSet::from_iter(vec![bucket_id]);
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_add_bucket_ids(add_buckets_ids.clone())
             .call_and_assert(Ok(()));
 
+        let add_buckets = add_buckets_ids
+            .iter()
+            .map(|idx| Storage::create_distribution_bucket_id(family_id, *idx))
+            .collect::<BTreeSet<_>>();
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
@@ -3634,23 +3638,14 @@ fn create_distribution_bucket_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        assert!(Storage::distribution_bucket_family_by_id(family_id)
-            .distribution_buckets
-            .contains_key(&bucket_id));
-
-        assert_eq!(
-            Storage::distribution_bucket_family_by_id(family_id)
-                .distribution_buckets
-                .get(&bucket_id)
-                .unwrap()
-                .accepting_new_bags,
-            accept_new_bags
+        assert!(
+            crate::DistributionBucketByFamilyIdById::<Test>::contains_key(&family_id, &bucket_id)
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketCreated(
             family_id,
             accept_new_bags,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
         ));
     });
 }
@@ -3671,22 +3666,6 @@ fn create_distribution_bucket_fails_with_non_existing_family() {
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
-            ));
-    });
-}
-
-#[test]
-fn create_distribution_bucket_fails_with_exceeding_max_bucket_number() {
-    build_test_externalities().execute_with(|| {
-        let (family_id, _) = create_distribution_bucket_family_with_buckets(
-            MaxDistributionBucketNumberPerFamily::get(),
-        );
-
-        CreateDistributionBucketFixture::default()
-            .with_family_id(family_id)
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::MaxDistributionBucketNumberPerFamilyLimitExceeded.into(),
             ));
     });
 }
@@ -3717,22 +3696,14 @@ fn update_distribution_bucket_status_succeeded() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id)
-                .accepting_new_bags,
-            new_status
-        );
-
-        assert_eq!(
-            Storage::distribution_bucket_family_by_id(family_id)
-                .distribution_buckets
-                .get(&bucket_id)
-                .unwrap()
+            Storage::distribution_bucket_by_family_id_by_index(family_id, &bucket_id)
                 .accepting_new_bags,
             new_status
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketStatusUpdated(
-            family_id, bucket_id, new_status,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
+            new_status,
         ));
     });
 }
@@ -3785,7 +3756,7 @@ fn delete_distribution_bucket_succeeded() {
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketDeleted(
-            family_id, bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
         ));
     });
 }
@@ -3810,15 +3781,19 @@ fn delete_distribution_bucket_fails_with_assgined_bags() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+        let add_buckets_ids = BTreeSet::from_iter(vec![bucket_id]);
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_add_bucket_ids(add_buckets_ids.clone())
             .call_and_assert(Ok(()));
 
+        let add_buckets = add_buckets_ids
+            .iter()
+            .map(|idx| Storage::create_distribution_bucket_id(family_id, *idx))
+            .collect::<BTreeSet<_>>();
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
@@ -3915,22 +3890,26 @@ fn update_distribution_buckets_for_bags_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+        let add_buckets_ids = BTreeSet::from_iter(vec![bucket_id]);
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_add_bucket_ids(add_buckets_ids.clone())
             .call_and_assert(Ok(()));
 
+        let add_buckets = add_buckets_ids
+            .iter()
+            .map(|idx| Storage::create_distribution_bucket_id(family_id, *idx))
+            .collect::<BTreeSet<_>>();
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketsUpdatedForBag(
             bag_id,
             family_id,
-            add_buckets,
+            add_buckets_ids,
             BTreeSet::new(),
         ));
     });
@@ -3956,20 +3935,24 @@ fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_add
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+        let add_buckets_ids = BTreeSet::from_iter(vec![bucket_id]);
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_add_bucket_ids(add_buckets_ids.clone())
             .call_and_assert(Ok(()));
 
         // Add check
+        let add_buckets = add_buckets_ids
+            .iter()
+            .map(|idx| Storage::create_distribution_bucket_id(family_id, *idx))
+            .collect::<BTreeSet<_>>();
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
-        let bucket = Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id);
+        let bucket = Storage::distribution_bucket_by_family_id_by_index(family_id, &bucket_id);
         assert_eq!(bucket.assigned_bags, 1);
 
         // ******
@@ -3978,13 +3961,13 @@ fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_add
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_remove_bucket_ids(add_buckets.clone())
+            .with_remove_bucket_ids(add_buckets_ids.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by.len(), 0);
 
-        let bucket = Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id);
+        let bucket = Storage::distribution_bucket_by_family_id_by_index(family_id, &bucket_id);
         assert_eq!(bucket.assigned_bags, 0);
     });
 }
@@ -4187,14 +4170,13 @@ fn update_distribution_bucket_mode_succeeded() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Storage::distribution_bucket_by_family_id_by_id(family_id, &bucket_id)
+            Storage::distribution_bucket_by_family_id_by_index(family_id, &bucket_id)
                 .accepting_new_bags,
             distributing
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketModeUpdated(
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
             distributing,
         ));
     });
@@ -4283,7 +4265,9 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id()
     });
 }
 
-fn create_distribution_bucket_family_with_buckets(bucket_number: u64) -> (u64, Vec<u64>) {
+fn create_distribution_bucket_family_with_buckets(
+    bucket_number: u64,
+) -> (u64, Vec<DistributionBucketId<Test>>) {
     let family_id = CreateDistributionBucketFamilyFixture::default()
         .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
         .call_and_assert(Ok(()))
@@ -4292,12 +4276,14 @@ fn create_distribution_bucket_family_with_buckets(bucket_number: u64) -> (u64, V
     let bucket_ids = repeat(family_id)
         .take(bucket_number as usize)
         .map(|fam_id| {
-            CreateDistributionBucketFixture::default()
+            let bucket_index = CreateDistributionBucketFixture::default()
                 .with_family_id(fam_id)
                 .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
                 .with_accept_new_bags(true)
                 .call_and_assert(Ok(()))
-                .unwrap()
+                .unwrap();
+
+            Storage::create_distribution_bucket_id(fam_id, bucket_index)
         })
         .collect::<Vec<_>>();
 
@@ -4312,17 +4298,14 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
         run_to_block(starting_block);
 
         let dynamic_bag_type = DynamicBagType::Channel;
+        let buckets_number = 10;
         let new_bucket_number = 5;
 
-        let (family_id1, bucket_ids1) = create_distribution_bucket_family_with_buckets(
-            MaxDistributionBucketNumberPerFamily::get(),
-        );
-        let (family_id2, bucket_ids2) = create_distribution_bucket_family_with_buckets(
-            MaxDistributionBucketNumberPerFamily::get(),
-        );
-        let (family_id3, _) = create_distribution_bucket_family_with_buckets(
-            MaxDistributionBucketNumberPerFamily::get(),
-        );
+        let (family_id1, bucket_ids1) =
+            create_distribution_bucket_family_with_buckets(buckets_number);
+        let (family_id2, bucket_ids2) =
+            create_distribution_bucket_family_with_buckets(buckets_number);
+        let (family_id3, _) = create_distribution_bucket_family_with_buckets(buckets_number);
         let (family_id4, _) = create_distribution_bucket_family_with_buckets(0);
 
         let families = BTreeMap::from_iter(vec![
@@ -4387,8 +4370,7 @@ fn invite_distribution_bucket_operator_succeeded() {
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketOperatorInvited(
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
             provider_id,
         ));
     });
@@ -4590,8 +4572,7 @@ fn cancel_distribution_bucket_operator_invite_succeeded() {
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketInvitationCancelled(
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
             provider_id,
         ));
     });
@@ -4680,8 +4661,7 @@ fn accept_distribution_bucket_operator_invite_succeeded() {
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketInvitationAccepted(
             provider_id,
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
         ));
     });
 }
@@ -4778,8 +4758,7 @@ fn set_distribution_operator_metadata_succeeded() {
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketMetadataSet(
             provider_id,
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
             metadata,
         ));
     });
@@ -4876,8 +4855,7 @@ fn remove_distribution_bucket_operator_succeeded() {
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketOperatorRemoved(
-            family_id,
-            bucket_id,
+            Storage::create_distribution_bucket_id(family_id, bucket_id),
             operator_id,
         ));
     });

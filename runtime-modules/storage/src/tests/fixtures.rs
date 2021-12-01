@@ -15,8 +15,8 @@ use crate::tests::mocks::{
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
-    DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UploadParameters,
+    DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent,
+    StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -50,6 +50,7 @@ impl EventFixture {
             u64,
             u64,
             u64,
+            DistributionBucketId<Test>,
             u64,
         >,
     ) {
@@ -69,6 +70,7 @@ impl EventFixture {
             u64,
             u64,
             u64,
+            DistributionBucketId<Test>,
             u64,
         >,
     ) {
@@ -1295,7 +1297,8 @@ impl CreateDistributionBucketFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
-        let next_bucket_id = Storage::next_distribution_bucket_id();
+        let next_bucket_id = Storage::distribution_bucket_family_by_id(self.family_id)
+            .next_distribution_bucket_index;
         let actual_result = Storage::create_distribution_bucket(
             self.origin.clone().into(),
             self.family_id,
@@ -1305,16 +1308,24 @@ impl CreateDistributionBucketFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(next_bucket_id + 1, Storage::next_distribution_bucket_id());
+            assert_eq!(
+                next_bucket_id + 1,
+                Storage::distribution_bucket_family_by_id(self.family_id)
+                    .next_distribution_bucket_index
+            );
 
             let bucket: DistributionBucket<Test> =
-                Storage::distribution_bucket_by_family_id_by_id(self.family_id, next_bucket_id);
+                Storage::distribution_bucket_by_family_id_by_index(self.family_id, next_bucket_id);
 
             assert_eq!(bucket.accepting_new_bags, self.accept_new_bags);
 
             Some(next_bucket_id)
         } else {
-            assert_eq!(next_bucket_id, Storage::next_distribution_bucket_id());
+            assert_eq!(
+                next_bucket_id,
+                Storage::distribution_bucket_family_by_id(self.family_id)
+                    .next_distribution_bucket_index
+            );
 
             None
         }
@@ -1359,8 +1370,7 @@ impl UpdateDistributionBucketStatusFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_status(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_id),
             self.new_status,
         );
 
@@ -1401,8 +1411,7 @@ impl DeleteDistributionBucketFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::delete_distribution_bucket(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_id),
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1550,8 +1559,7 @@ impl UpdateDistributionBucketModeFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_mode(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_id),
             self.distributing,
         );
 
@@ -1648,8 +1656,7 @@ impl InviteDistributionBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::invite_distribution_bucket_operator(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_id),
             self.operator_worker_id,
         );
 
@@ -1657,7 +1664,7 @@ impl InviteDistributionBucketOperatorFixture {
 
         if actual_result.is_ok() {
             let new_bucket: DistributionBucket<Test> =
-                Storage::distribution_bucket_by_family_id_by_id(self.family_id, self.bucket_id);
+                Storage::distribution_bucket_by_family_id_by_index(self.family_id, self.bucket_id);
 
             assert!(new_bucket
                 .pending_invitations
@@ -1705,8 +1712,7 @@ impl CancelDistributionBucketInvitationFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::cancel_distribution_bucket_operator_invite(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_id),
             self.operator_worker_id,
         );
 
@@ -1714,7 +1720,7 @@ impl CancelDistributionBucketInvitationFixture {
 
         if actual_result.is_ok() {
             let new_bucket: DistributionBucket<Test> =
-                Storage::distribution_bucket_by_family_id_by_id(self.family_id, self.bucket_id);
+                Storage::distribution_bucket_by_family_id_by_index(self.family_id, self.bucket_id);
 
             assert!(!new_bucket
                 .pending_invitations
@@ -1760,15 +1766,14 @@ impl AcceptDistributionBucketInvitationFixture {
         let actual_result = Storage::accept_distribution_bucket_invitation(
             self.origin.clone().into(),
             self.worker_id,
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_id),
         );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
             let new_bucket: DistributionBucket<Test> =
-                Storage::distribution_bucket_by_family_id_by_id(self.family_id, self.bucket_id);
+                Storage::distribution_bucket_by_family_id_by_index(self.family_id, self.bucket_id);
 
             assert!(!new_bucket.pending_invitations.contains(&self.worker_id));
 
@@ -1820,8 +1825,7 @@ impl SetDistributionBucketMetadataFixture {
         let actual_result = Storage::set_distribution_operator_metadata(
             self.origin.clone().into(),
             self.worker_id,
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_id),
             self.metadata.clone(),
         );
 
@@ -1868,15 +1872,14 @@ impl RemoveDistributionBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::remove_distribution_bucket_operator(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_id),
             self.operator_worker_id,
         );
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
             let new_bucket: DistributionBucket<Test> =
-                Storage::distribution_bucket_by_family_id_by_id(self.family_id, self.bucket_id);
+                Storage::distribution_bucket_by_family_id_by_index(self.family_id, self.bucket_id);
 
             assert!(!new_bucket.operators.contains(&self.operator_worker_id));
         }
