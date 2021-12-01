@@ -17,16 +17,17 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
       multiple: true,
       description: 'ID of an object to remove',
     }),
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
   async run(): Promise<void> {
     const {
-      flags: { channelId, objectId: objectIds },
+      flags: { channelId, objectId: objectIds, context },
     } = this.parse(RemoveChannelAssetsCommand)
     // Context
     const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
+    const actor = await this.getChannelManagementActor(channel, context)
     await this.requestAccountDecoding(account)
 
     this.jsonPrettyPrint(JSON.stringify({ channelId, assetsToRemove: objectIds }))

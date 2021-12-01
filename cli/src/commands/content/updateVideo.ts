@@ -11,6 +11,7 @@ import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
   static description = 'Update video under specific id.'
@@ -20,6 +21,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
   static args = [
@@ -57,9 +59,9 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     return assetsToRemove.map((a) => a.id)
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
-      flags: { input },
+      flags: { input, context },
       args: { videoId },
     } = this.parse(UpdateVideoCommand)
 
@@ -67,7 +69,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const account = await this.getRequiredSelectedAccount()
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getChannelOwnerActor(channel)
+    const actor = await this.getChannelManagementActor(channel, context)
     const memberId = await this.getRequiredMemberId(true)
     await this.requestAccountDecoding(account)
 

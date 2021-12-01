@@ -11,6 +11,7 @@ import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
 import { MemberId } from '@joystream/types/members'
+import _ from 'lodash'
 
 const ACCOUNTS_DIRNAME = 'accounts'
 const SPECIAL_ACCOUNT_POSTFIX = '__DEV'
@@ -53,7 +54,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   // Add dev "Alice" and "Bob" accounts
-  initSpecialAccounts() {
+  initSpecialAccounts(): void {
     const keyring = new Keyring({ type: 'sr25519' })
     keyring.addFromUri('//Alice', { name: 'Alice' })
     keyring.addFromUri('//Bob', { name: 'Bob' })
@@ -174,7 +175,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     await this.setPreservedState({ selectedAccountFilename: accountFilename })
   }
 
-  async promptForPassword(message = "Your account's password") {
+  async promptForPassword(message = "Your account's password"): Promise<string> {
     const { password } = await inquirer.prompt([{ name: 'password', type: 'password', message }])
 
     return password
@@ -252,7 +253,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberId(useSelected = false): Promise<number> {
+  async getRequiredMemberId(useSelected = false, allowedIds?: MemberId[]): Promise<number> {
     if (this.selectedMemberId && useSelected) {
       return this.selectedMemberId
     }
@@ -260,33 +261,49 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const account = await this.getRequiredSelectedAccount()
     const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
 
-    let memberId: number
-    if (!memberIds.length) {
-      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
-    } else if (memberIds.length === 1) {
-      memberId = memberIds[0].toNumber()
-    } else {
-      memberId = await this.promptForMember(memberIds, 'Choose member context')
+    const possibleIds = allowedIds
+      ? _.intersection(
+          memberIds.map((id) => id.toNumber()),
+          allowedIds.map((id) => id.toNumber())
+        )
+      : memberIds.map((id) => id.toNumber())
+
+    if (allowedIds && !possibleIds.length) {
+      this.error(
+        `Chosen account needs to be controller account of one of the following members: ${allowedIds?.join(', ')}`,
+        { exit: ExitCodes.AccessDenied }
+      )
     }
 
-    this.selectedMemberId = memberId
-    return memberId
+    if (!possibleIds.length) {
+      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+    }
+
+    let chosenId: number
+    if (possibleIds.length === 1) {
+      chosenId = possibleIds[0]
+    } else {
+      chosenId = await this.promptForMember(possibleIds, 'Choose member context')
+    }
+
+    this.selectedMemberId = chosenId
+    return chosenId
   }
 
-  async promptForMember(availableMembers: MemberId[], message = 'Choose a member'): Promise<number> {
+  async promptForMember(availableMembers: number[], message = 'Choose a member'): Promise<number> {
     const memberId: number = await this.simplePrompt({
       type: 'list',
       message,
       choices: availableMembers.map((memberId) => ({
-        name: `ID: ${memberId.toString()}`,
-        value: memberId.toNumber(),
+        name: `ID: ${memberId}`,
+        value: memberId,
       })),
     })
 
     return memberId
   }
 
-  async init() {
+  async init(): Promise<void> {
     await super.init()
     try {
       this.initAccountsFs()

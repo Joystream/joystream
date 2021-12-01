@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import { NameValueObj } from '../Types'
 import { AccountId } from '@polkadot/types/interfaces'
 
-export function displayHeader(caption: string, placeholderSign = '_', size = 50) {
+export function displayHeader(caption: string, placeholderSign = '_', size = 50): void {
   const singsPerSide: number = Math.floor((size - (caption.length + 2)) / 2)
   let finalStr = ''
   for (let i = 0; i < singsPerSide; ++i) finalStr += placeholderSign
@@ -13,7 +13,7 @@ export function displayHeader(caption: string, placeholderSign = '_', size = 50)
   process.stdout.write('\n' + chalk.bold.blueBright(finalStr) + '\n\n')
 }
 
-export function displayNameValueTable(rows: NameValueObj[]) {
+export function displayNameValueTable(rows: NameValueObj[]): void {
   cli.table(
     rows,
     {
@@ -24,7 +24,7 @@ export function displayNameValueTable(rows: NameValueObj[]) {
   )
 }
 
-export function displayCollapsedRow(row: { [k: string]: string | number }) {
+export function displayCollapsedRow(row: { [k: string]: string | number }): void {
   const collapsedRow: NameValueObj[] = Object.keys(row).map((name) => ({
     name,
     value: typeof row[name] === 'string' ? (row[name] as string) : row[name].toString(),
@@ -33,11 +33,11 @@ export function displayCollapsedRow(row: { [k: string]: string | number }) {
   displayNameValueTable(collapsedRow)
 }
 
-export function displayCollapsedTable(rows: { [k: string]: string | number }[]) {
+export function displayCollapsedTable(rows: { [k: string]: string | number }[]): void {
   for (const row of rows) displayCollapsedRow(row)
 }
 
-export function displayTable(rows: { [k: string]: string | number }[], cellHorizontalPadding = 0) {
+export function displayTable(rows: { [k: string]: string | number }[], cellHorizontalPadding = 0): void {
   if (!rows.length) {
     return
   }
