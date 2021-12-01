@@ -27,6 +27,12 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
     debug('Skipping Category Creation')
   }
 
+  if (process.env.SKIP_MOCK_CONTENT) {
+    debug('Skipping Video and Channel creation')
+    debug('Done')
+    return
+  }
+
   const memberAccount = api.createKeyPairs(1)[0].key.address
   const createMember: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     api,
