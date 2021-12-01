@@ -84,7 +84,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       this.log(
         `Data objects deletion prize of ${chalk.cyanBright(
           formatBalance(deletionPrize)
-        )} will be transferred to ${chalk.magentaBright(channel.deletion_prize_source_account_id.toString())}`
+        )} will be transferred to ${chalk.magentaBright(account.address)}`
       )
     }
 

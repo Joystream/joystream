@@ -2,7 +2,7 @@ import { getInputJson } from '../../helpers/InputOutput'
 import { ChannelInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
@@ -13,7 +13,7 @@ import { ChannelMetadata } from '@joystream/metadata-protobuf'
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
-    context: ContentDirectoryCommandBase.ownerContextFlag,
+    context: ContentDirectoryCommandBase.channelCreationContextFlag,
     input: flags.string({
       char: 'i',
       required: true,
@@ -21,12 +21,12 @@ export default class CreateChannelCommand extends UploadCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     let { context, input } = this.parse(CreateChannelCommand).flags
 
     // Context
     if (!context) {
-      context = await this.promptForOwnerContext()
+      context = await this.promptForChannelCreationContext()
     }
     const account = await this.getRequiredSelectedAccount()
     const actor = await this.getActor(context)
@@ -46,10 +46,15 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const channelCreationParameters = createTypeFromConstructor(ChannelCreationParameters, {
-      assets,
-      meta: metadataToBytes(ChannelMetadata, meta),
-    })
+    const channelCreationParameters = createType<ChannelCreationParameters, 'ChannelCreationParameters'>(
+      'ChannelCreationParameters',
+      {
+        assets,
+        meta: metadataToBytes(ChannelMetadata, meta),
+        collaborators: channelInput.collaborators,
+        reward_account: channelInput.rewardAccount,
+      }
+    )
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 

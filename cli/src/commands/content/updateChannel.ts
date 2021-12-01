@@ -11,9 +11,13 @@ import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import ExitCodes from '../../ExitCodes'
+
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     input: flags.string({
       char: 'i',
       required: true,
@@ -69,21 +73,29 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     return assetsToRemove.map((a) => a.id)
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
-      flags: { input },
+      flags: { input, context },
       args: { channelId },
     } = this.parse(UpdateChannelCommand)
 
     // Context
     const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
+    const actor = await this.getChannelManagementActor(channel, context)
     const memberId = await this.getRequiredMemberId(true)
     await this.requestAccountDecoding(account)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
+
+    if (channelInput.rewardAccount !== undefined && actor.type === 'Collaborator') {
+      this.error("Collaborators are not allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
+    }
+
+    if (channelInput.collaborators !== undefined && actor.type === 'Collaborator') {
+      this.error("Collaborators are not allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
+    }
 
     const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
     const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
@@ -97,11 +109,14 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     // Preare and send the extrinsic
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(channelId, coverPhotoIndex, avatarPhotoIndex)
+
+    const collaborators = createType('Option<BTreeSet<MemberId>>', channelInput.collaborators)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets_to_upload: assetsToUpload,
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
+      collaborators,
     }
 
     this.jsonPrettyPrint(

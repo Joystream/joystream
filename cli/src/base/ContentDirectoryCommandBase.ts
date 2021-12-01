@@ -4,39 +4,34 @@ import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType, createTypeFromConstructor } from '@joystream/types'
 import { flags } from '@oclif/command'
 
-// TODO: Rework the contexts
-
-const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
-const OWNER_CONTEXTS = ['Member', 'Curator'] as const
+const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
+const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
 
-type Context = typeof CONTEXTS[number]
-type OwnerContext = typeof OWNER_CONTEXTS[number]
+type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
+type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
 type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
-  static contextFlag = flags.enum({
-    name: 'context',
+  static channelCreationContextFlag = flags.enum({
     required: false,
-    description: `Actor context to execute the command in (${CONTEXTS.join('/')})`,
-    options: [...CONTEXTS],
+    description: `Actor context to execute the command in (${CHANNEL_CREATION_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_CREATION_CONTEXTS],
   })
 
-  static ownerContextFlag = flags.enum({
-    name: 'ownerContext',
+  static channelManagementContextFlag = flags.enum({
     required: false,
-    description: `Actor context to execute the command in (${OWNER_CONTEXTS.join('/')})`,
-    options: [...OWNER_CONTEXTS],
+    description: `Actor context to execute the command in (${CHANNEL_MANAGEMENT_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_MANAGEMENT_CONTEXTS],
   })
 
   static categoriesContextFlag = flags.enum({
-    name: 'categoriesContext',
     required: false,
     description: `Actor context to execute the command in (${CATEGORIES_CONTEXTS.join('/')})`,
     options: [...CATEGORIES_CONTEXTS],
@@ -47,21 +42,13 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     this.group = WorkingGroups.Curators // override group for RolesCommandBase
   }
 
-  async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
-    return this.simplePrompt({
-      message,
-      type: 'list',
-      choices: CONTEXTS.map((c) => ({ name: c, value: c })),
-    })
-  }
-
-  async promptForOwnerContext(
+  async promptForChannelCreationContext(
     message = 'Choose in which context you wish to execute the command'
-  ): Promise<OwnerContext> {
+  ): Promise<ChannelCreationContext> {
     return this.simplePrompt({
       message,
       type: 'list',
-      choices: OWNER_CONTEXTS.map((c) => ({ name: c, value: c })),
+      choices: CHANNEL_CREATION_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
@@ -92,7 +79,33 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         return await this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      return await this.getActor('Member')
+      const memberId = await this.getRequiredMemberId(false, [channel.owner.asType('Member')])
+      return createType<ContentActor, 'ContentActor'>('ContentActor', { Member: memberId })
+    }
+  }
+
+  async getChannelCollaborator(channel: Channel): Promise<ContentActor> {
+    const memberId = await this.getRequiredMemberId(false, Array.from(channel.collaborators))
+    return createType<ContentActor, 'ContentActor'>('ContentActor', { Collaborator: memberId })
+  }
+
+  async getChannelManagementActor(channel: Channel, context: ChannelManagementContext): Promise<ContentActor> {
+    if (context && context === 'Owner') {
+      return this.getChannelOwnerActor(channel)
+    }
+    if (context && context === 'Collaborator') {
+      return this.getChannelCollaborator(channel)
+    }
+
+    // Context not set - derive
+    try {
+      const owner = await this.getChannelOwnerActor(channel)
+      this.log('Derived context: Channel owner')
+      return owner
+    } catch (e) {
+      const collaborator = await this.getChannelCollaborator(channel)
+      this.log('Derived context: Channel collaborator')
+      return collaborator
     }
   }
 
@@ -229,19 +242,21 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return group
   }
 
-  async getActor(context: typeof CONTEXTS[number]): Promise<ContentActor> {
-    let actor: ContentActor
+  async getActor(context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>): Promise<ContentActor> {
     if (context === 'Member') {
       const memberId = await this.getRequiredMemberId()
-      actor = this.createType('ContentActor', { Member: memberId })
-    } else if (context === 'Curator') {
-      actor = await this.getCuratorContext()
-    } else {
-      await this.getRequiredLead()
-
-      actor = this.createType('ContentActor', { Lead: null })
+      return this.createType('ContentActor', { Member: memberId })
     }
 
-    return actor
+    if (context === 'Curator') {
+      return this.getCuratorContext()
+    }
+
+    if (context === 'Lead') {
+      await this.getRequiredLead()
+      return this.createType('ContentActor', { Lead: null })
+    }
+
+    throw new Error(`Unrecognized context: ${context}`)
   }
 }
