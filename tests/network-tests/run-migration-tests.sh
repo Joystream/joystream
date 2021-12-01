@@ -120,7 +120,10 @@ function fork_off_init() {
     # chain-spec-raw already existing
 
     if ! [[ -f $(pwd)/storage.json ]]; then
-	scp ignazio@testnet-rpc-3-uk.joystream.org:/home/ignazio/storage.json ./storage.json
+	curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
+	     "Content-type: application/json" -d \
+	     '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
+	     > storage.json	
     fi
 	cp $(pwd)/storage.json ${DATA_PATH}/storage.json    
 
