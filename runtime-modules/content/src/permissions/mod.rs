@@ -1,20 +1,19 @@
-/*
-* The following table summarizes the permissions in the content subsystem.
-* - Actor role as columns, controller account is Tx sender.
-* - operations on a given channel (=channel=) are rows, which are basically the guards to be
-*   implemented
-* - Entries are conditions to be verified / assertions
-*
-* |                       | *Lead*                   | *Curator*                | *Member*                | *Collaborator*                   |
-* |-----------------------+--------------------------+--------------------------+-------------------------+----------------------------------|
-* | *assets mgmt*         | channel.owner is curator | curator is channel.owner | member is channel.owner | collaborators in channel.collabs |
-* | *censorship mgmt*     | channel.owner is curator | curator is channel.owner | false                   | false                            |
-* | *category mgmt*       | true                     | true                     | false                   | false                            |
-* | *collab. set mgmt*    | channel.owner is curator | curator is channel.owner | member is channel.owner | false                            |
-* | *reward account mgmt* | false                    | curator is channel.owner | member is channel.owner | false                            |
-* | *create channel*      | false                    | true                     | true                    | false                            |
-* | *delete channel*      | false                    | curator is channel.owner | member is channel.owner | false                            |
-*/
+// The following table summarizes the permissions in the content subsystem.
+// - Actor role as columns, controller account is Tx sender.
+// - operations on a given channel (=channel=) are rows, which are basically the guards to be
+//   implemented
+// - Entries are conditions to be verified / assertions
+//
+// |                       | *Lead*                   | *Curator*                | *Member*                | *Collaborator*            |
+// |-----------------------+--------------------------+--------------------------+-------------------------+---------------------------|
+// | *assets mgmt*         | channel.owner is curator | curator is channel.owner | member is channel.owner | collab in channel.collabs |
+// | *censorship mgmt*     | true                     | channel.owner is member  | false                   | false                     |
+// | *category mgmt*       | true                     | true                     | false                   | false                     |
+// | *collab. set mgmt*    | channel.owner is curator | curator is channel.owner | member is channel.owner | false                     |
+// | *reward account mgmt* | channel.owner is curator | curator is channel.owner | member is channel.owner | false                     |
+// | *create channel*      | false                    | true                     | true                    | false                     |
+// | *delete channel*      | channel.owner is curator | curator is channel.owner | member is channel.owner | false                     |
+
 mod curator_group;
 
 pub use curator_group::*;
@@ -134,6 +133,13 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     match actor {
+        ContentActor::Lead => {
+            // ensure lead is valid
+            ensure_lead_auth_success::<T>(sender)?;
+            // ensure curator
+            ensure_channel_is_owned_by_curators::<T>(&channel.owner)?;
+            Ok(())
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             // ensure curator group is valid
             CuratorGroup::<T>::perform_curator_in_group_auth(
@@ -152,7 +158,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
             ensure_member_is_channel_owner::<T>(channel_owner, member_id)?;
             Ok(())
         }
-        // Lead & collaborators should use their member or curator role in order to update reward account.
+        // collaborators should use their member or curator role in order to update reward account.
         _ => Err(Error::<T>::ActorNotAuthorized.into()),
     }
 }
@@ -345,7 +351,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
             }
         }
         _ => {
-            // Members cannot censore channels!
+            // Members & collaborators cannot censore channels!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
     }
@@ -369,7 +375,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
             CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
         }
         _ => {
-            // Members cannot censore channels!
+            // Members & collaborators cannot manage categories!
             Err(Error::<T>::ActorNotAuthorized.into())
         }
     }

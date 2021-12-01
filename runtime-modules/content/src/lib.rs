@@ -770,7 +770,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel_assets::<T>(
+            ensure_actor_authorized_delete_channel::<T>(
                 &sender,
                 &actor,
                 &channel,
