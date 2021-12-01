@@ -12,6 +12,7 @@
     "checks": "prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",
     "postinstall": "yarn ts-node ./scripts/postInstall.ts",
+    "postHydraCLIInstall": "yarn ts-node ./scripts/postHydraCLIInstall.ts",
     "bootstrap-data:fetch:members": "yarn ts-node ./bootstrap-data/scripts/fetchMembersData.ts",
     "bootstrap-data:fetch:categories": "yarn ts-node ./bootstrap-data/scripts/fetchCategories.ts",
     "bootstrap-data:fetch:workingGroups": "yarn ts-node ./bootstrap-data/scripts/fetchWorkingGroupsData.ts",
