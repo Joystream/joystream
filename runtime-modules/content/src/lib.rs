@@ -1447,9 +1447,9 @@ impl<T: Trait> Module<T> {
 
     fn validate_collaborator_set(collaborators: &BTreeSet<T::MemberId>) -> DispatchResult {
         // check if all members are valid
-        let res = !collaborators
+        let res = collaborators
             .iter()
-            .any(|member_id| !<T as ContentActorAuthenticator>::validate_member_id(member_id));
+            .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
         ensure!(res, Error::<T>::CollaboratorIsNotValidMember);
         Ok(())
     }
