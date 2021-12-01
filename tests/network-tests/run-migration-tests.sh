@@ -229,14 +229,17 @@ function main {
 
     CONTAINER_ID=""
 
-    echo "**** CREATING EMPTY CHAINSPEC ****"
-    create_initial_config
-    create_chainspec_file
-    convert_chainspec
-    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
+    if ! [[ -d $DATA_PATH ]]; then
+	echo "**** CREATING EMPTY CHAINSPEC ****"
+	create_initial_config
+	create_chainspec_file
+	convert_chainspec
+	echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-    # use forkoff to update chainspec with the live state + update runtime code
-    # fork_off_init
+	# use forkoff to update chainspec with the live state + update runtime code
+	fork_off_init
+
+    fi
 
     echo "***** STARTING NODE WITH FORKED STATE *****"
     JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
@@ -257,4 +260,4 @@ function main {
 
 # main entrypoint
 main
-cleanup
+trap cleanup EXIT
