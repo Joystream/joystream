@@ -15,9 +15,9 @@ PRE_MIGRATION_CLI_SETUP=${PRE_MIGRATION_CLI_SETUP:=$true}
 # If state modification by means of typescript scenarios are required before migration
 PRE_MIGRATION_ASYNC_SETUP=${PRE_MIGRATION_ASYNC_SETUP:=$false}
 # Post migration assertions by means of joystream-cli required
-POST_MIGRATION_CLI_ASSERTIONS=${POST_MIGRATION_CLI_ASSERTIONS=$true}
+POST_MIGRATION_CLI_ASSERTIONS=${POST_MIGRATION_CLI_ASSERTIONS=$false}
 # Post migration assertions by means of typescript scenarios required
-POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$false}
+POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$true}
 
 export WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
     
@@ -271,8 +271,6 @@ function post_migration_cli() {
 
 # entrypoint
 function main {
-    # Section A: pre migration
-
     CONTAINER_ID=""
 
     echo "**** CREATING EMPTY CHAINSPEC ****"
@@ -282,13 +280,12 @@ function main {
     echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
     # use forkoff to update chainspec with the live state + update runtime code
-    # fork_off_init
+    #fork_off_init
 
     echo "***** STARTING NODE WITH FORKED STATE *****"
     JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
     CONTAINER_ID=$(start_node)
 
-    # Section C: assertions
     # verify that the number of outstanding channels & videos == 0
     if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
 	# verify assertion using cli
@@ -296,9 +293,11 @@ function main {
 	post_migration_cli
     fi
     
-    # if [[ $POST_MIGRATION_ASYNC_ASSERTION]]; then
-    # 	# verify assertion using scenarios
-    # fi
+    if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
+	# verify assertion using typsecript	
+	echo "***** POST MIGRATION TYPESCRIPT *****"	
+	yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
+    fi
 }
 
 # main entrypoint
