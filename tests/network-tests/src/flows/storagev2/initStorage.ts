@@ -34,7 +34,7 @@ export const allStaticBags: CreateInterface<StaticBagId>[] = [
   { WorkingGroup: 'Storage' },
 ]
 
-export const defaultSingleBucketConfig: InitStorageConfig = {
+export const singleBucketConfig: InitStorageConfig = {
   dynamicBagPolicy: {
     'Channel': 1,
     'Member': 1,
@@ -44,6 +44,29 @@ export const defaultSingleBucketConfig: InitStorageConfig = {
       metadata: { endpoint: process.env.STORAGE_1_URL || 'http://localhost:3333' },
       staticBags: allStaticBags,
       operatorId: parseInt(process.env.STORAGE_1_WORKER_ID || '0'),
+      storageLimit: new BN(1_000_000_000_000),
+      objectsLimit: 1000000000,
+    },
+  ],
+}
+
+export const doubleBucketConfig: InitStorageConfig = {
+  dynamicBagPolicy: {
+    'Channel': 2,
+    'Member': 2,
+  },
+  buckets: [
+    {
+      metadata: { endpoint: process.env.STORAGE_1_URL || 'http://localhost:3333' },
+      staticBags: allStaticBags,
+      operatorId: parseInt(process.env.STORAGE_1_WORKER_ID || '0'),
+      storageLimit: new BN(1_000_000_000_000),
+      objectsLimit: 1000000000,
+    },
+    {
+      metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
+      staticBags: allStaticBags,
+      operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
     },
@@ -82,7 +105,7 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
       )
     )
     const setMaxVoucherLimitsTx = api.tx.storage.updateStorageBucketsVoucherMaxLimits(maxStorageLimit, maxObjectsLimit)
-    const setBucketPerBagLimitTx = api.tx.storage.updateStorageBucketsPerBagLimit(buckets.length)
+    const setBucketPerBagLimitTx = api.tx.storage.updateStorageBucketsPerBagLimit(Math.max(5, buckets.length))
 
     await api.signAndSendMany(
       [...updateDynamicBagPolicyTxs, setMaxVoucherLimitsTx, setBucketPerBagLimitTx],
@@ -93,18 +116,12 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     const createBucketTxs = buckets.map((b, i) =>
       api.tx.storage.createStorageBucket(operatorIds[i], true, b.storageLimit, b.objectsLimit)
     )
-    const createBucketResults = await api.signAndSendManyByMany(createBucketTxs, operatorKeys)
+    const createBucketResults = await api.signAndSendMany(createBucketTxs, storageLeaderKey)
     const bucketById = new Map<number, StorageBucketConfig>()
     createBucketResults.forEach((res, i) => {
       const bucketId = api.getEvent(res, 'storage', 'StorageBucketCreated').data[0]
       bucketById.set(bucketId.toNumber(), buckets[i])
     })
-
-    // Invite bucket operators
-    const bucketInviteTxs = Array.from(bucketById.keys()).map((bucketId, i) =>
-      api.tx.storage.inviteStorageBucketOperator(bucketId, operatorIds[i])
-    )
-    await api.signAndSendMany(bucketInviteTxs, storageLeaderKey)
 
     // Accept invitations
     const acceptInvitationTxs = Array.from(bucketById.keys()).map((bucketId, i) =>

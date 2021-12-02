@@ -49,7 +49,7 @@ export const allStaticBags: CreateInterface<StaticBagId>[] = [
   { WorkingGroup: 'Storage' },
 ]
 
-export const defaultSingleBucketConfig: InitDistributionConfig = {
+export const singleBucketConfig: InitDistributionConfig = {
   families: [
     {
       metadata: { region: 'All' },
@@ -62,6 +62,39 @@ export const defaultSingleBucketConfig: InitDistributionConfig = {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
           staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
+        },
+      ],
+    },
+  ],
+}
+
+export const doubleBucketConfig: InitDistributionConfig = {
+  families: [
+    {
+      metadata: { region: 'Region 1' },
+      dynamicBagPolicy: {
+        'Channel': 1,
+        'Member': 1,
+      },
+      buckets: [
+        {
+          metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
+          staticBags: allStaticBags,
+          operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
+        },
+      ],
+    },
+    {
+      metadata: { region: 'Region 2' },
+      dynamicBagPolicy: {
+        'Channel': 1,
+        'Member': 1,
+      },
+      buckets: [
+        {
+          metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
+          staticBags: allStaticBags,
+          operatorId: parseInt(process.env.DISTRIBUTOR_2_WORKER_ID || '1'),
         },
       ],
     },

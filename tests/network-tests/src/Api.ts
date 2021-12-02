@@ -1728,13 +1728,11 @@ export class Api {
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey<[WorkerId]>, Worker][] = await this.api.query[module].workerById.entries<Worker>()
+    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
 
-    return entries
-      .filter(([idKey]) => {
-        return workerIds.some((id) => id.eq(idKey.args[0]))
-      })
-      .map(([, worker]) => worker.role_account_id.toString())
+    return workers.map((worker) => {
+      return worker.role_account_id.toString()
+    })
   }
 
   public async getStake(id: StakeId): Promise<Stake> {
