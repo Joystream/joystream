@@ -269,7 +269,6 @@ function post_migration_cli() {
   yarn joystream-cli content:videos 1
 }
 
-
 # entrypoint
 function main {
     # Section A: pre migration
