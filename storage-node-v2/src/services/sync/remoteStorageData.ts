@@ -4,7 +4,7 @@ import logger from '../logger'
 import NodeCache from 'node-cache'
 
 // Expiration period in seconds for the local cache.
-const ExpirationPeriod: number = 5 * 60 // minutes
+const ExpirationPeriod: number = 3 * 60 // minutes
 
 // Max data entries in local cache
 const MaxEntries = 10000
