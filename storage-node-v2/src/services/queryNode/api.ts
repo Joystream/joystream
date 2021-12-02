@@ -19,6 +19,7 @@ import {
   GetStorageBucketsConnection,
   GetStorageBucketsConnectionQuery,
   GetStorageBucketsConnectionQueryVariables,
+  GetStorageBucketDetailsByWorkerId,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
 
@@ -164,12 +165,12 @@ export class QueryNodeApi {
    *
    * @param workerId - worker ID
    */
-  public async getStorageBucketDetailsByWorkerId(workerId: string): Promise<Array<StorageBucketIdsFragment>> {
+  public async getStorageBucketIdsByWorkerId(workerId: string): Promise<Array<StorageBucketIdsFragment>> {
     const result = await this.multipleEntitiesWithPagination<
       StorageBucketIdsFragment,
       GetStorageBucketDetailsByWorkerIdQuery,
       GetStorageBucketDetailsByWorkerIdQueryVariables
-    >(GetStorageBucketsConnection, { workerId, limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
+    >(GetStorageBucketDetailsByWorkerId, { workerId, limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
 
     if (!result) {
       return []

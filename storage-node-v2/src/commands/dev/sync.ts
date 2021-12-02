@@ -27,17 +27,18 @@ export default class DevSync extends Command {
       char: 'p',
       required: false,
       description: 'Sync workers number (max async operations in progress).',
+      default: 20,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
-      description: 'Query node host and port (e.g.: some.com:8081)',
       default: 'http://localhost:8081/graphql',
+      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
     }),
     dataSourceOperatorUrl: flags.string({
       char: 'o',
       required: false,
-      description: 'Storage node url base (e.g.: http://some.com:8081) to get data from.',
+      description: 'Storage node url base (e.g.: http://some.com:3333) to get data from.',
       default: 'http://localhost:3333',
     }),
     uploads: flags.string({
@@ -52,7 +53,7 @@ export default class DevSync extends Command {
 
     logger.info('Syncing...')
 
-    const syncWorkersNumber = flags.syncWorkersNumber ?? 20
+    const syncWorkersNumber = flags.syncWorkersNumber
 
     try {
       await performSync(

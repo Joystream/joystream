@@ -31,7 +31,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
     endpoint: flags.string({
       char: 'e',
       description: 'Root distribution node endpoint',
-      exclusive: ['input'],
+      exclusive: ['jsonFile'],
     }),
     jsonFile: flags.string({
       char: 'j',
