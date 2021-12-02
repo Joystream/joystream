@@ -133,6 +133,8 @@ function post_migration_cli() {
   fi
   # This cammand doesn't give error exit code if videos not found in a channel
   yarn joystream-cli content:videos 1
+}
+
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
 TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=latest}
 # The joystream/node docker image tag to start the chain with
@@ -267,46 +269,6 @@ function post_migration_cli() {
   yarn joystream-cli content:videos 1
 }
 
-# entrypoint
-function main {
-    # Section A: pre migration
-
-    CONTAINER_ID=""
-
-    if ! [[ -d $DATA_PATH ]]; then
-	echo "**** CREATING EMPTY CHAINSPEC ****"
-	create_initial_config
-	create_chainspec_file
-	convert_chainspec
-	echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
-
-	# use forkoff to update chainspec with the live state + update runtime code
-	fork_off_init
-
-    fi
-
-    echo "***** STARTING NODE WITH FORKED STATE *****"
-    JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
-    CONTAINER_ID=$(start_node)
-
-    # Section C: assertions
-    # verify that the number of outstanding channels & videos == 0
-    if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
-	# verify assertion using cli
-	echo "***** POST MIGRATION CLI *****"
-	post_migration_cli
-    fi
-    
-    # if [[ $POST_MIGRATION_ASYNC_ASSERTION]]; then
-    # 	# verify assertion using scenarios
-    # fi
-}
-
-# main entrypoint
-main
-trap cleanup EXIT
-=======
-}
 
 # entrypoint
 function main {
@@ -343,4 +305,3 @@ function main {
 # main entrypoint
 main
 cleanup
-
