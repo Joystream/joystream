@@ -1713,7 +1713,7 @@ export class Api {
     return this.api.query[module].applicationById<Application>(id)
   }
 
-  public async getApplicantRoleAccnounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
+  public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
     const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
 
     const applications = entries

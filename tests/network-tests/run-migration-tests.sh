@@ -93,15 +93,15 @@ function pre_migration_cli() {
   # work against older runtime. Assert it is version  `@joystream/cli/0.5.1` ?
   joystream-cli --version
 
-  joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+  yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
   echo "creating 1 channel"
-  joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+  yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
   echo "adding 1 video to the above channel"
-  joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+  yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
 
   # Confirm channel and video created successfully
-  joystream-cli content:videos 1
-  joystream-cli content:channel 1
+  yarn joystream-cli content:videos 1
+  yarn joystream-cli content:channel 1
 }
 
 #######################################
@@ -225,17 +225,17 @@ function pre_migration_cli() {
 
   # assume older version of joystream-cli is installed globally. So we run these commands to
   # work against older runtime. Assert it is version  `@joystream/cli/0.5.1` ?
-  joystream-cli --version
+  yarn joystream-cli --version
 
-  joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
+  yarn joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
   echo "creating 1 channel"
-  joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
+  yarn joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
   echo "adding 1 video to the above channel"
-  joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+  yarn joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
 
   # Confirm channel and video created successfully
-  joystream-cli content:videos 1
-  joystream-cli content:channel 1
+  yarn joystream-cli content:videos 1
+  yarn joystream-cli content:channel 1
 }
 
 #######################################
@@ -280,21 +280,22 @@ function main {
     echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
     # use forkoff to update chainspec with the live state + update runtime code
-    #fork_off_init
+    fork_off_init
 
     echo "***** STARTING NODE WITH FORKED STATE *****"
     JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
     CONTAINER_ID=$(start_node)
 
     # verify that the number of outstanding channels & videos == 0
-    if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
-	# verify assertion using cli
-	echo "***** POST MIGRATION CLI *****"
-	post_migration_cli
-    fi
+    # if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
+    # 	# verify assertion using cli
+    # 	echo "***** POST MIGRATION CLI *****"
+    # 	post_migration_cli
+    # fi
     
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
-	# verify assertion using typsecript	
+	# verify assertion using typsecript
+	sleep 10 # TODO: 3m and 52 sec needed!!
 	echo "***** POST MIGRATION TYPESCRIPT *****"	
 	yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
     fi
@@ -302,4 +303,4 @@ function main {
 
 # main entrypoint
 main
-cleanup
+#cleanup
