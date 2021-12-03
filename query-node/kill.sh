@@ -11,3 +11,4 @@ docker-compose -f ../docker-compose.yml rm -vsf indexer
 docker-compose -f ../docker-compose.yml rm -vsf hydra-indexer-gateway
 docker-compose -f ../docker-compose.yml rm -vsf redis
 docker-compose -f ../docker-compose.yml rm -vsf db
+docker volume rm joystream_query-node-data
