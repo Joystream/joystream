@@ -22,7 +22,7 @@ yarn workspace query-node config:dev
 
 # Prepare & migrate the databases
 yarn workspace query-node-root db:prepare
-yarn workspace query-node-root db:processor:migrate
+yarn workspace query-node-root db:migrate # FIXME
 
 docker-compose up -d graphql-server
 
