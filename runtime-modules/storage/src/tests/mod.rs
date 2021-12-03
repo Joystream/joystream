@@ -3312,12 +3312,12 @@ fn test_storage_bucket_iterators() {
         let buckets_number = 5;
         create_storage_buckets(buckets_number);
 
-        use crate::storage_bucket_picker::{
-            RandomStorageBucketIdIterator as Rand, SequentialStorageBucketIdIterator as Seq,
+        use crate::random_buckets::storage_bucket_picker::{
+            RandomBucketIdIterator as Rand, SequentialBucketIdIterator as Seq,
         };
 
-        let ids = Rand::<Test>::new()
-            .chain(Seq::<Test>::new())
+        let ids = Rand::<Test, u64>::new(Storage::next_storage_bucket_id())
+            .chain(Seq::<Test, u64>::new(Storage::next_storage_bucket_id()))
             .collect::<Vec<_>>();
 
         // Check combined iterator length.
@@ -4323,6 +4323,8 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
 
         let picked_bucket_ids =
             Storage::pick_distribution_buckets_for_dynamic_bag(dynamic_bag_type);
+
+        println!("{:?}", picked_bucket_ids);
 
         assert_eq!(picked_bucket_ids.len(), (new_bucket_number * 2) as usize); // buckets from two families
 

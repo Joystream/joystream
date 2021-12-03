@@ -127,7 +127,7 @@ mod tests;
 mod benchmarking;
 
 //pub(crate) mod distribution_bucket_picker;
-pub(crate) mod storage_bucket_picker;
+pub(crate) mod random_buckets;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -151,8 +151,8 @@ use common::constraints::BoundedValueConstraint;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
-//use distribution_bucket_picker::DistributionBucketPicker;
-use storage_bucket_picker::StorageBucketPicker;
+use random_buckets::DistributionBucketPicker;
+use random_buckets::StorageBucketPicker;
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -247,7 +247,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + Into<u64>
+        + From<u64>;
 
     /// Distribution bucket index within a distribution bucket family type.
     type DistributionBucketIndex: Parameter
@@ -257,7 +259,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + Into<u64>
+        + From<u64>;
 
     /// Distribution bucket family ID type.
     type DistributionBucketFamilyId: Parameter
@@ -3286,8 +3290,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn pick_distribution_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
     ) -> BTreeSet<DistributionBucketId<T>> {
-        unimplemented!()
-        // DistributionBucketPicker::<T>::pick_distribution_buckets(bag_type)
+        DistributionBucketPicker::<T>::pick_distribution_buckets(bag_type)
     }
 
     // Get default dynamic bag policy by bag type.
