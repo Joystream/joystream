@@ -2,7 +2,7 @@
 set -e
 
 ## Run a local development chain
-docker-compose up -d joystream-node-2
+docker-compose up -d joystream-node
 
 # Init the chain with 2 storage buckets that have high limits set
 # The DynamicBagPolicy for Channel should be "numberOfStorageBuckets: 2" after this step is done
