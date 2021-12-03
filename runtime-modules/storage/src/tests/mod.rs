@@ -4307,12 +4307,31 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
             create_distribution_bucket_family_with_buckets(buckets_number);
         let (family_id3, _) = create_distribution_bucket_family_with_buckets(buckets_number);
         let (family_id4, _) = create_distribution_bucket_family_with_buckets(0);
+        let (family_id5, bucket_id5) = create_distribution_bucket_family_with_buckets(1);
+        let (family_id6, bucket_id6) = create_distribution_bucket_family_with_buckets(1);
+
+        let deleted_bucket_id = bucket_id5[0].clone();
+        DeleteDistributionBucketFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(deleted_bucket_id.distribution_bucket_family_id)
+            .with_bucket_index(deleted_bucket_id.distribution_bucket_index)
+            .call_and_assert(Ok(()));
+
+        let disabled_bucket_id = bucket_id6[0].clone();
+        UpdateDistributionBucketStatusFixture::default()
+            .with_new_status(false)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(disabled_bucket_id.distribution_bucket_family_id)
+            .with_bucket_index(disabled_bucket_id.distribution_bucket_index)
+            .call_and_assert(Ok(()));
 
         let families = BTreeMap::from_iter(vec![
             (family_id1, new_bucket_number),
             (family_id2, new_bucket_number),
             (family_id3, 0),
             (family_id4, new_bucket_number),
+            (family_id5, new_bucket_number),
+            (family_id6, new_bucket_number),
         ]);
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
