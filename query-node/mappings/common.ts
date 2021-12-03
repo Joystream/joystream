@@ -5,11 +5,11 @@ import {
   ExtrinsicArg,
   EventContext,
   StoreContext,
-} from '@dzlzv/hydra-common'
+} from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { WorkingGroup, WorkerId, ThreadId, ContentParameters } from '@joystream/types/augment/all'
 import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner } from 'query-node/dist/model'
-import { BaseModel } from 'warthog'
+import { BaseModel } from '@joystream/warthog'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'

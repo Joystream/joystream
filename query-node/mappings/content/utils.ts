@@ -6,7 +6,7 @@
 //         every time query node codegen is run (that will overwrite said manual changes)
 //       - verify in integration tests that the records are trully created/updated/removed as expected
 
-import { DatabaseManager, EventContext, StoreContext } from '@dzlzv/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import ISO6391 from 'iso-639-1'
 import { FindConditions } from 'typeorm'
 import {
