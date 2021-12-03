@@ -36,6 +36,10 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
 
+    if (channelInput.collaborators) {
+      await this.validateCollaborators(channelInput.collaborators)
+    }
+
     const { coverPhotoPath, avatarPhotoPath } = channelInput
     const assetsPaths = [coverPhotoPath, avatarPhotoPath].filter((v) => v !== undefined) as string[]
     const resolvedAssets = await this.resolveAndValidateAssets(assetsPaths, input)

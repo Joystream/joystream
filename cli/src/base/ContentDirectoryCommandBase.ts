@@ -6,6 +6,7 @@ import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType, createTypeFromConstructor } from '@joystream/types'
 import { flags } from '@oclif/command'
+import { MemberId } from '@joystream/types/members'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
@@ -258,5 +259,14 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     throw new Error(`Unrecognized context: ${context}`)
+  }
+
+  async validateCollaborators(collaborators: number[] | MemberId[]): Promise<void> {
+    const collaboratorMembers = await this.getApi().getMembers(collaborators)
+    if (collaboratorMembers.length < collaborators.length || collaboratorMembers.some((m) => m.isEmpty)) {
+      this.error(`Invalid collaborator set! All collaborators must be existing members.`, {
+        exit: ExitCodes.InvalidInput,
+      })
+    }
   }
 }

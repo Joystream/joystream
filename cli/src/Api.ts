@@ -558,7 +558,7 @@ export default class Api {
     ])
   }
 
-  async getMembers(ids: MemberId[]): Promise<Membership[]> {
+  async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
     return this._api.query.members.membershipById.multi(ids)
   }
 }

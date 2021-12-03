@@ -97,6 +97,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       this.error("Collaborators are not allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
     }
 
+    if (channelInput.collaborators) {
+      await this.validateCollaborators(channelInput.collaborators)
+    }
+
     const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
     const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
     const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
