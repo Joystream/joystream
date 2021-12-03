@@ -283,9 +283,11 @@ function main {
     fork_off_init
 
     echo "***** STARTING NODE WITH FORKED STATE *****"
-    JOYSTREAM_NODE_TAG=$TARGET_RUNTIME_TAG
+    export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
     CONTAINER_ID=$(start_node)
-
+    
+    sleep 240
+    
     # verify that the number of outstanding channels & videos == 0
     # if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
     # 	# verify assertion using cli
@@ -295,7 +297,6 @@ function main {
     
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
 	# verify assertion using typsecript
-	sleep 10 # TODO: 3m and 52 sec needed!!
 	echo "***** POST MIGRATION TYPESCRIPT *****"	
 	yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
     fi
