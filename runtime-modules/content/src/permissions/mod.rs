@@ -158,7 +158,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
             ensure_member_is_channel_owner::<T>(channel_owner, member_id)?;
             Ok(())
         }
-        // collaborators should use their member or curator role in order to update reward account.
+        // collaborators should use their member or curator role to delete channel
         _ => Err(Error::<T>::ActorNotAuthorized.into()),
     }
 }
@@ -207,6 +207,13 @@ pub fn ensure_actor_can_manage_reward_account<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     match actor {
+        ContentActor::Lead => {
+            // ensure lead is valid
+            ensure_lead_auth_success::<T>(sender)?;
+            // ensure curator
+            ensure_channel_is_owned_by_curators::<T>(channel_owner)?;
+            Ok(())
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             // ensure curator group is valid
             CuratorGroup::<T>::perform_curator_in_group_auth(
@@ -225,7 +232,7 @@ pub fn ensure_actor_can_manage_reward_account<T: Trait>(
             ensure_member_is_channel_owner::<T>(channel_owner, member_id)?;
             Ok(())
         }
-        // Lead & collaborators should use their member or curator role in order to update reward account.
+        // collaborators should use their member or curator role in order to update reward account.
         _ => Err(Error::<T>::ActorNotAuthorized.into()),
     }
 }
