@@ -8,7 +8,8 @@
     "build": "rm -rf lib && tsc --build tsconfig.json && cp ./generated/types/typedefs.json ./lib/generated/types/typedefs.json",
     "lint": "echo \"Skippinng\"",
     "clean": "rm -rf lib",
-    "postinstall": "yarn ts-node ./scripts/postInstall.ts"
+    "postinstall": "yarn ts-node ./scripts/postInstall.ts",
+    "postHydraCLIInstall": "yarn ts-node ./scripts/postHydraCLIInstall.ts"
   },
   "dependencies": {
     "@joystream/hydra-common": "3.1.0-alpha.13",
