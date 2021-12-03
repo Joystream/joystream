@@ -50,7 +50,7 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 6;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
