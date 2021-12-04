@@ -118,16 +118,25 @@ impl<
         self
     }
 
-    /// Ensure NFT transaction can be canceled
-    pub fn ensure_transaction_can_be_canceled<T: Trait>(&self) -> DispatchResult {
-        match &self.transactional_status {
-            TransactionalStatus::Auction(auction) => {
-                // Ensure given auction can be canceled
-                auction.ensure_auction_can_be_canceled::<T>()
-            }
-            TransactionalStatus::Idle => Err(Error::<T>::NoPendingTransaction.into()),
-            _ => Ok(()),
-        }
+    /// Ensure NFT has pending offer
+    pub fn ensure_pending_offer_state<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(
+                self.transactional_status,
+                TransactionalStatus::InitiatedOfferToMember(..),
+            ),
+            Error::<T>::PendingOfferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure NFT is in BuyNow state
+    pub fn ensure_buy_now_state<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(self.transactional_status, TransactionalStatus::BuyNow(..),),
+            Error::<T>::NFTNotInBuyNowState
+        );
+        Ok(())
     }
 }
 
@@ -342,7 +351,7 @@ impl<
 
     /// Ensure caller is last bidder.
     pub fn ensure_caller_is_last_bidder<T: Trait>(&self, who: MemberId) -> DispatchResult {
-        ensure!(self.is_last_bidder(who), Error::<T>::CallerIsNotAWinner);
+        ensure!(self.is_last_bidder(who), Error::<T>::ActorIsNotALastBidder);
         Ok(())
     }
 
@@ -351,6 +360,15 @@ impl<
         ensure!(
             matches!(&self.auction_type, AuctionType::Open(_)),
             Error::<T>::IsNotOpenAuctionType
+        );
+        Ok(())
+    }
+
+    /// Ensure auction type is `English`
+    pub fn ensure_is_english_auction<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(&self.auction_type, AuctionType::English(_)),
+            Error::<T>::IsNotEnglishAuctionType
         );
         Ok(())
     }
@@ -382,7 +400,7 @@ impl<
         // ensure last bid exists
         let last_bid = self.ensure_last_bid_exists::<T>()?;
 
-        // Ensure caller is last bidder.
+        // ensure caller is last bidder.
         self.ensure_caller_is_last_bidder::<T>(who)?;
 
         // ensure bid lock duration expired
