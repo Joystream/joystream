@@ -1499,6 +1499,40 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
         }
 
+        /// Return NFT back to the original artist at no cost
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn sling_nft_back(
+            origin,
+            video_id: T::VideoId,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        ) {
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft owner
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure there is no pending offer or existing auction for given nft.
+            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Set nft owner to ChannelOwner
+            let nft = nft.set_owner(NFTOwner::ChannelOwner);
+            let video = video.set_nft_status(nft);
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::NftSlingedBackToTheOriginalArtist(video_id, owner_id));
+        }
+
         /// Accept incoming NFT offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_incoming_offer(
@@ -1897,5 +1931,6 @@ decl_event!(
         NFTSellOrderMade(VideoId, ContentActor, Balance),
         NFTBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
+        NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
     }
 );
