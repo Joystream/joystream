@@ -208,9 +208,7 @@ impl<
     > AuctionRecord<BlockNumber, Balance, MemberId, AccountId>
 {
     /// Create a new auction record with provided parameters
-    pub fn new<VideoId>(
-        auction_params: AuctionParams<VideoId, BlockNumber, Balance, MemberId>,
-    ) -> Self {
+    pub fn new(auction_params: AuctionParams<BlockNumber, Balance, MemberId>) -> Self {
         if let Some(starts_at) = auction_params.starts_at {
             Self {
                 starting_price: auction_params.starting_price,
@@ -278,7 +276,7 @@ impl<
                 auction_duration,
             }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
-                *auction_duration = *auction_duration + *extension_period;
+                *auction_duration += *extension_period;
                 true
             }
             _ => false,
@@ -449,9 +447,8 @@ pub type Nft<T> = OwnedNFT<
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
-    pub video_id: VideoId,
-    /// Auction type (either english or open)
+pub struct AuctionParams<BlockNumber, Balance, MemberId: Ord> {
+    // Auction type (either english or open)
     pub auction_type: AuctionType<BlockNumber>,
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,
@@ -491,5 +488,6 @@ pub struct EnglishAuctionDetails<BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct OpenAuctionDetails<BlockNumber> {
+    // bid lock duration
     pub bid_lock_duration: BlockNumber,
 }

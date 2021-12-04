@@ -6,23 +6,6 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-fn create_member_channel() -> ChannelId {
-    let channel_id = Content::next_channel_id();
-
-    // Member can create the channel
-    assert_ok!(Content::create_channel(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
-            reward_account: None,
-        }
-    ));
-
-    channel_id
-}
-
 #[test]
 fn video_creation_successful() {
     with_default_mock_builder(|| {
@@ -47,26 +30,7 @@ fn video_creation_successful() {
             Ok(()),
         );
 
-        let params = VideoCreationParametersRecord {
-            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                object_creation_list: vec![
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"first".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"second".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"third".to_vec(),
-                    },
-                ],
-                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-            }),
-            meta: b"test".to_vec(),
-        };
+        let params = get_video_creation_parameters();
 
         create_video_mock(
             FIRST_MEMBER_ORIGIN,
@@ -101,26 +65,7 @@ fn video_update_successful() {
             Ok(()),
         );
 
-        let params = VideoCreationParametersRecord {
-            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                object_creation_list: vec![
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"first".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"second".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"third".to_vec(),
-                    },
-                ],
-                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-            }),
-            meta: b"test".to_vec(),
-        };
+        let params = get_video_creation_parameters();
 
         let video_id = Content::next_video_id();
 
@@ -266,6 +211,48 @@ fn member_can_create_videos() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 video_id
             ))
+        );
+    })
+}
+
+#[test]
+fn delete_video_nft_is_issued() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+        let channel_id = create_member_channel();
+
+        let video_id = Content::next_video_id();
+
+        // Create a video
+        assert_ok!(Content::create_video(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            VideoCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
+                meta: b"metablob".to_vec(),
+            }
+        ));
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            None,
+            b"metablob".to_vec(),
+            None
+        ));
+
+        // Make an attempt to delete a video, which has an nft issued already.
+        assert_err!(
+            Content::delete_video(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Member(FIRST_MEMBER_ID),
+                video_id
+            ),
+            Error::<Test>::NFTAlreadyExists
         );
     })
 }

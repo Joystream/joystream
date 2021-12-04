@@ -74,6 +74,34 @@ fn successful_channel_deletion() {
             Ok(()),
         );
 
+        let params = get_video_creation_parameters();
+
+        let video_id = NextVideoId::<Test>::get();
+
+        // Create simple video using member actor
+        create_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            params,
+            Ok(()),
+        );
+
+        // attempt to delete channel with non zero videos
+        delete_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            Err(Error::<Test>::ChannelContainsVideos.into()),
+        );
+
+        // delete video
+        assert_ok!(Content::delete_video(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id
+        ));
+
         // successful deletion
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,

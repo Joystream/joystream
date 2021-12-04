@@ -187,6 +187,9 @@ decl_storage! {
 
         /// Max delta between current block and starts at
         pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
+
+        /// Max nft auction whitelist length
+        pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
     }
 }
 
@@ -1104,10 +1107,9 @@ decl_module! {
         pub fn start_nft_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
+            video_id: T::VideoId,
+            auction_params: AuctionParams<T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
-            let video_id = auction_params.video_id;
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1142,7 +1144,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionStarted(owner_id, auction_params));
+            Self::deposit_event(RawEvent::AuctionStarted(owner_id, video_id, auction_params));
         }
 
         // Cancel video nft auction
@@ -1254,7 +1256,6 @@ decl_module! {
             participant_id: T::MemberId,
             video_id: T::VideoId,
             bid: BalanceOf<T>,
-            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1311,7 +1312,7 @@ decl_module! {
                     VideoById::<T>::insert(video_id, video);
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
+                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id));
                 }
                 _ => {
                     // Make auction bid & update auction data
@@ -1327,7 +1328,7 @@ decl_module! {
                     VideoById::<T>::insert(video_id, video);
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata, is_extended));
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, is_extended));
                 }
             }
         }
@@ -1380,7 +1381,6 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
-            metadata: Metadata,
         ) {
             // Authorize member under given member id
             let account_id = ensure_signed(origin)?;
@@ -1417,7 +1417,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id, metadata));
+            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
         }
 
         /// Accept open auction bid
@@ -1427,7 +1427,6 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            metadata: Metadata,
         ) {
 
             // Ensure given video exists
@@ -1461,7 +1460,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, metadata));
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
         }
 
         /// Offer NFT
@@ -1505,12 +1504,8 @@ decl_module! {
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
-            recipient_id: MemberId<T>,
         ) {
-
-            // Authorize participant under given member id
             let receiver_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&recipient_id, &receiver_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1519,7 +1514,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure new pending offer is available to proceed
-            Self::ensure_new_pending_offer_available_to_proceed(&nft, recipient_id, &receiver_account_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
             let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
 
@@ -1534,7 +1529,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferAccepted(video_id, recipient_id));
+            Self::deposit_event(RawEvent::OfferAccepted(video_id));
         }
 
         /// Sell NFT
@@ -1578,7 +1573,6 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
-            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1601,13 +1595,13 @@ decl_module! {
             //
 
             // Buy nft
-            let nft = Self::buy_now(nft, owner_account_id, participant_account_id, participant_id);
+            let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id, metadata));
+            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
         }
     }
 }
@@ -1771,12 +1765,8 @@ decl_event!(
         Channel = Channel<T>,
         DataObjectId = <T as storage::Trait>::DataObjectId,
         IsCensored = bool,
-        AuctionParams = AuctionParams<
-            <T as Trait>::VideoId,
-            <T as frame_system::Trait>::BlockNumber,
-            BalanceOf<T>,
-            MemberId<T>,
-        >,
+        AuctionParams =
+            AuctionParams<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>,
         Balance = BalanceOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
@@ -1887,7 +1877,7 @@ decl_event!(
         ChannelDeleted(ContentActor, ChannelId),
 
         // NFT auction
-        AuctionStarted(ContentActor, AuctionParams),
+        AuctionStarted(ContentActor, VideoId, AuctionParams),
         NftIssued(
             ContentActor,
             VideoId,
@@ -1895,18 +1885,17 @@ decl_event!(
             Metadata,
             Option<MemberId>,
         ),
-        AuctionBidMade(MemberId, VideoId, Balance, Metadata, IsExtended),
+        AuctionBidMade(MemberId, VideoId, Balance, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
-        AuctionCompleted(MemberId, VideoId, Metadata),
-        BidMadeCompletingAuction(MemberId, VideoId, Metadata),
-        OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
+        EnglishAuctionCompleted(MemberId, VideoId),
+        BidMadeCompletingAuction(MemberId, VideoId),
+        OpenAuctionBidAccepted(ContentActor, VideoId),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
-        TransactionCanceled(VideoId, ContentActor),
-        OfferAccepted(VideoId, MemberId),
+        OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
         NFTSellOrderMade(VideoId, ContentActor, Balance),
-        NFTBought(VideoId, MemberId, Metadata),
+        NFTBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
     }
 );

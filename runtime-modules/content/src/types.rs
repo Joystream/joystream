@@ -133,7 +133,7 @@ pub struct ChannelCreationParametersRecord<NewAssets, AccountId> {
     /// Asset collection for the channel, referenced by metadata
     pub assets: NewAssets,
     /// Metadata about the channel.
-    meta: Vec<u8>,
+    pub meta: Vec<u8>,
     /// optional reward account
     pub reward_account: Option<AccountId>,
 }
@@ -148,7 +148,7 @@ pub struct ChannelUpdateParametersRecord<NewAssets, AccountId> {
     /// Asset collection for the channel, referenced by metadata    
     pub assets: Option<NewAssets>,
     /// If set, metadata update for the channel.
-    new_meta: Option<Vec<u8>>,
+    pub new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     pub reward_account: Option<Option<AccountId>>,
 }
@@ -162,7 +162,7 @@ pub type ChannelUpdateParameters<T> =
 pub struct VideoCategoryUpdateParameters {
     // Because it is the only field it is not an Option
     /// Metadata update for the video category.
-    new_meta: Vec<u8>,
+    pub new_meta: Vec<u8>,
 }
 
 /// Information regarding the content being uploaded
@@ -183,7 +183,7 @@ pub struct VideoCreationParametersRecord<NewAssets> {
     /// Asset collection for the video
     pub assets: NewAssets,
     /// Metadata for the video.
-    meta: Vec<u8>,
+    pub meta: Vec<u8>,
 }
 
 pub type VideoCreationParameters<T> = VideoCreationParametersRecord<NewAssets<T>>;
@@ -195,7 +195,7 @@ pub struct VideoUpdateParametersRecord<NewAssets> {
     /// Assets referenced by metadata
     pub assets: Option<NewAssets>,
     /// If set, metadata update for the video.
-    new_meta: Option<Vec<u8>>,
+    pub new_meta: Option<Vec<u8>>,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<NewAssets<T>>;
@@ -205,7 +205,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<NewAssets<T>>;
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistCreationParameters {
     /// Metadata about the playlist.
-    meta: Vec<u8>,
+    pub meta: Vec<u8>,
 }
 
 /// Information about the playlist being updated.
@@ -214,7 +214,7 @@ pub struct PlaylistCreationParameters {
 pub struct PlaylistUpdateParameters {
     // It is the only field so its not an Option
     /// Metadata update for the playlist.
-    new_meta: Vec<u8>,
+    pub new_meta: Vec<u8>,
 }
 
 /// A playlist is an ordered collection of videos.
@@ -248,7 +248,7 @@ pub struct SeasonParameters<VideoId, NewAssets> {
     /// Will truncate existing season when length of new_episodes is less than previously set.
     episodes: Option<Vec<Option<EpisodeParameters<VideoId, NewAssets>>>>,
 
-    meta: Option<Vec<u8>>,
+    pub meta: Option<Vec<u8>>,
 }
 
 /// Information about the series being created or updated.
@@ -385,7 +385,7 @@ impl<
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.nft_status.is_none(), Error::<T>::NFTDoesNotExist);
+        ensure!(self.nft_status.is_none(), Error::<T>::NFTAlreadyExists);
         Ok(())
     }
 
@@ -396,7 +396,7 @@ impl<
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.to_owned())
         } else {
-            Err(Error::<T>::NFTAlreadyExists)
+            Err(Error::<T>::NFTDoesNotExist)
         }
     }
 
