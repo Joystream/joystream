@@ -35,7 +35,7 @@ const PaginationBox = styled.div`
 function ProposalPreviewList ({ bestNumber, historical }: ProposalPreviewListProps) {
   const { pathname } = useLocation();
   const transport = useTransport();
-  const [activeFilter, setActiveFilter] = useState<ProposalStatusFilter>('All');
+  const [activeFilter, setActiveFilter] = useState<ProposalStatusFilter>('Active');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [proposalsBatch, error, loading] = usePromise<ProposalsBatch | undefined>(
     () => historical
