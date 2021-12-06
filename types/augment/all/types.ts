@@ -416,17 +416,23 @@ export interface DistributionBucket extends Struct {
 
 /** @name DistributionBucketFamily */
 export interface DistributionBucketFamily extends Struct {
-  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketState>;
+  readonly next_distribution_bucket_index: DistributionBucketIndex;
 }
 
 /** @name DistributionBucketFamilyId */
 export interface DistributionBucketFamilyId extends u64 {}
 
 /** @name DistributionBucketId */
-export interface DistributionBucketId extends u64 {}
+export interface DistributionBucketId extends Struct {
+  readonly distribution_bucket_family_id: DistributionBucketFamilyId;
+  readonly distribution_bucket_index: DistributionBucketIndex;
+}
 
-/** @name DistributionBucketIdSet */
-export interface DistributionBucketIdSet extends BTreeSet<DistributionBucketId> {}
+/** @name DistributionBucketIndex */
+export interface DistributionBucketIndex extends u64 {}
+
+/** @name DistributionBucketIndexSet */
+export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketIndex> {}
 
 /** @name DistributionBucketState */
 export interface DistributionBucketState extends Struct {
