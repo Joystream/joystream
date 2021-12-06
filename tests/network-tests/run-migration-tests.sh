@@ -29,21 +29,19 @@ source ./.env
 function fork_off_init() {
     # chain-spec-raw already existing
 
-    if ! [[ -f $(pwd)/storage.json ]]; then
+    if ! [[ -f ${DATA_PATH}/storage.json ]]; then
 	curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
 	     "Content-type: application/json" -d \
 	     '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
-	     > storage.json	
+	     > ${DATA_PATH}/storage.json	
     fi
-	cp $(pwd)/storage.json ${DATA_PATH}/storage.json    
 
     if ! [[ -f ${DATA_PATH}/schema.json ]]; then
-	cp $(pwd)/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
+	cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
     fi
 
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
     docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
-#    cat ${DATA_PATH}/runtime.wasm | hexdump -ve '/1 "%02x"\' > ${DATA_PATH}/runtime.hex
     
     yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
