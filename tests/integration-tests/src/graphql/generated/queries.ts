@@ -1,6 +1,10 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type GetCurrentCouncilMembersQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetCurrentCouncilMembersQuery = { electedCouncils: Array<{ councilMembers: Array<{ id: string }> }> }
+
 export type ForumCategoryFieldsFragment = {
   id: string
   createdAt: any
@@ -3614,6 +3618,15 @@ export const BudgetSpendingEventFields = gql`
     reciever
     amount
     rationale
+  }
+`
+export const GetCurrentCouncilMembers = gql`
+  query getCurrentCouncilMembers {
+    electedCouncils(where: { endedAtBlock_eq: null }) {
+      councilMembers {
+        id
+      }
+    }
   }
 `
 export const GetCategoriesByIds = gql`

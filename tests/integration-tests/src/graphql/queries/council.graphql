@@ -1,0 +1,6 @@
+
+query getCurrentCouncilMembers {
+    electedCouncils(where: { endedAtBlock_eq: null }) {
+        councilMembers { id }
+    }
+}
