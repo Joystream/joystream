@@ -6,12 +6,12 @@ cd $SCRIPT_PATH
 
 CONTAINER_ID=$(./run-test-node-docker.sh)
 
-# function cleanup() {
-#     docker logs ${CONTAINER_ID} --tail 15
-#     docker-compose -f ../../docker-compose.yml down -v
-# }
+function cleanup() {
+    docker logs ${CONTAINER_ID} --tail 15
+    docker-compose -f ../../docker-compose.yml down -v
+}
 
-# trap cleanup EXIT
+trap cleanup EXIT
 
 sleep 3
 

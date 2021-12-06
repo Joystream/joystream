@@ -16,6 +16,11 @@ export class JoystreamCLI extends CLI {
     this.tmpFileManager = tmpFileManager
   }
 
+  async init(): Promise<void> {
+    await this.run('api:setUri', [process.env.NODE_URL || 'ws://127.0.0.1:9944'])
+    await this.run('api:setQueryNodeEndpoint', [process.env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'])
+  }
+
   async importKey(pair: KeyringPair): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(pair.toJson())
     await this.run('account:import', [jsonFile])
