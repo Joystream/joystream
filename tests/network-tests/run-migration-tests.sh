@@ -285,8 +285,10 @@ function main {
     echo "***** STARTING NODE WITH FORKED STATE *****"
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
     CONTAINER_ID=$(start_node)
-    
-    sleep 240
+
+    # 120 sec needed to load the chainspec + 480 sec in order to perform migration, given that
+    # a new block is produced every 6 sec
+    sleep 600
     
     # verify that the number of outstanding channels & videos == 0
     # if ( $POST_MIGRATION_CLI_ASSERTIONS ); then

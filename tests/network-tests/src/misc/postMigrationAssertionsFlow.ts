@@ -15,6 +15,7 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
     assert(video_migration.current_id.toNumber() == video_migration.final_id.toNumber())
 
     debug('Check all working groups have been correctly created')
+
     const wg_alpha = await api.query.operationsWorkingGroupAlpha.activeWorkerCount();
     const wg_beta = await api.query.operationsWorkingGroupBeta.activeWorkerCount();
     const wg_gamma = await api.query.operationsWorkingGroupGamma.activeWorkerCount();
@@ -41,11 +42,9 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
 
     const num_channels = await api.getNumberOfOutstandingChannels()
     const num_videos = await api.getNumberOfOutstandingVideos()
-    const num_categories = await api.getNumberOfOutstandingVideoCategories()
 
     assert(num_channels === 0);
     assert(num_videos === 0);
-    assert(num_categories === 0);
 
     debug('Done')
 }
