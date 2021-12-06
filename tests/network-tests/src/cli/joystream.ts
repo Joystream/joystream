@@ -12,7 +12,10 @@ export class JoystreamCLI extends CLI {
   protected tmpFileManager: TmpFileManager
 
   constructor(tmpFileManager: TmpFileManager) {
-    super(CLI_ROOT_PATH)
+    const defaultEnv = {
+      HOME: tmpFileManager.tmpDataDir,
+    }
+    super(CLI_ROOT_PATH, defaultEnv)
     this.tmpFileManager = tmpFileManager
   }
 
