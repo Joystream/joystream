@@ -5,6 +5,10 @@ import {
   GetDataObjectsByIdsQuery,
   GetDataObjectsByIdsQueryVariables,
   GetDataObjectsByIds,
+  ChannelFieldsFragment,
+  GetChannelById,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -98,6 +102,14 @@ export class QueryNodeApi {
   >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT]> {
     this.debugQuery(query, variables)
     return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+  }
+
+  public async channelById(id: string): Promise<Maybe<ChannelFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { id },
+      'channelByUniqueInput'
+    )
   }
 
   public async getDataObjectsByIds(ids: string[]): Promise<StorageDataObjectFieldsFragment[]> {

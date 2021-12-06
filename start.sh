@@ -27,7 +27,7 @@ docker-compose up -d joystream-node
 ## Init the chain with some state
 export SKIP_MOCK_CONTENT=true
 HOST_IP=$(tests/network-tests/get-host-ip.sh)
-export STORAGE_1_URL="http://${HOST_IP}:3333"
+export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
 ./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 

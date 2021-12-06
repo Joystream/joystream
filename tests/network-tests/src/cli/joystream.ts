@@ -1,23 +1,41 @@
 import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
-import { tmpJsonFile } from './utils'
+import { TmpFileManager } from './utils'
 import { ChannelInputParameters } from '@joystream/cli/src/Types'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
 export class JoystreamCLI extends CLI {
-  constructor() {
+  protected keys: string[] = []
+  protected chosenKey: string | undefined
+  protected tmpFileManager: TmpFileManager
+
+  constructor(tmpFileManager: TmpFileManager) {
     super(CLI_ROOT_PATH)
+    this.tmpFileManager = tmpFileManager
   }
 
-  async importKey(pair: KeyringPair): Promise<CommandResult> {
-    const jsonFile = tmpJsonFile(pair.toJson())
-    return this.run('account:import', [jsonFile])
+  async importKey(pair: KeyringPair): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(pair.toJson())
+    await this.run('account:import', [jsonFile])
+    this.keys.push(pair.address)
+  }
+
+  async chooseKey(address: string): Promise<void> {
+    if (!this.keys.includes(address)) {
+      throw new Error('Cannot choose a key that was not imported via JoystreamCLI.importKey!')
+    }
+    await this.run('account:choose', ['--address', address])
+    this.chosenKey = address
+  }
+
+  async run(command: string, customArgs: string[] = [], keyLocks?: string[]): Promise<CommandResult> {
+    return super.run(command, customArgs, keyLocks || (this.chosenKey ? [this.chosenKey] : []))
   }
 
   async createChannel(inputData: ChannelInputParameters, args: string[]): Promise<CommandResult> {
-    const jsonFile = tmpJsonFile(inputData)
+    const jsonFile = this.tmpFileManager.jsonFile(inputData)
     return this.run('content:createChannel', ['--input', jsonFile, ...args])
   }
 }

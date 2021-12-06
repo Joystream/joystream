@@ -49,6 +49,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const channelCreationParameters = createTypeFromConstructor(ChannelCreationParameters, {
       assets,
       meta: metadataToBytes(ChannelMetadata, meta),
+      reward_account: channelInput.rewardAccount,
     })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))

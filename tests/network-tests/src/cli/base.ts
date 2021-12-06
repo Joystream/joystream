@@ -17,16 +17,37 @@ export abstract class CLI {
     this.env = {
       ...process.env,
       AUTO_CONFIRM: 'true',
+      FORCE_COLOR: '0',
       ...defaultEnv,
     }
     this.defaultArgs = [...defaultArgs]
   }
 
-  async run(command: string, args: string[] = []): Promise<CommandResult> {
+  protected getArgs(customArgs: string[]): string[] {
+    return [...this.defaultArgs, ...customArgs]
+  }
+
+  protected getFlagStringValue(args: string[], flag: string, alias?: string): string | undefined {
+    const flagIndex = args.lastIndexOf(flag)
+    const aliasIndex = alias ? args.lastIndexOf(alias) : -1
+    const flagOrAliasIndex = Math.max(flagIndex, aliasIndex)
+    if (flagOrAliasIndex === -1) {
+      return undefined
+    }
+    const nextArg = args[flagOrAliasIndex + 1]
+    return nextArg
+  }
+
+  async run(command: string, customArgs: string[] = [], lockKeys: string[] = []): Promise<CommandResult> {
     const pExecFile = promisify(execFile)
     const { env } = this
-    const { stdout, stderr } = await Sender.asyncLock.acquire('tx-queue', () =>
-      pExecFile(this.binPath, [command, ...this.defaultArgs, ...args], { env, cwd: this.rootPath })
+    const { stdout, stderr } = await Sender.asyncLock.acquire(
+      lockKeys.map((k) => `nonce-${k}`),
+      () =>
+        pExecFile(this.binPath, [command, ...this.getArgs(customArgs)], {
+          env,
+          cwd: this.rootPath,
+        })
     )
     return { stdout, stderr, out: stdout.trim() }
   }

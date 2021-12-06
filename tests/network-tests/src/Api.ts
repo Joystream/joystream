@@ -55,11 +55,19 @@ type EventType<
   Method extends EventMethod<Section>
 > = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
 
+export type KeyGenInfo = {
+  start: number
+  final: number
+  custom: string[]
+}
+
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
   // number used as part of key derivation path
   private keyId = 0
+  // stores names of the created custom keys
+  private customKeys: string[] = []
   // mapping from account address to key id.
   // To be able to re-derive keypair externally when mini-secret is known.
   readonly addressesToKeyId: Map<string, number> = new Map()
@@ -122,26 +130,34 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const key = this.createCustomKeyPair(`${id}`)
+      const key = this.createKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
     return keys
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    const uri = `${this.miniSecret}//testing//${customPath}`
+  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+    if (isCustom) {
+      this.customKeys.push(suriPath)
+    }
+    const uri = `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
   }
 
-  public keyGenInfo(): { start: number; final: number } {
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    return this.createKeyPair(customPath, true)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
     const start = 0
     const final = this.keyId
     return {
       start,
       final,
+      custom: this.customKeys,
     }
   }
 
@@ -178,6 +194,10 @@ export class Api {
 
   public get query(): ApiPromise['query'] {
     return this.api.query
+  }
+
+  public get consts(): ApiPromise['consts'] {
+    return this.api.consts
   }
 
   public get tx(): ApiPromise['tx'] {
@@ -226,7 +246,7 @@ export class Api {
     return this.factory.createCustomKeyPair(path)
   }
 
-  public keyGenInfo(): { start: number; final: number } {
+  public keyGenInfo(): KeyGenInfo {
     return this.factory.keyGenInfo()
   }
 

@@ -195,7 +195,7 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiAuthTokenForUploading: async (tokenRequest?: TokenRequest, options: any = {}): Promise<RequestArgs> => {
+    filesApiAuthTokenForUploading: async (tokenRequest?: TokenRequest, options: any = {}): Promise<RequestArgs> => {
       const localVarPath = `/authToken`
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
@@ -226,9 +226,9 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiGetFile: async (id: string, options: any = {}): Promise<RequestArgs> => {
+    filesApiGetFile: async (id: string, options: any = {}): Promise<RequestArgs> => {
       // verify required parameter 'id' is not null or undefined
-      assertParamExists('publicApiGetFile', 'id', id)
+      assertParamExists('filesApiGetFile', 'id', id)
       const localVarPath = `/files/{id}`.replace(`{${'id'}}`, encodeURIComponent(String(id)))
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
@@ -256,9 +256,9 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiGetFileHeaders: async (id: string, options: any = {}): Promise<RequestArgs> => {
+    filesApiGetFileHeaders: async (id: string, options: any = {}): Promise<RequestArgs> => {
       // verify required parameter 'id' is not null or undefined
-      assertParamExists('publicApiGetFileHeaders', 'id', id)
+      assertParamExists('filesApiGetFileHeaders', 'id', id)
       const localVarPath = `/files/{id}`.replace(`{${'id'}}`, encodeURIComponent(String(id)))
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
@@ -289,7 +289,7 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiUploadFile: async (
+    filesApiUploadFile: async (
       dataObjectId: string,
       storageBucketId: string,
       bagId: string,
@@ -297,11 +297,11 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
       options: any = {}
     ): Promise<RequestArgs> => {
       // verify required parameter 'dataObjectId' is not null or undefined
-      assertParamExists('publicApiUploadFile', 'dataObjectId', dataObjectId)
+      assertParamExists('filesApiUploadFile', 'dataObjectId', dataObjectId)
       // verify required parameter 'storageBucketId' is not null or undefined
-      assertParamExists('publicApiUploadFile', 'storageBucketId', storageBucketId)
+      assertParamExists('filesApiUploadFile', 'storageBucketId', storageBucketId)
       // verify required parameter 'bagId' is not null or undefined
-      assertParamExists('publicApiUploadFile', 'bagId', bagId)
+      assertParamExists('filesApiUploadFile', 'bagId', bagId)
       const localVarPath = `/files`
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
@@ -362,11 +362,11 @@ export const FilesApiFp = function (configuration?: Configuration) {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    async publicApiAuthTokenForUploading(
+    async filesApiAuthTokenForUploading(
       tokenRequest?: TokenRequest,
       options?: any
     ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<InlineResponse2011>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiAuthTokenForUploading(tokenRequest, options)
+      const localVarAxiosArgs = await localVarAxiosParamCreator.filesApiAuthTokenForUploading(tokenRequest, options)
       return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
     },
     /**
@@ -375,11 +375,11 @@ export const FilesApiFp = function (configuration?: Configuration) {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    async publicApiGetFile(
+    async filesApiGetFile(
       id: string,
       options?: any
     ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFile(id, options)
+      const localVarAxiosArgs = await localVarAxiosParamCreator.filesApiGetFile(id, options)
       return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
     },
     /**
@@ -388,11 +388,11 @@ export const FilesApiFp = function (configuration?: Configuration) {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    async publicApiGetFileHeaders(
+    async filesApiGetFileHeaders(
       id: string,
       options?: any
     ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiGetFileHeaders(id, options)
+      const localVarAxiosArgs = await localVarAxiosParamCreator.filesApiGetFileHeaders(id, options)
       return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
     },
     /**
@@ -404,14 +404,14 @@ export const FilesApiFp = function (configuration?: Configuration) {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    async publicApiUploadFile(
+    async filesApiUploadFile(
       dataObjectId: string,
       storageBucketId: string,
       bagId: string,
       file?: any,
       options?: any
     ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<InlineResponse201>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.publicApiUploadFile(
+      const localVarAxiosArgs = await localVarAxiosParamCreator.filesApiUploadFile(
         dataObjectId,
         storageBucketId,
         bagId,
@@ -436,10 +436,8 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any): AxiosPromise<InlineResponse2011> {
-      return localVarFp
-        .publicApiAuthTokenForUploading(tokenRequest, options)
-        .then((request) => request(axios, basePath))
+    filesApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any): AxiosPromise<InlineResponse2011> {
+      return localVarFp.filesApiAuthTokenForUploading(tokenRequest, options).then((request) => request(axios, basePath))
     },
     /**
      * Returns a media file.
@@ -447,8 +445,8 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiGetFile(id: string, options?: any): AxiosPromise<any> {
-      return localVarFp.publicApiGetFile(id, options).then((request) => request(axios, basePath))
+    filesApiGetFile(id: string, options?: any): AxiosPromise<any> {
+      return localVarFp.filesApiGetFile(id, options).then((request) => request(axios, basePath))
     },
     /**
      * Returns a media file headers.
@@ -456,8 +454,8 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiGetFileHeaders(id: string, options?: any): AxiosPromise<void> {
-      return localVarFp.publicApiGetFileHeaders(id, options).then((request) => request(axios, basePath))
+    filesApiGetFileHeaders(id: string, options?: any): AxiosPromise<void> {
+      return localVarFp.filesApiGetFileHeaders(id, options).then((request) => request(axios, basePath))
     },
     /**
      * Upload data
@@ -468,7 +466,7 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    publicApiUploadFile(
+    filesApiUploadFile(
       dataObjectId: string,
       storageBucketId: string,
       bagId: string,
@@ -476,7 +474,7 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
       options?: any
     ): AxiosPromise<InlineResponse201> {
       return localVarFp
-        .publicApiUploadFile(dataObjectId, storageBucketId, bagId, file, options)
+        .filesApiUploadFile(dataObjectId, storageBucketId, bagId, file, options)
         .then((request) => request(axios, basePath))
     },
   }
@@ -496,9 +494,9 @@ export class FilesApi extends BaseAPI {
    * @throws {RequiredError}
    * @memberof FilesApi
    */
-  public publicApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any) {
+  public filesApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any) {
     return FilesApiFp(this.configuration)
-      .publicApiAuthTokenForUploading(tokenRequest, options)
+      .filesApiAuthTokenForUploading(tokenRequest, options)
       .then((request) => request(this.axios, this.basePath))
   }
 
@@ -509,9 +507,9 @@ export class FilesApi extends BaseAPI {
    * @throws {RequiredError}
    * @memberof FilesApi
    */
-  public publicApiGetFile(id: string, options?: any) {
+  public filesApiGetFile(id: string, options?: any) {
     return FilesApiFp(this.configuration)
-      .publicApiGetFile(id, options)
+      .filesApiGetFile(id, options)
       .then((request) => request(this.axios, this.basePath))
   }
 
@@ -522,9 +520,9 @@ export class FilesApi extends BaseAPI {
    * @throws {RequiredError}
    * @memberof FilesApi
    */
-  public publicApiGetFileHeaders(id: string, options?: any) {
+  public filesApiGetFileHeaders(id: string, options?: any) {
     return FilesApiFp(this.configuration)
-      .publicApiGetFileHeaders(id, options)
+      .filesApiGetFileHeaders(id, options)
       .then((request) => request(this.axios, this.basePath))
   }
 
@@ -538,9 +536,9 @@ export class FilesApi extends BaseAPI {
    * @throws {RequiredError}
    * @memberof FilesApi
    */
-  public publicApiUploadFile(dataObjectId: string, storageBucketId: string, bagId: string, file?: any, options?: any) {
+  public filesApiUploadFile(dataObjectId: string, storageBucketId: string, bagId: string, file?: any, options?: any) {
     return FilesApiFp(this.configuration)
-      .publicApiUploadFile(dataObjectId, storageBucketId, bagId, file, options)
+      .filesApiUploadFile(dataObjectId, storageBucketId, bagId, file, options)
       .then((request) => request(this.axios, this.basePath))
   }
 }

@@ -1,11 +1,12 @@
 import path from 'path'
-import { CLI } from './base'
+import { CLI, CommandResult } from './base'
 import { spawn } from 'child_process'
 import { v4 as uuid } from 'uuid'
 import { WorkerId } from '@joystream/types/working-group'
 import os from 'os'
 import { ProcessManager } from './utils'
 import fs from 'fs'
+import { Keyring } from '@polkadot/keyring'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../storage-node-v2')
 
@@ -16,6 +17,16 @@ export class StorageCLI extends CLI {
 
   setDefaultSuri(defaultSuri: string): void {
     this.defaultArgs = ['--accountUri', defaultSuri]
+  }
+
+  async run(command: string, customArgs: string[] = []): Promise<CommandResult> {
+    const args = this.getArgs(customArgs)
+    const accountUri = this.getFlagStringValue(args, '--accountUri', '-y')
+    if (!accountUri) {
+      throw new Error('Missing accountUri')
+    }
+    const accountKey = new Keyring({ type: 'sr25519' }).createFromUri(accountUri).address
+    return super.run(command, args, [accountKey])
   }
 
   async spawnServer(

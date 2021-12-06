@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Distributor node API
- * Distributor node API
+ * Distributor node public API
+ * Distributor node public API
  *
  * The version of the OpenAPI document: 0.1.0
  * Contact: info@joystream.org

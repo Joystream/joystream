@@ -1,5 +1,4 @@
-import os from 'os'
-import fs from 'fs'
+import fs, { mkdirSync, rmSync } from 'fs'
 import path from 'path'
 import { v4 as uuid } from 'uuid'
 import { ChildProcessWithoutNullStreams } from 'child_process'
@@ -8,18 +7,34 @@ import _ from 'lodash'
 import bmp from 'bmp-js'
 import nodeCleanup from 'node-cleanup'
 
-export function tmpJsonFile(value: unknown): string {
-  const tmpFilePath = path.join(os.tmpdir(), `${uuid()}.json`)
-  fs.writeFileSync(tmpFilePath, JSON.stringify(value))
-  return tmpFilePath
-}
+export class TmpFileManager {
+  tmpDataDir: string
 
-export function randomImgFile(width: number, height: number): string {
-  const data = Buffer.from(Array.from({ length: width * height * 3 }, () => _.random(0, 255)))
-  const rawBmp = bmp.encode({ width, height, data })
-  const tmpFilePath = path.join(os.tmpdir(), `${uuid()}.bmp`)
-  fs.writeFileSync(tmpFilePath, rawBmp.data)
-  return tmpFilePath
+  constructor(baseDir?: string) {
+    this.tmpDataDir = path.join(
+      baseDir || process.env.DATA_PATH || path.join(__filename, '../../../data'),
+      'joystream-testing',
+      uuid()
+    )
+    mkdirSync(this.tmpDataDir, { recursive: true })
+    nodeCleanup(() => {
+      rmSync(this.tmpDataDir, { recursive: true, force: true })
+    })
+  }
+
+  public jsonFile(value: unknown): string {
+    const tmpFilePath = path.join(this.tmpDataDir, `${uuid()}.json`)
+    fs.writeFileSync(tmpFilePath, JSON.stringify(value))
+    return tmpFilePath
+  }
+
+  public randomImgFile(width: number, height: number): string {
+    const data = Buffer.from(Array.from({ length: width * height * 3 }, () => _.random(0, 255)))
+    const rawBmp = bmp.encode({ width, height, data })
+    const tmpFilePath = path.join(this.tmpDataDir, `${uuid()}.bmp`)
+    fs.writeFileSync(tmpFilePath, rawBmp.data)
+    return tmpFilePath
+  }
 }
 
 type OutputType = 'stdout' | 'stderr'

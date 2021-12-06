@@ -1,13 +1,16 @@
 import path from 'path'
 import { spawn } from 'child_process'
 import { DistributorNodeConfiguration } from '@joystream/distributor-cli/src/types/generated/ConfigJson'
-import { CLI } from './base'
+import { CLI, CommandResult } from './base'
 import { WorkerId } from '@joystream/types/working-group'
 import { ProcessManager } from './utils'
+import Keyring from '@polkadot/keyring'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../distributor-node')
 
 export class DistributorCLI extends CLI {
+  protected keys: string[]
+
   constructor(keyUris: string[]) {
     const keys: DistributorNodeConfiguration['keys'] = keyUris.map((suri) => ({
       suri,
@@ -16,6 +19,13 @@ export class DistributorCLI extends CLI {
       JOYSTREAM_DISTRIBUTOR__KEYS: JSON.stringify(keys),
     }
     super(CLI_ROOT_PATH, defaultEnv)
+    const keyring = new Keyring({ type: 'sr25519' })
+    keyUris.forEach((uri) => keyring.addFromUri(uri))
+    this.keys = keyring.getPairs().map((p) => p.address)
+  }
+
+  async run(command: string, customArgs: string[] = [], keyLocks?: string[]): Promise<CommandResult> {
+    return super.run(command, customArgs, keyLocks || this.keys)
   }
 
   async spawnServer(

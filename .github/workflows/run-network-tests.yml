@@ -140,7 +140,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: tests/network-tests/run-tests.sh full
+        run: tests/network-tests/run-full-tests.sh
 
   new_chain_setup:
     name: Initialize new chain

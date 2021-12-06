@@ -2,10 +2,8 @@ import assignCouncil from '../flows/council/assign'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import mockContentFlow from '../misc/mockContentFlow'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
-import initStorage, { defaultSingleBucketConfig as defaultStorageConfig } from '../flows/storagev2/initStorage'
-import initDistribution, {
-  defaultSingleBucketConfig as defaultDistributionConfig,
-} from '../flows/storagev2/initDistribution'
+import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flows/storagev2/initStorage'
+import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storagev2/initDistribution'
 import { AllWorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 

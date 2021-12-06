@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Distributor node API
- * Distributor node API
+ * Distributor node public API
+ * Distributor node public API
  *
  * The version of the OpenAPI document: 0.1.0
  * Contact: info@joystream.org
@@ -127,10 +127,10 @@ export interface StatusResponse {
 }
 
 /**
- * PublicApi - axios parameter creator
+ * DefaultApi - axios parameter creator
  * @export
  */
-export const PublicApiAxiosParamCreator = function (configuration?: Configuration) {
+export const DefaultApiAxiosParamCreator = function (configuration?: Configuration) {
   return {
     /**
      * Returns a media file.
@@ -141,7 +141,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
     publicAsset: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
       // verify required parameter 'objectId' is not null or undefined
       assertParamExists('publicAsset', 'objectId', objectId)
-      const localVarPath = `/asset/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
+      const localVarPath = `/assets/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
       let baseOptions
@@ -171,7 +171,7 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
     publicAssetHead: async (objectId: string, options: any = {}): Promise<RequestArgs> => {
       // verify required parameter 'objectId' is not null or undefined
       assertParamExists('publicAssetHead', 'objectId', objectId)
-      const localVarPath = `/asset/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
+      const localVarPath = `/assets/{objectId}`.replace(`{${'objectId'}}`, encodeURIComponent(String(objectId)))
       // use dummy base URL string because the URL constructor only accepts absolute URLs.
       const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
       let baseOptions
@@ -250,11 +250,11 @@ export const PublicApiAxiosParamCreator = function (configuration?: Configuratio
 }
 
 /**
- * PublicApi - functional programming interface
+ * DefaultApi - functional programming interface
  * @export
  */
-export const PublicApiFp = function (configuration?: Configuration) {
-  const localVarAxiosParamCreator = PublicApiAxiosParamCreator(configuration)
+export const DefaultApiFp = function (configuration?: Configuration) {
+  const localVarAxiosParamCreator = DefaultApiAxiosParamCreator(configuration)
   return {
     /**
      * Returns a media file.
@@ -308,11 +308,11 @@ export const PublicApiFp = function (configuration?: Configuration) {
 }
 
 /**
- * PublicApi - factory interface
+ * DefaultApi - factory interface
  * @export
  */
-export const PublicApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-  const localVarFp = PublicApiFp(configuration)
+export const DefaultApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+  const localVarFp = DefaultApiFp(configuration)
   return {
     /**
      * Returns a media file.
@@ -352,21 +352,21 @@ export const PublicApiFactory = function (configuration?: Configuration, basePat
 }
 
 /**
- * PublicApi - object-oriented interface
+ * DefaultApi - object-oriented interface
  * @export
- * @class PublicApi
+ * @class DefaultApi
  * @extends {BaseAPI}
  */
-export class PublicApi extends BaseAPI {
+export class DefaultApi extends BaseAPI {
   /**
    * Returns a media file.
    * @param {string} objectId Data Object ID
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
-   * @memberof PublicApi
+   * @memberof DefaultApi
    */
   public publicAsset(objectId: string, options?: any) {
-    return PublicApiFp(this.configuration)
+    return DefaultApiFp(this.configuration)
       .publicAsset(objectId, options)
       .then((request) => request(this.axios, this.basePath))
   }
@@ -376,10 +376,10 @@ export class PublicApi extends BaseAPI {
    * @param {string} objectId Data Object ID
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
-   * @memberof PublicApi
+   * @memberof DefaultApi
    */
   public publicAssetHead(objectId: string, options?: any) {
-    return PublicApiFp(this.configuration)
+    return DefaultApiFp(this.configuration)
       .publicAssetHead(objectId, options)
       .then((request) => request(this.axios, this.basePath))
   }
@@ -388,10 +388,10 @@ export class PublicApi extends BaseAPI {
    * Returns list of distributed buckets
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
-   * @memberof PublicApi
+   * @memberof DefaultApi
    */
   public publicBuckets(options?: any) {
-    return PublicApiFp(this.configuration)
+    return DefaultApiFp(this.configuration)
       .publicBuckets(options)
       .then((request) => request(this.axios, this.basePath))
   }
@@ -400,10 +400,10 @@ export class PublicApi extends BaseAPI {
    * Returns json object describing current node status.
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
-   * @memberof PublicApi
+   * @memberof DefaultApi
    */
   public publicStatus(options?: any) {
-    return PublicApiFp(this.configuration)
+    return DefaultApiFp(this.configuration)
       .publicStatus(options)
       .then((request) => request(this.axios, this.basePath))
   }

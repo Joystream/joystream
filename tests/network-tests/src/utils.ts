@@ -63,4 +63,10 @@ export class Utils {
     // We use `toObject()` to get rid of .prototype defaults for optional fields
     return metaToObject(metaClass, metaClass.decode(bytes.toU8a(true)))
   }
+
+  public static assert(condition: any, msg?: string): asserts condition {
+    if (!condition) {
+      throw new Error(msg || 'Assertion failed')
+    }
+  }
 }
