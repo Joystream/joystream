@@ -210,7 +210,7 @@ export interface Channel extends Struct {
   readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
-  readonly deletion_prize_source_account_id: GenericAccountId;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCategory */
@@ -237,6 +237,7 @@ export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCurationStatus */
@@ -273,6 +274,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -309,6 +311,8 @@ export interface ContentActor extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
+  readonly isCollaborator: boolean;
+  readonly asCollaborator: MemberId;
 }
 
 /** @name ContentIdSet */
