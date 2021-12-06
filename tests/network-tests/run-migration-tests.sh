@@ -304,4 +304,4 @@ function main {
 
 # main entrypoint
 main
-#cleanup
+cleanup
