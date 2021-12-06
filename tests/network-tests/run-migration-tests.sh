@@ -290,13 +290,6 @@ function main {
     # a new block is produced every 6 sec
     sleep 600
     
-    # verify that the number of outstanding channels & videos == 0
-    # if ( $POST_MIGRATION_CLI_ASSERTIONS ); then
-    # 	# verify assertion using cli
-    # 	echo "***** POST MIGRATION CLI *****"
-    # 	post_migration_cli
-    # fi
-    
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
 	# verify assertion using typsecript
 	echo "***** POST MIGRATION TYPESCRIPT *****"	
