@@ -34,9 +34,9 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
     const nextVideoId = await api.query.content.nextVideoId()
     const nextChannelId = await api.query.content.nextChannelId()
 
-    assert(nextVideoCategoryId.toNumber() > 1);
-    assert(nextVideoId.toNumber() > 1);
-    assert(nextChannelId.toNumber() > 1);
+    assert(nextVideoCategoryId.toNumber().gt(1));
+    assert(nextVideoId.toNumber().gt(1));
+    assert(nextChannelId.toNumber().gt(1));
 
     debug('Checking that number of outstanding channels & videos == 0');
 
