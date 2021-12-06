@@ -159,7 +159,6 @@ export type IStorageBucket = {
   operator_status: StorageBucketOperatorStatus
   accepting_new_bags: bool
   voucher: Voucher
-  metadata: Bytes
 }
 
 export class StorageBucket
@@ -167,7 +166,6 @@ export class StorageBucket
     operator_status: StorageBucketOperatorStatus,
     accepting_new_bags: bool,
     voucher: Voucher,
-    metadata: Bytes,
   })
   implements IStorageBucket {}
 
