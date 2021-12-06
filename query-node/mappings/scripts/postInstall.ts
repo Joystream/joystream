@@ -1,35 +1,45 @@
 // A script to be executed post query-node install, that may include workarounds in Hydra node_modules
-import fs from 'fs'
 import path from 'path'
+import { replaceInFile } from './utils'
 
 // FIXME: Temporarly remove broken sanitizeNullCharacter call
 const subscribersJsPath = path.resolve(
   __dirname,
   '../../../node_modules/@joystream/hydra-processor/lib/db/subscribers.js'
 )
-const subscribersJsContent = fs.readFileSync(subscribersJsPath).toString()
-fs.writeFileSync(
-  subscribersJsPath,
-  subscribersJsContent.replace(/sanitizeNullCharacter\(entity, field\);/g, '//sanitizeNullCharacter(entity, field)')
-)
+replaceInFile({
+  filePath: subscribersJsPath,
+  regex: /sanitizeNullCharacter\(entity, field\);/g,
+  newContent: '//sanitizeNullCharacter(entity, field)',
+})
 
 // FIXME: Temporarly replace broken relations resolution in @joystream/warthog
 const dataLoaderJsPath = path.resolve(
   __dirname,
   '../../../node_modules/@joystream/warthog/dist/middleware/DataLoaderMiddleware.js'
 )
-const dataLoaderJsContent = fs.readFileSync(dataLoaderJsPath).toString()
-const dataLoaderJsContentLines = dataLoaderJsContent.split('\n')
-dataLoaderJsContentLines.splice(
-  dataLoaderJsContentLines.findIndex((l) => l.match(/return context\.connection\.relationIdLoader/)),
-  0,
-  `return Promise.all(
+replaceInFile({
+  filePath: dataLoaderJsPath,
+  regex: /return context\.connection\.relationIdLoader[\s\S]+return group\.related;\s+\}\);\s+\}\)/,
+  newContent: `return Promise.all(
     entities.map(entity => context.connection.relationLoader.load(relation, entity))
   ).then(function (results) {
     return results.map(function (related) {
       return (relation.isManyToOne || relation.isOneToOne) ? related[0] : related
     })
-  })
-  `
-)
-fs.writeFileSync(dataLoaderJsPath, dataLoaderJsContentLines.join('\n'))
+  })`,
+})
+
+// FIXME: Temporary fix for "table name x specified more than once"
+const baseServiceJsPath = path.resolve(__dirname, '../../../node_modules/@joystream/warthog/dist/core/BaseService.js')
+replaceInFile({
+  filePath: baseServiceJsPath,
+  regex: /function common\(parameters, localIdColumn, foreignTableName, foreignColumnMap, foreignColumnName\) \{[^}]+\}/,
+  newContent: `function common(parameters, localIdColumn, foreignTableName, foreignColumnMap, foreignColumnName) {
+    const uuid = require('uuid/v4')
+    const foreignTableAlias = uuid().replace('-', '')
+    var foreingIdColumn = "\\"" + foreignTableAlias + "\\".\\"" + foreignColumnMap[foreignColumnName] + "\\"";
+    parameters.topLevelQb.leftJoin(foreignTableName, foreignTableAlias, localIdColumn + " = " + foreingIdColumn);
+    addWhereCondition(parameters, foreignTableAlias, foreignColumnMap);
+  }`,
+})

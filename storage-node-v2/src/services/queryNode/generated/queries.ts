@@ -122,7 +122,11 @@ export const DataObjectDetails = gql`
 `
 export const GetStorageBucketsConnection = gql`
   query getStorageBucketsConnection($limit: Int, $cursor: String) {
-    storageBucketsConnection(first: $limit, after: $cursor) {
+    storageBucketsConnection(
+      first: $limit
+      after: $cursor
+      where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
+    ) {
       edges {
         cursor
         node {

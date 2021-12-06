@@ -29,84 +29,6 @@ export class ServerError extends WebApiError {
 }
 
 /**
- * Returns a directory for file uploading from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-export function getUploadsDir(res: express.Response<unknown, AppConfig>): string {
-  if (res.locals.uploadsDir) {
-    return res.locals.uploadsDir
-  }
-
-  throw new ServerError('No upload directory path loaded.')
-}
-
-/**
- * Returns a directory for temporary file uploading from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-export function getTempFileUploadingDir(res: express.Response<unknown, AppConfig>): string {
-  if (res.locals.tempFileUploadingDir) {
-    return res.locals.tempFileUploadingDir
-  }
-
-  throw new ServerError('No temporary uploading directory path loaded.')
-}
-
-/**
- * Returns worker ID from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-export function getWorkerId(res: express.Response<unknown, AppConfig>): number {
-  if (res.locals.workerId || res.locals.workerId === 0) {
-    return res.locals.workerId
-  }
-
-  throw new ServerError('No Joystream worker ID loaded.')
-}
-
-/**
- * Returns the QueryNode URL from the starting parameters.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-export function getQueryNodeUrl(res: express.Response<unknown, AppConfig>): string {
-  if (res.locals.queryNodeEndpoint) {
-    return res.locals.queryNodeEndpoint
-  }
-
-  throw new ServerError('No Query Node URL loaded.')
-}
-
-/**
- * Returns a command config.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-export function getCommandConfig(res: express.Response<unknown, AppConfig>): {
-  version: string
-  userAgent: string
-} {
-  if (res.locals.process) {
-    return res.locals.process
-  }
-
-  throw new ServerError('Cannot load command config.')
-}
-
-/**
  * Handles errors and sends a response.
  *
  * @param res - Response instance
@@ -146,7 +68,7 @@ export function getHttpStatusCodeByError(err: Error): number {
   }
 
   if (err instanceof ExtrinsicFailedError) {
-    return 400
+    return 500
   }
 
   if (err instanceof WebApiError) {

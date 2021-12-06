@@ -13,7 +13,6 @@ import { promisify } from 'util'
 import { KeyringPair } from '@polkadot/keyring/types'
 import ExitCodes from './../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
-import { Worker } from '@joystream/types/working-group'
 import fs from 'fs'
 const fsPromises = fs.promises
 
@@ -179,10 +178,10 @@ async function runSyncWithInterval(
   syncWorkersNumber: number,
   syncIntervalMinutes: number
 ) {
-  const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+  const sleepInteval = syncIntervalMinutes * 60 * 1000
   while (true) {
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
-    await sleep(sleepIntevalInSeconds)
+    await sleep(sleepInteval)
     try {
       logger.info(`Resume syncing....`)
       await performSync(api, workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory, tempDirectory)
@@ -226,8 +225,7 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
  */
 async function verifyWorkerId(api: ApiPromise, workerId: number, account: KeyringPair): Promise<void> {
   // Cast Codec type to Worker type
-  const workerObj = await api.query.storageWorkingGroup.workerById(workerId)
-  const worker = workerObj as Worker
+  const worker = await api.query.storageWorkingGroup.workerById(workerId)
 
   if (worker.role_account_id.toString() !== account.address) {
     throw new CLIError(`Provided worker ID doesn't match the Joystream account.`, {
