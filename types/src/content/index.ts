@@ -2,6 +2,7 @@ import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
 import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
+
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
@@ -31,6 +32,7 @@ export class ContentActor extends JoyEnum({
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
+  Collaborator: MemberId,
 }) {}
 
 export class ChannelOwner extends JoyEnum({
@@ -43,13 +45,14 @@ export class Channel extends JoyStructDecorated({
   num_videos: u64,
   is_censored: bool,
   reward_account: Option.with(AccountId),
-  deletion_prize_source_account_id: AccountId,
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
   reward_account: Option.with(AccountId),
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
@@ -57,6 +60,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
   assets_to_remove: BTreeSet.with(DataObjectId),
+  collaborators: Option.with(BTreeSet.with(MemberId)),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
