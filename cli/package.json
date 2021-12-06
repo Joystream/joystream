@@ -143,6 +143,6 @@
   "types": "lib/index.d.ts",
   "volta": {
     "node": "14.16.1",
-    "yarn": "1.22.4"
+    "yarn": "1.22.17"
   }
 }
