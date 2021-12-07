@@ -86,7 +86,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
 
-  const openingId = api.getEvent(voteForCreateOpeningProposalFixture.events, group, 'OpeningAdded')?.data[0]
+  const openingId = api.getEvent(voteForCreateOpeningProposalFixture.events, group, 'OpeningAdded').data[0]
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
     api,
