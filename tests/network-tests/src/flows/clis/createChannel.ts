@@ -23,7 +23,7 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   const channelOwnerBalance = api.consts.storage.dataObjectDeletionPrize.muln(2)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
-  // Create CLI's
+  // Create Joystream CLI
   const tmpFileManager = new TmpFileManager()
   const joystreamCli = new JoystreamCLI(tmpFileManager)
 
