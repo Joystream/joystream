@@ -1,9 +1,21 @@
+type AvatarObject @variant {
+  "The avatar data object"
+  avatarObject: DataObject!
+}
+
+type AvatarUri @variant {
+  "The avatar URL"
+  avatarUri: String!
+}
+
+union Avatar = AvatarObject | AvatarUri
+
 type MemberMetadata @entity {
   "Member's name"
   name: String
 
   "Avatar data object"
-  avatar: DataObject
+  avatar: Avatar
 
   "Short text chosen by member to share information about themselves"
   about: String
