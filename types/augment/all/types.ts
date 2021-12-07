@@ -434,11 +434,6 @@ export interface DistributionBucketIndex extends u64 {}
 /** @name DistributionBucketIndexSet */
 export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketIndex> {}
 
-/** @name DistributionBucketState */
-export interface DistributionBucketState extends Struct {
-  readonly accepting_new_bags: bool;
-}
-
 /** @name Dynamic */
 export interface Dynamic extends Enum {
   readonly isMember: boolean;

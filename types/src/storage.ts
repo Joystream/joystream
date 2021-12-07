@@ -232,16 +232,6 @@ export class DistributionBucket
   })
   implements IDistributionBucket {}
 
-export type IDistributionBucketState = {
-  accepting_new_bags: bool
-}
-
-export class DistributionBucketState
-  extends JoyStructDecorated({
-    accepting_new_bags: bool,
-  })
-  implements IDistributionBucketState {}
-
 export type IDistributionBucketFamily = {
   next_distribution_bucket_index: DistributionBucketIndex
 }
@@ -284,7 +274,6 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
-  DistributionBucketState,
   // Utility types:
   DataObjectIdMap,
   DistributionBucketIndexSet,

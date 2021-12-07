@@ -605,9 +605,6 @@
     "DistributionBucketFamily": {
         "next_distribution_bucket_index": "DistributionBucketIndex"
     },
-    "DistributionBucketState": {
-        "accepting_new_bags": "bool"
-    },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
