@@ -219,7 +219,7 @@ pub trait DataObjectStorage<T: Trait> {
         params: UploadParameters<T>,
     ) -> DispatchResult;
 
-    /// Same as can_create_dynamic_bag but with caller provided objects/data    
+    /// Same as can_create_dynamic_bag but with caller provided objects/data
     fn can_create_dynamic_bag_with_objects(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
@@ -2493,52 +2493,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
         let bag_change = Self::validate_upload_data_objects_parameters(&params)?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        Self::upload_data_objects_inner(&params, &bag_change, &bag);
+        Self::upload_data_objects_inner(&params, &bag_change, &bag)?;
         Ok(())
-    }
-
-    fn upload_data_objects_inner(
-        params: &UploadParameters<T>,
-        bag_change: &BagUpdate<BalanceOf<T>>,
-        bag: &Bag<T>,
-    ) {
-        let data = Self::create_data_objects(params.object_creation_list.clone());
-
-        <StorageTreasury<T>>::deposit(
-            &params.deletion_prize_source_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        Self::slash_data_size_fee(
-            &params.deletion_prize_source_account_id,
-            bag_change.voucher_update.objects_total_size,
-        );
-
-        // Save next object id.
-        <NextDataObjectId<T>>::put(data.next_data_object_id);
-
-        // Insert new objects.
-        for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
-        }
-
-        Self::change_storage_bucket_vouchers_for_bag(
-            &params.bag_id,
-            &bag,
-            &bag_change.voucher_update,
-            OperationType::Increase,
-        );
-
-        Self::deposit_event(RawEvent::DataObjectsUploaded(
-            data.data_objects_map.keys().cloned().collect(),
-            params,
-            T::DataObjectDeletionPrize::get(),
-        ));
     }
 
     fn can_move_data_objects(
@@ -2674,7 +2630,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
-        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize);
+        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
         Ok(())
     }
 
@@ -2683,15 +2639,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
         params: UploadParameters<T>,
     ) -> DispatchResult {
-        let bag_change =
-            Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
-        let bag = Self::create_dynamic_bag(dynamic_bag_id, deletion_prize)?;
-
-        //
-        // = MUTATION SAFE =
-        //
-
-        Self::upload_data_objects_inner(&params, &bag_change, &bag);
+        Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
+        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
         Ok(())
     }
 
@@ -2706,9 +2655,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+    ) -> DispatchResult {
         Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
-        Self::validate_upload_data_objects_parameters(params)
+        Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
@@ -2723,13 +2672,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // dynamic bag creation logic
     fn create_dynamic_bag_inner(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-    ) {
+    ) -> DispatchResult {
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
         }
+
+        //
+        // = MUTATION SAFE =
+        //
 
         let bag_type: DynamicBagType = dynamic_bag_id.clone().into();
 
@@ -2748,11 +2702,59 @@ impl<T: Trait> Module<T> {
         <Bags<T>>::insert(&bag_id, bag);
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
-            dynamic_bag_id,
-            deletion_prize,
+            dynamic_bag_id.clone(),
+            deletion_prize.clone(),
             storage_buckets,
             distribution_buckets,
         ));
+
+        Ok(())
+    }
+
+    // storage upload logic
+    fn upload_data_objects_inner(
+        params: &UploadParameters<T>,
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        bag: &Bag<T>,
+    ) -> DispatchResult {
+        let data = Self::create_data_objects(params.object_creation_list.clone());
+
+        <StorageTreasury<T>>::deposit(
+            &params.deletion_prize_source_account_id,
+            bag_change.total_deletion_prize,
+        )?;
+
+        Self::slash_data_size_fee(
+            &params.deletion_prize_source_account_id,
+            bag_change.voucher_update.objects_total_size,
+        );
+
+        //
+        // = MUTATION SAFE =
+        //
+
+        // Save next object id.
+        <NextDataObjectId<T>>::put(data.next_data_object_id);
+
+        // Insert new objects.
+        for (data_object_id, data_object) in data.data_objects_map.iter() {
+            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
+        }
+
+        Self::change_storage_bucket_vouchers_for_bag(
+            &params.bag_id,
+            &bag,
+            &bag_change.voucher_update,
+            OperationType::Increase,
+        );
+
+        Self::deposit_event(RawEvent::DataObjectsUploaded(
+            data.data_objects_map.keys().cloned().collect(),
+            params.clone(),
+            T::DataObjectDeletionPrize::get(),
+        ));
+
+        Ok(())
     }
 
     // Increment distribution family number in the storage.
