@@ -674,7 +674,7 @@ fn channel_censoring() {
 }
 
 #[test]
-fn channel_creation_succeeds_even_with_large_objects_size() {
+fn channel_creation_doesnt_live_bags_dangling() {
     with_default_mock_builder(|| {
         // number of assets big enought to make upload_data_objects throw
         let asset_num = 100_000usize;
@@ -702,12 +702,12 @@ fn channel_creation_succeeds_even_with_large_objects_size() {
                 meta: Some(vec![]),
                 reward_account: None,
             },
-            Ok(()),
+            Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()),
         );
 
         // ensure that no bag are left dangling
         let dyn_bag = DynamicBagIdType::<MemberId, ChannelId>::Channel(channel_id);
         let bag_id = storage::BagIdType::from(dyn_bag.clone());
-        assert!(<Test as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_ok());
+        assert!(<Test as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_err());
     })
 }

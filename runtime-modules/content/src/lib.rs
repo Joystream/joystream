@@ -1497,7 +1497,7 @@ impl<T: Trait> Module<T> {
             expected_data_size_fee: assets.expected_data_size_fee,
         };
 
-        // create dynamic bag if it doesn't exist
+        // create dynamic bag if it doesn't exist (does not emits conflicting created/deleted bag events)
         if let Err(_) = Storage::<T>::ensure_bag_exists(&bag_id) {
             Storage::<T>::create_dynamic_bag_with_objects(dyn_bag, None, upload_params.clone())?;
         };
