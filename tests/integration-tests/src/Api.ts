@@ -563,13 +563,16 @@ export class Api {
 
         const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
 
-        const currentAnnouncementPeriodNr = announcementPeriodNr === null
-          ? null
-          : (await this.api.query.council.announcementPeriodNr()).toNumber()
+        const currentAnnouncementPeriodNr =
+          announcementPeriodNr === null ? null : (await this.api.query.council.announcementPeriodNr()).toNumber()
 
         debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
 
-        return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve) && (announcementPeriodNr == currentAnnouncementPeriodNr)
+        return (
+          currentStage === targetStage &&
+          currentStageEndsIn.gten(blocksReserve) &&
+          announcementPeriodNr == currentAnnouncementPeriodNr
+        )
       },
       intervalMs
     )

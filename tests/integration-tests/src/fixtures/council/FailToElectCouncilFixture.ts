@@ -9,15 +9,14 @@ import { MemberId } from '@joystream/types/common'
 import { assert } from 'chai'
 
 interface IScenarioResources {
-  candidatesMemberIds: MemberId[],
-  candidatesStakingAccounts: string[],
-  candidatesMemberAccounts: string[],
-  councilCandidateStake: Balance,
+  candidatesMemberIds: MemberId[]
+  candidatesStakingAccounts: string[]
+  candidatesMemberAccounts: string[]
+  councilCandidateStake: Balance
   councilMemberIds: MemberId[]
 }
 
 export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
-
   /*
     Execute all scenarios when a new council election is expected to fail.
   */
@@ -63,7 +62,7 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
 
     // retrieve currently elected council's members
     const councilMembers = await this.api.query.council.councilMembers()
-    const councilMemberIds = councilMembers.map(item => item.membership_id)
+    const councilMemberIds = councilMembers.map((item) => item.membership_id)
 
     return {
       candidatesMemberIds,
@@ -119,8 +118,8 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
     // ensure council members haven't changed
     const councilMembersEnding = await this.api.query.council.councilMembers()
     assert.sameMembers(
-      councilMemberIds.map(item => item.toString()),
-      councilMembersEnding.map(item => item.membership_id.toString()),
+      councilMemberIds.map((item) => item.toString()),
+      councilMembersEnding.map((item) => item.membership_id.toString())
     )
 
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
@@ -195,19 +194,19 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
     // ensure council members haven't changed
     const councilMembersEnding = await this.api.query.council.councilMembers()
     assert.sameMembers(
-      councilMemberIds.map(item => item.toString()),
-      councilMembersEnding.map(item => item.membership_id.toString()),
+      councilMemberIds.map((item) => item.toString()),
+      councilMembersEnding.map((item) => item.membership_id.toString())
     )
 
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 
-  async aaa({councilMemberIds}: IScenarioResources) {
+  async aaa({ councilMemberIds }: IScenarioResources) {
     // ensure council members haven't changed
     const councilMembersEnding = await this.api.query.council.councilMembers()
     assert.sameMembers(
-      councilMemberIds.map(item => item.toString()),
-      councilMembersEnding.map(item => item.membership_id.toString()),
+      councilMemberIds.map((item) => item.toString()),
+      councilMembersEnding.map((item) => item.membership_id.toString())
     )
 
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)

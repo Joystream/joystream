@@ -439,10 +439,11 @@ export class QueryNodeApi {
   }
 
   public async getCurrentCouncilMembers(): Promise<ElectedCouncilFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetCurrentCouncilMembersQuery,
-      GetCurrentCouncilMembersQueryVariables
-    >(GetCurrentCouncilMembers, {}, 'electedCouncils')
+    return this.firstEntityQuery<GetCurrentCouncilMembersQuery, GetCurrentCouncilMembersQueryVariables>(
+      GetCurrentCouncilMembers,
+      {},
+      'electedCouncils'
+    )
   }
 
   // TODO: Use event id
