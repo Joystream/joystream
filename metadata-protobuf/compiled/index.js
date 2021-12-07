@@ -1418,7 +1418,8 @@ $root.MembershipMetadata = (function() {
      * @exports IMembershipMetadata
      * @interface IMembershipMetadata
      * @property {string|null} [name] MembershipMetadata name
-     * @property {number|null} [avatar] MembershipMetadata avatar
+     * @property {number|null} [avatarObject] MembershipMetadata avatarObject
+     * @property {string|null} [avatarUri] MembershipMetadata avatarUri
      * @property {string|null} [about] MembershipMetadata about
      */
 
@@ -1446,12 +1447,20 @@ $root.MembershipMetadata = (function() {
     MembershipMetadata.prototype.name = "";
 
     /**
-     * MembershipMetadata avatar.
-     * @member {number} avatar
+     * MembershipMetadata avatarObject.
+     * @member {number|null|undefined} avatarObject
      * @memberof MembershipMetadata
      * @instance
      */
-    MembershipMetadata.prototype.avatar = 0;
+    MembershipMetadata.prototype.avatarObject = null;
+
+    /**
+     * MembershipMetadata avatarUri.
+     * @member {string|null|undefined} avatarUri
+     * @memberof MembershipMetadata
+     * @instance
+     */
+    MembershipMetadata.prototype.avatarUri = null;
 
     /**
      * MembershipMetadata about.
@@ -1460,6 +1469,20 @@ $root.MembershipMetadata = (function() {
      * @instance
      */
     MembershipMetadata.prototype.about = "";
+
+    // OneOf field names bound to virtual getters and setters
+    var $oneOfFields;
+
+    /**
+     * MembershipMetadata avatar.
+     * @member {"avatarObject"|"avatarUri"|undefined} avatar
+     * @memberof MembershipMetadata
+     * @instance
+     */
+    Object.defineProperty(MembershipMetadata.prototype, "avatar", {
+        get: $util.oneOfGetter($oneOfFields = ["avatarObject", "avatarUri"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
 
     /**
      * Creates a new MembershipMetadata instance using the specified properties.
@@ -1487,10 +1510,12 @@ $root.MembershipMetadata = (function() {
             writer = $Writer.create();
         if (message.name != null && Object.hasOwnProperty.call(message, "name"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.name);
-        if (message.avatar != null && Object.hasOwnProperty.call(message, "avatar"))
-            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.avatar);
+        if (message.avatarObject != null && Object.hasOwnProperty.call(message, "avatarObject"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.avatarObject);
         if (message.about != null && Object.hasOwnProperty.call(message, "about"))
             writer.uint32(/* id 3, wireType 2 =*/26).string(message.about);
+        if (message.avatarUri != null && Object.hasOwnProperty.call(message, "avatarUri"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.avatarUri);
         return writer;
     };
 
@@ -1529,7 +1554,10 @@ $root.MembershipMetadata = (function() {
                 message.name = reader.string();
                 break;
             case 2:
-                message.avatar = reader.uint32();
+                message.avatarObject = reader.uint32();
+                break;
+            case 4:
+                message.avatarUri = reader.string();
                 break;
             case 3:
                 message.about = reader.string();
@@ -1569,12 +1597,22 @@ $root.MembershipMetadata = (function() {
     MembershipMetadata.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        var properties = {};
         if (message.name != null && message.hasOwnProperty("name"))
             if (!$util.isString(message.name))
                 return "name: string expected";
-        if (message.avatar != null && message.hasOwnProperty("avatar"))
-            if (!$util.isInteger(message.avatar))
-                return "avatar: integer expected";
+        if (message.avatarObject != null && message.hasOwnProperty("avatarObject")) {
+            properties.avatar = 1;
+            if (!$util.isInteger(message.avatarObject))
+                return "avatarObject: integer expected";
+        }
+        if (message.avatarUri != null && message.hasOwnProperty("avatarUri")) {
+            if (properties.avatar === 1)
+                return "avatar: multiple values";
+            properties.avatar = 1;
+            if (!$util.isString(message.avatarUri))
+                return "avatarUri: string expected";
+        }
         if (message.about != null && message.hasOwnProperty("about"))
             if (!$util.isString(message.about))
                 return "about: string expected";
@@ -1595,8 +1633,10 @@ $root.MembershipMetadata = (function() {
         var message = new $root.MembershipMetadata();
         if (object.name != null)
             message.name = String(object.name);
-        if (object.avatar != null)
-            message.avatar = object.avatar >>> 0;
+        if (object.avatarObject != null)
+            message.avatarObject = object.avatarObject >>> 0;
+        if (object.avatarUri != null)
+            message.avatarUri = String(object.avatarUri);
         if (object.about != null)
             message.about = String(object.about);
         return message;
@@ -1617,15 +1657,22 @@ $root.MembershipMetadata = (function() {
         var object = {};
         if (options.defaults) {
             object.name = "";
-            object.avatar = 0;
             object.about = "";
         }
         if (message.name != null && message.hasOwnProperty("name"))
             object.name = message.name;
-        if (message.avatar != null && message.hasOwnProperty("avatar"))
-            object.avatar = message.avatar;
+        if (message.avatarObject != null && message.hasOwnProperty("avatarObject")) {
+            object.avatarObject = message.avatarObject;
+            if (options.oneofs)
+                object.avatar = "avatarObject";
+        }
         if (message.about != null && message.hasOwnProperty("about"))
             object.about = message.about;
+        if (message.avatarUri != null && message.hasOwnProperty("avatarUri")) {
+            object.avatarUri = message.avatarUri;
+            if (options.oneofs)
+                object.avatar = "avatarUri";
+        }
         return object;
     };
 
