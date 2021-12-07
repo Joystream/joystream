@@ -890,9 +890,10 @@ fn veto_proposal_event_emitted() {
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
 
-        EventFixture::assert_events(vec![
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Vetoed,
+        )]);
     });
 }
 
@@ -930,9 +931,7 @@ fn vote_proposal_event_emitted() {
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        EventFixture::assert_events(vec![
-            RawEvent::Voted(1, 1, VoteKind::Approve, Vec::new()),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::Voted(1, 1, VoteKind::Approve, Vec::new())]);
     });
 }
 
@@ -957,9 +956,10 @@ fn create_proposal_and_expire_it() {
         run_to_block_and_finalize(expected_expriration_block);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
-        EventFixture::assert_events(vec![
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Expired),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Expired,
+        )]);
     });
 }
 
