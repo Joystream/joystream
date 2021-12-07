@@ -212,6 +212,20 @@ pub trait DataObjectStorage<T: Trait> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult;
 
+    /// Same as create_dynamic_bag but with caller provided objects/data
+    fn create_dynamic_bag_with_objects(
+        bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult;
+
+    /// Same as can_create_dynamic_bag but with caller provided objects/data    
+    fn can_create_dynamic_bag_with_objects(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
+    ) -> DispatchResult;
+
     /// Checks if a bag does exists and returns it. Static Always exists
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
 
@@ -2478,13 +2492,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
         let bag_change = Self::validate_upload_data_objects_parameters(&params)?;
 
         //
         // == MUTATION SAFE ==
         //
 
+        Self::upload_data_objects_inner(&params, &bag_change, &bag);
+        Ok(())
+    }
+
+    fn upload_data_objects_inner(
+        params: &UploadParameters<T>,
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        bag: &Bag<T>,
+    ) {
         let data = Self::create_data_objects(params.object_creation_list.clone());
 
         <StorageTreasury<T>>::deposit(
@@ -2517,8 +2539,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             params,
             T::DataObjectDeletionPrize::get(),
         ));
-
-        Ok(())
     }
 
     fn can_move_data_objects(
@@ -2648,12 +2668,65 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize)?;
+        Self::can_create_dynamic_bag(&dynamic_bag_id, &deletion_prize)?;
 
         //
         // == MUTATION SAFE ==
         //
 
+        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize);
+        Ok(())
+    }
+
+    fn create_dynamic_bag_with_objects(
+        dynamic_bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult {
+        let bag_change =
+            Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
+        let bag = Self::create_dynamic_bag(dynamic_bag_id, deletion_prize)?;
+
+        //
+        // = MUTATION SAFE =
+        //
+
+        Self::upload_data_objects_inner(&params, &bag_change, &bag);
+        Ok(())
+    }
+
+    fn can_create_dynamic_bag(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+    ) -> DispatchResult {
+        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+    }
+
+    fn can_create_dynamic_bag_with_objects(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
+        Self::validate_upload_data_objects_parameters(params)
+    }
+
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+        Self::ensure_bag_exists(bag_id)
+    }
+
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
+        DataObjectsById::<T>::iter_prefix(&bag_id)
+            .map(|x| x.0)
+            .collect()
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn create_dynamic_bag_inner(
+        dynamic_bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+    ) {
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
         }
@@ -2680,29 +2753,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             storage_buckets,
             distribution_buckets,
         ));
-
-        Ok(())
     }
 
-    fn can_create_dynamic_bag(
-        bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-    ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
-    }
-
-    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
-        Self::ensure_bag_exists(bag_id)
-    }
-
-    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
-        DataObjectsById::<T>::iter_prefix(&bag_id)
-            .map(|x| x.0)
-            .collect()
-    }
-}
-
-impl<T: Trait> Module<T> {
     // Increment distribution family number in the storage.
     fn increment_distribution_family_number() {
         DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() + 1);
