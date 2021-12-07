@@ -1490,29 +1490,22 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::from(dyn_bag.clone());
 
-        // create_dynamic_bag if it does not exists yet
-        let bag_is_being_created = T::DataObjectStorage::ensure_bag_exists(&bag_id)
-            .map(|_| ())
-            .or_else(|_| Storage::<T>::create_dynamic_bag(dyn_bag.clone(), None));
-
-        // at this point bag_is_being_created holds the value
-
         let upload_params = UploadParametersRecord {
-            bag_id,
+            bag_id: bag_id.clone(),
             object_creation_list: assets.object_creation_list.clone(),
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
         };
 
+        // create dynamic bag if it doesn't exist
+        Storage::<T>::ensure_bag_exists(&bag_id).map(|_| ()).or(
+            Storage::<T>::create_dynamic_bag_with_objects(dyn_bag, None, upload_params.clone()),
+        )?;
+
         // remove bag in case of upload error
-        Storage::<T>::upload_data_objects(upload_params).map_err(|err| {
-            // bag removal should not give Error:
-            let _ = bag_is_being_created.and(Storage::<T>::delete_dynamic_bag(
-                prize_source_account.clone(),
-                dyn_bag,
-            ));
-            err
-        })
+        Storage::<T>::upload_data_objects(upload_params)?;
+
+        Ok(())
     }
 
     fn remove_assets_from_storage(
