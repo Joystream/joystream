@@ -58,10 +58,8 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       flags: { channelId, force },
     } = this.parse(DeleteChannelCommand)
     // Context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelOwnerActor(channel)
 
     if (channel.num_videos.toNumber()) {
       this.error(
@@ -84,7 +82,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       this.log(
         `Data objects deletion prize of ${chalk.cyanBright(
           formatBalance(deletionPrize)
-        )} will be transferred to ${chalk.magentaBright(account.address)}`
+        )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 
@@ -94,7 +92,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       }?`
     )
 
-    await this.sendAndFollowNamedTx(account, 'content', 'deleteChannel', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannel', [
       actor,
       channelId,
       force ? dataObjectsInfo.length : 0,

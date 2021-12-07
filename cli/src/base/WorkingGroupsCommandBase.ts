@@ -1,15 +1,7 @@
 import ExitCodes from '../ExitCodes'
 import AccountsCommandBase from './AccountsCommandBase'
 import { flags } from '@oclif/command'
-import {
-  WorkingGroups,
-  AvailableGroups,
-  NamedKeyringPair,
-  GroupMember,
-  GroupOpening,
-  OpeningStatus,
-  GroupApplication,
-} from '../Types'
+import { WorkingGroups, AvailableGroups, GroupMember, GroupOpening, OpeningStatus, GroupApplication } from '../Types'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
@@ -26,11 +18,10 @@ export abstract class RolesCommandBase extends AccountsCommandBase {
   }
 
   // Use when lead access is required in given command
-  async getRequiredLead(): Promise<GroupMember> {
-    const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
+  async getRequiredLeadContext(): Promise<GroupMember> {
     const lead = await this.getApi().groupLead(this.group)
 
-    if (!lead || lead.roleAccount.toString() !== selectedAccount.address) {
+    if (!lead || !this.isKeyAvailable(lead.roleAccount)) {
       this.error(`${_.startCase(this.group)} Group Lead access required for this command!`, {
         exit: ExitCodes.AccessDenied,
       })
@@ -40,38 +31,22 @@ export abstract class RolesCommandBase extends AccountsCommandBase {
   }
 
   // Use when worker access is required in given command
-  async getRequiredWorker(): Promise<GroupMember> {
-    const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
+  async getRequiredWorkerContext(expectedKeyType: 'Role' | 'MemberController' = 'Role'): Promise<GroupMember> {
     const groupMembers = await this.getApi().groupMembers(this.group)
-    const groupMembersByAccount = groupMembers.filter((m) => m.roleAccount.toString() === selectedAccount.address)
-
-    if (!groupMembersByAccount.length) {
-      this.error(`${_.startCase(this.group)} Group Worker access required for this command!`, {
-        exit: ExitCodes.AccessDenied,
-      })
-    } else if (groupMembersByAccount.length === 1) {
-      return groupMembersByAccount[0]
-    } else {
-      return await this.promptForWorker(groupMembersByAccount)
-    }
-  }
-
-  // Use when member controller access is required, but one of the associated roles is expected to be selected
-  async getRequiredWorkerByMemberController(): Promise<GroupMember> {
-    const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
-    const memberIds = await this.getApi().getMemberIdsByControllerAccount(selectedAccount.address)
-    const controlledWorkers = (await this.getApi().groupMembers(this.group)).filter((groupMember) =>
-      memberIds.some((memberId) => groupMember.memberId.eq(memberId))
+    const availableGroupMemberContexts = groupMembers.filter((m) =>
+      expectedKeyType === 'Role'
+        ? this.isKeyAvailable(m.roleAccount.toString())
+        : this.isKeyAvailable(m.profile.controller_account.toString())
     )
 
-    if (!controlledWorkers.length) {
-      this.error(`Member controller account with some associated ${this.group} group roles needs to be selected!`, {
+    if (!availableGroupMemberContexts.length) {
+      this.error(`No ${_.startCase(this.group)} Group Worker ${_.startCase(expectedKeyType)} key available!`, {
         exit: ExitCodes.AccessDenied,
       })
-    } else if (controlledWorkers.length === 1) {
-      return controlledWorkers[0]
+    } else if (availableGroupMemberContexts.length === 1) {
+      return availableGroupMemberContexts[0]
     } else {
-      return await this.promptForWorker(controlledWorkers)
+      return await this.promptForWorker(availableGroupMemberContexts)
     }
   }
 

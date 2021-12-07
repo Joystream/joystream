@@ -46,11 +46,10 @@ export default class CreateVideoCommand extends UploadCommandBase {
     const { input, channelId, context } = this.parse(CreateVideoCommand).flags
 
     // Get context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelManagementActor(channel, context)
-    const memberId = await this.getRequiredMemberId(true)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
@@ -83,7 +82,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'createVideo', [
       actor,
       channelId,
       videoCreationParameters,
@@ -98,8 +97,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        account,
-        memberId,
+        keypair,
+        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { types } from '@joystream/types/'
+import { createType, types } from '@joystream/types/'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
@@ -560,5 +560,14 @@ export default class Api {
 
   async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
     return this._api.query.members.membershipById.multi(ids)
+  }
+
+  async memberEntriesByIds(ids: MemberId[] | number[]): Promise<[MemberId, Membership][]> {
+    const memberships = await this._api.query.members.membershipById.multi<Membership>(ids)
+    return ids.map((id, i) => [createType('MemberId', id), memberships[i]])
+  }
+
+  allMemberEntries(): Promise<[MemberId, Membership][]> {
+    return this.entriesByIds(this._api.query.members.membershipById)
   }
 }

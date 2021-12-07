@@ -28,10 +28,9 @@ export default class CreateChannelCommand extends UploadCommandBase {
     if (!context) {
       context = await this.promptForChannelCreationContext()
     }
-    const account = await this.getRequiredSelectedAccount()
-    const actor = await this.getActor(context)
-    const memberId = await this.getRequiredMemberId(true)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getContentActor(context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
@@ -64,7 +63,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'createChannel', [
       actor,
       channelCreationParameters,
     ])
@@ -77,8 +76,8 @@ export default class CreateChannelCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        account,
-        memberId,
+        keypair,
+        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

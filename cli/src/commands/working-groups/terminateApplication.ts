@@ -17,20 +17,22 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsTerminateApplication)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const applicationId = parseInt(args.wgApplicationId)
     // We don't really need the application itself here, so this one is just for validation purposes
     await this.getApplicationForLeadAction(applicationId, ApplicationStageKeys.Active)
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateApplication', [applicationId])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'terminateApplication',
+      [applicationId]
+    )
 
     this.log(chalk.green(`Application ${chalk.magentaBright(applicationId)} has been successfully terminated!`))
   }

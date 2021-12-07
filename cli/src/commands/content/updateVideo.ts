@@ -66,12 +66,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     } = this.parse(UpdateVideoCommand)
 
     // Context
-    const account = await this.getRequiredSelectedAccount()
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getChannelManagementActor(channel, context)
-    const memberId = await this.getRequiredMemberId(true)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     const meta = asValidatedMetadata(VideoMetadata, videoInput)
@@ -100,7 +99,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'updateVideo', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'updateVideo', [
       actor,
       videoId,
       videoUpdateParameters,
@@ -109,8 +108,8 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        account,
-        memberId,
+        keypair,
+        memberId.toNumber(),
         `dynamic:channel:${video.in_channel.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

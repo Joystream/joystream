@@ -25,15 +25,13 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
       flags: { channelId, objectId: objectIds, context },
     } = this.parse(RemoveChannelAssetsCommand)
     // Context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelManagementActor(channel, context)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     this.jsonPrettyPrint(JSON.stringify({ channelId, assetsToRemove: objectIds }))
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(account, 'content', 'updateChannel', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannel', [
       actor,
       channelId,
       { assets_to_remove: createType('BTreeSet<DataObjectId>', objectIds) },
