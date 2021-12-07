@@ -1,4 +1,4 @@
-import { StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
+import { StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import BN from 'bn.js'
 import { MembershipSystemSnapshot, WorkingGroup, ElectedCouncil, ElectionRound } from 'query-node/dist/model'
 import { membershipSystem, workingGroups } from './genesis-data'
