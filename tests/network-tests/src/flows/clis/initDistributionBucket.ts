@@ -4,7 +4,7 @@ import { WorkingGroups } from '../../WorkingGroups'
 import { DistributorCLI } from '../../cli/distributor'
 
 export default async function initDistributionBucket({ api }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:initDistributionBucket')
+  const debug = extendDebug('flow:initDistributionBucketViaCLI')
   debug('Started')
 
   const leaderId = await api.getLeadWorkerId(WorkingGroups.Distribution)

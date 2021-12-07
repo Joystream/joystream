@@ -4,7 +4,7 @@ import { WorkingGroups } from '../../WorkingGroups'
 import { StorageCLI } from '../../cli/storage'
 
 export default async function initStorageBucket({ api }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:initStorageBucket')
+  const debug = extendDebug('flow:initStorageBucketViaCLI')
   debug('Started')
 
   const leaderId = await api.getLeadWorkerId(WorkingGroups.Storage)
