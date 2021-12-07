@@ -672,3 +672,42 @@ fn channel_censoring() {
         ));
     })
 }
+
+#[test]
+fn channel_creation_succeeds_even_with_large_objects_size() {
+    with_default_mock_builder(|| {
+        // number of assets big enought to make upload_data_objects throw
+        let asset_num = 100_000usize;
+        let mut object_creation_list =
+            Vec::<DataObjectCreationParameters>::with_capacity(asset_num);
+        for _i in 0..asset_num {
+            object_creation_list.push(DataObjectCreationParameters {
+                size: 1_000_000, // size big enought to make upload_data_objects throw
+                ipfs_content_id: b"test".to_vec(),
+            });
+        }
+
+        let assets = StorageAssetsRecord {
+            object_creation_list: object_creation_list,
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        };
+
+        let channel_id = NextChannelId::<Test>::get();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(assets),
+                meta: Some(vec![]),
+                reward_account: None,
+            },
+            Ok(()),
+        );
+
+        // ensure that no bag are left dangling
+        let dyn_bag = DynamicBagIdType::<MemberId, ChannelId>::Channel(channel_id);
+        let bag_id = storage::BagIdType::from(dyn_bag.clone());
+        assert!(<Test as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_ok());
+    })
+}
