@@ -2,6 +2,7 @@ import { StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
 import BN from 'bn.js'
 import { MembershipSystemSnapshot, WorkingGroup, ElectedCouncil, ElectionRound } from 'query-node/dist/model'
 import { membershipSystem, workingGroups } from './genesis-data'
+import { CURRENT_NETWORK } from './common'
 
 export async function loadGenesisData({ store }: StoreContext): Promise<void> {
   await initMembershipSystem(store)
@@ -47,6 +48,8 @@ async function initFirstElectionRound(store: DatabaseManager) {
     councilMembers: [],
     updates: [],
     electedAtBlock: 0,
+    electedAtTime: new Date(0),
+    electedAtNetwork: CURRENT_NETWORK,
     councilElections: [],
     nextCouncilElections: [],
     isResigned: false,

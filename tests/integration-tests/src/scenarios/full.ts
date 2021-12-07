@@ -77,6 +77,7 @@ scenario(async ({ job, env }) => {
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
 
-  // Council (other than council election that happens at start)
-  job('council election failures', failToElect).requires(membershipSystemJob)
+  // Council
+  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  job('council election failures', failToElect).requires(secondCouncilJob)
 })

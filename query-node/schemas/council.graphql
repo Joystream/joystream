@@ -217,6 +217,18 @@ type ElectedCouncil @entity {
   "Block number at which the council reign ended and a new council was elected."
   endedAtBlock: Int
 
+  "Time at which the council was elected."
+  electedAtTime: DateTime!
+
+  "Time at which the council reign ended and a new council was elected."
+  endedAtTime: DateTime
+
+  "Network running at the time of election."
+  electedAtNetwork: Network!
+
+  "Network running at the time of resignation."
+  endedAtNetwork: Network
+
   # it might seem that derived field is wrongly set to `nextElectedCouncil`, but that's how it should be
   "Elections held before the council was rightfully elected."
   #councilElections: [ElectionRound!]! @derivedFrom(field: "electedCouncil")

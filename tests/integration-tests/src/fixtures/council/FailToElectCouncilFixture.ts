@@ -3,6 +3,7 @@ import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } fro
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { ForumThreadWithInitialPostFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
+import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { Balance } from '@polkadot/types/interfaces'
 import { MemberId } from '@joystream/types/common'
 import { assert } from 'chai'
@@ -22,15 +23,6 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
   */
   public async execute(): Promise<void> {
     const { api, query } = this
-
-    /*
-    TODO: find how to register graphql queries defined in `graphql/queries/council.graphql` to `QuerNodeApi`
-    const council = await this.api.query.council.councilMembers()
-    console.log(council)
-    council.map(item => console.log(item.toString()))
-    const tmp = await this.query.GetCurrentCouncilMembers() // this throws error
-    console.log('heeeello,', tmp)
-    */
 
     const resources1 = await this.prepareScenarioResources()
     await this.executeNotEnoughCandidates(resources1)
@@ -130,6 +122,8 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
       councilMemberIds.map(item => item.toString()),
       councilMembersEnding.map(item => item.membership_id.toString()),
     )
+
+    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 
   /*
@@ -204,5 +198,18 @@ export class FailToElectCouncilFixture extends BaseQueryNodeFixture {
       councilMemberIds.map(item => item.toString()),
       councilMembersEnding.map(item => item.membership_id.toString()),
     )
+
+    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
+  }
+
+  async aaa({councilMemberIds}: IScenarioResources) {
+    // ensure council members haven't changed
+    const councilMembersEnding = await this.api.query.council.councilMembers()
+    assert.sameMembers(
+      councilMemberIds.map(item => item.toString()),
+      councilMembersEnding.map(item => item.membership_id.toString()),
+    )
+
+    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }

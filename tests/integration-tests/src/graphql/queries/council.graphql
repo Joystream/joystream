@@ -1,6 +1,18 @@
+fragment CouncilMemberFields on CouncilMember {
+    id
+    member {
+        id
+    }
+}
+
+fragment ElectedCouncilFields on ElectedCouncil {
+    councilMembers {
+        ...CouncilMemberFields
+    }
+}
 
 query getCurrentCouncilMembers {
     electedCouncils(where: { endedAtBlock_eq: null }) {
-        councilMembers { id }
+        ...ElectedCouncilFields
     }
 }

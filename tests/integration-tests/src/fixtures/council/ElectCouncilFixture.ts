@@ -1,5 +1,6 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
+import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { assert } from 'chai'
@@ -83,5 +84,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       councilMembers.map((m) => m.membership_id.toString()),
       candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
     )
+
+    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }
