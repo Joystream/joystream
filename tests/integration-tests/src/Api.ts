@@ -571,7 +571,7 @@ export class Api {
         return (
           currentStage === targetStage &&
           currentStageEndsIn.gten(blocksReserve) &&
-          announcementPeriodNr == currentAnnouncementPeriodNr
+          announcementPeriodNr === currentAnnouncementPeriodNr
         )
       },
       intervalMs
