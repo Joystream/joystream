@@ -3,6 +3,7 @@ import { map, switchMap } from 'rxjs/operators';
 import { ApiPromise } from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces';
 import { Option, Vec } from '@polkadot/types';
+import { createType } from '@joystream/types';
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 import { keyring } from '@polkadot/ui-keyring';
@@ -34,7 +35,9 @@ import { keyPairDetails } from './flows/apply';
 import { classifyApplicationCancellation,
   classifyOpeningStage,
   classifyOpeningStakes,
-  isApplicationHired } from './classifiers';
+  isApplicationHired,
+  OpeningStageClassification,
+  OpeningState } from './classifiers';
 import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from './working_groups';
 import { Sort, Sum, Zero } from './balances';
 import _ from 'lodash';
@@ -48,6 +51,25 @@ type StakePair<T = Balance> = {
   application: T;
   role: T;
 }
+
+export type OpeningCacheItems = {
+  [key: string]: OpeningCacheItem;
+}
+
+type OpeningCacheItem = {
+  groupOpening: WGOpening;
+  opening: Opening;
+  applications: WorkingGroupPair<Application, WGApplication>[];
+}
+
+type OpeningData = {
+  opening: Opening;
+  openingById: OpeningCacheItem;
+  groupOpening: WGOpening;
+  applications: WorkingGroupPair<Application, WGApplication>[];
+}
+
+const OPENINGS_CACHE_KEY = 'openingsCache';
 
 const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
@@ -219,7 +241,7 @@ export class Transport extends BaseTransport implements ITransport {
     return this.groupOverview(WorkingGroups.StorageProviders);
   }
 
-  async opportunitiesByGroup (group: WorkingGroups): Promise<WorkingGroupOpening[]> {
+  async opportunitiesByGroup (group: WorkingGroups, openingsCache: OpeningCacheItems): Promise<WorkingGroupOpening[]> {
     const output = new Array<WorkingGroupOpening>();
     const nextId = (await this.queryCachedByGroup(group).nextOpeningId()) as OpeningId;
 
@@ -228,7 +250,7 @@ export class Transport extends BaseTransport implements ITransport {
       const highestId = nextId.toNumber() - 1;
 
       for (let i = highestId; i >= 0; i--) {
-        output.push(await this.groupOpening(group, i));
+        output.push(await this.groupOpening(group, i, openingsCache));
       }
     }
 
@@ -238,8 +260,10 @@ export class Transport extends BaseTransport implements ITransport {
   async currentOpportunities (): Promise<WorkingGroupOpening[]> {
     let opportunities: WorkingGroupOpening[] = [];
 
+    let openingsCache: OpeningCacheItems = await this.getOpeningsCache();
+
     for (const group of AvailableGroups) {
-      opportunities = opportunities.concat(await this.opportunitiesByGroup(group));
+      opportunities = opportunities.concat(await this.opportunitiesByGroup(group, openingsCache));
     }
 
     return opportunities.sort((a, b) => b.stage.starting_block - a.stage.starting_block);
@@ -271,21 +295,35 @@ export class Transport extends BaseTransport implements ITransport {
     }));
   }
 
-  async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
+  getOpeningsCache (): OpeningCacheItems {
+    const openingsCache = localStorage.getItem(OPENINGS_CACHE_KEY);
+
+    if (!openingsCache) {
+      return {} as OpeningCacheItems;
+    }
+
+    return JSON.parse(openingsCache) as OpeningCacheItems;
+  }
+
+  setOpeningsCache (openingsCache: OpeningCacheItems, id: string, opening: OpeningCacheItem): void {
+    openingsCache[id] = opening;
+    localStorage.setItem(OPENINGS_CACHE_KEY, JSON.stringify(openingsCache));
+  }
+
+  async groupOpening (group: WorkingGroups, id: number, openingsCache: OpeningCacheItems): Promise<WorkingGroupOpening> {
     const nextId = (await this.queryCachedByGroup(group).nextOpeningId() as OpeningId).toNumber();
 
     if (id < 0 || id >= nextId) {
       throw new Error('invalid id');
     }
 
-    const groupOpening = await this.queryCachedByGroup(group).openingById(id) as WGOpening;
-
-    const opening = await this.opening(
-      groupOpening.hiring_opening_id.toNumber()
-    );
-
-    const applications = await this.groupOpeningApplications(group, id);
+    const { opening, openingById, groupOpening, applications } = await this.loadGroupOpening(openingsCache, group, id);
     const stakes = classifyOpeningStakes(opening);
+    const stage: OpeningStageClassification = await classifyOpeningStage(this, opening);
+
+    if (!openingById) {
+      this.saveOpeningToCache(stage, group, id, openingsCache, groupOpening, opening, applications);
+    }
 
     return ({
       opening: opening,
@@ -294,7 +332,7 @@ export class Transport extends BaseTransport implements ITransport {
         group,
         type: groupOpening instanceof WGOpening ? groupOpening.opening_type : undefined
       },
-      stage: await classifyOpeningStage(this, opening),
+      stage: stage,
       applications: {
         numberOfApplications: applications.length,
         maxNumberOfApplications: opening.max_applicants,
@@ -304,6 +342,34 @@ export class Transport extends BaseTransport implements ITransport {
       },
       defactoMinimumStake: this.api.createType('Balance', 0)
     });
+  }
+
+  private async loadGroupOpening (openingsCache: OpeningCacheItems, group: WorkingGroups, id: number): Promise<OpeningData> {
+    let groupOpening: WGOpening;
+    let opening: Opening;
+    let applications: WorkingGroupPair<Application, WGApplication>[];
+    const openingById: OpeningCacheItem | undefined = openingsCache ? openingsCache[`${group}-${id}`] : undefined;
+
+    if (openingById) {
+      groupOpening = openingById.groupOpening;
+      opening = createType('Opening', openingById.opening);
+      applications = openingById.applications;
+    } else {
+      groupOpening = await this.queryCachedByGroup(group).openingById(id) as WGOpening;
+      opening = await this.opening(
+        groupOpening.hiring_opening_id.toNumber()
+      );
+      applications = await this.groupOpeningApplications(group, id);
+    }
+
+    return { opening, openingById, groupOpening, applications } as OpeningData;
+  }
+
+  private saveOpeningToCache (stage: OpeningStageClassification, group: WorkingGroups, id: number,
+    openingsCache: OpeningCacheItems, groupOpening: WGOpening, opening: Opening, applications: WorkingGroupPair<Application, WGApplication>[]) {
+    if (stage.state === OpeningState.Complete || stage.state === OpeningState.Cancelled) {
+      this.setOpeningsCache(openingsCache, `${group}-${id}`, { groupOpening, opening, applications } as OpeningCacheItem);
+    }
   }
 
   protected async openingApplicationTotalStake (application: Application): Promise<Balance> {
@@ -414,7 +480,7 @@ export class Transport extends BaseTransport implements ITransport {
     return appvalues.findIndex((v) => v.app.eq(myApp)) + 1;
   }
 
-  async openingApplicationsByAddressAndGroup (group: WorkingGroups, roleKey: string): Promise<OpeningApplication[]> {
+  async openingApplicationsByAddressAndGroup (group: WorkingGroups, roleKey: string, openingsCache: OpeningCacheItems): Promise<OpeningApplication[]> {
     const myGroupApplications = (await this.entriesByIds<ApplicationId, WGApplication>(
       this.queryByGroup(group).applicationById
     ))
@@ -432,7 +498,7 @@ export class Transport extends BaseTransport implements ITransport {
 
     const openings = await Promise.all(
       myGroupApplications.map(([id, groupApplication]) => {
-        return this.groupOpening(group, groupApplication.opening_id.toNumber());
+        return this.groupOpening(group, groupApplication.opening_id.toNumber(), openingsCache);
       })
     );
 
@@ -465,9 +531,9 @@ export class Transport extends BaseTransport implements ITransport {
   // Get opening applications for all groups by address
   async openingApplicationsByAddress (roleKey: string): Promise<OpeningApplication[]> {
     let applications: OpeningApplication[] = [];
-
+    let openingsCache: OpeningCacheItems = await this.getOpeningsCache();
     for (const group of AvailableGroups) {
-      applications = applications.concat(await this.openingApplicationsByAddressAndGroup(group, roleKey));
+      applications = applications.concat(await this.openingApplicationsByAddressAndGroup(group, roleKey, openingsCache));
     }
 
     return applications;
