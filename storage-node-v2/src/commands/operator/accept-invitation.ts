@@ -25,6 +25,11 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
       char: 'i',
       required: true,
       description: 'Storage bucket ID',
+    }),    
+    transactorAccountId: flags.string({
+      char: 't',
+      required: true,
+      description: 'Transactor account ID (public key)',
     }),
     ...ApiCommandBase.flags,
   }
@@ -34,6 +39,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
 
     const worker = flags.workerId
     const bucket = flags.bucketId
+    const transactorAccountId = flags.transactorAccountId
 
     logger.info('Accepting pending storage bucket invitation...')
     if (flags.dev) {
@@ -43,7 +49,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await acceptStorageBucketInvitation(api, account, worker, bucket)
+    const success = await acceptStorageBucketInvitation(api, account, worker, bucket, transactorAccountId)
 
     this.exitAfterRuntimeCall(success)
   }
