@@ -97,6 +97,9 @@
 //! - delete_dynamic_bag
 //! - can_create_dynamic_bag
 //! - create_dynamic_bag
+//! - can_create_dynamic_bag_with_objects
+//! - create_dynamic_bag_with_objects
+
 //!
 //! ### Pallet constants
 //! - DataObjectDeletionPrize
@@ -2641,7 +2644,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     ) -> DispatchResult {
         Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
         Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
-        println!("validated upload data objects");
         Ok(())
     }
 
