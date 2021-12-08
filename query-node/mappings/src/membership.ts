@@ -74,11 +74,8 @@ async function createNewMemberFromParams(
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
   const eventTime = new Date(event.blockTimestamp)
 
-  let avatar: AvatarUri | undefined
-  if (metadata?.avatarUri) {
-    avatar = new AvatarUri()
-    avatar.avatarUri = metadata.avatarUri
-  }
+  const avatar = new AvatarUri()
+  avatar.avatarUri = metadata?.avatarUri ?? ''
 
   const metadataEntity = new MemberMetadata({
     createdAt: eventTime,
