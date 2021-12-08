@@ -25,7 +25,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
       char: 'i',
       required: true,
       description: 'Storage bucket ID',
-    }),    
+    }),
     transactorAccountId: flags.string({
       char: 't',
       required: true,
