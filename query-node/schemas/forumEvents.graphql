@@ -1,4 +1,4 @@
-type CategoryCreatedEvent @entity {
+type CategoryCreatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -24,7 +24,7 @@ type CategoryCreatedEvent @entity {
   # The actor is always lead
 }
 
-type CategoryArchivalStatusUpdatedEvent @entity {
+type CategoryArchivalStatusUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -54,7 +54,7 @@ type CategoryArchivalStatusUpdatedEvent @entity {
   actor: Worker!
 }
 
-type CategoryDeletedEvent @entity {
+type CategoryDeletedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -81,7 +81,7 @@ type CategoryDeletedEvent @entity {
   actor: Worker!
 }
 
-type ThreadCreatedEvent @entity {
+type ThreadCreatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -113,7 +113,7 @@ type ThreadCreatedEvent @entity {
   # The author is already part of the Thread entity itself and is immutable
 }
 
-type ThreadModeratedEvent @entity {
+type ThreadModeratedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -143,7 +143,7 @@ type ThreadModeratedEvent @entity {
   actor: Worker!
 }
 
-type ThreadMetadataUpdatedEvent @entity {
+type ThreadMetadataUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -172,7 +172,7 @@ type ThreadMetadataUpdatedEvent @entity {
   # Only author can update the thread title, so no actor information required
 }
 
-type ThreadDeletedEvent @entity {
+type ThreadDeletedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -198,7 +198,7 @@ type ThreadDeletedEvent @entity {
   # Only author can delete the thread, so no actor information required
 }
 
-type ThreadMovedEvent @entity {
+type ThreadMovedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -231,7 +231,7 @@ type ThreadMovedEvent @entity {
   actor: Worker!
 }
 
-type PostAddedEvent @entity {
+type PostAddedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -261,7 +261,7 @@ type PostAddedEvent @entity {
   text: String!
 }
 
-type PostModeratedEvent @entity {
+type PostModeratedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -291,7 +291,7 @@ type PostModeratedEvent @entity {
   actor: Worker!
 }
 
-type PostDeletedEvent @entity {
+type PostDeletedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -321,7 +321,7 @@ type PostDeletedEvent @entity {
   rationale: String!
 }
 
-type PostTextUpdatedEvent @entity {
+type PostTextUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -365,7 +365,7 @@ type PostReactionResultInvalid @variant {
 
 union PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
 
-type PostReactedEvent @entity {
+type PostReactedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -395,7 +395,7 @@ type PostReactedEvent @entity {
   reactingMember: Membership!
 }
 
-type VoteOnPollEvent @entity {
+type VoteOnPollEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -422,7 +422,7 @@ type VoteOnPollEvent @entity {
   votingMember: Membership!
 }
 
-type CategoryStickyThreadUpdateEvent @entity {
+type CategoryStickyThreadUpdateEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -452,7 +452,7 @@ type CategoryStickyThreadUpdateEvent @entity {
   actor: Worker!
 }
 
-type CategoryMembershipOfModeratorUpdatedEvent @entity {
+type CategoryMembershipOfModeratorUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
