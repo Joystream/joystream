@@ -1,7 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import { FailToElectCouncilFixture } from '../../fixtures/council/FailToElectCouncilFixture'
+import { NotEnoughCandidatesFixture, NotEnoughCandidatesWithVotesFixture } from '../../fixtures/council'
 
 // Currently only used by Olympia flow
 
@@ -10,8 +10,11 @@ export default async function failToElectCouncil({ api, query }: FlowProps): Pro
   debug('Started')
   api.enableDebugTxLogs()
 
-  const failToElectCouncilFixture = new FailToElectCouncilFixture(api, query)
-  await new FixtureRunner(failToElectCouncilFixture).run()
+  const notEnoughCandidatesFixture = new NotEnoughCandidatesFixture(api, query)
+  await new FixtureRunner(notEnoughCandidatesFixture).run()
+
+  const notEnoughCandidatesWithVotesFixture = new NotEnoughCandidatesWithVotesFixture(api, query)
+  await new FixtureRunner(notEnoughCandidatesWithVotesFixture).run()
 
   debug('Done')
 }

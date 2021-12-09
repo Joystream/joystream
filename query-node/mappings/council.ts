@@ -37,13 +37,14 @@ import {
   // Council & referendum schema types
   CouncilStageUpdate,
   CouncilStageAnnouncing,
+  CouncilStageIdle,
+  CouncilStageElection,
   CouncilStage,
   ElectionProblem,
   Candidate,
   CouncilMember,
   ElectionRound,
   ElectedCouncil,
-  CouncilStageElection,
   VariantNone,
   CastVote,
   CandidacyNoteMetadata,
@@ -84,7 +85,7 @@ async function getCandidate(
     where.electionRound = electionRound
   }
 
-  const candidate = await store.get(Candidate, { where, order: { createdAt: 'DESC' } })
+  const candidate = await store.get(Candidate, { where, order: { createdAt: 'DESC', candidacyWithdrawn: 'ASC' } })
 
   if (!candidate) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
@@ -138,13 +139,19 @@ async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilSta
 /*
   Returns current elected council record.
 */
-async function getCurrentElectedCouncil(
-  store: DatabaseManager,
-  canFail: boolean = false
-): Promise<ElectedCouncil | undefined> {
+async function getCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil | undefined> {
   const electedCouncil = await store.get(ElectedCouncil, { order: { electedAtBlock: 'DESC' } })
 
-  if (!electedCouncil && !canFail) {
+  return electedCouncil
+}
+
+/*
+  Returns current elected council record. Throws error when no council is elected
+*/
+async function getRequiredCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil> {
+  const electedCouncil = await getCurrentElectedCouncil(store)
+
+  if (!electedCouncil) {
     throw new Error('No council is elected.')
   }
 
@@ -202,7 +209,7 @@ async function updateCouncilStage(
   blockNumber: number,
   electionProblem?: ElectionProblem
 ): Promise<void> {
-  const electedCouncil = await getCurrentElectedCouncil(store, true)
+  const electedCouncil = await getCurrentElectedCouncil(store)
   if (!electedCouncil) {
     return
   }
@@ -247,6 +254,7 @@ async function startNextElectionRound(
   await store.save<ElectionRound>(electionRound)
 
   // update council stage
+
   const stage = new CouncilStageAnnouncing()
   stage.candidatesCount = new BN(0)
   await updateCouncilStage(store, stage, blockNumber, electionProblem)
@@ -265,8 +273,7 @@ async function convertCandidatesToCouncilMembers(
   const councilMembers = await candidates.reduce(async (councilMembersPromise, candidate) => {
     const councilMembers = await councilMembersPromise
 
-    // cast to any needed because member is not eagerly loaded into candidate object
-    const member = new Membership({ id: (candidate as any).memberId.toString() })
+    const member = new Membership({ id: candidate.member.id.toString() })
 
     const councilMember = new CouncilMember({
       // id: candidate.id // TODO: are ids needed?
@@ -307,7 +314,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
   // specific event processing
 
   // restart elections
-  const electedCouncil = (await getCurrentElectedCouncil(store))!
+  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber)
 }
 
@@ -328,7 +335,7 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
   // specific event processing
 
   // restart elections
-  const electedCouncil = (await getCurrentElectedCouncil(store))!
+  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
@@ -426,7 +433,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // specific event processing
 
   // mark old council as resinged
-  const oldElectedCouncil = await getCurrentElectedCouncil(store, true)
+  const oldElectedCouncil = await getCurrentElectedCouncil(store)
   if (oldElectedCouncil) {
     oldElectedCouncil.isResigned = true
     oldElectedCouncil.endedAtBlock = event.blockNumber
@@ -441,8 +448,8 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // TODO: uncomment when following query will be working (after some QN patches make it to Olympia)
   ////const electedCandidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds } } })
   const electedCandidates = (
-    await store.getMany(Candidate, { where: { electionRoundId: electionRound.id } })
-  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId == (item as any).memberId.toString()))
+    await store.getMany(Candidate, { where: { electionRoundId: electionRound.id }, relations: ['member'] })
+  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId == item.member.id.toString()))
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
@@ -467,8 +474,9 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
     })
   )
 
-  // end the last election round and start new one
-  await startNextElectionRound(store, electedCouncil, event.blockNumber)
+  // add council stage update
+  const stage = new CouncilStageIdle()
+  await updateCouncilStage(store, stage, event.blockNumber)
 
   // unset `isCouncilMember` sign for old council's members
   const oldElectedMembers = await store.getMany(Membership, { where: { isCouncilMember: true } })
@@ -518,7 +526,7 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
   // specific event processing
 
   // restart elections
-  const electedCouncil = (await getCurrentElectedCouncil(store))!
+  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
 }
 
@@ -581,26 +589,37 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const electionRound = await getCurrentElectionRound(store)
   const candidate = await getCandidate(store, memberId.toString(), electionRound)
 
+  const areBulletPointsSet = (metadataBulletPoints: string[] | null | undefined) => !!metadataBulletPoints
+  const areBulletPointsBeingUnset = (metadataBulletPoints: string[]) => {
+    // assumes areBulletPointsSet() were checked before
+
+    return metadataBulletPoints.length && metadataBulletPoints[0] == ''
+  }
+
   // unpack note's metadata and save it to db
   const metadata = deserializeMetadata(CouncilCandidacyNoteMetadata, note)
   const noteMetadata = candidate.noteMetadata
   // `XXX || (null as any)` construct clears metadata if requested (see https://github.com/Joystream/hydra/issues/435)
-  noteMetadata.header = isSet(metadata?.header) ? metadata?.header || (null as any) : metadata?.header
-  noteMetadata.bulletPoints = metadata?.bulletPoints || []
+  noteMetadata.header = isSet(metadata?.header) ? metadata?.header || (null as any) : noteMetadata?.header
+  noteMetadata.bulletPoints = areBulletPointsSet(metadata?.bulletPoints)
+    ? areBulletPointsBeingUnset(metadata?.bulletPoints as string[]) // check deletion request
+      ? [] // empty bullet points
+      : (metadata?.bulletPoints as string[]) // set new value
+    : noteMetadata?.bulletPoints // keep previous value
   noteMetadata.bannerImageUri = isSet(metadata?.bannerImageUri)
     ? metadata?.bannerImageUri || (null as any)
-    : metadata?.bannerImageUri
+    : noteMetadata?.bannerImageUri
   noteMetadata.description = isSet(metadata?.description)
     ? metadata?.description || (null as any)
-    : metadata?.description
+    : noteMetadata?.description
   await store.save<CandidacyNoteMetadata>(noteMetadata)
 
   // save metadata set by this event
   const noteMetadataSnapshot = new CandidacyNoteMetadata({
-    header: metadata?.header || undefined,
-    bulletPoints: metadata?.bulletPoints || [],
-    bannerImageUri: metadata?.bannerImageUri || undefined,
-    description: metadata?.description || undefined,
+    header: metadata?.header ?? undefined,
+    bulletPoints: areBulletPointsSet(metadata?.bulletPoints) ? (metadata?.bulletPoints as string[]) : undefined,
+    bannerImageUri: metadata?.bannerImageUri ?? undefined,
+    description: metadata?.description ?? undefined,
   })
 
   await store.save<CandidacyNoteMetadata>(noteMetadataSnapshot)
@@ -817,17 +836,13 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
 
   const [optionResultsRaw] = new Referendum.ReferendumFinishedEvent(event).params
 
-  const members = await store.getMany(Membership, {
-    where: { id: optionResultsRaw.map((item) => item.option_id.toString()) },
-  })
-
   const referendumFinishedEvent = new ReferendumFinishedEvent({
     ...genericEventFields(event),
     optionResults: optionResultsRaw.map(
       (item, index) =>
         new ReferendumStageRevealingOptionResult({
           votePower: item.vote_power,
-          option: members.find((tmpMember) => tmpMember.id.toString() == optionResultsRaw[index].option_id.toString()),
+          option: optionResultsRaw[index].option_id.toString(),
         })
     ),
   })
@@ -877,7 +892,6 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   // common event processing - init
 
   const [account, memberId, salt] = new Referendum.VoteRevealedEvent(event).params
-  const member = await getMembership(store, memberId.toString())
 
   // specific event processing
 
