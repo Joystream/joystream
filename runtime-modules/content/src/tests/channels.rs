@@ -778,6 +778,7 @@ fn channel_creation_doesnt_live_bags_dangling() {
                 assets: Some(assets),
                 meta: Some(vec![]),
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()),
         );
