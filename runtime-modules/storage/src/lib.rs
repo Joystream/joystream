@@ -2614,6 +2614,35 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
+        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
+
+        Ok(())
+    }
+
+    fn can_create_dynamic_bag(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+    ) -> DispatchResult {
+        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+    }
+
+    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
+        Self::ensure_bag_exists(bag_id)
+    }
+
+    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
+        DataObjectsById::<T>::iter_prefix(&bag_id)
+            .map(|x| x.0)
+            .collect()
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn create_dynamic_bag_with_objects(
+        dynamic_bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult {
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
         }
@@ -2640,29 +2669,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             storage_buckets,
             distribution_buckets,
         ));
-
-        Ok(())
     }
 
-    fn can_create_dynamic_bag(
-        bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-    ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
-    }
-
-    fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
-        Self::ensure_bag_exists(bag_id)
-    }
-
-    fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
-        DataObjectsById::<T>::iter_prefix(&bag_id)
-            .map(|x| x.0)
-            .collect()
-    }
-}
-
-impl<T: Trait> Module<T> {
     fn upload_data_objects_inner(
         params: &UploadParameters<T>,
         bag_change: &BagUpdate<BalanceOf<T>>,
