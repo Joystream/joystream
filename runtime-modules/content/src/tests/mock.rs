@@ -200,7 +200,6 @@ impl ContentActorAuthenticator for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const MaxDistributionBucketNumberPerFamily: u64 = 10;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
@@ -229,7 +228,7 @@ impl storage::Trait for Test {
     type Event = MetaEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
-    type DistributionBucketId = u64;
+    type DistributionBucketIndex = u64;
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
@@ -245,7 +244,6 @@ impl storage::Trait for Test {
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;

@@ -50,10 +50,22 @@ export class DataObject
 
 export class DataObjectIdSet extends BTreeSet.with(DataObjectId) {}
 export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
-export class DistributionBucketId extends u64 {}
+export class DistributionBucketIndex extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends BTreeSet.with(StorageBucketId) {}
-export class DistributionBucketIdSet extends BTreeSet.with(DistributionBucketId) {}
+export class DistributionBucketIndexSet extends BTreeSet.with(DistributionBucketIndex) {}
+
+export type IDistributionBucketId = {
+  distribution_bucket_family_id: DistributionBucketFamilyId
+  distribution_bucket_index: DistributionBucketIndex
+}
+
+export class DistributionBucketId
+  extends JoyStructDecorated({
+    distribution_bucket_family_id: DistributionBucketFamilyId,
+    distribution_bucket_index: DistributionBucketIndex,
+  })
+  implements IDistributionBucketId {}
 
 export type IDynamicBagDeletionPrize = {
   account_id: AccountId
@@ -219,12 +231,12 @@ export class DistributionBucket
   implements IDistributionBucket {}
 
 export type IDistributionBucketFamily = {
-  distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>
+  next_distribution_bucket_index: DistributionBucketIndex
 }
 
 export class DistributionBucketFamily
   extends JoyStructDecorated({
-    distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+    next_distribution_bucket_index: DistributionBucketIndex,
   })
   implements IDistributionBucketFamily {}
 
@@ -256,12 +268,13 @@ export const storageTypes: RegistryTypes = {
   StorageBucketOperatorStatus,
   DataObject,
   DistributionBucketId,
+  DistributionBucketIndex,
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
   // Utility types:
   DataObjectIdMap,
-  DistributionBucketIdSet,
+  DistributionBucketIndexSet,
   DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes
