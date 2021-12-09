@@ -4,19 +4,19 @@
 
 # Distributor node configuration Properties
 
-| Property                    | Type      | Required | Nullable       | Defined by                                                                                                                                  |
-| :-------------------------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| [id](#id)                   | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-id.md "https://joystream.org/schemas/argus/config#/properties/id")                   |
-| [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/argus/config#/properties/endpoints")     |
-| [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "https://joystream.org/schemas/argus/config#/properties/directories") |
-| [logs](#logs)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")               |
-| [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")           |
-| [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")     |
-| [publicApi](#publicapi)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-publicapi.md "https://joystream.org/schemas/argus/config#/properties/publicApi")     |
-| [operatorApi](#operatorapi) | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-operatorapi.md "https://joystream.org/schemas/argus/config#/properties/operatorApi") |
-| [keys](#keys)               | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")               |
-| [buckets](#buckets)         | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-bucket-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets")      |
-| [workerId](#workerid)       | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")       |
+| Property                    | Type      | Required | Nullable       | Defined by                                                                                                                                          |
+| :-------------------------- | :-------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [id](#id)                   | `string`  | Required | cannot be null | [Distributor node configuration](definition-properties-id.md "https://joystream.org/schemas/argus/config#/properties/id")                           |
+| [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/argus/config#/properties/endpoints")             |
+| [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "https://joystream.org/schemas/argus/config#/properties/directories")         |
+| [logs](#logs)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")                       |
+| [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")                   |
+| [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")             |
+| [publicApi](#publicapi)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-publicapi.md "https://joystream.org/schemas/argus/config#/properties/publicApi")             |
+| [operatorApi](#operatorapi) | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-operatorapi.md "https://joystream.org/schemas/argus/config#/properties/operatorApi")         |
+| [keys](#keys)               | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-keys.md "https://joystream.org/schemas/argus/config#/properties/keys")                       |
+| [buckets](#buckets)         | `array`   | Optional | cannot be null | [Distributor node configuration](definition-properties-distributed-buckets-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets") |
+| [workerId](#workerid)       | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-workerid.md "https://joystream.org/schemas/argus/config#/properties/workerId")               |
 
 ## id
 
@@ -190,21 +190,21 @@ an array of merged types ([Details](definition-properties-keys-items.md))
 
 ## buckets
 
-Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.
+Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed. Expected bucket id format is: {familyId}:{bucketIndex}
 
 `buckets`
 
 *   is optional
 
-*   Type: `integer[]`
+*   Type: `string[]`
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-bucket-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets")
+*   defined in: [Distributor node configuration](definition-properties-distributed-buckets-ids.md "https://joystream.org/schemas/argus/config#/properties/buckets")
 
 ### buckets Type
 
-`integer[]`
+`string[]`
 
 ### buckets Constraints
 
