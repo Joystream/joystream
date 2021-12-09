@@ -3158,34 +3158,65 @@ impl<T: Trait> Module<T> {
     fn validate_upload_data_objects_parameters(
         params: &UploadParameters<T>,
     ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        // Check global uploading block.
-        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+        Self::check_global_uploading_block()?;
 
-        // Check object creation list validity.
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
+        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
 
-        // Check data objects' max size.
-        ensure!(
-            params
-                .object_creation_list
-                .iter()
-                .all(|obj| obj.size <= T::MaxDataObjectSize::get()),
-            Error::<T>::MaxDataObjectSizeExceeded
-        );
+        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
 
-        let bag = Self::ensure_bag_exists(&params.bag_id)?;
+        Self::ensure_enough_balance_for_upload(
+            &bag_change,
+            &params.deletion_prize_source_account_id,
+            &params.expected_data_size_fee,
+        )?;
 
+        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
+
+        Ok(bag_change)
+    }
+
+    fn ensure_upload_bag_validity(
+        bag_id: &BagId<T>,
+        voucher_update: &VoucherUpdate,
+    ) -> DispatchResult {
+        let bag = Self::ensure_bag_exists(bag_id)?;
+        // Check buckets.
+        Self::check_bag_for_buckets_overflow(&bag, voucher_update)?;
+        Ok(())
+    }
+
+    fn ensure_enough_balance_for_upload(
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        deletion_prize_source_account_id: &T::AccountId,
+        expected_data_size_fee: &BalanceOf<T>,
+    ) -> DispatchResult {
         // Check data size fee change.
         ensure!(
-            params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
+            *expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
             Error::<T>::DataSizeFeeChanged
         );
 
-        let bag_change = params
-            .object_creation_list
+        let size_fee =
+            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
+        let usable_balance = Balances::<T>::usable_balance(deletion_prize_source_account_id);
+
+        // Check account balance to satisfy deletion prize and storage fee.
+        let total_fee = bag_change.total_deletion_prize + size_fee;
+        ensure!(usable_balance >= total_fee, Error::<T>::InsufficientBalance);
+
+        Ok(())
+    }
+
+    // Check global uploading block.
+    fn check_global_uploading_block() -> DispatchResult {
+        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+        Ok(())
+    }
+
+    fn construct_bag_change(
+        object_creation_list: &[DataObjectCreationParameters],
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        let bag_change = object_creation_list
             .iter()
             .try_fold::<_, _, Result<_, DispatchError>>(
                 BagUpdate::default(),
@@ -3212,19 +3243,27 @@ impl<T: Trait> Module<T> {
                 },
             )?;
 
-        let size_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
-        let usable_balance =
-            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
-
-        // Check account balance to satisfy deletion prize and storage fee.
-        let total_fee = bag_change.total_deletion_prize + size_fee;
-        ensure!(usable_balance >= total_fee, Error::<T>::InsufficientBalance);
-
-        // Check buckets.
-        Self::check_bag_for_buckets_overflow(&bag, &bag_change.voucher_update)?;
-
         Ok(bag_change)
+    }
+
+    // objects creation list validity
+    fn ensure_objects_creation_list_validity(
+        object_creation_list: &[DataObjectCreationParameters],
+    ) -> DispatchResult {
+        // Check object creation list is not empty
+        ensure!(
+            !object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
+        // Check data objects' max size.
+        ensure!(
+            object_creation_list
+                .iter()
+                .all(|obj| obj.size <= T::MaxDataObjectSize::get()),
+            Error::<T>::MaxDataObjectSizeExceeded
+        );
+        Ok(())
     }
 
     // Iterates through buckets in the bag. Verifies voucher parameters to fit the new limits:
