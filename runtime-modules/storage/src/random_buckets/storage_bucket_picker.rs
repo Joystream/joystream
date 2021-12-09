@@ -13,7 +13,7 @@ pub(crate) struct StorageBucketPicker<T> {
 }
 
 impl<T: Trait> StorageBucketPicker<T> {
-    // Selects storage bucket ID sets to assign to the storage bucket.
+    // Selects storage bucket ID sets to assign to the dynamic bag.
     // At first, it tries to generate random bucket IDs. If acquired random IDs number is not enough
     // it tries to get additional IDs starting from zero up to the total number of the possible IDs.
     // The function filters deleted buckets and disabled buckets (accepting_new_bags == false)
