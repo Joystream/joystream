@@ -20,6 +20,7 @@ ${CLI} leader:update-bag -b static:council -f ${FAMILY_ID} -a ${BUCKET_1_INDEX} 
 # Test removing 2 buckets from bag at once
 ${CLI} leader:update-bag -b static:council -f ${FAMILY_ID} -r ${BUCKET_1_INDEX} ${BUCKET_2_INDEX}
 # Adding single bucket to all static bags
+${CLI} leader:update-bag -b static:council -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:storage -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:content -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:operationsAlpha -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
