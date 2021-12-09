@@ -12,7 +12,7 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
     let video_migration = await api.query.content.videoMigration();
 
     // wait for migration to be done
-    while (channel_migration.current_id.toNumber() < channel_migration.final_id.toNumber() &&
+    while (channel_migration.current_id.toNumber() < channel_migration.final_id.toNumber() ||
         video_migration.current_id.toNumber() < video_migration.final_id.toNumber()) {
         channel_migration = await api.query.content.channelMigration();
         video_migration = await api.query.content.videoMigration();
