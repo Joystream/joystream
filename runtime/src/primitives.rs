@@ -95,8 +95,9 @@ pub type DataObjectId = u64;
 /// Represent a storage bucket from the storage pallet.
 pub type StorageBucketId = u64;
 
-/// Represent a distribution bucket from the storage pallet.
-pub type DistributionBucketId = u64;
+/// Represent a distribution bucket index within the distribution bucket family from the
+/// storage pallet.
+pub type DistributionBucketIndex = u64;
 
 /// Represent a distribution bucket family from the storage pallet.
 pub type DistributionBucketFamilyId = u64;
