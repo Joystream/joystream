@@ -374,9 +374,7 @@ export interface DistributionBucket extends Struct {
 
 /** @name DistributionBucketFamily */
 export interface DistributionBucketFamily extends Struct {
-  readonly distribution_buckets: BTreeMap<DistributionBucketId, {
-    readonly accepting_new_bags: bool;
-  } & Struct>;
+  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketState>;
 }
 
 /** @name DistributionBucketFamilyId */
@@ -387,6 +385,11 @@ export interface DistributionBucketId extends u64 {}
 
 /** @name DistributionBucketIdSet */
 export interface DistributionBucketIdSet extends BTreeSet<DistributionBucketId> {}
+
+/** @name DistributionBucketState */
+export interface DistributionBucketState extends Struct {
+  readonly accepting_new_bags: bool;
+}
 
 /** @name Dynamic */
 export interface Dynamic extends Enum {
