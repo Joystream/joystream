@@ -1369,28 +1369,6 @@ impl<T: Trait> Module<T> {
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
-    fn pick_upload_parameters_from_assets(
-        assets: &StorageAssets<T>,
-        channel_id: &T::ChannelId,
-        prize_source_account: &T::AccountId,
-    ) -> UploadParameters<T> {
-        // dynamic bag for a media object
-        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
-        let bag_id = BagIdType::from(dyn_bag.clone());
-
-        if T::DataObjectStorage::ensure_bag_exists(&bag_id).is_err() {
-            // create_dynamic_bag checks automatically satifsfied with None as second parameter
-            Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
-        }
-
-        UploadParametersRecord {
-            bag_id,
-            object_creation_list: assets.object_creation_list.clone(),
-            deletion_prize_source_account_id: prize_source_account.clone(),
-            expected_data_size_fee: assets.expected_data_size_fee,
-        }
-    }
-
     fn actor_to_channel_owner(
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> ActorToChannelOwnerResult<T> {
@@ -1419,12 +1397,24 @@ impl<T: Trait> Module<T> {
         channel_id: &T::ChannelId,
         prize_source_account: &T::AccountId,
     ) -> DispatchResult {
-        // construct upload params
-        let upload_params =
-            Self::pick_upload_parameters_from_assets(assets, channel_id, prize_source_account);
+        // dynamic bag for the channel
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
+        let bag_id = BagIdType::from(dyn_bag.clone());
 
-        // attempt to upload objects att
-        Storage::<T>::upload_data_objects(upload_params.clone())?;
+        let upload_params = UploadParametersRecord {
+            bag_id: bag_id.clone(),
+            object_creation_list: assets.object_creation_list.clone(),
+            deletion_prize_source_account_id: prize_source_account.clone(),
+            expected_data_size_fee: assets.expected_data_size_fee,
+        };
+
+        // create dynamic bag if it doesn't exist (does not emits conflicting created/deleted bag events)
+        if let Err(_) = Storage::<T>::ensure_bag_exists(&bag_id) {
+            Storage::<T>::create_dynamic_bag_with_objects(dyn_bag, None, upload_params.clone())?;
+        };
+
+        // remove bag in case of upload error
+        Storage::<T>::upload_data_objects(upload_params)?;
 
         Ok(())
     }
