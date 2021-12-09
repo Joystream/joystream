@@ -2476,9 +2476,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
         let bag_change = Self::validate_upload_data_objects_parameters(&params)?;
-
+        Self::upload_data_objects_inner(&params, &bag_change, &bag)?;
         Ok(())
     }
 
@@ -2664,7 +2663,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    fn upload_data_objects_inner() {
+    fn upload_data_objects_inner(
+        params: &UploadParameters<T>,
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        bag: &Bag<T>,
+    ) -> DispatchResult {
         let data = Self::create_data_objects(params.object_creation_list.clone());
 
         <StorageTreasury<T>>::deposit(
