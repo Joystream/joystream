@@ -63,9 +63,8 @@ function main {
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
     CONTAINER_ID=$(start_node)
 
-    # 120 sec needed to load the chainspec + 480 sec in order to perform migration, given that
-    # a new block is produced every 6 sec
-    sleep 600
+    # 120 sec needed to load the chainspec
+    sleep 120
     
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
 	# verify assertion using typsecript
