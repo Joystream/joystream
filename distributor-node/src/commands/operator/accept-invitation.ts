@@ -6,14 +6,7 @@ export default class OperatorAcceptInvitation extends AccountsCommandBase {
   Requires the invited distribution group worker role key.`
 
   static flags = {
-    bucketId: flags.integer({
-      char: 'B',
-      description: 'Distribution bucket id',
-      required: true,
-    }),
-    familyId: flags.integer({
-      char: 'f',
-      description: 'Distribution bucket family id',
+    bucketId: flags.bucketId({
       required: true,
     }),
     workerId: flags.integer({
@@ -25,13 +18,16 @@ export default class OperatorAcceptInvitation extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { bucketId, familyId, workerId } = this.parse(OperatorAcceptInvitation).flags
+    const { bucketId, workerId } = this.parse(OperatorAcceptInvitation).flags
     const workerKey = await this.getDistributorWorkerRoleKey(workerId)
 
-    this.log(`Accepting distribution bucket operator invitation (bucket: ${bucketId}, worker: ${workerId})...`)
+    this.log(`Accepting distribution bucket operator invitation...`, {
+      bucketId: bucketId.toHuman(),
+      workerId,
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(workerKey),
-      this.api.tx.storage.acceptDistributionBucketInvitation(workerId, familyId, bucketId)
+      this.api.tx.storage.acceptDistributionBucketInvitation(workerId, bucketId)
     )
     this.log('Invitation succesfully accepted!')
   }
