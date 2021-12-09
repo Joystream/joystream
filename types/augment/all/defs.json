@@ -529,7 +529,11 @@
         "size": "u64",
         "ipfsContentId": "Bytes"
     },
-    "DistributionBucketId": "u64",
+    "DistributionBucketId": {
+        "distribution_bucket_family_id": "DistributionBucketFamilyId",
+        "distribution_bucket_index": "DistributionBucketIndex"
+    },
+    "DistributionBucketIndex": "u64",
     "DistributionBucketFamilyId": "u64",
     "DistributionBucket": {
         "accepting_new_bags": "bool",
@@ -539,13 +543,13 @@
         "assigned_bags": "u64"
     },
     "DistributionBucketFamily": {
-        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucketState>"
+        "next_distribution_bucket_index": "DistributionBucketIndex"
     },
     "DistributionBucketState": {
         "accepting_new_bags": "bool"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
-    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ProposalId": "u32",
     "ProposalStatus": {

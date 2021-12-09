@@ -105,7 +105,6 @@
 //! - DefaultMemberDynamicBagNumberOfStorageBuckets
 //! - DefaultChannelDynamicBagNumberOfStorageBuckets
 //! - MaxDistributionBucketFamilyNumber
-//! - MaxDistributionBucketNumberPerFamily
 //! - DistributionBucketsPerBagValueConstraint
 //! - MaxNumberOfPendingInvitationsPerDistributionBucket
 
