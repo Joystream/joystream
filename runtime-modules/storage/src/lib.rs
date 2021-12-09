@@ -2711,11 +2711,12 @@ impl<T: Trait> Module<T> {
         <Bags<T>>::insert(&bag_id, bag);
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
-            dynamic_bag_id,
-            deletion_prize,
+            dynamic_bag_id.clone(),
+            deletion_prize.clone(),
             storage_buckets,
             distribution_buckets,
         ));
+        Ok(())
     }
 
     fn upload_data_objects_inner(
@@ -2755,9 +2756,11 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
-            params,
+            params.clone(),
             T::DataObjectDeletionPrize::get(),
         ));
+
+        Ok(())
     }
 
     // Increment distribution family number in the storage.
