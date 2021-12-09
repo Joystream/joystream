@@ -97,6 +97,9 @@
 //! - delete_dynamic_bag
 //! - can_create_dynamic_bag
 //! - create_dynamic_bag
+//! - can_create_dynamic_bag_with_objects
+//! - create_dynamic_bag_with_objects
+
 //!
 //! ### Pallet constants
 //! - DataObjectDeletionPrize
