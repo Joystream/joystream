@@ -212,6 +212,20 @@ pub trait DataObjectStorage<T: Trait> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult;
 
+    /// Same as create_dynamic_bag but with caller provided objects/data
+    fn create_dynamic_bag_with_objects(
+        bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult;
+
+    /// Same as can_create_dynamic_bag but with caller provided objects/data
+    fn can_create_dynamic_bag_with_objects(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
+    ) -> DispatchResult;
+
     /// Checks if a bag does exists and returns it. Static Always exists
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
 
@@ -2624,6 +2638,36 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
         Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+    }
+    fn create_dynamic_bag_with_objects(
+        dynamic_bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult {
+        Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
+        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
+        Ok(())
+    }
+
+    fn can_create_dynamic_bag_with_objects(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
+    ) -> DispatchResult {
+        Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
+        Self::check_global_uploading_block()?;
+
+        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+
+        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
+
+        Self::ensure_enough_balance_for_upload(
+            &bag_change,
+            &params.deletion_prize_source_account_id,
+            &params.expected_data_size_fee,
+        )?;
+
+        Ok(())
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
