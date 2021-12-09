@@ -8,11 +8,16 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
 
     debug('Ensure migration is done')
 
-    const channel_migration = await api.query.content.channelMigration();
-    const video_migration = await api.query.content.videoMigration();
+    let channel_migration = await api.query.content.channelMigration();
+    let video_migration = await api.query.content.videoMigration();
 
-    assert.equal(channel_migration.current_id.toNumber(), channel_migration.final_id.toNumber())
-    assert.equal(video_migration.current_id.toNumber(), video_migration.final_id.toNumber())
+    // wait for migration to be done
+    while (channel_migration.current_id.toNumber() < channel_migration.final_id.toNumber() &&
+        video_migration.current_id.toNumber() < video_migration.final_id.toNumber()) {
+        channel_migration = await api.query.content.channelMigration();
+        video_migration = await api.query.content.videoMigration();
+
+    }
 
     debug('Check all new  working groups have been correctly initialized')
 
