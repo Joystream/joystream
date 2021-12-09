@@ -136,5 +136,5 @@ function start_node {
 		   -p 9944:9944 -p 9933:9933 joystream-node \
 		   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
 		   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-		   --chain /data/chain-spec-raw.json
+		   --chain /spec/chain-spec-raw.json
 }
