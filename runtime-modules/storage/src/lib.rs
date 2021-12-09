@@ -2685,10 +2685,10 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    fn create_dynamic_bag_with_objects(
-        dynamic_bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
-        params: UploadParameters<T>,
+    // dynamic bag creation logic
+    fn create_dynamic_bag_inner(
+        dynamic_bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
