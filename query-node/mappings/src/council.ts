@@ -45,7 +45,6 @@ import {
   CouncilMember,
   ElectionRound,
   ElectedCouncil,
-  VariantNone,
   CastVote,
   CandidacyNoteMetadata,
 
@@ -56,7 +55,7 @@ import { Council, Referendum } from '../generated/types'
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 
-/////////////////// Common - Gets //////////////////////////////////////////////
+/// /////////////// Common - Gets //////////////////////////////////////////////
 
 /*
   Retrieves the member record by its id.
@@ -195,10 +194,10 @@ function calculateVotePower(accountId: string, stake: BN): BN {
   Custom typeguard for council stage - announcing candidacy.
 */
 function isCouncilStageAnnouncing(councilStage: typeof CouncilStage): councilStage is CouncilStageAnnouncing {
-  return councilStage.isTypeOf == 'CouncilStageAnnouncing'
+  return councilStage.isTypeOf === 'CouncilStageAnnouncing'
 }
 
-/////////////////// Common /////////////////////////////////////////////////////
+/// /////////////// Common /////////////////////////////////////////////////////
 
 /*
   Creates new council stage update record.
@@ -294,7 +293,7 @@ async function convertCandidatesToCouncilMembers(
   return councilMembers
 }
 
-/////////////////// Council events /////////////////////////////////////////////
+/// /////////////// Council events /////////////////////////////////////////////
 
 /*
   The event is emitted when a new round of elections begins (can be caused by multiple reasons) and candidates can announce
@@ -303,7 +302,7 @@ async function convertCandidatesToCouncilMembers(
 export async function council_AnnouncingPeriodStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Council.AnnouncingPeriodStartedEvent(event).params
+  // const [] = new Council.AnnouncingPeriodStartedEvent(event).params
 
   const announcingPeriodStartedEvent = new AnnouncingPeriodStartedEvent({
     ...genericEventFields(event),
@@ -324,7 +323,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 export async function council_NotEnoughCandidates({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Council.NotEnoughCandidatesEvent(event).params
+  // const [] = new Council.NotEnoughCandidatesEvent(event).params
 
   const notEnoughCandidatesEvent = new NotEnoughCandidatesEvent({
     ...genericEventFields(event),
@@ -428,7 +427,6 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   const [memberIds] = new Council.NewCouncilElectedEvent(event).params
   const electedMemberIds = memberIds.map((item) => item.toString())
-  const members = await store.getMany(Membership, { where: { id: electedMemberIds } })
 
   // specific event processing
 
@@ -446,10 +444,10 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   const electionRound = await getCurrentElectionRound(store)
 
   // TODO: uncomment when following query will be working (after some QN patches make it to Olympia)
-  ////const electedCandidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds } } })
+  // const electedCandidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds } } })
   const electedCandidates = (
     await store.getMany(Candidate, { where: { electionRoundId: electionRound.id }, relations: ['member'] })
-  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId == item.member.id.toString()))
+  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId === item.member.id.toString()))
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
@@ -515,7 +513,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 export async function council_NewCouncilNotElected({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Council.NewCouncilNotElectedEvent(event).params
+  // const [] = new Council.NewCouncilNotElectedEvent(event).params
 
   const newCouncilNotElectedEvent = new NewCouncilNotElectedEvent({
     ...genericEventFields(event),
@@ -572,7 +570,6 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // specific event processing
 
   // mark candidacy as withdrawn
-  const electionRound = await getCurrentElectionRound(store)
   candidate.candidacyWithdrawn = true
   await store.save<Candidate>(candidate)
 }
@@ -593,7 +590,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const areBulletPointsBeingUnset = (metadataBulletPoints: string[]) => {
     // assumes areBulletPointsSet() were checked before
 
-    return metadataBulletPoints.length && metadataBulletPoints[0] == ''
+    return metadataBulletPoints.length && metadataBulletPoints[0] === ''
   }
 
   // unpack note's metadata and save it to db
@@ -770,7 +767,7 @@ export async function council_RequestFunded({ event, store }: EventContext & Sto
   // no specific event processing
 }
 
-/////////////////// Referendum events //////////////////////////////////////////
+/// /////////////// Referendum events //////////////////////////////////////////
 
 /*
   The event is emitted when the voting stage of elections starts.
@@ -817,7 +814,7 @@ export async function referendum_ReferendumStartedForcefully({
 export async function referendum_RevealingStageStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [] = new Referendum.RevealingStageStartedEvent(event).params
+  // const [] = new Referendum.RevealingStageStartedEvent(event).params
 
   const revealingStageStartedEvent = new RevealingStageStartedEvent({
     ...genericEventFields(event),
@@ -891,7 +888,7 @@ export async function referendum_VoteCast({ event, store }: EventContext & Store
 export async function referendum_VoteRevealed({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing - init
 
-  const [account, memberId, salt] = new Referendum.VoteRevealedEvent(event).params
+  const [account, memberId /*, salt */] = new Referendum.VoteRevealedEvent(event).params
 
   // specific event processing
 
@@ -934,7 +931,6 @@ export async function referendum_StakeReleased({ event, store }: EventContext & 
 
   // specific event processing
 
-  const electionRound = await getCurrentElectionRound(store)
   const castVote = await getAccountCastVote(store, stakingAccount.toString())
   castVote.stakeLocked = false
 

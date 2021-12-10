@@ -2,5 +2,8 @@ module.exports = {
   env: {
     node: true,
   },
-  rules: {},
+  rules: {
+    '@typescript-eslint/naming-convention': 'off',
+    '@typescript-eslint/no-explicit-any': 'off'
+  },
 }
