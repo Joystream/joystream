@@ -1,7 +1,7 @@
 import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
-import { FindConditions } from 'typeorm'
+import { FindConditions, SelectQueryBuilder } from 'typeorm'
 
 import {
   // Council events
@@ -77,20 +77,26 @@ async function getMembership(store: DatabaseManager, memberId: string): Promise<
 async function getCandidate(
   store: DatabaseManager,
   memberId: string,
-  electionRound?: ElectionRound
+  electionRound?: ElectionRound,
+  relations?: string[]
 ): Promise<Candidate> {
-  const where = { memberId: memberId } as FindConditions<Candidate>
-  if (electionRound) {
-    where.electionRound = electionRound
-  }
+  const event = await store.get(NewCandidateEvent, {
+    join: { alias: 'event', innerJoin: { candidate: 'event.candidate' } },
+    where: (qb: SelectQueryBuilder<NewCandidateEvent>) => {
+      qb.where('candidate.memberId = :memberId', { memberId })
+      if (electionRound) {
+        qb.andWhere('candidate.electionRoundId = :electionRoundId', { electionRoundId: electionRound.id })
+      }
+    },
+    order: { inBlock: 'DESC', indexInBlock: 'DESC' },
+    relations: ['candidate'].concat((relations || []).map((r) => `candidate.${r}`)),
+  })
 
-  const candidate = await store.get(Candidate, { where, order: { createdAt: 'DESC', candidacyWithdrawn: 'ASC' } })
-
-  if (!candidate) {
+  if (!event) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
   }
 
-  return candidate
+  return event.candidate
 }
 
 /*
@@ -584,7 +590,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
 
   // load candidate recored
   const electionRound = await getCurrentElectionRound(store)
-  const candidate = await getCandidate(store, memberId.toString(), electionRound)
+  const candidate = await getCandidate(store, memberId.toString(), electionRound, ['noteMetadata'])
 
   const areBulletPointsSet = (metadataBulletPoints: string[] | null | undefined) => !!metadataBulletPoints
   const areBulletPointsBeingUnset = (metadataBulletPoints: string[]) => {
@@ -597,24 +603,24 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
   const metadata = deserializeMetadata(CouncilCandidacyNoteMetadata, note)
   const noteMetadata = candidate.noteMetadata
   // `XXX || (null as any)` construct clears metadata if requested (see https://github.com/Joystream/hydra/issues/435)
-  noteMetadata.header = isSet(metadata?.header) ? metadata?.header || (null as any) : noteMetadata?.header
+  noteMetadata.header = isSet(metadata?.header) ? metadata?.header || (null as any) : noteMetadata.header
   noteMetadata.bulletPoints = areBulletPointsSet(metadata?.bulletPoints)
     ? areBulletPointsBeingUnset(metadata?.bulletPoints as string[]) // check deletion request
       ? [] // empty bullet points
       : (metadata?.bulletPoints as string[]) // set new value
-    : noteMetadata?.bulletPoints // keep previous value
+    : noteMetadata.bulletPoints // keep previous value
   noteMetadata.bannerImageUri = isSet(metadata?.bannerImageUri)
     ? metadata?.bannerImageUri || (null as any)
-    : noteMetadata?.bannerImageUri
+    : noteMetadata.bannerImageUri
   noteMetadata.description = isSet(metadata?.description)
     ? metadata?.description || (null as any)
-    : noteMetadata?.description
+    : noteMetadata.description
   await store.save<CandidacyNoteMetadata>(noteMetadata)
 
   // save metadata set by this event
   const noteMetadataSnapshot = new CandidacyNoteMetadata({
     header: metadata?.header ?? undefined,
-    bulletPoints: areBulletPointsSet(metadata?.bulletPoints) ? (metadata?.bulletPoints as string[]) : undefined,
+    bulletPoints: areBulletPointsSet(metadata?.bulletPoints) ? (metadata?.bulletPoints as string[]) : [],
     bannerImageUri: metadata?.bannerImageUri ?? undefined,
     description: metadata?.description ?? undefined,
   })
