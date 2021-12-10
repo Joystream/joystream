@@ -443,9 +443,11 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
 
-  const electedCandidates = await store.getMany(Candidate, {
-    where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds }, relations: ['member'] },
-  })
+  // TODO: uncomment when following query will be working (after some QN patches make it to Olympia)
+  // const electedCandidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds } } })
+  const electedCandidates = (
+    await store.getMany(Candidate, { where: { electionRoundId: electionRound.id }, relations: ['member'] })
+  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId === item.member.id.toString()))
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
