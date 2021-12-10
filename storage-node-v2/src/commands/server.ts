@@ -71,11 +71,6 @@ export default class Server extends ApiCommandBase {
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
-    disableUploadAuth: flags.boolean({
-      char: 'a',
-      description: 'Disable uploading authentication (should be used in testing-context only).',
-      default: false,
-    }),
     ...ApiCommandBase.flags,
   }
 
@@ -84,22 +79,20 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     await recreateTempDirectory(flags.uploads, TempDirName)
 
+    const logSource = `StorageProvider_${flags.worker}`
+
     if (fs.existsSync(flags.uploads)) {
       await loadDataObjectIdCache(flags.uploads, TempDirName)
     }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint)) {
-      initElasticLogger(flags.elasticSearchEndpoint ?? '')
+      initElasticLogger(logSource, flags.elasticSearchEndpoint ?? '')
     }
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
-    }
-
-    if (flags.disableUploadAuth) {
-      logger.warn(`Uploading auth-schema disabled.`)
     }
 
     const api = await this.getApi()
@@ -141,8 +134,9 @@ Supported values: warn, error, debug, info. Default:debug`,
         tempFileUploadingDir,
         process: this.config,
         queryNodeEndpoint: flags.queryNodeEndpoint,
-        enableUploadingAuth: !flags.disableUploadAuth,
+        enableUploadingAuth: false,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
+        logSource,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)

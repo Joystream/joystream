@@ -1,5 +1,6 @@
 import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
 import logger from '../logger'
+import _ from 'lodash'
 import {
   StorageBagDetailsFragment,
   StorageBucketDetailsFragment,
@@ -159,10 +160,15 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
   const idFragments = await api.getStorageBucketIds()
   const ids = idFragments.map((frag) => frag.id)
 
-  return await getAllObjectsWithPaging(
-    'get all storage buckets',
-    async (offset, limit) => await api.getStorageBucketDetails(ids.slice(offset, offset + limit), 0, limit)
-  )
+  return await getAllObjectsWithPaging(async (offset, limit) => {
+    const idsPart = ids.slice(offset, offset + limit)
+    if (!_.isEmpty(idsPart)) {
+      logger.debug(`Sync - getting all storage buckets: offset = ${offset}, limit = ${limit}`)
+      return await api.getStorageBucketDetails(idsPart, 0, limit)
+    } else {
+      return false
+    }
+  })
 }
 
 /**
@@ -196,8 +202,7 @@ async function getAllAssignedBags(api: QueryNodeApi, bucketIds: string[]): Promi
  * @returns storage operator URL
  */
 async function getAllObjectsWithPaging<T>(
-  objectName: string,
-  query: (offset: number, limit: number) => Promise<T[]>
+  query: (offset: number, limit: number) => Promise<T[] | false>
 ): Promise<T[]> {
   const result = []
   const limit = MAX_RESULTS_PER_QUERY
@@ -205,8 +210,13 @@ async function getAllObjectsWithPaging<T>(
 
   let resultPart = []
   do {
-    logger.debug(`Sync - getting ${objectName}: offset = ${offset}, limit = ${limit}`)
-    resultPart = await query(offset, limit)
+    const queryResult = await query(offset, limit)
+    if (queryResult === false) {
+      return result
+    } else {
+      resultPart = queryResult
+    }
+
     offset += limit
     result.push(...resultPart)
   } while (resultPart.length > 0)

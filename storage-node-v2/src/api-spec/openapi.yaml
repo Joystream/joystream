@@ -97,8 +97,6 @@ paths:
           description: Unknown server error
   /files:
     post:
-      security:
-        - UploadAuth: []
       description: Upload data
       operationId: filesApi.uploadFile
       tags:
@@ -141,43 +139,6 @@ paths:
                     type: string
         400:
           description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        401:
-          description: Unauthorized
-
-  /authToken:
-    post:
-      description: Get auth token from a server.
-      operationId: filesApi.authTokenForUploading
-      tags:
-        - files
-      requestBody:
-        description: Token request parameters,
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRequest'
-      responses:
-        201:
-          description: Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-        400:
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        401:
-          description: Unauthorized
           content:
             application/json:
               schema:
@@ -246,11 +207,6 @@ paths:
                 $ref: '#/components/schemas/DataStatsResponse'
 
 components:
-  securitySchemes:
-    UploadAuth:
-      type: apiKey
-      in: header
-      name: x-api-key
   schemas:
     TokenRequest:
       type: object

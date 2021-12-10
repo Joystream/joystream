@@ -23,14 +23,15 @@ const dataCache = new NodeCache({
  */
 export async function getAllLocalDataObjects(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
 ): Promise<void> {
   try {
     const ids = await getDataObjectIDs()
 
     res.status(200).json(ids)
   } catch (err) {
-    sendResponseWithError(res, err, 'all_data_objects')
+    sendResponseWithError(res, next, err, 'all_data_objects')
   }
 }
 
@@ -41,7 +42,8 @@ export async function getAllLocalDataObjects(
  */
 export async function getLocalDataStats(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
 ): Promise<void> {
   try {
     const uploadsDir = res.locals.uploadsDir
@@ -78,7 +80,7 @@ export async function getLocalDataStats(
       tempDirSize,
     })
   } catch (err) {
-    sendResponseWithError(res, err, 'local_data_stats')
+    sendResponseWithError(res, next, err, 'local_data_stats')
   }
 }
 
@@ -87,7 +89,8 @@ export async function getLocalDataStats(
  */
 export async function getLocalDataObjectsByBagId(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
 ): Promise<void> {
   try {
     const queryNodeUrl = res.locals.queryNodeEndpoint
@@ -102,7 +105,7 @@ export async function getLocalDataObjectsByBagId(
 
     res.status(200).json(localDataForBag)
   } catch (err) {
-    sendResponseWithError(res, err, 'data_objects_by_bag')
+    sendResponseWithError(res, next, err, 'data_objects_by_bag')
   }
 }
 
@@ -110,17 +113,13 @@ export async function getLocalDataObjectsByBagId(
  * A public endpoint: return the server version.
  */
 export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
-  try {
-    const config = res.locals.process
+  const config = res.locals.process
 
-    // Copy from an object, because the actual object could contain more data.
-    res.status(200).json({
-      version: config.version,
-      userAgent: config.userAgent,
-    })
-  } catch (err) {
-    sendResponseWithError(res, err, 'version')
-  }
+  // Copy from an object, because the actual object could contain more data.
+  res.status(200).json({
+    version: config.version,
+    userAgent: config.userAgent,
+  })
 }
 
 /**
@@ -145,7 +144,7 @@ function getBagId(req: express.Request): string {
  *
  */
 async function getCachedDataObjectsObligations(queryNodeUrl: string, bagId: string): Promise<string[]> {
-  const entryName = 'data_object_obligations'
+  const entryName = `data_object_obligations_${bagId}`
 
   if (!dataCache.has(entryName)) {
     const data = await getDataObjectIDsByBagId(queryNodeUrl, bagId)
