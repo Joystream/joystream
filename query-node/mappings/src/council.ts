@@ -52,7 +52,7 @@ import {
   // Misc
   Membership,
 } from 'query-node/dist/model'
-import { Council, Referendum } from './generated/types'
+import { Council, Referendum } from '../generated/types'
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 
@@ -842,7 +842,7 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
       (item, index) =>
         new ReferendumStageRevealingOptionResult({
           votePower: item.vote_power,
-          option: optionResultsRaw[index].option_id.toString(),
+          option: new Membership({ id: optionResultsRaw[index].option_id.toString() }),
         })
     ),
   })

@@ -1781,7 +1781,7 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@2.39.0":
+"@joystream/warthog@2.39.0", "@joystream/warthog@^2.40.0":
   version "2.39.0"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.39.0.tgz#3587b94953aed929bff809a7ba763d495e03170c"
   integrity sha512-gwZ8oBqcN7Xez8BfBDeDIyMhZ7VcL2paMuj0n3qOplyH+sxsBwgBemDzV6RThmAGi3GOhVVQJqOMq3w6siWqzA==
@@ -2936,7 +2936,7 @@
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.0.tgz#2f8bb441434d163b35fb8ffdccd7138927ffb8c0"
   integrity sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==
 
-"@types/pg@^7.11.2", "@types/pg@^7.14.11":
+"@types/pg@^7.14.11":
   version "7.14.11"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-7.14.11.tgz#daf5555504a1f7af4263df265d91f140fece52e3"
   integrity sha512-EnZkZ1OMw9DvNfQkn2MTJrwKmhJYDEs5ujWrPfvseWNoI95N8B4HzU/Ltrq5ZfYxDX/Zg8mTzwr6UAyTjjFvXA==
@@ -13225,7 +13225,7 @@ pg-types@^2.1.0, pg-types@^2.2.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg@8.0.3, pg@^8.3.2, pg@^8.4.0, pg@^8.6.0:
+pg@^8.3.2, pg@^8.4.0, pg@^8.6.0:
   version "8.6.0"
   resolved "https://registry.yarnpkg.com/pg/-/pg-8.6.0.tgz#e222296b0b079b280cce106ea991703335487db2"
   integrity sha512-qNS9u61lqljTDFvmk/N66EeGq3n6Ujzj0FFyNMGQr6XuEv4tgNTXvJQTfJdcvGit5p5/DWPu+wj920hAJFI+QQ==
@@ -13245,7 +13245,7 @@ pgpass@1.x:
   dependencies:
     split2 "^3.1.1"
 
-pgtools@^0.3.0, pgtools@^0.3.1:
+pgtools@^0.3.1:
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/pgtools/-/pgtools-0.3.2.tgz#df11d54057c889e27ba891664efda69de1b7a0fe"
   integrity sha512-o9iI8CrJohpjt3hgoJuEC18oYrt/iLsc3BYtW6kP/0T7EyQ9T/WlnuzyKcC2GtfutREfXCmwaUcbqPrLw8sjng==
@@ -16292,17 +16292,12 @@ typedi@^0.8.0:
   resolved "https://registry.yarnpkg.com/typedi/-/typedi-0.8.0.tgz#d8e203bd1d41a96e2b0a5c6295147d74b2b2d03e"
   integrity sha512-/c7Bxnm6eh5kXx2I+mTuO+2OvoWni5+rXA3PhXwVWCtJRYmz3hMok5s1AKLzoDvNAZqj/Q/acGstN0ri5aQoOA==
 
-typeorm-typedi-extensions@^0.2.3:
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/typeorm-typedi-extensions/-/typeorm-typedi-extensions-0.2.3.tgz#94fca2656206d771bf6d2242f5aab570511188e8"
-  integrity sha512-T9i1NvRZNjPn9Jb8oT772ihfn6PwdqDVpzPCtKSqjkZGOgXrCkdyD3dDrzfMaoWJ1afU58bVx2CMb95FzT42Ow==
-
 typeorm-typedi-extensions@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/typeorm-typedi-extensions/-/typeorm-typedi-extensions-0.4.1.tgz#e62e3c8f30021c9b8f258e068d38723dbd64de1d"
   integrity sha512-05hWktQ4zuXzTTUO3ao56yOezlvUuZhH2NRS//m0SOGCAJoVlfPTMHcmDaMSQy/lMfAwPWoIyn+sfK7ONzTdXQ==
 
-typeorm@0.2.34, typeorm@^0.2.25, typeorm@^0.2.31, typeorm@^0.2.32:
+typeorm@0.2.34, typeorm@^0.2.25, typeorm@^0.2.32:
   version "0.2.34"
   resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.34.tgz#637b3cec2de54ee7f423012b813a2022c0aacc8b"
   integrity sha512-FZAeEGGdSGq7uTH3FWRQq67JjKu0mgANsSZ04j3kvDYNgy9KwBl/6RFgMVgiSgjf7Rqd7NrhC2KxVT7I80qf7w==
@@ -16749,70 +16744,6 @@ warning@^4.0.1, warning@^4.0.3:
   integrity sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==
   dependencies:
     loose-envify "^1.0.0"
-
-"warthog@https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz":
-  version "2.30.0"
-  resolved "https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz#24a0b975f2ad5cba17a934752ac07052e856b49c"
-  dependencies:
-    "@types/app-root-path" "^1.2.4"
-    "@types/bn.js" "^4.11.6"
-    "@types/caller" "^1.0.0"
-    "@types/cosmiconfig" "^6.0.0"
-    "@types/debug" "^4.1.5"
-    "@types/dotenv" "^8.2.0"
-    "@types/express" "^4.17.2"
-    "@types/graphql" "^14.5.0"
-    "@types/graphql-fields" "^1.3.2"
-    "@types/graphql-iso-date" "^3.3.3"
-    "@types/graphql-type-json" "^0.3.2"
-    "@types/isomorphic-fetch" "^0.0.35"
-    "@types/lodash" "^4.14.148"
-    "@types/mkdirp" "^0.5.2"
-    "@types/node" "^12.12.8"
-    "@types/node-emoji" "^1.8.1"
-    "@types/open" "^6.2.1"
-    "@types/pg" "^7.11.2"
-    "@types/prettier" "^1.18.3"
-    "@types/shortid" "^0.0.29"
-    "@types/ws" "^6.0.3"
-    apollo-link-error "^1.1.12"
-    apollo-link-http "^1.5.16"
-    apollo-server "^2.9.9"
-    apollo-server-express "^2.9.9"
-    app-root-path "^3.0.0"
-    bn.js "^5.2.0"
-    caller "^1.0.1"
-    class-transformer "^0.2.3"
-    class-validator "^0.11.0"
-    cosmiconfig "^6.0.0"
-    cross-fetch "^3.0.4"
-    dataloader "^1.4.0"
-    debug "^4.1.1"
-    execa "^4.0.3"
-    express "^4.17.1"
-    gluegun "^4.1.0"
-    graphql "^14.5.8"
-    graphql-binding "^2.5.2"
-    graphql-fields "^2.0.3"
-    graphql-import-node "^0.0.4"
-    graphql-iso-date "^3.6.1"
-    graphql-scalars "^1.2.6"
-    graphql-tools "^4.0.6"
-    graphql-type-json "^0.3.0"
-    lodash "^4.17.15"
-    mkdirp "^0.5.1"
-    node-emoji "^1.10.0"
-    open "^7.0.0"
-    pg "8.0.3"
-    pgtools "^0.3.0"
-    prettier "^1.19.1"
-    reflect-metadata "^0.1.13"
-    shortid "^2.2.15"
-    type-graphql "^0.17.5"
-    typedi "^0.8.0"
-    typeorm "^0.2.25"
-    typeorm-typedi-extensions "^0.2.3"
-    typescript "^3.9.7"
 
 wcwidth@^1.0.1:
   version "1.0.1"

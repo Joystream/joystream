@@ -3,7 +3,7 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 
-import { StorageWorkingGroup as WorkingGroups } from './generated/types'
+import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,

@@ -2,11 +2,11 @@
   "name": "query-node-mappings",
   "version": "0.1.0",
   "description": "Mappings for hydra-processor",
-  "main": "lib/mappings/index.js",
+  "main": "lib/src/index.js",
   "license": "MIT",
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json && cp ./generated/types/typedefs.json ./lib/generated/types/typedefs.json",
-    "lint": "echo \"Skippinng\"",
+    "lint": "eslint ./src --ext .ts",
     "clean": "rm -rf lib",
     "postinstall": "yarn ts-node ./scripts/postInstall.ts",
     "postHydraCLIInstall": "yarn ts-node ./scripts/postHydraCLIInstall.ts"
