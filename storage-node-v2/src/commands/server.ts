@@ -10,9 +10,7 @@ import rimraf from 'rimraf'
 import _ from 'lodash'
 import path from 'path'
 import { promisify } from 'util'
-import { KeyringPair } from '@polkadot/keyring/types'
 import ExitCodes from './../command-base/ExitCodes'
-import { CLIError } from '@oclif/errors'
 import fs from 'fs'
 const fsPromises = fs.promises
 
@@ -64,6 +62,12 @@ export default class Server extends ApiCommandBase {
       description: 'Sync workers number (max async operations in progress).',
       default: 20,
     }),
+    syncWorkersTimeout: flags.integer({
+      char: 't',
+      required: false,
+      description: 'Asset downloading timeout for the syncronization (in minutes).',
+      default: 30,
+    }),
     elasticSearchEndpoint: flags.string({
       char: 'e',
       required: false,
@@ -108,6 +112,7 @@ Supported values: warn, error, debug, info. Default:debug`,
             flags.uploads,
             TempDirName,
             flags.syncWorkersNumber,
+            flags.syncWorkersTimeout,
             flags.syncInterval
           ),
         0
@@ -115,8 +120,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     const storageProviderAccount = this.getAccount(flags)
-
-    await verifyWorkerId(api, flags.worker, storageProviderAccount)
 
     try {
       const port = flags.port
@@ -159,6 +162,7 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @param uploadsDir - data uploading directory
  * @param tempDirectory - temporary data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync
+ * @param syncWorkersTimeout - downloading asset timeout
  * @param syncIntervalMinutes - defines an interval between sync runs
  *
  * @returns void promise.
@@ -170,15 +174,24 @@ async function runSyncWithInterval(
   uploadsDirectory: string,
   tempDirectory: string,
   syncWorkersNumber: number,
+  syncWorkersTimeout: number,
   syncIntervalMinutes: number
 ) {
-  const sleepInteval = syncIntervalMinutes * 60 * 1000
+  const sleepInteval = syncIntervalMinutes * 60 * 100
   while (true) {
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepInteval)
     try {
       logger.info(`Resume syncing....`)
-      await performSync(api, workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory, tempDirectory)
+      await performSync(
+        api,
+        workerId,
+        syncWorkersNumber,
+        syncWorkersTimeout,
+        queryNodeUrl,
+        uploadsDirectory,
+        tempDirectory
+      )
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
     }
@@ -205,25 +218,5 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
     await fsPromises.mkdir(tempFileUploadingDir)
   } catch (err) {
     logger.error(`Temp directory IO error: ${err}`)
-  }
-}
-
-/**
- * Verifies the worker ID from the command line argument and provided Joystream account.
- * It throws an error when not matched.
- *
- * @param api - runtime API promise
- * @param workerId - worker ID from the command line arguments
- * @param account - Joystream account KeyringPair
- * @returns void promise.
- */
-async function verifyWorkerId(api: ApiPromise, workerId: number, account: KeyringPair): Promise<void> {
-  // Cast Codec type to Worker type
-  const worker = await api.query.storageWorkingGroup.workerById(workerId)
-
-  if (worker.role_account_id.toString() !== account.address) {
-    throw new CLIError(`Provided worker ID doesn't match the Joystream account.`, {
-      exit: ExitCodes.InvalidWorkerId,
-    })
   }
 }
