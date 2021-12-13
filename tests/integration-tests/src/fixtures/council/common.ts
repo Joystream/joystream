@@ -28,7 +28,7 @@ export async function assertCouncilMembersRuntimeQnMatch(api: Api, query: QueryN
   )
 }
 
-export async function prepareFailtToElectResources(api: Api, query: QueryNodeApi): Promise<IFailToElectResources> {
+export async function prepareFailToElectResources(api: Api, query: QueryNodeApi): Promise<IFailToElectResources> {
   const { councilSize, minNumberOfExtraCandidates } = api.consts.council
   const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
 
