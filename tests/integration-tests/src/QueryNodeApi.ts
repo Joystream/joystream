@@ -8,6 +8,10 @@ import {
   GetCurrentCouncilMembers,
   GetCurrentCouncilMembersQuery,
   GetCurrentCouncilMembersQueryVariables,
+  ReferendumIntermediateWinnersFieldsFragment,
+  GetReferendumIntermediateWinners,
+  GetReferendumIntermediateWinnersQuery,
+  GetReferendumIntermediateWinnersQueryVariables,
   GetMemberByIdQuery,
   GetMemberByIdQueryVariables,
   GetMemberById,
@@ -443,6 +447,14 @@ export class QueryNodeApi {
       GetCurrentCouncilMembers,
       {},
       'electedCouncils'
+    )
+  }
+
+  public async getReferendumIntermediateWinners(): Promise<ReferendumIntermediateWinnersFieldsFragment | null> {
+    return this.firstEntityQuery<GetReferendumIntermediateWinnersQuery, GetReferendumIntermediateWinnersQueryVariables>(
+      GetReferendumIntermediateWinners,
+      {},
+      'electionRounds'
     )
   }
 

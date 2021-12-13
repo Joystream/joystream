@@ -122,42 +122,33 @@ type CandidacyNoteMetadata @entity {
 
 ################### Referendum #################################################
 
-# This section (ReferendumStage*) is not useful before referencing variant is solved.
-# See commented reference in ElectionRound, for example.
-# Uncomment after solving the issue or delete if it can't be solved or is not needed
-# in the future.
-#
-#type ReferendumStageInactive @variant {
-#  # no properties
-#
-#  # TODO: remove me - variant needs to have at least 1 property now
-#  dummy: Int
-#}
-#
-#type ReferendumStageVoting @variant {
-#  "Block in which referendum started."
-#  started: BigInt!
-#
-#  "Target number of winners."
-#  winningTargetCount: BigInt!
-#
-#  "Index of current election"
-#  electionRound: ElectionRound!
-#}
-#
-#type ReferendumStageRevealing @variant {
-#  "Block in which referendum started"
-#  started: BigInt!
-#
-#  "Target number of winners"
-#  winningTargetCount: BigInt!
-#
-#  "Intermediate winning options"
-#  intermediateWinners: [ReferendumStageRevealingOptionResult!]!
-#
-#  "Index of current election"
-#  electionRound: ElectionRound!
-#}
+# NOTE: Due to the bug https://github.com/Joystream/hydra/issues/467 `ReferendumStage*` variants were transformed to entities.
+#       It shouldn't have any negative impact on current usage, but it might need remodeling in the future depending on usage.
+
+type ReferendumStageVoting @entity {
+  "Block in which referendum started."
+  startedAtBlock: BigInt!
+
+  "Target number of winners."
+  winningTargetCount: BigInt!
+
+  "Election round"
+  electionRound: ElectionRound!
+}
+
+type ReferendumStageRevealing @entity {
+  "Block in which referendum started"
+  startedAtBlock: BigInt!
+
+  "Target number of winners"
+  winningTargetCount: BigInt!
+
+  "Intermediate winning options"
+  intermediateWinners: [ReferendumStageRevealingOptionResult!]! @derivedFrom(field: "referendumStageRevealing")
+
+  "Election round."
+  electionRound: ElectionRound!
+}
 
 type ReferendumStageRevealingOptionResult @entity {
   "Member that received votes."
@@ -166,18 +157,12 @@ type ReferendumStageRevealingOptionResult @entity {
   "Sum of votes' power received."
   votePower: BigInt!
 
-  # TODO: reference variant (how?)
-  #referendumRevealingStages: [ReferendumStageRevealing!]! @derivedFrom(field: "intermediateWinners")
-
-  "Election round."
-  electionRound: ElectionRound!
+  "Referendum revealing stage."
+  referendumStageRevealing: ReferendumStageRevealing!
 
   "Event that concluded the referendum."
-  referendumFinishedEvent: ReferendumFinishedEvent!
+  referendumFinishedEvent: ReferendumFinishedEvent
 }
-
-# TODO: this maybe needs to be @entity - so it's saved in db
-#union ReferendumStage = ReferendumStageInactive | ReferendumStageVoting | ReferendumStageRevealing | VariantNone
 
 type CastVote @entity {
   "Hashed vote that was casted before being revealed. Hex format."
@@ -251,9 +236,11 @@ type ElectionRound @entity {
   "Vote cast in the election round."
   castVotes: [CastVote!]! @derivedFrom(field: "electionRound")
 
-  # TODO: reference variant (how?)
-  #referendumStageVoting: ReferendumStage @derivedFrom(field: "cycleId")
-  #referendumStageRevealing: ReferendumStage @derivedFrom(field: "cycleId")
+  "Referendum voting stage that happened during this election round."
+  referendumStageVoting: ReferendumStageVoting @derivedFrom(field: "electionRound")
+
+  "Referendum revealing stage that happened during this election round."
+  referendumStageRevealing: ReferendumStageRevealing @derivedFrom(field: "electionRound")
 
   "Council that is ruling during the election."
   electedCouncil: ElectedCouncil!

@@ -490,7 +490,7 @@ type ReferendumFinishedEvent implements Event @entity {
   ### SPECIFIC DATA ###
 
   "Referendum results."
-  optionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "referendumFinishedEvent")
+  optionResults: [ReferendumStageRevealingOptionResult!]! @derivedFrom(field: "referendumFinishedEvent")
 }
 
 type VoteCastEvent implements Event @entity {

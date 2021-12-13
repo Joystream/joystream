@@ -1,6 +1,12 @@
 import { StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import { MembershipSystemSnapshot, WorkingGroup, ElectedCouncil, ElectionRound } from 'query-node/dist/model'
+import {
+  MembershipSystemSnapshot,
+  WorkingGroup,
+  ElectedCouncil,
+  ElectionRound,
+  VariantNone,
+} from 'query-node/dist/model'
 import { membershipSystem, workingGroups } from './genesis-data'
 import { CURRENT_NETWORK } from './common'
 

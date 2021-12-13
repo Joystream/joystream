@@ -77,12 +77,25 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await api.prepareAccountsForFeeExpenses(votersStakingAccounts, votingTxs)
     await api.sendExtrinsicsAndGetResults(revealingTxs, votersStakingAccounts)
 
+    const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
+
+    // check intermediate election winners are properly set
+    await query.tryQueryWithTimeout(
+      () => query.getReferendumIntermediateWinners(),
+      (qnReferendumIntermediateWinners) => {
+        assert.sameMembers(
+          qnReferendumIntermediateWinners!.referendumStageRevealing!.intermediateWinners!.map(item => item.option.id.toString()),
+          candidatesToWinIds
+        )
+      }
+    )
+
     await this.api.untilCouncilStage('Idle')
 
     const councilMembers = await api.query.council.councilMembers()
     assert.sameMembers(
       councilMembers.map((m) => m.membership_id.toString()),
-      candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
+      candidatesToWinIds
     )
 
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)

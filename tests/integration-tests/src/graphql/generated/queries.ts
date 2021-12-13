@@ -5,9 +5,19 @@ export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
 export type ElectedCouncilFieldsFragment = { councilMembers: Array<CouncilMemberFieldsFragment> }
 
+export type ReferendumIntermediateWinnersFieldsFragment = {
+  referendumStageRevealing?: Types.Maybe<{ intermediateWinners: Array<{ option: { id: string } }> }>
+}
+
 export type GetCurrentCouncilMembersQueryVariables = Types.Exact<{ [key: string]: never }>
 
 export type GetCurrentCouncilMembersQuery = { electedCouncils: Array<ElectedCouncilFieldsFragment> }
+
+export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetReferendumIntermediateWinnersQuery = {
+  electionRounds: Array<ReferendumIntermediateWinnersFieldsFragment>
+}
 
 export type ForumCategoryFieldsFragment = {
   id: string
@@ -846,9 +856,9 @@ type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: any
+  stakeAmount: number
   unstakingPeriod: number
-  rewardPerBlock: any
+  rewardPerBlock: number
   metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
   group?: Types.Maybe<{ id: string }>
 }
@@ -861,31 +871,31 @@ type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment =
 
 type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
   __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: any
+  amount: number
   group?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
   __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: any
+  amount: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: any
+  amount: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
   __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: any
+  newRewardPerBlock: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<any>
+  slashingAmount?: Types.Maybe<number>
   lead?: Types.Maybe<{ id: string }>
 }
 
@@ -901,22 +911,22 @@ type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
 
 type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
   __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: any
+  newPrice: number
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
   __typename: 'SetCouncilBudgetIncrementProposalDetails'
-  newAmount: any
+  newAmount: number
 }
 
 type ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment = {
   __typename: 'SetCouncilorRewardProposalDetails'
-  newRewardPerBlock: any
+  newRewardPerBlock: number
 }
 
 type ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment = {
   __typename: 'SetInitialInvitationBalanceProposalDetails'
-  newInitialInvitationBalance: any
+  newInitialInvitationBalance: number
 }
 
 type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
@@ -1906,6 +1916,17 @@ export const ElectedCouncilFields = gql`
     }
   }
   ${CouncilMemberFields}
+`
+export const ReferendumIntermediateWinnersFields = gql`
+  fragment ReferendumIntermediateWinnersFields on ElectionRound {
+    referendumStageRevealing {
+      intermediateWinners {
+        option {
+          id
+        }
+      }
+    }
+  }
 `
 export const ForumCategoryFields = gql`
   fragment ForumCategoryFields on ForumCategory {
@@ -3647,6 +3668,14 @@ export const GetCurrentCouncilMembers = gql`
     }
   }
   ${ElectedCouncilFields}
+`
+export const GetReferendumIntermediateWinners = gql`
+  query getReferendumIntermediateWinners {
+    electionRounds(orderBy: createdAt_DESC) {
+      ...ReferendumIntermediateWinnersFields
+    }
+  }
+  ${ReferendumIntermediateWinnersFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {

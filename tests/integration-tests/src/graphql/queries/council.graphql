@@ -11,8 +11,24 @@ fragment ElectedCouncilFields on ElectedCouncil {
   }
 }
 
+fragment ReferendumIntermediateWinnersFields on ElectionRound {
+  referendumStageRevealing {
+    intermediateWinners {
+      option {
+        id
+      }
+    }
+  }
+}
+
 query getCurrentCouncilMembers {
   electedCouncils(where: { endedAtBlock_eq: null }) {
     ...ElectedCouncilFields
+  }
+}
+
+query getReferendumIntermediateWinners {
+  electionRounds(orderBy: createdAt_DESC) {
+    ...ReferendumIntermediateWinnersFields
   }
 }
