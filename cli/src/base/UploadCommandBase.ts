@@ -249,7 +249,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       this.error('No active storage node found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
     }
     this.log(`Chosen storage node endpoint: ${storageNodeInfo.apiEndpoint}`)
-    const token = await this.getStorageNodeUploadToken(storageNodeInfo, account, memberId, objectId, bagId)
     const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
       filePath,
       `Uploading ${filePath}`,
@@ -272,7 +271,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     try {
       await axios.post(`${storageNodeInfo.apiEndpoint}/files`, formData, {
         headers: {
-          'x-api-key': token,
           'content-type': 'multipart/form-data',
           ...formData.getHeaders(),
         },
