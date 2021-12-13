@@ -89,11 +89,11 @@ type Membership @entity {
   #"Council reward payment made received by the member."
   #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
 
+  "Candidacies announced by this member."
+  councilCandidacies: [Candidate!] @derivedFrom(field: "member")
+
   "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
-
-  "Referendum results for the member."
-  referendumStageRevealingOptionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "option")
 }
 
 type MembershipSystemSnapshot @entity {

@@ -488,9 +488,6 @@ type ReferendumFinishedEvent implements Event @entity {
   indexInBlock: Int!
 
   ### SPECIFIC DATA ###
-
-  "Referendum results."
-  optionResults: [ReferendumStageRevealingOptionResult!]! @derivedFrom(field: "referendumFinishedEvent")
 }
 
 type VoteCastEvent implements Event @entity {

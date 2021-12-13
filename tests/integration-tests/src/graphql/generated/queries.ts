@@ -5,19 +5,18 @@ export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
 export type ElectedCouncilFieldsFragment = { councilMembers: Array<CouncilMemberFieldsFragment> }
 
-export type ReferendumIntermediateWinnersFieldsFragment = {
-  referendumStageRevealing?: Types.Maybe<{ intermediateWinners: Array<{ option: { id: string } }> }>
-}
+export type CandidateFieldsFragment = { id: string; member: { id: string } }
 
 export type GetCurrentCouncilMembersQueryVariables = Types.Exact<{ [key: string]: never }>
 
 export type GetCurrentCouncilMembersQuery = { electedCouncils: Array<ElectedCouncilFieldsFragment> }
 
-export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{
+  electionRoundCycleId: Types.Scalars['Int']
+  councilSize: Types.Scalars['Int']
+}>
 
-export type GetReferendumIntermediateWinnersQuery = {
-  electionRounds: Array<ReferendumIntermediateWinnersFieldsFragment>
-}
+export type GetReferendumIntermediateWinnersQuery = { candidates: Array<CandidateFieldsFragment> }
 
 export type ForumCategoryFieldsFragment = {
   id: string
@@ -1917,14 +1916,11 @@ export const ElectedCouncilFields = gql`
   }
   ${CouncilMemberFields}
 `
-export const ReferendumIntermediateWinnersFields = gql`
-  fragment ReferendumIntermediateWinnersFields on ElectionRound {
-    referendumStageRevealing {
-      intermediateWinners {
-        option {
-          id
-        }
-      }
+export const CandidateFields = gql`
+  fragment CandidateFields on Candidate {
+    id
+    member {
+      id
     }
   }
 `
@@ -3670,12 +3666,16 @@ export const GetCurrentCouncilMembers = gql`
   ${ElectedCouncilFields}
 `
 export const GetReferendumIntermediateWinners = gql`
-  query getReferendumIntermediateWinners {
-    electionRounds(orderBy: createdAt_DESC) {
-      ...ReferendumIntermediateWinnersFields
+  query getReferendumIntermediateWinners($electionRoundCycleId: Int!, $councilSize: Int!) {
+    candidates(
+      where: { electionRound: { cycleId_eq: $electionRoundCycleId }, votePower_gt: 0 }
+      orderBy: [votePower_DESC, lastVoteReceivedAtBlock_ASC, lastVoteReceivedAtEventNumber_ASC]
+      limit: $councilSize
+    ) {
+      ...CandidateFields
     }
   }
-  ${ReferendumIntermediateWinnersFields}
+  ${CandidateFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {

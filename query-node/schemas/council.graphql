@@ -71,6 +71,12 @@ type Candidate @entity {
   "Sum of power of all votes received."
   votePower: BigInt!
 
+  "Block in which the last vote was received."
+  lastVoteReceivedAtBlock: BigInt
+
+  "Event number in block in which the last vote was received."
+  lastVoteReceivedAtEventNumber: Int
+
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
 
@@ -143,25 +149,8 @@ type ReferendumStageRevealing @entity {
   "Target number of winners"
   winningTargetCount: BigInt!
 
-  "Intermediate winning options"
-  intermediateWinners: [ReferendumStageRevealingOptionResult!]! @derivedFrom(field: "referendumStageRevealing")
-
   "Election round."
   electionRound: ElectionRound!
-}
-
-type ReferendumStageRevealingOptionResult @entity {
-  "Member that received votes."
-  option: Membership!
-
-  "Sum of votes' power received."
-  votePower: BigInt!
-
-  "Referendum revealing stage."
-  referendumStageRevealing: ReferendumStageRevealing!
-
-  "Event that concluded the referendum."
-  referendumFinishedEvent: ReferendumFinishedEvent
 }
 
 type CastVote @entity {

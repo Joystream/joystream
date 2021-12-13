@@ -81,12 +81,10 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
     // check intermediate election winners are properly set
     await query.tryQueryWithTimeout(
-      () => query.getReferendumIntermediateWinners(),
+      () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
       (qnReferendumIntermediateWinners) => {
         assert.sameMembers(
-          qnReferendumIntermediateWinners!.referendumStageRevealing!.intermediateWinners!.map((item) =>
-            item.option.id.toString()
-          ),
+          qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
           candidatesToWinIds
         )
       }

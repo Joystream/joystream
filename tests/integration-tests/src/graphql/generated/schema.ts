@@ -2043,6 +2043,10 @@ export type Candidate = BaseGraphQlObject & {
   candidacyWithdrawn: Scalars['Boolean']
   /** Sum of power of all votes received. */
   votePower: Scalars['BigInt']
+  /** Block in which the last vote was received. */
+  lastVoteReceivedAtBlock?: Maybe<Scalars['BigInt']>
+  /** Event number in block in which the last vote was received. */
+  lastVoteReceivedAtEventNumber?: Maybe<Scalars['Int']>
   noteMetadata: CandidacyNoteMetadata
   noteMetadataId: Scalars['String']
   votesRecieved: Array<CastVote>
@@ -2067,6 +2071,8 @@ export type CandidateCreateInput = {
   stakeLocked: Scalars['Boolean']
   candidacyWithdrawn: Scalars['Boolean']
   votePower: Scalars['String']
+  lastVoteReceivedAtBlock?: Maybe<Scalars['String']>
+  lastVoteReceivedAtEventNumber?: Maybe<Scalars['Float']>
   noteMetadata: Scalars['ID']
 }
 
@@ -2098,6 +2104,10 @@ export enum CandidateOrderByInput {
   CandidacyWithdrawnDesc = 'candidacyWithdrawn_DESC',
   VotePowerAsc = 'votePower_ASC',
   VotePowerDesc = 'votePower_DESC',
+  LastVoteReceivedAtBlockAsc = 'lastVoteReceivedAtBlock_ASC',
+  LastVoteReceivedAtBlockDesc = 'lastVoteReceivedAtBlock_DESC',
+  LastVoteReceivedAtEventNumberAsc = 'lastVoteReceivedAtEventNumber_ASC',
+  LastVoteReceivedAtEventNumberDesc = 'lastVoteReceivedAtEventNumber_DESC',
   NoteMetadataAsc = 'noteMetadata_ASC',
   NoteMetadataDesc = 'noteMetadata_DESC',
 }
@@ -2111,6 +2121,8 @@ export type CandidateUpdateInput = {
   stakeLocked?: Maybe<Scalars['Boolean']>
   candidacyWithdrawn?: Maybe<Scalars['Boolean']>
   votePower?: Maybe<Scalars['String']>
+  lastVoteReceivedAtBlock?: Maybe<Scalars['String']>
+  lastVoteReceivedAtEventNumber?: Maybe<Scalars['Float']>
   noteMetadata?: Maybe<Scalars['ID']>
 }
 
@@ -2165,6 +2177,18 @@ export type CandidateWhereInput = {
   votePower_lt?: Maybe<Scalars['BigInt']>
   votePower_lte?: Maybe<Scalars['BigInt']>
   votePower_in?: Maybe<Array<Scalars['BigInt']>>
+  lastVoteReceivedAtBlock_eq?: Maybe<Scalars['BigInt']>
+  lastVoteReceivedAtBlock_gt?: Maybe<Scalars['BigInt']>
+  lastVoteReceivedAtBlock_gte?: Maybe<Scalars['BigInt']>
+  lastVoteReceivedAtBlock_lt?: Maybe<Scalars['BigInt']>
+  lastVoteReceivedAtBlock_lte?: Maybe<Scalars['BigInt']>
+  lastVoteReceivedAtBlock_in?: Maybe<Array<Scalars['BigInt']>>
+  lastVoteReceivedAtEventNumber_eq?: Maybe<Scalars['Int']>
+  lastVoteReceivedAtEventNumber_gt?: Maybe<Scalars['Int']>
+  lastVoteReceivedAtEventNumber_gte?: Maybe<Scalars['Int']>
+  lastVoteReceivedAtEventNumber_lt?: Maybe<Scalars['Int']>
+  lastVoteReceivedAtEventNumber_lte?: Maybe<Scalars['Int']>
+  lastVoteReceivedAtEventNumber_in?: Maybe<Array<Scalars['Int']>>
   member?: Maybe<MembershipWhereInput>
   electionRound?: Maybe<ElectionRoundWhereInput>
   noteMetadata?: Maybe<CandidacyNoteMetadataWhereInput>
@@ -7130,9 +7154,8 @@ export type Membership = BaseGraphQlObject & {
   roles: Array<Worker>
   whitelistedIn: Array<ProposalDiscussionWhitelist>
   channels: Array<Channel>
+  councilCandidacies: Array<Candidate>
   councilMembers: Array<CouncilMember>
-  referendumStageRevealingOptionResults: Array<ReferendumStageRevealingOptionResult>
-  candidatemember?: Maybe<Array<Candidate>>
   forumpostauthor?: Maybe<Array<ForumPost>>
   forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
   forumthreadauthor?: Maybe<Array<ForumThread>>
@@ -7747,15 +7770,12 @@ export type MembershipWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
+  councilCandidacies_none?: Maybe<CandidateWhereInput>
+  councilCandidacies_some?: Maybe<CandidateWhereInput>
+  councilCandidacies_every?: Maybe<CandidateWhereInput>
   councilMembers_none?: Maybe<CouncilMemberWhereInput>
   councilMembers_some?: Maybe<CouncilMemberWhereInput>
   councilMembers_every?: Maybe<CouncilMemberWhereInput>
-  referendumStageRevealingOptionResults_none?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  referendumStageRevealingOptionResults_some?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  referendumStageRevealingOptionResults_every?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  candidatemember_none?: Maybe<CandidateWhereInput>
-  candidatemember_some?: Maybe<CandidateWhereInput>
-  candidatemember_every?: Maybe<CandidateWhereInput>
   forumpostauthor_none?: Maybe<ForumPostWhereInput>
   forumpostauthor_some?: Maybe<ForumPostWhereInput>
   forumpostauthor_every?: Maybe<ForumPostWhereInput>
@@ -12102,9 +12122,6 @@ export type Query = {
   referendumFinishedEvents: Array<ReferendumFinishedEvent>
   referendumFinishedEventByUniqueInput?: Maybe<ReferendumFinishedEvent>
   referendumFinishedEventsConnection: ReferendumFinishedEventConnection
-  referendumStageRevealingOptionResults: Array<ReferendumStageRevealingOptionResult>
-  referendumStageRevealingOptionResultByUniqueInput?: Maybe<ReferendumStageRevealingOptionResult>
-  referendumStageRevealingOptionResultsConnection: ReferendumStageRevealingOptionResultConnection
   referendumStageRevealings: Array<ReferendumStageRevealing>
   referendumStageRevealingByUniqueInput?: Maybe<ReferendumStageRevealing>
   referendumStageRevealingsConnection: ReferendumStageRevealingConnection
@@ -14006,26 +14023,6 @@ export type QueryReferendumFinishedEventsConnectionArgs = {
   orderBy?: Maybe<Array<ReferendumFinishedEventOrderByInput>>
 }
 
-export type QueryReferendumStageRevealingOptionResultsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  orderBy?: Maybe<Array<ReferendumStageRevealingOptionResultOrderByInput>>
-}
-
-export type QueryReferendumStageRevealingOptionResultByUniqueInputArgs = {
-  where: ReferendumStageRevealingOptionResultWhereUniqueInput
-}
-
-export type QueryReferendumStageRevealingOptionResultsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  orderBy?: Maybe<Array<ReferendumStageRevealingOptionResultOrderByInput>>
-}
-
 export type QueryReferendumStageRevealingsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -14946,7 +14943,6 @@ export type ReferendumFinishedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
-    optionResults: Array<ReferendumStageRevealingOptionResult>
   }
 
 export type ReferendumFinishedEventConnection = {
@@ -15035,9 +15031,6 @@ export type ReferendumFinishedEventWhereInput = {
   indexInBlock_lt?: Maybe<Scalars['Int']>
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  optionResults_none?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  optionResults_some?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  optionResults_every?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
   AND?: Maybe<Array<ReferendumFinishedEventWhereInput>>
   OR?: Maybe<Array<ReferendumFinishedEventWhereInput>>
 }
@@ -15059,7 +15052,6 @@ export type ReferendumStageRevealing = BaseGraphQlObject & {
   startedAtBlock: Scalars['BigInt']
   /** Target number of winners */
   winningTargetCount: Scalars['BigInt']
-  intermediateWinners: Array<ReferendumStageRevealingOptionResult>
   electionRound: ElectionRound
   electionRoundId: Scalars['String']
 }
@@ -15079,109 +15071,6 @@ export type ReferendumStageRevealingCreateInput = {
 export type ReferendumStageRevealingEdge = {
   node: ReferendumStageRevealing
   cursor: Scalars['String']
-}
-
-export type ReferendumStageRevealingOptionResult = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  option: Membership
-  optionId: Scalars['String']
-  /** Sum of votes' power received. */
-  votePower: Scalars['BigInt']
-  referendumStageRevealing: ReferendumStageRevealing
-  referendumStageRevealingId: Scalars['String']
-  referendumFinishedEvent?: Maybe<ReferendumFinishedEvent>
-  referendumFinishedEventId?: Maybe<Scalars['String']>
-}
-
-export type ReferendumStageRevealingOptionResultConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ReferendumStageRevealingOptionResultEdge>
-  pageInfo: PageInfo
-}
-
-export type ReferendumStageRevealingOptionResultCreateInput = {
-  option: Scalars['ID']
-  votePower: Scalars['String']
-  referendumStageRevealing: Scalars['ID']
-  referendumFinishedEvent?: Maybe<Scalars['ID']>
-}
-
-export type ReferendumStageRevealingOptionResultEdge = {
-  node: ReferendumStageRevealingOptionResult
-  cursor: Scalars['String']
-}
-
-export enum ReferendumStageRevealingOptionResultOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  OptionAsc = 'option_ASC',
-  OptionDesc = 'option_DESC',
-  VotePowerAsc = 'votePower_ASC',
-  VotePowerDesc = 'votePower_DESC',
-  ReferendumStageRevealingAsc = 'referendumStageRevealing_ASC',
-  ReferendumStageRevealingDesc = 'referendumStageRevealing_DESC',
-  ReferendumFinishedEventAsc = 'referendumFinishedEvent_ASC',
-  ReferendumFinishedEventDesc = 'referendumFinishedEvent_DESC',
-}
-
-export type ReferendumStageRevealingOptionResultUpdateInput = {
-  option?: Maybe<Scalars['ID']>
-  votePower?: Maybe<Scalars['String']>
-  referendumStageRevealing?: Maybe<Scalars['ID']>
-  referendumFinishedEvent?: Maybe<Scalars['ID']>
-}
-
-export type ReferendumStageRevealingOptionResultWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  votePower_eq?: Maybe<Scalars['BigInt']>
-  votePower_gt?: Maybe<Scalars['BigInt']>
-  votePower_gte?: Maybe<Scalars['BigInt']>
-  votePower_lt?: Maybe<Scalars['BigInt']>
-  votePower_lte?: Maybe<Scalars['BigInt']>
-  votePower_in?: Maybe<Array<Scalars['BigInt']>>
-  option?: Maybe<MembershipWhereInput>
-  referendumStageRevealing?: Maybe<ReferendumStageRevealingWhereInput>
-  referendumFinishedEvent?: Maybe<ReferendumFinishedEventWhereInput>
-  AND?: Maybe<Array<ReferendumStageRevealingOptionResultWhereInput>>
-  OR?: Maybe<Array<ReferendumStageRevealingOptionResultWhereInput>>
-}
-
-export type ReferendumStageRevealingOptionResultWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export enum ReferendumStageRevealingOrderByInput {
@@ -15242,9 +15131,6 @@ export type ReferendumStageRevealingWhereInput = {
   winningTargetCount_lt?: Maybe<Scalars['BigInt']>
   winningTargetCount_lte?: Maybe<Scalars['BigInt']>
   winningTargetCount_in?: Maybe<Array<Scalars['BigInt']>>
-  intermediateWinners_none?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  intermediateWinners_some?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
-  intermediateWinners_every?: Maybe<ReferendumStageRevealingOptionResultWhereInput>
   electionRound?: Maybe<ElectionRoundWhereInput>
   AND?: Maybe<Array<ReferendumStageRevealingWhereInput>>
   OR?: Maybe<Array<ReferendumStageRevealingWhereInput>>

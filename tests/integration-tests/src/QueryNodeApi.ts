@@ -8,7 +8,7 @@ import {
   GetCurrentCouncilMembers,
   GetCurrentCouncilMembersQuery,
   GetCurrentCouncilMembersQueryVariables,
-  ReferendumIntermediateWinnersFieldsFragment,
+  CandidateFieldsFragment,
   GetReferendumIntermediateWinners,
   GetReferendumIntermediateWinnersQuery,
   GetReferendumIntermediateWinnersQueryVariables,
@@ -450,11 +450,20 @@ export class QueryNodeApi {
     )
   }
 
-  public async getReferendumIntermediateWinners(): Promise<ReferendumIntermediateWinnersFieldsFragment | null> {
-    return this.firstEntityQuery<GetReferendumIntermediateWinnersQuery, GetReferendumIntermediateWinnersQueryVariables>(
+  public async getReferendumIntermediateWinners(
+    electionRoundCycleId: number,
+    councilSize: number
+  ): Promise<CandidateFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetReferendumIntermediateWinnersQuery,
+      GetReferendumIntermediateWinnersQueryVariables
+    >(
       GetReferendumIntermediateWinners,
-      {},
-      'electionRounds'
+      {
+        electionRoundCycleId,
+        councilSize,
+      },
+      'candidates'
     )
   }
 

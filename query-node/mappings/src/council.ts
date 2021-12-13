@@ -34,7 +34,6 @@ import {
   // Council & referendum structures
   ReferendumStageVoting,
   ReferendumStageRevealing,
-  ReferendumStageRevealingOptionResult,
 
   // Council & referendum schema types
   CouncilStageUpdate,
@@ -146,23 +145,11 @@ async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilSta
 /*
   Returns current elected council record.
 */
-async function getCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil | undefined> {
+async function getCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil> {
   const electedCouncil = await store.get(ElectedCouncil, { order: { electedAtBlock: 'DESC' } })
 
-  return electedCouncil
-}
-
-/*
-  Returns current elected council record. Throws error when no council is elected
-*/
-async function getRequiredCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil> {
-  const electedCouncil = await getCurrentElectedCouncil(store)
-
-  if (!electedCouncil) {
-    throw new Error('No council is elected.')
-  }
-
-  return electedCouncil
+  // elected council's existence is guaranteed because one is inserted in `genesis.ts`
+  return electedCouncil as ElectedCouncil
 }
 
 /*
@@ -217,9 +204,6 @@ async function updateCouncilStage(
   electionProblem?: ElectionProblem
 ): Promise<void> {
   const electedCouncil = await getCurrentElectedCouncil(store)
-  if (!electedCouncil) {
-    return
-  }
 
   const councilStageUpdate = new CouncilStageUpdate({
     stage: councilStage,
@@ -321,7 +305,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
   // specific event processing
 
   // restart elections
-  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
+  const electedCouncil = await getCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber)
 }
 
@@ -342,7 +326,7 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
   // specific event processing
 
   // restart elections
-  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
+  const electedCouncil = await getCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
@@ -440,13 +424,11 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // mark old council as resinged
   const oldElectedCouncil = await getCurrentElectedCouncil(store)
-  if (oldElectedCouncil) {
-    oldElectedCouncil.isResigned = true
-    oldElectedCouncil.endedAtBlock = event.blockNumber
-    oldElectedCouncil.endedAtTime = new Date(event.blockTimestamp)
-    oldElectedCouncil.endedAtNetwork = CURRENT_NETWORK
-    await store.save<ElectedCouncil>(oldElectedCouncil)
-  }
+  oldElectedCouncil.isResigned = true
+  oldElectedCouncil.endedAtBlock = event.blockNumber
+  oldElectedCouncil.endedAtTime = new Date(event.blockTimestamp)
+  oldElectedCouncil.endedAtNetwork = CURRENT_NETWORK
+  await store.save<ElectedCouncil>(oldElectedCouncil)
 
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
@@ -532,7 +514,7 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
   // specific event processing
 
   // restart elections
-  const electedCouncil = await getRequiredCurrentElectedCouncil(store)
+  const electedCouncil = await getCurrentElectedCouncil(store)
   await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
 }
 
@@ -854,9 +836,7 @@ export async function referendum_RevealingStageStarted({ event, store }: EventCo
   // add referendum revealing stage record to election round
   const referendumStage = new ReferendumStageRevealing()
   referendumStage.startedAtBlock = new BN(event.blockNumber)
-
   referendumStage.winningTargetCount = (electionRound.referendumStageVoting as ReferendumStageVoting).winningTargetCount
-  referendumStage.intermediateWinners = []
   referendumStage.electionRound = electionRound
   await store.save<ReferendumStageRevealing>(referendumStage)
 }
@@ -869,14 +849,8 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
 
   // const [optionResultsRaw] = new Referendum.ReferendumFinishedEvent(event).params
 
-  const electionRound = await getCurrentElectionRound(store, [
-    'referendumStageRevealing',
-    'referendumStageRevealing.intermediateWinners',
-  ])
-
   const referendumFinishedEvent = new ReferendumFinishedEvent({
     ...genericEventFields(event),
-    optionResults: electionRound.referendumStageRevealing!.intermediateWinners,
   })
 
   await store.save<ReferendumFinishedEvent>(referendumFinishedEvent)
@@ -928,10 +902,7 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   // specific event processing
 
   // read vote info
-  const electionRound = await getCurrentElectionRound(store, [
-    'referendumStageRevealing',
-    'referendumStageRevealing.intermediateWinners',
-  ])
+  const electionRound = await getCurrentElectionRound(store)
   const candidate = await getCandidate(store, memberId.toString(), electionRound, ['member'])
   const castVote = await getAccountCastVote(store, account.toString(), electionRound)
 
@@ -941,14 +912,9 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
 
   // increase candidate's total vote power received accordingly
   candidate.votePower = candidate.votePower.add(castVote.votePower)
+  candidate.lastVoteReceivedAtBlock = new BN(event.blockNumber)
+  candidate.lastVoteReceivedAtEventNumber = event.indexInBlock
   await store.save<Candidate>(candidate)
-
-  // recalculate intermediate winners
-  await integrateCandidateToIntermediateWinners(
-    store,
-    electionRound.referendumStageRevealing! as ReferendumStageRevealing,
-    candidate
-  )
 
   // common event processing - save
 
@@ -958,60 +924,6 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
   })
 
   await store.save<VoteRevealedEvent>(voteRevealedEvent)
-}
-
-/*
-  Recalculates the list of intermediate winners after a candidate receives a new vote.
-*/
-async function integrateCandidateToIntermediateWinners(
-  store: DatabaseManager,
-  referendumStageRevealing: ReferendumStageRevealing,
-  candidate: Candidate
-): Promise<ReferendumStageRevealingOptionResult[]> {
-  const winningTargetCount = referendumStageRevealing.winningTargetCount.toNumber()
-
-  // adds a new intermediate winner record
-  const addRecord = async () => {
-    const newRecord = new ReferendumStageRevealingOptionResult({
-      votePower: candidate.votePower,
-      option: candidate.member,
-      referendumStageRevealing,
-    })
-
-    await store.save<ReferendumStageRevealingOptionResult>(newRecord)
-
-    return newRecord
-  }
-
-  // compose new list of intermediate winners
-  const [result, toBeAdded] = await referendumStageRevealing.intermediateWinners!.reduce(async (acc, item) => {
-    let [newWinners, toBeAdded] = await acc
-
-    // place winner to the list if it has more votes than previous one
-    if (toBeAdded && item.votePower < candidate.votePower) {
-      const newRecord = await addRecord()
-
-      newWinners = [...newWinners, newRecord]
-      toBeAdded = false
-    }
-
-    // remove no-longer-winner record if needed
-    if (newWinners.length >= winningTargetCount) {
-      await store.remove(item)
-
-      return [newWinners, false]
-    }
-
-    // place winner to the list (possibly to new place among intermediate winners)
-    return [[...newWinners, item], toBeAdded]
-  }, Promise.resolve([[], true] as [ReferendumStageRevealingOptionResult[], boolean]))
-
-  // place winner to end of list if needed
-  if (toBeAdded && result.length < winningTargetCount) {
-    return [...result, await addRecord()]
-  }
-
-  return result
 }
 
 /*
