@@ -5,12 +5,10 @@ export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBa
   static description = 'Create new Curator Group.'
   static aliases = ['createCuratorGroup']
 
-  async run() {
-    const account = await this.getRequiredSelectedAccount()
-    await this.requireLead()
+  async run(): Promise<void> {
+    const lead = await this.getRequiredLeadContext()
 
-    await this.requestAccountDecoding(account)
-    await this.buildAndSendExtrinsic(account, 'content', 'createCuratorGroup')
+    await this.buildAndSendExtrinsic(await this.getDecodedPair(lead.roleAccount), 'content', 'createCuratorGroup')
 
     const newGroupId = (await this.getApi().nextCuratorGroupId()) - 1
     console.log(chalk.green(`New group successfully created! (ID: ${chalk.magentaBright(newGroupId)})`))

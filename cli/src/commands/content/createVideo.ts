@@ -9,6 +9,7 @@ import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import chalk from 'chalk'
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video under specific channel inside content directory.'
@@ -23,6 +24,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
       required: true,
       description: 'ID of the Channel',
     }),
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
   setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): void {
@@ -40,15 +42,14 @@ export default class CreateVideoCommand extends UploadCommandBase {
     integrateMeta(metadata.mediaType || {}, mediaTypeMetaToIntegrate, ['codecName', 'container', 'mimeMediaType'])
   }
 
-  async run() {
-    const { input, channelId } = this.parse(CreateVideoCommand).flags
+  async run(): Promise<void> {
+    const { input, channelId, context } = this.parse(CreateVideoCommand).flags
 
     // Get context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
-    const memberId = await this.getRequiredMemberId(true)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
@@ -81,7 +82,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'createVideo', [
       actor,
       channelId,
       videoCreationParameters,
@@ -96,8 +97,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        account,
-        memberId,
+        keypair,
+        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

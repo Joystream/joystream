@@ -37,6 +37,9 @@ decl_error! {
         /// Member authentication failed
         MemberAuthFailed,
 
+        /// Member id not valid
+        CollaboratorIsNotValidMember,
+
         /// Curator authentication failed
         CuratorAuthFailed,
 
@@ -80,5 +83,7 @@ decl_error! {
         InvalidBagSizeSpecified,
 
 
+        /// Actor not channel owner
+        ActorNotChannelOwner,
     }
 }

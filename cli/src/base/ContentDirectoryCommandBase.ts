@@ -4,61 +4,52 @@ import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
+import { MemberId } from '@joystream/types/members'
 
-// TODO: Rework the contexts
-
-const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
-const OWNER_CONTEXTS = ['Member', 'Curator'] as const
+const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
+const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
 
-type Context = typeof CONTEXTS[number]
-type OwnerContext = typeof OWNER_CONTEXTS[number]
+type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
+type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
 type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
-  group = WorkingGroups.Curators // override group for RolesCommandBase
-
-  static contextFlag = flags.enum({
-    name: 'context',
+  static channelCreationContextFlag = flags.enum({
     required: false,
-    description: `Actor context to execute the command in (${CONTEXTS.join('/')})`,
-    options: [...CONTEXTS],
+    description: `Actor context to execute the command in (${CHANNEL_CREATION_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_CREATION_CONTEXTS],
   })
 
-  static ownerContextFlag = flags.enum({
-    name: 'ownerContext',
+  static channelManagementContextFlag = flags.enum({
     required: false,
-    description: `Actor context to execute the command in (${OWNER_CONTEXTS.join('/')})`,
-    options: [...OWNER_CONTEXTS],
+    description: `Actor context to execute the command in (${CHANNEL_MANAGEMENT_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_MANAGEMENT_CONTEXTS],
   })
 
   static categoriesContextFlag = flags.enum({
-    name: 'categoriesContext',
     required: false,
     description: `Actor context to execute the command in (${CATEGORIES_CONTEXTS.join('/')})`,
     options: [...CATEGORIES_CONTEXTS],
   })
 
-  async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
-    return this.simplePrompt({
-      message,
-      type: 'list',
-      choices: CONTEXTS.map((c) => ({ name: c, value: c })),
-    })
+  async init(): Promise<void> {
+    await super.init()
+    this.group = WorkingGroups.Curators // override group for RolesCommandBase
   }
 
-  async promptForOwnerContext(
+  async promptForChannelCreationContext(
     message = 'Choose in which context you wish to execute the command'
-  ): Promise<OwnerContext> {
+  ): Promise<ChannelCreationContext> {
     return this.simplePrompt({
       message,
       type: 'list',
-      choices: OWNER_CONTEXTS.map((c) => ({ name: c, value: c })),
+      choices: CHANNEL_CREATION_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
@@ -74,35 +65,66 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   // Use when lead access is required in given command
   async requireLead(): Promise<void> {
-    await this.getRequiredLead()
+    await this.getRequiredLeadContext()
   }
 
-  async getCurationActorByChannel(channel: Channel): Promise<ContentActor> {
-    return channel.owner.isOfType('Curators') ? await this.getActor('Lead') : await this.getActor('Curator')
+  getCurationActorByChannel(channel: Channel): Promise<[ContentActor, string]> {
+    return channel.owner.isOfType('Curators') ? this.getContentActor('Lead') : this.getContentActor('Curator')
   }
 
-  async getChannelOwnerActor(channel: Channel): Promise<ContentActor> {
+  getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
     if (channel.owner.isOfType('Curators')) {
       try {
-        return await this.getActor('Lead')
+        return this.getContentActor('Lead')
       } catch (e) {
-        return await this.getCuratorContext(channel.owner.asType('Curators'))
+        return this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      return await this.getActor('Member')
+      return this.getContentActor('Member')
     }
   }
 
-  async getCategoryManagementActor(): Promise<ContentActor> {
+  async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
+    const [id, membership] = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
+    return [
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Collaborator: id }),
+      membership.controller_account.toString(),
+    ]
+  }
+
+  async getChannelManagementActor(
+    channel: Channel,
+    context: ChannelManagementContext
+  ): Promise<[ContentActor, string]> {
+    if (context && context === 'Owner') {
+      return this.getChannelOwnerActor(channel)
+    }
+    if (context && context === 'Collaborator') {
+      return this.getChannelCollaboratorActor(channel)
+    }
+
+    // Context not set - derive
     try {
-      return await this.getActor('Lead')
+      const owner = await this.getChannelOwnerActor(channel)
+      this.log('Derived context: Channel owner')
+      return owner
     } catch (e) {
-      return await this.getActor('Curator')
+      const collaborator = await this.getChannelCollaboratorActor(channel)
+      this.log('Derived context: Channel collaborator')
+      return collaborator
     }
   }
 
-  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<ContentActor> {
-    const curator = await this.getRequiredWorker()
+  getCategoryManagementActor(): Promise<[ContentActor, string]> {
+    try {
+      return this.getContentActor('Lead')
+    } catch (e) {
+      return this.getContentActor('Curator')
+    }
+  }
+
+  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<[ContentActor, string]> {
+    const curator = await this.getRequiredWorkerContext()
 
     let groupId: number
     if (requiredGroupId) {
@@ -134,7 +156,10 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       }
     }
 
-    return createTypeFromConstructor(ContentActor, { Curator: [groupId, curator.workerId.toNumber()] })
+    return [
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] }),
+      curator.roleAccount.toString(),
+    ]
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
@@ -226,19 +251,35 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return group
   }
 
-  async getActor(context: typeof CONTEXTS[number]) {
-    let actor: ContentActor
+  async getContentActor(
+    context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
+  ): Promise<[ContentActor, string]> {
     if (context === 'Member') {
-      const memberId = await this.getRequiredMemberId()
-      actor = this.createType('ContentActor', { Member: memberId })
-    } else if (context === 'Curator') {
-      actor = await this.getCuratorContext()
-    } else {
-      await this.getRequiredLead()
-
-      actor = this.createType('ContentActor', { Lead: null })
+      const [id, membership] = await this.getRequiredMemberContext()
+      return [
+        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
+        membership.controller_account.toString(),
+      ]
     }
 
-    return actor
+    if (context === 'Curator') {
+      return this.getCuratorContext()
+    }
+
+    if (context === 'Lead') {
+      const lead = await this.getRequiredLeadContext()
+      return [createType<ContentActor, 'ContentActor'>('ContentActor', { Lead: null }), lead.roleAccount.toString()]
+    }
+
+    throw new Error(`Unrecognized context: ${context}`)
+  }
+
+  async validateCollaborators(collaborators: number[] | MemberId[]): Promise<void> {
+    const collaboratorMembers = await this.getApi().getMembers(collaborators)
+    if (collaboratorMembers.length < collaborators.length || collaboratorMembers.some((m) => m.isEmpty)) {
+      this.error(`Invalid collaborator set! All collaborators must be existing members.`, {
+        exit: ExitCodes.InvalidInput,
+      })
+    }
   }
 }

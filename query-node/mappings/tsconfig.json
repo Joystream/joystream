@@ -15,7 +15,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["../../types/augment/augment-types.ts"]
+      "@polkadot/types/augment": ["../../types/augment/augment-types.ts"],
+      "@polkadot/api/augment": ["../../types/augment/augment-api.ts"]
     }
   },
   "include": ["./**/*"]

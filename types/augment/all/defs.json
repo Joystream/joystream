@@ -82,8 +82,6 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "_Reserved0",
-            "_Reserved1",
             "Storage",
             "Content",
             "OperationsAlpha",
@@ -522,16 +520,16 @@
         "prize": "u128"
     },
     "Bag": {
-        "objects": "BTreeMap<DataObjectId,DataObject>",
-        "stored_by": "StorageBucketIdSet",
-        "distributed_by": "DistributionBucketIdSet",
-        "deletion_prize": "Option<u128>"
+        "stored_by": "BTreeSet<StorageBucketId>",
+        "distributed_by": "BTreeSet<DistributionBucketId>",
+        "deletion_prize": "Option<u128>",
+        "objects_total_size": "u64",
+        "objects_number": "u64"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
         "accepting_new_bags": "bool",
-        "voucher": "Voucher",
-        "metadata": "Bytes"
+        "voucher": "Voucher"
     },
     "StaticBagId": {
         "_enum": {
@@ -762,7 +760,8 @@
         "_enum": {
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
-            "Lead": "Null"
+            "Lead": "Null",
+            "Collaborator": "MemberId"
         }
     },
     "StorageAssets": {
@@ -774,7 +773,7 @@
         "num_videos": "u64",
         "is_censored": "bool",
         "reward_account": "Option<GenericAccountId>",
-        "deletion_prize_source_account_id": "GenericAccountId"
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -793,13 +792,15 @@
     "ChannelCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "reward_account": "Option<Option<GenericAccountId>>",
-        "assets_to_remove": "BTreeSet<DataObjectId>"
+        "assets_to_remove": "BTreeSet<DataObjectId>",
+        "collaborators": "Option<BTreeSet<MemberId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {

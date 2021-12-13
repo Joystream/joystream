@@ -154,10 +154,11 @@ export interface Backers extends Vec<Backer> {}
 
 /** @name Bag */
 export interface Bag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, DataObject>;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: DistributionBucketIdSet;
+  readonly stored_by: BTreeSet<StorageBucketId>;
+  readonly distributed_by: BTreeSet<DistributionBucketId>;
   readonly deletion_prize: Option<u128>;
+  readonly objects_total_size: u64;
+  readonly objects_number: u64;
 }
 
 /** @name BagId */
@@ -209,7 +210,7 @@ export interface Channel extends Struct {
   readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
-  readonly deletion_prize_source_account_id: GenericAccountId;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCategory */
@@ -236,6 +237,7 @@ export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCurationStatus */
@@ -272,6 +274,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -308,6 +311,8 @@ export interface ContentActor extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
+  readonly isCollaborator: boolean;
+  readonly asCollaborator: MemberId;
 }
 
 /** @name ContentIdSet */
@@ -1204,7 +1209,6 @@ export interface StorageBucket extends Struct {
   readonly operator_status: StorageBucketOperatorStatus;
   readonly accepting_new_bags: bool;
   readonly voucher: Voucher;
-  readonly metadata: Bytes;
 }
 
 /** @name StorageBucketId */
@@ -1399,8 +1403,6 @@ export interface WorkerOf extends Struct {
 
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
-  readonly isReserved0: boolean;
-  readonly isReserved1: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
   readonly isOperationsAlpha: boolean;

@@ -9,7 +9,9 @@ import {
   BTreeMap,
   Option,
   u32,
+  u128,
 } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
@@ -68,18 +70,20 @@ export class DynamicBagDeletionPrize
 export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
 
 export type IBag = {
-  objects: BTreeMap<DataObjectId, DataObject>
-  stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketIdSet
-  deletion_prize: Option<BalanceOf>
+  stored_by: BTreeSet<StorageBucketId>
+  distributed_by: BTreeSet<DistributionBucketId>
+  deletion_prize: Option<Balance>
+  objects_total_size: u64
+  objects_number: u64
 }
 
 export class Bag
   extends JoyStructDecorated({
-    objects: BTreeMap.with(DataObjectId, DataObject),
-    stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketIdSet,
-    deletion_prize: Option.with(BalanceOf),
+    stored_by: BTreeSet.with(StorageBucketId),
+    distributed_by: BTreeSet.with(DistributionBucketId),
+    deletion_prize: Option.with(u128),
+    objects_total_size: u64,
+    objects_number: u64,
   })
   implements IBag {}
 
@@ -155,7 +159,6 @@ export type IStorageBucket = {
   operator_status: StorageBucketOperatorStatus
   accepting_new_bags: bool
   voucher: Voucher
-  metadata: Bytes
 }
 
 export class StorageBucket
@@ -163,7 +166,6 @@ export class StorageBucket
     operator_status: StorageBucketOperatorStatus,
     accepting_new_bags: bool,
     voucher: Voucher,
-    metadata: Bytes,
   })
   implements IStorageBucket {}
 
