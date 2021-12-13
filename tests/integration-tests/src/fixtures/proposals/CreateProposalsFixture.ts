@@ -287,7 +287,10 @@ export class CreateProposalsFixture extends StandardizedFixture {
         Utils.assert(qProposal.details.__typename === 'UpdateWorkingGroupBudgetProposalDetails')
         const details = proposalDetails.asType('UpdateWorkingGroupBudget')
         const [balance, group, balanceKind] = details
-        assert.equal(qProposal.details.amount.toString(), (balanceKind.isOfType('Negative') ? '-' : '') + balance.toString())
+        assert.equal(
+          qProposal.details.amount.toString(),
+          (balanceKind.isOfType('Negative') ? '-' : '') + balance.toString()
+        )
         assert.equal(qProposal.details.group?.id, getWorkingGroupModuleName(group))
         break
       }

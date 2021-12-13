@@ -1,5 +1,5 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
-import { assertCouncilMembersRuntimeQnMatch, prepareFailtToElectResources } from './common'
+import { assertCouncilMembersRuntimeQnMatch, prepareFailToElectResources } from './common'
 import { assert } from 'chai'
 
 export class NotEnoughCandidatesFixture extends BaseQueryNodeFixture {
@@ -14,7 +14,7 @@ export class NotEnoughCandidatesFixture extends BaseQueryNodeFixture {
       candidatesMemberAccounts,
       councilCandidateStake,
       councilMemberIds,
-    } = await prepareFailtToElectResources(this.api, this.query)
+    } = await prepareFailToElectResources(this.api, this.query)
 
     const lessCandidatesNumber = 1
     const candidatingMemberIds = candidatesMemberIds.slice(0, candidatesMemberIds.length - lessCandidatesNumber)

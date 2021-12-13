@@ -1,5 +1,5 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
-import { assertCouncilMembersRuntimeQnMatch, prepareFailtToElectResources } from './common'
+import { assertCouncilMembersRuntimeQnMatch, prepareFailToElectResources } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { assert } from 'chai'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
@@ -12,7 +12,7 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
       candidatesMemberAccounts,
       councilCandidateStake,
       councilMemberIds,
-    } = await prepareFailtToElectResources(this.api, this.query)
+    } = await prepareFailToElectResources(this.api, this.query)
 
     const lessVotersNumber = 1
     const numberOfCandidates = candidatesMemberIds.length

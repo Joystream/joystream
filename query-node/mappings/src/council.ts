@@ -52,7 +52,6 @@ import {
 
   // Misc
   Membership,
-  VariantNone,
 } from 'query-node/dist/model'
 import { Council, Referendum } from '../generated/types'
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
@@ -95,7 +94,6 @@ async function getCandidate(
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
 
-
   if (!event) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
   }
@@ -122,10 +120,7 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
 /*
   Returns the current election round record.
 */
-async function getCurrentElectionRound(
-  store: DatabaseManager,
-  relations: string[] = []
-): Promise<ElectionRound> {
+async function getCurrentElectionRound(store: DatabaseManager, relations: string[] = []): Promise<ElectionRound> {
   const electionRound = await store.get(ElectionRound, { order: { cycleId: 'DESC' }, relations: relations })
 
   if (!electionRound) {
@@ -872,9 +867,12 @@ export async function referendum_RevealingStageStarted({ event, store }: EventCo
 export async function referendum_ReferendumFinished({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [optionResultsRaw] = new Referendum.ReferendumFinishedEvent(event).params
+  // const [optionResultsRaw] = new Referendum.ReferendumFinishedEvent(event).params
 
-  const electionRound = await getCurrentElectionRound(store, ['referendumStageRevealing', 'referendumStageRevealing.intermediateWinners'])
+  const electionRound = await getCurrentElectionRound(store, [
+    'referendumStageRevealing',
+    'referendumStageRevealing.intermediateWinners',
+  ])
 
   const referendumFinishedEvent = new ReferendumFinishedEvent({
     ...genericEventFields(event),
@@ -986,30 +984,27 @@ async function integrateCandidateToIntermediateWinners(
   }
 
   // compose new list of intermediate winners
-  const [result, toBeAdded] = await referendumStageRevealing.intermediateWinners!.reduce(
-    async (acc, item, index) => {
-      let [newWinners, toBeAdded] = await acc
+  const [result, toBeAdded] = await referendumStageRevealing.intermediateWinners!.reduce(async (acc, item) => {
+    let [newWinners, toBeAdded] = await acc
 
-      // place winner to the list if it has more votes than previous one
-      if (toBeAdded && item.votePower < candidate.votePower) {
-        const newRecord = await addRecord()
+    // place winner to the list if it has more votes than previous one
+    if (toBeAdded && item.votePower < candidate.votePower) {
+      const newRecord = await addRecord()
 
-        newWinners = [...newWinners, newRecord]
-        toBeAdded = false
-      }
+      newWinners = [...newWinners, newRecord]
+      toBeAdded = false
+    }
 
-      // remove no-longer-winner record if needed
-      if (newWinners.length >= winningTargetCount) {
-        await store.remove(item)
+    // remove no-longer-winner record if needed
+    if (newWinners.length >= winningTargetCount) {
+      await store.remove(item)
 
-        return [newWinners, false]
-      }
+      return [newWinners, false]
+    }
 
-      // place winner to the list (possibly to new place among intermediate winners)
-      return [[...newWinners, item], toBeAdded]
-    },
-    Promise.resolve([[], true] as [ReferendumStageRevealingOptionResult[], boolean])
-  )
+    // place winner to the list (possibly to new place among intermediate winners)
+    return [[...newWinners, item], toBeAdded]
+  }, Promise.resolve([[], true] as [ReferendumStageRevealingOptionResult[], boolean]))
 
   // place winner to end of list if needed
   if (toBeAdded && result.length < winningTargetCount) {

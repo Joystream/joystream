@@ -84,7 +84,9 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       () => query.getReferendumIntermediateWinners(),
       (qnReferendumIntermediateWinners) => {
         assert.sameMembers(
-          qnReferendumIntermediateWinners!.referendumStageRevealing!.intermediateWinners!.map(item => item.option.id.toString()),
+          qnReferendumIntermediateWinners!.referendumStageRevealing!.intermediateWinners!.map((item) =>
+            item.option.id.toString()
+          ),
           candidatesToWinIds
         )
       }
