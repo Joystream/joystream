@@ -5105,9 +5105,13 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_n
         let starting_block = 1;
         run_to_block(starting_block);
 
+        // set limit size 100 and limit obj number 20
+        set_max_voucher_limits_with_params(100, 20);
+
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        create_storage_buckets(10);
+        // create 10 buckets each with size limit 10 and num object limit 1
+        create_storage_buckets_with_limits(10, 10, 1);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -5136,11 +5140,31 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_n
             0
         );
 
+        // this fails because num objects == 3 & bucket.num_objects_limit == 1
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize(deletion_prize.clone())
+            .with_objects(upload_parameters.clone())
+            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+
+        // set bucket size limits to be large enought and retry
+        let new_objects_number_limit = 10;
+        let new_objects_size_limit = 100;
+        let bucket_id_to_enlarge = 1;
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id_to_enlarge)
+            .with_new_objects_number_limit(new_objects_number_limit)
+            .with_new_objects_size_limit(new_objects_size_limit)
+            .call_and_assert(Ok(()));
+
+        // this succeeds now
         CreateDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(deletion_prize.clone())
             .with_objects(upload_parameters)
-            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+            .call_and_assert(Ok(()));
     })
 }
 
@@ -5189,7 +5213,25 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_s
         CreateDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(deletion_prize.clone())
-            .with_objects(upload_parameters)
+            .with_objects(upload_parameters.clone())
             .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+
+        // set bucket size limits to be large enought and retry
+        let new_objects_number_limit = 10;
+        let new_objects_size_limit = 100;
+        let bucket_id_to_enlarge = 1;
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id_to_enlarge)
+            .with_new_objects_number_limit(new_objects_number_limit)
+            .with_new_objects_size_limit(new_objects_size_limit)
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize(deletion_prize.clone())
+            .with_objects(upload_parameters)
+            .call_and_assert(Ok(()));
     })
 }
