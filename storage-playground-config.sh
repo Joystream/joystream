@@ -39,17 +39,17 @@ CLI=distributor-node/bin/run
 
 ${CLI} leader:set-buckets-per-bag-limit -l 10
 FAMILY_ID=`${CLI} leader:create-bucket-family`
-BUCKET_ID=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
-${CLI} leader:update-bucket-mode -f ${FAMILY_ID} -B ${BUCKET_ID} --mode on
+BUCKET_INDEX=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
+BUCKET_ID="${FAMILY_ID}:${BUCKET_INDEX}"
+${CLI} leader:update-bucket-mode -B ${BUCKET_ID} --mode on
 ${CLI} leader:update-dynamic-bag-policy -t Channel -p ${FAMILY_ID}:5
-${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
-${CLI} operator:accept-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
+${CLI} leader:invite-bucket-operator -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
+${CLI} operator:accept-invitation -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
 
 # The node uri should be an accessible endpoint from within a container as well as the host machine.
 # In production it would most likely be the reverse proxy endpoint. If not specified we
 # set it to the host machine address.
 DISTRIBUTOR_1_NODE_URI=${DISTRIBUTOR_1_NODE_URI:="http://${HOST_IP}:3334"}
-${CLI} operator:set-metadata -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID} -e="${DISTRIBUTOR_1_NODE_URI}"
+${CLI} operator:set-metadata -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID} -e="${DISTRIBUTOR_1_NODE_URI}"
 
-echo "Distributor 1 FAMILY_ID=${FAMILY_ID}"
 echo "Distributor 1 BUCKET_ID=${BUCKET_ID}"
