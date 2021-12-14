@@ -3412,10 +3412,7 @@ impl<T: Trait> Module<T> {
     fn pick_buckets_for_bag(
         dynamic_bag_id: DynamicBagId<T>,
         voucher_update: Option<VoucherUpdate>,
-    ) -> (
-        BTreeSet<T::StorageBucketId>,
-        BTreeSet<DistributionBucketId<T>>,
-    ) {
+    ) -> BucketPair<T> {
         let bag_type: DynamicBagType = dynamic_bag_id.into();
 
         (
