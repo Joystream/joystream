@@ -3408,6 +3408,22 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // helper pick buckets for bag
+    fn pick_buckets_for_bag(
+        dynamic_bag_id: DynamicBagId<T>,
+        voucher_update: Option<VoucherUpdate>,
+    ) -> (
+        BTreeSet<T::StorageBucketId>,
+        BTreeSet<DistributionBucketId<T>>,
+    ) {
+        let bag_type: DynamicBagType = dynamic_bag_id.into();
+
+        (
+            Self::pick_storage_buckets_for_dynamic_bag(bag_type, voucher_update),
+            Self::pick_distribution_buckets_for_dynamic_bag(bag_type),
+        )
+    }
+
     // Selects storage bucket ID sets to assign to the dynamic bag.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
