@@ -35,9 +35,6 @@ type Channel @entity {
   "Reward account where revenue is sent if set."
   rewardAccount: String
 
-  "Destination account for the prize associated with channel deletion"
-  deletionPrizeDestAccount: String!
-
   "The title of the Channel"
   title: String @fulltext(query: "search")
 

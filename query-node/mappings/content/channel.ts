@@ -26,7 +26,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
-    deletionPrizeDestAccount: runtimeChannel.deletion_prize_source_account_id.toString(),
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
