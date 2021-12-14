@@ -814,7 +814,7 @@ decl_module! {
             let funding_total: Balance<T> =
                 funding_requests.iter().fold(
                     Zero::zero(),
-                    |accumulated, funding_request| accumulated + funding_request.amount,
+                    |accumulated, funding_request| accumulated.saturating_add(funding_request.amount),
                 );
 
             let current_budget = Self::budget();
@@ -846,7 +846,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(current_budget - funding_total);
+            Mutations::<T>::set_budget(current_budget.saturating_sub(funding_total));
 
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
@@ -1051,7 +1051,7 @@ impl<T: Trait> Module<T> {
                 ));
 
                 // return new balance
-                balance - available_balance
+                balance.saturating_sub(available_balance)
             },
         );
 
@@ -1346,7 +1346,7 @@ impl<T: Trait> Mutations<T> {
 
         // prepare new stage
         let new_stage_data = CouncilStageAnnouncing {
-            candidates_count: stage_data.candidates_count - 1,
+            candidates_count: stage_data.candidates_count.saturating_sub(1),
         };
 
         // store new stage
