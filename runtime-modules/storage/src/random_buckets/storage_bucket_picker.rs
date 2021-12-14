@@ -19,7 +19,10 @@ impl<T: Trait> StorageBucketPicker<T> {
     // The function filters deleted buckets and disabled buckets (accepting_new_bags == false)
     // Total number of possible IDs is limited by the dynamic bag settings.
     // Returns an accumulated bucket ID set or an empty set.
-    pub(crate) fn pick_storage_buckets(bag_type: DynamicBagType) -> BTreeSet<T::StorageBucketId> {
+    pub(crate) fn pick_storage_buckets(
+        bag_type: DynamicBagType,
+        voucher_update: Option<VoucherUpdate>,
+    ) -> BTreeSet<T::StorageBucketId> {
         let creation_policy = Module::<T>::get_dynamic_bag_creation_policy(bag_type);
 
         if creation_policy.no_storage_buckets_required() {
@@ -35,7 +38,7 @@ impl<T: Trait> StorageBucketPicker<T> {
             .chain(SequentialBucketIdIterator::<T, T::StorageBucketId>::new(
                 next_storage_bucket_id,
             ))
-            .filter(Self::check_storage_bucket_is_valid_for_bag_assigning)
+            .filter(|id| Self::check_storage_bucket_is_valid_for_bag_assigning(id, &voucher_update))
             .filter(|bucket_id| {
                 let bucket_ids = bucket_ids_cell.borrow();
 

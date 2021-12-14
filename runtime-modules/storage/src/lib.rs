@@ -227,7 +227,7 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
-    ) -> DispatchResult;
+    ) -> Result<BucketPair<T>, DispatchError>;
 
     /// Checks if a bag does exists and returns it. Static Always exists
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
@@ -3395,8 +3395,9 @@ impl<T: Trait> Module<T> {
     // Selects storage bucket ID sets to assign to the dynamic bag.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
+        voucher_update: Option<VoucherUpdate>,
     ) -> BTreeSet<T::StorageBucketId> {
-        StorageBucketPicker::<T>::pick_storage_buckets(bag_type)
+        StorageBucketPicker::<T>::pick_storage_buckets(bag_type, voucher_update)
     }
 
     // Selects distributed bucket ID sets to assign to the dynamic bag.
