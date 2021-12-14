@@ -1,5 +1,5 @@
-import { createHash, HashInput, NodeHash } from 'blake3'
-import { HashReader } from 'blake3/dist/wasm/nodejs'
+import { createHash, HashInput, NodeHash } from 'blake3-wasm'
+import { HashReader } from 'blake3-wasm/dist/wasm/nodejs/blake3_js'
 import { toB58String, encode } from 'multihashes'
 
 export class ContentHash {

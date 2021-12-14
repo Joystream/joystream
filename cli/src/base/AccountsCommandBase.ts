@@ -10,6 +10,7 @@ import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
+import { MemberId } from '@joystream/types/members'
 
 const ACCOUNTS_DIRNAME = 'accounts'
 const SPECIAL_ACCOUNT_POSTFIX = '__DEV'
@@ -22,6 +23,8 @@ const SPECIAL_ACCOUNT_POSTFIX = '__DEV'
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
+  private selectedMemberId: number | undefined
+
   getAccountsDirPath(): string {
     return path.join(this.getAppDataPath(), ACCOUNTS_DIRNAME)
   }
@@ -249,14 +252,38 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberId(): Promise<number> {
-    const account = await this.getRequiredSelectedAccount()
-    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
-    if (!memberIds.length) {
-      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+  async getRequiredMemberId(useSelected = false): Promise<number> {
+    if (this.selectedMemberId && useSelected) {
+      return this.selectedMemberId
     }
 
-    return memberIds[0].toNumber() // FIXME: Temporary solution (just using the first one)
+    const account = await this.getRequiredSelectedAccount()
+    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
+
+    let memberId: number
+    if (!memberIds.length) {
+      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+    } else if (memberIds.length === 1) {
+      memberId = memberIds[0].toNumber()
+    } else {
+      memberId = await this.promptForMember(memberIds, 'Choose member context')
+    }
+
+    this.selectedMemberId = memberId
+    return memberId
+  }
+
+  async promptForMember(availableMembers: MemberId[], message = 'Choose a member'): Promise<number> {
+    const memberId: number = await this.simplePrompt({
+      type: 'list',
+      message,
+      choices: availableMembers.map((memberId) => ({
+        name: `ID: ${memberId.toString()}`,
+        value: memberId.toNumber(),
+      })),
+    })
+
+    return memberId
   }
 
   async init() {

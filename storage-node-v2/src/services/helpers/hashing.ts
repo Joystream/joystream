@@ -1,6 +1,6 @@
 import * as multihash from 'multihashes'
 import fs from 'fs'
-import { createHash } from 'blake3'
+import { createHash } from 'blake3-wasm'
 
 /**
  * Reads the file and calculates its hash. It uses the blake3 hashing algorithm

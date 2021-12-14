@@ -38,19 +38,19 @@ async function main() {
   }
 
   // Create a new lead opening
-  if ((await api.query.contentDirectoryWorkingGroup.currentLead()).isSome) {
+  if ((await api.query.contentWorkingGroup.currentLead()).isSome) {
     console.log('Curators lead already exists, aborting...')
   } else {
     console.log(`Making member id: ${memberId} the content lead.`)
-    const newOpeningId = (await api.query.contentDirectoryWorkingGroup.nextOpeningId()).toNumber()
-    const newApplicationId = (await api.query.contentDirectoryWorkingGroup.nextApplicationId()).toNumber()
+    const newOpeningId = (await api.query.contentWorkingGroup.nextOpeningId()).toNumber()
+    const newApplicationId = (await api.query.contentWorkingGroup.nextApplicationId()).toNumber()
     // Create curator lead opening
     console.log('Perparing Create Curator Lead Opening extrinsic...')
     await txHelper.sendAndCheck(
       SudoKeyPair,
       [
         sudo(
-          api.tx.contentDirectoryWorkingGroup.addOpening(
+          api.tx.contentWorkingGroup.addOpening(
             { CurrentBlock: null }, // activate_at
             { max_review_period_length: 9999 }, // OpeningPolicyCommitment
             'bootstrap curator opening', // human_readable_text
@@ -66,7 +66,7 @@ async function main() {
     await txHelper.sendAndCheck(
       LeadKeyPair,
       [
-        api.tx.contentDirectoryWorkingGroup.applyOnOpening(
+        api.tx.contentWorkingGroup.applyOnOpening(
           memberId, // member id
           newOpeningId, // opening id
           LeadKeyPair.address, // address
@@ -81,13 +81,13 @@ async function main() {
     const extrinsics: SubmittableExtrinsic<'promise'>[] = []
     // Begin review period
     console.log('Perparing Begin Applicant Review extrinsic...')
-    extrinsics.push(sudo(api.tx.contentDirectoryWorkingGroup.beginApplicantReview(newOpeningId)))
+    extrinsics.push(sudo(api.tx.contentWorkingGroup.beginApplicantReview(newOpeningId)))
 
     // Fill opening
     console.log('Perparing Fill Opening extrinsic...')
     extrinsics.push(
       sudo(
-        api.tx.contentDirectoryWorkingGroup.fillOpening(
+        api.tx.contentWorkingGroup.fillOpening(
           newOpeningId, // opening id
           api.createType('ApplicationIdSet', [newApplicationId]), // succesful applicants
           null // reward policy

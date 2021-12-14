@@ -1,6 +1,7 @@
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { v4 as uuid } from 'uuid'
 import { RewardRelationship } from '@joystream/types/recurring-rewards'
@@ -485,7 +486,7 @@ export class UpdateRewardAccountFixture extends BaseFixture {
     this.api.treasuryTransferBalance(workerRoleAccount, updateRewardAccountFee)
 
     // Update reward account
-    const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0]
+    const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0].key
     await this.api.updateRewardAccount(workerRoleAccount, this.workerId, createdAccount.address, this.module)
     const newRewardAccount: string = await this.api.getWorkerRewardAccount(this.workerId, this.module)
     assert(
@@ -514,7 +515,7 @@ export class UpdateRoleAccountFixture extends BaseFixture {
     this.api.treasuryTransferBalance(workerRoleAccount, updateRoleAccountFee)
 
     // Update role account
-    const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0]
+    const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0].key
     await this.api.updateRoleAccount(workerRoleAccount, this.workerId, createdAccount.address, this.module)
     const newRoleAccount: string = (await this.api.getWorkerById(this.workerId, this.module)).role_account_id.toString()
     assert(

@@ -25,23 +25,24 @@ ${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev
 ${CLI} leader:set-bucket-limits -i=${BUCKET_ID} -o=100 -s=10000000 --dev
 ${CLI} leader:update-bucket-status -i=${BUCKET_ID} --set on --dev
 ${CLI} leader:update-bag -a=${BUCKET_ID} -i static:council --dev 
-${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -m=http://google.com --dev
+${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -e=http://localhost:3333 --dev
+${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -j=./operatorMetadata.json --dev
 
 # Create and delete a bucket
 BUCKET_ID=`${CLI} leader:create-bucket -a -n=100 -s=10000000  --dev` # bucketId = 1
-${CLI} leader:delete-bucket -i=${BUCKET_ID}  --dev 
+${CLI} leader:delete-bucket -i=${BUCKET_ID}  --dev
 
 # Create a bucket, invite operator, cancel invite, accept invitation and remove operator.
 BUCKET_ID=`${CLI} leader:create-bucket -a -n=100 -s=10000000  --dev` # bucketId = 2
-${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev 
-${CLI} leader:cancel-invite -i=${BUCKET_ID} --dev 
-${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev 
+${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev
+${CLI} leader:cancel-invite -i=${BUCKET_ID} --dev
+${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev
 ${CLI} operator:accept-invitation -i=${BUCKET_ID} -w=0 --dev
-${CLI} leader:remove-operator -i=${BUCKET_ID}   --dev 
+${CLI} leader:remove-operator -i=${BUCKET_ID}   --dev
 
 # Toggle uploading block.
-${CLI} leader:set-global-uploading-status --set on --dev 
-${CLI} leader:set-global-uploading-status --set off --dev 
+${CLI} leader:set-global-uploading-status --set on --dev
+${CLI} leader:set-global-uploading-status --set off --dev
 
 # Blacklist.
 ${CLI} leader:update-blacklist -a BLACKLISTED_CID -r SOME_CID --dev

@@ -3,45 +3,33 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import { HttpError, OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
+import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
-import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
+import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
 import { httpLogger, errorLogger } from '../../services/logger'
+import { AppConfig } from './controllers/common'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
  *
- * @param api - runtime API promise
- * @param account - KeyringPair instance
- * @param workerId - storage provider ID (worker ID)
- * @param uploadsDir - directory for the file uploading
- * @param maxFileSize - max allowed file size
+ * @param config - web app configuration parameters
  * @returns Express promise.
  */
-export async function createApp(
-  api: ApiPromise,
-  account: KeyringPair,
-  workerId: number,
-  uploadsDir: string,
-  maxFileSize: number
-): Promise<Express> {
+export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
-
   const app = express()
 
   app.use(cors())
   app.use(express.json())
-  app.use(httpLogger())
+  app.use(httpLogger(config.elasticSearchEndpoint))
 
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
-      res.locals.uploadsDir = uploadsDir
-      res.locals.storageProviderAccount = account
-      res.locals.workerId = workerId
-      res.locals.api = api
+      res.locals = config
+
       next()
     },
     // Setup OpenAPiValidator
@@ -55,20 +43,16 @@ export async function createApp(
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
       fileUploader: {
-        dest: uploadsDir,
+        dest: config.tempFileUploadingDir,
         // Busboy library settings
         limits: {
           // For multipart forms, the max number of file fields (Default: Infinity)
           files: 1,
           // For multipart forms, the max file size (in bytes) (Default: Infinity)
-          fileSize: maxFileSize,
+          fileSize: config.maxFileSize,
         },
       },
-      validateSecurity: {
-        handlers: {
-          UploadAuth: validateUpload(api, account),
-        },
-      },
+      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.storageProviderAccount),
     })
   ) // Required signature.
 
@@ -99,6 +83,34 @@ export async function createApp(
   })
 
   return app
+}
+
+/**
+ * Setup uploading validation. It disables the validation or returns the
+ * 'validation security' configuration.
+ *
+ * @param enableUploadingAuth - enables uploading auth-schema validation
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ *
+ * @returns false (disabled validation) or validation options.
+ */
+function setupUploadingValidation(
+  enableUploadingAuth: boolean,
+  api: ApiPromise,
+  account: KeyringPair
+): boolean | ValidateSecurityOpts {
+  if (enableUploadingAuth) {
+    const opts = {
+      handlers: {
+        UploadAuth: validateUpload(api, account),
+      },
+    }
+
+    return opts
+  }
+
+  return false
 }
 
 // Defines a signature for a upload validation function.

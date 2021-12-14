@@ -82,6 +82,10 @@ decl_error! {
         /// Bag Size specified is not valid
         InvalidBagSizeSpecified,
 
+        /// Migration not done yet
+        MigrationNotFinished,
+
+
 
         /// Actor not channel owner
         ActorNotChannelOwner,

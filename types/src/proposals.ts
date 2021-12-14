@@ -1,4 +1,4 @@
-import { Text, u32, Tuple, u8, Vec, Option, Null, Bytes } from '@polkadot/types'
+import { u32, Tuple, u8, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { bool, u128 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
@@ -57,8 +57,8 @@ export class ProposalParameters
 export type IProposal = {
   parameters: ProposalParameters
   proposerId: MemberId
-  title: Text
-  description: Text
+  title: Bytes
+  description: Bytes
   createdAt: BlockNumber
   status: ProposalStatus
   votingResults: VotingResults
@@ -87,7 +87,7 @@ export class ActiveStake
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
-  error: Text,
+  error: Bytes,
 }) {}
 
 export class ExecutionFailed extends ExecutionFailedStatus {}
@@ -166,9 +166,9 @@ export class Proposal
     // Identifier of member proposing.
     proposerId: MemberId,
     // Proposal description
-    title: Text,
+    title: Bytes,
     // Proposal body
-    description: Text,
+    description: Bytes,
     // When it was created.
     createdAt: u32, // BlockNumber
     /// Current proposal status
@@ -251,7 +251,7 @@ export class TerminateRoleParameters
   implements ITerminateRoleParameters {}
 
 export class ProposalDetails extends JoyEnum({
-  Text: Text,
+  Text: Bytes,
   RuntimeUpgrade: Bytes,
   SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
