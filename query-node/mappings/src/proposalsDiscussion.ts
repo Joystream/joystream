@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import {
   Membership,
   ProposalDiscussionPostStatusActive,
@@ -18,7 +18,7 @@ import {
   ProposalDiscussionPostStatusRemoved,
 } from 'query-node/dist/model'
 import { bytesToString, deserializeMetadata, genericEventFields, MemoryCache } from './common'
-import { ProposalsDiscussion } from './generated/types'
+import { ProposalsDiscussion } from '../generated/types'
 import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { In } from 'typeorm'
 

@@ -20,6 +20,7 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace integration-tests checks --quiet
+        yarn workspace query-node-root lint
 
   network_build_osx:
     name: MacOS Checks
@@ -39,3 +40,4 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace integration-tests checks --quiet
+        yarn workspace query-node-root lint

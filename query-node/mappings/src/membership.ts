@@ -1,8 +1,8 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
-import { Members } from './generated/types'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { bytesToString, deserializeMetadata, genericEventFields } from './common'
@@ -104,6 +104,10 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
         : undefined,
     isFoundingMember: false,
+    isCouncilMember: false,
+
+    councilCandidacies: [],
+    councilMembers: [],
   })
 
   await store.save<MemberMetadata>(member.metadata)

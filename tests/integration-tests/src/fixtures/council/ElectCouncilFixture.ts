@@ -1,5 +1,6 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
+import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { assert } from 'chai'
@@ -76,12 +77,27 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await api.prepareAccountsForFeeExpenses(votersStakingAccounts, votingTxs)
     await api.sendExtrinsicsAndGetResults(revealingTxs, votersStakingAccounts)
 
+    const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
+
+    // check intermediate election winners are properly set
+    await query.tryQueryWithTimeout(
+      () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
+      (qnReferendumIntermediateWinners) => {
+        assert.sameMembers(
+          qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
+          candidatesToWinIds
+        )
+      }
+    )
+
     await this.api.untilCouncilStage('Idle')
 
     const councilMembers = await api.query.council.councilMembers()
     assert.sameMembers(
       councilMembers.map((m) => m.membership_id.toString()),
-      candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
+      candidatesToWinIds
     )
+
+    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }

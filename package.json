@@ -39,7 +39,8 @@
     "typescript": "^4.3.5",
     "bn.js": "^5.1.2",
     "rxjs": "^7.2.0",
-    "typeorm": "^0.2.31",
+    "typeorm": "0.2.34",
+    "@joystream/warthog": "2.39.0",
     "pg": "^8.4.0",
     "chalk": "^4.0.0"
   },

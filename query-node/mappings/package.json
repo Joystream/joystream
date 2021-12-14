@@ -2,18 +2,20 @@
   "name": "query-node-mappings",
   "version": "0.1.0",
   "description": "Mappings for hydra-processor",
-  "main": "lib/mappings/index.js",
+  "main": "lib/src/index.js",
   "license": "MIT",
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json && cp ./generated/types/typedefs.json ./lib/generated/types/typedefs.json",
-    "lint": "echo \"Skippinng\"",
-    "clean": "rm -rf lib"
+    "lint": "eslint ./src --ext .ts",
+    "clean": "rm -rf lib",
+    "postinstall": "yarn ts-node ./scripts/postInstall.ts",
+    "postHydraCLIInstall": "yarn ts-node ./scripts/postHydraCLIInstall.ts"
   },
   "dependencies": {
-    "@dzlzv/hydra-common": "3.1.0-alpha.0",
-    "@dzlzv/hydra-db-utils": "3.1.0-alpha.0",
+    "@joystream/hydra-common": "3.1.0-alpha.13",
+    "@joystream/hydra-db-utils": "3.1.0-alpha.13",
     "@joystream/types": "^0.17.0",
-    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz",
+    "@joystream/warthog": "2.39.0",
     "@joystream/metadata-protobuf": "^1.0.0",
     "iso-639-1": "^2.1.8"
   },

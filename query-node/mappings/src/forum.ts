@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import {
   bytesToString,
   deserializeMetadata,
@@ -55,7 +55,7 @@ import {
   PostStatusRemoved,
   ForumThreadTag,
 } from 'query-node/dist/model'
-import { Forum } from './generated/types'
+import { Forum } from '../generated/types'
 import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
 import {
   ForumPostMetadata,

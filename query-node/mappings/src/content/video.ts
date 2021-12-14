@@ -1,9 +1,9 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
-import { Content } from '../generated/types'
+import { Content } from '../../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { processVideoMetadata } from './utils'
 import { AssetNone, Channel, Video, VideoCategory } from 'query-node/dist/model'
