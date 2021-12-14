@@ -23,7 +23,6 @@
     "@joystream/hydra-common": "3.1.0-alpha.13",
     "@joystream/hydra-db-utils": "3.1.0-alpha.13",
     "@joystream/metadata-protobuf": "^1.0.0",
-    "@joystream/sumer-types": "npm:@joystream/types@^0.16.0",
     "@joystream/types": "^0.17.0",
     "@joystream/warthog": "2.39.0",
     "@apollo/client": "^3.2.5"

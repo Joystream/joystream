@@ -42,6 +42,7 @@
     "@types/long": "^4.0.1",
     "i18n-iso-countries": "^6.8.0",
     "iso-639-1": "^2.1.9",
+    "protobufjs": "^6.11.2",
     "iso-3166-2": "^1.0.0",
     "@types/iso-3166-2": "^1.0.0"
   },
@@ -53,7 +54,6 @@
     "mocha": "^8.2.1",
     "prettier": "2.0.2",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3",
-    "protobufjs": "^6.11.2"
+    "typescript": "^4.4.3"
   }
 }
