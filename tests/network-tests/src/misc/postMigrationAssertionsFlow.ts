@@ -1,66 +1,68 @@
 import { assert } from 'chai'
 import { FlowProps } from '../Flow'
 import { extendDebug } from '../Debugger'
-import { Utils } from '../../utils'
+import { Utils } from '../utils'
 
 export default async function postMigrationAssertions({ api }: FlowProps): Promise<void> {
-    const debug = extendDebug('flow:postMigrationAssertions')
-    debug('Started')
+  const debug = extendDebug('flow:postMigrationAssertions')
+  debug('Started')
 
-    debug('Ensure migration is done')
+  debug('Ensure migration is done')
 
-    let channel_migration = await api.query.content.channelMigration();
-    let video_migration = await api.query.content.videoMigration();
+  let channelMigration = await api.query.content.channelMigration()
+  let videoMigration = await api.query.content.videoMigration()
 
-    // wait for migration to be done and checking that index do actually change
-    while (channel_migration.current_id.toNumber() < channel_migration.final_id.toNumber() ||
-        video_migration.current_id.toNumber() < video_migration.final_id.toNumber()) {
-        let channel_migration_new = await api.query.content.channelMigration();
-        let video_migration_new = await api.query.content.videoMigration();
+  // wait for migration to be done and checking that index do actually change
+  while (
+    channelMigration.current_id.toNumber() < channelMigration.final_id.toNumber() ||
+    videoMigration.current_id.toNumber() < videoMigration.final_id.toNumber()
+  ) {
+    const channelMigrationNew = await api.query.content.channelMigration()
+    const videoMigrationNew = await api.query.content.videoMigration()
 
-        // assert invariant in order to prevent infinite loop
-        if (channel_migration_new.current_id.toNumber() > channel_migration.current_id.toNumber() &&
-            video_migration_new.current_id.toNumber() > video_migration.current_id.toNumber()) {
+    // assert invariant in order to prevent infinite loop
+    if (
+      channelMigrationNew.current_id.toNumber() > channelMigration.current_id.toNumber() &&
+      videoMigrationNew.current_id.toNumber() > videoMigration.current_id.toNumber()
+    ) {
+      // update migration variables
+      channelMigration = channelMigrationNew
+      videoMigration = videoMigrationNew
 
-            // update migration variables
-            channel_migration = channel_migration_new;
-            video_migration = video_migration_new;
-
-            // wait 6 seconds
-            await Utils.wait(6000)
-        } else {
-            throw "Migration indices not updating";
-        }
-
+      // wait 6 seconds
+      await Utils.wait(6000)
+    } else {
+      throw new Error('Unable to connect to chain')
     }
+  }
 
-    debug('Check all new  working groups have been correctly initialized')
+  debug('Check all new  working groups have been correctly initialized')
 
-    const wg_beta = await api.query.operationsWorkingGroupBeta.activeWorkerCount();
-    const wg_gamma = await api.query.operationsWorkingGroupGamma.activeWorkerCount();
-    const wg_gateway = await api.query.gatewayWorkingGroup.activeWorkerCount();
+  const wgBeta = await api.query.operationsWorkingGroupBeta.activeWorkerCount()
+  const wgGamma = await api.query.operationsWorkingGroupGamma.activeWorkerCount()
+  const wgGateway = await api.query.gatewayWorkingGroup.activeWorkerCount()
 
-    assert.equal(wg_beta.toNumber(), 0);
-    assert.equal(wg_gamma.toNumber(), 0);
-    assert.equal(wg_gateway.toNumber(), 0);
+  assert.equal(wgBeta.toNumber(), 0)
+  assert.equal(wgGamma.toNumber(), 0)
+  assert.equal(wgGateway.toNumber(), 0)
 
-    debug('Checking that Video, Channel, Categories  counters have not been re-set')
+  debug('Checking that Video, Channel, Categories  counters have not been re-set')
 
-    const nextVideoCategoryId = await api.query.content.nextVideoCategoryId()
-    const nextVideoId = await api.query.content.nextVideoId()
-    const nextChannelId = await api.query.content.nextChannelId()
+  const nextVideoCategoryId = await api.query.content.nextVideoCategoryId()
+  const nextVideoId = await api.query.content.nextVideoId()
+  const nextChannelId = await api.query.content.nextChannelId()
 
-    assert(nextVideoCategoryId.toNumber() > 1);
-    assert(nextVideoId.toNumber() > 1);
-    assert(nextChannelId.toNumber() > 1);
+  assert(nextVideoCategoryId.toNumber() > 1)
+  assert(nextVideoId.toNumber() > 1)
+  assert(nextChannelId.toNumber() > 1)
 
-    debug('Checking that number of outstanding channels & videos == 0');
+  debug('Checking that number of outstanding channels & videos == 0')
 
-    const num_channels = await api.getNumberOfOutstandingChannels()
-    const num_videos = await api.getNumberOfOutstandingVideos()
+  const numChannels = await api.getNumberOfOutstandingChannels()
+  const numVideos = await api.getNumberOfOutstandingVideos()
 
-    assert.equal(num_channels, 0);
-    assert.equal(num_videos, 0);
+  assert.equal(numChannels, 0)
+  assert.equal(numVideos, 0)
 
-    debug('Done')
+  debug('Done')
 }
