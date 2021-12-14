@@ -631,7 +631,7 @@ decl_module! {
         /// # </weight>
         #[weight = CouncilWeightInfo::<T>::withdraw_candidacy()]
         pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
-            let staking_account_id =
+            let (stage_data, candidate) =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
 
             //
@@ -639,7 +639,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::release_candidacy_stake(&membership_id, &staking_account_id);
+            Mutations::<T>::withdraw_candidacy(&stage_data, &membership_id, &candidate);
 
             // emit event
             Self::deposit_event(RawEvent::CandidacyWithdraw(membership_id));
@@ -902,10 +902,10 @@ impl<T: Trait> Module<T> {
 
     // Finish voting and start ravealing.
     fn end_announcement_period(stage_data: CouncilStageAnnouncing) {
-        let candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
+        let min_candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
 
         // reset announcing period when not enough candidates registered
-        if stage_data.candidates_count < candidate_count {
+        if stage_data.candidates_count < min_candidate_count {
             Mutations::<T>::start_announcing_period();
 
             // emit event
@@ -1322,7 +1322,7 @@ impl<T: Trait> Mutations<T> {
             candidates_count: stage_data.candidates_count + 1,
         };
 
-        // store new candidacy list
+        // store new stage
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(new_stage_data),
@@ -1334,6 +1334,30 @@ impl<T: Trait> Mutations<T> {
 
         // lock candidacy stake
         T::CandidacyLock::lock(&candidate.staking_account_id, *stake);
+    }
+
+    fn withdraw_candidacy(
+        stage_data: &CouncilStageAnnouncing,
+        membership_id: &T::MemberId,
+        candidate: &CandidateOf<T>,
+    ) {
+        // release candidacy stake
+        Self::release_candidacy_stake(&membership_id, &candidate.staking_account_id);
+
+        // prepare new stage
+        let new_stage_data = CouncilStageAnnouncing {
+            candidates_count: stage_data.candidates_count - 1,
+        };
+
+        // store new stage
+        Stage::<T>::mutate(|value| {
+            *value = CouncilStageUpdate {
+                stage: CouncilStage::Announcing(new_stage_data),
+
+                // keep changed_at (and other values) - stage phase haven't changed
+                ..*value
+            }
+        });
     }
 
     // Release user's stake that was used for candidacy.
@@ -1525,7 +1549,7 @@ impl<T: Trait> EnsureChecks<T> {
     fn can_withdraw_candidacy(
         origin: T::Origin,
         membership_id: &T::MemberId,
-    ) -> Result<T::AccountId, Error<T>> {
+    ) -> Result<(CouncilStageAnnouncing, CandidateOf<T>), Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
@@ -1537,17 +1561,19 @@ impl<T: Trait> EnsureChecks<T> {
         let candidate = Candidates::<T>::get(membership_id);
 
         // ensure candidacy announcing period is running now
-        match Stage::<T>::get().stage {
-            CouncilStage::Announcing(_) => {
+        let stage_data = match Stage::<T>::get().stage {
+            CouncilStage::Announcing(stage_data) => {
                 // ensure candidacy was announced in current election cycle
                 if candidate.cycle_id != AnnouncementPeriodNr::get() {
                     return Err(Error::NotCandidatingNow);
                 }
+
+                stage_data
             }
             _ => return Err(Error::CantWithdrawCandidacyNow),
         };
 
-        Ok(candidate.staking_account_id)
+        Ok((stage_data, candidate))
     }
 
     // Ensures there is no problem in setting new note for the candidacy.
