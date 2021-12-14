@@ -11,7 +11,7 @@ import {
   logger,
   unexpectedData,
 } from './common'
-import { DataDirectory } from './generated/types'
+import { DataDirectory } from '../generated/types'
 import { ContentId, StorageObjectOwner } from '@joystream/types/augment'
 import { ContentId as Custom_ContentId } from '@joystream/types/storage'
 import { registry } from '@joystream/types'

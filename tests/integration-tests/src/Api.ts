@@ -535,6 +535,7 @@ export class Api {
 
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
+    announcementPeriodNr: number | null = null,
     blocksReserve = 3,
     intervalMs = BLOCKTIME
   ): Promise<void> {
@@ -562,9 +563,16 @@ export class Api {
 
         const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
 
+        const currentAnnouncementPeriodNr =
+          announcementPeriodNr === null ? null : (await this.api.query.council.announcementPeriodNr()).toNumber()
+
         debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
 
-        return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve)
+        return (
+          currentStage === targetStage &&
+          currentStageEndsIn.gten(blocksReserve) &&
+          announcementPeriodNr === currentAnnouncementPeriodNr
+        )
       },
       intervalMs
     )

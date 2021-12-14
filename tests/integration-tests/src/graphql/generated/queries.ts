@@ -1,6 +1,23 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
+
+export type ElectedCouncilFieldsFragment = { councilMembers: Array<CouncilMemberFieldsFragment> }
+
+export type CandidateFieldsFragment = { id: string; member: { id: string } }
+
+export type GetCurrentCouncilMembersQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetCurrentCouncilMembersQuery = { electedCouncils: Array<ElectedCouncilFieldsFragment> }
+
+export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{
+  electionRoundCycleId: Types.Scalars['Int']
+  councilSize: Types.Scalars['Int']
+}>
+
+export type GetReferendumIntermediateWinnersQuery = { candidates: Array<CandidateFieldsFragment> }
+
 export type ForumCategoryFieldsFragment = {
   id: string
   createdAt: any
@@ -838,9 +855,9 @@ type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: any
+  stakeAmount: number
   unstakingPeriod: number
-  rewardPerBlock: any
+  rewardPerBlock: number
   metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
   group?: Types.Maybe<{ id: string }>
 }
@@ -853,31 +870,31 @@ type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment =
 
 type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
   __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: any
+  amount: number
   group?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
   __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: any
+  amount: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: any
+  amount: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
   __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: any
+  newRewardPerBlock: number
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<any>
+  slashingAmount?: Types.Maybe<number>
   lead?: Types.Maybe<{ id: string }>
 }
 
@@ -893,22 +910,22 @@ type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
 
 type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
   __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: any
+  newPrice: number
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
   __typename: 'SetCouncilBudgetIncrementProposalDetails'
-  newAmount: any
+  newAmount: number
 }
 
 type ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment = {
   __typename: 'SetCouncilorRewardProposalDetails'
-  newRewardPerBlock: any
+  newRewardPerBlock: number
 }
 
 type ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment = {
   __typename: 'SetInitialInvitationBalanceProposalDetails'
-  newInitialInvitationBalance: any
+  newInitialInvitationBalance: number
 }
 
 type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
@@ -1883,6 +1900,30 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export const CouncilMemberFields = gql`
+  fragment CouncilMemberFields on CouncilMember {
+    id
+    member {
+      id
+    }
+  }
+`
+export const ElectedCouncilFields = gql`
+  fragment ElectedCouncilFields on ElectedCouncil {
+    councilMembers {
+      ...CouncilMemberFields
+    }
+  }
+  ${CouncilMemberFields}
+`
+export const CandidateFields = gql`
+  fragment CandidateFields on Candidate {
+    id
+    member {
+      id
+    }
+  }
+`
 export const ForumCategoryFields = gql`
   fragment ForumCategoryFields on ForumCategory {
     id
@@ -3615,6 +3656,26 @@ export const BudgetSpendingEventFields = gql`
     amount
     rationale
   }
+`
+export const GetCurrentCouncilMembers = gql`
+  query getCurrentCouncilMembers {
+    electedCouncils(where: { endedAtBlock_eq: null }) {
+      ...ElectedCouncilFields
+    }
+  }
+  ${ElectedCouncilFields}
+`
+export const GetReferendumIntermediateWinners = gql`
+  query getReferendumIntermediateWinners($electionRoundCycleId: Int!, $councilSize: Int!) {
+    candidates(
+      where: { electionRound: { cycleId_eq: $electionRoundCycleId }, votePower_gt: 0 }
+      orderBy: [votePower_DESC, lastVoteReceivedAtBlock_ASC, lastVoteReceivedAtEventNumber_ASC]
+      limit: $councilSize
+    ) {
+      ...CandidateFields
+    }
+  }
+  ${CandidateFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {

@@ -18,7 +18,7 @@ import {
   ProposalDiscussionPostStatusRemoved,
 } from 'query-node/dist/model'
 import { bytesToString, deserializeMetadata, genericEventFields, MemoryCache } from './common'
-import { ProposalsDiscussion } from './generated/types'
+import { ProposalsDiscussion } from '../generated/types'
 import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { In } from 'typeorm'
 

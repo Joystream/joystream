@@ -61,7 +61,7 @@ import {
   ProposalDiscussionThreadModeOpen,
 } from 'query-node/dist/model'
 import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
-import { ProposalsEngine, ProposalsCodex } from './generated/types'
+import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'

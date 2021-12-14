@@ -21,6 +21,7 @@ import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
+import failToElect from '../flows/council/failToElect'
 import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
@@ -75,4 +76,8 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Council
+  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  job('council election failures', failToElect).requires(secondCouncilJob)
 })

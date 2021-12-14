@@ -55,7 +55,7 @@ import {
   PostStatusRemoved,
   ForumThreadTag,
 } from 'query-node/dist/model'
-import { Forum } from './generated/types'
+import { Forum } from '../generated/types'
 import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
 import {
   ForumPostMetadata,

@@ -180,7 +180,6 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
         const isAccepted = acceptedApplicationsIds.some((id) => id.toNumber() === qApplication.runtimeId)
         if (isAccepted) {
           Utils.assert(qApplication.status.__typename === 'ApplicationStatusAccepted', 'Invalid application status')
-          console.log('qApplication.status', qApplication.status)
           // FIXME: Missing due to Hydra bug now
           // Utils.assert(qApplication.status.openingFilledEvent, 'Query node: Missing openingFilledEvent relation')
           // assert.equal(qApplication.status.openingFilledEvent.id, qEvent.id)
