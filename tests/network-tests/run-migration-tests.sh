@@ -12,9 +12,6 @@ RUNTIME_TAG=${RUNTIME_TAG:=sumer}
 POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS=$true}
 # The joystream/node docker image tag to start the chain with
 RUNTIME_TAG=${RUNTIME_TAG:=sumer}
-# RPC endpoint for live RUNTIME testnet 
-export WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
-
 # source common function used for node setup
 source ./node-utils.sh
 source ./.env
@@ -42,7 +39,9 @@ function fork_off_init() {
 
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
     docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
-    
+
+    # RPC endpoint for live RUNTIME testnet 
+    export WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org"
     yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
