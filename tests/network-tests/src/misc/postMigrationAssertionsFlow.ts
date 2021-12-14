@@ -19,15 +19,19 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
         let video_migration_new = await api.query.content.videoMigration();
 
         // assert invariant in order to prevent infinite loop
-        assert(channel_migration_new.current_id.toNumber() > channel_migration.current_id.toNumber());
-        assert(video_migration_new.current_id.toNumber() > video_migration.current_id.toNumber());
+        if (channel_migration_new.current_id.toNumber() > channel_migration.current_id.toNumber() &&
+            video_migration_new.current_id.toNumber() > video_migration.current_id.toNumber()) {
 
-        // update migration variables
-        channel_migration = channel_migration_new;
-        video_migration = video_migration_new;
+            // update migration variables
+            channel_migration = channel_migration_new;
+            video_migration = video_migration_new;
 
-        // wait 6 seconds
-        await Utils.wait(6000)
+            // wait 6 seconds
+            await Utils.wait(6000)
+        } else {
+            throw "Migration indices not updating";
+        }
+
     }
 
     debug('Check all new  working groups have been correctly initialized')
