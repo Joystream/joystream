@@ -55,11 +55,32 @@ impl<T: Trait> StorageBucketPicker<T> {
     // Verifies storage bucket ID (non-deleted and accepting new bags).
     pub(crate) fn check_storage_bucket_is_valid_for_bag_assigning(
         bucket_id: &T::StorageBucketId,
+        voucher_update: &Option<VoucherUpdate>,
     ) -> bool {
         // Check bucket for existence (return false if not). Check `accepting_new_bags`.
-        Module::<T>::ensure_storage_bucket_exists(bucket_id)
-            .ok()
-            .map(|bucket| bucket.accepting_new_bags)
-            .unwrap_or(false)
+        let bucket = Module::<T>::ensure_storage_bucket_exists(bucket_id).ok();
+
+        // check that bucket is accepting new bags
+        let accepting_bags = bucket
+            .as_ref()
+            .map_or(false, |bucket| bucket.accepting_new_bags);
+
+        // check that buckets has enough room for objects and size
+        let limits_sufficient = bucket.as_ref().map_or(false, |bucket| {
+            voucher_update.map_or(true, |voucher_update| {
+                let num_objects_enough = bucket.voucher.objects_limit
+                    >= bucket
+                        .voucher
+                        .objects_used
+                        .saturating_add(voucher_update.objects_number);
+                let size_enough = bucket.voucher.size_limit
+                    >= bucket
+                        .voucher
+                        .size_used
+                        .saturating_add(voucher_update.objects_total_size);
+                size_enough && num_objects_enough
+            })
+        });
+        accepting_bags && limits_sufficient
     }
 }
