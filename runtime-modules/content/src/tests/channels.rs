@@ -101,6 +101,7 @@ fn successful_channel_assets_deletion() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
@@ -258,6 +259,8 @@ fn succesful_channel_creation() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
@@ -301,6 +304,7 @@ fn succesful_channel_creation() {
 #[test]
 fn lead_cannot_create_channel() {
     with_default_mock_builder(|| {
+        create_initial_storage_buckets();
         assert_err!(
             Content::create_channel(
                 Origin::signed(LEAD_ORIGIN),
@@ -442,6 +446,7 @@ fn invalid_member_cannot_create_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         // Not a member
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -463,6 +468,7 @@ fn invalid_member_cannot_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -496,6 +502,8 @@ fn invalid_member_cannot_delete_channel() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
+
+        create_initial_storage_buckets();
 
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -758,8 +766,12 @@ fn channel_censoring() {
 }
 
 #[test]
-fn channel_creation_doesnt_live_bags_dangling() {
+fn channel_creation_doesnt_leave_bags_dangling() {
     with_default_mock_builder(|| {
+        // in order to emit events
+        run_to_block(1);
+
+        create_initial_storage_buckets();
         // number of assets big enought to make upload_data_objects throw
         let asset_num = 100_000usize;
         let mut object_creation_list =
