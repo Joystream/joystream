@@ -1,6 +1,7 @@
 import { assert } from 'chai'
 import { FlowProps } from '../Flow'
 import { extendDebug } from '../Debugger'
+import { Utils } from '../../utils'
 
 export default async function postMigrationAssertions({ api }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:postMigrationAssertions')
@@ -11,12 +12,22 @@ export default async function postMigrationAssertions({ api }: FlowProps): Promi
     let channel_migration = await api.query.content.channelMigration();
     let video_migration = await api.query.content.videoMigration();
 
-    // wait for migration to be done
+    // wait for migration to be done and checking that index do actually change
     while (channel_migration.current_id.toNumber() < channel_migration.final_id.toNumber() ||
         video_migration.current_id.toNumber() < video_migration.final_id.toNumber()) {
-        channel_migration = await api.query.content.channelMigration();
-        video_migration = await api.query.content.videoMigration();
+        let channel_migration_new = await api.query.content.channelMigration();
+        let video_migration_new = await api.query.content.videoMigration();
 
+        // assert invariant in order to prevent infinite loop
+        assert(channel_migration_new.current_id.toNumber() > channel_migration.current_id.toNumber());
+        assert(video_migration_new.current_id.toNumber() > video_migration.current_id.toNumber());
+
+        // update migration variables
+        channel_migration = channel_migration_new;
+        video_migration = video_migration_new;
+
+        // wait 6 seconds
+        await Utils.wait(6000)
     }
 
     debug('Check all new  working groups have been correctly initialized')
