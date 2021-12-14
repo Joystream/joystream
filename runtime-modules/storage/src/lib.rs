@@ -2631,14 +2631,37 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize)?;
+        Self::can_create_dynamic_bag(&dynamic_bag_id, &deletion_prize)?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
+        let (storage_bucket_ids, distribution_bucket_ids) =
+            Self::pick_buckets_for_bag(dynamic_bag_id.clone(), None);
 
+        Self::create_dynamic_bag_inner(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &storage_bucket_ids,
+            &distribution_bucket_ids,
+        )?;
+        Ok(())
+    }
+
+    fn create_dynamic_bag_with_objects(
+        dynamic_bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult {
+        let (storage_bucket_ids, distribution_bucket_ids) =
+            Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
+        Self::create_dynamic_bag_inner(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &storage_bucket_ids,
+            &distribution_bucket_ids,
+        )?;
         Ok(())
     }
 
@@ -2647,15 +2670,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
         Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
-    }
-    fn create_dynamic_bag_with_objects(
-        dynamic_bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
-        params: UploadParameters<T>,
-    ) -> DispatchResult {
-        Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
-        Self::create_dynamic_bag_inner(&dynamic_bag_id, &deletion_prize)?;
-        Ok(())
     }
 
     fn can_create_dynamic_bag_with_objects(
