@@ -2704,15 +2704,16 @@ impl<T: Trait> Module<T> {
     fn create_dynamic_bag_inner(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
+        //
+        // = MUTATION SAFE =
+        //
+
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
         }
-
-        let bag_type: DynamicBagType = dynamic_bag_id.clone().into();
-
-        let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_type);
-        let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = Bag::<T> {
             stored_by: storage_buckets.clone(),
@@ -2728,9 +2729,10 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id.clone(),
             deletion_prize.clone(),
-            storage_buckets,
-            distribution_buckets,
+            storage_buckets.clone(),
+            distribution_buckets.clone(),
         ));
+
         Ok(())
     }
 
