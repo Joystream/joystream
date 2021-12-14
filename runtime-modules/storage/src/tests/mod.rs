@@ -3359,6 +3359,14 @@ fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
     let objects_limit = 1;
     let size_limit = 100;
 
+    create_storage_buckets_with_limits(buckets_number, size_limit, objects_limit)
+}
+
+fn create_storage_buckets_with_limits(
+    buckets_number: u64,
+    size_limit: u64,
+    objects_limit: u64,
+) -> BTreeSet<u64> {
     let mut bucket_ids = BTreeSet::new();
 
     for _ in 0..buckets_number {
