@@ -5,7 +5,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 
 pub(crate) use super::{RandomBucketIdIterator, SequentialBucketIdIterator};
-use crate::{DynamicBagType, Module, Trait};
+use crate::{DynamicBagType, Module, Trait, VoucherUpdate};
 
 // Generates storage bucket IDs to assign to a new dynamic bag.
 pub(crate) struct StorageBucketPicker<T> {

@@ -12,6 +12,8 @@ fn successful_channel_deletion() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
@@ -162,6 +164,8 @@ fn succesful_channel_update() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
+
+        create_initial_storage_buckets();
 
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
@@ -523,6 +527,8 @@ fn non_authorized_collaborators_cannot_update_channel() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
+
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -598,6 +604,7 @@ fn authorized_collaborators_can_update_channel() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,

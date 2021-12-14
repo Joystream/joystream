@@ -481,6 +481,12 @@ pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
+/// Type alias for the storage & distribution bucket ids pair
+pub type BucketPair<T> = (
+    BTreeSet<<T as Trait>::StorageBucketId>,
+    BTreeSet<DistributionBucketId<T>>,
+);
+
 /// The fundamental concept in the system, which represents single static binary object in the
 /// system. The main goal of the system is to retain an index of all such objects, including who
 /// owns them, and information about what actors are currently tasked with storing and distributing
@@ -2656,7 +2662,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
-    ) -> DispatchResult {
+    ) -> Result<BucketPair<T>, DispatchError> {
         Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
         Self::check_global_uploading_block()?;
 
@@ -2670,7 +2676,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             &params.expected_data_size_fee,
         )?;
 
-        Ok(())
+        let (storage_bucket_ids, distribution_bucket_ids) =
+            Self::pick_buckets_for_bag(bag_id.clone(), Some(bag_change.voucher_update));
+
+        // check if storage buckets have been found
+        ensure!(
+            !storage_bucket_ids.is_empty(),
+            Error::<T>::StorageBucketIdCollectionsAreEmpty
+        );
+
+        Ok((storage_bucket_ids, distribution_bucket_ids))
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {

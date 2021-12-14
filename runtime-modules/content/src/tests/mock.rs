@@ -662,3 +662,27 @@ pub fn helper_init_accounts(accounts: Vec<u64>) {
         );
     }
 }
+
+pub fn create_initial_storage_buckets() {
+    // first set limits
+    assert_eq!(
+        Storage::<Test>::update_storage_buckets_voucher_max_limits(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            400,
+            40
+        ),
+        Ok(())
+    );
+
+    // create bucket(s)
+    assert_eq!(
+        Storage::<Test>::create_storage_bucket(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            None,
+            true,
+            100,
+            10,
+        ),
+        Ok(())
+    );
+}
