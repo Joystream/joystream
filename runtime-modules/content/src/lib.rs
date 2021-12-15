@@ -1413,7 +1413,7 @@ impl<T: Trait> Module<T> {
             Storage::<T>::create_dynamic_bag_with_objects(dyn_bag, None, upload_params.clone())?;
         };
 
-        // remove bag in case of upload error
+        // once bag is succesfully created with the required size & number of object, proceed to upload
         Storage::<T>::upload_data_objects(upload_params)?;
 
         Ok(())
