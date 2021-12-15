@@ -234,6 +234,8 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Get all objects id in a bag, without checking its existence
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
+
+    fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -2493,6 +2495,10 @@ decl_module! {
 
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
+    fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult {
+        Self::validate_upload_data_objects_parameters(params).map(|_| ())
+    }
+
     fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
         Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
@@ -3199,6 +3205,28 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Validates upload parameters and conditions (like global uploading block).
+    // Returns voucher update parameters for the storage buckets.
+    fn validate_upload_data_objects_parameters(
+        params: &UploadParameters<T>,
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        Self::check_global_uploading_block()?;
+
+        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+
+        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
+
+        Self::ensure_enough_balance_for_upload(
+            &bag_change,
+            &params.deletion_prize_source_account_id,
+            &params.expected_data_size_fee,
+        )?;
+
+        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
+
+        Ok(bag_change)
+    }
+
     // Validates `delete_data_objects` parameters.
     // Returns voucher update for an affected bag.
     fn validate_delete_data_objects_params(
@@ -3231,28 +3259,6 @@ impl<T: Trait> Module<T> {
             <StorageTreasury<T>>::usable_balance() >= bag_change.total_deletion_prize,
             Error::<T>::InsufficientTreasuryBalance
         );
-
-        Ok(bag_change)
-    }
-
-    // Validates upload parameters and conditions (like global uploading block).
-    // Returns voucher update parameters for the storage buckets.
-    fn validate_upload_data_objects_parameters(
-        params: &UploadParameters<T>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        Self::check_global_uploading_block()?;
-
-        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
-
-        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
-
-        Self::ensure_enough_balance_for_upload(
-            &bag_change,
-            &params.deletion_prize_source_account_id,
-            &params.expected_data_size_fee,
-        )?;
-
-        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
 
         Ok(bag_change)
     }

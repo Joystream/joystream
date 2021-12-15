@@ -686,3 +686,37 @@ pub fn create_initial_storage_buckets() {
         Ok(())
     );
 }
+
+pub fn create_channel_with_bag() {
+    // 3 assets added at creation
+    let assets = StorageAssetsRecord {
+        object_creation_list: vec![
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"first".to_vec(),
+            },
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"second".to_vec(),
+            },
+            DataObjectCreationParameters {
+                size: 3,
+                ipfs_content_id: b"third".to_vec(),
+            },
+        ],
+        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+    };
+
+    // create channel
+    create_channel_mock(
+        FIRST_MEMBER_ORIGIN,
+        ContentActor::Member(FIRST_MEMBER_ID),
+        ChannelCreationParametersRecord {
+            assets: Some(assets),
+            meta: None,
+            reward_account: None,
+            collaborators: BTreeSet::new(),
+        },
+        Ok(()),
+    );
+}

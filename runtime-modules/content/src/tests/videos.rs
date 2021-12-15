@@ -40,17 +40,7 @@ fn video_creation_successful() {
 
         create_initial_storage_buckets();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: None,
-                reward_account: None,
-                collaborators: BTreeSet::new(),
-            },
-            Ok(()),
-        );
+        create_channel_with_bag();
 
         let params = VideoCreationParametersRecord {
             assets: Some(StorageAssetsRecord {
@@ -96,17 +86,7 @@ fn video_update_successful() {
 
         let channel_id = NextChannelId::<Test>::get();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: None,
-                reward_account: None,
-                collaborators: BTreeSet::new(),
-            },
-            Ok(()),
-        );
+        create_channel_with_bag();
 
         // create video with 3 assets
         let params = VideoCreationParametersRecord {
