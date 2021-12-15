@@ -48,10 +48,7 @@ import {
   ElectedCouncil,
   CastVote,
   CandidacyNoteMetadata,
-  CandidacyStatusActive,
-  CandidacyStatusWithdrawn,
-  CandidacyStatusElected,
-  CandidacyStatusLost,
+  CandidacyStatus,
 
   // Misc
   Membership,
@@ -391,7 +388,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     stakingAccountId: stakingAccount.toString(),
     rewardAccountId: rewardAccount.toString(),
     member,
-    status: new CandidacyStatusActive(),
+    status: CandidacyStatus.ACTIVE,
     electionRound,
     stake: balance,
     stakeLocked: true,
@@ -435,16 +432,25 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
+  const candidates = (await store.getMany(Candidate, {
+    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+  })) as Array<Candidate & { memberId: string }>
 
-  const where = { electionRoundId: electionRound.id, status_json: { isTypeOf_eq: 'CandidacyStatusActive' } }
-  const candidates = await store.getMany(Candidate, { where })
+  const electedCandidates = candidates.filter((candidate) => electedMemberIds.includes(candidate.memberId))
 
-  const electedCandidates = candidates.filter((candidate) => electedMemberIds.includes(candidate.member.id))
-
-  // Set candidates elected status
+  // Set elected candidates status
   electedCandidates.forEach((candidate) => {
-    candidate.status = new CandidacyStatusElected()
+    candidate.status = CandidacyStatus.ELECTED
   })
+  // Store candidates new statuses
+  await Promise.all(
+    candidates.map((candidate) => {
+      if (candidate.status === CandidacyStatus.ACTIVE) {
+        candidate.status = CandidacyStatus.LOST
+      }
+      return store.save<Candidate>(candidate)
+    })
+  )
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
@@ -567,7 +573,7 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // specific event processing
 
   // mark candidacy as withdrawn
-  candidate.status = new CandidacyStatusWithdrawn()
+  candidate.status = CandidacyStatus.WITHDRAWN
   await store.save<Candidate>(candidate)
 }
 
