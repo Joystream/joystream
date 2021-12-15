@@ -685,7 +685,7 @@ decl_module! {
         };
 
                 // verify that bag exists before hand
-                Storage::<T>::can_create_dynamic_bag_with_objects(&dyn_bag, &None, &upload_params)?;
+                Storage::<T>::can_create_dynamic_bag_with_objects_constraints(&dyn_bag, &None, &upload_params)?;
 
                 Self::upload_assets_to_storage(
                     upload_assets,
@@ -754,12 +754,12 @@ decl_module! {
                 let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
                 let bag_id = BagIdType::from(dyn_bag.clone());
 
-        let upload_params = UploadParametersRecord {
-            bag_id: bag_id.clone(),
-            object_creation_list: upload_assets.object_creation_list.clone(),
-            deletion_prize_source_account_id: sender.clone(),
-            expected_data_size_fee: upload_assets.expected_data_size_fee,
-        };
+                let upload_params = UploadParametersRecord {
+                    bag_id: bag_id.clone(),
+                    object_creation_list: upload_assets.object_creation_list.clone(),
+                    deletion_prize_source_account_id: sender.clone(),
+                    expected_data_size_fee: upload_assets.expected_data_size_fee,
+                };
 
                 Storage::<T>::ensure_upload_params_are_valid(&upload_params).map(|_| ())?;
             }
@@ -778,7 +778,7 @@ decl_module! {
                     upload_assets,
                     &channel_id,
                     &sender,
-            false,
+                    false,
                 )?;
             }
 
@@ -823,6 +823,9 @@ decl_module! {
                     bag.objects_number == num_objects_to_delete,
                     Error::<T>::InvalidBagSizeSpecified
                 );
+
+                // delete dynamic bag guard
+                ensure_can_delete_dynamic_bag(dyn_bag.clone())?;
 
                 //
                 // == MUTATION SAFE ==
@@ -1063,12 +1066,12 @@ decl_module! {
                 let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
                 let bag_id = BagIdType::from(dyn_bag.clone());
 
-        let upload_params = UploadParametersRecord {
-            bag_id: bag_id.clone(),
-            object_creation_list: upload_assets.object_creation_list.clone(),
-            deletion_prize_source_account_id: sender.clone(),
-            expected_data_size_fee: upload_assets.expected_data_size_fee,
-        };
+                let upload_params = UploadParametersRecord {
+                    bag_id: bag_id.clone(),
+                    object_creation_list: upload_assets.object_creation_list.clone(),
+                    deletion_prize_source_account_id: sender.clone(),
+                    expected_data_size_fee: upload_assets.expected_data_size_fee,
+                };
 
                 Storage::<T>::ensure_upload_params_are_valid(&upload_params)?;
             }
@@ -1086,7 +1089,7 @@ decl_module! {
                     upload_assets,
                     &channel_id,
                     &sender,
-            false,
+                    false,
                 )?;
             }
 
@@ -1461,7 +1464,11 @@ impl<T: Trait> Module<T> {
 
         // create dynamic bag if it doesn't exist (does not emits conflicting created/deleted bag events)
         if channel_creation && Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
-            Storage::<T>::create_dynamic_bag_with_objects(dyn_bag, None, upload_params.clone())?;
+            Storage::<T>::create_dynamic_bag_with_objects_constraints(
+                dyn_bag,
+                None,
+                upload_params.clone(),
+            )?;
         };
 
         // once bag is succesfully created with the required size & number of object, proceed to upload

@@ -97,8 +97,8 @@
 //! - delete_dynamic_bag
 //! - can_create_dynamic_bag
 //! - create_dynamic_bag
-//! - can_create_dynamic_bag_with_objects
-//! - create_dynamic_bag_with_objects
+//! - can_create_dynamic_bag_with_objects_constraints
+//! - create_dynamic_bag_with_objects_constraints
 
 //!
 //! ### Pallet constants
@@ -216,14 +216,14 @@ pub trait DataObjectStorage<T: Trait> {
     ) -> DispatchResult;
 
     /// Same as create_dynamic_bag but with caller provided objects/data
-    fn create_dynamic_bag_with_objects(
+    fn create_dynamic_bag_with_objects_constraints(
         bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
         params: UploadParameters<T>,
     ) -> DispatchResult;
 
     /// Same as can_create_dynamic_bag but with caller provided objects/data
-    fn can_create_dynamic_bag_with_objects(
+    fn can_create_dynamic_bag_with_objects_constraints(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
@@ -235,7 +235,11 @@ pub trait DataObjectStorage<T: Trait> {
     /// Get all objects id in a bag, without checking its existence
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 
+    /// validate upload parameters
     fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult;
+
+    /// delete dynamic bag guard
+    fn ensure_can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -2495,6 +2499,10 @@ decl_module! {
 
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
+    fn ensure_can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
+        validate_delete_dynamic_bag_params(dynamic_bag_id: &DynamicBagId<T>).map(|_| ())
+    }
+
     fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult {
         Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
@@ -2655,13 +2663,17 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
-    fn create_dynamic_bag_with_objects(
+    fn create_dynamic_bag_with_objects_constraints(
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
         params: UploadParameters<T>,
     ) -> DispatchResult {
         let (storage_bucket_ids, distribution_bucket_ids) =
-            Self::can_create_dynamic_bag_with_objects(&dynamic_bag_id, &deletion_prize, &params)?;
+            Self::can_create_dynamic_bag_with_objects_constraints(
+                &dynamic_bag_id,
+                &deletion_prize,
+                &params,
+            )?;
         Self::create_dynamic_bag_inner(
             &dynamic_bag_id,
             &deletion_prize,
@@ -2678,7 +2690,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
     }
 
-    fn can_create_dynamic_bag_with_objects(
+    fn can_create_dynamic_bag_with_objects_constraints(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
