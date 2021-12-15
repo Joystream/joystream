@@ -18,39 +18,29 @@ services:
       - "127.0.0.1:9944:9944"
       - "127.0.0.1:9933:9933"
 
-  ipfs:
-    image: ipfs/go-ipfs:latest
-    ports:
-      - '127.0.0.1:5001:5001'
-      - '127.0.0.1:8080:8080'
-    volumes:
-      - /data/ipfs
-    entrypoint: ''
-    command: |
-      /bin/sh -c "
-        set -e
-        /usr/local/bin/start_ipfs config profile apply lowpower
-        /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
-        /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
-      "
-
   colossus:
-    image: joystream/apps
+    image: joystream/colossus:latest
     restart: on-failure
-    depends_on:
-      - "ipfs"
     build:
       context: .
-      dockerfile: apps.Dockerfile
+      dockerfile: colossus.Dockerfile
+    depends_on:
+      - graphql-server-mnt
+    volumes:
+      - /data
+      - /keystore
+    ports:
+      - '127.0.0.1:3333:3333'
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
-    ports:
-      - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
     environment:
-      - DEBUG=*
-
+      - COLOSSUS_PORT=3333
+      - QUERY_NODE_ENDPOINT=http://graphql-server-mnt:${GRAPHQL_SERVER_PORT}/graphql
+      - WORKER_ID=0
+      - ACCOUNT_URI=//Alice
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_ENDPOINT=host.docker.internal:9200
   db:
     image: postgres:12
     restart: always

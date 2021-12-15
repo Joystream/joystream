@@ -20,14 +20,6 @@ export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    enable: flags.boolean({
-      char: 'e',
-      description: 'Enables accepting new bags (default).',
-    }),
-    disable: flags.boolean({
-      char: 'd',
-      description: 'Disables accepting new bags.',
-    }),
     set: flags.enum({
       char: 's',
       description: `Sets 'accepting new bags' parameter for the bucket (on/off).`,

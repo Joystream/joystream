@@ -1,8 +1,20 @@
 import { BagId, DynamicBagType, DynamicBagTypeKey, Static, Dynamic } from '@joystream/types/storage'
 import { WorkingGroup } from '@joystream/types/common'
-import { ApiPromise } from '@polkadot/api'
+import { createType } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
+
+/**
+ * Special error type for bagId parsing. Extends the CLIError with setting
+ * the `InvalidParameters` exit code.
+ */
+export class BagIdValidationError extends CLIError {
+  constructor(err: string) {
+    super(err, {
+      exit: ExitCodes.InvalidParameters,
+    })
+  }
+}
 
 /**
  * Parses the type string and returns the DynamicBagType instance.
@@ -14,8 +26,8 @@ import { CLIError } from '@oclif/errors'
  * @param bagType - dynamic bag type string
  * @returns The DynamicBagType instance.
  */
-export function parseDynamicBagType(api: ApiPromise, bagType: DynamicBagTypeKey): DynamicBagType {
-  return api.createType('DynamicBagType', bagType)
+export function parseDynamicBagType(bagType: DynamicBagTypeKey): DynamicBagType {
+  return createType('DynamicBagType', bagType)
 }
 
 /**
@@ -29,8 +41,8 @@ export function parseDynamicBagType(api: ApiPromise, bagType: DynamicBagTypeKey)
  * @param bagId - bag ID in string format
  * @returns The BagId instance.
  */
-export function parseBagId(api: ApiPromise, bagId: string): BagId {
-  const parser = new BagIdParser(api, bagId)
+export function parseBagId(bagId: string): BagId {
+  const parser = new BagIdParser(bagId)
 
   return parser.parse()
 }
@@ -40,19 +52,15 @@ export function parseBagId(api: ApiPromise, bagId: string): BagId {
  */
 class BagIdParser {
   bagId: string
-  api: ApiPromise
   bagIdParts: string[]
 
-  constructor(api: ApiPromise, bagId: string) {
+  constructor(bagId: string) {
     this.bagId = bagId
-    this.api = api
 
     this.bagIdParts = bagId.trim().toLowerCase().split(':')
 
     if (this.bagIdParts.length > 3 || this.bagIdParts.length < 2) {
-      throw new CLIError(`Invalid bagId: ${bagId}`, {
-        exit: ExitCodes.InvalidParameters,
-      })
+      throw new BagIdValidationError(`Invalid bagId: ${bagId}`)
     }
   }
 
@@ -69,9 +77,7 @@ class BagIdParser {
       return this.parseDynamicBagId()
     }
 
-    throw new CLIError(`Invalid bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid bagId: ${this.bagId}`)
   }
 
   /**
@@ -81,8 +87,8 @@ class BagIdParser {
     // Try to construct static council bag ID.
     if (this.bagIdParts[1] === 'council') {
       if (this.bagIdParts.length === 2) {
-        const staticBagId: Static = this.api.createType('Static', 'Council')
-        const constructedBagId: BagId = this.api.createType('BagId', {
+        const staticBagId: Static = createType('Static', 'Council')
+        const constructedBagId: BagId = createType('BagId', {
           'Static': staticBagId,
         })
 
@@ -98,11 +104,11 @@ class BagIdParser {
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup: WorkingGroup = this.api.createType('WorkingGroup', group)
-            const staticBagId: Static = this.api.createType('Static', {
+            const workingGroup: WorkingGroup = createType('WorkingGroup', group)
+            const staticBagId: Static = createType('Static', {
               'WorkingGroup': workingGroup,
             })
-            const constructedBagId: BagId = this.api.createType('BagId', {
+            const constructedBagId: BagId = createType('BagId', {
               'Static': staticBagId,
             })
 
@@ -112,9 +118,7 @@ class BagIdParser {
       }
     }
 
-    throw new CLIError(`Invalid static bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid static bagId: ${this.bagId}`)
   }
 
   /**
@@ -136,8 +140,8 @@ class BagIdParser {
             const dynamic = {} as Record<DynamicBagTypeKey, number>
             dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
 
-            const dynamicBagId: Dynamic = this.api.createType('Dynamic', dynamic)
-            const constructedBagId: BagId = this.api.createType('BagId', {
+            const dynamicBagId: Dynamic = createType('Dynamic', dynamic)
+            const constructedBagId: BagId = createType('BagId', {
               'Dynamic': dynamicBagId,
             })
 
@@ -147,8 +151,6 @@ class BagIdParser {
       }
     }
 
-    throw new CLIError(`Invalid dynamic bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid dynamic bagId: ${this.bagId}`)
   }
 }
