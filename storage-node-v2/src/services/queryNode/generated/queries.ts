@@ -1,6 +1,35 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type StorageBucketIdsFragment = { id: string }
+
+export type GetStorageBucketsConnectionQueryVariables = Types.Exact<{
+  limit?: Types.Maybe<Types.Scalars['Int']>
+  cursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetStorageBucketsConnectionQuery = {
+  storageBucketsConnection: {
+    totalCount: number
+    edges: Array<{ cursor: string; node: StorageBucketIdsFragment }>
+    pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+  }
+}
+
+export type GetStorageBucketDetailsByWorkerIdQueryVariables = Types.Exact<{
+  workerId?: Types.Maybe<Types.Scalars['ID']>
+  limit?: Types.Maybe<Types.Scalars['Int']>
+  cursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetStorageBucketDetailsByWorkerIdQuery = {
+  storageBucketsConnection: {
+    totalCount: number
+    edges: Array<{ cursor: string; node: StorageBucketIdsFragment }>
+    pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+  }
+}
+
 export type StorageBucketDetailsFragment = {
   id: string
   operatorMetadata?: Types.Maybe<{ id: string; nodeEndpoint?: Types.Maybe<string> }>
@@ -8,32 +37,58 @@ export type StorageBucketDetailsFragment = {
 }
 
 export type GetStorageBucketDetailsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
   offset?: Types.Maybe<Types.Scalars['Int']>
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
 export type GetStorageBucketDetailsQuery = { storageBuckets: Array<StorageBucketDetailsFragment> }
 
-export type StorageBagDetailsFragment = { id: string; storageAssignments: Array<{ storageBucket: { id: string } }> }
+export type StorageBagDetailsFragment = { id: string; storageBuckets: Array<{ id: string }> }
 
 export type GetStorageBagDetailsQueryVariables = Types.Exact<{
-  bucketIds?: Types.Maybe<Array<Types.Scalars['String']> | Types.Scalars['String']>
+  bucketIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
   offset?: Types.Maybe<Types.Scalars['Int']>
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
 export type GetStorageBagDetailsQuery = { storageBags: Array<StorageBagDetailsFragment> }
 
-export type DataObjectDetailsFragment = { id: string; storageBagId: string }
-
-export type GetDataObjectDetailsQueryVariables = Types.Exact<{
-  bagIds?: Types.Maybe<Types.StorageBagWhereInput>
-  offset?: Types.Maybe<Types.Scalars['Int']>
+export type GetBagConnectionQueryVariables = Types.Exact<{
+  bucketIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
   limit?: Types.Maybe<Types.Scalars['Int']>
+  cursor?: Types.Maybe<Types.Scalars['String']>
 }>
 
-export type GetDataObjectDetailsQuery = { storageDataObjects: Array<DataObjectDetailsFragment> }
+export type GetBagConnectionQuery = {
+  storageBagsConnection: {
+    totalCount: number
+    edges: Array<{ cursor: string; node: StorageBagDetailsFragment }>
+    pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+  }
+}
 
+export type DataObjectDetailsFragment = { id: string; storageBagId: string }
+
+export type GetDataObjectConnectionQueryVariables = Types.Exact<{
+  bagIds?: Types.Maybe<Types.StorageBagWhereInput>
+  limit?: Types.Maybe<Types.Scalars['Int']>
+  cursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetDataObjectConnectionQuery = {
+  storageDataObjectsConnection: {
+    totalCount: number
+    edges: Array<{ cursor: string; node: DataObjectDetailsFragment }>
+    pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+  }
+}
+
+export const StorageBucketIds = gql`
+  fragment StorageBucketIds on StorageBucket {
+    id
+  }
+`
 export const StorageBucketDetails = gql`
   fragment StorageBucketDetails on StorageBucket {
     id
@@ -54,10 +109,8 @@ export const StorageBucketDetails = gql`
 export const StorageBagDetails = gql`
   fragment StorageBagDetails on StorageBag {
     id
-    storageAssignments {
-      storageBucket {
-        id
-      }
+    storageBuckets {
+      id
     }
   }
 `
@@ -67,30 +120,98 @@ export const DataObjectDetails = gql`
     storageBagId
   }
 `
+export const GetStorageBucketsConnection = gql`
+  query getStorageBucketsConnection($limit: Int, $cursor: String) {
+    storageBucketsConnection(
+      first: $limit
+      after: $cursor
+      where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
+    ) {
+      edges {
+        cursor
+        node {
+          ...StorageBucketIds
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
+    }
+  }
+  ${StorageBucketIds}
+`
+export const GetStorageBucketDetailsByWorkerId = gql`
+  query getStorageBucketDetailsByWorkerId($workerId: ID, $limit: Int, $cursor: String) {
+    storageBucketsConnection(
+      first: $limit
+      after: $cursor
+      where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
+    ) {
+      edges {
+        cursor
+        node {
+          ...StorageBucketIds
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
+    }
+  }
+  ${StorageBucketIds}
+`
 export const GetStorageBucketDetails = gql`
-  query getStorageBucketDetails($offset: Int, $limit: Int) {
-    storageBuckets(offset: $offset, limit: $limit) {
+  query getStorageBucketDetails($ids: [ID!], $offset: Int, $limit: Int) {
+    storageBuckets(where: { id_in: $ids }, offset: $offset, limit: $limit) {
       ...StorageBucketDetails
     }
   }
   ${StorageBucketDetails}
 `
 export const GetStorageBagDetails = gql`
-  query getStorageBagDetails($bucketIds: [String!], $offset: Int, $limit: Int) {
-    storageBags(
-      offset: $offset
-      limit: $limit
-      where: { storageAssignments_some: { storageBucketId_in: $bucketIds } }
-    ) {
+  query getStorageBagDetails($bucketIds: [ID!], $offset: Int, $limit: Int) {
+    storageBags(offset: $offset, limit: $limit, where: { storageBuckets_some: { id_in: $bucketIds } }) {
       ...StorageBagDetails
     }
   }
   ${StorageBagDetails}
 `
-export const GetDataObjectDetails = gql`
-  query getDataObjectDetails($bagIds: StorageBagWhereInput, $offset: Int, $limit: Int) {
-    storageDataObjects(offset: $offset, limit: $limit, where: { storageBag: $bagIds, isAccepted_eq: true }) {
-      ...DataObjectDetails
+export const GetBagConnection = gql`
+  query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
+    storageBagsConnection(first: $limit, after: $cursor, where: { storageBuckets_some: { id_in: $bucketIds } }) {
+      edges {
+        cursor
+        node {
+          ...StorageBagDetails
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
+    }
+  }
+  ${StorageBagDetails}
+`
+export const GetDataObjectConnection = gql`
+  query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
+    storageDataObjectsConnection(first: $limit, after: $cursor, where: { storageBag: $bagIds, isAccepted_eq: true }) {
+      edges {
+        cursor
+        node {
+          ...DataObjectDetails
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
     }
   }
   ${DataObjectDetails}

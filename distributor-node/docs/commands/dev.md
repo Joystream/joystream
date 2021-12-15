@@ -9,8 +9,6 @@ Developer utility commands
 ## `joystream-distributor dev:batchUpload`
 
 ```
-undefined
-
 USAGE
   $ joystream-distributor dev:batchUpload
 
@@ -33,8 +31,6 @@ _See code: [src/commands/dev/batchUpload.ts](https://github.com/Joystream/joystr
 Initialize development environment. Sets Alice as distributor working group leader.
 
 ```
-Initialize development environment. Sets Alice as distributor working group leader.
-
 USAGE
   $ joystream-distributor dev:init
 

@@ -22,6 +22,23 @@ import {
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 
+const MAX_RESULTS_PER_QUERY = 1000
+
+type PaginationQueryVariables = {
+  limit: number
+  lastCursor?: Maybe<string>
+}
+
+type PaginationQueryResult<T = unknown> = {
+  edges: { node: T }[]
+  pageInfo: {
+    hasNextPage: boolean
+    endCursor?: Maybe<string>
+  }
+}
+
+type CustomVariables<T> = Omit<T, keyof PaginationQueryVariables>
+
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
   private logger: Logger
@@ -68,6 +85,35 @@ export class QueryNodeApi {
     return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
   }
 
+  protected async multipleEntitiesWithPagination<
+    NodeT,
+    QueryT extends { [k: string]: PaginationQueryResult<NodeT> },
+    CustomVariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: CustomVariablesT,
+    resultKey: keyof QueryT,
+    itemsPerPage = MAX_RESULTS_PER_QUERY
+  ): Promise<NodeT[]> {
+    let hasNextPage = true
+    let results: NodeT[] = []
+    let lastCursor: string | undefined
+    while (hasNextPage) {
+      const paginationVariables = { limit: itemsPerPage, lastCursor }
+      const queryVariables = { ...variables, ...paginationVariables }
+      const page = (
+        await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
+          query,
+          variables: queryVariables,
+        })
+      ).data[resultKey]
+      results = results.concat(page.edges.map((e) => e.node))
+      hasNextPage = page.pageInfo.hasNextPage
+      lastCursor = page.pageInfo.endCursor || undefined
+    }
+    return results
+  }
+
   public getDataObjectDetails(objectId: string): Promise<DataObjectDetailsFragment | null> {
     return this.uniqueEntityQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
       GetDataObjectDetails,
@@ -93,9 +139,10 @@ export class QueryNodeApi {
   }
 
   public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
-    return this.multipleEntitiesQuery<
+    return this.multipleEntitiesWithPagination<
+      StorageBucketOperatorFieldsFragment,
       GetActiveStorageBucketOperatorsDataQuery,
-      GetActiveStorageBucketOperatorsDataQueryVariables
-    >(GetActiveStorageBucketOperatorsData, {}, 'storageBuckets')
+      CustomVariables<GetActiveStorageBucketOperatorsDataQueryVariables>
+    >(GetActiveStorageBucketOperatorsData, {}, 'storageBucketsConnection')
   }
 }

@@ -1,6 +1,22 @@
 use crate::*;
 use sp_std::borrow::ToOwned;
 
+
+/// Data structure in order to keep track of the migration
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct MigrationConfigRecord<NumericId> {
+    // at each block the videos/channels removed will be those with id in the
+    // half open range [current_id, final_id).
+    // when migration is triggered final_id will be updated
+    // when migration is performed current_id will be updated
+    pub current_id: NumericId,
+    pub final_id: NumericId,
+}
+
+pub type VideoMigrationConfig<T> = MigrationConfigRecord<<T as Trait>::VideoId>;
+pub type ChannelMigrationConfig<T> = MigrationConfigRecord<<T as storage::Trait>::ChannelId>;
+
 pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
 /// The owner of a channel, is the authorized "actor" that can update

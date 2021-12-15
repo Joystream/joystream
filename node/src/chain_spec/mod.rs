@@ -381,6 +381,14 @@ pub fn testnet_genesis(
                 platform_fee_percentage: Perbill::from_percent(1),
                 auction_starts_at_max_delta: 90_000,
                 max_auction_whitelist_length: 100,
+                video_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
+                channel_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {

@@ -1,20 +1,47 @@
 import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
 import {
+  GetBagConnection,
+  GetBagConnectionQuery,
+  GetBagConnectionQueryVariables,
   GetStorageBucketDetails,
   GetStorageBucketDetailsQuery,
+  GetStorageBucketDetailsByWorkerIdQuery,
+  GetStorageBucketDetailsByWorkerIdQueryVariables,
   GetStorageBucketDetailsQueryVariables,
   StorageBucketDetailsFragment,
-  GetStorageBagDetailsQuery,
-  GetStorageBagDetails,
   StorageBagDetailsFragment,
-  GetStorageBagDetailsQueryVariables,
   DataObjectDetailsFragment,
-  GetDataObjectDetailsQuery,
-  GetDataObjectDetailsQueryVariables,
-  GetDataObjectDetails,
+  GetDataObjectConnectionQuery,
+  GetDataObjectConnectionQueryVariables,
+  GetDataObjectConnection,
+  StorageBucketIdsFragment,
+  GetStorageBucketsConnection,
+  GetStorageBucketsConnectionQuery,
+  GetStorageBucketsConnectionQueryVariables,
+  GetStorageBucketDetailsByWorkerId,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
+
+import logger from '../logger'
+
+/**
+ * Defines query paging limits.
+ */
+export const MAX_RESULTS_PER_QUERY = 1000
+
+type PaginationQueryVariables = {
+  limit: number
+  lastCursor?: Maybe<string>
+}
+
+type PaginationQueryResult<T = unknown> = {
+  edges: { node: T }[]
+  pageInfo: {
+    hasNextPage: boolean
+    endCursor?: Maybe<string>
+  }
+}
 
 /**
  * Query node class helper. Incapsulates custom queries.
@@ -28,7 +55,7 @@ export class QueryNodeApi {
       link: new HttpLink({ uri: endpoint, fetch }),
       cache: new InMemoryCache(),
       defaultOptions: {
-        query: { fetchPolicy: 'no-cache', errorPolicy: 'all' },
+        query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
       },
     })
   }
@@ -76,6 +103,40 @@ export class QueryNodeApi {
     return result.data[resultKey][0]
   }
 
+  protected async multipleEntitiesWithPagination<
+    NodeT,
+    QueryT extends { [k: string]: PaginationQueryResult<NodeT> },
+    CustomVariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: CustomVariablesT,
+    resultKey: keyof QueryT,
+    itemsPerPage = MAX_RESULTS_PER_QUERY
+  ): Promise<NodeT[]> {
+    let hasNextPage = true
+    let results: NodeT[] = []
+    let lastCursor: string | undefined
+    while (hasNextPage) {
+      const paginationVariables = { limit: itemsPerPage, cursor: lastCursor }
+      const queryVariables = { ...variables, ...paginationVariables }
+      logger.debug(`Query - ${resultKey}`)
+      const result = await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
+        query,
+        variables: queryVariables,
+      })
+
+      if (!result?.data) {
+        return results
+      }
+
+      const page = result.data[resultKey]
+      results = results.concat(page.edges.map((e) => e.node))
+      hasNextPage = page.pageInfo.hasNextPage
+      lastCursor = page.pageInfo.endCursor || undefined
+    }
+    return results
+  }
+
   /**
    * Query-node: get multiple entities
    *
@@ -95,20 +156,45 @@ export class QueryNodeApi {
     if (result?.data === null) {
       return null
     }
+
     return result.data[resultKey]
+  }
+
+  /**
+   * Returns storage bucket IDs filtered by worker ID.
+   *
+   * @param workerId - worker ID
+   */
+  public async getStorageBucketIdsByWorkerId(workerId: string): Promise<Array<StorageBucketIdsFragment>> {
+    const result = await this.multipleEntitiesWithPagination<
+      StorageBucketIdsFragment,
+      GetStorageBucketDetailsByWorkerIdQuery,
+      GetStorageBucketDetailsByWorkerIdQueryVariables
+    >(GetStorageBucketDetailsByWorkerId, { workerId, limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
+
+    if (!result) {
+      return []
+    }
+
+    return result
   }
 
   /**
    * Returns storage bucket info by pages.
    *
+   * @param ids - bucket IDs to fetch
    * @param offset - starting record of the page
    * @param limit - page size
    */
-  public async getStorageBucketDetails(offset: number, limit: number): Promise<Array<StorageBucketDetailsFragment>> {
+  public async getStorageBucketDetails(
+    ids: string[],
+    offset: number,
+    limit: number
+  ): Promise<Array<StorageBucketDetailsFragment>> {
     const result = await this.multipleEntitiesQuery<
       GetStorageBucketDetailsQuery,
       GetStorageBucketDetailsQueryVariables
-    >(GetStorageBucketDetails, { offset, limit }, 'storageBuckets')
+    >(GetStorageBucketDetails, { offset, limit, ids }, 'storageBuckets')
 
     if (result === null) {
       return []
@@ -121,21 +207,15 @@ export class QueryNodeApi {
    * Returns storage bag info by pages for the given buckets.
    *
    * @param bucketIds - query filter: bucket IDs
-   * @param offset - starting record of the page
-   * @param limit - page size
    */
-  public async getStorageBagsDetails(
-    bucketIds: string[],
-    offset: number,
-    limit: number
-  ): Promise<Array<StorageBagDetailsFragment>> {
-    const result = await this.multipleEntitiesQuery<GetStorageBagDetailsQuery, GetStorageBagDetailsQueryVariables>(
-      GetStorageBagDetails,
-      { offset, limit, bucketIds },
-      'storageBags'
-    )
+  public async getStorageBagsDetails(bucketIds: string[]): Promise<Array<StorageBagDetailsFragment>> {
+    const result = await this.multipleEntitiesWithPagination<
+      StorageBagDetailsFragment,
+      GetBagConnectionQuery,
+      GetBagConnectionQueryVariables
+    >(GetBagConnection, { limit: MAX_RESULTS_PER_QUERY, bucketIds }, 'storageBagsConnection')
 
-    if (result === null) {
+    if (!result) {
       return []
     }
 
@@ -147,21 +227,34 @@ export class QueryNodeApi {
    *
    * @param bagIds - query filter: bag IDs
    * @param offset - starting record of the page
-   * @param limit - page size
    */
-  public async getDataObjectDetails(
-    bagIds: string[],
-    offset: number,
-    limit: number
-  ): Promise<Array<DataObjectDetailsFragment>> {
+  public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
     const input: StorageBagWhereInput = { id_in: bagIds }
-    const result = await this.multipleEntitiesQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
-      GetDataObjectDetails,
-      { offset, limit, bagIds: input },
-      'storageDataObjects'
-    )
+    const result = await this.multipleEntitiesWithPagination<
+      DataObjectDetailsFragment,
+      GetDataObjectConnectionQuery,
+      GetDataObjectConnectionQueryVariables
+    >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection')
 
-    if (result === null) {
+    if (!result) {
+      return []
+    }
+
+    return result
+  }
+
+  /**
+   * Returns storage bucket IDs.
+   *
+   */
+  public async getStorageBucketIds(): Promise<Array<StorageBucketIdsFragment>> {
+    const result = await this.multipleEntitiesWithPagination<
+      StorageBucketIdsFragment,
+      GetStorageBucketsConnectionQuery,
+      GetStorageBucketsConnectionQueryVariables
+    >(GetStorageBucketsConnection, { limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
+
+    if (!result) {
       return []
     }
 

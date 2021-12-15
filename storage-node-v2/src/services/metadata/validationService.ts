@@ -1,5 +1,6 @@
 import Ajv from 'ajv'
 import { SchemaKey, schemas, TypeBySchemaKey } from './schemas'
+import stringify from 'fast-safe-stringify'
 
 /**
  * JSON schema validation error
@@ -28,7 +29,7 @@ export class ValidationService {
     if (!valid) {
       throw new ValidationError(
         `${schemaKey} is not valid`,
-        this.ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`) || []
+        this.ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${stringify(e.params)})`) || []
       )
     }
     return input as TypeBySchemaKey<SK>

@@ -66,6 +66,8 @@ pub trait NumericIdentifier:
     + PartialEq
     + Ord
     + Zero
+    + From<u64>
+    + Into<u64>
 {
 }
 
@@ -107,9 +109,13 @@ pub trait Trait:
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
-}
 
-type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
+    /// Video migrated in each block during migration
+    type VideosMigrationsEachBlock: Get<u64>;
+
+    /// Channel migrated in each block during migration
+    type ChannelsMigrationsEachBlock: Get<u64>;
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -195,6 +201,12 @@ decl_storage! {
 
         /// Max nft auction whitelist length
         pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
+
+        /// Migration config for channels
+        pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
+
+        /// Migration config for videos:
+        pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
     }
 }
 
@@ -347,6 +359,9 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<T>,
         ) {
+            // ensure migration is done
+            ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
+
             // channel creator account
             let sender = ensure_signed(origin)?;
 
@@ -408,9 +423,8 @@ decl_module! {
             params: ChannelUpdateParameters<T>,
         ) {
             let sender = ensure_signed(origin)?;
-
             // check that channel exists
-            let mut channel = Self::ensure_channel_exists(&channel_id)?;
+            let mut channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -453,7 +467,7 @@ decl_module! {
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
-}
+        }
 
         // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
@@ -463,10 +477,10 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
-
             let sender = ensure_signed(origin)?;
+
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_delete_channel::<T>(
                 &sender,
@@ -528,7 +542,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_censor::<T>(
                 origin,
@@ -650,7 +664,7 @@ decl_module! {
             let sender = ensure_signed(origin.clone())?;
 
             // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -689,10 +703,11 @@ decl_module! {
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
-            // Only increment next video id if adding content was successful
+            // Only increment next video id
             NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
 
             // Add recently added video id to the channel
+
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos = channel.num_videos.saturating_add(1);
             });
@@ -708,10 +723,10 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
-
             let sender = ensure_signed(origin.clone())?;
+
             // check that video exists, retrieve corresponding channel id.
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
@@ -749,11 +764,10 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-
            let sender = ensure_signed(origin.clone())?;
 
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // get information regarding channel
             let channel_id = video.in_channel;
@@ -953,7 +967,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) {
             // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             ensure_actor_authorized_to_censor::<T>(
                 origin,
@@ -1019,7 +1033,7 @@ decl_module! {
             let sender = ensure_signed(origin.clone())?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
@@ -1027,7 +1041,7 @@ decl_module! {
             let channel_id = video.in_channel;
 
             // Ensure channel exists, retrieve channel owner
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
@@ -1072,7 +1086,7 @@ decl_module! {
             auction_params: AuctionParams<T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1116,7 +1130,7 @@ decl_module! {
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1152,7 +1166,7 @@ decl_module! {
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1185,7 +1199,7 @@ decl_module! {
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1227,7 +1241,7 @@ decl_module! {
             Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1307,7 +1321,7 @@ decl_module! {
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1348,7 +1362,7 @@ decl_module! {
             ensure_member_auth_success::<T>(&account_id, &member_id)?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1391,7 +1405,7 @@ decl_module! {
         ) {
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1435,7 +1449,7 @@ decl_module! {
         ) {
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1469,7 +1483,7 @@ decl_module! {
             let receiver_account_id = ensure_signed(origin)?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1503,7 +1517,7 @@ decl_module! {
         ) {
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1541,7 +1555,7 @@ decl_module! {
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
             // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            let video = Self::ensure_video_validity(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -1564,10 +1578,94 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
         }
+
+        fn on_initialize(_n: T::BlockNumber) -> frame_support::weights::Weight {
+            Self::perform_video_migration();
+            Self::perform_channel_migration();
+
+            10_000_000 // TODO: adjust Weight
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
+    /// Migrate Videos
+    fn perform_video_migration() {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <VideoMigration<T>>::get();
+
+        if current_id < final_id {
+            // perform migration procedure
+            let next_id = sp_std::cmp::min(
+                current_id + T::VideosMigrationsEachBlock::get().into(),
+                final_id,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // clear maps: (iterator are lazy and do nothing unless consumed)
+            for id in current_id.into()..next_id.into() {
+                <VideoById<T>>::remove(T::VideoId::from(id));
+            }
+
+            // edit the current id
+            <VideoMigration<T>>::mutate(|value| value.current_id = next_id);
+        }
+    }
+
+    /// Migrate Channels
+    fn perform_channel_migration() {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <ChannelMigration<T>>::get();
+
+        if current_id < final_id {
+            // perform migration procedure
+            let next_id = sp_std::cmp::min(
+                current_id + T::ChannelsMigrationsEachBlock::get().into(),
+                final_id,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // clear maps: (iterator are lazy and do nothing unless consumed)
+            for id in current_id.into()..next_id.into() {
+                <ChannelById<T>>::remove(T::ChannelId::from(id));
+            }
+
+            // edit the current id
+            <ChannelMigration<T>>::mutate(|value| value.current_id = next_id);
+        }
+    }
+
+    /// Ensure Channel Migration Finished
+
+    /// Ensure Video Migration Finished
+    fn is_migration_done() -> bool {
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <VideoMigration<T>>::get();
+
+        let video_migration_done = current_id == final_id;
+
+        let MigrationConfigRecord {
+            current_id,
+            final_id,
+        } = <ChannelMigration<T>>::get();
+
+        let channel_migration_done = current_id == final_id;
+
+        return video_migration_done && channel_migration_done;
+    }
+
     /// Ensure `CuratorGroup` under given id exists
     fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
@@ -1587,7 +1685,11 @@ impl<T: Trait> Module<T> {
         Ok(Self::curator_group_by_id(curator_group_id))
     }
 
-    fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+    fn ensure_channel_validity(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+        // ensure migration is done
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
+
+        // ensure channel exists
         ensure!(
             ChannelById::<T>::contains_key(channel_id),
             Error::<T>::ChannelDoesNotExist
@@ -1595,7 +1697,11 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+    fn ensure_video_validity(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
+        // ensure migration is done
+        ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished,);
+
+        // ensure video exists
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
@@ -1737,10 +1843,9 @@ impl<T: Trait> Module<T> {
 // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
 impl<T: Trait> Module<T> {
     pub fn on_runtime_upgrade() {
-        // Clear VideoById map
-        <VideoById<T>>::remove_all();
-        // Clear ChannelById map
-        <ChannelById<T>>::remove_all();
+        // setting final index triggers migration
+        <VideoMigration<T>>::mutate(|config| config.final_id = <NextVideoId<T>>::get());
+        <ChannelMigration<T>>::mutate(|config| config.final_id = <NextChannelId<T>>::get());
     }
 }
 

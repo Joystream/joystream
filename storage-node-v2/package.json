@@ -9,8 +9,9 @@
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
     "@apollo/client": "^3.3.21",
-    "@joystream/types": "^0.17.0",
+    "@elastic/ecs-winston-format": "^1.3.1",
     "@joystream/metadata-protobuf": "^1.0.0",
+    "@joystream/types": "^0.17.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
@@ -32,12 +33,13 @@
     "ajv": "^7",
     "await-lock": "^2.1.0",
     "base64url": "^3.0.1",
-    "blake3": "^2.1.4",
+    "blake3-wasm": "^2.1.5",
     "cross-fetch": "^3.1.4",
     "express": "4.17.1",
     "express-openapi-validator": "4.12.4",
     "express-winston": "^4.1.0",
     "fast-folder-size": "^1.4.0",
+    "fast-safe-stringify": "^2.1.1",
     "file-type": "^16.5.0",
     "lodash": "^4.17.21",
     "multihashes": "^4.0.2",
@@ -135,12 +137,13 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "version": "oclif-dev readme && git add README.md",
     "build": "tsc --build tsconfig.json",
-    "format": "prettier ./src --write",
+    "format": "yarn prettier ./src --write",
     "lint": "eslint ./src --ext .ts",
     "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml",
     "generate:types:json-schema": "yarn ts-node ./src/services/metadata/generateTypes.ts",
-    "ensure": "yarn format && yarn lint --fix && yarn build"
+    "ensure": "yarn format && yarn lint --fix && yarn build",
+    "checks": "tsc --noEmit --pretty && prettier ./src --check && yarn lint"
   },
   "types": "lib/index.d.ts"
 }

@@ -11,9 +11,6 @@ Commands for performing node operator (Distribution Working Group worker) on-cha
 Accept pending distribution bucket operator invitation.
 
 ```
-Accept pending distribution bucket operator invitation.
-  Requires the invited distribution group worker role key.
-
 USAGE
   $ joystream-distributor operator:accept-invitation
 
@@ -40,9 +37,6 @@ _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joyst
 Set/update distribution bucket operator metadata.
 
 ```
-Set/update distribution bucket operator metadata.
-  Requires active distribution bucket operator worker role key.
-
 USAGE
   $ joystream-distributor operator:set-metadata
 
