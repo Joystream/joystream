@@ -647,7 +647,11 @@ pub fn create_channel_mock(
     let channel_id = Content::next_channel_id();
 
     assert_eq!(
-        Content::create_channel(Origin::signed(sender.clone()), actor.clone(), params.clone()),
+        Content::create_channel(
+            Origin::signed(sender.clone()),
+            actor.clone(),
+            params.clone()
+        ),
         result.clone(),
     );
 

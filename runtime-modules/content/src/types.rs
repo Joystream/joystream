@@ -1,7 +1,6 @@
 use crate::*;
 use sp_std::borrow::ToOwned;
 
-
 /// Data structure in order to keep track of the migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -146,13 +145,17 @@ pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: O
     pub collaborators: BTreeSet<MemberId>,
 }
 
-pub type ChannelCreationParameters<T> =
-    ChannelCreationParametersRecord<StorageAssets<T>, <T as frame_system::Trait>::AccountId, <T as common::MembershipTypes>::MemberId>;
+pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
+    StorageAssets<T>,
+    <T as frame_system::Trait>::AccountId,
+    <T as common::MembershipTypes>::MemberId,
+>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord, MemberId: Ord> {
+pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord, MemberId: Ord>
+{
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.

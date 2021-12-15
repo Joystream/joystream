@@ -16,7 +16,6 @@ pub enum WorkingGroup {
         /// Forum working group: working_group::Instance1.
         Forum,
     */
-
     /// Storage working group: working_group::Instance2.
     Storage,
 
