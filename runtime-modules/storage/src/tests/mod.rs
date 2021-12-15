@@ -5100,7 +5100,7 @@ fn create_dynamic_bag_with_objects_succeeds() {
 }
 
 #[test]
-fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_number_objects() {
+fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficient_objects_limit() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5169,7 +5169,7 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_n
 }
 
 #[test]
-fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_enough_size() {
+fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficient_size_limit() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
