@@ -47,7 +47,7 @@ function fork_off_init() {
 
 function export_chainspec_file_to_disk() {
     if ! [[ -f ${DATA_PATH}/exported-state.json ]]; then
-   # write the initial genesis state to db, in order to wait arbitrary amount of time 
+    # write the initial genesis state to db, in order to aviod waiting for an arbitrary amount of time 
     docker-compose -f ../../docker-compose.yml run \
 		   -v ${DATA_PATH}:/spec joystream-node export-state \
 		   --chain /spec/chain-spec-raw.json \
@@ -69,13 +69,13 @@ function main {
     fork_off_init
 
     # export chain-spec BEFORE starting the node
-    export_chainspec_file_to_disk
+#    export_chainspec_file_to_disk
     
     echo "***** STARTING NODE WITH FORKED STATE *****"
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
     CONTAINER_ID=$(start_node)
     
-    sleep 30
+    sleep 120
     
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
 	# verify assertion using typsecript
