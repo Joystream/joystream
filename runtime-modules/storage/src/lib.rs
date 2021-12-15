@@ -2757,13 +2757,14 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let data = Self::create_data_objects(params.object_creation_list.clone());
 
+        //
+        // == MUTATION SAFE ==
+        //
+
         <StorageTreasury<T>>::deposit(
             &params.deletion_prize_source_account_id,
             bag_change.total_deletion_prize,
         )?;
-        //
-        // == MUTATION SAFE ==
-        //
 
         Self::slash_data_size_fee(
             &params.deletion_prize_source_account_id,
