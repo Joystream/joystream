@@ -171,7 +171,7 @@ async function getAccountCastVote(
 
   if (!castVote) {
     throw new Error(
-      `No vote cast by the given account in the curent election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
+      `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
     )
   }
 
@@ -315,7 +315,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 }
 
 /*
-  The event is emitted when a candidacy announcment period has ended, but not enough members announced.
+  The event is emitted when a candidacy announcement period has ended, but not enough members announced.
 */
 export async function council_NotEnoughCandidates({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
@@ -381,7 +381,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
 
   const electionRound = await getCurrentElectionRound(store)
 
-  // prepare note metadata record (empty until explicitily set via different extrinsic)
+  // prepare note metadata record (empty until explicitly set via different extrinsic)
   const noteMetadata = new CandidacyNoteMetadata({
     bulletPoints: [],
   })
@@ -398,7 +398,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     stakeLocked: true,
     votePower: new BN(0),
     noteMetadata,
-    votesRecieved: [],
+    votesReceived: [],
   })
   await store.save<Candidate>(candidate)
 
@@ -426,7 +426,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // specific event processing
 
-  // mark old council as resinged
+  // mark old council as resigned
   const oldElectedCouncil = await getCurrentElectedCouncil(store)
   oldElectedCouncil.isResigned = true
   oldElectedCouncil.endedAtBlock = event.blockNumber
@@ -589,7 +589,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
 
-  // load candidate recored
+  // load candidate recorded
   const electionRound = await getCurrentElectionRound(store)
   const candidate = await getCandidate(store, memberId.toString(), electionRound, ['noteMetadata'])
 
@@ -756,7 +756,7 @@ export async function council_CouncilorRewardUpdated({ event, store }: EventCont
 }
 
 /*
-  The event is emitted when funds are transfered from the council budget to an account.
+  The event is emitted when funds are transferred from the council budget to an account.
 */
 export async function council_RequestFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing

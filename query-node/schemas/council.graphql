@@ -87,8 +87,8 @@ type Candidate @entity {
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
 
-  "Votes recieved in referendums by this member."
-  votesRecieved: [CastVote!]! @derivedFrom(field: "voteFor")
+  "Votes received in referendums by this member."
+  votesReceived: [CastVote!]! @derivedFrom(field: "voteFor")
 }
 
 type CouncilMember @entity {
@@ -107,7 +107,7 @@ type CouncilMember @entity {
   "Stake used for the council membership."
   stake: BigInt!
 
-  "Block number in which council member recieved the last reward payment."
+  "Block number in which council member received the last reward payment."
   lastPaymentBlock: BigInt!
 
   "Reward amount that should have been paid but couldn't be paid off due to insufficient budget."

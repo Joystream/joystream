@@ -2049,7 +2049,7 @@ export type Candidate = BaseGraphQlObject & {
   lastVoteReceivedAtEventNumber?: Maybe<Scalars['Int']>
   noteMetadata: CandidacyNoteMetadata
   noteMetadataId: Scalars['String']
-  votesRecieved: Array<CastVote>
+  votesReceived: Array<CastVote>
   candidacynoteseteventcandidate?: Maybe<Array<CandidacyNoteSetEvent>>
   candidacystakereleaseeventcandidate?: Maybe<Array<CandidacyStakeReleaseEvent>>
   candidacywithdraweventcandidate?: Maybe<Array<CandidacyWithdrawEvent>>
@@ -2192,9 +2192,9 @@ export type CandidateWhereInput = {
   member?: Maybe<MembershipWhereInput>
   electionRound?: Maybe<ElectionRoundWhereInput>
   noteMetadata?: Maybe<CandidacyNoteMetadataWhereInput>
-  votesRecieved_none?: Maybe<CastVoteWhereInput>
-  votesRecieved_some?: Maybe<CastVoteWhereInput>
-  votesRecieved_every?: Maybe<CastVoteWhereInput>
+  votesReceived_none?: Maybe<CastVoteWhereInput>
+  votesReceived_some?: Maybe<CastVoteWhereInput>
+  votesReceived_every?: Maybe<CastVoteWhereInput>
   candidacynoteseteventcandidate_none?: Maybe<CandidacyNoteSetEventWhereInput>
   candidacynoteseteventcandidate_some?: Maybe<CandidacyNoteSetEventWhereInput>
   candidacynoteseteventcandidate_every?: Maybe<CandidacyNoteSetEventWhereInput>
