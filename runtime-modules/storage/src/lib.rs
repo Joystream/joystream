@@ -203,6 +203,9 @@ pub trait DataObjectStorage<T: Trait> {
     /// Validates `delete_dynamic_bag` parameters and conditions.
     fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
 
+    /// Validates `delete_dynamic_bag` without checking for num objects == 0
+    fn can_delete_non_empty_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
+
     /// Creates dynamic bag. BagId should provide the caller.
     fn create_dynamic_bag(
         bag_id: DynamicBagId<T>,
@@ -234,12 +237,6 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Get all objects id in a bag, without checking its existence
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
-
-    /// validate upload parameters
-    fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult;
-
-    /// delete dynamic bag guard
-    fn ensure_can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -2499,14 +2496,6 @@ decl_module! {
 
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
-    fn ensure_can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
-        validate_delete_dynamic_bag_params(dynamic_bag_id: &DynamicBagId<T>).map(|_| ())
-    }
-
-    fn ensure_upload_params_are_valid(params: &UploadParameters<T>) -> DispatchResult {
-        Self::validate_upload_data_objects_parameters(params).map(|_| ())
-    }
-
     fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
         Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
@@ -2613,6 +2602,20 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult {
         Self::validate_delete_dynamic_bag_params(bag_id).map(|_| ())
+    }
+
+    fn can_delete_non_empty_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
+        Self::ensure_dynamic_bag_exists(dynamic_bag_id)?;
+
+        let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
+
+        if let Some(deletion_prize) = dynamic_bag.deletion_prize {
+            ensure!(
+                <StorageTreasury<T>>::usable_balance() >= deletion_prize,
+                Error::<T>::InsufficientTreasuryBalance
+            );
+        }
+        Ok(())
     }
 
     fn delete_dynamic_bag(

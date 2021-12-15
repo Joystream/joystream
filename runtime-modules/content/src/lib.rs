@@ -761,7 +761,7 @@ decl_module! {
                     expected_data_size_fee: upload_assets.expected_data_size_fee,
                 };
 
-                Storage::<T>::ensure_upload_params_are_valid(&upload_params).map(|_| ())?;
+                Storage::<T>::can_upload_data_objects(&upload_params).map(|_| ())?;
             }
 
 
@@ -824,15 +824,17 @@ decl_module! {
                     Error::<T>::InvalidBagSizeSpecified
                 );
 
-                // delete dynamic bag guard
-                ensure_can_delete_dynamic_bag(dyn_bag.clone())?;
+                // construct collection of assets to be removed
+                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
+
+                // delete data objects guard
+                Storage::<T>::can_delete_non_empty_dynamic_bag(
+                    &dyn_bag,
+                )?;
 
                 //
                 // == MUTATION SAFE ==
                 //
-
-                // construct collection of assets to be removed
-                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
                 // remove specified assets from storage
                 Self::remove_assets_from_storage(
@@ -1073,7 +1075,7 @@ decl_module! {
                     expected_data_size_fee: upload_assets.expected_data_size_fee,
                 };
 
-                Storage::<T>::ensure_upload_params_are_valid(&upload_params)?;
+                Storage::<T>::can_upload_data_objects(&upload_params)?;
             }
 
             //
