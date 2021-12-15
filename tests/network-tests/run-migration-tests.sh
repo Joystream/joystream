@@ -53,7 +53,8 @@ function export_chainspec_file_to_disk() {
 		   --chain /spec/chain-spec-raw.json \
 		   --base-path /data --pruning archive > ${DATA_PATH}/exported-state.json
     fi
-    }
+}
+
 # entrypoint
 function main {
     CONTAINER_ID=""
@@ -67,11 +68,12 @@ function main {
     # use forkoff to update chainspec with the live state + update runtime code
     fork_off_init
 
+    # export chain-spec BEFORE starting the node
+    export_chainspec_file_to_disk
+    
     echo "***** STARTING NODE WITH FORKED STATE *****"
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
     CONTAINER_ID=$(start_node)
-
-    export_chainspec_file_to_disk
     
     sleep 30
     
