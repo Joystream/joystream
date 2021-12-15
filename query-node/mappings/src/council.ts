@@ -1,4 +1,4 @@
-import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
 import { FindConditions, SelectQueryBuilder } from 'typeorm'
@@ -222,12 +222,16 @@ async function updateCouncilStage(
 async function startNextElectionRound(
   store: DatabaseManager,
   electedCouncil: ElectedCouncil,
-  blockNumber: number,
+  event: SubstrateEvent,
   electionProblem?: ElectionProblem
 ): Promise<ElectionRound> {
   // finish last election round
   const lastElectionRound = await getCurrentElectionRound(store)
   lastElectionRound.isFinished = true
+  lastElectionRound.endedAtBlock = event.blockNumber
+  lastElectionRound.endedAtTime = new Date(event.blockTimestamp)
+  lastElectionRound.endedAtNetwork = CURRENT_NETWORK
+
   lastElectionRound.nextElectedCouncil = electedCouncil
 
   // save last election
@@ -249,7 +253,7 @@ async function startNextElectionRound(
 
   const stage = new CouncilStageAnnouncing()
   stage.candidatesCount = new BN(0)
-  await updateCouncilStage(store, stage, blockNumber, electionProblem)
+  await updateCouncilStage(store, stage, event.blockNumber, electionProblem)
 
   return electionRound
 }
@@ -307,7 +311,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber)
+  await startNextElectionRound(store, electedCouncil, event)
 }
 
 /*
@@ -328,7 +332,7 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NOT_ENOUGH_CANDIDATES)
+  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
 /*
@@ -528,7 +532,7 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
+  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
 }
 
 /*

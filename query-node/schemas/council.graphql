@@ -229,6 +229,15 @@ type ElectionRound @entity {
   "Sign if election has already finished."
   isFinished: Boolean!
 
+  "Block number at which the election ended."
+  endedAtBlock: Int
+
+  "Time at which the election ended."
+  endedAtTime: DateTime
+
+  "Network running at the time the election ended."
+  endedAtNetwork: Network
+
   "Vote cast in the election round."
   castVotes: [CastVote!]! @derivedFrom(field: "electionRound")
 
