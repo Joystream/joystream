@@ -1,9 +1,9 @@
 FROM rust:1.52.1-buster AS rust
 RUN rustup self update
-RUN rustup install nightly-2021-03-24 --force
-RUN rustup default nightly-2021-03-24
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
-RUN rustup component add --toolchain nightly-2021-03-24 clippy
+RUN rustup install nightly-2021-02-20 --force
+RUN rustup default nightly-2021-02-20
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+RUN rustup component add --toolchain nightly-2021-02-20 clippy
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev
 
@@ -14,7 +14,7 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ENV WASM_BUILD_TOOLCHAIN=nightly-2021-03-24
+ENV WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
 RUN apt-get install -y libprotobuf-dev protobuf-compiler
 RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \

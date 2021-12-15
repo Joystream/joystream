@@ -2,8 +2,8 @@
 
 use super::curators;
 use super::mock::*;
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
@@ -46,6 +46,7 @@ fn successful_channel_deletion() {
                 assets: Some(assets),
                 meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -78,6 +79,7 @@ fn successful_channel_deletion() {
                 assets: None,
                 meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -129,8 +131,9 @@ fn successful_channel_assets_deletion() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -148,6 +151,7 @@ fn successful_channel_assets_deletion() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: assets_to_remove,
+                collaborators: None,
             },
         ));
     })
@@ -205,8 +209,9 @@ fn succesful_channel_update() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(first_batch),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -218,9 +223,10 @@ fn succesful_channel_update() {
             channel_id,
             ChannelUpdateParametersRecord {
                 assets_to_upload: Some(second_batch),
-                new_meta: Some(vec![]),
+                new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
+                collaborators: None,
             },
             Ok(()),
         );
@@ -235,6 +241,7 @@ fn succesful_channel_update() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: first_batch_ids,
+                collaborators: None,
             },
             Ok(()),
         );
@@ -278,8 +285,9 @@ fn succesful_channel_creation() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -295,8 +303,9 @@ fn lead_cannot_create_channel() {
                 ContentActor::Lead,
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -317,8 +326,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -334,8 +344,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -348,8 +359,9 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -363,8 +375,9 @@ fn curator_owned_channels() {
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -377,13 +390,15 @@ fn curator_owned_channels() {
                     owner: ChannelOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
                     is_censored: false,
                     reward_account: None,
-                    deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                     num_videos: 0,
+                    collaborators: BTreeSet::new(),
+                    deletion_prize_source_account_id: FIRST_CURATOR_ORIGIN,
                 },
                 ChannelCreationParametersRecord {
                     assets: None,
-                    meta: Some(vec![]),
+                    meta: None,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ))
         );
@@ -398,7 +413,8 @@ fn curator_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-            },
+                collaborators: None,
+            }
         ));
 
         // Lead can update curator owned channels
@@ -411,148 +427,208 @@ fn curator_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
-            },
+                collaborators: None,
+            }
         ));
     })
 }
 
 #[test]
-fn member_owned_channels() {
+fn invalid_member_cannot_create_channel() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         // Not a member
-        assert_err!(
-            Content::create_channel(
-                Origin::signed(UNKNOWN_ORIGIN),
-                ContentActor::Member(MEMBERS_COUNT + 1),
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                }
-            ),
-            Error::<Test>::MemberAuthFailed
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
+    })
+}
 
-        let channel_id_1 = Content::next_channel_id();
+#[test]
+fn invalid_member_cannot_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
 
-        // Member can create the channel
-        assert_ok!(Content::create_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-            }
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_1,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
-
-                    num_videos: 0,
-                },
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                }
-            ))
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
         );
 
-        let channel_id_2 = Content::next_channel_id();
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                collaborators: None,
+                assets_to_remove: BTreeSet::new(),
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+    })
+}
 
-        // Member can create the channel
-        assert_ok!(Content::create_channel(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            ContentActor::Member(SECOND_MEMBER_ID),
+#[test]
+fn invalid_member_cannot_delete_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
-            }
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                ContentActor::Member(SECOND_MEMBER_ID),
-                channel_id_2,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    deletion_prize_source_account_id: SECOND_MEMBER_ORIGIN,
-
-                    num_videos: 0,
-                },
-                ChannelCreationParametersRecord {
-                    assets: None,
-                    meta: Some(vec![]),
-                    reward_account: None,
-                }
-            ))
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
         );
 
-        // Update channel
-        assert_ok!(Content::update_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+        delete_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(UNKNOWN_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            0u64,
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+    })
+}
+
+#[test]
+fn non_authorized_collaborators_cannot_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id_1,
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // attempt for an non auth. collaborator to update channel assets
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+                collaborators: None,
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+
+        // add collaborators
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
                 new_meta: None,
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
+                collaborators: Some(
+                    vec![COLLABORATOR_MEMBER_ID]
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                ),
             },
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_1,
-                ChannelRecord {
-                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
-                    is_censored: false,
-                    reward_account: None,
-                    deletion_prize_source_account_id: FIRST_MEMBER_ORIGIN,
-
-                    num_videos: 0,
-                },
-                ChannelUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: None,
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                }
-            ))
+            Ok(()),
         );
 
-        // Member cannot update a channel they do not own
-        assert_err!(
-            Content::update_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_2,
-                ChannelUpdateParametersRecord {
-                    assets_to_upload: None,
-                    new_meta: None,
-                    reward_account: None,
-                    assets_to_remove: BTreeSet::new(),
-                },
-            ),
-            Error::<Test>::ActorNotAuthorized
+        // attempt for a valid collaborator to update channel fields outside
+        // of his scope
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: Some(Some(COLLABORATOR_MEMBER_ORIGIN)),
+                assets_to_remove: BTreeSet::new(),
+                collaborators: None,
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn authorized_collaborators_can_update_channel() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+
+        // attempt for an auth. collaborator to update channel assets
+        update_channel_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            ChannelUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+                collaborators: None,
+            },
+            Ok(()),
         );
     })
 }
@@ -569,8 +645,9 @@ fn channel_censoring() {
             ContentActor::Member(FIRST_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -645,8 +722,9 @@ fn channel_censoring() {
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             ChannelCreationParametersRecord {
                 assets: None,
-                meta: Some(vec![]),
+                meta: None,
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 

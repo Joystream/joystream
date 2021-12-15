@@ -14,9 +14,9 @@ use crate::tests::mocks::{
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
 };
 use crate::{
-    BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
-    DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UploadParameters,
+    BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
+    DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent,
+    StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -50,6 +50,7 @@ impl EventFixture {
             u64,
             u64,
             u64,
+            DistributionBucketId<Test>,
             u64,
         >,
     ) {
@@ -69,6 +70,7 @@ impl EventFixture {
             u64,
             u64,
             u64,
+            DistributionBucketId<Test>,
             u64,
         >,
     ) {
@@ -1295,7 +1297,8 @@ impl CreateDistributionBucketFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
-        let next_bucket_id = Storage::next_distribution_bucket_id();
+        let next_bucket_index = Storage::distribution_bucket_family_by_id(self.family_id)
+            .next_distribution_bucket_index;
         let actual_result = Storage::create_distribution_bucket(
             self.origin.clone().into(),
             self.family_id,
@@ -1305,24 +1308,27 @@ impl CreateDistributionBucketFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(next_bucket_id + 1, Storage::next_distribution_bucket_id());
-
-            let family: DistributionBucketFamily<Test> =
-                Storage::distribution_bucket_family_by_id(self.family_id);
-
-            assert!(family.distribution_buckets.contains_key(&next_bucket_id));
             assert_eq!(
-                family
-                    .distribution_buckets
-                    .get(&next_bucket_id)
-                    .unwrap()
-                    .accepting_new_bags,
-                self.accept_new_bags
+                next_bucket_index + 1,
+                Storage::distribution_bucket_family_by_id(self.family_id)
+                    .next_distribution_bucket_index
             );
 
-            Some(next_bucket_id)
+            let bucket: DistributionBucket<Test> =
+                Storage::distribution_bucket_by_family_id_by_index(
+                    self.family_id,
+                    next_bucket_index,
+                );
+
+            assert_eq!(bucket.accepting_new_bags, self.accept_new_bags);
+
+            Some(next_bucket_index)
         } else {
-            assert_eq!(next_bucket_id, Storage::next_distribution_bucket_id());
+            assert_eq!(
+                next_bucket_index,
+                Storage::distribution_bucket_family_by_id(self.family_id)
+                    .next_distribution_bucket_index
+            );
 
             None
         }
@@ -1332,7 +1338,7 @@ impl CreateDistributionBucketFixture {
 pub struct UpdateDistributionBucketStatusFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
-    distribution_bucket_id: u64,
+    distribution_bucket_index: u64,
     new_status: bool,
 }
 
@@ -1341,13 +1347,13 @@ impl UpdateDistributionBucketStatusFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             family_id: Default::default(),
-            distribution_bucket_id: Default::default(),
+            distribution_bucket_index: Default::default(),
             new_status: false,
         }
     }
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
         Self {
-            distribution_bucket_id: bucket_id,
+            distribution_bucket_index: bucket_index,
             ..self
         }
     }
@@ -1367,8 +1373,7 @@ impl UpdateDistributionBucketStatusFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_status(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_index),
             self.new_status,
         );
 
@@ -1379,7 +1384,7 @@ impl UpdateDistributionBucketStatusFixture {
 pub struct DeleteDistributionBucketFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
-    distribution_bucket_id: u64,
+    distribution_bucket_index: u64,
 }
 
 impl DeleteDistributionBucketFixture {
@@ -1387,13 +1392,13 @@ impl DeleteDistributionBucketFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             family_id: Default::default(),
-            distribution_bucket_id: Default::default(),
+            distribution_bucket_index: Default::default(),
         }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
         Self {
-            distribution_bucket_id: bucket_id,
+            distribution_bucket_index: bucket_index,
             ..self
         }
     }
@@ -1409,8 +1414,7 @@ impl DeleteDistributionBucketFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::delete_distribution_bucket(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_index),
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1421,8 +1425,8 @@ pub struct UpdateDistributionBucketForBagsFixture {
     origin: RawOrigin<u64>,
     bag_id: BagId<Test>,
     family_id: u64,
-    add_bucket_ids: BTreeSet<u64>,
-    remove_bucket_ids: BTreeSet<u64>,
+    add_bucket_indices: BTreeSet<u64>,
+    remove_bucket_indices: BTreeSet<u64>,
 }
 
 impl UpdateDistributionBucketForBagsFixture {
@@ -1431,8 +1435,8 @@ impl UpdateDistributionBucketForBagsFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             bag_id: Default::default(),
             family_id: Default::default(),
-            add_bucket_ids: Default::default(),
-            remove_bucket_ids: Default::default(),
+            add_bucket_indices: Default::default(),
+            remove_bucket_indices: Default::default(),
         }
     }
 
@@ -1440,16 +1444,16 @@ impl UpdateDistributionBucketForBagsFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_add_bucket_ids(self, add_bucket_ids: BTreeSet<u64>) -> Self {
+    pub fn with_add_bucket_indices(self, add_bucket_indices: BTreeSet<u64>) -> Self {
         Self {
-            add_bucket_ids,
+            add_bucket_indices,
             ..self
         }
     }
 
-    pub fn with_remove_bucket_ids(self, remove_bucket_ids: BTreeSet<u64>) -> Self {
+    pub fn with_remove_bucket_indices(self, remove_bucket_indices: BTreeSet<u64>) -> Self {
         Self {
-            remove_bucket_ids,
+            remove_bucket_indices,
             ..self
         }
     }
@@ -1467,8 +1471,8 @@ impl UpdateDistributionBucketForBagsFixture {
             self.origin.clone().into(),
             self.bag_id.clone(),
             self.family_id,
-            self.add_bucket_ids.clone(),
-            self.remove_bucket_ids.clone(),
+            self.add_bucket_indices.clone(),
+            self.remove_bucket_indices.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1520,7 +1524,7 @@ impl UpdateDistributionBucketsPerBagLimitFixture {
 pub struct UpdateDistributionBucketModeFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
-    distribution_bucket_id: u64,
+    distribution_bucket_index: u64,
     distributing: bool,
 }
 
@@ -1529,13 +1533,13 @@ impl UpdateDistributionBucketModeFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             family_id: Default::default(),
-            distribution_bucket_id: Default::default(),
+            distribution_bucket_index: Default::default(),
             distributing: true,
         }
     }
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
         Self {
-            distribution_bucket_id: bucket_id,
+            distribution_bucket_index: bucket_index,
             ..self
         }
     }
@@ -1558,8 +1562,7 @@ impl UpdateDistributionBucketModeFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_mode(
             self.origin.clone().into(),
-            self.family_id,
-            self.distribution_bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.distribution_bucket_index),
             self.distributing,
         );
 
@@ -1621,7 +1624,7 @@ pub struct InviteDistributionBucketOperatorFixture {
     origin: RawOrigin<u64>,
     operator_worker_id: u64,
     family_id: u64,
-    bucket_id: u64,
+    bucket_index: u64,
 }
 
 impl InviteDistributionBucketOperatorFixture {
@@ -1629,7 +1632,7 @@ impl InviteDistributionBucketOperatorFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             operator_worker_id: DEFAULT_WORKER_ID,
-            bucket_id: Default::default(),
+            bucket_index: Default::default(),
             family_id: Default::default(),
         }
     }
@@ -1645,8 +1648,11 @@ impl InviteDistributionBucketOperatorFixture {
         }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
-        Self { bucket_id, ..self }
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
+        Self {
+            bucket_index,
+            ..self
+        }
     }
 
     pub fn with_family_id(self, family_id: u64) -> Self {
@@ -1656,19 +1662,18 @@ impl InviteDistributionBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::invite_distribution_bucket_operator(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_index),
             self.operator_worker_id,
         );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
-            let new_bucket = new_family
-                .distribution_buckets
-                .get(&self.bucket_id)
-                .unwrap();
+            let new_bucket: DistributionBucket<Test> =
+                Storage::distribution_bucket_by_family_id_by_index(
+                    self.family_id,
+                    self.bucket_index,
+                );
 
             assert!(new_bucket
                 .pending_invitations
@@ -1679,7 +1684,7 @@ impl InviteDistributionBucketOperatorFixture {
 
 pub struct CancelDistributionBucketInvitationFixture {
     origin: RawOrigin<u64>,
-    bucket_id: u64,
+    bucket_index: u64,
     family_id: u64,
     operator_worker_id: u64,
 }
@@ -1688,7 +1693,7 @@ impl CancelDistributionBucketInvitationFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
-            bucket_id: Default::default(),
+            bucket_index: Default::default(),
             family_id: Default::default(),
             operator_worker_id: Default::default(),
         }
@@ -1698,8 +1703,11 @@ impl CancelDistributionBucketInvitationFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
-        Self { bucket_id, ..self }
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
+        Self {
+            bucket_index,
+            ..self
+        }
     }
 
     pub fn with_family_id(self, family_id: u64) -> Self {
@@ -1716,19 +1724,18 @@ impl CancelDistributionBucketInvitationFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::cancel_distribution_bucket_operator_invite(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_index),
             self.operator_worker_id,
         );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
-            let new_bucket = new_family
-                .distribution_buckets
-                .get(&self.bucket_id)
-                .unwrap();
+            let new_bucket: DistributionBucket<Test> =
+                Storage::distribution_bucket_by_family_id_by_index(
+                    self.family_id,
+                    self.bucket_index,
+                );
 
             assert!(!new_bucket
                 .pending_invitations
@@ -1739,7 +1746,7 @@ impl CancelDistributionBucketInvitationFixture {
 
 pub struct AcceptDistributionBucketInvitationFixture {
     origin: RawOrigin<u64>,
-    bucket_id: u64,
+    bucket_index: u64,
     family_id: u64,
     worker_id: u64,
 }
@@ -1748,7 +1755,7 @@ impl AcceptDistributionBucketInvitationFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
-            bucket_id: Default::default(),
+            bucket_index: Default::default(),
             family_id: Default::default(),
             worker_id: Default::default(),
         }
@@ -1758,8 +1765,11 @@ impl AcceptDistributionBucketInvitationFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
-        Self { bucket_id, ..self }
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
+        Self {
+            bucket_index,
+            ..self
+        }
     }
 
     pub fn with_family_id(self, family_id: u64) -> Self {
@@ -1774,18 +1784,17 @@ impl AcceptDistributionBucketInvitationFixture {
         let actual_result = Storage::accept_distribution_bucket_invitation(
             self.origin.clone().into(),
             self.worker_id,
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_index),
         );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
-            let new_bucket = new_family
-                .distribution_buckets
-                .get(&self.bucket_id)
-                .unwrap();
+            let new_bucket: DistributionBucket<Test> =
+                Storage::distribution_bucket_by_family_id_by_index(
+                    self.family_id,
+                    self.bucket_index,
+                );
 
             assert!(!new_bucket.pending_invitations.contains(&self.worker_id));
 
@@ -1796,7 +1805,7 @@ impl AcceptDistributionBucketInvitationFixture {
 
 pub struct SetDistributionBucketMetadataFixture {
     origin: RawOrigin<u64>,
-    bucket_id: u64,
+    bucket_index: u64,
     family_id: u64,
     worker_id: u64,
     metadata: Vec<u8>,
@@ -1806,7 +1815,7 @@ impl SetDistributionBucketMetadataFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
-            bucket_id: Default::default(),
+            bucket_index: Default::default(),
             family_id: Default::default(),
             worker_id: Default::default(),
             metadata: Default::default(),
@@ -1821,8 +1830,11 @@ impl SetDistributionBucketMetadataFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
-        Self { bucket_id, ..self }
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
+        Self {
+            bucket_index,
+            ..self
+        }
     }
 
     pub fn with_family_id(self, family_id: u64) -> Self {
@@ -1837,8 +1849,7 @@ impl SetDistributionBucketMetadataFixture {
         let actual_result = Storage::set_distribution_operator_metadata(
             self.origin.clone().into(),
             self.worker_id,
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_index),
             self.metadata.clone(),
         );
 
@@ -1848,7 +1859,7 @@ impl SetDistributionBucketMetadataFixture {
 
 pub struct RemoveDistributionBucketOperatorFixture {
     origin: RawOrigin<u64>,
-    bucket_id: u64,
+    bucket_index: u64,
     family_id: u64,
     operator_worker_id: u64,
 }
@@ -1857,7 +1868,7 @@ impl RemoveDistributionBucketOperatorFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID),
-            bucket_id: Default::default(),
+            bucket_index: Default::default(),
             family_id: Default::default(),
             operator_worker_id: Default::default(),
         }
@@ -1867,8 +1878,11 @@ impl RemoveDistributionBucketOperatorFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
-        Self { bucket_id, ..self }
+    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
+        Self {
+            bucket_index,
+            ..self
+        }
     }
 
     pub fn with_family_id(self, family_id: u64) -> Self {
@@ -1885,18 +1899,17 @@ impl RemoveDistributionBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::remove_distribution_bucket_operator(
             self.origin.clone().into(),
-            self.family_id,
-            self.bucket_id,
+            Storage::create_distribution_bucket_id(self.family_id, self.bucket_index),
             self.operator_worker_id,
         );
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
-            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
-            let new_bucket = new_family
-                .distribution_buckets
-                .get(&self.bucket_id)
-                .unwrap();
+            let new_bucket: DistributionBucket<Test> =
+                Storage::distribution_bucket_by_family_id_by_index(
+                    self.family_id,
+                    self.bucket_index,
+                );
 
             assert!(!new_bucket.operators.contains(&self.operator_worker_id));
         }

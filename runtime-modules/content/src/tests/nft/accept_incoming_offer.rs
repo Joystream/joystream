@@ -197,6 +197,7 @@ fn accept_incoming_offer_reward_account_is_not_set() {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
+                collaborators: BTreeSet::<tests::mock::MemberId>::new(),
             },
             Ok(()),
         );

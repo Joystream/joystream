@@ -38,14 +38,14 @@ export type VideoCategoryJson = {
   id: string
   name: string
   createdInBlock: number
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export type ChannelCategoryJson = {
   id: string
   name: string
   createdInBlock: number
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }

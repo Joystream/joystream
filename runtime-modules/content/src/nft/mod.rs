@@ -237,7 +237,7 @@ impl<T: Trait> Module<T> {
             &nft.transactional_status
         {
             // Authorize participant under given member id
-            ensure_member_auth_success::<T>(&member_id, &participant_account_id)?;
+            ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
 
             if let Some(price) = price {
                 Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
