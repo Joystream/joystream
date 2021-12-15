@@ -290,6 +290,25 @@ async function convertCandidatesToCouncilMembers(
   return councilMembers
 }
 
+/**
+  Mark the candidacies as aborted when there is not enough candidates or elected councilor
+ */
+async function abortCandidacies(store: DatabaseManager) {
+  const electionRound = await getCurrentElectionRound(store)
+  const candidates = await store.getMany(Candidate, {
+    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+  })
+
+  await Promise.all(
+    candidates.map((candidate) => {
+      if (candidate.status === CandidacyStatus.ACTIVE) {
+        candidate.status = CandidacyStatus.FAILED
+      }
+      return store.save<Candidate>(candidate)
+    })
+  )
+}
+
 /// /////////////// Council events /////////////////////////////////////////////
 
 /*
@@ -327,6 +346,8 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
   })
 
   await store.save<NotEnoughCandidatesEvent>(notEnoughCandidatesEvent)
+
+  await abortCandidacies(store)
 
   // specific event processing
 
@@ -450,7 +471,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   await Promise.all(
     candidates.map((candidate) => {
       if (candidate.status === CandidacyStatus.ACTIVE) {
-        candidate.status = CandidacyStatus.LOST
+        candidate.status = CandidacyStatus.FAILED
       }
       return store.save<Candidate>(candidate)
     })
@@ -527,6 +548,8 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
   })
 
   await store.save<NewCouncilNotElectedEvent>(newCouncilNotElectedEvent)
+
+  await abortCandidacies(store)
 
   // specific event processing
 

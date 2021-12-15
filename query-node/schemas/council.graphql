@@ -50,7 +50,7 @@ enum CandidacyStatus {
   ACTIVE
   WITHDRAWN
   ELECTED
-  LOST
+  FAILED
 }
 
 type Candidate @entity {
