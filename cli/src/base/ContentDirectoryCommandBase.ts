@@ -72,7 +72,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return channel.owner.isOfType('Curators') ? this.getContentActor('Lead') : this.getContentActor('Curator')
   }
 
-  getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
+  async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
     if (channel.owner.isOfType('Curators')) {
       try {
         return this.getContentActor('Lead')
@@ -80,7 +80,11 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         return this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      return this.getContentActor('Member')
+      const [id, membership] = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
+      return [
+        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
+        membership.controller_account.toString(),
+      ]
     }
   }
 
@@ -104,23 +108,43 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     // Context not set - derive
+
     try {
       const owner = await this.getChannelOwnerActor(channel)
       this.log('Derived context: Channel owner')
       return owner
     } catch (e) {
+      // continue
+    }
+
+    try {
       const collaborator = await this.getChannelCollaboratorActor(channel)
       this.log('Derived context: Channel collaborator')
       return collaborator
+    } catch (e) {
+      // continue
     }
+
+    this.error('No account found with access to manage the provided channel', { exit: ExitCodes.AccessDenied })
   }
 
-  getCategoryManagementActor(): Promise<[ContentActor, string]> {
+  async getCategoryManagementActor(): Promise<[ContentActor, string]> {
     try {
-      return this.getContentActor('Lead')
+      const lead = await this.getContentActor('Lead')
+      this.log('Derived context: Lead')
+      return lead
     } catch (e) {
-      return this.getContentActor('Curator')
+      // continue
     }
+    try {
+      const curator = await this.getContentActor('Curator')
+      this.log('Derived context: Curator')
+      return curator
+    } catch (e) {
+      // continue
+    }
+
+    this.error('Lead / Curator Group member permissions are required for this action', { exit: ExitCodes.AccessDenied })
   }
 
   async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<[ContentActor, string]> {
