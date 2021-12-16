@@ -46,6 +46,13 @@ enum ElectionProblem {
   NEW_COUNCIL_NOT_ELECTED
 }
 
+enum CandidacyStatus {
+  ACTIVE
+  WITHDRAWN
+  ELECTED
+  FAILED
+}
+
 type Candidate @entity {
   "Account used for staking currency needed for the candidacy."
   stakingAccountId: String!
@@ -65,8 +72,8 @@ type Candidate @entity {
   "Reflects if the stake is still locked for candidacy or has been already released by the member."
   stakeLocked: Boolean!
 
-  "Reflects if the candidacy was withdrawn before voting started."
-  candidacyWithdrawn: Boolean!
+  "Current candidate status"
+  status: CandidacyStatus!
 
   "Sum of power of all votes received."
   votePower: BigInt!
@@ -80,8 +87,8 @@ type Candidate @entity {
   "The metadata contained in note."
   noteMetadata: CandidacyNoteMetadata!
 
-  "Votes recieved in referendums by this member."
-  votesRecieved: [CastVote!]! @derivedFrom(field: "voteFor")
+  "Votes received in referendums by this member."
+  votesReceived: [CastVote!]! @derivedFrom(field: "voteFor")
 }
 
 type CouncilMember @entity {
@@ -100,7 +107,7 @@ type CouncilMember @entity {
   "Stake used for the council membership."
   stake: BigInt!
 
-  "Block number in which council member recieved the last reward payment."
+  "Block number in which council member received the last reward payment."
   lastPaymentBlock: BigInt!
 
   "Reward amount that should have been paid but couldn't be paid off due to insufficient budget."
@@ -221,6 +228,15 @@ type ElectionRound @entity {
 
   "Sign if election has already finished."
   isFinished: Boolean!
+
+  "Block number at which the election ended."
+  endedAtBlock: Int
+
+  "Time at which the election ended."
+  endedAtTime: DateTime
+
+  "Network running at the time the election ended."
+  endedAtNetwork: Network
 
   "Vote cast in the election round."
   castVotes: [CastVote!]! @derivedFrom(field: "electionRound")

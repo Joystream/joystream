@@ -615,8 +615,11 @@ export interface IMembershipMetadata {
     /** MembershipMetadata name */
     name?: (string|null);
 
-    /** MembershipMetadata avatar */
-    avatar?: (number|null);
+    /** MembershipMetadata avatarObject */
+    avatarObject?: (number|null);
+
+    /** MembershipMetadata avatarUri */
+    avatarUri?: (string|null);
 
     /** MembershipMetadata about */
     about?: (string|null);
@@ -634,11 +637,17 @@ export class MembershipMetadata implements IMembershipMetadata {
     /** MembershipMetadata name. */
     public name: string;
 
-    /** MembershipMetadata avatar. */
-    public avatar: number;
+    /** MembershipMetadata avatarObject. */
+    public avatarObject?: (number|null);
+
+    /** MembershipMetadata avatarUri. */
+    public avatarUri?: (string|null);
 
     /** MembershipMetadata about. */
     public about: string;
+
+    /** MembershipMetadata avatar. */
+    public avatar?: ("avatarObject"|"avatarUri");
 
     /**
      * Creates a new MembershipMetadata instance using the specified properties.
