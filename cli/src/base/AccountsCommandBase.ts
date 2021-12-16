@@ -99,9 +99,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         })
       }
       await this.requestPairDecoding(masterKey, 'Current account password')
-      if (!masterKey.meta.name) {
-        masterKey.meta.name = name
-      }
+      masterKey.meta.name = name
     }
 
     while (password === undefined) {
