@@ -579,7 +579,7 @@
         "_enum": {
             "Missing": "Null",
             "InvitedStorageWorker": "WorkerId",
-            "StorageWorker": "WorkerId"
+            "StorageWorker": "(WorkerId,GenericAccountId)"
         }
     },
     "DataObject": {

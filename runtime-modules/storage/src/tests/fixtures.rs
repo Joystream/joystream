@@ -188,6 +188,7 @@ pub struct AcceptStorageBucketInvitationFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
     storage_bucket_id: u64,
+    transactor_account_id: u64,
 }
 
 impl AcceptStorageBucketInvitationFixture {
@@ -196,6 +197,7 @@ impl AcceptStorageBucketInvitationFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
+            transactor_account_id: DEFAULT_ACCOUNT_ID,
         }
     }
 
@@ -205,6 +207,12 @@ impl AcceptStorageBucketInvitationFixture {
 
     pub fn with_worker_id(self, worker_id: u64) -> Self {
         Self { worker_id, ..self }
+    }
+    pub fn with_transactor_account_id(self, transactor_account_id: u64) -> Self {
+        Self {
+            transactor_account_id,
+            ..self
+        }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -221,6 +229,7 @@ impl AcceptStorageBucketInvitationFixture {
             self.origin.clone().into(),
             self.worker_id,
             self.storage_bucket_id,
+            self.transactor_account_id,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -229,7 +238,10 @@ impl AcceptStorageBucketInvitationFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 new_bucket.operator_status,
-                StorageBucketOperatorStatus::StorageWorker(self.worker_id)
+                StorageBucketOperatorStatus::StorageWorker(
+                    self.worker_id,
+                    self.transactor_account_id
+                )
             );
         } else {
             assert_eq!(old_bucket, new_bucket);
