@@ -262,14 +262,11 @@ async function startNextElectionRound(
   Converts successful council candidate records to council member records.
 */
 async function convertCandidatesToCouncilMembers(
-  store: DatabaseManager,
-  candidates: Candidate[],
+  candidates: Array<Candidate & { memberId: string }>,
   blockNumber: number
 ): Promise<CouncilMember[]> {
-  const councilMembers = await candidates.reduce(async (councilMembersPromise, candidate) => {
-    const councilMembers = await councilMembersPromise
-
-    const member = new Membership({ id: candidate.member.id.toString() })
+  return candidates.map((candidate) => {
+    const member = new Membership({ id: candidate.memberId })
 
     const councilMember = new CouncilMember({
       // id: candidate.id // TODO: are ids needed?
@@ -284,10 +281,8 @@ async function convertCandidatesToCouncilMembers(
       accumulatedReward: new BN(0),
     })
 
-    return [...councilMembers, councilMember]
-  }, Promise.resolve([] as CouncilMember[]))
-
-  return councilMembers
+    return councilMember
+  })
 }
 
 /**
@@ -479,7 +474,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
-    councilMembers: await convertCandidatesToCouncilMembers(store, electedCandidates, event.blockNumber),
+    councilMembers: await convertCandidatesToCouncilMembers(electedCandidates, event.blockNumber),
     updates: [],
     electedAtBlock: event.blockNumber,
     electedAtTime: new Date(event.blockTimestamp),
