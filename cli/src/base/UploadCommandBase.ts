@@ -38,6 +38,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   private fileSizeCache: Map<string, number> = new Map<string, number>()
   private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
+    noTTYOutput: true,
     format: `{barTitle} | {bar} | {value}/{total} KB processed`,
   }
 
@@ -63,8 +64,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     let processedKB = 0
     const fileSizeKB = Math.ceil(fileSize / 1024)
     const progress = multiBar
-      ? multiBar.create(fileSizeKB, processedKB, { barTitle })
+      ? (multiBar.create(fileSizeKB, processedKB, { barTitle }) as SingleBar | undefined)
       : new SingleBar(this.progressBarOptions)
+
+    if (!progress) {
+      throw new Error('Provided multibar does not support noTTY mode!')
+    }
 
     progress.start(fileSizeKB, processedKB, { barTitle })
     return {
@@ -188,24 +193,30 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     })
   }
 
-  async resolveAndValidateAssets(paths: string[], basePath: string): Promise<ResolvedAsset[]> {
-    // Resolve assets
-    if (basePath) {
-      paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
-    }
-    // Validate assets
-    await Promise.all(paths.map((p) => this.validateFile(p)))
-
-    // Return data
-    return await Promise.all(
-      paths.map(async (path) => {
-        const parameters = await this.generateDataObjectParameters(path)
-        return {
-          path,
-          parameters,
-        }
+  async resolveAndValidateAssets<T extends Record<string, string | null | undefined>>(
+    paths: T,
+    basePath: string
+  ): Promise<[ResolvedAsset[], { [K in keyof T]?: number }]> {
+    const assetIndices: { [K in keyof T]?: number } = {}
+    const resolvedAssets: ResolvedAsset[] = []
+    for (let [assetKey, assetPath] of Object.entries(paths)) {
+      const assetType = assetKey as keyof T
+      if (!assetPath) {
+        assetIndices[assetType] = undefined
+        continue
+      }
+      if (basePath) {
+        assetPath = path.resolve(path.dirname(basePath), assetPath)
+      }
+      await this.validateFile(assetPath)
+      const parameters = await this.generateDataObjectParameters(assetPath)
+      assetIndices[assetType] = resolvedAssets.length
+      resolvedAssets.push({
+        path: assetPath,
+        parameters,
       })
-    )
+    }
+    return [resolvedAssets, assetIndices]
   }
 
   async getStorageNodeUploadToken(
@@ -327,11 +338,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     errors.forEach(([objectId, message]) => this.warn(`Upload of object ${objectId} failed: ${message}`))
     this.handleRejectedUploads(bagId, assets, results, inputFilePath, outputFilePostfix)
     multiBar.stop()
-  }
-
-  public assetsIndexes(originalPaths: (string | undefined)[], filteredPaths: string[]): (number | undefined)[] {
-    let lastIndex = -1
-    return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
   }
 
   async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {

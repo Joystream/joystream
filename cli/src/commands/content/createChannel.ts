@@ -40,12 +40,12 @@ export default class CreateChannelCommand extends UploadCommandBase {
     }
 
     const { coverPhotoPath, avatarPhotoPath } = channelInput
-    const assetsPaths = [coverPhotoPath, avatarPhotoPath].filter((v) => v !== undefined) as string[]
-    const resolvedAssets = await this.resolveAndValidateAssets(assetsPaths, input)
-    // Set assets indexes in the metadata
-    const [coverPhotoIndex, avatarPhotoIndex] = this.assetsIndexes([coverPhotoPath, avatarPhotoPath], assetsPaths)
-    meta.coverPhoto = coverPhotoIndex
-    meta.avatarPhoto = avatarPhotoIndex
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
+      { coverPhotoPath, avatarPhotoPath },
+      input
+    )
+    meta.coverPhoto = assetIndices.coverPhotoPath
+    meta.avatarPhoto = assetIndices.avatarPhotoPath
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)

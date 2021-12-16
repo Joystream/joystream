@@ -76,17 +76,19 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const meta = asValidatedMetadata(VideoMetadata, videoInput)
 
     const { videoPath, thumbnailPhotoPath } = videoInput
-    const inputPaths = [videoPath, thumbnailPhotoPath].filter((p) => p !== undefined) as string[]
-    const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
-    // Set assets indexes in the metadata
-    const [videoIndex, thumbnailPhotoIndex] = this.assetsIndexes([videoPath, thumbnailPhotoPath], inputPaths)
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Set assets indices in the metadata
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
-    meta.video = videoIndex
-    meta.thumbnailPhoto = thumbnailPhotoIndex
+    meta.video = assetIndices.videoPath
+    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
     // Preare and send the extrinsic
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const assetsToRemove = await this.getAssetsToRemove(videoId, videoIndex, thumbnailPhotoIndex)
+    const assetsToRemove = await this.getAssetsToRemove(
+      videoId,
+      assetIndices.videoPath,
+      assetIndices.thumbnailPhotoPath
+    )
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
       assets_to_upload: assetsToUpload,
       new_meta: metadataToBytes(VideoMetadata, meta),

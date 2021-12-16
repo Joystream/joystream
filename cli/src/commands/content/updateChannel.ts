@@ -101,17 +101,22 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     }
 
     const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
-    const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
-    const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
-    // Set assets indexes in the metadata
-    const [coverPhotoIndex, avatarPhotoIndex] = this.assetsIndexes([coverPhotoPath, avatarPhotoPath], inputPaths)
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
+      { coverPhotoPath, avatarPhotoPath },
+      input
+    )
+    // Set assets indices in the metadata
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
-    meta.coverPhoto = coverPhotoIndex
-    meta.avatarPhoto = avatarPhotoIndex
+    meta.coverPhoto = assetIndices.coverPhotoPath
+    meta.avatarPhoto = assetIndices.avatarPhotoPath
 
     // Preare and send the extrinsic
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const assetsToRemove = await this.getAssetsToRemove(channelId, coverPhotoIndex, avatarPhotoIndex)
+    const assetsToRemove = await this.getAssetsToRemove(
+      channelId,
+      assetIndices.coverPhotoPath,
+      assetIndices.avatarPhotoPath
+    )
 
     const collaborators = createType('Option<BTreeSet<MemberId>>', channelInput.collaborators)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {

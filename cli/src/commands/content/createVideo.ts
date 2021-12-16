@@ -57,16 +57,14 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
-    const assetsPaths = [videoPath, thumbnailPhotoPath].filter((a) => a !== undefined) as string[]
-    const resolvedAssets = await this.resolveAndValidateAssets(assetsPaths, input)
-    // Set assets indexes in the metadata
-    const [videoIndex, thumbnailPhotoIndex] = this.assetsIndexes([videoPath, thumbnailPhotoPath], assetsPaths)
-    meta.video = videoIndex
-    meta.thumbnailPhoto = thumbnailPhotoIndex
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Set assets indices in the metadata
+    meta.video = assetIndices.videoPath
+    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
     // Try to get video file metadata
-    if (videoIndex !== undefined) {
-      const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[videoIndex].path)
+    if (assetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[assetIndices.videoPath].path)
       this.log('Video media file parameters established:', videoFileMetadata)
       this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
