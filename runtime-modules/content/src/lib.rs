@@ -676,7 +676,7 @@ decl_module! {
 
             Storage::<T>::can_upload_data_objects(
                 &upload_params,
-            )?;	    
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -684,8 +684,6 @@ decl_module! {
 
             // upload to storage
             if let Some(upload_assets) = params.assets.as_ref() {
-
-		
                 // upload assets to storage after creating the bag
                 Self::upload_assets_to_storage(
                     upload_assets,
