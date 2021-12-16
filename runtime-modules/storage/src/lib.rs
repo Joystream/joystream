@@ -99,6 +99,7 @@
 //! - create_dynamic_bag
 //! - can_create_dynamic_bag_with_objects_constraints
 //! - create_dynamic_bag_with_objects_constraints
+//! - can_delete_non_empty_dynamic_bag
 
 //!
 //! ### Pallet constants
@@ -2605,13 +2606,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn can_delete_non_empty_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
-        Self::ensure_dynamic_bag_exists(dynamic_bag_id)?;
+        let bag = Self::ensure_dynamic_bag_exists(dynamic_bag_id)?;
 
         let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
 
         if let Some(deletion_prize) = dynamic_bag.deletion_prize {
+            let total_deletion_prize = Self::calculate_data_storage_fee(bag.objects_total_size)
+                .saturating_add(deletion_prize);
             ensure!(
-                <StorageTreasury<T>>::usable_balance() >= deletion_prize,
+                <StorageTreasury<T>>::usable_balance() >= total_deletion_prize,
                 Error::<T>::InsufficientTreasuryBalance
             );
         }

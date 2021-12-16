@@ -675,7 +675,7 @@ decl_module! {
             // upload to storage
             if let Some(upload_assets) = params.assets.as_ref() {
 
-        // upload assets to storage after creating eth bag
+                // upload assets to storage after creating the bag
                 Self::upload_assets_to_storage(
                     upload_assets,
                     &channel_id,
@@ -758,7 +758,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // remove eassets from storage
+            // remove assets from storage
             Self::remove_assets_from_storage(&params.assets_to_remove, &channel_id, &sender)?;
 
             // upload assets to storage
