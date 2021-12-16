@@ -23,7 +23,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.5.1 linux-x64 node-v14.16.1
+@joystream/cli/0.6.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -70,73 +70,67 @@ When using the CLI for the first time there are a few common steps you might wan
 
 # Commands
 <!-- commands -->
-- [@joystream/cli](#joystreamcli)
-- [Usage](#usage)
-- [Development](#development)
-- [First steps](#first-steps)
-- [Useful environment settings](#useful-environment-settings)
-- [Commands](#commands)
-  - [`joystream-cli account:create`](#joystream-cli-accountcreate)
-  - [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
-  - [`joystream-cli account:forget`](#joystream-cli-accountforget)
-  - [`joystream-cli account:import`](#joystream-cli-accountimport)
-  - [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
-  - [`joystream-cli account:list`](#joystream-cli-accountlist)
-  - [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
-  - [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
-  - [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
-  - [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
-  - [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
-  - [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
-  - [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
-  - [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
-  - [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
-  - [`joystream-cli content:channels`](#joystream-cli-contentchannels)
-  - [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
-  - [`joystream-cli content:createChannelCategory`](#joystream-cli-contentcreatechannelcategory)
-  - [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
-  - [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
-  - [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
-  - [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
-  - [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
-  - [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
-  - [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
-  - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
-  - [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
-  - [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
-  - [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
-  - [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
-  - [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
-  - [`joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`](#joystream-cli-contentsetfeaturedvideos-featuredvideoids)
-  - [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
-  - [`joystream-cli content:updateChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentupdatechannelcategory-channelcategoryid)
-  - [`joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatechannelcensorshipstatus-id-status)
-  - [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
-  - [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
-  - [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
-  - [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
-  - [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
-  - [`joystream-cli council:info`](#joystream-cli-councilinfo)
-  - [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
-  - [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
-  - [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
-  - [`joystream-cli working-groups:decreaseWorkerStake WORKERID`](#joystream-cli-working-groupsdecreaseworkerstake-workerid)
-  - [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
-  - [`joystream-cli working-groups:fillOpening WGOPENINGID`](#joystream-cli-working-groupsfillopening-wgopeningid)
-  - [`joystream-cli working-groups:increaseStake`](#joystream-cli-working-groupsincreasestake)
-  - [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
-  - [`joystream-cli working-groups:opening WGOPENINGID`](#joystream-cli-working-groupsopening-wgopeningid)
-  - [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
-  - [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
-  - [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
-  - [`joystream-cli working-groups:slashWorker WORKERID`](#joystream-cli-working-groupsslashworker-workerid)
-  - [`joystream-cli working-groups:startAcceptingApplications WGOPENINGID`](#joystream-cli-working-groupsstartacceptingapplications-wgopeningid)
-  - [`joystream-cli working-groups:startReviewPeriod WGOPENINGID`](#joystream-cli-working-groupsstartreviewperiod-wgopeningid)
-  - [`joystream-cli working-groups:terminateApplication WGAPPLICATIONID`](#joystream-cli-working-groupsterminateapplication-wgapplicationid)
-  - [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
-  - [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-  - [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
-  - [`joystream-cli working-groups:updateWorkerReward WORKERID`](#joystream-cli-working-groupsupdateworkerreward-workerid)
+* [`joystream-cli account:create`](#joystream-cli-accountcreate)
+* [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
+* [`joystream-cli account:forget`](#joystream-cli-accountforget)
+* [`joystream-cli account:import`](#joystream-cli-accountimport)
+* [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
+* [`joystream-cli account:list`](#joystream-cli-accountlist)
+* [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
+* [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
+* [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
+* [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
+* [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
+* [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+* [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
+* [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
+* [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
+* [`joystream-cli content:channels`](#joystream-cli-contentchannels)
+* [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
+* [`joystream-cli content:createChannelCategory`](#joystream-cli-contentcreatechannelcategory)
+* [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
+* [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
+* [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
+* [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
+* [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
+* [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
+* [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
+* [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
+* [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
+* [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
+* [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
+* [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
+* [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
+* [`joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`](#joystream-cli-contentsetfeaturedvideos-featuredvideoids)
+* [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
+* [`joystream-cli content:updateChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentupdatechannelcategory-channelcategoryid)
+* [`joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatechannelcensorshipstatus-id-status)
+* [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
+* [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
+* [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
+* [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
+* [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+* [`joystream-cli council:info`](#joystream-cli-councilinfo)
+* [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
+* [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
+* [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
+* [`joystream-cli working-groups:decreaseWorkerStake WORKERID`](#joystream-cli-working-groupsdecreaseworkerstake-workerid)
+* [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
+* [`joystream-cli working-groups:fillOpening WGOPENINGID`](#joystream-cli-working-groupsfillopening-wgopeningid)
+* [`joystream-cli working-groups:increaseStake`](#joystream-cli-working-groupsincreasestake)
+* [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
+* [`joystream-cli working-groups:opening WGOPENINGID`](#joystream-cli-working-groupsopening-wgopeningid)
+* [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
+* [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
+* [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
+* [`joystream-cli working-groups:slashWorker WORKERID`](#joystream-cli-working-groupsslashworker-workerid)
+* [`joystream-cli working-groups:startAcceptingApplications WGOPENINGID`](#joystream-cli-working-groupsstartacceptingapplications-wgopeningid)
+* [`joystream-cli working-groups:startReviewPeriod WGOPENINGID`](#joystream-cli-working-groupsstartreviewperiod-wgopeningid)
+* [`joystream-cli working-groups:terminateApplication WGAPPLICATIONID`](#joystream-cli-working-groupsterminateapplication-wgapplicationid)
+* [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
+* [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
+* [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
+* [`joystream-cli working-groups:updateWorkerReward WORKERID`](#joystream-cli-working-groupsupdateworkerreward-workerid)
 
 ## `joystream-cli account:create`
 
@@ -282,15 +276,15 @@ OPTIONS
       If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
 
   -a, --callArgs=callArgs
-      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie.
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
       "-a=arg1,arg2".
       You can omit this flag even if the method requires some aguments.
       In that case you will be promted to provide value for each required argument.
-      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
       just simple comma-separated strings)
 
   -e, --exec
-      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
       default)
 
   -m, --method=method
@@ -820,7 +814,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -840,7 +834,7 @@ OPTIONS
 
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 
   -i, --input=input
@@ -850,7 +844,7 @@ OPTIONS
       Path to the file where the output JSON should be saved (this output can be then reused as input)
 
   --dryRun
-      If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be
+      If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be 
       provided as input later)
 ```
 
@@ -870,7 +864,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -890,7 +884,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -910,7 +904,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -927,7 +921,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -944,7 +938,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -964,7 +958,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -981,7 +975,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -998,7 +992,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1015,7 +1009,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1035,7 +1029,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1055,7 +1049,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1075,7 +1069,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1095,7 +1089,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1115,7 +1109,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1135,7 +1129,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1155,7 +1149,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
@@ -1175,7 +1169,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|operationsAlpha|operationsBeta|operationsGamma|gateway|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway,
+      Available values are: storageProviders, curators, operationsAlpha, operationsBeta, operationsGamma, gateway, 
       distributors.
 ```
 
