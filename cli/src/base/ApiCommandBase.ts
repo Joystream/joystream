@@ -189,9 +189,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       } while (!this.isQueryNodeUriValid(selectedUri))
     }
 
-    await this.setPreservedState({ queryNodeUri: selectedUri })
+    const queryNodeUri = selectedUri === 'none' ? null : selectedUri
 
-    return selectedUri === 'none' ? null : selectedUri
+    await this.setPreservedState({ queryNodeUri })
+
+    return queryNodeUri
   }
 
   isApiUriValid(uri: string): boolean {
