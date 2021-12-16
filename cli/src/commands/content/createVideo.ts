@@ -7,7 +7,6 @@ import { flags } from '@oclif/command'
 import { VideoCreationParameters } from '@joystream/types/content'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
@@ -27,19 +26,18 @@ export default class CreateVideoCommand extends UploadCommandBase {
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
-  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): void {
-    const videoMetaToIntegrate = {
+  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
+    return {
       duration: videoFileMetadata.duration,
       mediaPixelWidth: videoFileMetadata.width,
       mediaPixelHeight: videoFileMetadata.height,
+      mediaType: {
+        codecName: videoFileMetadata.codecName,
+        container: videoFileMetadata.container,
+        mimeMediaType: videoFileMetadata.mimeType,
+      },
+      ...metadata,
     }
-    const mediaTypeMetaToIntegrate = {
-      codecName: videoFileMetadata.codecName,
-      container: videoFileMetadata.container,
-      mimeMediaType: videoFileMetadata.mimeType,
-    }
-    integrateMeta(metadata, videoMetaToIntegrate, ['duration', 'mediaPixelWidth', 'mediaPixelHeight'])
-    integrateMeta(metadata.mediaType || {}, mediaTypeMetaToIntegrate, ['codecName', 'container', 'mimeMediaType'])
   }
 
   async run(): Promise<void> {
@@ -53,7 +51,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
-    const meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
+    let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
@@ -66,7 +64,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
     if (assetIndices.videoPath !== undefined) {
       const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[assetIndices.videoPath].path)
       this.log('Video media file parameters established:', videoFileMetadata)
-      this.setVideoMetadataDefaults(meta, videoFileMetadata)
+      meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
 
     // Preare and send the extrinsic
