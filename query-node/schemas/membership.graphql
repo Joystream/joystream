@@ -38,4 +38,10 @@ type Membership @entity {
 
   "List of channels the member has collaborator access to"
   collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+
+  "Auctions in which is this user whitelisted to participate"
+  whitelistedInAuctions: [Auction!]! @derivedFrom(field: "whitelistedMembers")
+
+  "NFTs owned by this member"
+  ownedNfts: [OwnedNft!]! @derivedFrom(field: "ownerMember")
 }

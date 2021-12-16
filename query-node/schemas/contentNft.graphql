@@ -1,0 +1,165 @@
+# TODO: add runtime ids to entities (`id: ID!`) where it's needed and possible
+
+# TODO: move `ContentActor*` to `content.graphql` after schema/mappings are finished
+#       keep it here for easier reviews
+type ContentActorCurator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  curator: Curator!
+}
+
+type ContentActorMember @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+type ContentActorLead @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+type ContentActorCollaborator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead | ContentActorCollaborator
+
+type CuratorGroup @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  "Curators belonging to this group"
+  curators: [Curator!]! @derivedFrom(field: "curatorGroup")
+
+  "Channels curated by this group"
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+}
+
+type Curator @entity {
+  #TODO: curator
+  dummy: Int
+
+  curatorGroup: CuratorGroup!
+}
+
+"Represents NFT details"
+type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+  "Member owning the NFT (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the NFT (if any)"
+  ownerCuratorGroup: CuratorGroup
+
+  "NFT transactional status"
+  transactionalStatus: TransactionalStatus!
+
+  "Creator royalty"
+  creatorRoyalty: Float
+}
+
+"NFT transactional state"
+union TransactionalStatus = TransactionalStatusIdle
+  | TransactionalStatusInitiatedOfferToMember
+  | TransactionalStatusAuction
+  | TransactionalStatusBuyNow
+
+"Represents TransactionalStatus Idle"
+type TransactionalStatusIdle @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+"Represents TransactionalStatus InitiatedOfferToMember"
+type TransactionalStatusInitiatedOfferToMember @variant {
+  "Member identifier"
+  member: Int!
+
+  "Whether member should pay to accept offer (optional)"
+  price: BigInt
+}
+
+"Represents TransactionalStatus Auction"
+type TransactionalStatusAuction @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  "Member identifier"
+  auction: Auction!
+}
+
+"Represents TransactionalStatus BuyNow"
+type TransactionalStatusBuyNow @variant {
+  price: Int!
+}
+
+"Represents various action types"
+union AuctionType = AuctionTypeEnglish | AuctionTypeOpen
+
+"Represents English auction details"
+type AuctionTypeEnglish @variant {
+  "English auction duration"
+  duration: Int!
+
+  "Auction extension time"
+  extensionTime: Int
+}
+
+"Represents Open auction details"
+type AuctionTypeOpen @variant {
+  "Auction bid lock duration"
+  bidLockingTime: Int!
+}
+
+"Represents NFT auction"
+type Auction @entity {
+  "Auction starting price"
+  startingPrice: BigInt!
+
+  "Whether auction can be completed instantly"
+  buyNowPrice: BigInt
+
+  "The type of auction"
+  auctionType: AuctionType!
+
+  "Minimal step between auction bids"
+  minimalBidStep: BigInt!
+
+  "Auction last bid (if exists)"
+  lastBid: Bid
+
+  "Block when auction starts"
+  startsAtBlock: Int!
+
+  "Block when auction starts"
+  endedAtBlock: Int!
+
+  "Auction participants whitelist"
+  whitelistedMembers: [Membership!]! @derivedFrom(field: "whitelistedInAuctions")
+}
+
+"Represents bid in NFT auction"
+type Bid @entity {
+  "Bidder membership"
+  bidder: Membership!
+
+  "Bidder account, used to pay for NFT"
+  bidderAccount: String!
+
+  "Amount bidded"
+  amount: BigInt!
+
+  "Bid time"
+  createdInTime: DateTime!
+
+  "Block in which the bid was placed"
+  createdInBlock: Int!
+}
