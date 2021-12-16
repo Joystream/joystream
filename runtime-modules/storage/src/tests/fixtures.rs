@@ -1150,12 +1150,12 @@ impl CreateDynamicBagWithObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let checker_result = Storage::can_create_dynamic_bag_with_objects(
+        let checker_result = Storage::can_create_dynamic_bag_with_objects_constraints(
             &self.bag_id,
             &self.deletion_prize,
             &self.upload_parameters,
         );
-        let actual_result = Storage::create_dynamic_bag_with_objects(
+        let actual_result = Storage::create_dynamic_bag_with_objects_constraints(
             self.bag_id.clone(),
             self.deletion_prize.clone(),
             self.upload_parameters.clone(),
