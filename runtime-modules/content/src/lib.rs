@@ -668,22 +668,13 @@ decl_module! {
             // ensure collaborator member ids are valid
             Self::validate_collaborator_set(&params.collaborators)?;
 
-            Storage::<T>::can_create_dynamic_bag_with_objects_constraints(
-                &dyn_bag,
-                &None,
-                &upload_params,
-            )?;
-
-            Storage::<T>::can_upload_data_objects(
-                &upload_params,
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
 
             // upload to storage
             if let Some(upload_assets) = params.assets.as_ref() {
+
                 // upload assets to storage after creating the bag
                 Self::upload_assets_to_storage(
                     upload_assets,
