@@ -35,6 +35,7 @@ type StorageBucketOperatorStatusInvited @variant {
 
 type StorageBucketOperatorStatusActive @variant {
   workerId: Int!
+  transactorAccountId: String!
 }
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive

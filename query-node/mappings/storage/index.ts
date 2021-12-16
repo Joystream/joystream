@@ -95,10 +95,11 @@ export async function storage_StorageBucketInvitationAccepted({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [bucketId, workerId] = new Storage.StorageBucketInvitationAcceptedEvent(event).params
+  const [bucketId, workerId, transactorAccountId] = new Storage.StorageBucketInvitationAcceptedEvent(event).params
   const storageBucket = await getById(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusActive()
   operatorStatus.workerId = workerId.toNumber()
+  operatorStatus.transactorAccountId = transactorAccountId.toString()
   storageBucket.operatorStatus = operatorStatus
   await store.save<StorageBucket>(storageBucket)
 }

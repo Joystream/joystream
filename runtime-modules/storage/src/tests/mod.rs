@@ -156,6 +156,7 @@ fn accept_storage_bucket_invitation_succeeded() {
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
+        let transactor_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -167,11 +168,13 @@ fn accept_storage_bucket_invitation_succeeded() {
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
+            .with_transactor_account_id(transactor_id)
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::StorageBucketInvitationAccepted(
             bucket_id,
             storage_provider_id,
+            transactor_id,
         ));
     });
 }
@@ -1327,6 +1330,7 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
 
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Ok(()));
@@ -1373,6 +1377,7 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
 
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Ok(()));
@@ -1398,6 +1403,46 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
 }
 
 #[test]
+fn accept_pending_data_objects_fails_with_invalid_transactor_account_id() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+        let transactor_account_id = 11111;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(transactor_account_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+
+        let data_object_id = 0;
+
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids)
+            .call_and_assert(Err(Error::<Test>::InvalidTransactorAccount.into()));
+    });
+}
+
+#[test]
 fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         set_max_voucher_limits();
@@ -1417,6 +1462,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
 
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Ok(()));
@@ -2482,6 +2528,7 @@ fn create_storage_bucket_and_assign_to_bag(
     if let Some(storage_provider_id) = storage_provider_id {
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Ok(()));
