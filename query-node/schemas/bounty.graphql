@@ -1,0 +1,190 @@
+"Any member can submit work entries to the bounty"
+type BountyContractOpen @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Only preselected members can submit work entries to the bounty"
+type BountyContractClosed @variant {
+  # Members authorized to submit entries to the bounty
+  whitelist: [Membership!]!
+}
+
+"Valid of type assurance contract"
+union BountyContractType = BountyContractOpen | BountyContractClosed
+
+type BountyFundingPerpetual @variant {
+  "Desired funding"
+  target: BigInt!
+}
+
+type BountyFundingLimited @variant {
+  "Minimum amount of funds for a successful bounty"
+  minFundingAmount: BigInt!
+
+  "Upper boundary for a bounty funding"
+  maxFundingAmount: BigInt!
+
+  "Maximum allowed funding period"
+  fundingPeriod: Int!
+}
+
+"Bounty funding types"
+union BountyFundingType = BountyFundingPerpetual | BountyFundingLimited
+
+"All valid bounty stages"
+enum BountyStage {
+  Funding
+  Expired
+  WorkSubmission
+  Judgment
+  Successful
+  Failed
+  Terminated
+}
+
+type Bounty @entity {
+  # Bounty creation parameters:
+  "Bounty's runtime id"
+  id: ID!
+
+  "Bounty title"
+  title: String!
+
+  "Bounty description"
+  description: String!
+
+  "Amount of funding provided by the creator"
+  cherry: BigInt!
+
+  "Stake minimum amount required to submit work entry to the bounty"
+  entrantStake: BigInt!
+
+  "Bounty creator"
+  creator: Membership
+
+  "Bounty oracle"
+  oracle: Membership
+
+  "Bounty funding type"
+  fundingType: BountyFundingType!
+
+  "Bounty assurance contract type"
+  contractType: BountyContractType!
+
+  "Number of blocks from end of funding period until people can no longer submit bounty submissions"
+  workPeriod: Int!
+
+  "Number of block from end of work period until oracle can no longer decide winners"
+  judgingPeriod: Int!
+
+  # Bounty current state:
+  "Current bounty stage"
+  stage: BountyStage!
+
+  totalFunding: BigInt!
+
+  "Bounty's discussion thread"
+  discussionThread: ForumThread!
+
+  # Events:
+  "The event the bounty was created in"
+  createdInEvent: BountyCreatedEvent!
+
+  "Event emitted if a bounty reached its maximum funding amount"
+  maxFundingReachedEvent: BountyMaxFundingReachedEvent
+}
+
+"Initial status during creation in Working Period."
+type BountyEntryStatusWorking @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"When withdrawn during the Working Period."
+type BountyEntryStatusWithdrawn @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Selected as winner during Judgement Period , and therefore is due an outstanding share of the bounty funds, called reward."
+type BountyEntryStatusWinner @variant {
+  reward: BigInt!
+}
+
+"Not referenced by oracle in Judgement Period judgement, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
+type BountyEntryStatusPassed @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Rejected by oracle in Judgement Period as a malicious entry, and thus has had stake slashed."
+type BountyEntryStatusRejected @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Worker cashed out stake and/or share of bounty reward."
+type BountyEntryStatusCashedOut @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"All valid work entry statuses"
+union BountyEntryStatus =
+    BountyEntryStatusWorking
+  | BountyEntryStatusWithdrawn
+  | BountyEntryStatusWinner
+  | BountyEntryStatusPassed
+  | BountyEntryStatusRejected
+  | BountyEntryStatusCashedOut
+
+type BountyEntry @entity {
+  # Work entry creation parameters:
+  "Work Entry Id"
+  id: ID!
+
+  "Bounty to which the work entry corresponds"
+  bounty: Bounty!
+
+  "Member which submitted the work entry"
+  worker: Membership!
+
+  "Stake used to announce the work entry."
+  stake: BigInt!
+
+  "Staking account with the work entry stake"
+  stakingAccount: String
+
+  # Work entry current state:
+  "Whether at least one work has been submitted"
+  workSubmitted: Boolean!
+
+  # TODO find an acceptable structure for this
+  works: [String]!
+
+  "Work entry status"
+  status: BountyEntryStatus!
+
+  # Events
+  "The event the work entry was created in"
+  announcedInEvent: WorkEntryAnnouncedEvent!
+}
+
+type BountyContribution @entity {
+  "Contribution Id"
+  id: ID!
+
+  "Bounty to which the contribution is made"
+  bounty: Bounty!
+
+  "Amount of the contribution"
+  amount: BigInt!
+}
