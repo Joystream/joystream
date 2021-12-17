@@ -4,6 +4,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { BagId, DynamicBagType } from '@joystream/types/storage'
 import logger from '../../services/logger'
+import { timeout } from 'promise-timeout'
 
 /**
  * Creates storage bucket.
@@ -60,10 +61,11 @@ export async function acceptStorageBucketInvitation(
   api: ApiPromise,
   account: KeyringPair,
   workerId: number,
-  storageBucketId: number
+  storageBucketId: number,
+  transactorAccountId: string
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const tx = api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId)
+    const tx = api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, transactorAccountId)
 
     return sendAndFollowNamedTx(api, account, tx)
   })
@@ -269,9 +271,13 @@ export async function inviteStorageBucketOperator(
  * after logging.
  * @returns promise with a success flag.
  */
-async function extrinsicWrapper(extrinsic: () => Promise<void>, throwErr = false): Promise<boolean> {
+async function extrinsicWrapper(
+  extrinsic: () => Promise<void>,
+  throwErr = false,
+  timeoutMs = 25000 // 25s - default extrinsic timeout
+): Promise<boolean> {
   try {
-    await extrinsic()
+    await timeout(extrinsic(), timeoutMs)
   } catch (err) {
     logger.error(`Api Error: ${err}`)
 

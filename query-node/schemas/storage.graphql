@@ -35,6 +35,7 @@ type StorageBucketOperatorStatusInvited @variant {
 
 type StorageBucketOperatorStatusActive @variant {
   workerId: Int!
+  transactorAccountId: String!
 }
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
@@ -273,11 +274,14 @@ type DistributionBucketOperator @entity {
 }
 
 type DistributionBucket @entity {
-  "Runtime bucket id"
+  "Runtime bucket id in {familyId}:{bucketIndex} format"
   id: ID!
 
   "Distribution family the bucket is part of"
   family: DistributionBucketFamily!
+
+  "Bucket index within the family"
+  bucketIndex: Int!
 
   "Distribution bucket operators (either active or invited)"
   operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
