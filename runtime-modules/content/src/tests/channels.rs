@@ -17,7 +17,7 @@ fn successful_channel_deletion() {
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets added at creation
@@ -105,7 +105,7 @@ fn successful_channel_assets_deletion() {
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets
@@ -171,7 +171,7 @@ fn succesful_channel_update() {
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 2 + 1 assets to be uploaded
@@ -264,7 +264,7 @@ fn succesful_channel_creation() {
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets to be uploaded

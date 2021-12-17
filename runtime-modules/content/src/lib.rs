@@ -819,6 +819,7 @@ decl_module! {
                 // can delete non-empty dynamic bag
                 Storage::<T>::can_delete_dynamic_bag_with_objects(
                     &dyn_bag,
+
                 )?;
 
                 Storage::<T>::can_delete_data_objects(
@@ -1462,7 +1463,10 @@ impl<T: Trait> Module<T> {
         if channel_creation && Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
             Storage::<T>::create_dynamic_bag_with_objects_constraints(
                 dyn_bag,
-                None,
+                Some(storage::DynamicBagDeletionPrize::<T> {
+                    prize: One::one(), // TODO: fix prize
+                    account_id: prize_source_account.clone(),
+                }),
                 upload_params.clone(),
             )?;
         };

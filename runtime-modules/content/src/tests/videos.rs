@@ -33,7 +33,7 @@ fn video_creation_successful() {
         // depositi initial balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();
@@ -81,7 +81,7 @@ fn video_update_successful() {
         create_initial_storage_buckets();
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();

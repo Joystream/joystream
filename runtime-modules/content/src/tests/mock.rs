@@ -52,7 +52,7 @@ pub const COLLABORATOR_MEMBER_ID: MemberId = 9;
 
 /// Constants
 // initial balancer for an account
-pub const INIT_BALANCE: u32 = 500;
+pub const INITIAL_BALANCE: u32 = 1_000_000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -658,7 +658,7 @@ pub fn helper_init_accounts(accounts: Vec<u64>) {
     for acc in accounts.iter() {
         let _ = balances::Module::<Test>::deposit_creating(
             acc,
-            <Test as balances::Trait>::Balance::from(INIT_BALANCE),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
     }
 }

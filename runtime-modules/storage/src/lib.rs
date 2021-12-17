@@ -2849,7 +2849,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_sufficient_balance_for_upload(
             deletion_prize
                 .as_ref()
-                .map(|del_prize| del_prize.account_id.clone()),
+                .map(|deletion_prize| deletion_prize.account_id.clone()),
             total_upload_fee,
         )?;
 
@@ -2863,6 +2863,11 @@ impl<T: Trait> Module<T> {
         let usable_balance = deletion_prize_source_account_id.map_or(Zero::zero(), |account_id| {
             Balances::<T>::usable_balance(account_id)
         });
+
+        println!(
+            "TOTAL UPLOAD FEE: \t {:?}\nBALANCE: \t {:?}",
+            required_balance, usable_balance
+        );
 
         ensure!(
             usable_balance >= required_balance,
