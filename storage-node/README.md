@@ -650,16 +650,23 @@ USAGE
   $ storage-node operator:accept-invitation
 
 OPTIONS
-  -h, --help                   show CLI help
-  -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-  -w, --workerId=workerId      (required) Storage operator worker ID
+  -h, --help                                     show CLI help
+  -i, --bucketId=bucketId                        (required) Storage bucket ID
+  -k, --keyFile=keyFile                          Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                                      Use development mode
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -p, --password=password                        Key file password (optional). Could be overriden by ACCOUNT_PWD
+                                                 environment variable.
+
+  -t, --transactorAccountId=transactorAccountId  (required) Transactor account ID (public key)
+
+  -u, --apiUrl=apiUrl                            [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev
+                                                 environment.
+
+  -w, --workerId=workerId                        (required) Storage operator worker ID
+
+  -y, --accountUri=accountUri                    Account URI (optional). Has a priority over the keyFile and password
+                                                 flags. Could be overriden by ACCOUNT_URI environment variable.
 ```
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/operator/accept-invitation.ts)_
@@ -710,6 +717,9 @@ OPTIONS
   -i, --syncInterval=syncInterval                    [default: 1] Interval between synchronizations (in minutes)
 
   -k, --keyFile=keyFile                              Key file for the account. Mandatory in non-dev environment.
+
+  -l, --logFileName=logFileName                      Absolute path to the rolling log file. Creates up to 3 files with
+                                                     50MB each
 
   -m, --dev                                          Use development mode
 
