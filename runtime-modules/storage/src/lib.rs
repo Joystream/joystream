@@ -2264,9 +2264,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            DynamicBagCreationPolicies::<T>::mutate(dynamic_bag_type, |creation_policy| {
-                creation_policy.families = families.clone();
-            });
+            // We initialize the default storage bucket number here if no policy exists.
+            let mut new_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+            new_policy.families = families.clone();
+
+            DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, new_policy);
 
             Self::deposit_event(
                 RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
