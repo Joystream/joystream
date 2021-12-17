@@ -122,7 +122,9 @@
 #![allow(clippy::unused_unit)]
 // needed for step iteration over DataObjectId range
 #![feature(step_trait)]
-
+// silence clippy
+#![allow(clippy::redundant_closure)]
+#![allow(clippy::or_fun_call)]
 #[cfg(test)]
 mod tests;
 
@@ -3466,7 +3468,7 @@ impl<T: Trait> Module<T> {
 
         let storage_bucket_ids = Self::pick_storage_buckets_for_dynamic_bag(
             bag_type,
-            bag_change.map(|bag_change| bag_change.voucher_update.clone()),
+            bag_change.map(|bag_change| bag_change.voucher_update),
         );
 
         let distribution_bucket_ids = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
