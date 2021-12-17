@@ -644,7 +644,6 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        // TODO: Add Option<reward_account> to ChannelCreationParameters ?
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel(
             origin,
@@ -882,8 +881,6 @@ decl_module! {
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.is_censored = is_censored
             });
-
-            // TODO: unset the reward account ? so no revenue can be earned for censored channels?
 
             Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
         }
@@ -1460,11 +1457,13 @@ impl<T: Trait> Module<T> {
         };
 
         // create dynamic bag if it doesn't exist (does not emits conflicting created/deleted bag events)
+        // move out bag creation to create channel only
+        // create_channel_
         if channel_creation && Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
             Storage::<T>::create_dynamic_bag_with_objects_constraints(
                 dyn_bag,
                 Some(storage::DynamicBagDeletionPrize::<T> {
-                    prize: One::one(), // TODO: fix prize
+                    prize: Zero::zero(), // put 0 for Giza release
                     account_id: prize_source_account.clone(),
                 }),
                 upload_params.clone(),
@@ -1476,10 +1475,6 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
-
-    // validate _with bojcets
-    // can upload objects
-    // combined balance check
 
     fn remove_assets_from_storage(
         assets: &BTreeSet<DataObjectId<T>>,

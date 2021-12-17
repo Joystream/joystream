@@ -122,9 +122,6 @@
 #![allow(clippy::unused_unit)]
 // needed for step iteration over DataObjectId range
 #![feature(step_trait)]
-// silence clippy
-#![allow(clippy::redundant_closure)]
-#![allow(clippy::or_fun_call)]
 #[cfg(test)]
 mod tests;
 
@@ -2826,20 +2823,25 @@ impl<T: Trait> Module<T> {
             Error::<T>::DynamicBagExists
         );
 
-        let bag_change = upload_params.as_ref().map_or(Ok(None), |params| {
-            // check params are valid
-            ensure!(
-                params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
-                Error::<T>::DataSizeFeeChanged
-            );
+        // ensure! upload_params.account_id == deletion_prize.account_id
+        // call can upload data explicitly
+        // add extra tests in the
 
-            Self::check_global_uploading_block()?;
+        // Some ->
+        let bag_change = upload_params
+            .as_ref()
+            .map(|params| {
+                // check params are valid
+                Self::ensure_valid_expected_data_fee(params.expected_data_size_fee)?;
 
-            Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+                Self::check_global_uploading_block()?;
 
-            // compute bag change due to objects creation list
-            Self::construct_bag_change(&params.object_creation_list).map(|res| Some(res))
-        })?;
+                Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+
+                // compute bag change due to objects creation list
+                Self::construct_bag_change(&params.object_creation_list)
+            })
+            .transpose()?;
 
         let total_upload_fee = deletion_prize
             .as_ref()
@@ -2878,6 +2880,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn ensure_valid_expected_data_fee(expected_data_size_fee: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
+            Error::<T>::DataSizeFeeChanged
+        );
+
+        Ok(())
+    }
+
     // Validates dynamic bag deletion params and conditions. Returns bag's deletion prize.
     fn validate_delete_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,
@@ -2888,21 +2899,20 @@ impl<T: Trait> Module<T> {
         let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
 
         // deletion prize = bag.deletion_prize + total_objects fees if any
-        let deletion_prize = match with_objects {
-            false => {
-                // TODO: should this be checked ?
-                ensure!(
-                    dynamic_bag.objects_number == 0,
-                    Error::<T>::CannotDeleteNonEmptyDynamicBag
-                );
-                dynamic_bag.deletion_prize.unwrap_or(Zero::zero())
-            }
-            true => dynamic_bag
+        let deletion_prize = if with_objects {
+            // TODO: should this be checked ?
+            ensure!(
+                dynamic_bag.objects_number == 0,
+                Error::<T>::CannotDeleteNonEmptyDynamicBag
+            );
+            dynamic_bag.deletion_prize.unwrap_or_else(Zero::zero)
+        } else {
+            dynamic_bag
                 .deletion_prize
-                .unwrap_or(Zero::zero())
+                .unwrap_or_else(Zero::zero)
                 .saturating_add(Self::calculate_data_storage_fee(
                     dynamic_bag.objects_total_size,
-                )),
+                ))
         };
 
         ensure!(
