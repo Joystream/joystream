@@ -2682,7 +2682,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, false)
     }
 
     fn can_create_dynamic_bag_with_objects_constraints(
@@ -2690,7 +2690,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
     ) -> Result<BucketPair<T>, DispatchError> {
-        Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
+        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, Some(params));
+        //        Self::can_create_dynamic_bag(bag_id, deletion_prize)?;
         Self::check_global_uploading_block()?;
 
         Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
@@ -2824,6 +2825,7 @@ impl<T: Trait> Module<T> {
     fn validate_create_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        upload_params: &Option<UploadParameters>,
     ) -> DispatchResult {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
@@ -2836,6 +2838,29 @@ impl<T: Trait> Module<T> {
             ensure!(
                 Balances::<T>::usable_balance(&deletion_prize.account_id) >= deletion_prize.prize,
                 Error::<T>::InsufficientBalance
+            );
+        }
+
+        if let Some(upload_params) = upload_params {
+            Self::check_global_uploading_block()?;
+
+            Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+
+            let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
+
+            Self::ensure_enough_balance_for_upload(
+                &bag_change,
+                &params.deletion_prize_source_account_id,
+                &params.expected_data_size_fee,
+            )?;
+
+            let (storage_bucket_ids, distribution_bucket_ids) =
+                Self::pick_buckets_for_bag(bag_id.clone(), Some(bag_change.voucher_update));
+
+            // check if storage buckets have been found
+            ensure!(
+                !storage_bucket_ids.is_empty(),
+                Error::<T>::StorageBucketIdCollectionsAreEmpty
             );
         }
 
