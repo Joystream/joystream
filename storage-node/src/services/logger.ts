@@ -188,6 +188,7 @@ function createElasticTransport(logSource: string, elasticSearchEndpoint: string
     index: 'storage-node',
     format: ecsformat(),
     source: logSource,
+    retryLimit: 10,
   }
   return new ElasticsearchTransport(esTransportOpts)
 }
