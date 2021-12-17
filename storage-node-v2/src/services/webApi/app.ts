@@ -20,7 +20,7 @@ import { createExpressLoggerOptions, httpLogger, errorLogger } from '../../servi
 export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
   const app = express()
-  const expressLoggerOptions = createExpressLoggerOptions(config.elasticSearchEndpoint, config.logSource)
+  const expressLoggerOptions = createExpressLoggerOptions()
 
   app.use(cors())
   app.use(express.json())

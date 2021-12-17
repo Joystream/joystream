@@ -143,8 +143,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         process: this.config,
         queryNodeEndpoint: flags.queryNodeEndpoint,
         enableUploadingAuth: false,
-        elasticSearchEndpoint: flags.elasticSearchEndpoint,
-        logSource,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)

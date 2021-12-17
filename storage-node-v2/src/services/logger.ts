@@ -83,41 +83,13 @@ export default proxy
 
 /**
  * Creates Express-Winston logger options.
- * @param logSource - source tag for log entries.
- * @param elasticSearchEndpoint - elastic search engine endpoint (optional).
- * @returns  Express-Winston logger options
  *
  */
-export function createExpressLoggerOptions(
-  elasticSearchEndpoint?: string,
-  filename?: string,
-logSource: string
-): expressWinston.LoggerOptions {
-  // ElasticSearch server date format.
-  const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
-
-  const transports: winston.transport[] = [
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.timestamp({ format: elasticDateFormat }), winston.format.json()),
-    }),
-  ]
-
-  if (elasticSearchEndpoint) {
-    transports.push(createElasticTransport(elasticSearchEndpoint, logSource))
+export function createExpressLoggerOptions(): expressWinston.LoggerOptions {
+  return {
+    winstonInstance: proxy,
+    level: 'http',
   }
-  if (filename) {
-    transports.push(createFileTransport(filename))
-  }
-
-  const opts: expressWinston.LoggerOptions = {
-    transports,
-    meta: true,
-    msg: 'HTTP {{req.method}} {{req.url}}',
-    expressFormat: true,
-    colorize: false,
-  }
-
-  return opts
 }
 
 /**
@@ -149,7 +121,11 @@ export function httpLogger(options: expressWinston.LoggerOptions): Handler {
  * @returns Winston logger
  *
  */
-function createCustomLogger(customOptions: { logSource: string, elasticSearchEndpoint?: string; filename?: string }): winston.Logger {
+function createCustomLogger(customOptions: {
+  logSource: string
+  elasticSearchEndpoint?: string
+  filename?: string
+}): winston.Logger {
   const loggerOptions = createDefaultLoggerOptions()
 
   // Transports
@@ -159,7 +135,7 @@ function createCustomLogger(customOptions: { logSource: string, elasticSearchEnd
   }
 
   if (customOptions.elasticSearchEndpoint) {
-    transports.push(createElasticTransport(logSource, customOptions.elasticSearchEndpoint))
+    transports.push(createElasticTransport(customOptions.logSource, customOptions.elasticSearchEndpoint))
   }
   if (customOptions.filename) {
     transports.push(createFileTransport(customOptions.filename))
@@ -185,7 +161,7 @@ function createCustomLogger(customOptions: { logSource: string, elasticSearchEnd
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @param filename - absolute path to the log file.
  */
-export function initNewLogger(options: { logSource: string,elasticSearchEndpoint?: string; filename?: string }): void {
+export function initNewLogger(options: { logSource: string; elasticSearchEndpoint?: string; filename?: string }): void {
   InnerLogger = createCustomLogger(options)
 }
 
