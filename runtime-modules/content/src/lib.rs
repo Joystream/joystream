@@ -817,7 +817,7 @@ decl_module! {
                 let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
                 // can delete non-empty dynamic bag
-                Storage::<T>::can_delete_non_empty_dynamic_bag(
+                Storage::<T>::can_delete_dynamic_bag_with_objects(
                     &dyn_bag,
                 )?;
 
@@ -1472,6 +1472,10 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+
+    // validate _with bojcets
+    // can upload objects
+    // combined balance check
 
     fn remove_assets_from_storage(
         assets: &BTreeSet<DataObjectId<T>>,
