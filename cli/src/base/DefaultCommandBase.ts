@@ -38,6 +38,19 @@ export default abstract class DefaultCommandBase extends Command {
     return result
   }
 
+  async requireConfirmation(
+    message = 'Are you sure you want to execute this action?',
+    defaultVal = false
+  ): Promise<void> {
+    if (process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '')) {
+      return
+    }
+    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
+    if (!confirmed) {
+      this.exit(ExitCodes.OK)
+    }
+  }
+
   private jsonPrettyIndented(line: string) {
     return `${this.jsonPrettyIdent}${line}`
   }
@@ -102,6 +115,9 @@ export default abstract class DefaultCommandBase extends Command {
     // called after run and catch regardless of whether or not the command errored
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
     if (!err) this.exit(ExitCodes.OK)
+    if (err && process.env.DEBUG === 'true') {
+      console.log(err)
+    }
     super.finally(err)
   }
 

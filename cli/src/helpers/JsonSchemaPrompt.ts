@@ -129,15 +129,13 @@ export class JsonSchemaPrompter<JsonResult> {
           confirmed = await this.inquirerSinglePrompt({
             message: `Do you want to provide optional ${chalk.greenBright(objectPropertyPath)}?`,
             type: 'confirm',
-            default:
-              _.get(this.filledObject, objectPropertyPath) !== undefined &&
-              _.get(this.filledObject, objectPropertyPath) !== null,
+            default: _.get(this.filledObject, objectPropertyPath) !== undefined,
           })
         }
         if (confirmed) {
           value[pName] = await this.prompt(pSchema, objectPropertyPath)
         } else {
-          _.set(this.filledObject, objectPropertyPath, null)
+          _.set(this.filledObject, objectPropertyPath, undefined)
         }
       }
       return value

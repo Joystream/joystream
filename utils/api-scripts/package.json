@@ -11,7 +11,7 @@
     "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict"
   },
   "dependencies": {
-    "@joystream/types": "^0.16.1",
+    "@joystream/types": "^0.17.0",
     "@polkadot/api": "5.9.1",
     "@polkadot/types": "5.9.1",
     "@polkadot/keyring": "7.3.1",
