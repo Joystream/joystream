@@ -111,10 +111,10 @@ bash
 yarn
 yarn workspace @joystream/types build
 yarn workspace @joystream/metadata-protobuf build
-yarn workspace storage-node-v2 build
+yarn workspace storage-node build
 
 # Verify installation
-cd storage-node-v2
+cd storage-node
 yarn storage-node version
 ```
 # Usage
