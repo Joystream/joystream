@@ -2,7 +2,7 @@
 # remove relations in events and save snapshot representation (immutable)
 # TODO: unite leading dot `.` in property descriptions
 
-type AuctionStartedEvent @entity {
+type AuctionStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -32,7 +32,7 @@ type AuctionStartedEvent @entity {
   auction: Auction!
 }
 
-type NftIssuedEvent @entity {
+type NftIssuedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -69,7 +69,7 @@ type NftIssuedEvent @entity {
   newOwner: Membership
 }
 
-type AuctionBidMadeEvent @entity {
+type AuctionBidMadeEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -102,7 +102,7 @@ type AuctionBidMadeEvent @entity {
   extendsAuction: Boolean!
 }
 
-type AuctionBidCanceledEvent @entity {
+type AuctionBidCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -129,7 +129,7 @@ type AuctionBidCanceledEvent @entity {
   video: Video!
 }
 
-type AuctionCanceledEvent @entity {
+type AuctionCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -156,7 +156,7 @@ type AuctionCanceledEvent @entity {
   video: Video!
 }
 
-type EnglishAuctionCompletedEvent @entity {
+type EnglishAuctionCompletedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -183,7 +183,7 @@ type EnglishAuctionCompletedEvent @entity {
   video: Video!
 }
 
-type BidMadeCompletingAuctionEvent @entity {
+type BidMadeCompletingAuctionEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -210,7 +210,7 @@ type BidMadeCompletingAuctionEvent @entity {
   video: Video!
 }
 
-type OpenAuctionBidAcceptedEvent @entity {
+type OpenAuctionBidAcceptedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -237,7 +237,7 @@ type OpenAuctionBidAcceptedEvent @entity {
   video: Video!
 }
 
-type OfferStartedEvent @entity {
+type OfferStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -270,7 +270,7 @@ type OfferStartedEvent @entity {
   price: BigInt
 }
 
-type OfferAcceptedEvent @entity {
+type OfferAcceptedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -294,7 +294,7 @@ type OfferAcceptedEvent @entity {
   video: Video!
 }
 
-type OfferCanceledEvent @entity {
+type OfferCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -321,7 +321,7 @@ type OfferCanceledEvent @entity {
   contentActor: ContentActor!
 }
 
-type NftSellOrderMadeEvent @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+type NftSellOrderMadeEvent @entity { # NFT in name can't be UPPERCASE because it causes codegenimplements Event  errors
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -351,7 +351,7 @@ type NftSellOrderMadeEvent @entity { # NFT in name can't be UPPERCASE because it
   price: BigInt!
 }
 
-type NftBoughtEvent @entity {
+type NftBoughtEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -378,7 +378,7 @@ type NftBoughtEvent @entity {
   member: Membership!
 }
 
-type BuyNowCanceledEvent @entity {
+type BuyNowCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"

@@ -38,17 +38,20 @@ type CuratorGroup @entity {
   isActive: Boolean!
 
   "Curators belonging to this group"
-  curators: [Curator!]! @derivedFrom(field: "curatorGroup")
+  curators: [Curator!]! @derivedFrom(field: "curatorGroups")
 
   "Channels curated by this group"
   channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
 }
 
 type Curator @entity {
-  #TODO: curator
+  "Runtime identifier"
+  id: ID!
+
+  "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
 
-  curatorGroup: CuratorGroup!
+  curatorGroups: [CuratorGroup!]!
 }
 
 "Represents NFT details"

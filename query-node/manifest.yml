@@ -85,6 +85,22 @@ typegen:
     - content.FeaturedVideosSet
     - content.ChannelDeleted
 
+    # content NFTs
+    - content.AuctionStarted
+    - content.NftIssued
+    - content.AuctionBidMade
+    - content.AuctionBidCanceled
+    - content.AuctionCanceled
+    - content.EnglishAuctionCompleted
+    - content.BidMadeCompletingAuction
+    - content.OpenAuctionBidAccepted
+    - content.OfferStarted
+    - content.OfferAccepted
+    - content.OfferCanceled
+    - content.NftSellOrderMade
+    - content.NftBought
+    - content.BuyNowCanceled
+
     # working groups (we're using "storage_working_group" as a reference module)
     - storage_working_group.WorkerStorageUpdated
     - storage_working_group.OpeningFilled
@@ -175,6 +191,36 @@ mappings:
       handler: content_FeaturedVideosSet
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+
+    # content NFTs
+    - event: content.AuctionStarted
+      handler: content_AuctionStarted
+    - event: content.NftIssued
+      handler: content_NftIssued
+    - event: content.AuctionBidMade
+      handler: content_AuctionBidMade
+    - event: content.AuctionBidCanceled
+      handler: content_AuctionBidCanceled
+    - event: content.AuctionCanceled
+      handler: content_AuctionCanceled
+    - event: content.EnglishAuctionCompleted
+      handler: content_EnglishAuctionCompleted
+    - event: content.BidMadeCompletingAuction
+      handler: content_BidMadeCompletingAuction
+    - event: content.OpenAuctionBidAccepted
+      handler: content_OpenAuctionBidAccepted
+    - event: content.OfferStarted
+      handler: content_OfferStarted
+    - event: content.OfferAccepted
+      handler: content_OfferAccepted
+    - event: content.OfferCanceled
+      handler: content_OfferCanceled
+    - event: content.NftSellOrderMade
+      handler: content_NftSellOrderMade
+    - event: content.NftBought
+      handler: content_NftBought
+    - event: content.BuyNowCanceled
+      handler: content_BuyNowCanceled
 
     # working groups
     ## storage - workers

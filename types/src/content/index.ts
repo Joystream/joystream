@@ -182,6 +182,71 @@ export class ChannelMigrationConfig extends JoyStructDecorated({
   final_id: ChannelId,
 }) {}
 
+export class IsExtended extends bool {}
+
+export class EnglishAuctionDetails extends JoyStructDecorated({
+  extension_period: u32, // BlockNumber
+  auction_duration: u32, // BlockNumber
+}) {}
+
+export class OpenAuctionDetails extends JoyStructDecorated({
+  bid_lock_duration: u32, // BlockNumber
+}) {}
+
+export class AuctionType extends JoyEnum({
+  English: EnglishAuctionDetails,
+  Open: CuratorId,
+}) {}
+
+export class AuctionParams extends JoyStructDecorated({
+  auction_type: AuctionType,
+  starting_price: u128, // Balance
+  minimal_bid_step: u128, // Balance
+  buy_now_price: Option.with(u128), // Option<Balance>
+  starts_at: Option.with(u32), // Option<BlockNumber>
+  whitelist: BTreeSet.with(MemberId),
+}) {}
+
+export class Royalty extends u32 {}
+
+export class Bid extends JoyStructDecorated({
+  bidder: MemberId,
+  bidder_account_id: AccountId,
+  amount: u128, // Balance
+  made_at_block: u32, // BlockNumber
+}) {}
+
+export class AuctionRecord extends JoyStructDecorated({
+  starting_price: u128, // Balance
+  buy_now_price: u128, // Balance
+  auction_type: AuctionType,
+  minimal_bid_step: u128, // Balance
+  last_bid: Option.with(Bid),
+  starts_at: Option.with(u32), // Option<BlockNumber>
+  whitelist: BTreeSet.with(MemberId),
+}) {}
+
+export class TransactionalStatus extends JoyEnum({
+  Idle: Null,
+  InitiatedOfferToMember: Tuple.with([
+    MemberId,
+    Option.with(u128) // Option<Balance>
+  ]),
+  Auction: AuctionRecord,
+  BuyNow: u128, // Balance
+}) {}
+
+export class NFTOwner extends JoyEnum({
+  ChannelOwner: Null,
+  Member: MemberId,
+}) {}
+
+export class OwnedNFT extends JoyStructDecorated({
+  owner: NFTOwner,
+  transactional_status: TransactionalStatus,
+  creator_royalty: Option.with(Royalty),
+}) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -226,6 +291,17 @@ export const contentTypes = {
   IsCensored,
   VideoMigrationConfig,
   ChannelMigrationConfig,
+  EnglishAuctionDetails,
+  OpenAuctionDetails,
+  AuctionType,
+  AuctionParams,
+  Royalty,
+  Bid,
+  AuctionRecord,
+  TransactionalStatus,
+  NFTOwner,
+  OwnedNFT,
+  IsExtended,
 }
 
 export default contentTypes

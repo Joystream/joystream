@@ -137,6 +137,35 @@ export interface Approved extends Enum {
   readonly asExecutionFailed: ExecutionFailed;
 }
 
+/** @name AuctionParams */
+export interface AuctionParams extends Struct {
+  readonly auction_type: AuctionType;
+  readonly starting_price: u128;
+  readonly minimal_bid_step: u128;
+  readonly buy_now_price: Option<u128>;
+  readonly starts_at: Option<u32>;
+  readonly whitelist: BTreeSet<MemberId>;
+}
+
+/** @name AuctionRecord */
+export interface AuctionRecord extends Struct {
+  readonly starting_price: u128;
+  readonly buy_now_price: u128;
+  readonly auction_type: AuctionType;
+  readonly minimal_bid_step: u128;
+  readonly last_bid: Option<Bid>;
+  readonly starts_at: Option<u32>;
+  readonly whitelist: BTreeSet<MemberId>;
+}
+
+/** @name AuctionType */
+export interface AuctionType extends Enum {
+  readonly isEnglish: boolean;
+  readonly asEnglish: EnglishAuctionDetails;
+  readonly isOpen: boolean;
+  readonly asOpen: CuratorId;
+}
+
 /** @name Backer */
 export interface Backer extends Struct {
   readonly member: GenericAccountId;
@@ -174,6 +203,14 @@ export interface BagIdType extends Enum {
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
 
+/** @name Bid */
+export interface Bid extends Struct {
+  readonly bidder: MemberId;
+  readonly bidder_account_id: GenericAccountId;
+  readonly amount: u128;
+  readonly made_at_block: u32;
+}
+
 /** @name BlockAndTime */
 export interface BlockAndTime extends Struct {
   readonly block: u32;
@@ -197,82 +234,6 @@ export interface Category extends Struct {
 
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
-
-/** @name Channel */
-export interface Channel extends Struct {
-  readonly owner: ChannelOwner;
-  readonly num_videos: u64;
-  readonly is_censored: bool;
-  readonly reward_account: Option<GenericAccountId>;
-  readonly collaborators: BTreeSet<MemberId>;
-}
-
-/** @name ChannelCategory */
-export interface ChannelCategory extends Struct {}
-
-/** @name ChannelCategoryCreationParameters */
-export interface ChannelCategoryCreationParameters extends Struct {
-  readonly meta: Bytes;
-}
-
-/** @name ChannelCategoryId */
-export interface ChannelCategoryId extends u64 {}
-
-/** @name ChannelCategoryUpdateParameters */
-export interface ChannelCategoryUpdateParameters extends Struct {
-  readonly new_meta: Bytes;
-}
-
-/** @name ChannelCreationParameters */
-export interface ChannelCreationParameters extends Struct {
-  readonly assets: Option<StorageAssets>;
-  readonly meta: Option<Bytes>;
-  readonly reward_account: Option<GenericAccountId>;
-  readonly collaborators: BTreeSet<MemberId>;
-}
-
-/** @name ChannelId */
-export interface ChannelId extends u64 {}
-
-/** @name ChannelMigrationConfig */
-export interface ChannelMigrationConfig extends Struct {
-  readonly current_id: ChannelId;
-  readonly final_id: ChannelId;
-}
-
-/** @name ChannelOwner */
-export interface ChannelOwner extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isCurators: boolean;
-  readonly asCurators: CuratorGroupId;
-}
-
-/** @name ChannelOwnershipTransferRequest */
-export interface ChannelOwnershipTransferRequest extends Struct {
-  readonly channel_id: ChannelId;
-  readonly new_owner: ChannelOwner;
-  readonly payment: u128;
-  readonly new_reward_account: Option<GenericAccountId>;
-}
-
-/** @name ChannelOwnershipTransferRequestId */
-export interface ChannelOwnershipTransferRequestId extends u64 {}
-
-/** @name ChannelUpdateParameters */
-export interface ChannelUpdateParameters extends Struct {
-  readonly assets_to_upload: Option<StorageAssets>;
-  readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<GenericAccountId>>;
-  readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly collaborators: Option<BTreeSet<MemberId>>;
-}
-
-/** @name ChildPositionInParentCategory */
-export interface ChildPositionInParentCategory extends Struct {
-  readonly parent_id: CategoryId;
-  readonly child_nr_in_parent_category: u32;
-}
 
 /** @name Cid */
 export interface Cid extends Bytes {}
@@ -467,6 +428,12 @@ export interface ElectionStake extends Struct {
   readonly transferred: u128;
 }
 
+/** @name EnglishAuctionDetails */
+export interface EnglishAuctionDetails extends Struct {
+  readonly extension_period: u32;
+  readonly auction_duration: u32;
+}
+
 /** @name EntryMethod */
 export interface EntryMethod extends Enum {
   readonly isPaid: boolean;
@@ -508,6 +475,82 @@ export interface Finalized extends Struct {
 /** @name HiringApplicationId */
 export interface HiringApplicationId extends u64 {}
 
+/** @name Channel */
+export interface Channel extends Struct {
+  readonly owner: ChannelOwner;
+  readonly num_videos: u64;
+  readonly is_censored: bool;
+  readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
+}
+
+/** @name ChannelCategory */
+export interface ChannelCategory extends Struct {}
+
+/** @name ChannelCategoryCreationParameters */
+export interface ChannelCategoryCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
+/** @name ChannelCategoryId */
+export interface ChannelCategoryId extends u64 {}
+
+/** @name ChannelCategoryUpdateParameters */
+export interface ChannelCategoryUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
+}
+
+/** @name ChannelCreationParameters */
+export interface ChannelCreationParameters extends Struct {
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
+  readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
+}
+
+/** @name ChannelId */
+export interface ChannelId extends u64 {}
+
+/** @name ChannelMigrationConfig */
+export interface ChannelMigrationConfig extends Struct {
+  readonly current_id: ChannelId;
+  readonly final_id: ChannelId;
+}
+
+/** @name ChannelOwner */
+export interface ChannelOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+  readonly asCurators: CuratorGroupId;
+}
+
+/** @name ChannelOwnershipTransferRequest */
+export interface ChannelOwnershipTransferRequest extends Struct {
+  readonly channel_id: ChannelId;
+  readonly new_owner: ChannelOwner;
+  readonly payment: u128;
+  readonly new_reward_account: Option<GenericAccountId>;
+}
+
+/** @name ChannelOwnershipTransferRequestId */
+export interface ChannelOwnershipTransferRequestId extends u64 {}
+
+/** @name ChannelUpdateParameters */
+export interface ChannelUpdateParameters extends Struct {
+  readonly assets_to_upload: Option<StorageAssets>;
+  readonly new_meta: Option<Bytes>;
+  readonly reward_account: Option<Option<GenericAccountId>>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
+}
+
+/** @name ChildPositionInParentCategory */
+export interface ChildPositionInParentCategory extends Struct {
+  readonly parent_id: CategoryId;
+  readonly child_nr_in_parent_category: u32;
+}
+
 /** @name InactiveApplicationStage */
 export interface InactiveApplicationStage extends Struct {
   readonly deactivation_initiated: u32;
@@ -523,6 +566,9 @@ export interface InputValidationLengthConstraint extends Struct {
 
 /** @name IsCensored */
 export interface IsCensored extends bool {}
+
+/** @name IsExtended */
+export interface IsExtended extends bool {}
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
@@ -580,8 +626,20 @@ export interface NextAdjustment extends Struct {
   readonly at_block: u32;
 }
 
+/** @name NFTOwner */
+export interface NFTOwner extends Enum {
+  readonly isChannelOwner: boolean;
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+}
+
 /** @name ObjectOwner */
 export interface ObjectOwner extends Null {}
+
+/** @name OpenAuctionDetails */
+export interface OpenAuctionDetails extends Struct {
+  readonly bid_lock_duration: u32;
+}
 
 /** @name Opening */
 export interface Opening extends Struct {
@@ -642,6 +700,13 @@ export interface OpeningStage extends Enum {
 export interface OpeningType extends Enum {
   readonly isLeader: boolean;
   readonly isWorker: boolean;
+}
+
+/** @name OwnedNFT */
+export interface OwnedNFT extends Struct {
+  readonly owner: NFTOwner;
+  readonly transactional_status: TransactionalStatus;
+  readonly creator_royalty: Option<Royalty>;
 }
 
 /** @name PaidMembershipTerms */
@@ -919,6 +984,9 @@ export interface RoleStakeProfile extends Struct {
   readonly exit_unstaking_period: Option<u32>;
 }
 
+/** @name Royalty */
+export interface Royalty extends u32 {}
+
 /** @name SealedVote */
 export interface SealedVote extends Struct {
   readonly voter: GenericAccountId;
@@ -1120,6 +1188,17 @@ export interface ThreadCounter extends Struct {
 
 /** @name ThreadId */
 export interface ThreadId extends u64 {}
+
+/** @name TransactionalStatus */
+export interface TransactionalStatus extends Enum {
+  readonly isIdle: boolean;
+  readonly isInitiatedOfferToMember: boolean;
+  readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
+  readonly isAuction: boolean;
+  readonly asAuction: AuctionRecord;
+  readonly isBuyNow: boolean;
+  readonly asBuyNow: u128;
+}
 
 /** @name TransferableStake */
 export interface TransferableStake extends Struct {

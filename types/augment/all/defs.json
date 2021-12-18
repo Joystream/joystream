@@ -844,5 +844,62 @@
         "current_id": "ChannelId",
         "final_id": "ChannelId"
     },
+    "EnglishAuctionDetails": {
+        "extension_period": "u32",
+        "auction_duration": "u32"
+    },
+    "OpenAuctionDetails": {
+        "bid_lock_duration": "u32"
+    },
+    "AuctionType": {
+        "_enum": {
+            "English": "EnglishAuctionDetails",
+            "Open": "CuratorId"
+        }
+    },
+    "AuctionParams": {
+        "auction_type": "AuctionType",
+        "starting_price": "u128",
+        "minimal_bid_step": "u128",
+        "buy_now_price": "Option<u128>",
+        "starts_at": "Option<u32>",
+        "whitelist": "BTreeSet<MemberId>"
+    },
+    "Royalty": "u32",
+    "Bid": {
+        "bidder": "MemberId",
+        "bidder_account_id": "GenericAccountId",
+        "amount": "u128",
+        "made_at_block": "u32"
+    },
+    "AuctionRecord": {
+        "starting_price": "u128",
+        "buy_now_price": "u128",
+        "auction_type": "AuctionType",
+        "minimal_bid_step": "u128",
+        "last_bid": "Option<Bid>",
+        "starts_at": "Option<u32>",
+        "whitelist": "BTreeSet<MemberId>"
+    },
+    "TransactionalStatus": {
+        "_enum": {
+            "Idle": "Null",
+            "InitiatedOfferToMember": "(MemberId,Option<u128>)",
+            "Auction": "AuctionRecord",
+            "BuyNow": "u128"
+        }
+    },
+    "NFTOwner": {
+        "_enum": {
+            "ChannelOwner": "Null",
+            "Member": "MemberId"
+        }
+    },
+    "OwnedNFT": {
+        "owner": "NFTOwner",
+        "transactional_status": "TransactionalStatus",
+        "creator_royalty": "Option<Royalty>"
+    },
+    "IsExtended": "bool",
     "AccountInfo": "AccountInfoWithRefCount"
 }

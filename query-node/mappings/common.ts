@@ -4,6 +4,7 @@ import { Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { Event } from 'query-node/dist/model'
 
 export const CURRENT_NETWORK = Network.GIZA
 /*
@@ -29,6 +30,21 @@ class Logger {
 }
 
 export const logger = new Logger()
+
+
+export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
+  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
+  const eventTime = new Date(blockTimestamp)
+  return {
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
+    inBlock: blockNumber,
+    network: CURRENT_NETWORK,
+    inExtrinsic: extrinsic?.hash,
+    indexInBlock,
+  }
+}
 
 /*
   Reports that insurmountable inconsistent state has been encountered and throws an exception.
