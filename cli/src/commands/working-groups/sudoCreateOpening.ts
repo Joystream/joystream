@@ -1,5 +1,4 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { GroupMember } from '../../Types'
 import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
 import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
@@ -18,7 +17,7 @@ import { createTypeFromConstructor } from '@joystream/types'
 import { OpeningPolicyCommitment, OpeningType } from '@joystream/types/working-group'
 import { ActivateOpeningAt } from '@joystream/types/hiring'
 
-export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
+export default class WorkingGroupsSudoCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
   static flags = {
     ...WorkingGroupsCommandBase.flags,
@@ -41,13 +40,6 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         'If provided along with --output - skips sending the actual extrinsic' +
         '(can be used to generate a "draft" which can be provided as input later)',
       dependsOn: ['output'],
-    }),
-    sudo: flags.boolean({
-      char: 's',
-      required: false,
-      hidden: true,
-      description:
-        'Wrappes the command in sudo',
     }),
   }
 
@@ -113,12 +105,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         exit_role_stake_unstaking_period: wgOpeningJson.leaveRoleUnstakingPeriod,
       }),
       JSON.stringify(hrtJson),
-      createTypeFromConstructor(OpeningType, 'Worker'),
+      createTypeFromConstructor(OpeningType, 'Leader'),
     ]
   }
 
   async promptForData(
-    lead: GroupMember | string,
     rememberedInput?: [WGOpeningJson, HRTJson]
   ): Promise<[WGOpeningJson, HRTJson]> {
     const openingDefaults = rememberedInput?.[0]
@@ -127,12 +118,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       openingDefaults
     )
     const wgOpeningJson = await openingPrompt.promptAll()
-    let profile = "Sudo"
-    if (typeof lead !== "string") {
-      profile = lead.profile.handle.toString()
-    }
 
-    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(profile)
+    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults('Sudo')
     this.log(`Values for ${chalk.greenBright('human_readable_text')} json:`)
     const hrtPropmpt = new JsonSchemaPrompter<HRTJson>((HRTSchema as unknown) as JSONSchema, hrtDefaults)
     // Prompt only for 'headline', 'job', 'application', 'reward' and 'process', leave the rest default
@@ -174,12 +161,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
   async run() {
     const account = await this.getRequiredSelectedAccount()
+    const {
+      flags: { input, output, edit, dryRun },
+    } = this.parse(WorkingGroupsSudoCreateOpening)
     
     await this.requestAccountDecoding(account) // Prompt for password
-
-    const {
-      flags: { input, output, edit, dryRun, sudo },
-    } = this.parse(WorkingGroupsCreateOpening)
 
     ensureOutputFileIsWriteable(output)
 
@@ -189,15 +175,10 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       if (edit) {
         rememberedInput = await this.getInputFromFile(input as string)
       }
-      let lead: string | GroupMember = "Sudo"
-      if (!sudo) {
-        // lead-only gate
-        lead = await this.getRequiredLead()
-      }
       // Either prompt for the data or get it from input file
       const [openingJson, hrtJson] =
         !input || edit || tryAgain
-          ? await this.promptForData(lead, rememberedInput)
+          ? await this.promptForData(rememberedInput)
           : await this.getInputFromFile(input)
 
       // Remember the provided/fetched data in a variable
@@ -205,9 +186,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Generate and ask to confirm tx params
       const txParams = this.createTxParams(openingJson, hrtJson)
-      if (sudo) {
-        txParams[3] = createTypeFromConstructor(OpeningType, 'Leader')
-      }
+
       this.jsonPrettyPrint(JSON.stringify(txParams))
       const confirmed = await this.simplePrompt({
         type: 'confirm',
@@ -235,19 +214,12 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       // Send the tx
       this.log(chalk.magentaBright('Sending the extrinsic...'))
       try {
-        if (!sudo) {
-          await this.sendAndFollowTx(
-            account,
-            this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
-          )
-        } else {
-          await this.sendAndFollowNamedSudoTx(
-            account,
-            apiModuleByGroup[this.group],
-            'addOpening',
-            txParams,
-          )
-        }
+        await await this.sendAndFollowNamedSudoTx(
+          account,
+          apiModuleByGroup[this.group],
+          'addOpening',
+          txParams,
+        )
         this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
       } catch (e) {
