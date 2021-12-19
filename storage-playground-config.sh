@@ -15,19 +15,20 @@ HOST_IP=$(tests/network-tests/get-host-ip.sh)
 
 ## Colossus 1
 CLI=storage-node-v2/bin/run
+TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
 
-${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-BUCKET_ID=`${CLI} leader:create-bucket -i=${COLOSSUS_1_WORKER_ID} -a -n=10000 -s=1000000000000  --accountUri ${COLOSSUS_1_ACCOUNT_URI}`
-${CLI} operator:accept-invitation -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-dynamic-bag-policy -n 1 -t Channel --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-data-fee -f 10 --accountUri ${COLOSSUS_1_ACCOUNT_URI} # Optionally - set some data fee per megabyte
+${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COLOSSUS_1_WORKER_URI}
+BUCKET_ID=`${CLI} leader:create-bucket -i=${COLOSSUS_1_WORKER_ID} -a -n=10000 -s=1000000000000  --accountUri ${COLOSSUS_1_WORKER_URI}`
+${CLI} operator:accept-invitation -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -t=${TRANSACTOR_KEY} --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-dynamic-bag-policy -n 1 -t Channel --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-data-fee -f 10 --accountUri ${COLOSSUS_1_WORKER_URI} # Optionally - set some data fee per megabyte
 
 # The node uri should be an accessible endpoint from within a container as well as the host machine.
 # In production it would most likely be the reverse proxy endpoint. If not specified we
 # set it to the host machine address.
 COLOSSUS_1_NODE_URI=${COLOSSUS_1_NODE_URI:="http://${HOST_IP}:3333"}
-${CLI} operator:set-metadata -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -e="${COLOSSUS_1_NODE_URI}" --accountUri ${COLOSSUS_1_ACCOUNT_URI}
+${CLI} operator:set-metadata -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -e="${COLOSSUS_1_NODE_URI}" --accountUri ${COLOSSUS_1_WORKER_URI}
 
 echo "Colossus 1 BUCKET_ID=${BUCKET_ID}"
 

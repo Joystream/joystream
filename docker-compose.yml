@@ -37,7 +37,7 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=${COLOSSUS_1_ACCOUNT_URI}
+      - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
@@ -102,7 +102,7 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=${COLOSSUS_2_ACCOUNT_URI}
+      - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
