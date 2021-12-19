@@ -9,7 +9,6 @@ Joystream storage subsystem.
 <!-- toc -->
 * [Description](#description)
   * [API](#api)
-  * [Auth schema](#auth-schema-description)
   * [CLI](#cli)
   * [Metadata](#metadata)
   * [Data](#data)
@@ -30,7 +29,6 @@ Joystream storage subsystem.
 The main responsibility of Colossus is handling media data for users. The data could be images, audio, or video files.
 Colossus receives uploads and saves files in the local folder, registers uploads in the blockchain, and later serves files 
 to Argus nodes (distribution nodes). Colossus instances spread the data using peer-to-peer synchronization.
-On data uploading, clients should provide an authentication token to prevent abuse.
 Data management is blockchain-based, it relies on the concepts of buckets, bags, data objects.
 The full description of the blockchain smart contracts could be found [here](https://github.com/Joystream/joystream/issues/2224).
 
@@ -42,20 +40,12 @@ API endpoints:
 - files
     - get - get the data file by its ID
     - head - get the data file headers by its ID
-    - post - upload a file (requires auth token)
-    - auth_token - returns auth token for uploading
+    - post - upload a file
 - state
     - version - Colossus version and system environment
     - all data objects IDs
     - data objects IDs for bag
     - data statistics - total data folder size and data object number
-
-
-### Auth schema description
-
-To reduce the possibility of abuse of the uploading endpoint we implemented a simple authentication schema. On each uploading attempt, the client should receive the auth token first and provide it as a special header. The token has an expiration time and cannot be reused. To receive such a token the client should have Joystream Membership and `MemberId`.
-
-
 ### CLI
 
 There is a command-line interface to manage Storage Working Group operations like create a bucket or change storage settings. Full description could be found [below](#cli-commands).
@@ -79,13 +69,7 @@ JSON file format based on the *protobuf* format described [here](../metadata-pro
 #### Uploading
 
 Colossus accepts files using its API. The data must be uploaded using POST http method with `multipart/form-data`.
-Simplified process:
-
-1. Get auth token using API endpoint
-   - sign data object info with private blockchain account key
-
-2. Upload file
-   - auth header decoding and verification
+Simplified process (file uploading):
    - accepting the data upload in the temp folder
    - data hash & size verification
    - moving the data to the data folder
@@ -227,12 +211,16 @@ OPTIONS
   -h, --help                                         show CLI help
 
   -o, --dataSourceOperatorUrl=dataSourceOperatorUrl  [default: http://localhost:3333] Storage node url base (e.g.:
-                                                     http://some.com:8081) to get data from.
+                                                     http://some.com:3333) to get data from.
 
-  -p, --syncWorkersNumber=syncWorkersNumber          Sync workers number (max async operations in progress).
+  -p, --syncWorkersNumber=syncWorkersNumber          [default: 20] Sync workers number (max async operations in
+                                                     progress).
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint          [default: http://localhost:8081/graphql] Query node host and port
-                                                     (e.g.: some.com:8081)
+  -q, --queryNodeEndpoint=queryNodeEndpoint          [default: http://localhost:8081/graphql] Query node endpoint (e.g.:
+                                                     http://some.com:8081/graphql)
+
+  -t, --syncWorkersTimeout=syncWorkersTimeout        [default: 30] Asset downloading timeout for the syncronization (in
+                                                     minutes).
 
   -w, --workerId=workerId                            (required) Storage node operator worker ID.
 ```
@@ -571,8 +559,6 @@ USAGE
   $ storage-node leader:update-bucket-status
 
 OPTIONS
-  -d, --disable                Disables accepting new bags.
-  -e, --enable                 Enables accepting new bags (default).
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
   -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
@@ -712,9 +698,6 @@ USAGE
   $ storage-node server
 
 OPTIONS
-  -a, --disableUploadAuth                            Disable uploading authentication (should be used in testing-context
-                                                     only).
-
   -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
 
   -e, --elasticSearchEndpoint=elasticSearchEndpoint  Elasticsearch endpoint (e.g.: http://some.com:8081).
@@ -743,6 +726,9 @@ OPTIONS
 
   -s, --sync                                         Enable data synchronization.
 
+  -t, --syncWorkersTimeout=syncWorkersTimeout        [default: 30] Asset downloading timeout for the syncronization (in
+                                                     minutes).
+
   -u, --apiUrl=apiUrl                                [default: ws://localhost:9944] Runtime API URL. Mandatory in
                                                      non-dev environment.
 
@@ -754,5 +740,4 @@ OPTIONS
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
-
 <!-- commandsstop -->

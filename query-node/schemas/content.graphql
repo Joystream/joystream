@@ -58,9 +58,14 @@ type Channel @entity {
   "The primary langauge of the channel's content"
   language: Language
 
+  "List of videos that belong to the channel"
   videos: [Video!]! @derivedFrom(field: "channel")
 
+  "Number of the block the channel was created in"
   createdInBlock: Int!
+
+  "List of channel collaborators (members)"
+  collaborators: [Membership!]
 }
 
 type CuratorGroup @entity {

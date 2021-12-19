@@ -33,5 +33,9 @@ type Membership @entity {
   "The type of subscription the member has purchased if any."
   subscription: Int
 
+  "List of channels the member owns"
   channels: [Channel!]! @derivedFrom(field: "ownerMember")
+
+  "List of channels the member has collaborator access to"
+  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
 }

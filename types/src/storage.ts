@@ -10,6 +10,7 @@ import {
   Option,
   u32,
   u128,
+  Tuple,
 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -163,7 +164,7 @@ export class Voucher
 export const StorageBucketOperatorStatusDef = {
   Missing: Null,
   InvitedStorageWorker: WorkerId,
-  StorageWorker: WorkerId,
+  StorageWorker: Tuple.with([WorkerId, AccountId]),
 } as const
 export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
 

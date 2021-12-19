@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
-import { Channel, ChannelCategory, StorageDataObject } from 'query-node/dist/model'
+import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
@@ -14,9 +14,7 @@ import { removeDataObject } from '../storage/utils'
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, channelId, runtimeChannel, channelCreationParameters] = new Content.ChannelCreatedEvent(
-    event
-  ).params
+  const [contentActor, channelId, , channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -31,6 +29,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     updatedAt: new Date(event.blockTimestamp),
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOwner(store, contentActor)),
+    collaborators: Array.from(channelCreationParameters.collaborators).map(
+      (id) => new Membership({ id: id.toString() })
+    ),
   })
 
   // deserialize & process metadata
@@ -75,11 +76,15 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
   // prepare changed reward account
   const newRewardAccount = channelUpdateParameters.reward_account.unwrapOr(null)
-
   // reward account change happened?
   if (newRewardAccount) {
     // this will change the `channel`!
     channel.rewardAccount = newRewardAccount.unwrapOr(undefined)?.toString()
+  }
+
+  const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
+  if (newCollaborators) {
+    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id.toString() }))
   }
 
   // set last update time

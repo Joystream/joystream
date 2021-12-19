@@ -13,7 +13,7 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { channelId } = this.parse(VideosCommand).args
 
     let videos: [VideoId, Video][] = await this.getApi().availableVideos()
