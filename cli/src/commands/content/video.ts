@@ -11,14 +11,14 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { videoId } = this.parse(VideoCommand).args
     const aVideo = await this.getApi().videoById(videoId)
     if (aVideo) {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.in_channel.toString(),
-        'InSeries': aVideo.in_series.toString(),
+        'InSeries': aVideo.in_series.unwrapOr('NONE').toString(),
         'IsCensored': aVideo.is_censored.toString(),
       })
     } else {

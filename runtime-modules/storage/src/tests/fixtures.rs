@@ -1624,6 +1624,11 @@ impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
         assert_eq!(actual_result, expected_result);
 
         let new_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+        assert_eq!(
+            old_policy.number_of_storage_buckets,
+            new_policy.number_of_storage_buckets
+        );
+
         if actual_result.is_ok() {
             assert_eq!(new_policy.families, self.families);
         } else {

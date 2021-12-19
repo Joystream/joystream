@@ -30,6 +30,13 @@ export const ChannelInputSchema: JsonSchema<ChannelInputParameters> = {
     coverPhotoPath: { type: 'string' },
     avatarPhotoPath: { type: 'string' },
     rewardAccount: { type: ['string', 'null'] },
+    collaborators: {
+      type: ['array', 'null'],
+      items: {
+        type: 'integer',
+        min: 0,
+      },
+    },
   },
 }
 
@@ -74,7 +81,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
         },
       },
     },
-    personsList: { type: 'array' },
+    persons: { type: 'array' },
     publishedBeforeJoystream: {
       type: 'object',
       properties: {
