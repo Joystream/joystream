@@ -4,97 +4,82 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-# Location to store runtime WASM for runtime upgrade
-DATA_PATH=$PWD/data
-
-# The joystream/node docker image tag to start chain
-export RUNTIME=${RUNTIME:=latest}
-
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
-TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=latest}
+# The joystream/node docker image tag to start the chain with
+RUNTIME_TAG=${RUNTIME_TAG:=sumer}
+# Post migration assertions by means of typescript scenarios required
+POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS:=$true}
+# source common function used for node setup
+source ./node-utils.sh
 
-# Prevent joystream cli from prompting
-export AUTO_CONFIRM=true
+#######################################
+# use fork-off to generate a chainspec file with the current s
+# Globals:
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function fork_off_init() {
+    # chain-spec-raw already existing
 
-# Create chainspec with Alice (sudo) as member so we can use her in joystream-cli
-CONTAINER_ID=$(MAKE_SUDO_MEMBER=true ./run-test-node-docker.sh)
+    if ! [[ -f ${DATA_PATH}/storage.json ]]; then
+        curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
+            "Content-type: application/json" -d \
+            '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
+            > ${DATA_PATH}/storage.json
+    fi
 
-function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker-compose -f ../../docker-compose.yml down -v
-    rm ./assets/TestChannel__rejectedContent.json || true
-    rm ./assets/TestVideo__rejectedContent.json || true
+    if ! [[ -f ${DATA_PATH}/schema.json ]]; then
+        cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
+    fi
+
+    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+
+    # RPC endpoint for live RUNTIME testnet 
+    WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" \
+        yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
-function pre_migration_hook() {
-  sleep 10 # needed otherwise docker image won't be ready yet
-  # Display runtime version
-  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
-  # assume older version of joystream-cli is installed globally. So we run these commands to
-  # work against older runtime. Assert it is version  `@joystream/cli/0.5.1` ?
-  joystream-cli --version
-
-  joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
-  echo "creating 1 channel"
-  joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
-  echo "adding 1 video to the above channel"
-  joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
-
-  # Confirm channel and video created successfully
-  joystream-cli content:videos 1
-  joystream-cli content:channel 1
+function export_chainspec_file_to_disk() {
+    echo "**** Initializing node database by exporting state ****"
+    # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time 
+    docker-compose -f ../../docker-compose.yml run \
+		   -v ${DATA_PATH}:/spec joystream-node export-state \
+		   --chain /spec/chain-spec-raw.json \
+		   --base-path /data --pruning archive > ${DATA_PATH}/exported-state.json
 }
 
-function post_migration_hook() {
-  echo "*** verify existence of the 5 new groups ***"
-  yarn joystream-cli working-groups:overview --group=operationsAlpha
-  yarn joystream-cli working-groups:overview --group=operationsBeta
-  yarn joystream-cli working-groups:overview --group=operationsGamma
-  yarn joystream-cli working-groups:overview --group=curators
-  yarn joystream-cli working-groups:overview --group=distributors
+# entrypoint
+function main {
+    CONTAINER_ID=""
 
-  echo "*** verify previously created channel and video are cleared ***"
-  # Allow a few blocks for migration to complete
-  sleep 12
-  
-  # FIXME: Howto assert these fail as expected. They should report video and channel do no exist
-  # Can we get json output to more easily parse result of query?
-  set +e
-  yarn joystream-cli content:channel 1
-  if [ $? -eq 0 ]; then
-    echo "Unexpected channel was found"
-    exit -1
-  fi
-  # This cammand doesn't give error exit code if videos not found in a channel
-  yarn joystream-cli content:videos 1
-}    
+    echo "**** CREATING EMPTY CHAINSPEC ****"
+    create_initial_config
+    create_chainspec_file
+    convert_chainspec
+    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-trap cleanup EXIT
+    # use forkoff to update chainspec with the live state + update runtime code
+    fork_off_init
 
-if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
-  echo "Not Performing a runtime upgrade."
-else
-  pre_migration_hook
+    export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
 
-  # Copy new runtime wasm file from target joystream/node image
-  echo "Extracting wasm blob from target joystream/node image."
-  id=$(docker create joystream/node:${TARGET_RUNTIME})
-  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
-  docker rm $id
+    # export chain-spec BEFORE starting the node
+    export_chainspec_file_to_disk
+    
+    echo "***** STARTING NODE WITH FORKED STATE *****"
+    CONTAINER_ID=$(start_node)
 
-  echo "Performing runtime upgrade."
-  yarn workspace api-scripts tsnode-strict \
-    src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
+    if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
+        sleep 120
+        # verify assertion using typsecript
+        echo "***** POST MIGRATION TYPESCRIPT *****"
+        yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
+    fi
+}
 
-  echo "Runtime upgraded."
-
-  # Display runtime version
-  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
-  echo "Performing migration tests"
-
-  post_migration_hook
-
-  echo "Done with migrations tests"
-fi
+# main entrypoint
+main || :
+cleanup
