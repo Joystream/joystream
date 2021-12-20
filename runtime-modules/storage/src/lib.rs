@@ -1459,6 +1459,10 @@ decl_error! {
 
         /// Max data object size exceeded.
         MaxDataObjectSizeExceeded,
+
+        /// Different Accounts for dynamic bag deletion prize and upload fees
+        AccountsNotCoherent,
+
     }
 }
 
@@ -2823,26 +2827,24 @@ impl<T: Trait> Module<T> {
             Error::<T>::DynamicBagExists
         );
 
-        // ensure! upload_params.account_id == deletion_prize.account_id
         // call can upload data explicitly
         // add extra tests in the
-
-        // Some ->
         let bag_change = upload_params
             .as_ref()
             .map(|params| {
-                // check params are valid
-                Self::ensure_valid_expected_data_fee(params.expected_data_size_fee)?;
+                // ensure coherent account ids for prize
+                if let Some(deletion_prize) = deletion_prize {
+                    ensure!(
+                        params.deletion_prize_source_account_id == deletion_prize.account_id,
+                        Error::<T>::AccountsNotCoherent,
+                    );
+                }
 
-                Self::check_global_uploading_block()?;
-
-                Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
-
-                // compute bag change due to objects creation list
-                Self::construct_bag_change(&params.object_creation_list)
+                Self::validate_bag_change(params)
             })
             .transpose()?;
 
+        // check that fees are sufficient
         let total_upload_fee = deletion_prize
             .as_ref()
             .map_or(Zero::zero(), |del_prize| del_prize.prize)
@@ -2877,15 +2879,6 @@ impl<T: Trait> Module<T> {
             usable_balance >= required_balance,
             Error::<T>::InsufficientBalance
         );
-        Ok(())
-    }
-
-    fn ensure_valid_expected_data_fee(expected_data_size_fee: BalanceOf<T>) -> DispatchResult {
-        ensure!(
-            expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
-            Error::<T>::DataSizeFeeChanged
-        );
-
         Ok(())
     }
 
@@ -3275,6 +3268,20 @@ impl<T: Trait> Module<T> {
     fn validate_upload_data_objects_parameters(
         params: &UploadParameters<T>,
     ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        let bag_change = Self::validate_bag_change(params)?;
+        Self::ensure_sufficient_balance_for_upload(
+            Some(params.deletion_prize_source_account_id.clone()),
+            Self::compute_upload_fees(&bag_change),
+        )?;
+        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
+
+        Ok(bag_change)
+    }
+
+    // construct bag change after validating the inputs
+    fn validate_bag_change(
+        params: &UploadParameters<T>,
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         Self::check_global_uploading_block()?;
 
         Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
@@ -3285,14 +3292,6 @@ impl<T: Trait> Module<T> {
             params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
             Error::<T>::DataSizeFeeChanged
         );
-
-        Self::ensure_sufficient_balance_for_upload(
-            Some(params.deletion_prize_source_account_id.clone()),
-            Self::compute_upload_fees(&bag_change),
-        )?;
-
-        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
-
         Ok(bag_change)
     }
 
