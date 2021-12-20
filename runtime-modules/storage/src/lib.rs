@@ -3269,7 +3269,6 @@ impl<T: Trait> Module<T> {
             Self::compute_upload_fees(&bag_change),
         )?;
         Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
-
         Ok(bag_change)
     }
 

@@ -699,7 +699,7 @@ decl_module! {
                         params.clone(),
                     )?;
                 }
-                // can create dynamic guards ensures that this invocation succeeds
+                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeeds
                 Storage::<T>::upload_data_objects(params)?;
             }
 
@@ -840,7 +840,6 @@ decl_module! {
                 // construct collection of assets to be removed
                 let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
-                // can delete non-empty dynamic bag
                 Storage::<T>::can_delete_dynamic_bag_with_objects(
                     &dyn_bag,
 
