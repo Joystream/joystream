@@ -2,12 +2,6 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { PostgresServiceDeployment } from 'pulumi-common'
 
-const config = new pulumi.Config()
-const DB_PASS = config.require('dbPassword')
-const DB_USERNAME = 'postgres'
-const PROCESSOR_DATABASE_NAME = 'processor'
-const DB_PORT = '5432'
-
 /**
  * ServiceDeployment is an example abstraction that uses a class to fold together the common pattern of a
  * Kubernetes Deployment and its associated Service object.
@@ -20,6 +14,12 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
 
   constructor(name: string, args: ServiceDeploymentArgs, opts?: pulumi.ComponentResourceOptions) {
     super('processor:service:ProcessorServiceDeployment', name, {}, opts)
+
+    const config = new pulumi.Config()
+    const DB_PASS = config.require('dbPassword')
+    const DB_USERNAME = 'postgres'
+    const PROCESSOR_DATABASE_NAME = 'processor'
+    const DB_PORT = '5432'
 
     // Name passed in the constructor will be the endpoint for accessing the service
     this.endpoint = 'graphql-server'
@@ -203,9 +203,7 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                     },
                   ],
                   command: ['/bin/sh', '-c'],
-                  // Should we really use "-e ../.env" args could there be some env vars we have not
-                  // correctly overridden for this container?
-                  args: ['cd query-node && yarn hydra-processor run -e ../.env'],
+                  args: ['workspace', 'query-node-root', 'processor:start'],
                 },
               ],
               volumes: [
