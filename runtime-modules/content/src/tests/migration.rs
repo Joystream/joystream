@@ -33,6 +33,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
         ),
         result
@@ -57,6 +58,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
                 new_meta: Some(vec![]),
                 reward_account: None,
                 assets_to_remove: BTreeSet::new(),
+                collaborators: None,
             },
         ),
         result
@@ -132,6 +134,7 @@ fn setup_scenario_with(n_videos: u64, n_channels: u64) -> (u64, u64) {
                 assets: None,
                 meta: Some(vec![]),
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
