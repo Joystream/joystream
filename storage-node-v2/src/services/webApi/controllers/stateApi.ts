@@ -2,15 +2,7 @@ import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import {
-  getUploadsDir,
-  getTempFileUploadingDir,
-  getQueryNodeUrl,
-  WebApiError,
-  getCommandConfig,
-  sendResponseWithError,
-  AppConfig,
-} from './common'
+import { WebApiError, sendResponseWithError, AppConfig } from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
@@ -52,8 +44,8 @@ export async function getLocalDataStats(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
-    const uploadsDir = getUploadsDir(res)
-    const tempFileDir = getTempFileUploadingDir(res)
+    const uploadsDir = res.locals.uploadsDir
+    const tempFileDir = res.locals.tempFileUploadingDir
     const fastFolderSizeAsync = promisify(fastFolderSize)
 
     const tempFolderExists = fs.existsSync(tempFileDir)
@@ -98,7 +90,7 @@ export async function getLocalDataObjectsByBagId(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
-    const queryNodeUrl = getQueryNodeUrl(res)
+    const queryNodeUrl = res.locals.queryNodeEndpoint
     const bagId = getBagId(req)
 
     const [ids, requiredIds] = await Promise.all([
@@ -119,7 +111,7 @@ export async function getLocalDataObjectsByBagId(
  */
 export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
   try {
-    const config = getCommandConfig(res)
+    const config = res.locals.process
 
     // Copy from an object, because the actual object could contain more data.
     res.status(200).json({
