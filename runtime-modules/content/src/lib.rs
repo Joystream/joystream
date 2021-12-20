@@ -667,6 +667,7 @@ decl_module! {
             // ensure collaborator member ids are valid
             Self::validate_collaborator_set(&params.collaborators)?;
 
+           // TODO: This if .. else .. code will be refactored in Olympia
             if let Some(assets) = params.assets.as_ref() {
                 let params = Self::construct_upload_parameters(
                     assets,
