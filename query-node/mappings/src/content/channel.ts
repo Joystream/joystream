@@ -39,6 +39,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // default values for properties that might or might not be filled by metadata
     coverPhotoUrls: [],
@@ -185,6 +186,7 @@ export async function content_ChannelCategoryCreated(db: DatabaseManager, event:
     id: channelCategoryId.toString(),
     channels: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),

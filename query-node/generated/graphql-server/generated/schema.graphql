@@ -647,6 +647,11 @@ type Channel implements BaseGraphQLObject {
 
   """The description of a Channel"""
   description: String
+
+  """
+  Count of channel's videos with an uploaded asset that are public and not censored.
+  """
+  activeVideosCounter: Int!
   coverPhotoDataObject: DataObject
   coverPhotoDataObjectId: String
 
@@ -697,6 +702,11 @@ type ChannelCategory implements BaseGraphQLObject {
 
   """The name of the category"""
   name: String
+
+  """
+  Count of channel's videos with an uploaded asset that are public and not censored.
+  """
+  activeVideosCounter: Int!
   channels: [Channel!]!
   createdInBlock: Int!
 }
@@ -1637,6 +1647,11 @@ type VideoCategory implements BaseGraphQLObject {
 
   """The name of the category"""
   name: String
+
+  """
+  Count of channel's videos with an uploaded asset that are public and not censored.
+  """
+  activeVideosCounter: Int!
   videos: [Video!]!
   createdInBlock: Int!
 }

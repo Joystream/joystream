@@ -6,13 +6,14 @@ import { FindConditions, In } from 'typeorm'
 
 import { Content } from '../../../generated/types'
 
-import { inconsistentState, logger, getNextId } from '../common'
+import { inconsistentState, isVideoFullyActive, updateVideoActiveCounters, logger, getNextId } from '../common'
 
 import { convertContentActorToDataObjectOwner, readProtobuf, readProtobufWithAssets, RawVideoMetadata } from './utils'
 
 import {
   AssetAvailability,
   Channel,
+  ChannelCategory,
   License,
   Video,
   VideoCategory,
@@ -43,6 +44,7 @@ export async function content_VideoCategoryCreated(db: DatabaseManager, event: S
     id: videoCategoryId.toString(),
     videos: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
@@ -179,6 +181,11 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
   // save video
   await db.save<Video>(video)
 
+  // increase active video counters for channel, channel category, and video category
+  if (isVideoFullyActive(video)) {
+    await updateVideoActiveCounters(db, video, true)
+  }
+
   // emit log event
   logger.info('Video has been created', { id: videoId })
 }
@@ -191,13 +198,16 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   // load video
   const video = await db.get(Video, {
     where: { id: videoId.toString() } as FindConditions<Video>,
-    relations: ['channel', 'license'],
+    relations: ['channel', 'channel.category', 'license', 'category'],
   })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video update requested', videoId)
   }
+
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
 
   // prepare changed metadata
   const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
@@ -241,6 +251,14 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   // save video
   await db.save<Video>(video)
 
+  // check if video is fully active
+  const isFullyActive = isVideoFullyActive(video)
+
+  // update video counters for channel, channel category, and video category if needed
+  if (wasFullyActive !== isFullyActive) {
+    await updateVideoActiveCounters(db, video, isFullyActive)
+  }
+
   // delete old license if it's planned
   if (licenseToDelete) {
     await db.remove<License>(licenseToDelete)
@@ -256,15 +274,26 @@ export async function content_VideoDeleted(db: DatabaseManager, event: Substrate
   const { videoId } = new Content.VideoDeletedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await db.get(Video, {
+    where: { id: videoId.toString() } as FindConditions<Video>,
+    relations: ['channel', 'channel.category', 'category'],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video deletion requested', videoId)
   }
 
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
+
   // remove video
   await db.remove<Video>(video)
+
+  // decrease active video counters for channel, channel category, and video category
+  if (wasFullyActive) {
+    await updateVideoActiveCounters(db, video, false)
+  }
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
@@ -276,12 +305,18 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   const { videoId, isCensored } = new Content.VideoCensorshipStatusUpdatedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await db.get(Video, {
+    where: { id: videoId.toString() } as FindConditions<Video>,
+    relations: ['channel', 'channel.category', 'category'],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video censoring requested', videoId)
   }
+
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -291,6 +326,14 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
 
   // save video
   await db.save<Video>(video)
+
+  // check if video is fully active
+  const isFullyActive = isVideoFullyActive(video)
+
+  // update video counters for channel, channel category, and video category if needed
+  if (wasFullyActive !== isFullyActive) {
+    await updateVideoActiveCounters(db, video, isFullyActive)
+  }
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })

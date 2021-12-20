@@ -1819,6 +1819,7 @@ export interface Channel extends BaseGraphQLObject {
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
+  activeVideosCounter: Int
   coverPhotoDataObject?: DataObject | null
   coverPhotoDataObjectId?: String | null
   coverPhotoUrls: Array<String>
@@ -1856,6 +1857,7 @@ export interface ChannelCategory extends BaseGraphQLObject {
   deletedById?: String | null
   version: Int
   name?: String | null
+  activeVideosCounter: Int
   channels: Array<Channel>
   createdInBlock: Int
 }
@@ -2080,6 +2082,7 @@ export interface VideoCategory extends BaseGraphQLObject {
   deletedById?: String | null
   version: Int
   name?: String | null
+  activeVideosCounter: Int
   videos: Array<Video>
   createdInBlock: Int
 }

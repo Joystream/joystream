@@ -10,6 +10,11 @@ export class VideoCategory extends BaseModel {
   })
   name?: string;
 
+  @IntField({
+    description: `Count of channel's videos with an uploaded asset that are public and not censored.`,
+  })
+  activeVideosCounter!: number;
+
   @OneToMany(() => Video, (param: Video) => param.category, {
     cascade: ["insert", "update"],
     modelName: 'VideoCategory',

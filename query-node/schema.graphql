@@ -49,6 +49,9 @@ type ChannelCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
 
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
+
   channels: [Channel!]! @derivedFrom(field: "category")
 
   createdInBlock: Int!
@@ -185,6 +188,9 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
+
   ### Cover photo asset ###
 
   # Channel's cover (background) photo. Recommended ratio: 16:9.
@@ -246,6 +252,9 @@ type VideoCategory @entity {
 
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
+
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
 
   videos: [Video!]! @derivedFrom(field: "category")
 

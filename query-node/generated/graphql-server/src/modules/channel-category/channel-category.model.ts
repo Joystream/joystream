@@ -10,6 +10,11 @@ export class ChannelCategory extends BaseModel {
   })
   name?: string;
 
+  @IntField({
+    description: `Count of channel's videos with an uploaded asset that are public and not censored.`,
+  })
+  activeVideosCounter!: number;
+
   @OneToMany(() => Channel, (param: Channel) => param.category, {
     modelName: 'ChannelCategory',
     relModelName: 'Channel',

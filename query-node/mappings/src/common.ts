@@ -4,7 +4,18 @@ import { u64, Bytes } from '@polkadot/types/primitive'
 import { fixBlockTimestamp } from './eventFix'
 
 // Asset
-import { DataObjectOwner, DataObject, LiaisonJudgement, Network, NextEntityId } from 'query-node'
+import {
+  AssetAvailability,
+  Channel,
+  ChannelCategory,
+  DataObjectOwner,
+  DataObject,
+  LiaisonJudgement,
+  Network,
+  NextEntityId,
+  Video,
+  VideoCategory,
+} from 'query-node'
 import { ContentParameters } from '@joystream/types/augment'
 
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
@@ -83,6 +94,44 @@ export async function prepareDataObject(
   })
 
   return dataObject
+}
+
+export function isVideoFullyActive(video: Video): boolean {
+  return (
+    !!video.isPublic &&
+    !video.isCensored &&
+    video.thumbnailPhotoAvailability === AssetAvailability.ACCEPTED &&
+    video.mediaAvailability === AssetAvailability.ACCEPTED
+  )
+}
+
+export async function updateVideoActiveCounters(
+  store: DatabaseManager,
+  video: Video,
+  isFullyActive: boolean
+): Promise<void> {
+  const counterChange = isFullyActive ? 1 : -1
+
+  if (video.channel) {
+    const channel = video.channel
+    channel.activeVideosCounter += counterChange
+
+    await store.save<Channel>(channel)
+  }
+
+  if (video.channel && video.channel.category) {
+    const channelCategory = video.channel.category
+    channelCategory.activeVideosCounter += counterChange
+
+    await store.save<ChannelCategory>(channelCategory)
+  }
+
+  if (video.category) {
+    const category = video.category
+    category.activeVideosCounter += counterChange
+
+    await store.save<VideoCategory>(category)
+  }
 }
 
 /// ///////////////// Sudo extrinsic calls ///////////////////////////////////////

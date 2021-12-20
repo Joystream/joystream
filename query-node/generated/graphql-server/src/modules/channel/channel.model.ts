@@ -70,6 +70,11 @@ export class Channel extends BaseModel {
   })
   description?: string;
 
+  @IntField({
+    description: `Count of channel's videos with an uploaded asset that are public and not censored.`,
+  })
+  activeVideosCounter!: number;
+
   @ManyToOne(() => DataObject, (param: DataObject) => param.channelcoverPhotoDataObject, {
     skipGraphQLField: true,
     nullable: true,
