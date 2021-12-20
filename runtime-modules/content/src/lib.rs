@@ -667,63 +667,56 @@ decl_module! {
             // ensure collaborator member ids are valid
             Self::validate_collaborator_set(&params.collaborators)?;
 
-           // TODO: This if .. else .. code will be refactored in Olympia
-            if let Some(assets) = params.assets.as_ref() {
-                let params = Self::construct_upload_parameters(
+           let upload_params = params.assets.as_ref().map(|assets| {
+                Self::construct_upload_parameters(
                     assets,
                     &channel_id,
                     &sender
-                );
+                )});
 
-                let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
-                    prize: Zero::zero(), // put 0 for Giza release
-                    account_id: sender.clone(),
-                };
+            let channel_bag_id = Self::bag_id_for_channel(&channel_id);
 
-                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
+            let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
+                prize: Zero::zero(), // put 0 for Giza release
+                account_id: sender.clone(),
+            };
+
+            if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
+                if let Some(params) = upload_params.clone() {
                     Storage::<T>::can_create_dynamic_bag_with_objects_constraints(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         &Some(deletion_prize.clone()),
                         &params
                     )?;
-                }
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
-                    Storage::<T>::create_dynamic_bag_with_objects_constraints(
-                        DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
-                        Some(deletion_prize),
-                        params.clone(),
-                    )?;
-                }
-                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succee ds
-                Storage::<T>::upload_data_objects(params)?;
-            } else {
-                // canonical bag creation in case of no assets to upload
-                let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
-                    prize: Zero::zero(), // put 0 for Giza release
-                    account_id: sender.clone(),
-                };
-
-                let bag_id = Self::bag_id_for_channel(&channel_id);
-                if Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
+                } else {
                     Storage::<T>::can_create_dynamic_bag(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         &Some(deletion_prize.clone()),
                     )?;
+                }
+            }
 
-                    //
-                    // == MUTATION SAFE ==
-                    //
+            //
+            // == MUTATION SAFE ==
+            //
 
+            if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
+                if let Some(params) = upload_params.clone() {
+                    Storage::<T>::create_dynamic_bag_with_objects_constraints(
+                        DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
+                        Some(deletion_prize),
+                        params,
+                )?;
+                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
+                } else {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         Some(deletion_prize),
                     )?;
                 }
+            }
+            if let Some(params) = upload_params.clone() {
+                Storage::<T>::upload_data_objects(params)?;
             }
 
             // Only increment next channel id if adding content was successful
