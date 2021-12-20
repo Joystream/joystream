@@ -2870,11 +2870,6 @@ impl<T: Trait> Module<T> {
             Balances::<T>::usable_balance(account_id)
         });
 
-        println!(
-            "TOTAL UPLOAD FEE: \t {:?}\nBALANCE: \t {:?}",
-            required_balance, usable_balance
-        );
-
         ensure!(
             usable_balance >= required_balance,
             Error::<T>::InsufficientBalance
@@ -2892,7 +2887,7 @@ impl<T: Trait> Module<T> {
         let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
 
         // deletion prize = bag.deletion_prize + total_objects fees if any
-        let deletion_prize = if with_objects {
+        let deletion_prize = if !with_objects {
             // TODO: should this be checked ?
             ensure!(
                 dynamic_bag.objects_number == 0,
