@@ -793,6 +793,28 @@ impl DeleteDynamicBagFixture {
     }
 }
 
+pub struct CanDeleteDynamicBagWithObjectsFixture {
+    bag_id: DynamicBagId<Test>,
+}
+
+impl CanDeleteDynamicBagWithObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            bag_id: Default::default(),
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::can_delete_dynamic_bag_with_objects(&self.bag_id.clone());
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 pub struct DeleteStorageBucketFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
