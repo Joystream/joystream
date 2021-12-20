@@ -112,7 +112,7 @@ impl VotingResults {
 
     /// Calculates number of votes so far
     pub fn votes_number(&self) -> u32 {
-        self.abstentions + self.approvals + self.rejections + self.slashes
+        self.approvals + self.rejections + self.slashes
     }
 }
 
@@ -192,6 +192,7 @@ where
             proposal: self,
             approvals: self.voting_results.approvals,
             slashes: self.voting_results.slashes,
+            abstentions: self.voting_results.abstentions,
             now,
             votes_count: self.voting_results.votes_number(),
             total_voters_count,
@@ -239,6 +240,7 @@ struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, A
     total_voters_count: u32,
     approvals: u32,
     slashes: u32,
+    abstentions: u32,
 }
 
 impl<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
@@ -254,10 +256,10 @@ where
     }
 
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
+    // votes sum divided by total possible votes count (minus abstentions.)
     pub fn is_approval_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
-            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count - self.abstentions);
         let approval_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
@@ -265,10 +267,10 @@ where
     }
 
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
+    // votes sum divided by total possible votes count (minus abstentions.)
     pub fn is_slashing_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
-            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count - self.abstentions);
         let slashing_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
@@ -299,7 +301,7 @@ where
 
     // All voters had voted
     pub fn is_voting_completed(&self) -> bool {
-        self.votes_count == self.total_voters_count
+        self.votes_count == self.total_voters_count - self.abstentions
     }
 }
 
@@ -510,6 +512,187 @@ mod tests {
     }
 
     #[test]
+    fn define_proposal_decision_status_returns_approved_despite_abstained_voters() {
+        let now = 2;
+        let mut proposal = ProposalObject::default();
+        proposal.created_at = 1;
+        proposal.parameters.voting_period = 3;
+        proposal.parameters.approval_quorum_percentage = 66;
+        proposal.parameters.approval_threshold_percentage = 80;
+        proposal.parameters.slashing_quorum_percentage = 50;
+        proposal.parameters.slashing_threshold_percentage = 50;
+
+        let council_seats = 10;
+
+        for _ in 1..=2 {
+            proposal.voting_results.add_vote(VoteKind::Abstain);
+        }
+
+        for _ in 1..=7 {
+            proposal.voting_results.add_vote(VoteKind::Approve);
+        }
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 2,
+                approvals: 7,
+                rejections: 0,
+                slashes: 0,
+            }
+        );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(council_seats, now);
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Approved(
+                ApprovedProposalStatus::PendingExecution
+            ))
+        );
+    }
+
+    #[test]
+    fn define_proposal_decision_status_returns_rejected_when_all_voters_abstained() {
+        let now = 2;
+        let mut proposal = ProposalObject::default();
+        proposal.created_at = 1;
+        proposal.parameters.voting_period = 3;
+        proposal.parameters.approval_quorum_percentage = 51;
+        proposal.parameters.approval_threshold_percentage = 51;
+        proposal.parameters.slashing_quorum_percentage = 51;
+        proposal.parameters.slashing_threshold_percentage = 51;
+
+        let council_seats = 20;
+
+        for _ in 1..=20 {
+            proposal.voting_results.add_vote(VoteKind::Abstain);
+        }
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: council_seats,
+                approvals: 0,
+                rejections: 0,
+                slashes: 0,
+            }
+        );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(council_seats, now);
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Rejected)
+        );
+    }
+    
+    #[test]
+    fn define_proposal_decision_status_returns_approved_when_one_approver_while_the_rest_voters_abstained() {
+        let now = 2;
+        let mut proposal = ProposalObject::default();
+        proposal.created_at = 1;
+        proposal.parameters.voting_period = 3;
+        proposal.parameters.approval_quorum_percentage = 51;
+        proposal.parameters.approval_threshold_percentage = 51;
+        proposal.parameters.slashing_quorum_percentage = 51;
+        proposal.parameters.slashing_threshold_percentage = 51;
+
+        let council_seats = 20;
+
+        for _ in 1..=council_seats - 1 {
+            proposal.voting_results.add_vote(VoteKind::Abstain);
+        }
+        proposal.voting_results.add_vote(VoteKind::Approve);
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: council_seats - 1,
+                approvals: 1,
+                rejections: 0,
+                slashes: 0,
+            }
+        );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(council_seats, now);
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Approved(
+                ApprovedProposalStatus::PendingExecution
+            ))
+        );
+    }
+
+    #[test]
+    fn define_proposal_decision_status_returns_slashed_when_one_slasher_while_the_rest_voters_abstained() {
+        let now = 2;
+        let mut proposal = ProposalObject::default();
+        proposal.created_at = 1;
+        proposal.parameters.voting_period = 3;
+        proposal.parameters.approval_quorum_percentage = 51;
+        proposal.parameters.approval_threshold_percentage = 51;
+        proposal.parameters.slashing_quorum_percentage = 51;
+        proposal.parameters.slashing_threshold_percentage = 51;
+
+        let council_seats = 20;
+
+        for _ in 1..=council_seats - 1 {
+            proposal.voting_results.add_vote(VoteKind::Abstain);
+        }
+        proposal.voting_results.add_vote(VoteKind::Slash);
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: council_seats - 1,
+                approvals: 0,
+                rejections: 0,
+                slashes: 1,
+            }
+        );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(council_seats, now);
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Slashed)
+        );
+    }
+
+    #[test]
+    fn define_proposal_decision_status_returns_rejected_when_one_rejector_while_the_rest_voters_abstained() {
+        let now = 2;
+        let mut proposal = ProposalObject::default();
+        proposal.created_at = 1;
+        proposal.parameters.voting_period = 3;
+        proposal.parameters.approval_quorum_percentage = 51;
+        proposal.parameters.approval_threshold_percentage = 51;
+        proposal.parameters.slashing_quorum_percentage = 51;
+        proposal.parameters.slashing_threshold_percentage = 51;
+
+        let council_seats = 20;
+
+        for _ in 1..=council_seats - 1 {
+            proposal.voting_results.add_vote(VoteKind::Abstain);
+        }
+        proposal.voting_results.add_vote(VoteKind::Reject);
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: council_seats - 1,
+                approvals: 0,
+                rejections: 1,
+                slashes: 0,
+            }
+        );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(council_seats, now);
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Rejected)
+        );
+    }
+
+    #[test]
     fn define_proposal_decision_status_returns_rejected() {
         let mut proposal = ProposalObject::default();
         let now = 2;
@@ -695,6 +878,7 @@ mod tests {
             total_voters_count: 500,
             approvals: 3,
             slashes: 3,
+            abstentions: 0,
         };
 
         assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
@@ -724,6 +908,7 @@ mod tests {
             total_voters_count: 500,
             approvals: 3,
             slashes: 3,
+            abstentions: 0,
         };
 
         assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
@@ -753,6 +938,7 @@ mod tests {
             total_voters_count: 600,
             approvals: 314,
             slashes: 3,
+            abstentions: 0,
         };
 
         assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
@@ -782,6 +968,7 @@ mod tests {
             total_voters_count: 600,
             approvals: 3,
             slashes: 314,
+            abstentions: 0,
         };
 
         assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
