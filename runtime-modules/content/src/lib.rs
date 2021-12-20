@@ -876,7 +876,6 @@ decl_module! {
                     )?;
                 }
 
-
                 //
                 // == MUTATION SAFE ==
                 //
