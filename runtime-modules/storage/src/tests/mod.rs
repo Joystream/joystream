@@ -5035,10 +5035,10 @@ fn create_dynamic_bag_with_objects_succeeds() {
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         let upload_parameters = UploadParameters::<Test> {
             bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
@@ -5092,7 +5092,7 @@ fn create_dynamic_bag_with_objects_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id,
-            Some(deletion_prize),
+            deletion_prize,
             BTreeSet::from_iter(bag.stored_by),
             BTreeSet::from_iter(bag.distributed_by),
         ));
@@ -5118,10 +5118,10 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         let upload_parameters = UploadParameters::<Test> {
             bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
@@ -5187,10 +5187,10 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         // try uploading with 3 objects each exceeding bucket size limit
         let upload_parameters = UploadParameters::<Test> {
@@ -5254,10 +5254,10 @@ fn create_dynamic_bag_with_objects_fails_with_unsufficient_balance() {
         let initial_balance = 100; // just enough for the del prize
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         // try uploading with > 0 objects exceeding balance
         let data_objects = create_data_object_candidates(1, 3);
@@ -5304,10 +5304,10 @@ fn create_dynamic_bag_with_objects_fails_with_incoherent_accounts() {
         let initial_balance = 100; // just enough for the del prize
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         // try uploading with > 0 objects exceeding balance
         let data_objects = create_data_object_candidates(1, 3);
@@ -5333,6 +5333,12 @@ fn create_dynamic_bag_with_objects_fails_with_incoherent_accounts() {
             .with_deletion_prize(deletion_prize.clone())
             .with_objects(upload_parameters.clone())
             .call_and_assert(Err(Error::<Test>::AccountsNotCoherent.into()));
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize(None)
+            .with_objects(upload_parameters.clone())
+            .call_and_assert(Err(Error::<Test>::AccountsNotCoherent.into()));
     })
 }
 
@@ -5351,10 +5357,10 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         let upload_parameters = UploadParameters::<Test> {
             bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
@@ -5400,10 +5406,10 @@ fn cannot_delete_dynamic_bags_with_objects_with_unsufficient_treasury_balance() 
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
 
-        let deletion_prize = DynamicBagDeletionPrize::<Test> {
+        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
             prize: deletion_prize_value,
             account_id: deletion_prize_account_id,
-        };
+        });
 
         let upload_parameters = UploadParameters::<Test> {
             bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),

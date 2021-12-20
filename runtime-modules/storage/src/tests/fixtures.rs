@@ -1157,9 +1157,12 @@ impl CreateDynamicBagWithObjectsFixture {
         Self { bag_id, ..self }
     }
 
-    pub fn with_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
+    pub fn with_deletion_prize(
+        self,
+        deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+    ) -> Self {
         Self {
-            deletion_prize: Some(deletion_prize),
+            deletion_prize: deletion_prize,
             ..self
         }
     }
