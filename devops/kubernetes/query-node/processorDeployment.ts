@@ -202,7 +202,6 @@ export class ProcessorServiceDeployment extends pulumi.ComponentResource {
                       subPath: 'fileData',
                     },
                   ],
-                  command: ['/bin/sh', '-c'],
                   args: ['workspace', 'query-node-root', 'processor:start'],
                 },
               ],
