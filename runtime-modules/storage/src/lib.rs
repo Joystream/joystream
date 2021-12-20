@@ -137,7 +137,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, Parameter,
 };
-use frame_system::ensure_root;
+use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -789,7 +789,7 @@ impl VoucherUpdate {
 /// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum StorageBucketOperatorStatus<WorkerId> {
+pub enum StorageBucketOperatorStatus<WorkerId, AccountId> {
     /// No connection.
     Missing,
 
@@ -797,22 +797,25 @@ pub enum StorageBucketOperatorStatus<WorkerId> {
     InvitedStorageWorker(WorkerId),
 
     /// Storage operator accepted the invitation.
-    StorageWorker(WorkerId),
+    StorageWorker(WorkerId, AccountId),
 }
 
-impl<WorkerId> Default for StorageBucketOperatorStatus<WorkerId> {
+impl<WorkerId, AccountId> Default for StorageBucketOperatorStatus<WorkerId, AccountId> {
     fn default() -> Self {
         Self::Missing
     }
 }
 
+/// Type alias for the StorageBucketRecord.
+pub type StorageBucket<T> = StorageBucketRecord<WorkerId<T>, <T as frame_system::Trait>::AccountId>;
+
 /// A commitment to hold some set of bags for long term storage. A bucket may have a bucket
 /// operator, which is a single worker in the storage working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StorageBucket<WorkerId> {
+pub struct StorageBucketRecord<WorkerId, AccountId> {
     /// Current storage operator status.
-    pub operator_status: StorageBucketOperatorStatus<WorkerId>,
+    pub operator_status: StorageBucketOperatorStatus<WorkerId, AccountId>,
 
     /// Defines whether the bucket accepts new bags.
     pub accepting_new_bags: bool,
@@ -948,7 +951,7 @@ decl_storage! {
 
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
-            T::StorageBucketId => StorageBucket<WorkerId<T>>;
+            T::StorageBucketId => StorageBucket<T>;
 
         /// Blacklisted data object hashes.
         pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) Cid => ();
@@ -1030,7 +1033,8 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         /// - invited worker ID
-        StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
+        /// - transactor account ID
+        StorageBucketInvitationAccepted(StorageBucketId, WorkerId, AccountId),
 
         /// Emits on updating storage buckets for bag.
         /// Params
@@ -1463,6 +1467,8 @@ decl_error! {
         /// Different Accounts for dynamic bag deletion prize and upload fees
         AccountsNotCoherent,
 
+        /// Invalid transactor account ID for this bucket.
+        InvalidTransactorAccount,
     }
 }
 
@@ -1701,7 +1707,7 @@ decl_module! {
                 .map(StorageBucketOperatorStatus::InvitedStorageWorker)
                 .unwrap_or(StorageBucketOperatorStatus::Missing);
 
-            let storage_bucket = StorageBucket {
+            let storage_bucket = StorageBucket::<T> {
                 operator_status,
                 accepting_new_bags,
                 voucher,
@@ -1918,11 +1924,14 @@ decl_module! {
         // ===== Storage Operator actions =====
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
+        /// It accepts an additional account ID (transactor) for accepting data objects to prevent
+        /// transaction nonce collisions.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_storage_bucket_invitation(
             origin,
             worker_id: WorkerId<T>,
-            storage_bucket_id: T::StorageBucketId
+            storage_bucket_id: T::StorageBucketId,
+            transactor_account_id: T::AccountId,
         ) {
             T::ensure_storage_worker_origin(origin, worker_id)?;
 
@@ -1935,11 +1944,19 @@ decl_module! {
             //
 
             <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
-                bucket.operator_status = StorageBucketOperatorStatus::StorageWorker(worker_id);
+                bucket.operator_status =
+                    StorageBucketOperatorStatus::StorageWorker(
+                        worker_id,
+                        transactor_account_id.clone()
+                );
             });
 
             Self::deposit_event(
-                RawEvent::StorageBucketInvitationAccepted(storage_bucket_id, worker_id)
+                RawEvent::StorageBucketInvitationAccepted(
+                    storage_bucket_id,
+                    worker_id,
+                    transactor_account_id
+                )
             );
         }
 
@@ -1975,11 +1992,11 @@ decl_module! {
             bag_id: BagId<T>,
             data_objects: BTreeSet<T::DataObjectId>,
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            let transactor_account_id = ensure_signed(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
-            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+            Self::ensure_bucket_transactor_access(&bucket, worker_id, transactor_account_id)?;
 
             Self::ensure_bag_exists(&bag_id)?;
 
@@ -2276,9 +2293,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            DynamicBagCreationPolicies::<T>::mutate(dynamic_bag_type, |creation_policy| {
-                creation_policy.families = families.clone();
-            });
+            // We initialize the default storage bucket number here if no policy exists.
+            let mut new_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+            new_policy.families = families.clone();
+
+            DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, new_policy);
 
             Self::deposit_event(
                 RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
@@ -2912,7 +2931,7 @@ impl<T: Trait> Module<T> {
     // Returns the StorageBucket object or error.
     fn ensure_storage_bucket_exists(
         storage_bucket_id: &T::StorageBucketId,
-    ) -> Result<StorageBucket<WorkerId<T>>, Error<T>> {
+    ) -> Result<StorageBucket<T>, Error<T>> {
         ensure!(
             <StorageBucketById<T>>::contains_key(storage_bucket_id),
             Error::<T>::StorageBucketDoesntExist
@@ -2924,14 +2943,14 @@ impl<T: Trait> Module<T> {
     // Ensures the correct invitation for the storage bucket and storage provider. Storage provider
     // must be invited.
     fn ensure_bucket_storage_provider_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => {
                 Err(Error::<T>::NoStorageBucketInvitation.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(invited_worker_id) => {
@@ -2948,9 +2967,9 @@ impl<T: Trait> Module<T> {
     // Ensures the correct invitation for the storage bucket and storage provider for removal.
     // Must be invited storage provider.
     fn ensure_bucket_storage_provider_invitation_status_for_removal(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
     ) -> DispatchResult {
-        if let StorageBucketOperatorStatus::StorageWorker(_) = bucket.operator_status {
+        if let StorageBucketOperatorStatus::StorageWorker(..) = bucket.operator_status {
             Ok(())
         } else {
             Err(Error::<T>::StorageProviderMustBeSet.into())
@@ -2958,14 +2977,12 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensures the correct invitation for the storage bucket and storage provider. Must be pending.
-    fn ensure_bucket_pending_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
-    ) -> DispatchResult {
+    fn ensure_bucket_pending_invitation_status(bucket: &StorageBucket<T>) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => {
                 Err(Error::<T>::NoStorageBucketInvitation.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => Ok(()),
@@ -2973,12 +2990,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensures the missing invitation for the storage bucket and storage provider.
-    fn ensure_bucket_missing_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
-    ) -> DispatchResult {
+    fn ensure_bucket_missing_invitation_status(bucket: &StorageBucket<T>) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => Ok(()),
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
@@ -2989,7 +3004,7 @@ impl<T: Trait> Module<T> {
 
     // Ensures correct storage provider for the storage bucket.
     fn ensure_bucket_invitation_accepted(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
         match bucket.operator_status {
@@ -2999,10 +3014,42 @@ impl<T: Trait> Module<T> {
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
                 Err(Error::<T>::InvalidStorageProvider.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(invited_worker_id) => {
+            StorageBucketOperatorStatus::StorageWorker(invited_worker_id, _) => {
                 ensure!(
                     worker_id == invited_worker_id,
                     Error::<T>::InvalidStorageProvider
+                );
+
+                Ok(())
+            }
+        }
+    }
+
+    // Ensures correct storage provider transactor account for the storage bucket.
+    fn ensure_bucket_transactor_access(
+        bucket: &StorageBucket<T>,
+        worker_id: WorkerId<T>,
+        transactor_account_id: T::AccountId,
+    ) -> DispatchResult {
+        match bucket.operator_status.clone() {
+            StorageBucketOperatorStatus::Missing => {
+                Err(Error::<T>::StorageProviderMustBeSet.into())
+            }
+            StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
+                Err(Error::<T>::InvalidStorageProvider.into())
+            }
+            StorageBucketOperatorStatus::StorageWorker(
+                invited_worker_id,
+                bucket_transactor_account_id,
+            ) => {
+                ensure!(
+                    worker_id == invited_worker_id,
+                    Error::<T>::InvalidStorageProvider
+                );
+
+                ensure!(
+                    transactor_account_id == bucket_transactor_account_id,
+                    Error::<T>::InvalidTransactorAccount
                 );
 
                 Ok(())

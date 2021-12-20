@@ -16,9 +16,8 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     },
   ]
 
-  async run() {
-    const account = await this.getRequiredSelectedAccount()
-    await this.requireLead()
+  async run(): Promise<void> {
+    const lead = await this.getRequiredLeadContext()
 
     let { groupId, curatorId } = this.parse(RemoveCuratorFromGroupCommand).args
 
@@ -27,7 +26,7 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     }
 
     const group = await this.getCuratorGroup(groupId)
-    const groupCuratorIds = group.curators.toArray().map((id) => id.toNumber())
+    const groupCuratorIds = Array.from(group.curators).map((id) => id.toNumber())
 
     if (curatorId === undefined) {
       curatorId = await this.promptForCurator('Choose a Curator to remove', groupCuratorIds)
@@ -38,8 +37,10 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
       await this.getCurator(curatorId)
     }
 
-    await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'content', 'removeCuratorFromGroup', [groupId, curatorId])
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'removeCuratorFromGroup', [
+      groupId,
+      curatorId,
+    ])
 
     this.log(
       chalk.green(

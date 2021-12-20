@@ -17,19 +17,21 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsStartAcceptingApplications)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const openingId = parseInt(args.wgOpeningId)
     await this.validateOpeningForLeadAction(openingId, OpeningStatus.WaitingToBegin)
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'acceptApplications', [openingId])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'acceptApplications',
+      [openingId]
+    )
 
     this.log(
       chalk.green(

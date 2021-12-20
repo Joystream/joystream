@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://joystream.org/Assets.schema.json",
+  "title": "Assets",
+  "description": "List of assets to upload/reupload",
+  "type": "object",
+  "required": ["bagId", "assets"],
+  "properties": {
+    "bagId": {
+      "type": "string",
+      "description": "Target bag id"
+    },
+    "assets": {
+      "type": "array",
+      "description": "List of assets to upload",
+      "items": {
+        "type": "object",
+        "required": ["objectId", "path"],
+        "additionalProperties": false,
+        "properties": {
+          "objectId": {
+            "type": "string",
+            "description": "Already existing data object ID",
+            "pattern": "[0-9]+"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the content file (relative to input json file)"
+          }
+        }
+      }
+    }
+  }
+}

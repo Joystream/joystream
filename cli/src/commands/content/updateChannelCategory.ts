@@ -1,11 +1,12 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { ChannelCategoryInputParameters } from '../../Types'
-import { channelCategoryMetadataFromInput, metadataToBytes } from '../../helpers/serialization'
+import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryUpdateParameters } from '@joystream/types/content'
 import { flags } from '@oclif/command'
-import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { ChannelCategoryInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelCategoryMetadata } from '@joystream/metadata-protobuf'
 export default class UpdateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Update channel category inside content directory.'
   static flags = {
@@ -25,29 +26,25 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(UpdateChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(UpdateChannelCategoryCommand).args
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
-    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
+    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input, ChannelCategoryInputSchema)
-
-    const meta = channelCategoryMetadataFromInput(channelCategoryInput)
+    const meta = asValidatedMetadata(ChannelCategoryMetadata, channelCategoryInput)
 
     const channelCategoryUpdateParameters: CreateInterface<ChannelCategoryUpdateParameters> = {
-      new_meta: metadataToBytes(meta),
+      new_meta: metadataToBytes(ChannelCategoryMetadata, meta),
     }
 
     this.jsonPrettyPrint(JSON.stringify(channelCategoryInput))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannelCategory', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannelCategory', [
       actor,
       channelCategoryId,
       channelCategoryUpdateParameters,
