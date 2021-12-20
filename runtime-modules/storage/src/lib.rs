@@ -2828,7 +2828,6 @@ impl<T: Trait> Module<T> {
         );
 
         // call can upload data explicitly
-        // add extra tests in the
         let bag_change = upload_params
             .as_ref()
             .map(|params| {
@@ -2888,7 +2887,6 @@ impl<T: Trait> Module<T> {
 
         // deletion prize = bag.deletion_prize + total_objects fees if any
         let deletion_prize = if !with_objects {
-            // TODO: should this be checked ?
             ensure!(
                 dynamic_bag.objects_number == 0,
                 Error::<T>::CannotDeleteNonEmptyDynamicBag

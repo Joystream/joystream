@@ -699,10 +699,27 @@ decl_module! {
                         params.clone(),
                     )?;
                 }
-                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeeds
+                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succee ds
                 Storage::<T>::upload_data_objects(params)?;
-            }
+            } else {
+                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
+                    Storage::<T>::can_create_dynamic_bag(
+                        &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
+                        &Some(deletion_prize.clone()),
+                    )?;
+                }
 
+                //
+                // == MUTATION SAFE ==
+                //
+
+                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
+                    Storage::<T>::create_dynamic_bag(
+                        DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
+                        Some(deletion_prize),
+                    )?;
+                }
+            }
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -1159,7 +1176,7 @@ decl_module! {
 
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-            sender,
+                    sender,
                     Self::bag_id_for_channel(&channel_id),
                     assets_to_remove.clone()
                 )?;

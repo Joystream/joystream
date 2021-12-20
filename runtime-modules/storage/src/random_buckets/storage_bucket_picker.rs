@@ -31,7 +31,7 @@ impl<T: Trait> StorageBucketPicker<T> {
 
         let required_bucket_num = creation_policy.number_of_storage_buckets as usize;
 
-        // TODO: the selection algorithm will change
+        // TODO: the selection algorithm will change: https://github.com/Joystream/joystream/issues/2904
         // Storage bucket IDs accumulator.
         let bucket_ids_cell = RefCell::new(BTreeSet::new());
         let next_storage_bucket_id = Module::<T>::next_storage_bucket_id();
