@@ -679,7 +679,6 @@ decl_module! {
                     account_id: sender.clone(),
                 };
 
-
                 if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
                     Storage::<T>::can_create_dynamic_bag_with_objects_constraints(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
@@ -702,18 +701,23 @@ decl_module! {
                 // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succee ds
                 Storage::<T>::upload_data_objects(params)?;
             } else {
-                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
+                // canonical bag creation in case of no assets to upload
+                let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
+                    prize: Zero::zero(), // put 0 for Giza release
+                    account_id: sender.clone(),
+                };
+
+                let bag_id = Self::bag_id_for_channel(&channel_id);
+                if Storage::<T>::ensure_bag_exists(&bag_id).is_err() {
                     Storage::<T>::can_create_dynamic_bag(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         &Some(deletion_prize.clone()),
                     )?;
-                }
 
-                //
-                // == MUTATION SAFE ==
-                //
+                    //
+                    // == MUTATION SAFE ==
+                    //
 
-                if Storage::<T>::ensure_bag_exists(&params.bag_id).is_err() {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         Some(deletion_prize),
@@ -857,27 +861,34 @@ decl_module! {
                 // construct collection of assets to be removed
                 let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
 
-                Storage::<T>::can_delete_dynamic_bag_with_objects(
-                    &dyn_bag,
+                if !assets_to_remove.is_empty() {
+                    Storage::<T>::can_delete_dynamic_bag_with_objects(
+                        &dyn_bag,
+                    )?;
 
-                )?;
+                    Storage::<T>::can_delete_data_objects(
+                        &bag_id,
+                        &assets_to_remove,
+                    )?;
+                } else {
+                    Storage::<T>::can_delete_dynamic_bag(
+                        &dyn_bag,
+                    )?;
+                }
 
-                Storage::<T>::can_delete_data_objects(
-                    &bag_id,
-                    &assets_to_remove,
-                )?;
 
                 //
                 // == MUTATION SAFE ==
                 //
 
                 // remove specified assets from storage
-                Self::remove_assets_from_storage(
-                    &assets_to_remove,
-                    &channel_id,
-                    &sender,
-                )?;
-
+                if !assets_to_remove.is_empty() {
+                    Storage::<T>::delete_data_objects(
+                        sender.clone(),
+                        Self::bag_id_for_channel(&channel_id),
+                        assets_to_remove.clone(),
+                    )?;
+                }
 
                 // delete channel dynamic bag
                 Storage::<T>::delete_dynamic_bag(
@@ -1128,7 +1139,7 @@ decl_module! {
 
             if !params.assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-            sender,
+                    sender,
                     Self::bag_id_for_channel(&channel_id),
                     params.assets_to_remove.clone(),
                 )?;
@@ -1510,22 +1521,6 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
         }
-    }
-
-    fn remove_assets_from_storage(
-        assets: &BTreeSet<DataObjectId<T>>,
-        channel_id: &T::ChannelId,
-        prize_source_account: &T::AccountId,
-    ) -> DispatchResult {
-        // remove assets if any
-        if !assets.is_empty() {
-            Storage::<T>::delete_data_objects(
-                prize_source_account.clone(),
-                Self::bag_id_for_channel(&channel_id),
-                assets.clone(),
-            )?;
-        }
-        Ok(())
     }
 
     fn validate_collaborator_set(collaborators: &BTreeSet<T::MemberId>) -> DispatchResult {

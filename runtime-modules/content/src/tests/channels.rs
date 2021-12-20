@@ -68,7 +68,7 @@ fn successful_channel_deletion() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            3u64,
+            3u64, // now assets are 0
             Ok(()),
         );
 
@@ -85,11 +85,12 @@ fn successful_channel_deletion() {
             },
             Ok(()),
         );
+
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             empty_channel_id,
-            43u64, // this param will be discarded if channel has no assets
+            0u64,
             Ok(()),
         );
     })
