@@ -2815,19 +2815,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_upload_and_deletion_prize_account_are_coherent(
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-        params: &UploadParameters<T>,
-    ) -> DispatchResult {
-        ensure!(deletion_prize.is_some(), Error::<T>::AccountsNotCoherent,);
-        if let Some(deletion_prize) = deletion_prize {
-            ensure!(
-                params.deletion_prize_source_account_id == deletion_prize.account_id,
-                Error::<T>::AccountsNotCoherent,
-            );
-        }
-        Ok(())
-    }
     // Validates dynamic bag creation params and conditions.
     fn validate_create_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,
@@ -2845,10 +2832,12 @@ impl<T: Trait> Module<T> {
             .as_ref()
             .map(|params| {
                 // ensure coherent account ids for prize
-                Self::ensure_upload_and_deletion_prize_account_are_coherent(
-                    &deletion_prize,
-                    params,
-                )?;
+                if let Some(deletion_prize) = deletion_prize {
+                    ensure!(
+                        params.deletion_prize_source_account_id == deletion_prize.account_id,
+                        Error::<T>::AccountsNotCoherent,
+                    );
+                }
                 Self::validate_bag_change(params)
             })
             .transpose()?;

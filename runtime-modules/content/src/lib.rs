@@ -732,7 +732,6 @@ decl_module! {
             // channel creation
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
-                // a newly create channel has zero videos ??
                 num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
