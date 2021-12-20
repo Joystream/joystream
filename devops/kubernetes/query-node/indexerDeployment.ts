@@ -2,15 +2,6 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { PostgresServiceDeployment } from 'pulumi-common'
 
-const config = new pulumi.Config()
-const DB_PASS = config.require('dbPassword')
-const BLOCK_HEIGHT = config.require('blockHeight') || '0'
-const WS_PROVIDER_ENDPOINT_URI = config.require('joystreamWsEndpoint')
-
-const DB_USERNAME = 'postgres'
-const INDEXER_DATABASE_NAME = 'indexer'
-const DB_PORT = '5432'
-
 /**
  * ServiceDeployment is an example abstraction that uses a class to fold together the common pattern of a
  * Kubernetes Deployment and its associated Service object.
@@ -22,6 +13,15 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
 
   constructor(name: string, args: ServiceDeploymentArgs, opts?: pulumi.ComponentResourceOptions) {
     super('indexer:service:IndexerServiceDeployment', name, {}, opts)
+
+    const config = new pulumi.Config()
+    const DB_PASS = config.require('dbPassword')
+    const BLOCK_HEIGHT = config.require('blockHeight') || '0'
+    const WS_PROVIDER_ENDPOINT_URI = config.require('joystreamWsEndpoint')
+
+    const DB_USERNAME = 'postgres'
+    const INDEXER_DATABASE_NAME = 'indexer'
+    const DB_PORT = '5432'
 
     // Name passed in the constructor will be the endpoint for accessing the service
     const serviceName = name
