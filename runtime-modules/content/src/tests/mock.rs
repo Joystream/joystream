@@ -443,6 +443,8 @@ pub fn run_to_block(n: u64) {
 
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
+pub type Balances = balances::Module<Test>;
+
 pub fn create_channel_mock(
     sender: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -656,7 +658,7 @@ pub fn helper_generate_storage_assets(sizes: Vec<u64>) -> StorageAssets<Test> {
 pub fn helper_init_accounts(accounts: Vec<u64>) {
     // give channel owner funds to permit collaborators to update assets
     for acc in accounts.iter() {
-        let _ = balances::Module::<Test>::deposit_creating(
+        let _ = Balances::deposit_creating(
             acc,
             <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
