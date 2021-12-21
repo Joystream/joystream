@@ -1043,7 +1043,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // upload to storage
+            // upload to storage: check is performed beforehand in the extrinsics so storage state won't be endangered
             if let Some(upload_assets) = params.assets.as_ref() {
                 let params = Self::construct_upload_parameters(
                     upload_assets,
