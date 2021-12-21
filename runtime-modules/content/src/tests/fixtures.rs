@@ -44,6 +44,36 @@ impl CreateChannelFixture {
         Self { params, ..self }
     }
 
+    pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
+        let params = ChannelCreationParameters::<Test> {
+            assets: Some(assets),
+            meta: None,
+            reward_account: None,
+            collaborators: BTreeSet::new(),
+        };
+        self.with_params(params)
+    }
+
+    pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
+        let params = ChannelCreationParameters::<Test> {
+            assets: None,
+            meta: None,
+            reward_account: None,
+            collaborators: collaborators,
+        };
+        self.with_params(params)
+    }
+
+    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
+        let params = ChannelCreationParameters::<Test> {
+            assets: None,
+            meta: None,
+            reward_account: Some(reward_account),
+            collaborators: BTreeSet::new(),
+        };
+        self.with_params(params)
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let actual_result =
