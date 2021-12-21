@@ -586,7 +586,6 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
-
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
@@ -667,7 +666,7 @@ decl_module! {
             // ensure collaborator member ids are valid
             Self::validate_collaborator_set(&params.collaborators)?;
 
-           let upload_params = params.assets.as_ref().map(|assets| {
+            let upload_params = params.assets.as_ref().map(|assets| {
                 Self::construct_upload_parameters(
                     assets,
                     &channel_id,
@@ -715,13 +714,14 @@ decl_module! {
                     )?;
                 }
             }
+
+             // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
             if let Some(params) = upload_params.clone() {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
-
 
             // channel creation
             let channel: Channel<T> = ChannelRecord {
