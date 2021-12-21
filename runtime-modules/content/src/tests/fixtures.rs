@@ -20,7 +20,12 @@ impl CreateChannelFixture {
             },
         }
     }
+
     pub fn with_origin(self, origin: Origin) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
     }
 }
