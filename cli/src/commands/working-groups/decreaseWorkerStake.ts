@@ -23,12 +23,11 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsDecreaseWorkerStake)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const workerId = parseInt(args.workerId)
     const groupMember = await this.getWorkerWithStakeForLeadAction(workerId)
@@ -40,9 +39,12 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
       createParamOptions('amount', undefined, balanceValidator)
     )) as Balance
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'decreaseStake', [workerId, balance])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'decreaseStake',
+      [workerId, balance]
+    )
 
     this.log(
       chalk.green(

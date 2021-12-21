@@ -1,9 +1,9 @@
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
-import AssetsSchema from '../../json-schemas/Assets.schema.json'
-import { Assets as AssetsInput } from '../../json-schemas/typings/Assets.schema'
+import AssetsSchema from '../../schemas/json/Assets.schema.json'
+import { Assets as AssetsInput } from '../../schemas/typings/Assets.schema'
 import { flags } from '@oclif/command'
-import { ContentId } from '@joystream/types/storage'
+import BN from 'bn.js'
 
 export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
   static description = 'Allows reuploading assets that were not successfully uploaded during channel/video creation'
@@ -16,21 +16,28 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { input } = this.parse(ReuploadVideoAssetsCommand).flags
 
     // Get context
-    const account = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(account)
+    const [memberId, membership] = await this.getRequiredMemberContext()
 
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)
-    const inputAssets = inputData.map(({ contentId, path }) => ({
-      contentId: ContentId.decode(this.getTypesRegistry(), contentId),
+    const { bagId } = inputData
+    const inputAssets = inputData.assets.map(({ objectId, path }) => ({
+      dataObjectId: new BN(objectId),
       path,
     }))
 
     // Upload assets
-    await this.uploadAssets(inputAssets, input, '')
+    await this.uploadAssets(
+      await this.getDecodedPair(membership.controller_account),
+      memberId.toNumber(),
+      bagId,
+      inputAssets,
+      input,
+      ''
+    )
   }
 }

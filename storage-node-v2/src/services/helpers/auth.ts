@@ -2,6 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { u8aToHex } from '@polkadot/util'
 import { signatureVerify } from '@polkadot/util-crypto'
 import base64url from 'base64url'
+import stringify from 'fast-safe-stringify'
 
 /**
  * Represents an upload token request.
@@ -97,7 +98,7 @@ export function parseUploadToken(tokenString: string): UploadToken {
  * @returns The UploadToken instance.
  */
 export function verifyTokenSignature(token: UploadToken | UploadTokenRequest, address: string): boolean {
-  const message = JSON.stringify(token.data)
+  const message = stringify(token.data)
   const { isValid } = signatureVerify(message, token.signature, address)
 
   return isValid
@@ -111,7 +112,7 @@ export function verifyTokenSignature(token: UploadToken | UploadTokenRequest, ad
  * @returns object signature.
  */
 export function signTokenBody(tokenBody: UploadTokenBody | UploadTokenRequestBody, account: KeyringPair): string {
-  const message = JSON.stringify(tokenBody)
+  const message = stringify(tokenBody)
   const signature = u8aToHex(account.sign(message))
 
   return signature
@@ -132,5 +133,5 @@ export function createUploadToken(tokenBody: UploadTokenBody, account: KeyringPa
     signature,
   }
 
-  return base64url.encode(JSON.stringify(token))
+  return base64url.encode(stringify(token))
 }

@@ -6,6 +6,7 @@ import { Reward } from '../../Types'
 import { positiveInt } from '../../validators/common'
 import { createParamOptions } from '../../helpers/promptOptions'
 import ExitCodes from '../../ExitCodes'
+import { BalanceOfMint } from '@joystream/types/mint'
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."
@@ -21,7 +22,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     ...WorkingGroupsCommandBase.flags,
   }
 
-  formatReward(reward?: Reward) {
+  formatReward(reward?: Reward): string {
     return reward
       ? formatBalance(reward.value) +
           (reward.interval ? ` / ${reward.interval} block(s)` : '') +
@@ -29,12 +30,10 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       : 'NONE'
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsUpdateWorkerReward)
 
-    const account = await this.getRequiredSelectedAccount()
-    // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const workerId = parseInt(args.workerId)
     // This will also make sure the worker is valid
@@ -48,17 +47,17 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
     console.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
-    const newRewardValue = await this.promptForParam(
+    const newRewardValue = (await this.promptForParam(
       'BalanceOfMint',
       createParamOptions('new_amount', undefined, positiveInt())
+    )) as BalanceOfMint
+
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'updateRewardAmount',
+      [workerId, newRewardValue]
     )
-
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
-      workerId,
-      newRewardValue,
-    ])
 
     const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
     this.log(chalk.green(`Worker ${chalk.magentaBright(workerId)} reward has been updated!`))

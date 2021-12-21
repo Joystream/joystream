@@ -23,7 +23,16 @@ import { unsetAssetRelations } from '../content/utils'
 
 import { BTreeSet } from '@polkadot/types'
 import _ from 'lodash'
-import { DataObjectId, BagId, DynamicBagId, StaticBagId } from '@joystream/types/augment/all'
+import {
+  DataObjectId,
+  BagId,
+  DynamicBagId,
+  StaticBagId,
+  DistributionBucketId,
+  DistributionBucketFamilyId,
+  DistributionBucketIndex,
+  WorkerId,
+} from '@joystream/types/augment/all'
 import { Balance } from '@polkadot/types/interfaces'
 
 export async function getDataObjectsInBag(
@@ -60,7 +69,7 @@ export function getStaticBagOwner(bagId: StaticBagId): typeof StorageBagOwner {
   }
 }
 
-export function getDynamicBagOwner(bagId: DynamicBagId) {
+export function getDynamicBagOwner(bagId: DynamicBagId): typeof StorageBagOwner {
   if (bagId.isChannel) {
     const owner = new StorageBagOwnerChannel()
     owner.channelId = bagId.asChannel.toNumber()
@@ -94,7 +103,7 @@ export function getDynamicBagId(bagId: DynamicBagId): string {
   }
 }
 
-export function getBagId(bagId: BagId) {
+export function getBagId(bagId: BagId): string {
   return bagId.isStatic ? getStaticBagId(bagId.asStatic) : getDynamicBagId(bagId.asDynamic)
 }
 
@@ -238,4 +247,20 @@ export async function getMostRecentlyCreatedDataObjects(
 export async function removeDataObject(store: DatabaseManager, object: StorageDataObject): Promise<void> {
   await unsetAssetRelations(store, object)
   await store.remove<StorageDataObject>(object)
+}
+
+export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {
+  const { distribution_bucket_family_id: familyId, distribution_bucket_index: bucketIndex } = runtimeBucketId
+  return distributionBucketIdByFamilyAndIndex(familyId, bucketIndex)
+}
+
+export function distributionBucketIdByFamilyAndIndex(
+  familyId: DistributionBucketFamilyId,
+  bucketIndex: DistributionBucketIndex
+): string {
+  return `${familyId.toString()}:${bucketIndex.toString()}`
+}
+
+export function distributionOperatorId(bucketId: DistributionBucketId, workerId: WorkerId): string {
+  return `${distributionBucketId(bucketId)}-${workerId.toString()}`
 }
