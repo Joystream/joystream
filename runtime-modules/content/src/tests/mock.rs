@@ -1,9 +1,8 @@
 #![cfg(test)]
 
 use crate::*;
-
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -31,6 +30,7 @@ pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
+pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
@@ -45,6 +45,14 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+
+// members that act as collaborators
+pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 8;
+pub const COLLABORATOR_MEMBER_ID: MemberId = 9;
+
+/// Constants
+// initial balancer for an account
+pub const INIT_BALANCE: u32 = 500;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -162,6 +170,10 @@ impl ContentActorAuthenticator for Test {
     type CuratorId = u64;
     type CuratorGroupId = u64;
 
+    fn validate_member_id(member_id: &Self::MemberId) -> bool {
+        *member_id < MEMBERS_COUNT
+    }
+
     fn is_lead(account_id: &Self::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
         *account_id == lead_account_id
@@ -188,7 +200,6 @@ impl ContentActorAuthenticator for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const MaxDistributionBucketNumberPerFamily: u64 = 10;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
@@ -217,7 +228,7 @@ impl storage::Trait for Test {
     type Event = MetaEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
-    type DistributionBucketId = u64;
+    type DistributionBucketIndex = u64;
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
@@ -233,7 +244,6 @@ impl storage::Trait for Test {
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
@@ -474,11 +484,12 @@ pub fn create_channel_mock(
                 ChannelRecord {
                     owner: owner,
                     is_censored: false,
-                    reward_account: params.reward_account,
-                    deletion_prize_source_account_id: sender,
+                    reward_account: params.reward_account.clone(),
+
+                    collaborators: params.collaborators.clone(),
                     num_videos: 0,
                 },
-                params.clone(),
+                params,
             ))
         );
     }
@@ -512,11 +523,16 @@ pub fn update_channel_mock(
                 ChannelRecord {
                     owner: channel_pre.owner.clone(),
                     is_censored: channel_pre.is_censored,
-                    reward_account: channel_pre.reward_account.clone(),
-                    deletion_prize_source_account_id: sender,
+                    reward_account: params
+                        .reward_account
+                        .map_or_else(|| channel_pre.reward_account.clone(), |account| account),
+                    collaborators: params
+                        .collaborators
+                        .clone()
+                        .unwrap_or(channel_pre.collaborators),
                     num_videos: channel_pre.num_videos,
                 },
-                params.clone(),
+                params,
             ))
         );
     }
@@ -611,6 +627,55 @@ pub fn update_video_mock(
                 video_id,
                 params.clone(),
             ))
+        );
+    }
+}
+
+pub fn delete_video_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: <Test as Trait>::VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::delete_video(
+            Origin::signed(sender),
+            actor.clone(),
+            video_id.clone(),
+            assets_to_remove.clone(),
+        ),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoDeleted(actor.clone(), video_id))
+        );
+    }
+}
+
+// helper functions
+pub fn helper_generate_storage_assets(sizes: Vec<u64>) -> StorageAssets<Test> {
+    StorageAssetsRecord {
+        object_creation_list: sizes
+            .into_iter()
+            .map(|s| DataObjectCreationParameters {
+                size: s,
+                ipfs_content_id: s.encode(),
+            })
+            .collect::<Vec<_>>(),
+        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+    }
+}
+
+pub fn helper_init_accounts(accounts: Vec<u64>) {
+    // give channel owner funds to permit collaborators to update assets
+    for acc in accounts.iter() {
+        let _ = balances::Module::<Test>::deposit_creating(
+            acc,
+            <Test as balances::Trait>::Balance::from(INIT_BALANCE),
         );
     }
 }

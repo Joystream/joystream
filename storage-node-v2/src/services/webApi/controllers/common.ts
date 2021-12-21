@@ -1,15 +1,13 @@
 import * as express from 'express'
-import { CLIError } from '@oclif/errors'
 import { ExtrinsicFailedError } from '../../runtime/api'
 import { BagIdValidationError } from '../../helpers/bagTypes'
-import logger from '../../logger'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 
 /**
  * Dedicated error for the web api requests.
  */
-export class WebApiError extends CLIError {
+export class WebApiError extends Error {
   httpStatusCode: number
 
   constructor(err: string, httpStatusCode: number) {
@@ -36,14 +34,20 @@ export class ServerError extends WebApiError {
  * @param errorType - defines request type
  * @returns void promise.
  */
-export function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
+export function sendResponseWithError(
+  res: express.Response,
+  next: express.NextFunction,
+  err: Error,
+  errorType: string
+): void {
   const message = isNofileError(err) ? `File not found.` : err.toString()
-  logger.error(message, { err })
 
   res.status(getHttpStatusCodeByError(err)).json({
     type: errorType,
     message,
   })
+
+  next(err)
 }
 
 /**
@@ -127,6 +131,11 @@ export type AppConfig = {
    * Enables uploading auth-schema validation
    */
   enableUploadingAuth: boolean
+
+  /**
+   * Source tag for log entries for ElasticSearch.
+   */
+  logSource: string
 
   /**
    * ElasticSearch logging endpoint URL

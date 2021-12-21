@@ -20,6 +20,7 @@ export const TempDirName = 'temp'
  * @param api - (optional) runtime API promise
  * @param workerId - current storage provider ID
  * @param asyncWorkersNumber - maximum parallel downloads number
+ * @param asyncWorkersTimeout - downloading asset timeout
  * @param queryNodeUrl - Query Node endpoint URL
  * @param uploadDirectory - local directory to get file names from
  * @param operatorUrl - (optional) defines the data source URL. If not set
@@ -30,6 +31,7 @@ export async function performSync(
   api: ApiPromise | undefined,
   workerId: number,
   asyncWorkersNumber: number,
+  asyncWorkersTimeout: number,
   queryNodeUrl: string,
   uploadDirectory: string,
   tempDirectory: string,
@@ -60,10 +62,11 @@ export async function performSync(
       added,
       uploadDirectory,
       tempDirectory,
-      workingStack
+      workingStack,
+      asyncWorkersTimeout
     )
   } else {
-    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory)
+    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout)
   }
 
   logger.debug(`Sync - started processing...`)
@@ -85,6 +88,7 @@ export async function performSync(
  * @param uploadDirectory - local directory for data uploading
  * @param tempDirectory - local directory for temporary data uploading
  * @param taskSink - a destination for the newly created tasks
+ * @param asyncWorkersTimeout - downloading asset timeout
  */
 async function getPrepareDownloadTasks(
   api: ApiPromise | undefined,
@@ -93,7 +97,8 @@ async function getPrepareDownloadTasks(
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
-  taskSink: TaskSink
+  taskSink: TaskSink,
+  asyncWorkersTimeout: number
 ): Promise<PrepareDownloadFileTask[]> {
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
@@ -134,7 +139,16 @@ async function getPrepareDownloadTasks(
       }
     }
 
-    return new PrepareDownloadFileTask(operatorUrls, bagId, id, uploadDirectory, tempDirectory, taskSink, api)
+    return new PrepareDownloadFileTask(
+      operatorUrls,
+      bagId,
+      id,
+      uploadDirectory,
+      tempDirectory,
+      taskSink,
+      asyncWorkersTimeout,
+      api
+    )
   })
 
   return tasks
@@ -147,15 +161,18 @@ async function getPrepareDownloadTasks(
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
  * @param tempDirectory - local directory for temporary data uploading
+ * @param downloadTimeout - asset downloading timeout (in minutes)
  */
 async function getDownloadTasks(
   operatorUrl: string,
   addedIds: string[],
   uploadDirectory: string,
-  tempDirectory: string
+  tempDirectory: string,
+  downloadTimeout: number
 ): Promise<DownloadFileTask[]> {
   const addedTasks = addedIds.map(
-    (fileName) => new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory)
+    (fileName) =>
+      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout)
   )
 
   return addedTasks

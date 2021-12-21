@@ -17,19 +17,21 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsStartReviewPeriod)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const openingId = parseInt(args.wgOpeningId)
     await this.validateOpeningForLeadAction(openingId, OpeningStatus.AcceptingApplications)
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'beginApplicantReview', [openingId])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'beginApplicantReview',
+      [openingId]
+    )
 
     this.log(
       chalk.green(`Opening ${chalk.magentaBright(openingId)} status changed to: ${chalk.magentaBright('In Review')}`)

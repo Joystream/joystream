@@ -6,6 +6,7 @@ import { ConfigParserService } from '../services/parsers/ConfigParserService'
 import { LoggingService } from '../services/logging'
 import { Logger } from 'winston'
 import { BagIdParserService } from '../services/parsers/BagIdParserService'
+import { BucketIdParserService } from '../services/parsers/BucketIdParserService'
 
 export const flags = {
   ...oclifFlags,
@@ -21,6 +22,7 @@ export const flags = {
     },
   }),
   bagId: oclifFlags.build({
+    char: 'b',
     parse: (value: string) => {
       const parser = new BagIdParserService(value)
       return parser.parse()
@@ -36,6 +38,13 @@ export const flags = {
     - static:council
     - static:wg:storage
     - dynamic:member:4`,
+  }),
+  bucketId: oclifFlags.build({
+    char: 'B',
+    parse: (value: string) => {
+      return BucketIdParserService.parseBucketId(value)
+    },
+    description: `Distribution bucket ID in {familyId}:{bucketIndex} format.`,
   }),
 }
 export default abstract class DefaultCommandBase extends Command {

@@ -15,7 +15,7 @@ import {
 import { LoggingService } from '../../logging'
 import { ContentService, DEFAULT_CONTENT_TYPE } from '../../content/ContentService'
 import proxy from 'express-http-proxy'
-import { PendingDownloadStatusDownloading, PendingDownloadStatusType } from '../../networking/PendingDownload'
+import { PendingDownload, PendingDownloadStatusType } from '../../networking/PendingDownload'
 import urljoin from 'url-join'
 
 const CACHED_MAX_AGE = 31536000
@@ -149,15 +149,15 @@ export class PublicApiController {
     objectId: string
   ) {
     const pendingDownload = this.stateCache.getPendingDownload(objectId)
-    if (!pendingDownload) {
-      throw new Error('Trying to serve pending download asset that is not pending download!')
+    if (!pendingDownload || pendingDownload.getStatus().type === PendingDownloadStatusType.Completed) {
+      throw new Error('Trying to serve pending download asset that is not in pending download state!')
     }
     const status = pendingDownload.getStatus().type
-    this.logger.verbose('Serving object in pending download state', { objectId, status })
+    this.logger.verbose('Serving object in pending download state', { objectId, currentStatus: status })
 
-    await pendingDownload.untilStatus(PendingDownloadStatusType.Downloading)
     const objectSize = pendingDownload.getObjectSize()
-    const { source, contentType } = pendingDownload.getStatus() as PendingDownloadStatusDownloading
+    const { source, contentType } = await pendingDownload.sourceData()
+
     res.setHeader('content-type', contentType || DEFAULT_CONTENT_TYPE)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
     // since the data coming from the source may not be valid
@@ -169,10 +169,10 @@ export class PublicApiController {
       const range = req.range(objectSize)
       if (!range || range === -1 || range === -2 || range.length !== 1 || range.type !== 'bytes') {
         // Range is not provided / invalid - serve data from pending download file
-        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize)
+        return this.servePendingDownloadAssetFromFile(req, res, next, pendingDownload, objectId, objectSize)
       } else if (range[0].start <= partiallyDownloadedContentSize) {
         // Range starts at the already downloaded part of the content - serve data from pending download file
-        return this.servePendingDownloadAssetFromFile(req, res, next, objectId, objectSize, range[0])
+        return this.servePendingDownloadAssetFromFile(req, res, next, pendingDownload, objectId, objectSize, range[0])
       }
     }
 
@@ -184,6 +184,7 @@ export class PublicApiController {
     req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
+    pendingDownload: PendingDownload,
     objectId: string,
     objectSize: number,
     range?: { start: number; end: number }
@@ -201,9 +202,14 @@ export class PublicApiController {
       res.setHeader('content-range', `bytes ${range.start}-${range.end}/${objectSize}`)
     }
     stream.pipe(res)
+    // Cleanup & infinite loading prevention
     req.on('close', () => {
       stream.destroy()
       res.end()
+    })
+    pendingDownload.onError(() => {
+      stream.destroy()
+      next(new Error(`Failed to get valid data for object ${objectId}`))
     })
   }
 

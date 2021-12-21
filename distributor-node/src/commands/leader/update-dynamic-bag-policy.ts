@@ -27,17 +27,21 @@ export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
       char: 'p',
       description: 'Key-value pair of {familyId}:{numberOfBuckets}',
       multiple: true,
+      default: [],
     }),
     ...DefaultCommandBase.flags,
   }
 
-  static examples = [`$ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 -p 2:10 -p 3:5`]
+  static examples = [`$ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 2:10 3:5`]
 
   async run(): Promise<void> {
     const { type, policy } = this.parse(LeaderUpdateDynamicBagPolicy).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Updating dynamic bag policy (${type})...`)
+    this.log(`Updating dynamic bag policy...`, {
+      type,
+      policy: policy.map(([familyId, numberOfBuckets]) => ({ familyId, numberOfBuckets })),
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateFamiliesInDynamicBagCreationPolicy(

@@ -6,9 +6,9 @@
  */
 
 /**
- * Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.
+ * Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed. Expected bucket id format is: {familyId}:{bucketIndex}
  */
-export type BucketIds = number[]
+export type DistributedBucketsIds = string[]
 
 /**
  * Configuration schema for distirubtor CLI and node
@@ -128,7 +128,7 @@ export interface DistributorNodeConfiguration {
    * Specifies the keys available within distributor node CLI.
    */
   keys?: (SubstrateUri | MnemonicPhrase | JSONBackupFile)[]
-  buckets?: BucketIds
+  buckets?: DistributedBucketsIds
   /**
    * ID of the node operator (distribution working group worker)
    */

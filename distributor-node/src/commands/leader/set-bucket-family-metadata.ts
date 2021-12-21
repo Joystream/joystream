@@ -73,7 +73,10 @@ export default class LeaderSetBucketFamilyMetadata extends AccountsCommandBase {
     )
     const metadata = this.parseAndValidateMetadata(metadataInput)
 
-    this.log(`Setting bucket family metadata (family: ${familyId})`, metadata)
+    this.log(`Setting bucket family metadata`, {
+      familyId,
+      metadata,
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.setDistributionBucketFamilyMetadata(

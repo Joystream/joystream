@@ -204,7 +204,7 @@ export interface Channel extends Struct {
   readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
-  readonly deletion_prize_source_account_id: GenericAccountId;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCategory */
@@ -228,6 +228,7 @@ export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelId */
@@ -264,6 +265,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -282,6 +284,8 @@ export interface ContentActor extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
+  readonly isCollaborator: boolean;
+  readonly asCollaborator: MemberId;
 }
 
 /** @name ContentId */
@@ -374,17 +378,23 @@ export interface DistributionBucket extends Struct {
 
 /** @name DistributionBucketFamily */
 export interface DistributionBucketFamily extends Struct {
-  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>;
+  readonly next_distribution_bucket_index: DistributionBucketIndex;
 }
 
 /** @name DistributionBucketFamilyId */
 export interface DistributionBucketFamilyId extends u64 {}
 
 /** @name DistributionBucketId */
-export interface DistributionBucketId extends u64 {}
+export interface DistributionBucketId extends Struct {
+  readonly distribution_bucket_family_id: DistributionBucketFamilyId;
+  readonly distribution_bucket_index: DistributionBucketIndex;
+}
 
-/** @name DistributionBucketIdSet */
-export interface DistributionBucketIdSet extends BTreeSet<DistributionBucketId> {}
+/** @name DistributionBucketIndex */
+export interface DistributionBucketIndex extends u64 {}
+
+/** @name DistributionBucketIndexSet */
+export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketIndex> {}
 
 /** @name Dynamic */
 export interface Dynamic extends Enum {
@@ -1049,7 +1059,6 @@ export interface StorageBucket extends Struct {
   readonly operator_status: StorageBucketOperatorStatus;
   readonly accepting_new_bags: bool;
   readonly voucher: Voucher;
-  readonly metadata: Bytes;
 }
 
 /** @name StorageBucketId */
@@ -1064,7 +1073,7 @@ export interface StorageBucketOperatorStatus extends Enum {
   readonly isInvitedStorageWorker: boolean;
   readonly asInvitedStorageWorker: WorkerId;
   readonly isStorageWorker: boolean;
-  readonly asStorageWorker: WorkerId;
+  readonly asStorageWorker: ITuple<[WorkerId, GenericAccountId]>;
 }
 
 /** @name StorageBucketsPerBagValueConstraint */

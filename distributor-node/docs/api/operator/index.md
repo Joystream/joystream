@@ -264,7 +264,7 @@ OperatorAuth
 ```javascript
 const inputBody = '{
   "buckets": [
-    0
+    "string"
   ]
 }';
 const headers = {
@@ -303,7 +303,7 @@ Updates buckets supported by the node.
 ```json
 {
   "buckets": [
-    0
+    "string"
   ]
 }
 ```
@@ -359,7 +359,7 @@ OperatorAuth
 ```json
 {
   "buckets": [
-    0
+    "string"
   ]
 }
 
@@ -369,7 +369,7 @@ OperatorAuth
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|buckets|[integer]|false|none|Set of bucket ids to be distributed by the node. If not provided - all buckets assigned to currently configured worker will be distributed.|
+|buckets|[string]|false|none|Set of bucket ids to be distributed by the node. If not provided - all buckets assigned to currently configured worker will be distributed.|
 
 undefined
 

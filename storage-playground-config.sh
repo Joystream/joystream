@@ -15,19 +15,20 @@ HOST_IP=$(tests/network-tests/get-host-ip.sh)
 
 ## Colossus 1
 CLI=storage-node-v2/bin/run
+TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
 
-${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-BUCKET_ID=`${CLI} leader:create-bucket -i=${COLOSSUS_1_WORKER_ID} -a -n=10000 -s=1000000000000  --accountUri ${COLOSSUS_1_ACCOUNT_URI}`
-${CLI} operator:accept-invitation -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-dynamic-bag-policy -n 1 -t Channel --accountUri ${COLOSSUS_1_ACCOUNT_URI}
-${CLI} leader:update-data-fee -f 10 --accountUri ${COLOSSUS_1_ACCOUNT_URI} # Optionally - set some data fee per megabyte
+${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COLOSSUS_1_WORKER_URI}
+BUCKET_ID=`${CLI} leader:create-bucket -i=${COLOSSUS_1_WORKER_ID} -a -n=10000 -s=1000000000000  --accountUri ${COLOSSUS_1_WORKER_URI}`
+${CLI} operator:accept-invitation -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -t=${TRANSACTOR_KEY} --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-dynamic-bag-policy -n 1 -t Channel --accountUri ${COLOSSUS_1_WORKER_URI}
+${CLI} leader:update-data-fee -f 10 --accountUri ${COLOSSUS_1_WORKER_URI} # Optionally - set some data fee per megabyte
 
 # The node uri should be an accessible endpoint from within a container as well as the host machine.
 # In production it would most likely be the reverse proxy endpoint. If not specified we
 # set it to the host machine address.
 COLOSSUS_1_NODE_URI=${COLOSSUS_1_NODE_URI:="http://${HOST_IP}:3333"}
-${CLI} operator:set-metadata -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -e="${COLOSSUS_1_NODE_URI}" --accountUri ${COLOSSUS_1_ACCOUNT_URI}
+${CLI} operator:set-metadata -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -e="${COLOSSUS_1_NODE_URI}" --accountUri ${COLOSSUS_1_WORKER_URI}
 
 echo "Colossus 1 BUCKET_ID=${BUCKET_ID}"
 
@@ -39,17 +40,17 @@ CLI=distributor-node/bin/run
 
 ${CLI} leader:set-buckets-per-bag-limit -l 10
 FAMILY_ID=`${CLI} leader:create-bucket-family`
-BUCKET_ID=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
-${CLI} leader:update-bucket-mode -f ${FAMILY_ID} -B ${BUCKET_ID} --mode on
+BUCKET_INDEX=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
+BUCKET_ID="${FAMILY_ID}:${BUCKET_INDEX}"
+${CLI} leader:update-bucket-mode -B ${BUCKET_ID} --mode on
 ${CLI} leader:update-dynamic-bag-policy -t Channel -p ${FAMILY_ID}:5
-${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
-${CLI} operator:accept-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
+${CLI} leader:invite-bucket-operator -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
+${CLI} operator:accept-invitation -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID}
 
 # The node uri should be an accessible endpoint from within a container as well as the host machine.
 # In production it would most likely be the reverse proxy endpoint. If not specified we
 # set it to the host machine address.
 DISTRIBUTOR_1_NODE_URI=${DISTRIBUTOR_1_NODE_URI:="http://${HOST_IP}:3334"}
-${CLI} operator:set-metadata -f ${FAMILY_ID} -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID} -e="${DISTRIBUTOR_1_NODE_URI}"
+${CLI} operator:set-metadata -B ${BUCKET_ID} -w ${DISTRIBUTOR_1_WORKER_ID} -e="${DISTRIBUTOR_1_NODE_URI}"
 
-echo "Distributor 1 FAMILY_ID=${FAMILY_ID}"
 echo "Distributor 1 BUCKET_ID=${BUCKET_ID}"

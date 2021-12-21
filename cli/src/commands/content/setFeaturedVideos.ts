@@ -11,15 +11,12 @@ export default class SetFeaturedVideosCommand extends ContentDirectoryCommandBas
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { featuredVideoIds } = this.parse(SetFeaturedVideosCommand).args
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getContentActor('Lead')
 
-    const actor = await this.getActor('Lead')
-
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'setFeaturedVideos', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'setFeaturedVideos', [
       actor,
       (featuredVideoIds as string).split(','),
     ])

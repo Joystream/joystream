@@ -36,4 +36,7 @@ impl content::ContentActorAuthenticator for Runtime {
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
         ContentWorkingGroup::ensure_worker_exists(curator_id).is_ok()
     }
+    fn validate_member_id(member_id: &Self::MemberId) -> bool {
+        membership::Module::<Runtime>::ensure_membership(*member_id).is_ok()
+    }
 }

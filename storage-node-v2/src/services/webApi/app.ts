@@ -23,7 +23,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
   app.use(cors())
   app.use(express.json())
-  app.use(httpLogger(config.elasticSearchEndpoint))
+  app.use(httpLogger(config.logSource, config.elasticSearchEndpoint))
 
   app.use(
     // Set parameters for each request.
