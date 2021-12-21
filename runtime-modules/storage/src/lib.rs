@@ -99,7 +99,7 @@
 //! - create_dynamic_bag
 //! - can_create_dynamic_bag_with_objects_constraints
 //! - create_dynamic_bag_with_objects_constraints
-//! - can_delete_non_empty_dynamic_bag
+//! - can_delete_dynamic_bag_with_objects
 
 //!
 //! ### Pallet constants
