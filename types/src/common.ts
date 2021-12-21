@@ -70,10 +70,7 @@ export class InputValidationLengthConstraint
   }
 }
 
-// Reserved keys are not part of the exported definition const, since they are not intented to be used
 export const WorkingGroupDef = {
-  // _Reserved0
-  // _Reserved1
   Storage: Null,
   Content: Null,
   OperationsAlpha: Null,
@@ -83,11 +80,7 @@ export const WorkingGroupDef = {
   OperationsGamma: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
-export class WorkingGroup extends JoyEnum({
-  _Reserved0: Null,
-  _Reserved1: Null,
-  ...WorkingGroupDef,
-}) {}
+export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
 // Temporarly in "common", because used both by /working-group and /content-working-group:
 export type ISlashableTerms = {

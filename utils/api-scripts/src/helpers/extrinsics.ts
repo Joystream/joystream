@@ -63,7 +63,7 @@ export class ExtrinsicsHelper {
                         // Need to assert that registry is of TypeRegistry type, since Registry intefrace
                         // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
                         const { name, docs } = (this.api.registry as TypeRegistry).findMetaError(dispatchError.asModule)
-                        errorMsg = `${name} (${docs})`
+                        errorMsg = `${name} (${docs.join(', ')})`
                       } catch (e) {
                         // This probably means we don't have this error in the metadata
                         // In this case - continue (we'll just display dispatchError.toString())

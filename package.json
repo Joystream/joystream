@@ -49,9 +49,10 @@
     "typescript": "^4.4.3",
     "bn.js": "4.12.0",
     "rxjs": "^7.4.0",
-    "typeorm": "^0.2.31",
+    "typeorm": "0.2.34",
     "pg": "^8.4.0",
-    "chalk": "^4.0.0"
+    "chalk": "^4.0.0",
+    "@joystream/warthog": "2.39.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",
@@ -69,7 +70,7 @@
     "yarn": "^1.22.0"
   },
   "volta": {
-    "node": "14.16.1",
+    "node": "14.18.0",
     "yarn": "1.22.4"
   }
 }

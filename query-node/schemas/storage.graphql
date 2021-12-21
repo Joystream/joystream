@@ -35,6 +35,7 @@ type StorageBucketOperatorStatusInvited @variant {
 
 type StorageBucketOperatorStatusActive @variant {
   workerId: Int!
+  transactorAccountId: String!
 }
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
@@ -105,8 +106,8 @@ type StorageBucket @entity {
   "Whether the bucket is accepting any new storage bags"
   acceptingNewBags: Boolean!
 
-  "Assignments to store a bag"
-  bagAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBucket")
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "storageBuckets")
 
   "Bucket's data object size limit in bytes"
   dataObjectsSizeLimit: BigInt!
@@ -151,44 +152,14 @@ type StorageBag @entity {
   "Data objects in the bag"
   objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
 
-  "Assignments to a storage bucket"
-  storageAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBag")
+  "Storage buckets assigned to the bag"
+  storageBuckets: [StorageBucket!]
 
-  "Assignments to a distribution bucket"
-  distirbutionAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "storageBag")
+  "Distribution buckets assigned to the bag"
+  distributionBuckets: [DistributionBucket!]
 
   "Owner of the storage bag"
   owner: StorageBagOwner!
-}
-
-type StorageBagStorageAssignment @entity {
-  "{storageBagId-storageBucketId}"
-  id: ID!
-
-  "Storage bag to be stored"
-  storageBag: StorageBag!
-
-  "Storage bucket that should store the bag"
-  storageBucket: StorageBucket!
-
-  # Relationship filtering workaround
-  storageBagId: ID
-  storageBucketId: ID
-}
-
-type StorageBagDistributionAssignment @entity {
-  "{storageBagId-distributionBucketId}"
-  id: ID!
-
-  "Storage bag to be distributed"
-  storageBag: StorageBag!
-
-  "Distribution bucket that should distribute the bag"
-  distributionBucket: DistributionBucket!
-
-  # Relationship filtering workaround
-  storageBagId: ID
-  distributionBucketId: ID
 }
 
 type DataObjectTypeChannelAvatar @variant {
@@ -303,11 +274,14 @@ type DistributionBucketOperator @entity {
 }
 
 type DistributionBucket @entity {
-  "Runtime bucket id"
+  "Runtime bucket id in {familyId}:{bucketIndex} format"
   id: ID!
 
   "Distribution family the bucket is part of"
   family: DistributionBucketFamily!
+
+  "Bucket index within the family"
+  bucketIndex: Int!
 
   "Distribution bucket operators (either active or invited)"
   operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
@@ -318,8 +292,8 @@ type DistributionBucket @entity {
   "Whether the bucket is currently distributing content"
   distributing: Boolean!
 
-  "Assignments to distribute a bag"
-  bagAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "distributionBucket")
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "distributionBuckets")
 }
 
 type DistributionBucketFamily @entity {

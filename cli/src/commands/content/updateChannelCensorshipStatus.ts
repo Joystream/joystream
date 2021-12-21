@@ -26,18 +26,14 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let {
       args: { id, status },
       flags: { rationale },
     } = this.parse(UpdateChannelCensorshipStatusCommand)
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-
     const channel = await this.getApi().channelById(id)
-    const actor = await this.getCurationActorByChannel(channel)
-
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getCurationActorByChannel(channel)
 
     if (status === undefined) {
       status = await this.simplePrompt({
@@ -58,10 +54,12 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     }
 
     if (rationale === undefined) {
-      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
+      rationale = (await this.simplePrompt({
+        message: 'Please provide the rationale for updating the status',
+      })) as string
     }
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannelCensorshipStatus', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannelCensorshipStatus', [
       actor,
       id,
       status,

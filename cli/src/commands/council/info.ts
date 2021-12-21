@@ -1,7 +1,7 @@
 import { ElectionStage } from '@joystream/types/council'
 import { formatNumber, formatBalance } from '@polkadot/util'
 import { BlockNumber } from '@polkadot/types/interfaces'
-import { CouncilInfoObj, NameValueObj } from '../../Types'
+import { CouncilInfo as CouncilInfoObj, NameValueObj } from '../../Types'
 import { displayHeader, displayNameValueTable } from '../../helpers/display'
 import ApiCommandBase from '../../base/ApiCommandBase'
 

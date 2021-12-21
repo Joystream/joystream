@@ -4,6 +4,10 @@ import { Worker, WorkerType } from 'query-node/dist/model'
 import { StorageWorkingGroup } from './generated/types'
 import { WorkerId } from '@joystream/types/augment'
 
+export function workerEntityId(type: WorkerType, workerId: string | WorkerId): string {
+  return `${type}-${workerId.toString()}`
+}
+
 export async function workingGroup_OpeningFilled({ event, store }: EventContext & StoreContext): Promise<void> {
   const workerType = getWorkerType(event)
   if (!workerType) {
@@ -94,11 +98,13 @@ export async function workingGroup_TerminatedLeader({ event, store }: EventConte
 /// ///////////////// Helpers ////////////////////////////////////////////////////
 
 function getWorkerType(event: SubstrateEvent): WorkerType | null {
-  if (event.section === 'storageWorkingGroup') {
+  // Note: event.section is not available!
+  const [eventSection] = event.name.split('.')
+  if (eventSection === 'storageWorkingGroup') {
     return WorkerType.STORAGE
   }
 
-  if (event.section === 'gatewayWorkingGroup') {
+  if (eventSection === 'gatewayWorkingGroup') {
     return WorkerType.GATEWAY
   }
 
@@ -113,7 +119,7 @@ async function createWorker(
 ): Promise<void> {
   // create entity
   const newWorker = new Worker({
-    id: `${workerType}-${workerId.toString()}`,
+    id: workerEntityId(workerType, workerId),
     workerId: workerId.toString(),
     type: workerType,
     isActive: true,
