@@ -35,14 +35,15 @@ export class MigrateContentCommand extends Command {
       description: 'Video batch size',
       default: 20,
     }),
-    dev: flags.boolean({
-      description: 'Turns on dev mode (assumes that member 0 (Alice) exists)',
-      default: false,
+    forceChannelOwnerMemberId: flags.integer({
+      description:
+        'Can be used to force a specific channel owner for all channels, allowing to easily test the script in dev environment',
+      required: false,
     }),
     preferredDownloadSpEndpoints: flags.string({
       multiple: true,
-      description: 'Preferred storage node endpoints when downloading data objects (comma-separated)',
-      default: ['https://rome-rpc-4.joystream.org'],
+      description: 'Preferred storage node endpoints when downloading data objects',
+      default: ['https://storage-1.joystream.org/storage'],
     }),
     uploadSpEndpoint: flags.string({
       description: 'Giza storage node endpoint to use for uploading',
@@ -51,14 +52,6 @@ export class MigrateContentCommand extends Command {
     uploadSpBucketId: flags.integer({
       description: 'Giza storage bucket id',
       default: 0,
-    }),
-    uploadMemberId: flags.integer({
-      description: 'Giza member id to use for uploading',
-      default: 0,
-    }),
-    uploadMemberControllerUri: flags.string({
-      description: 'Giza upload member controller uri',
-      default: '//Alice',
     }),
     migrationStatePath: flags.string({
       description: 'Path to migration results directory',

@@ -23,14 +23,6 @@ export class RetryFailedUploadsCommand extends Command {
       description: 'Giza storage bucket id',
       default: 0,
     }),
-    uploadMemberId: flags.integer({
-      description: 'Giza member id to use for uploading',
-      default: 0,
-    }),
-    uploadMemberControllerUri: flags.string({
-      description: 'Giza upload member controller uri',
-      default: '//Alice',
-    }),
     failedUploadsPath: flags.string({
       char: 'f',
       description: 'Path to failed uploads file',

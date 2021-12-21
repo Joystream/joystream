@@ -28,81 +28,9 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`migration-scripts giza:migrateContent`](#migration-scripts-gizamigratecontent)
-* [`migration-scripts giza:retryFailedUploads`](#migration-scripts-gizaretryfaileduploads)
 * [`migration-scripts help [COMMAND]`](#migration-scripts-help-command)
-
-## `migration-scripts giza:migrateContent`
-
-```
-USAGE
-  $ migration-scripts giza:migrateContent
-
-OPTIONS
-  -c, --channelIds=channelIds                                  (required) Channel ids to migrate
-  --channelBatchSize=channelBatchSize                          [default: 100] Channel batch size
-
-  --dataDir=dataDir                                            [default: /tmp/joystream/giza-migration] Directory for
-                                                               storing data objects to upload
-
-  --dev                                                        Turns on dev mode
-
-  --migrationStatePath=migrationStatePath                      [default:
-                                                               /home/leszek/projects/joystream/joystream-ws-1/utils/migr
-                                                               ation-scripts/results/giza] Path to migration
-                                                               state/results directory
-
-  --preferredDownloadSpEndpoints=preferredDownloadSpEndpoints  [default: https://rome-rpc-4.joystream.org] Preferred
-                                                               storage node endpoints when downloading data objects
-                                                               (comma-separated)
-
-  --queryNodeUri=queryNodeUri                                  [default: https://hydra.joystream.org/graphql] Query node
-                                                               uri
-
-  --sudoUri=sudoUri                                            [default: //Alice] Sudo key Substrate uri
-
-  --uploadMemberControllerUri=uploadMemberControllerUri        [default: //Alice] Giza upload member controller uri
-
-  --uploadMemberId=uploadMemberId                              [default: 0] Giza member id to use for uploading
-
-  --uploadSpBucketId=uploadSpBucketId                          [default: 0] Giza storage bucket id
-
-  --uploadSpEndpoint=uploadSpEndpoint                          [default: http://localhost:3333] Giza storage node
-                                                               endpoint to use for uploading
-
-  --videoBatchSize=videoBatchSize                              [default: 100] Video batch size
-
-  --wsProviderEndpointUri=wsProviderEndpointUri                [default: ws://localhost:9944] WS provider endpoint uri
-                                                               (Giza)
-```
-
-_See code: [src/commands/giza/migrateContent.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza/migrateContent.ts)_
-
-## `migration-scripts giza:retryFailedUploads`
-
-```
-USAGE
-  $ migration-scripts giza:retryFailedUploads
-
-OPTIONS
-  -f, --failedUploadsPath=failedUploadsPath              (required) Path to failed uploads file
-
-  --dataDir=dataDir                                      [default: /tmp/joystream/giza-migration] Directory for storing
-                                                         data objects to upload
-
-  --uploadMemberControllerUri=uploadMemberControllerUri  [default: //Alice] Giza upload member controller uri
-
-  --uploadMemberId=uploadMemberId                        [default: 0] Giza member id to use for uploading
-
-  --uploadSpBucketId=uploadSpBucketId                    [default: 0] Giza storage bucket id
-
-  --uploadSpEndpoint=uploadSpEndpoint                    [default: http://localhost:3333] Giza storage node endpoint to
-                                                         use for uploading
-
-  --wsProviderEndpointUri=wsProviderEndpointUri          [default: ws://localhost:9944] WS provider endpoint uri (Giza)
-```
-
-_See code: [src/commands/giza/retryFailedUploads.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza/retryFailedUploads.ts)_
+* [`migration-scripts sumer-giza:migrateContent`](#migration-scripts-sumer-gizamigratecontent)
+* [`migration-scripts sumer-giza:retryFailedUploads`](#migration-scripts-sumer-gizaretryfaileduploads)
 
 ## `migration-scripts help [COMMAND]`
 
@@ -120,4 +48,69 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.3/src/commands/help.ts)_
+
+## `migration-scripts sumer-giza:migrateContent`
+
+```
+USAGE
+  $ migration-scripts sumer-giza:migrateContent
+
+OPTIONS
+  -c, --channelIds=channelIds                                  (required) Channel ids to migrate
+  --channelBatchSize=channelBatchSize                          [default: 20] Channel batch size
+
+  --dataDir=dataDir                                            [default: /tmp/joystream/sumer-giza-migration] Directory
+                                                               for storing data objects to upload
+
+  --forceChannelOwnerMemberId=forceChannelOwnerMemberId        Can be used to force a specific channel owner for all
+                                                               channels, allowing to test the script in dev environment
+
+  --migrationStatePath=migrationStatePath                      [default:
+                                                               /home/leszek/projects/joystream/joystream-ws-2/utils/migr
+                                                               ation-scripts/results/sumer-giza] Path to migration
+                                                               results directory
+
+  --preferredDownloadSpEndpoints=preferredDownloadSpEndpoints  [default: https://storage-1.joystream.org/storage]
+                                                               Preferred storage node endpoints when downloading data
+                                                               objects
+
+  --queryNodeUri=queryNodeUri                                  [default: https://hydra.joystream.org/graphql] Query node
+                                                               uri
+
+  --sudoUri=sudoUri                                            [default: //Alice] Sudo key Substrate uri
+
+  --uploadSpBucketId=uploadSpBucketId                          [default: 0] Giza storage bucket id
+
+  --uploadSpEndpoint=uploadSpEndpoint                          [default: http://localhost:3333] Giza storage node
+                                                               endpoint to use for uploading
+
+  --videoBatchSize=videoBatchSize                              [default: 20] Video batch size
+
+  --wsProviderEndpointUri=wsProviderEndpointUri                [default: ws://localhost:9944] WS provider endpoint uri
+                                                               (Giza)
+```
+
+_See code: [src/commands/sumer-giza/migrateContent.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/sumer-giza/migrateContent.ts)_
+
+## `migration-scripts sumer-giza:retryFailedUploads`
+
+```
+USAGE
+  $ migration-scripts sumer-giza:retryFailedUploads
+
+OPTIONS
+  -f, --failedUploadsPath=failedUploadsPath      (required) Path to failed uploads file
+
+  --dataDir=dataDir                              [default: /tmp/joystream/sumer-giza-migration] Directory where data
+                                                 objects to upload are stored
+
+  --uploadSpBucketId=uploadSpBucketId            [default: 0] Giza storage bucket id
+
+  --uploadSpEndpoint=uploadSpEndpoint            [default: http://localhost:3333] Giza storage node endpoint to use for
+                                                 uploading
+
+  --wsProviderEndpointUri=wsProviderEndpointUri  [default: ws://localhost:9944] WS provider endpoint uri (Giza)
+```
+
+_See code: [src/commands/sumer-giza/retryFailedUploads.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/sumer-giza/retryFailedUploads.ts)_
 <!-- commandsstop -->

@@ -21,7 +21,6 @@ export type MigrationStateJson = {
 export type BaseMigrationConfig = {
   migrationStatePath: string
   sudoUri: string
-  dev: boolean
 }
 
 export type BaseMigrationParams = {

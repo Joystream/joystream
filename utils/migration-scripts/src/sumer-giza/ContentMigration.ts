@@ -2,8 +2,6 @@ import { WsProvider } from '@polkadot/api'
 import { QueryNodeApi } from './sumer-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { VideosMigration } from './VideosMigration'
-import { ChannelCategoriesMigration } from './ChannelCategoriesMigration'
-import { VideoCategoriesMigration } from './VideoCategoriesMigration'
 import { ChannelMigration } from './ChannelsMigration'
 
 export type ContentMigrationConfig = {
@@ -14,12 +12,10 @@ export type ContentMigrationConfig = {
   dataDir: string
   channelBatchSize: number
   videoBatchSize: number
-  dev: boolean
+  forceChannelOwnerMemberId: number | undefined
   preferredDownloadSpEndpoints?: string[]
   uploadSpBucketId: number
   uploadSpEndpoint: string
-  uploadMemberControllerUri: string
-  uploadMemberId: number
   migrationStatePath: string
 }
 
@@ -36,24 +32,38 @@ export class ContentMigration {
     this.config = config
   }
 
+  private async getForcedChannelOwner(): Promise<{ id: string; controllerAccount: string } | undefined> {
+    const { forceChannelOwnerMemberId } = this.config
+    if (forceChannelOwnerMemberId) {
+      const ownerMember = await this.api.query.members.membershipById(forceChannelOwnerMemberId)
+      if (ownerMember.isEmpty) {
+        throw new Error(`Membership by id ${forceChannelOwnerMemberId} not found!`)
+      }
+      return {
+        id: forceChannelOwnerMemberId.toString(),
+        controllerAccount: ownerMember.controller_account.toString(),
+      }
+    }
+    return undefined
+  }
+
   public async run(): Promise<void> {
     const { api, queryNodeApi, config } = this
     await this.api.isReadyOrError
-    const { idsMap: channelCategoriesMap } = await new ChannelCategoriesMigration({ api, queryNodeApi, config }).run()
-    const { idsMap: videoCategoriesMap } = await new VideoCategoriesMigration({ api, queryNodeApi, config }).run()
+    const forcedChannelOwner = await this.getForcedChannelOwner()
     const { idsMap: channelsMap, videoIds } = await new ChannelMigration({
       api,
       queryNodeApi,
       config,
-      categoriesMap: channelCategoriesMap,
+      forcedChannelOwner,
     }).run()
     await new VideosMigration({
       api,
       queryNodeApi,
       config,
-      categoriesMap: videoCategoriesMap,
       channelsMap,
       videoIds,
+      forcedChannelOwner,
     }).run()
   }
 }

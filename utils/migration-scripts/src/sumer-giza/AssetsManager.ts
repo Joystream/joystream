@@ -8,10 +8,7 @@ import { BagId, DataObjectCreationParameters, DataObjectId, UploadParameters } f
 import { IEvent } from '@polkadot/types/types'
 import { Vec } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
-import { u8aToHex } from '@polkadot/util'
 import FormData from 'form-data'
-import { Keyring } from '@polkadot/keyring'
-import { KeyringPair } from '@polkadot/keyring/types'
 import { ImageResizer } from './ImageResizer'
 import { QueryNodeApi } from './sumer-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
@@ -25,8 +22,6 @@ export type AssetsManagerConfig = {
   preferredDownloadSpEndpoints?: string[]
   uploadSpBucketId: number
   uploadSpEndpoint: string
-  uploadMemberControllerUri: string
-  uploadMemberId: number
   dataDir: string
 }
 
@@ -38,7 +33,6 @@ export type AssetsManagerParams = {
 
 export type AssetsManagerLoadableParams = {
   dataObjectFeePerMB: BN
-  uploadMemberKey: KeyringPair
   sumerStorageProviderEndpoints: string[]
 }
 
@@ -58,7 +52,6 @@ export class AssetsManager {
   private api: RuntimeApi
   private config: AssetsManagerConfig
   public readonly dataObjectFeePerMB: BN
-  private uploadMemberKey: KeyringPair
   private sumerStorageProviderEndpoints: string[]
   private resizer: ImageResizer
   private queuedUploads: Set<string>
@@ -71,18 +64,16 @@ export class AssetsManager {
   public static async create(params: AssetsManagerParams): Promise<AssetsManager> {
     const { api } = params
     const dataObjectFeePerMB = await api.query.storage.dataObjectPerMegabyteFee()
-    const uploadMemberKey = await AssetsManager.getUploadMemberKey(params)
     const sumerStorageProviderEndpoints = params.queryNodeApi
       ? await AssetsManager.getSumerStorageProviderEndpoints(params.queryNodeApi)
       : []
-    return new AssetsManager(params, { dataObjectFeePerMB, uploadMemberKey, sumerStorageProviderEndpoints })
+    return new AssetsManager(params, { dataObjectFeePerMB, sumerStorageProviderEndpoints })
   }
 
   private constructor(params: AssetsManagerParams, loadableParams: AssetsManagerLoadableParams) {
     const { api, config } = params
-    const { dataObjectFeePerMB, uploadMemberKey, sumerStorageProviderEndpoints } = loadableParams
+    const { dataObjectFeePerMB, sumerStorageProviderEndpoints } = loadableParams
     this.dataObjectFeePerMB = dataObjectFeePerMB
-    this.uploadMemberKey = uploadMemberKey
     this.sumerStorageProviderEndpoints = sumerStorageProviderEndpoints
     this.api = api
     this.config = config
@@ -90,20 +81,6 @@ export class AssetsManager {
     this.queuedUploads = new Set()
     fs.mkdirSync(this.tmpAssetPath(''), { recursive: true })
     fs.mkdirSync(this.assetPath(''), { recursive: true })
-  }
-
-  private static async getUploadMemberKey({ api, config }: AssetsManagerParams): Promise<KeyringPair> {
-    const { uploadMemberControllerUri, uploadMemberId } = config
-    const keyring = new Keyring({ type: 'sr25519' })
-    const uploadMemberController = keyring.createFromUri(uploadMemberControllerUri)
-    const uploadMember = await api.query.members.membershipById(uploadMemberId)
-    if (uploadMember.controller_account.toString() !== uploadMemberController.address) {
-      throw new Error(
-        `Invalid upload member controller key! ` +
-          `Expected: ${uploadMember.controller_account.toString()}, Got: ${uploadMemberController.address}`
-      )
-    }
-    return uploadMemberController
   }
 
   private static async getSumerStorageProviderEndpoints(queryNodeApi: QueryNodeApi): Promise<string[]> {
@@ -246,8 +223,7 @@ export class AssetsManager {
 
   private async uploadDataObject(bagId: string, dataObjectId: number): Promise<void> {
     const {
-      uploadMemberKey,
-      config: { uploadMemberId, uploadSpBucketId, uploadSpEndpoint },
+      config: { uploadSpBucketId, uploadSpEndpoint },
     } = this
     const dataObject = await this.api.query.storage.dataObjectsById(
       { Dynamic: { Channel: bagId.split(':')[2] } },
@@ -256,27 +232,6 @@ export class AssetsManager {
     const dataPath = this.assetPath(Buffer.from(dataObject.ipfsContentId.toHex().replace('0x', ''), 'hex').toString())
     if (!fs.existsSync(dataPath)) {
       throw new Error(`Cannot upload object: ${dataObjectId}: ${dataPath} not found`)
-    }
-    const tokenRequestPayload = {
-      accountId: uploadMemberKey.address,
-      bagId,
-      dataObjectId,
-      memberId: uploadMemberId,
-      storageBucketId: uploadSpBucketId,
-    }
-    const signature = u8aToHex(uploadMemberKey.sign(JSON.stringify(tokenRequestPayload)))
-
-    let token: string
-    try {
-      const response = await axios.post(urljoin(uploadSpEndpoint, 'api/v1/authToken'), {
-        data: tokenRequestPayload,
-        signature,
-      })
-      token = response.data.token
-    } catch (e) {
-      const msg = this.reqErrorMessage(e)
-      console.error(`Upload token request (objectId: ${dataObjectId}) to ${uploadSpEndpoint} failed: ${msg}`)
-      return
     }
 
     const fileStream = fs.createReadStream(dataPath)
@@ -293,7 +248,6 @@ export class AssetsManager {
         data: formData,
         maxBodyLength: Infinity,
         headers: {
-          'x-api-key': token,
           'content-type': 'multipart/form-data',
           ...formData.getHeaders(),
         },

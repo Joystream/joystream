@@ -16,31 +16,23 @@ export type VideosMigrationConfig = AssetsMigrationConfig & {
 export type VideosMigrationParams = AssetsMigrationParams & {
   config: VideosMigrationConfig
   videoIds: number[]
-  categoriesMap: Map<number, number>
   channelsMap: Map<number, number>
+  forcedChannelOwner: { id: string; controllerAccount: string } | undefined
 }
 
 export class VideosMigration extends AssetsMigration {
   name = 'Videos migration'
   protected config: VideosMigrationConfig
-  protected categoriesMap: Map<number, number>
   protected channelsMap: Map<number, number>
   protected videoIds: number[]
+  protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
 
-  public constructor({ api, queryNodeApi, config, videoIds, categoriesMap, channelsMap }: VideosMigrationParams) {
+  public constructor({ api, queryNodeApi, config, videoIds, channelsMap, forcedChannelOwner }: VideosMigrationParams) {
     super({ api, queryNodeApi, config })
     this.config = config
-    this.categoriesMap = categoriesMap
     this.channelsMap = channelsMap
     this.videoIds = videoIds
-  }
-
-  private getNewCategoryId(oldCategoryId: string | null | undefined): Long | undefined {
-    if (typeof oldCategoryId !== 'string') {
-      return undefined
-    }
-    const newCategoryId = this.categoriesMap.get(parseInt(oldCategoryId))
-    return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
+    this.forcedChannelOwner = forcedChannelOwner
   }
 
   private getNewChannelId(oldChannelId: number): number {
@@ -119,8 +111,8 @@ export class VideosMigration extends AssetsMigration {
     }
 
     let { ownerMember } = channel
-    if (this.config.dev) {
-      ownerMember = { id: '0', controllerAccount: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY' }
+    if (this.forcedChannelOwner) {
+      ownerMember = this.forcedChannelOwner
     }
 
     return { ...video, channel: { ...channel, ownerMember } }
@@ -156,7 +148,7 @@ export class VideosMigration extends AssetsMigration {
     const meta = new VideoMetadata({
       title,
       description,
-      category: this.getNewCategoryId(categoryId),
+      category: categoryId ? Long.fromString(categoryId) : undefined,
       duration,
       hasMarketing,
       isExplicit,

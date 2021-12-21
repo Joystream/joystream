@@ -12,11 +12,12 @@ import { MigrationResult } from './BaseMigration'
 export type ChannelsMigrationConfig = AssetsMigrationConfig & {
   channelIds: number[]
   channelBatchSize: number
+  forceChannelOwnerMemberId: number | undefined
 }
 
 export type ChannelsMigrationParams = AssetsMigrationParams & {
   config: ChannelsMigrationConfig
-  categoriesMap: Map<number, number>
+  forcedChannelOwner: { id: string; controllerAccount: string } | undefined
 }
 
 export type ChannelsMigrationResult = MigrationResult & {
@@ -26,21 +27,13 @@ export type ChannelsMigrationResult = MigrationResult & {
 export class ChannelMigration extends AssetsMigration {
   name = 'Channels migration'
   protected config: ChannelsMigrationConfig
-  protected categoriesMap: Map<number, number>
   protected videoIds: number[] = []
+  protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
 
   public constructor(params: ChannelsMigrationParams) {
     super(params)
     this.config = params.config
-    this.categoriesMap = params.categoriesMap
-  }
-
-  private getNewCategoryId(oldCategoryId: string | null | undefined): Long | undefined {
-    if (typeof oldCategoryId !== 'string') {
-      return undefined
-    }
-    const newCategoryId = this.categoriesMap.get(parseInt(oldCategoryId))
-    return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
+    this.forcedChannelOwner = params.forcedChannelOwner
   }
 
   private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment) {
@@ -48,8 +41,8 @@ export class ChannelMigration extends AssetsMigration {
       throw new Error(`Chanel ownerMember missing: ${id}. Only member-owned channels are supported!`)
     }
 
-    if (this.config.dev) {
-      return { id: '0', controllerAccount: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY' }
+    if (this.forcedChannelOwner) {
+      return this.forcedChannelOwner
     }
 
     return ownerMember
@@ -136,7 +129,7 @@ export class ChannelMigration extends AssetsMigration {
     const meta = new ChannelMetadata({
       title,
       description,
-      category: this.getNewCategoryId(categoryId),
+      category: categoryId ? Long.fromString(categoryId) : undefined,
       avatarPhoto: preparedAssets.avatar?.index,
       coverPhoto: preparedAssets.coverPhoto?.index,
       isPublic,
