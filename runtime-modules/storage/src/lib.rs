@@ -2892,12 +2892,16 @@ impl<T: Trait> Module<T> {
             );
             dynamic_bag.deletion_prize.unwrap_or_else(Zero::zero)
         } else {
+            let bag_id: BagId<T> = dynamic_bag_id.clone().into();
+            let objects_del_prize = <DataObjectsById<T>>::iter_prefix(bag_id)
+                .fold(BalanceOf::<T>::zero(), |acc, (_, data_object)| {
+                    acc.saturating_add(data_object.deletion_prize)
+                });
+
             dynamic_bag
                 .deletion_prize
                 .unwrap_or_else(Zero::zero)
-                .saturating_add(Self::calculate_data_storage_fee(
-                    dynamic_bag.objects_total_size,
-                ))
+                .saturating_add(objects_del_prize)
         };
 
         ensure!(
