@@ -13,9 +13,9 @@ const queryNodeHost = config.require('queryNodeHost')
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 let configArgusImage = config.require('argusImage')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
-const keys = config.get('keys') || '[{ "suri": "//Alice" }]'
+const keys = config.require('keys')
 const buckets = config.get('buckets') || 'all'
-const workerId = config.get('workerId') || '0'
+const workerId = config.require('workerId')
 const name = 'argus-node'
 const isMinikube = config.getBoolean('isMinikube')
 
@@ -110,6 +110,7 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'argus',
               image: argusImage,
               imagePullPolicy: 'IfNotPresent',
+              workingDir: '/joystream/distributor-node',
               env: [
                 {
                   name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE',
@@ -130,6 +131,10 @@ const deployment = new k8s.apps.v1.Deployment(
                 {
                   name: 'JOYSTREAM_DISTRIBUTOR__WORKER_ID',
                   value: workerId,
+                },
+                {
+                  name: 'JOYSTREAM_DISTRIBUTOR__PORT',
+                  value: '3334',
                 },
               ],
               args: ['start'],

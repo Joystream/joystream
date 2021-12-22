@@ -18,13 +18,10 @@ template:
       default: 'wss://rome-rpc-endpoint.joystream.org:9944/'
     argusImage:
       description: The distributor node image to use for running the node
-      default: joystream/distributor-node:latest
     keys:
       description: Specifies the keys available within distributor node CLI
-      default: "[{ 'suri': '//Alice' }]"
     buckets:
       description: Specifies the buckets distributed by the node
       default: 'all'
     workerId:
       description: ID of the node operator (distribution working group worker)
-      default: 0
