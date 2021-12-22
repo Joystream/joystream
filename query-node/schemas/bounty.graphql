@@ -62,10 +62,10 @@ type Bounty @entity {
   "Stake minimum amount required to submit work entry to the bounty"
   entrantStake: BigInt!
 
-  "Bounty creator"
+  "Bounty creator (if created by a member and not the council)"
   creator: Membership
 
-  "Bounty oracle"
+  "Bounty oracle (if a member and not the council)"
   oracle: Membership
 
   "Bounty funding type"
@@ -184,6 +184,9 @@ type BountyContribution @entity {
 
   "Bounty to which the contribution is made"
   bounty: Bounty!
+
+  "Member making the contribution (if a member and not the council)"
+  contributor: Membership
 
   "Amount of the contribution"
   amount: BigInt!
