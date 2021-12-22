@@ -5,13 +5,14 @@ use frame_support::{assert_err, assert_ok};
 
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
+type ChannelId = <Test as storage::Trait>::ChannelId;
 
 // helper functions
 pub fn increase_account_balance_helper(account_id: &u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
-// fixture
+// fixtures
 pub struct CreateChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -139,6 +140,90 @@ impl CreateChannelFixture {
                     assets.object_creation_list.len(),
                 );
             }
+        }
+    }
+}
+
+pub struct CreateVideoFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    params: VideoCreationParameters<Test>,
+    channel_id: ChannelId,
+}
+
+impl CreateVideoFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            params: VideoCreationParameters::<Test> {
+                assets: None,
+                meta: None,
+            },
+            channel_id: One::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_params(self, params: VideoCreationParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
+        let params = VideoCreationParameters::<Test> {
+            assets: Some(assets),
+            meta: None,
+        };
+        self.with_params(params)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let actual_result = Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id.clone(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let balance_pre = Balances::usable_balance(self.sender);
+
+        if expected_result.is_ok() {
+            let video_id = Content::next_video_id();
+
+            // ensure channel is on chain
+            assert_ok!(Content::ensure_video_exists(&video_id));
+
+            // channel counter increased
+            assert_eq!(
+                Content::next_video_id(),
+                video_id.saturating_add(One::one())
+            );
+
+            // event correctly deposited
+            let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoCreated(
+                    ContentActor::Member(FIRST_MEMBER_ID),
+                    self.channel_id,
+                    video_id,
+                    self.params.clone(),
+                ))
+            );
         }
     }
 }
