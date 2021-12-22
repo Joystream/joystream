@@ -15,12 +15,20 @@ const name = 'storage-node'
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 const queryNodeHost = config.require('queryNodeHost')
 const workerId = config.get('workerId') || '0'
-const accountURI = config.get('accountURI') || '//Alice'
+const accountURI = config.get('accountURI')
+const keyFile = config.get('keyFile')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const configColossusImage = config.get('colossusImage') || `joystream/colossus:latest`
 const colossusPort = parseInt(config.get('colossusPort') || '3333')
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
+
+let additionalVolumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
+let additionalVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
+
+if (!accountURI && !keyFile) {
+  throw new Error('Must specify either Key file or Account URI')
+}
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
 
@@ -89,22 +97,36 @@ const pvc = new k8s.core.v1.PersistentVolumeClaim(
   resourceOptions
 )
 
-const keyFile = config.require('keyFile')
-const keyConfigName = new configMapFromFile(
-  'key-config',
-  {
-    filePath: keyFile,
-    namespaceName: namespaceName,
-  },
-  resourceOptions
-).configName
+if (keyFile) {
+  const keyConfigName = new configMapFromFile(
+    'key-config',
+    {
+      filePath: keyFile,
+      namespaceName: namespaceName,
+    },
+    resourceOptions
+  ).configName
 
-const remoteKeyFilePath = '/joystream/key-file.json'
-additionalParams = ['--key-file', remoteKeyFilePath]
+  const remoteKeyFilePath = '/joystream/key-file.json'
+  additionalParams = ['--keyFile', remoteKeyFilePath]
 
-const passphrase = config.get('passphrase')
-if (passphrase) {
-  additionalParams.push('--password', passphrase)
+  const passphrase = config.get('passphrase')
+  if (passphrase) {
+    additionalParams.push('--password', passphrase)
+  }
+
+  additionalVolumes.push({
+    name: 'keyfile-volume',
+    configMap: {
+      name: keyConfigName,
+    },
+  })
+
+  additionalVolumeMounts.push({
+    mountPath: remoteKeyFilePath,
+    name: 'keyfile-volume',
+    subPath: 'fileData',
+  })
 }
 
 // Create a Deployment
@@ -166,11 +188,7 @@ const deployment = new k8s.apps.v1.Deployment(
                   mountPath: '/keystore',
                   subPath: 'keystore',
                 },
-                {
-                  mountPath: remoteKeyFilePath,
-                  name: 'keyfile-volume',
-                  subPath: 'fileData',
-                },
+                ...additionalVolumeMounts,
               ],
               ports: [{ containerPort: colossusPort }],
             },
@@ -182,12 +200,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 claimName: `${name}-pvc`,
               },
             },
-            {
-              name: 'keyfile-volume',
-              configMap: {
-                name: keyConfigName,
-              },
-            },
+            ...additionalVolumes,
           ],
         },
       },

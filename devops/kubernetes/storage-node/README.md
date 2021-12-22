@@ -40,7 +40,8 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
     --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
     --plaintext queryNodeHost='http://graphql-server.query-node-yszsbs2i:8081' \
-    --plaintext keyFile='../../../keyfile.json' \
+    --plaintext keyFile='../../../keyfile.json' --plaintext passphrase='' \
+    --plaintext accountURI='//Alice' \
     --plaintext isMinikube=true
    ```
 
