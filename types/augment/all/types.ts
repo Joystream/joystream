@@ -163,7 +163,7 @@ export interface AuctionType extends Enum {
   readonly isEnglish: boolean;
   readonly asEnglish: EnglishAuctionDetails;
   readonly isOpen: boolean;
-  readonly asOpen: CuratorId;
+  readonly asOpen: OpenAuctionDetails;
 }
 
 /** @name Backer */

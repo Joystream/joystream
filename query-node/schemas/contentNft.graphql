@@ -56,17 +56,23 @@ type Curator @entity {
 
 "Represents NFT details"
 type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+  "NFT's video"
+  video: Video!
+
   "Member owning the NFT (if any)"
   ownerMember: Membership
 
   "Curator group owning the NFT (if any)"
   ownerCuratorGroup: CuratorGroup
 
+  "NFT's metadata"
+  metadata: String!
+
   "NFT transactional status"
   transactionalStatus: TransactionalStatus!
 
   "Creator royalty"
-  creatorRoyalty: Float
+  creatorRoyalty: Float!
 }
 
 "NFT transactional state"
@@ -95,7 +101,7 @@ type TransactionalStatusAuction @variant {
   "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
 
-  "Member identifier"
+  "Auction"
   auction: Auction!
 }
 
@@ -113,7 +119,7 @@ type AuctionTypeEnglish @variant {
   duration: Int!
 
   "Auction extension time"
-  extensionTime: Int
+  extensionPeriod: Int
 }
 
 "Represents Open auction details"
@@ -124,6 +130,15 @@ type AuctionTypeOpen @variant {
 
 "Represents NFT auction"
 type Auction @entity {
+  "NFT's video"
+  video: Video!
+
+  "Member starting NFT auction"
+  initialOwner: Membership!
+
+  "Member that won this auction"
+  winningMember: Membership
+
   "Auction starting price"
   startingPrice: BigInt!
 
@@ -139,11 +154,19 @@ type Auction @entity {
   "Auction last bid (if exists)"
   lastBid: Bid
 
+  bids: [Bid!]! @derivedFrom(field: "auction")
+
   "Block when auction starts"
   startsAtBlock: Int!
 
   "Block when auction starts"
   endedAtBlock: Int!
+
+  "Is auction canceled"
+  isCanceled: Boolean!
+
+  "Is auction completed"
+  isCompleted: Boolean!
 
   "Auction participants whitelist"
   whitelistedMembers: [Membership!]! @derivedFrom(field: "whitelistedInAuctions")
@@ -151,17 +174,20 @@ type Auction @entity {
 
 "Represents bid in NFT auction"
 type Bid @entity {
+  "NFT's auction"
+  auction: Auction!
+
   "Bidder membership"
   bidder: Membership!
 
-  "Bidder account, used to pay for NFT"
-  bidderAccount: String!
+  # TODO: probably remove that
+  #"Bidder account, used to pay for NFT"
+  #bidderAccount: String!
 
   "Amount bidded"
   amount: BigInt!
 
-  "Bid time"
-  createdInTime: DateTime!
+  isCanceled: Boolean!
 
   "Block in which the bid was placed"
   createdInBlock: Int!

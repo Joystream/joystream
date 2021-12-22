@@ -140,6 +140,8 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+
+  auction: Auction @derivedFrom(field: "video")
 }
 
 type VideoMediaMetadata @entity {

@@ -854,7 +854,7 @@
     "AuctionType": {
         "_enum": {
             "English": "EnglishAuctionDetails",
-            "Open": "CuratorId"
+            "Open": "OpenAuctionDetails"
         }
     },
     "AuctionParams": {

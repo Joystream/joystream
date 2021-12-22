@@ -1,10 +1,9 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { Network } from 'query-node/dist/model'
+import { Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import { Event } from 'query-node/dist/model'
 
 export const CURRENT_NETWORK = Network.GIZA
 /*
@@ -30,7 +29,6 @@ class Logger {
 }
 
 export const logger = new Logger()
-
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent

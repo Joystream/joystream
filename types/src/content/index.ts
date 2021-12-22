@@ -195,7 +195,7 @@ export class OpenAuctionDetails extends JoyStructDecorated({
 
 export class AuctionType extends JoyEnum({
   English: EnglishAuctionDetails,
-  Open: CuratorId,
+  Open: OpenAuctionDetails,
 }) {}
 
 export class AuctionParams extends JoyStructDecorated({

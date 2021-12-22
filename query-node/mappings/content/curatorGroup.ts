@@ -28,7 +28,7 @@ async function createCurator(store: DatabaseManager, curatorId: string): Promise
 }
 
 async function ensureCurator(store: DatabaseManager, curatorId: string): Promise<Curator> {
-  return await getCurator(store, curatorId) || await createCurator(store, curatorId)
+  return (await getCurator(store, curatorId)) || (await createCurator(store, curatorId))
 }
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -132,7 +132,7 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator removal from curator group requested', curatorGroupId)
   }
 
-  const curatorIndex = curatorGroup.curators.findIndex(item => item.id.toString() == curator.toString())
+  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curator.toString())
 
   // ensure curator group exists
   if (curatorIndex < 0) {
