@@ -1,0 +1,93 @@
+{
+  "name": "migration-scripts",
+  "description": "Joystream migration scripts",
+  "version": "0.1.0",
+  "author": "Joystream contributors",
+  "bin": {
+    "migration-scripts": "./bin/run"
+  },
+  "bugs": "https://github.com/Joystream/joystream/issues",
+  "dependencies": {
+    "@oclif/command": "^1",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^3.2.3",
+    "tslib": "^1",
+    "@joystream/types": "^0.17.0",
+    "@polkadot/api": "5.9.1",
+    "@polkadot/types": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
+    "@apollo/client": "^3.2.5",
+    "cross-fetch": "^3.1.4",
+    "lodash": "^4.17.21",
+    "url-join": "^4.0.1",
+    "@types/url-join": "^4.0.1",
+    "axios": "^0.24.0",
+    "blake3": "^2.1.4",
+    "multihashes": "^4.0.3",
+    "moment": "^2.29.1",
+    "sharp": "^0.29.2",
+    "@types/sharp": "^0.29.2",
+    "form-data": "^4.0.0",
+    "node-cleanup": "^2.1.2",
+    "@types/node-cleanup": "^2.1.2"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@oclif/dev-cli": "^1",
+    "@types/node": "^14",
+    "globby": "^10",
+    "ts-node": "^8",
+    "typescript": "^3.3"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "yarn": "^1.22.0"
+  },
+  "volta": {
+    "node": "14.16.1",
+    "yarn": "1.22.4"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/Joystream/joystream",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "GPL-3.0-only",
+  "main": "lib/index.js",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "migration-scripts",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {
+      "sumer-giza": {
+        "description": "Sumer-to-Giza migration scripts"
+      }
+    }
+  },
+  "repository": "Joystream/joystream",
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "echo NO TESTS",
+    "version": "oclif-dev readme && git add README.md",
+    "build": "tsc --build tsconfig.json",
+    "lint": "eslint ./src --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "format": "prettier ./ --write",
+    "generate:types:graphql": "yarn graphql-codegen -c ./src/sumer-giza/sumer-query-node/codegen.yml"
+  },
+  "types": "lib/index.d.ts"
+}
