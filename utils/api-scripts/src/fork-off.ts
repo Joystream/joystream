@@ -1,17 +1,17 @@
-import fs = require('fs')
-import path = require('path')
 import { xxhashAsHex } from '@polkadot/util-crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-const execSync = require('child_process').execSync
+import fs from 'fs'
+import path from 'path'
+import { execSync } from 'child_process'
 
 // paths & env variables
-let alice = process.env.SUDO_ACCOUNT
+const alice = process.env.SUDO_ACCOUNT
 // bad error handling TODO: fix process.env
-let schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
-let wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
-let hexPath = path.join(process.env.DATA_PATH || '', 'runtime.hex') || ''
-let specPath = path.join(process.env.DATA_PATH || '', 'chain-spec-raw.json')
-let storagePath = path.join(process.env.DATA_PATH || '', 'storage.json')
+const schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
+const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
+const hexPath = path.join(process.env.DATA_PATH || '', 'runtime.hex') || ''
+const specPath = path.join(process.env.DATA_PATH || '', 'chain-spec-raw.json')
+const storagePath = path.join(process.env.DATA_PATH || '', 'storage.json')
 
 // this might not be of much use
 const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9944')
@@ -28,7 +28,7 @@ const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9
  * For module hashing, do it via xxhashAsHex,
  * e.g. console.log(xxhashAsHex('System', 128)).
  */
-let prefixes = ['0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9' /* System.Account */]
+const prefixes = ['0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9' /* System.Account */]
 const skippedModulesPrefix = [
   'System',
   'Session',
@@ -67,26 +67,25 @@ async function main() {
 
   // storage.json is guaranteed to exists
 
-  let metadata = await api.rpc.state.getMetadata()
+  const metadata = await api.rpc.state.getMetadata()
   // Populate the prefixes array
-  let modules = metadata.asLatest.modules
+  const modules = metadata.asV12.modules
   modules.forEach((module) => {
-    if (module.storage) {
-      if (!skippedModulesPrefix.includes(module.name.toString())) {
-        prefixes.push(xxhashAsHex(module.name.toString(), 128))
+    if (module.storage.isSome) {
+      if (!skippedModulesPrefix.includes(module.storage.unwrap().prefix.toString())) {
+        prefixes.push(xxhashAsHex(module.storage.unwrap().prefix.toString(), 128))
       }
     }
   })
 
   // blank starting chainspec guaranteed to exist
 
-  let storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  let chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
+  const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
 
   // Modify chain name and id
   chainSpec.name = chainSpec.name + '-fork'
   chainSpec.id = chainSpec.id + '-fork'
-  chainSpec.protocolId = chainSpec.protocolId
 
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
