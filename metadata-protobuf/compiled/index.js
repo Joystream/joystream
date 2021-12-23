@@ -9,6 +9,448 @@ var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.ut
 // Exported root namespace
 var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
+$root.BountyMetadata = (function() {
+
+    /**
+     * Properties of a BountyMetadata.
+     * @exports IBountyMetadata
+     * @interface IBountyMetadata
+     * @property {string|null} [title] BountyMetadata title
+     * @property {string|null} [description] BountyMetadata description
+     * @property {number|null} [discussionThread] BountyMetadata discussionThread
+     */
+
+    /**
+     * Constructs a new BountyMetadata.
+     * @exports BountyMetadata
+     * @classdesc Represents a BountyMetadata.
+     * @implements IBountyMetadata
+     * @constructor
+     * @param {IBountyMetadata=} [properties] Properties to set
+     */
+    function BountyMetadata(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * BountyMetadata title.
+     * @member {string} title
+     * @memberof BountyMetadata
+     * @instance
+     */
+    BountyMetadata.prototype.title = "";
+
+    /**
+     * BountyMetadata description.
+     * @member {string} description
+     * @memberof BountyMetadata
+     * @instance
+     */
+    BountyMetadata.prototype.description = "";
+
+    /**
+     * BountyMetadata discussionThread.
+     * @member {number} discussionThread
+     * @memberof BountyMetadata
+     * @instance
+     */
+    BountyMetadata.prototype.discussionThread = 0;
+
+    /**
+     * Creates a new BountyMetadata instance using the specified properties.
+     * @function create
+     * @memberof BountyMetadata
+     * @static
+     * @param {IBountyMetadata=} [properties] Properties to set
+     * @returns {BountyMetadata} BountyMetadata instance
+     */
+    BountyMetadata.create = function create(properties) {
+        return new BountyMetadata(properties);
+    };
+
+    /**
+     * Encodes the specified BountyMetadata message. Does not implicitly {@link BountyMetadata.verify|verify} messages.
+     * @function encode
+     * @memberof BountyMetadata
+     * @static
+     * @param {IBountyMetadata} message BountyMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BountyMetadata.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.title);
+        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.description);
+        if (message.discussionThread != null && Object.hasOwnProperty.call(message, "discussionThread"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.discussionThread);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified BountyMetadata message, length delimited. Does not implicitly {@link BountyMetadata.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof BountyMetadata
+     * @static
+     * @param {IBountyMetadata} message BountyMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BountyMetadata.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a BountyMetadata message from the specified reader or buffer.
+     * @function decode
+     * @memberof BountyMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {BountyMetadata} BountyMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BountyMetadata.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.BountyMetadata();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.title = reader.string();
+                break;
+            case 2:
+                message.description = reader.string();
+                break;
+            case 3:
+                message.discussionThread = reader.uint32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a BountyMetadata message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof BountyMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {BountyMetadata} BountyMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BountyMetadata.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a BountyMetadata message.
+     * @function verify
+     * @memberof BountyMetadata
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    BountyMetadata.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.title != null && message.hasOwnProperty("title"))
+            if (!$util.isString(message.title))
+                return "title: string expected";
+        if (message.description != null && message.hasOwnProperty("description"))
+            if (!$util.isString(message.description))
+                return "description: string expected";
+        if (message.discussionThread != null && message.hasOwnProperty("discussionThread"))
+            if (!$util.isInteger(message.discussionThread))
+                return "discussionThread: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a BountyMetadata message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof BountyMetadata
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {BountyMetadata} BountyMetadata
+     */
+    BountyMetadata.fromObject = function fromObject(object) {
+        if (object instanceof $root.BountyMetadata)
+            return object;
+        var message = new $root.BountyMetadata();
+        if (object.title != null)
+            message.title = String(object.title);
+        if (object.description != null)
+            message.description = String(object.description);
+        if (object.discussionThread != null)
+            message.discussionThread = object.discussionThread >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a BountyMetadata message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof BountyMetadata
+     * @static
+     * @param {BountyMetadata} message BountyMetadata
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    BountyMetadata.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults) {
+            object.title = "";
+            object.description = "";
+            object.discussionThread = 0;
+        }
+        if (message.title != null && message.hasOwnProperty("title"))
+            object.title = message.title;
+        if (message.description != null && message.hasOwnProperty("description"))
+            object.description = message.description;
+        if (message.discussionThread != null && message.hasOwnProperty("discussionThread"))
+            object.discussionThread = message.discussionThread;
+        return object;
+    };
+
+    /**
+     * Converts this BountyMetadata to JSON.
+     * @function toJSON
+     * @memberof BountyMetadata
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    BountyMetadata.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return BountyMetadata;
+})();
+
+$root.BountyWorkData = (function() {
+
+    /**
+     * Properties of a BountyWorkData.
+     * @exports IBountyWorkData
+     * @interface IBountyWorkData
+     * @property {string|null} [title] BountyWorkData title
+     * @property {string|null} [description] BountyWorkData description
+     */
+
+    /**
+     * Constructs a new BountyWorkData.
+     * @exports BountyWorkData
+     * @classdesc Represents a BountyWorkData.
+     * @implements IBountyWorkData
+     * @constructor
+     * @param {IBountyWorkData=} [properties] Properties to set
+     */
+    function BountyWorkData(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * BountyWorkData title.
+     * @member {string} title
+     * @memberof BountyWorkData
+     * @instance
+     */
+    BountyWorkData.prototype.title = "";
+
+    /**
+     * BountyWorkData description.
+     * @member {string} description
+     * @memberof BountyWorkData
+     * @instance
+     */
+    BountyWorkData.prototype.description = "";
+
+    /**
+     * Creates a new BountyWorkData instance using the specified properties.
+     * @function create
+     * @memberof BountyWorkData
+     * @static
+     * @param {IBountyWorkData=} [properties] Properties to set
+     * @returns {BountyWorkData} BountyWorkData instance
+     */
+    BountyWorkData.create = function create(properties) {
+        return new BountyWorkData(properties);
+    };
+
+    /**
+     * Encodes the specified BountyWorkData message. Does not implicitly {@link BountyWorkData.verify|verify} messages.
+     * @function encode
+     * @memberof BountyWorkData
+     * @static
+     * @param {IBountyWorkData} message BountyWorkData message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BountyWorkData.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.title);
+        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.description);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified BountyWorkData message, length delimited. Does not implicitly {@link BountyWorkData.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof BountyWorkData
+     * @static
+     * @param {IBountyWorkData} message BountyWorkData message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BountyWorkData.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a BountyWorkData message from the specified reader or buffer.
+     * @function decode
+     * @memberof BountyWorkData
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {BountyWorkData} BountyWorkData
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BountyWorkData.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.BountyWorkData();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.title = reader.string();
+                break;
+            case 2:
+                message.description = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a BountyWorkData message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof BountyWorkData
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {BountyWorkData} BountyWorkData
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BountyWorkData.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a BountyWorkData message.
+     * @function verify
+     * @memberof BountyWorkData
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    BountyWorkData.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.title != null && message.hasOwnProperty("title"))
+            if (!$util.isString(message.title))
+                return "title: string expected";
+        if (message.description != null && message.hasOwnProperty("description"))
+            if (!$util.isString(message.description))
+                return "description: string expected";
+        return null;
+    };
+
+    /**
+     * Creates a BountyWorkData message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof BountyWorkData
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {BountyWorkData} BountyWorkData
+     */
+    BountyWorkData.fromObject = function fromObject(object) {
+        if (object instanceof $root.BountyWorkData)
+            return object;
+        var message = new $root.BountyWorkData();
+        if (object.title != null)
+            message.title = String(object.title);
+        if (object.description != null)
+            message.description = String(object.description);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a BountyWorkData message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof BountyWorkData
+     * @static
+     * @param {BountyWorkData} message BountyWorkData
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    BountyWorkData.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults) {
+            object.title = "";
+            object.description = "";
+        }
+        if (message.title != null && message.hasOwnProperty("title"))
+            object.title = message.title;
+        if (message.description != null && message.hasOwnProperty("description"))
+            object.description = message.description;
+        return object;
+    };
+
+    /**
+     * Converts this BountyWorkData to JSON.
+     * @function toJSON
+     * @memberof BountyWorkData
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    BountyWorkData.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return BountyWorkData;
+})();
+
 $root.ChannelMetadata = (function() {
 
     /**

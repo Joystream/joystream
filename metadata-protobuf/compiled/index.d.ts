@@ -1,5 +1,203 @@
 import { Long } from 'long'
 import * as $protobuf from "protobufjs";
+/** Properties of a BountyMetadata. */
+export interface IBountyMetadata {
+
+    /** BountyMetadata title */
+    title?: (string|null);
+
+    /** BountyMetadata description */
+    description?: (string|null);
+
+    /** BountyMetadata discussionThread */
+    discussionThread?: (number|null);
+}
+
+/** Represents a BountyMetadata. */
+export class BountyMetadata implements IBountyMetadata {
+
+    /**
+     * Constructs a new BountyMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IBountyMetadata);
+
+    /** BountyMetadata title. */
+    public title: string;
+
+    /** BountyMetadata description. */
+    public description: string;
+
+    /** BountyMetadata discussionThread. */
+    public discussionThread: number;
+
+    /**
+     * Creates a new BountyMetadata instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns BountyMetadata instance
+     */
+    public static create(properties?: IBountyMetadata): BountyMetadata;
+
+    /**
+     * Encodes the specified BountyMetadata message. Does not implicitly {@link BountyMetadata.verify|verify} messages.
+     * @param message BountyMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IBountyMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BountyMetadata message, length delimited. Does not implicitly {@link BountyMetadata.verify|verify} messages.
+     * @param message BountyMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IBountyMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BountyMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BountyMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BountyMetadata;
+
+    /**
+     * Decodes a BountyMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BountyMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BountyMetadata;
+
+    /**
+     * Verifies a BountyMetadata message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a BountyMetadata message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns BountyMetadata
+     */
+    public static fromObject(object: { [k: string]: any }): BountyMetadata;
+
+    /**
+     * Creates a plain object from a BountyMetadata message. Also converts values to other types if specified.
+     * @param message BountyMetadata
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: BountyMetadata, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this BountyMetadata to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a BountyWorkData. */
+export interface IBountyWorkData {
+
+    /** BountyWorkData title */
+    title?: (string|null);
+
+    /** BountyWorkData description */
+    description?: (string|null);
+}
+
+/** Represents a BountyWorkData. */
+export class BountyWorkData implements IBountyWorkData {
+
+    /**
+     * Constructs a new BountyWorkData.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IBountyWorkData);
+
+    /** BountyWorkData title. */
+    public title: string;
+
+    /** BountyWorkData description. */
+    public description: string;
+
+    /**
+     * Creates a new BountyWorkData instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns BountyWorkData instance
+     */
+    public static create(properties?: IBountyWorkData): BountyWorkData;
+
+    /**
+     * Encodes the specified BountyWorkData message. Does not implicitly {@link BountyWorkData.verify|verify} messages.
+     * @param message BountyWorkData message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IBountyWorkData, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BountyWorkData message, length delimited. Does not implicitly {@link BountyWorkData.verify|verify} messages.
+     * @param message BountyWorkData message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IBountyWorkData, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BountyWorkData message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BountyWorkData
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BountyWorkData;
+
+    /**
+     * Decodes a BountyWorkData message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BountyWorkData
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BountyWorkData;
+
+    /**
+     * Verifies a BountyWorkData message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a BountyWorkData message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns BountyWorkData
+     */
+    public static fromObject(object: { [k: string]: any }): BountyWorkData;
+
+    /**
+     * Creates a plain object from a BountyWorkData message. Also converts values to other types if specified.
+     * @param message BountyWorkData
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: BountyWorkData, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this BountyWorkData to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
 /** Properties of a ChannelMetadata. */
 export interface IChannelMetadata {
 
