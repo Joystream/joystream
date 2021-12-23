@@ -84,10 +84,17 @@ type Bounty @entity {
   "Current bounty stage"
   stage: BountyStage!
 
+  "Total amount available for the reward"
   totalFunding: BigInt!
 
   "Bounty's discussion thread"
   discussionThread: ForumThread!
+
+  "The contributions (in fund) made to the bounty"
+  contributions: [BountyContribution]!
+
+  "The work entries announce on the bounty"
+  entries: [BountyEntry!]
 
   # Events:
   "The event the bounty was created in"
@@ -164,7 +171,7 @@ type BountyEntry @entity {
   id: ID!
 
   "Bounty to which the work entry corresponds"
-  bounty: Bounty!
+  bounty: Bounty! @derivedFrom(field: "entries")
 
   "Member which submitted the work entry"
   worker: Membership!
@@ -195,7 +202,7 @@ type BountyContribution @entity {
   id: ID!
 
   "Bounty to which the contribution is made"
-  bounty: Bounty!
+  bounty: Bounty! @derivedFrom(field: "contributions")
 
   "Member making the contribution (if a member and not the council)"
   contributor: Membership
