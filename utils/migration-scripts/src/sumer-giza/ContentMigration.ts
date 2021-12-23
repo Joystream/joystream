@@ -35,7 +35,7 @@ export class ContentMigration {
 
   private async getForcedChannelOwner(): Promise<{ id: string; controllerAccount: string } | undefined> {
     const { forceChannelOwnerMemberId } = this.config
-    if (forceChannelOwnerMemberId) {
+    if (forceChannelOwnerMemberId !== undefined) {
       const ownerMember = await this.api.query.members.membershipById(forceChannelOwnerMemberId)
       if (ownerMember.isEmpty) {
         throw new Error(`Membership by id ${forceChannelOwnerMemberId} not found!`)
