@@ -1,6 +1,6 @@
-name: eks-cluster
+name: storage-node
 runtime: nodejs
-description: A Pulumi program to deploy storage node to cloud environment
+description: A Pulumi program to deploy storage node to Kubernetes
 template:
   config:
     aws:profile:
@@ -12,7 +12,6 @@ template:
       default: false
     wsProviderEndpointURI:
       description: Chain RPC endpoint
-      default: 'wss://rome-rpc-endpoint.joystream.org:9944/'
     isLoadBalancerReady:
       description: Whether the load balancer service is ready and has been assigned an IP
       default: false
@@ -32,10 +31,7 @@ template:
       default: joystream/colossus:latest
     queryNodeHost:
       description: Query node GraphQL endpoint
-      default: 'https://hydra.joystream.org/graphql'
     workerId:
       description: ID of the node operator (distribution working group worker)
-      default: 0
     accountURI:
       description: Account URI
-      default: '//Alice'

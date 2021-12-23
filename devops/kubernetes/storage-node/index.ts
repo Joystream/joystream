@@ -14,7 +14,7 @@ const name = 'storage-node'
 
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 const queryNodeHost = config.require('queryNodeHost')
-const workerId = config.get('workerId') || '0'
+const workerId = config.require('workerId')
 const accountURI = config.get('accountURI')
 const keyFile = config.get('keyFile')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
@@ -108,11 +108,11 @@ if (keyFile) {
   ).configName
 
   const remoteKeyFilePath = '/joystream/key-file.json'
-  additionalParams = ['--keyFile', remoteKeyFilePath]
+  additionalParams.push(`--keyFile=${remoteKeyFilePath}`)
 
   const passphrase = config.get('passphrase')
   if (passphrase) {
-    additionalParams.push('--password', passphrase)
+    additionalParams.push(`--password=${passphrase}`)
   }
 
   additionalVolumes.push({
@@ -150,6 +150,7 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'colossus',
               image: colossusImage,
               imagePullPolicy: 'IfNotPresent',
+              workingDir: '/joystream/storage-node-v2',
               env: [
                 {
                   name: 'WS_PROVIDER_ENDPOINT_URI',
@@ -172,6 +173,7 @@ const deployment = new k8s.apps.v1.Deployment(
                   name: 'WORKER_ID',
                   value: workerId,
                 },
+                // ACCOUNT_URI takes precedence over keyFile
                 {
                   name: 'ACCOUNT_URI',
                   value: accountURI,
@@ -189,6 +191,22 @@ const deployment = new k8s.apps.v1.Deployment(
                   subPath: 'keystore',
                 },
                 ...additionalVolumeMounts,
+              ],
+              command: ['yarn'],
+              args: [
+                'storage-node',
+                'server',
+                '--worker',
+                workerId,
+                '--port=3333',
+                '--uploads=/data',
+                '--sync',
+                '--syncInterval=1',
+                '--queryNodeEndpoint',
+                queryNodeHost,
+                '--apiUrl',
+                wsProviderEndpointURI,
+                ...additionalParams,
               ],
               ports: [{ containerPort: colossusPort }],
             },

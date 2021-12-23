@@ -1,6 +1,6 @@
 # Amazon EKS Cluster: Hello World!
 
-This example deploys an EKS Kubernetes cluster with custom ipfs image
+Deploy storage-node to a Kubernetes cluster
 
 ## Deploying the App
 
@@ -37,12 +37,12 @@ After cloning this repo, from this working directory, run these commands:
 1. Set the required configuration variables in `Pulumi.<stack>.yaml`
 
    ```bash
-   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
+   $ pulumi config set-all --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
     --plaintext queryNodeHost='http://graphql-server.query-node-yszsbs2i:8081' \
-    --plaintext keyFile='../../../keyfile.json' --plaintext passphrase='' \
-    --plaintext accountURI='//Alice' \
-    --plaintext isMinikube=true
+    --plaintext keyFile='../../../keyfile.json' --secret passphrase='' \
+    --plaintext accountURI='//Alice' workerId=0 \
+    --plaintext isMinikube=true --plaintext colossusImage='joystream/colossus:latest' \
+    --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
