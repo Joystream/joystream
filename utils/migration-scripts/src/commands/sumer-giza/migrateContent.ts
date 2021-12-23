@@ -61,6 +61,7 @@ export class MigrateContentCommand extends Command {
       multiple: true,
       description: 'Video ids to exclude from migration',
       required: false,
+      default: [],
     }),
   }
 
