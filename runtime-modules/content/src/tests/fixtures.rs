@@ -78,12 +78,13 @@ impl CreateChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+
         let actual_result =
             Content::create_channel(origin, self.actor.clone(), self.params.clone());
 
         assert_eq!(actual_result, expected_result);
-
-        let balance_pre = Balances::usable_balance(self.sender);
 
         if expected_result.is_ok() {
             let channel_id = Content::next_channel_id();
@@ -193,6 +194,9 @@ impl CreateVideoFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+
         let actual_result = Content::create_video(
             origin,
             self.actor.clone(),
@@ -201,8 +205,6 @@ impl CreateVideoFixture {
         );
 
         assert_eq!(actual_result, expected_result);
-
-        let balance_pre = Balances::usable_balance(self.sender);
 
         if expected_result.is_ok() {
             let video_id = Content::next_video_id();
@@ -314,48 +316,11 @@ impl UpdateChannelFixture {
         let origin = Origin::signed(self.sender.clone());
 
         let balance_pre = Balances::usable_balance(self.sender);
+
         let channel_pre = Content::channel_by_id(&self.channel_id);
-
-        let actual_result = Content::update_channel(
-            origin,
-            self.actor.clone(),
-            self.channel_id,
-            self.params.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        // event has been deposited with correct outcome
-        let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                self.actor.clone(),
-                self.channel_id,
-                ChannelRecord {
-                    owner: owner,
-                    is_censored: channel_pre.is_censored,
-                    reward_account: self
-                        .params
-                        .reward_account
-                        .clone()
-                        .unwrap_or(channel_pre.reward_account),
-                    collaborators: self
-                        .params
-                        .collaborators
-                        .clone()
-                        .unwrap_or(channel_pre.collaborators),
-                    num_videos: channel_pre.num_videos,
-                },
-                self.params.clone(),
-            ))
-        );
 
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
-        let balance_post = Balances::usable_balance(self.sender);
-
-        // bag is already outstanding so no bag_deletion_prize deposited
         let deletion_prize_deposited =
             self.params
                 .assets_to_upload
@@ -371,7 +336,6 @@ impl UpdateChannelFixture {
                     )
                 });
 
-        // no bag deletion also, so only object deleted account for the prize
         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
             self.params
                 .assets_to_remove
@@ -384,22 +348,60 @@ impl UpdateChannelFixture {
             BalanceOf::<Test>::zero()
         };
 
-        assert_eq!(
-            balance_post.saturating_sub(balance_pre),
-            deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+        let actual_result = Content::update_channel(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
         );
 
-        // objects uploaded: check for the number of objects uploaded
-        if let Some(assets) = self.params.assets_to_upload.as_ref() {
-            assert_eq!(
-                storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-                assets.object_creation_list.len(),
-            );
-        }
+        assert_eq!(actual_result, expected_result);
 
-        assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-        }));
+        if expected_result.is_ok() {
+            let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelUpdated(
+                    self.actor.clone(),
+                    self.channel_id,
+                    ChannelRecord {
+                        owner: owner,
+                        is_censored: channel_pre.is_censored,
+                        reward_account: self
+                            .params
+                            .reward_account
+                            .clone()
+                            .unwrap_or(channel_pre.reward_account),
+                        collaborators: self
+                            .params
+                            .collaborators
+                            .clone()
+                            .unwrap_or(channel_pre.collaborators),
+                        num_videos: channel_pre.num_videos,
+                    },
+                    self.params.clone(),
+                ))
+            );
+
+            let balance_post = Balances::usable_balance(self.sender);
+
+            assert_eq!(
+                balance_post.saturating_sub(balance_pre),
+                deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+            );
+
+            // objects uploaded: check for the number of objects uploaded
+            if let Some(assets) = self.params.assets_to_upload.as_ref() {
+                assert_eq!(
+                    storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
+                    assets.object_creation_list.len(),
+                );
+            }
+
+            assert!(self.params.assets_to_remove.iter().all(|obj_id| {
+                !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+            }));
+        }
     }
 }
 
@@ -453,27 +455,6 @@ impl UpdateVideoFixture {
 
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
 
-        let actual_result = Content::update_video(
-            origin,
-            self.actor.clone(),
-            self.video_id,
-            self.params.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        let balance_post = Balances::usable_balance(self.sender);
-
-        // event emitted correctly
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoUpdated(
-                self.actor.clone(),
-                self.video_id,
-                self.params.clone()
-            ))
-        );
-
         let deletion_prize_deposited =
             self.params
                 .assets_to_upload
@@ -501,22 +482,45 @@ impl UpdateVideoFixture {
             BalanceOf::<Test>::zero()
         };
 
-        assert_eq!(
-            balance_post.saturating_sub(balance_pre),
-            deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+        let actual_result = Content::update_video(
+            origin,
+            self.actor.clone(),
+            self.video_id,
+            self.params.clone(),
         );
 
-        // objects uploaded: check for the number of objects uploaded
-        if let Some(assets) = self.params.assets_to_upload.as_ref() {
-            assert_eq!(
-                storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-                assets.object_creation_list.len(),
-            );
-        }
+        assert_eq!(actual_result, expected_result);
 
-        assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-        }));
+        if expected_result.is_ok() {
+            let balance_post = Balances::usable_balance(self.sender);
+
+            // event emitted correctly
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoUpdated(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.params.clone()
+                ))
+            );
+
+            assert_eq!(
+                balance_post.saturating_sub(balance_pre),
+                deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+            );
+
+            // objects uploaded: check for the number of objects uploaded
+            if let Some(assets) = self.params.assets_to_upload.as_ref() {
+                assert_eq!(
+                    storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
+                    assets.object_creation_list.len(),
+                );
+            }
+
+            assert!(self.params.assets_to_remove.iter().all(|obj_id| {
+                !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+            }));
+        }
     }
 }
 
@@ -572,32 +576,34 @@ impl DeleteChannelFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.sender);
+        if expected_result.is_ok() {
+            let balance_post = Balances::usable_balance(self.sender);
 
-        // event emitted correctly
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelDeleted(
-                self.actor.clone(),
-                self.channel_id,
-            ))
-        );
+            // event emitted correctly
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelDeleted(
+                    self.actor.clone(),
+                    self.channel_id,
+                ))
+            );
 
-        let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
+            let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
 
-        assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
 
-        // bag deleted
-        assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+            // bag deleted
+            assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
 
-        // all assets deleted
-        assert_eq!(
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-            0,
-        );
+            // all assets deleted
+            assert_eq!(
+                storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
+                0,
+            );
 
-        // channel deleted
-        assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
+            // channel deleted
+            assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
+        }
     }
 }
 
@@ -654,22 +660,24 @@ impl DeleteVideoFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.sender);
+        if expected_result.is_ok() {
+            let balance_post = Balances::usable_balance(self.sender);
 
-        // event emitted correctly
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
-        );
+            // event emitted correctly
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
+            );
 
-        assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
 
-        // all assets deleted
-        assert!(self.assets_to_remove.iter().all(|obj_id| {
-            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-        }));
+            // all assets deleted
+            assert!(self.assets_to_remove.iter().all(|obj_id| {
+                !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+            }));
 
-        // video deleted
-        assert!(!<VideoById<Test>>::contains_key(&self.video_id));
+            // video deleted
+            assert!(!<VideoById<Test>>::contains_key(&self.video_id));
+        }
     }
 }
