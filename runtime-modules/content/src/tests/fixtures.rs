@@ -160,7 +160,7 @@ impl CreateVideoFixture {
                 assets: None,
                 meta: None,
             },
-            channel_id: One::one(),
+            channel_id: ChannelId::one(), // channel index starts at 1
         }
     }
 
@@ -225,5 +225,88 @@ impl CreateVideoFixture {
                 ))
             );
         }
+    }
+}
+
+pub struct UpdateChannelFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: ChannelUpdateParameters<Test>,
+}
+
+impl UpdateChannelFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(), // channel index starts at 1
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: None,
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_params(self, params: ChannelUpdateParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
+        let params = ChannelUpdateParameters::<Test> {
+            assets_to_upload: Some(assets),
+            new_meta: None,
+            reward_account: None,
+            assets_to_remove: BTreeSet::new(),
+            collaborators: None,
+        };
+        self.with_params(params)
+    }
+
+    pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
+        let params = ChannelUpdateParameters::<Test> {
+            assets_to_upload: None,
+            new_meta: None,
+            reward_account: None,
+            assets_to_remove: BTreeSet::new(),
+            collaborators: Some(collaborators),
+        };
+        self.with_params(params)
+    }
+
+    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
+        let params = ChannelUpdateParameters::<Test> {
+            assets_to_upload: None,
+            new_meta: None,
+            reward_account: Some(Some(reward_account)),
+            assets_to_remove: BTreeSet::new(),
+            collaborators: None,
+        };
+        self.with_params(params)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let actual_result = Content::update_channel(
+            origin,
+            self.actor.clone(),
+            self.channel_id.clone(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let balance_pre = Balances::usable_balance(self.sender);
     }
 }
