@@ -337,7 +337,8 @@ impl UpdateChannelFixture {
             ))
         );
 
-        // balance accounting
+        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+
         let balance_post = Balances::usable_balance(self.sender);
 
         // bag is already outstanding so no bag_deletion_prize deposited
@@ -358,12 +359,11 @@ impl UpdateChannelFixture {
 
         // no bag deletion also, so only object deleted account for the prize
         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
-            let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
             self.params
                 .assets_to_remove
                 .iter()
-                .fold(BalanceOf::<Test>::zero(), |acc, obj| {
-                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj)
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj_id)
                         .deletion_prize
                 })
         } else {
@@ -375,8 +375,16 @@ impl UpdateChannelFixture {
             deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
         );
 
-        // asset uploaded
+        // objects uploaded: check for the number of objects uploaded
+        assert_eq!(
+            storage::DataObjectsById::<Test>::iter_prefix(channel_bag_id).count(),
+            assets.object_creation_list.len(),
+        );
 
-        // asset removed
+        assert!(self
+            .params
+            .assets_to_remove
+            .iter()
+            .all(|obj_id| Storage::ensure_data_object_exists(&bag_for_channel, obj_id).is_err()));
     }
 }
