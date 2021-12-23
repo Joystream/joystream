@@ -139,7 +139,9 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
   })
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await db.get(Channel, {
+    where: { id: channelId.toString(), relations: ['category'] } as FindConditions<Channel>,
+  })
 
   // ensure channel exists
   if (!channel) {
