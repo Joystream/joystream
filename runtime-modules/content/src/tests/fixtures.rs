@@ -46,33 +46,39 @@ impl CreateChannelFixture {
     }
 
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
-        let params = ChannelCreationParameters::<Test> {
-            assets: Some(assets),
-            meta: None,
-            reward_account: None,
-            collaborators: BTreeSet::new(),
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                assets: Some(assets),
+                meta: self.params.meta,
+                reward_account: self.params.reward_account,
+                collaborators: self.params.collaborators,
+            },
+            ..self
+        }
     }
 
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
-        let params = ChannelCreationParameters::<Test> {
-            assets: None,
-            meta: None,
-            reward_account: None,
-            collaborators: collaborators,
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                assets: self.params.assets,
+                meta: self.params.meta,
+                reward_account: self.params.reward_account,
+                collaborators: collaborators,
+            },
+            ..self
+        }
     }
 
     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-        let params = ChannelCreationParameters::<Test> {
-            assets: None,
-            meta: None,
-            reward_account: Some(reward_account),
-            collaborators: BTreeSet::new(),
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                assets: self.params.assets,
+                meta: self.params.meta,
+                reward_account: Some(reward_account),
+                collaborators: self.params.collaborators,
+            },
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -181,11 +187,13 @@ impl CreateVideoFixture {
     }
 
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
-        let params = VideoCreationParameters::<Test> {
-            assets: Some(assets),
-            meta: None,
-        };
-        self.with_params(params)
+        Self {
+            params: VideoCreationParameters::<Test> {
+                assets: Some(assets),
+                meta: self.params.meta,
+            },
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -264,36 +272,55 @@ impl UpdateChannelFixture {
     }
 
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
-        let params = ChannelUpdateParameters::<Test> {
-            assets_to_upload: Some(assets),
-            new_meta: None,
-            reward_account: None,
-            assets_to_remove: BTreeSet::new(),
-            collaborators: None,
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: Some(assets),
+                new_meta: self.params.new_meta,
+                reward_account: self.params.reward_account,
+                assets_to_remove: self.params.assets_to_remove,
+                collaborators: self.params.collaborators,
+            },
+            ..self
+        }
+    }
+
+    pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: self.params.assets_to_upload,
+                new_meta: self.params.new_meta,
+                reward_account: self.params.reward_account,
+                assets_to_remove: assets,
+                collaborators: self.params.collaborators,
+            },
+            ..self
+        }
     }
 
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
-        let params = ChannelUpdateParameters::<Test> {
-            assets_to_upload: None,
-            new_meta: None,
-            reward_account: None,
-            assets_to_remove: BTreeSet::new(),
-            collaborators: Some(collaborators),
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: self.params.assets_to_upload,
+                new_meta: self.params.new_meta,
+                reward_account: self.params.reward_account,
+                assets_to_remove: self.params.assets_to_remove,
+                collaborators: Some(collaborators),
+            },
+            ..self
+        }
     }
 
     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-        let params = ChannelUpdateParameters::<Test> {
-            assets_to_upload: None,
-            new_meta: None,
-            reward_account: Some(Some(reward_account)),
-            assets_to_remove: BTreeSet::new(),
-            collaborators: None,
-        };
-        self.with_params(params)
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: self.params.assets_to_upload,
+                new_meta: self.params.new_meta,
+                reward_account: Some(Some(reward_account)),
+                assets_to_remove: self.params.assets_to_remove,
+                collaborators: self.params.collaborators,
+            },
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -376,15 +403,15 @@ impl UpdateChannelFixture {
         );
 
         // objects uploaded: check for the number of objects uploaded
-        assert_eq!(
-            storage::DataObjectsById::<Test>::iter_prefix(channel_bag_id).count(),
-            assets.object_creation_list.len(),
-        );
+        if let Some(assets) = self.params.assets_to_upload.as_ref() {
+            assert_eq!(
+                storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+                assets.object_creation_list.len(),
+            );
+        }
 
-        assert!(self
-            .params
-            .assets_to_remove
-            .iter()
-            .all(|obj_id| Storage::ensure_data_object_exists(&bag_for_channel, obj_id).is_err()));
+        assert!(self.params.assets_to_remove.iter().all(|obj_id| {
+            storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
+        }));
     }
 }
