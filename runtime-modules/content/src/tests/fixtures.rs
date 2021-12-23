@@ -6,6 +6,7 @@ use frame_support::{assert_err, assert_ok};
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
 type ChannelId = <Test as storage::Trait>::ChannelId;
+type VideoId = <Test as Trait>::VideoId;
 
 // helper functions
 pub fn increase_account_balance_helper(account_id: &u64, balance: u64) {
@@ -49,9 +50,7 @@ impl CreateChannelFixture {
         Self {
             params: ChannelCreationParameters::<Test> {
                 assets: Some(assets),
-                meta: self.params.meta,
-                reward_account: self.params.reward_account,
-                collaborators: self.params.collaborators,
+                ..self.params
             },
             ..self
         }
@@ -60,10 +59,8 @@ impl CreateChannelFixture {
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                assets: self.params.assets,
-                meta: self.params.meta,
-                reward_account: self.params.reward_account,
                 collaborators: collaborators,
+                ..self.params
             },
             ..self
         }
@@ -72,10 +69,8 @@ impl CreateChannelFixture {
     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                assets: self.params.assets,
-                meta: self.params.meta,
                 reward_account: Some(reward_account),
-                collaborators: self.params.collaborators,
+                ..self.params
             },
             ..self
         }
@@ -190,7 +185,7 @@ impl CreateVideoFixture {
         Self {
             params: VideoCreationParameters::<Test> {
                 assets: Some(assets),
-                meta: self.params.meta,
+                ..self.params
             },
             ..self
         }
@@ -275,10 +270,7 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: Some(assets),
-                new_meta: self.params.new_meta,
-                reward_account: self.params.reward_account,
-                assets_to_remove: self.params.assets_to_remove,
-                collaborators: self.params.collaborators,
+                ..self.params
             },
             ..self
         }
@@ -287,11 +279,8 @@ impl UpdateChannelFixture {
     pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                assets_to_upload: self.params.assets_to_upload,
-                new_meta: self.params.new_meta,
-                reward_account: self.params.reward_account,
                 assets_to_remove: assets,
-                collaborators: self.params.collaborators,
+                ..self.params
             },
             ..self
         }
@@ -300,11 +289,8 @@ impl UpdateChannelFixture {
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                assets_to_upload: self.params.assets_to_upload,
-                new_meta: self.params.new_meta,
-                reward_account: self.params.reward_account,
-                assets_to_remove: self.params.assets_to_remove,
                 collaborators: Some(collaborators),
+                ..self.params
             },
             ..self
         }
@@ -313,11 +299,8 @@ impl UpdateChannelFixture {
     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                assets_to_upload: self.params.assets_to_upload,
-                new_meta: self.params.new_meta,
                 reward_account: Some(Some(reward_account)),
-                assets_to_remove: self.params.assets_to_remove,
-                collaborators: self.params.collaborators,
+                ..self.params
             },
             ..self
         }
@@ -413,5 +396,45 @@ impl UpdateChannelFixture {
         assert!(self.params.assets_to_remove.iter().all(|obj_id| {
             storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
         }));
+    }
+}
+
+pub struct UpdateVideoFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    params: VideoUpdateParameters<Test>,
+}
+
+impl UpdateVideoFixture {
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_params(self, params: VideoUpdateParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                assets_to_upload: Some(assets),
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                assets_to_remove: assets,
+                ..self.params
+            },
+            ..self
+        }
     }
 }
