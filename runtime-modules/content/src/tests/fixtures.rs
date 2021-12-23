@@ -597,6 +597,76 @@ impl DeleteChannelFixture {
         );
 
         // channel deleted
+        assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
+    }
+}
+
+pub struct DeletVideoFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+}
+
+impl DeleteChannelFixture {
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: u64) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+
+        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+
+        let deletion_prize = self
+            .assets_to_remove
+            .iter()
+            .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                acc + storage::DataObjectsById::get(bag_for_channel, obj_id)
+            });
+
+        let actual_result = Content::delete_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.assets_to_remove,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.sender);
+
+        // event emitted correctly
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
+        );
+
+        assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+        // all assets deleted
+        assert!(self
+            .assets_to_remove
+            .iter()
+            .all(|obj_id| !storage::DataObjectsById::contains_key(bag_for_channel, obj_id)));
+
+        // video deleted
         assert!(!<VideoById<Test>>::contains_key(&self.channel_id));
     }
 }
