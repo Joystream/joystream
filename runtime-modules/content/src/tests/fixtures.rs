@@ -266,6 +266,10 @@ impl UpdateChannelFixture {
         Self { params, ..self }
     }
 
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
@@ -310,7 +314,7 @@ impl UpdateChannelFixture {
         let origin = Origin::signed(self.sender.clone());
 
         let balance_pre = Balances::usable_balance(self.sender);
-        let channel_pre = Content::channel_by_id(self.channel_id.clone());
+        let channel_pre = Content::channel_by_id(&self.channel_id);
 
         let actual_result = Content::update_channel(
             origin,
@@ -419,6 +423,10 @@ impl UpdateVideoFixture {
         Self { params, ..self }
     }
 
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
         Self {
             params: VideoUpdateParameters::<Test> {
@@ -436,5 +444,20 @@ impl UpdateVideoFixture {
             },
             ..self
         }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+        let channel_pre = Content::channel_by_id(&self.video_id);
+
+        let actual_result = Content::update_video(
+            origin,
+            self.actor.clone(),
+            self.video_id.clone(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }
