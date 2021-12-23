@@ -52,7 +52,7 @@
     "typeorm": "0.2.34",
     "pg": "^8.4.0",
     "chalk": "^4.0.0",
-    "@joystream/warthog": "2.39.0"
+    "@joystream/warthog": "2.41.1"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

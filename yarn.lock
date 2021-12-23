@@ -3035,19 +3035,19 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-common@3.1.0-alpha.13", "@joystream/hydra-common@^3.1.0-alpha.13":
-  version "3.1.0-alpha.13"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-3.1.0-alpha.13.tgz#90292e8aa7cd79014f01faa21a193d39ff403522"
-  integrity sha512-867WpaNRp8qoBakOSPNCtM3KiLipYDk92mWC659qFCG3bjLLTJmnv4TEpfvUMF28oteeis0KxSutu5k5GLao7A==
+"@joystream/hydra-common@3.1.0-alpha.15", "@joystream/hydra-common@^3.1.0-alpha.15":
+  version "3.1.0-alpha.15"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-3.1.0-alpha.15.tgz#9a780bb933a9901ed1468c670834bd06177e6249"
+  integrity sha512-WRTp6mJX8asLS7R3VfhyThyCMCmXjMcR9VDuaaqLAsqpztRcqii3WfQcvsdgWMgn463FOtDcyLk0tVg2b4bPjg==
   dependencies:
     bn.js "^5.1.3"
 
-"@joystream/hydra-db-utils@3.1.0-alpha.13", "@joystream/hydra-db-utils@^3.1.0-alpha.13":
-  version "3.1.0-alpha.13"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-3.1.0-alpha.13.tgz#b023a081c63009d7d5524b2fcf6256249c2b55d1"
-  integrity sha512-VbDfDpuKt1Fn2644eGmxoRiS7OhRMJLoSEhbSAbtowhfDPAvWXHpYrM9Hbex+hiqVXF+UENry+wvA6d2rYc8bA==
+"@joystream/hydra-db-utils@3.1.0-alpha.15", "@joystream/hydra-db-utils@^3.1.0-alpha.15":
+  version "3.1.0-alpha.15"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-3.1.0-alpha.15.tgz#90a539f1a6e4f7737b4a1810b6bcdc75e71cb7eb"
+  integrity sha512-8WGlNBJTokTjDJirwORlNbG4g6zYlCtU+ry+zJKpRMjU/oQoyE8KAf2kMdbcq71r5ZMA4CBzvamsqfruQPmSiQ==
   dependencies:
-    "@joystream/hydra-common" "^3.1.0-alpha.13"
+    "@joystream/hydra-common" "^3.1.0-alpha.15"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.1.3"
     ioredis "^4.17.3"
@@ -3055,13 +3055,13 @@
     shortid "^2.2.16"
     typeorm "^0.2.25"
 
-"@joystream/hydra-processor@3.1.0-alpha.13":
-  version "3.1.0-alpha.13"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-3.1.0-alpha.13.tgz#c41687a6aa4ebcc163ada4184ed56110988a3e50"
-  integrity sha512-8VJXb0sJbwUapvgNT39UnSvnOaCw+zZw8vS/K3Qcl9vm1MHlS6Jwxkmkkwrn/mrfVNrwPBYCtjYAFLivUzhIsg==
+"@joystream/hydra-processor@3.1.0-alpha.15":
+  version "3.1.0-alpha.15"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-3.1.0-alpha.15.tgz#dfad56af63b987ca7c0c885e6f40047645fa0cf7"
+  integrity sha512-QeJvxXozVBBTTT2FYziu6ve1wPtgmtB0SZM7bXDhXdoz5wfF0uynio+ksUyFyWcnFHIdJwIdoNrYQUJwkD7VQw==
   dependencies:
-    "@joystream/hydra-common" "^3.1.0-alpha.13"
-    "@joystream/hydra-db-utils" "^3.1.0-alpha.13"
+    "@joystream/hydra-common" "^3.1.0-alpha.15"
+    "@joystream/hydra-db-utils" "^3.1.0-alpha.15"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -3110,10 +3110,10 @@
     lodash "^4.17.15"
     moment "^2.24.0"
 
-"@joystream/warthog@2.39.0", "@joystream/warthog@^2.40.0":
-  version "2.39.0"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.39.0.tgz#3587b94953aed929bff809a7ba763d495e03170c"
-  integrity sha512-gwZ8oBqcN7Xez8BfBDeDIyMhZ7VcL2paMuj0n3qOplyH+sxsBwgBemDzV6RThmAGi3GOhVVQJqOMq3w6siWqzA==
+"@joystream/warthog@2.41.1", "@joystream/warthog@~2.41.1":
+  version "2.41.1"
+  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.1.tgz#060be37d988c11fd74b457c663811ad21e1b0e86"
+  integrity sha512-ysUaivwy8slX2B5jeFVV8pgwfzdDTPTHh5focqQJJCHhGBbNmzIkjXcRKehRrKypJe3xoDO75PhvoI/x67ELnQ==
   dependencies:
     "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
     "@types/app-root-path" "^1.2.4"
@@ -3172,9 +3172,9 @@
     shortid "^2.2.15"
     type-graphql "^0.17.5"
     typedi "^0.8.0"
-    typeorm "^0.2.32"
+    typeorm "0.2.37"
     typeorm-typedi-extensions "^0.4.1"
-    typescript "^3.9.7"
+    typescript "^4.4"
 
 "@jsdevtools/ono@7.1.3", "@jsdevtools/ono@^7.1.3":
   version "7.1.3"
@@ -29494,7 +29494,7 @@ typeorm-typedi-extensions@^0.4.1:
   resolved "https://registry.yarnpkg.com/typeorm-typedi-extensions/-/typeorm-typedi-extensions-0.4.1.tgz#e62e3c8f30021c9b8f258e068d38723dbd64de1d"
   integrity sha512-05hWktQ4zuXzTTUO3ao56yOezlvUuZhH2NRS//m0SOGCAJoVlfPTMHcmDaMSQy/lMfAwPWoIyn+sfK7ONzTdXQ==
 
-typeorm@0.2.34, typeorm@^0.2.25, typeorm@^0.2.32:
+typeorm@0.2.34, typeorm@0.2.37, typeorm@^0.2.25:
   version "0.2.34"
   resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.34.tgz#637b3cec2de54ee7f423012b813a2022c0aacc8b"
   integrity sha512-FZAeEGGdSGq7uTH3FWRQq67JjKu0mgANsSZ04j3kvDYNgy9KwBl/6RFgMVgiSgjf7Rqd7NrhC2KxVT7I80qf7w==
@@ -29544,7 +29544,7 @@ typescript-tuple@^2.2.1:
   dependencies:
     typescript-compare "^0.0.2"
 
-typescript@2.2.2, typescript@^3.0.3, typescript@^3.3, typescript@^3.8.3, typescript@^3.9.5, typescript@^3.9.7, typescript@^4.0.3, typescript@^4.4.3:
+typescript@2.2.2, typescript@^3.0.3, typescript@^3.3, typescript@^3.8.3, typescript@^3.9.5, typescript@^3.9.7, typescript@^4.0.3, typescript@^4.4, typescript@^4.4.3:
   version "4.4.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.4.3.tgz#bdc5407caa2b109efd4f82fe130656f977a29324"
   integrity sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA==
