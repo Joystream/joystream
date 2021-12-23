@@ -13,6 +13,7 @@ export type ChannelsMigrationConfig = AssetsMigrationConfig & {
   channelIds: number[]
   channelBatchSize: number
   forceChannelOwnerMemberId: number | undefined
+  excludeVideoIds: number[]
 }
 
 export type ChannelsMigrationParams = AssetsMigrationParams & {
@@ -101,7 +102,10 @@ export class ChannelMigration extends AssetsMigration {
         }
       }
       const videoIdsToMigrate: number[] = channelsBatch.reduce<number[]>(
-        (res, { id, videos }) => (this.idsMap.has(parseInt(id)) ? res.concat(videos.map((v) => parseInt(v.id))) : res),
+        (res, { id, videos }) =>
+          this.idsMap.has(parseInt(id))
+            ? res.concat(videos.map((v) => parseInt(v.id)).filter((id) => !this.config.excludeVideoIds.includes(id)))
+            : res,
         []
       )
       this.videoIds = this.videoIds.concat(videoIdsToMigrate)
