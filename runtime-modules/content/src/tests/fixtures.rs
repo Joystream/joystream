@@ -351,7 +351,7 @@ impl UpdateChannelFixture {
             ))
         );
 
-        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
         let balance_post = Balances::usable_balance(self.sender);
 
@@ -377,7 +377,7 @@ impl UpdateChannelFixture {
                 .assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj_id)
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
                         .deletion_prize
                 })
         } else {
@@ -392,13 +392,13 @@ impl UpdateChannelFixture {
         // objects uploaded: check for the number of objects uploaded
         if let Some(assets) = self.params.assets_to_upload.as_ref() {
             assert_eq!(
-                storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+                storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
                 assets.object_creation_list.len(),
             );
         }
 
         assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-            storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
+            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
         }));
     }
 }
@@ -451,7 +451,7 @@ impl UpdateVideoFixture {
         let balance_pre = Balances::usable_balance(self.sender);
         let video_pre = Content::video_by_id(&self.video_id);
 
-        let bag_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+        let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
 
         let actual_result = Content::update_video(
             origin,
@@ -494,7 +494,7 @@ impl UpdateVideoFixture {
                 .assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj_id)
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
                         .deletion_prize
                 })
         } else {
@@ -509,13 +509,13 @@ impl UpdateVideoFixture {
         // objects uploaded: check for the number of objects uploaded
         if let Some(assets) = self.params.assets_to_upload.as_ref() {
             assert_eq!(
-                storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+                storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
                 assets.object_creation_list.len(),
             );
         }
 
         assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-            storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
+            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
         }));
     }
 }
@@ -551,14 +551,14 @@ impl DeleteChannelFixture {
 
         let balance_pre = Balances::usable_balance(self.sender);
 
-        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
-        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_for_channel)
+        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
             .deletion_prize
             .unwrap_or(BalanceOf::<Test>::zero());
 
         let objects_deletion_prize =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel)
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
                 .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
                     acc + obj.deletion_prize
                 });
@@ -588,11 +588,11 @@ impl DeleteChannelFixture {
         assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
 
         // bag deleted
-        assert!(!storage::Bags::<Test>::contains_key(&bag_for_channel));
+        assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
 
         // all assets deleted
         assert_eq!(
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
             0,
         );
 
@@ -601,14 +601,14 @@ impl DeleteChannelFixture {
     }
 }
 
-pub struct DeletVideoFixture {
+pub struct DeleteVideoFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
 }
 
-impl DeleteChannelFixture {
+impl DeleteVideoFixture {
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -617,7 +617,7 @@ impl DeleteChannelFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_assets_to_remove(self, assets_to_remove: u64) -> Self {
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
         Self {
             assets_to_remove,
             ..self
@@ -627,25 +627,29 @@ impl DeleteChannelFixture {
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }
     }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
 
         let balance_pre = Balances::usable_balance(self.sender);
 
-        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let video_pre = <VideoById<Test>>::get(&self.video_id);
 
-        let deletion_prize = self
-            .assets_to_remove
-            .iter()
-            .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                acc + storage::DataObjectsById::get(bag_for_channel, obj_id)
-            });
+        let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+
+        let deletion_prize =
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                });
 
         let actual_result = Content::delete_video(
             origin,
             self.actor.clone(),
-            self.channel_id,
-            self.assets_to_remove,
+            self.video_id,
+            self.assets_to_remove.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
@@ -661,12 +665,11 @@ impl DeleteChannelFixture {
         assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
 
         // all assets deleted
-        assert!(self
-            .assets_to_remove
-            .iter()
-            .all(|obj_id| !storage::DataObjectsById::contains_key(bag_for_channel, obj_id)));
+        assert!(self.assets_to_remove.iter().all(|obj_id| {
+            !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+        }));
 
         // video deleted
-        assert!(!<VideoById<Test>>::contains_key(&self.channel_id));
+        assert!(!<VideoById<Test>>::contains_key(&self.video_id));
     }
 }
