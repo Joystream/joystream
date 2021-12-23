@@ -196,7 +196,7 @@ impl CreateVideoFixture {
         let actual_result = Content::create_video(
             origin,
             self.actor.clone(),
-            self.channel_id.clone(),
+            self.channel_id,
             self.params.clone(),
         );
 
@@ -319,7 +319,7 @@ impl UpdateChannelFixture {
         let actual_result = Content::update_channel(
             origin,
             self.actor.clone(),
-            self.channel_id.clone(),
+            self.channel_id,
             self.params.clone(),
         );
 
@@ -331,7 +331,7 @@ impl UpdateChannelFixture {
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelUpdated(
                 self.actor.clone(),
-                self.channel_id.clone(),
+                self.channel_id,
                 ChannelRecord {
                     owner: owner,
                     is_censored: channel_pre.is_censored,
@@ -456,7 +456,7 @@ impl UpdateVideoFixture {
         let actual_result = Content::update_video(
             origin,
             self.actor.clone(),
-            self.video_id.clone(),
+            self.video_id,
             self.params.clone(),
         );
 
@@ -469,12 +469,11 @@ impl UpdateVideoFixture {
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::VideoUpdated(
                 self.actor.clone(),
-                self.video_id.clone(),
+                self.video_id,
                 self.params.clone()
             ))
         );
 
-        // bag is already outstanding so no bag_deletion_prize deposited
         let deletion_prize_deposited =
             self.params
                 .assets_to_upload
@@ -490,7 +489,6 @@ impl UpdateVideoFixture {
                     )
                 });
 
-        // no bag deletion also, so only object deleted account for the prize
         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
             self.params
                 .assets_to_remove
@@ -519,5 +517,86 @@ impl UpdateVideoFixture {
         assert!(self.params.assets_to_remove.iter().all(|obj_id| {
             storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
         }));
+    }
+}
+
+pub struct DeleteChannelFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    num_objects_to_delete: u64,
+}
+
+impl DeleteChannelFixture {
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
+        Self {
+            num_objects_to_delete,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+
+        let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+
+        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_for_channel)
+            .deletion_prize
+            .unwrap_or(BalanceOf::<Test>::zero());
+
+        let objects_deletion_prize =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel)
+                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
+                    acc + obj.deletion_prize
+                });
+
+        let actual_result = Content::delete_channel(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.num_objects_to_delete,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.sender);
+
+        // event emitted correctly
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelDeleted(
+                self.actor.clone(),
+                self.channel_id,
+            ))
+        );
+
+        let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
+
+        assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+
+        // bag deleted
+        assert!(!storage::Bags::<Test>::contains_key(&bag_for_channel));
+
+        // all assets deleted
+        assert_eq!(
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+            0,
+        );
+
+        // channel deleted
+        assert!(!<VideoById<Test>>::contains_key(&self.channel_id));
     }
 }
