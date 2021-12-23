@@ -5,8 +5,8 @@ import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { processVideoMetadata } from './utils'
-import { Channel, Video, VideoCategory } from 'query-node/dist/model'
+import { processVideoMetadata, isVideoFullyActive, updateVideoActiveCounters } from './utils'
+import { Channel, ChannelCategory, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -119,6 +119,11 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   // save video
   await store.save<Video>(video)
 
+  // increase active video counters for channel, channel category, and video category
+  if (isVideoFullyActive(video)) {
+    await updateVideoActiveCounters(store, video, true)
+  }
+
   // emit log event
   logger.info('Video has been created', { id: videoId })
 }
@@ -131,13 +136,16 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
-    relations: ['channel', 'license'],
+    relations: ['category', 'channel', 'channel.category', 'license'],
   })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video update requested', videoId)
   }
+
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
 
   // prepare changed metadata
   const newMetadataBytes = videoUpdateParameters.new_meta.unwrapOr(null)
@@ -154,6 +162,14 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // save video
   await store.save<Video>(video)
 
+  // check if video is fully active
+  const isFullyActive = isVideoFullyActive(video)
+
+  // update video counters for channel, channel category, and video category if needed
+  if (wasFullyActive !== isFullyActive) {
+    await updateVideoActiveCounters(store, video, isFullyActive)
+  }
+
   // emit log event
   logger.info('Video has been updated', { id: videoId })
 }
@@ -163,15 +179,26 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   const [, videoId] = new Content.VideoDeletedEvent(event).params
 
   // load video
-  const video = await store.get(Video, { where: { id: videoId.toString() } })
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+    relations: ['channel', 'channel.category', 'category'],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video deletion requested', videoId)
   }
 
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
+
   // remove video
   await store.remove<Video>(video)
+
+  // decrease active video counters for channel, channel category, and video category
+  if (wasFullyActive) {
+    await updateVideoActiveCounters(store, video, false)
+  }
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
@@ -185,12 +212,18 @@ export async function content_VideoCensorshipStatusUpdated({
   const [, videoId, isCensored] = new Content.VideoCensorshipStatusUpdatedEvent(event).params
 
   // load video
-  const video = await store.get(Video, { where: { id: videoId.toString() } })
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+    relations: ['channel', 'channel.category', 'category'],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video censoring requested', videoId)
   }
+
+  // remember if video is fully active before update
+  const wasFullyActive = isVideoFullyActive(video)
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -200,6 +233,14 @@ export async function content_VideoCensorshipStatusUpdated({
 
   // save video
   await store.save<Video>(video)
+
+  // check if video is fully active
+  const isFullyActive = isVideoFullyActive(video)
+
+  // update video counters for channel, channel category, and video category if needed
+  if (wasFullyActive !== isFullyActive) {
+    await updateVideoActiveCounters(store, video, isFullyActive)
+  }
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })

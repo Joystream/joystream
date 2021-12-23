@@ -492,8 +492,11 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
         id: dataObject.id,
       },
     })),
-    relations: [...videoAssets],
+    relations: [...videoAssets, 'category', 'channel', 'channel.category'],
   })
+
+  // remember if video is fully active before update
+  const wasFullyActive = video && isVideoFullyActive(video)
 
   if (channel) {
     channelAssets.forEach((assetName) => {
@@ -518,10 +521,54 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     })
     await store.save<Video>(video)
 
+    // check if video is fully active
+    const isFullyActive = isVideoFullyActive(video)
+
+    // update video counters for channel, channel category, and video category if needed
+    if (wasFullyActive !== isFullyActive) {
+      await updateVideoActiveCounters(store, video, isFullyActive)
+    }
+
     // emit log event
     logger.info('Content has been disconnected from Video', {
       videoId: video.id.toString(),
       dataObjectId: dataObject.id,
     })
+  }
+
+  // remove data object
+  await store.remove<StorageDataObject>(dataObject)
+}
+
+export function isVideoFullyActive(video: Video): boolean {
+  return !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto && !!video.media
+}
+
+export async function updateVideoActiveCounters(
+  store: DatabaseManager,
+  video: Video,
+  isFullyActive: boolean
+): Promise<void> {
+  const counterChange = isFullyActive ? 1 : -1
+
+  if (video.channel) {
+    const channel = video.channel
+    channel.activeVideosCounter += counterChange
+
+    await store.save<Channel>(channel)
+  }
+
+  if (video.channel && video.channel.category) {
+    const channelCategory = video.channel.category
+    channelCategory.activeVideosCounter += counterChange
+
+    await store.save<ChannelCategory>(channelCategory)
+  }
+
+  if (video.category) {
+    const category = video.category
+    category.activeVideosCounter += counterChange
+
+    await store.save<VideoCategory>(category)
   }
 }

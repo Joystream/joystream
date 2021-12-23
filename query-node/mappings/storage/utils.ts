@@ -245,8 +245,8 @@ export async function getMostRecentlyCreatedDataObjects(
 }
 
 export async function removeDataObject(store: DatabaseManager, object: StorageDataObject): Promise<void> {
+  // `unsetAssetRelations` actually removes data object
   await unsetAssetRelations(store, object)
-  await store.remove<StorageDataObject>(object)
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {
