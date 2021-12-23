@@ -449,7 +449,9 @@ impl UpdateVideoFixture {
         let origin = Origin::signed(self.sender.clone());
 
         let balance_pre = Balances::usable_balance(self.sender);
-        let channel_pre = Content::channel_by_id(&self.video_id);
+        let video_pre = Content::video_by_id(&self.video_id);
+
+        let bag_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
 
         let actual_result = Content::update_video(
             origin,
@@ -459,5 +461,63 @@ impl UpdateVideoFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.sender);
+
+        // event emitted correctly
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoUpdated(
+                self.actor.clone(),
+                self.video_id.clone(),
+                self.params.clone()
+            ))
+        );
+
+        // bag is already outstanding so no bag_deletion_prize deposited
+        let deletion_prize_deposited =
+            self.params
+                .assets_to_upload
+                .as_ref()
+                .map_or(BalanceOf::<Test>::zero(), |assets| {
+                    assets.object_creation_list.iter().fold(
+                        BalanceOf::<Test>::zero(),
+                        |acc, obj| {
+                            acc.saturating_add(
+                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+                            )
+                        },
+                    )
+                });
+
+        // no bag deletion also, so only object deleted account for the prize
+        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+            self.params
+                .assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        assert_eq!(
+            balance_post.saturating_sub(balance_pre),
+            deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+        );
+
+        // objects uploaded: check for the number of objects uploaded
+        if let Some(assets) = self.params.assets_to_upload.as_ref() {
+            assert_eq!(
+                storage::DataObjectsById::<Test>::iter_prefix(&bag_for_channel).count(),
+                assets.object_creation_list.len(),
+            );
+        }
+
+        assert!(self.params.assets_to_remove.iter().all(|obj_id| {
+            storage::DataObjectsById::<Test>::contains_key(&bag_for_channel, obj_id)
+        }));
     }
 }
