@@ -298,6 +298,10 @@ impl UpdateChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
+
+        let balance_pre = Balances::usable_balance(self.sender);
+        let channel_pre = Content::channel_by_id(self.channel_id.clone());
+
         let actual_result = Content::update_channel(
             origin,
             self.actor.clone(),
@@ -307,6 +311,72 @@ impl UpdateChannelFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_pre = Balances::usable_balance(self.sender);
+        // event has been deposited with correct outcome
+        let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelUpdated(
+                self.actor.clone(),
+                self.channel_id.clone(),
+                ChannelRecord {
+                    owner: owner,
+                    is_censored: channel_pre.is_censored,
+                    reward_account: self
+                        .params
+                        .reward_account
+                        .clone()
+                        .unwrap_or(channel_pre.reward_account),
+                    collaborators: self
+                        .params
+                        .collaborators
+                        .clone()
+                        .unwrap_or(channel_pre.collaborators),
+                    num_videos: channel_pre.num_videos,
+                },
+                self.params.clone(),
+            ))
+        );
+
+        // balance accounting
+        let balance_post = Balances::usable_balance(self.sender);
+
+        // bag is already outstanding so no bag_deletion_prize deposited
+        let deletion_prize_deposited =
+            self.params
+                .assets_to_upload
+                .as_ref()
+                .map_or(BalanceOf::<Test>::zero(), |assets| {
+                    assets.object_creation_list.iter().fold(
+                        BalanceOf::<Test>::zero(),
+                        |acc, obj| {
+                            acc.saturating_add(
+                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+                            )
+                        },
+                    )
+                });
+
+        // no bag deletion also, so only object deleted account for the prize
+        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+            let bag_for_channel = Content::bag_id_for_channel(&self.channel_id);
+            self.params
+                .assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_for_channel, obj)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        assert_eq!(
+            balance_post.saturating_sub(balance_pre),
+            deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+        );
+
+        // asset uploaded
+
+        // asset removed
     }
 }
