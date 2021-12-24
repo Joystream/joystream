@@ -43,6 +43,7 @@ export class CancelProposalsFixture extends StandardizedFixture {
       Utils.assert(qProposal, 'Query node: Proposal not found')
       Utils.assert(qProposal.status.__typename === 'ProposalStatusCancelled', 'Invalid proposal status')
       assert.equal(qProposal.status.cancelledInEvent?.id, qEvent.id)
+      assert.equal(qProposal.isFinalized, true)
     })
   }
 

@@ -513,14 +513,113 @@ export class ForumPostMetadata implements IForumPostMetadata {
     public toJSON(): { [k: string]: any };
 }
 
+/** Properties of a ForumThreadMetadata. */
+export interface IForumThreadMetadata {
+
+    /** ForumThreadMetadata title */
+    title?: (string|null);
+
+    /** ForumThreadMetadata tags */
+    tags?: (string[]|null);
+}
+
+/** Represents a ForumThreadMetadata. */
+export class ForumThreadMetadata implements IForumThreadMetadata {
+
+    /**
+     * Constructs a new ForumThreadMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IForumThreadMetadata);
+
+    /** ForumThreadMetadata title. */
+    public title: string;
+
+    /** ForumThreadMetadata tags. */
+    public tags: string[];
+
+    /**
+     * Creates a new ForumThreadMetadata instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ForumThreadMetadata instance
+     */
+    public static create(properties?: IForumThreadMetadata): ForumThreadMetadata;
+
+    /**
+     * Encodes the specified ForumThreadMetadata message. Does not implicitly {@link ForumThreadMetadata.verify|verify} messages.
+     * @param message ForumThreadMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IForumThreadMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ForumThreadMetadata message, length delimited. Does not implicitly {@link ForumThreadMetadata.verify|verify} messages.
+     * @param message ForumThreadMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IForumThreadMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ForumThreadMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ForumThreadMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ForumThreadMetadata;
+
+    /**
+     * Decodes a ForumThreadMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ForumThreadMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ForumThreadMetadata;
+
+    /**
+     * Verifies a ForumThreadMetadata message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ForumThreadMetadata message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ForumThreadMetadata
+     */
+    public static fromObject(object: { [k: string]: any }): ForumThreadMetadata;
+
+    /**
+     * Creates a plain object from a ForumThreadMetadata message. Also converts values to other types if specified.
+     * @param message ForumThreadMetadata
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ForumThreadMetadata, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ForumThreadMetadata to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
 /** Properties of a MembershipMetadata. */
 export interface IMembershipMetadata {
 
     /** MembershipMetadata name */
     name?: (string|null);
 
-    /** MembershipMetadata avatar */
-    avatar?: (number|null);
+    /** MembershipMetadata avatarObject */
+    avatarObject?: (number|null);
+
+    /** MembershipMetadata avatarUri */
+    avatarUri?: (string|null);
 
     /** MembershipMetadata about */
     about?: (string|null);
@@ -538,11 +637,17 @@ export class MembershipMetadata implements IMembershipMetadata {
     /** MembershipMetadata name. */
     public name: string;
 
-    /** MembershipMetadata avatar. */
-    public avatar: number;
+    /** MembershipMetadata avatarObject. */
+    public avatarObject?: (number|null);
+
+    /** MembershipMetadata avatarUri. */
+    public avatarUri?: (string|null);
 
     /** MembershipMetadata about. */
     public about: string;
+
+    /** MembershipMetadata avatar. */
+    public avatar?: ("avatarObject"|"avatarUri");
 
     /**
      * Creates a new MembershipMetadata instance using the specified properties.
@@ -826,6 +931,102 @@ export class PlaylistMetadata implements IPlaylistMetadata {
 
     /**
      * Converts this PlaylistMetadata to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a ProposalsDiscussionPostMetadata. */
+export interface IProposalsDiscussionPostMetadata {
+
+    /** ProposalsDiscussionPostMetadata text */
+    text?: (string|null);
+
+    /** ProposalsDiscussionPostMetadata repliesTo */
+    repliesTo?: (number|null);
+}
+
+/** Represents a ProposalsDiscussionPostMetadata. */
+export class ProposalsDiscussionPostMetadata implements IProposalsDiscussionPostMetadata {
+
+    /**
+     * Constructs a new ProposalsDiscussionPostMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProposalsDiscussionPostMetadata);
+
+    /** ProposalsDiscussionPostMetadata text. */
+    public text: string;
+
+    /** ProposalsDiscussionPostMetadata repliesTo. */
+    public repliesTo: number;
+
+    /**
+     * Creates a new ProposalsDiscussionPostMetadata instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ProposalsDiscussionPostMetadata instance
+     */
+    public static create(properties?: IProposalsDiscussionPostMetadata): ProposalsDiscussionPostMetadata;
+
+    /**
+     * Encodes the specified ProposalsDiscussionPostMetadata message. Does not implicitly {@link ProposalsDiscussionPostMetadata.verify|verify} messages.
+     * @param message ProposalsDiscussionPostMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IProposalsDiscussionPostMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProposalsDiscussionPostMetadata message, length delimited. Does not implicitly {@link ProposalsDiscussionPostMetadata.verify|verify} messages.
+     * @param message ProposalsDiscussionPostMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IProposalsDiscussionPostMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProposalsDiscussionPostMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProposalsDiscussionPostMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProposalsDiscussionPostMetadata;
+
+    /**
+     * Decodes a ProposalsDiscussionPostMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProposalsDiscussionPostMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProposalsDiscussionPostMetadata;
+
+    /**
+     * Verifies a ProposalsDiscussionPostMetadata message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ProposalsDiscussionPostMetadata message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ProposalsDiscussionPostMetadata
+     */
+    public static fromObject(object: { [k: string]: any }): ProposalsDiscussionPostMetadata;
+
+    /**
+     * Creates a plain object from a ProposalsDiscussionPostMetadata message. Also converts values to other types if specified.
+     * @param message ProposalsDiscussionPostMetadata
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ProposalsDiscussionPostMetadata, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ProposalsDiscussionPostMetadata to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };

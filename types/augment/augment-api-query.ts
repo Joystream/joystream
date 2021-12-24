@@ -140,7 +140,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Reply by unique blog, post and reply identificators
        **/
-      replyById: AugmentedQueryDoubleMap<ApiType, (key1: PostId | AnyNumber | Uint8Array, key2: ReplyId | AnyNumber | Uint8Array) => Observable<Reply>, [PostId, ReplyId]>;
+      replyById: AugmentedQuery<ApiType, (arg1: PostId | AnyNumber | Uint8Array, arg2: ReplyId | AnyNumber | Uint8Array) => Observable<Reply>, [PostId, ReplyId]>;
     };
     bounty: {
       /**
@@ -150,7 +150,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Double map for bounty funding. It stores a member or council funding for bounties.
        **/
-      bountyContributions: AugmentedQueryDoubleMap<ApiType, (key1: BountyId | AnyNumber | Uint8Array, key2: BountyActor | { Council: any } | { Member: any } | string | Uint8Array) => Observable<BalanceOf>, [BountyId, BountyActor]>;
+      bountyContributions: AugmentedQuery<ApiType, (arg1: BountyId | AnyNumber | Uint8Array, arg2: BountyActor | { Council: any } | { Member: any } | string | Uint8Array) => Observable<BalanceOf>, [BountyId, BountyActor]>;
       /**
        * Count of all bounties that have been created.
        **/
@@ -349,7 +349,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Moderator set for each Category
        **/
-      categoryByModerator: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ModeratorId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>, [CategoryId, ModeratorId]>;
+      categoryByModerator: AugmentedQuery<ApiType, (arg1: CategoryId | AnyNumber | Uint8Array, arg2: ModeratorId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>, [CategoryId, ModeratorId]>;
       /**
        * Counter for all existing categories.
        **/
@@ -373,15 +373,15 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Unique thread poll voters. This private double map prevents double voting.
        **/
-      pollVotes: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: ForumUserId | AnyNumber | Uint8Array) => Observable<bool>, [ThreadId, ForumUserId]>;
+      pollVotes: AugmentedQuery<ApiType, (arg1: ThreadId | AnyNumber | Uint8Array, arg2: ForumUserId | AnyNumber | Uint8Array) => Observable<bool>, [ThreadId, ForumUserId]>;
       /**
        * Map post identifier to corresponding post.
        **/
-      postById: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: PostId | AnyNumber | Uint8Array) => Observable<Post>, [ThreadId, PostId]>;
+      postById: AugmentedQuery<ApiType, (arg1: ThreadId | AnyNumber | Uint8Array, arg2: PostId | AnyNumber | Uint8Array) => Observable<Post>, [ThreadId, PostId]>;
       /**
        * Map thread identifier to corresponding thread.
        **/
-      threadById: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ThreadId | AnyNumber | Uint8Array) => Observable<ThreadOf>, [CategoryId, ThreadId]>;
+      threadById: AugmentedQuery<ApiType, (arg1: CategoryId | AnyNumber | Uint8Array, arg2: ThreadId | AnyNumber | Uint8Array) => Observable<ThreadOf>, [CategoryId, ThreadId]>;
     };
     forumWorkingGroup: {
       /**
@@ -518,7 +518,7 @@ declare module '@polkadot/api/types/storage' {
        * For each session index, we keep a mapping of `T::ValidatorId` to the
        * number of blocks authored by the given authority.
        **/
-      authoredBlocks: AugmentedQueryDoubleMap<ApiType, (key1: SessionIndex | AnyNumber | Uint8Array, key2: ValidatorId | string | Uint8Array) => Observable<u32>, [SessionIndex, ValidatorId]>;
+      authoredBlocks: AugmentedQuery<ApiType, (arg1: SessionIndex | AnyNumber | Uint8Array, arg2: ValidatorId | string | Uint8Array) => Observable<u32>, [SessionIndex, ValidatorId]>;
       /**
        * The block number after which it's ok to send heartbeats in current session.
        * 
@@ -536,7 +536,7 @@ declare module '@polkadot/api/types/storage' {
        * For each session index, we keep a mapping of `AuthIndex` to
        * `offchain::OpaqueNetworkState`.
        **/
-      receivedHeartbeats: AugmentedQueryDoubleMap<ApiType, (key1: SessionIndex | AnyNumber | Uint8Array, key2: AuthIndex | AnyNumber | Uint8Array) => Observable<Option<Bytes>>, [SessionIndex, AuthIndex]>;
+      receivedHeartbeats: AugmentedQuery<ApiType, (arg1: SessionIndex | AnyNumber | Uint8Array, arg2: AuthIndex | AnyNumber | Uint8Array) => Observable<Option<Bytes>>, [SessionIndex, AuthIndex]>;
     };
     members: {
       /**
@@ -631,7 +631,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * A vector of reports of the same kind that happened at the same time slot.
        **/
-      concurrentReportsIndex: AugmentedQueryDoubleMap<ApiType, (key1: Kind | string | Uint8Array, key2: OpaqueTimeSlot | string | Uint8Array) => Observable<Vec<ReportIdOf>>, [Kind, OpaqueTimeSlot]>;
+      concurrentReportsIndex: AugmentedQuery<ApiType, (arg1: Kind | string | Uint8Array, arg2: OpaqueTimeSlot | string | Uint8Array) => Observable<Vec<ReportIdOf>>, [Kind, OpaqueTimeSlot]>;
       /**
        * Deferred reports that have been rejected by the offence handler and need to be submitted
        * at a later time.
@@ -715,7 +715,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Map thread id and post id to corresponding post.
        **/
-      postThreadIdByPostId: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: PostId | AnyNumber | Uint8Array) => Observable<DiscussionPost>, [ThreadId, PostId]>;
+      postThreadIdByPostId: AugmentedQuery<ApiType, (arg1: ThreadId | AnyNumber | Uint8Array, arg2: PostId | AnyNumber | Uint8Array) => Observable<DiscussionPost>, [ThreadId, PostId]>;
       /**
        * Map thread identifier to corresponding thread.
        **/
@@ -745,7 +745,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Double map for preventing duplicate votes. Should be cleaned after usage.
        **/
-      voteExistsByProposalByVoter: AugmentedQueryDoubleMap<ApiType, (key1: ProposalId | AnyNumber | Uint8Array, key2: MemberId | AnyNumber | Uint8Array) => Observable<VoteKind>, [ProposalId, MemberId]>;
+      voteExistsByProposalByVoter: AugmentedQuery<ApiType, (arg1: ProposalId | AnyNumber | Uint8Array, arg2: MemberId | AnyNumber | Uint8Array) => Observable<VoteKind>, [ProposalId, MemberId]>;
     };
     randomnessCollectiveFlip: {
       /**
@@ -857,7 +857,7 @@ declare module '@polkadot/api/types/storage' {
        * Is it removed after `HISTORY_DEPTH` eras.
        * If stakers hasn't been set or has been removed then empty exposure is returned.
        **/
-      erasStakers: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<Exposure>, [EraIndex, AccountId]>;
+      erasStakers: AugmentedQuery<ApiType, (arg1: EraIndex | AnyNumber | Uint8Array, arg2: AccountId | string | Uint8Array) => Observable<Exposure>, [EraIndex, AccountId]>;
       /**
        * Clipped Exposure of validator at era.
        * 
@@ -871,7 +871,7 @@ declare module '@polkadot/api/types/storage' {
        * Is it removed after `HISTORY_DEPTH` eras.
        * If stakers hasn't been set or has been removed then empty exposure is returned.
        **/
-      erasStakersClipped: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<Exposure>, [EraIndex, AccountId]>;
+      erasStakersClipped: AugmentedQuery<ApiType, (arg1: EraIndex | AnyNumber | Uint8Array, arg2: AccountId | string | Uint8Array) => Observable<Exposure>, [EraIndex, AccountId]>;
       /**
        * The session index at which the era start for the last `HISTORY_DEPTH` eras.
        **/
@@ -888,7 +888,7 @@ declare module '@polkadot/api/types/storage' {
        * 
        * Is it removed after `HISTORY_DEPTH` eras.
        **/
-      erasValidatorPrefs: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<ValidatorPrefs>, [EraIndex, AccountId]>;
+      erasValidatorPrefs: AugmentedQuery<ApiType, (arg1: EraIndex | AnyNumber | Uint8Array, arg2: AccountId | string | Uint8Array) => Observable<ValidatorPrefs>, [EraIndex, AccountId]>;
       /**
        * The total validator era payout for the last `HISTORY_DEPTH` eras.
        * 
@@ -935,7 +935,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * All slashing events on nominators, mapped by era to the highest slash value of the era.
        **/
-      nominatorSlashInEra: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<Option<BalanceOf>>, [EraIndex, AccountId]>;
+      nominatorSlashInEra: AugmentedQuery<ApiType, (arg1: EraIndex | AnyNumber | Uint8Array, arg2: AccountId | string | Uint8Array) => Observable<Option<BalanceOf>>, [EraIndex, AccountId]>;
       /**
        * Where the reward payment should be made. Keyed by stash.
        **/
@@ -998,7 +998,7 @@ declare module '@polkadot/api/types/storage' {
        * All slashing events on validators, mapped by era to the highest slash proportion
        * and slash value of the era.
        **/
-      validatorSlashInEra: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<Option<ITuple<[Perbill, BalanceOf]>>>, [EraIndex, AccountId]>;
+      validatorSlashInEra: AugmentedQuery<ApiType, (arg1: EraIndex | AnyNumber | Uint8Array, arg2: AccountId | string | Uint8Array) => Observable<Option<ITuple<[Perbill, BalanceOf]>>>, [EraIndex, AccountId]>;
     };
     storageWorkingGroup: {
       /**

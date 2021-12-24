@@ -1,9 +1,21 @@
+type AvatarObject @variant {
+  "The avatar data object"
+  avatarObject: DataObject!
+}
+
+type AvatarUri @variant {
+  "The avatar URL"
+  avatarUri: String!
+}
+
+union Avatar = AvatarObject | AvatarUri
+
 type MemberMetadata @entity {
   "Member's name"
   name: String
 
   "Avatar data object"
-  avatar: DataObject
+  avatar: Avatar
 
   "Short text chosen by member to share information about themselves"
   about: String
@@ -71,6 +83,9 @@ type Membership @entity {
   "Whether member is founding member."
   isFoundingMember: Boolean!
 
+  "Whether member is elected in the current council."
+  isCouncilMember: Boolean!
+
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")
 
@@ -80,6 +95,17 @@ type Membership @entity {
 
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  # Council & Referendum relations
+
+  #"Council reward payment made received by the member."
+  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+
+  "Candidacies announced by this member."
+  councilCandidacies: [Candidate!] @derivedFrom(field: "member")
+
+  "Elected councils' memberships of the member."
+  councilMembers: [CouncilMember!] @derivedFrom(field: "member")
 }
 
 type MembershipSystemSnapshot @entity {

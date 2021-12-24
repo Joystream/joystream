@@ -3,6 +3,7 @@ import polls from '../flows/forum/polls'
 import threads from '../flows/forum/threads'
 import posts from '../flows/forum/posts'
 import moderation from '../flows/forum/moderation'
+import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
 import creatingMemberships from '../flows/membership/creatingMemberships'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
@@ -20,9 +21,11 @@ import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
+import failToElect from '../flows/council/failToElect'
 import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
+import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 
 scenario(async ({ job, env }) => {
@@ -49,12 +52,13 @@ scenario(async ({ job, env }) => {
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
   // Proposals:
-  const proposalsJob = job('proposals', [
+  const proposalsJob = job('proposals & proposal discussion', [
     proposals,
     cancellingProposals,
     vetoProposal,
     exactExecutionBlock,
     expireProposal,
+    proposalsDiscussion,
   ]).requires(membershipSystemJob)
 
   // Working groups
@@ -68,7 +72,12 @@ scenario(async ({ job, env }) => {
   // Forum:
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)
+  job('forum thread tags', threadTags).requires(sudoHireLead)
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Council
+  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  job('council election failures', failToElect).requires(secondCouncilJob)
 })

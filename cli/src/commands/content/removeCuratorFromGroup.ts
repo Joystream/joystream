@@ -26,7 +26,7 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     }
 
     const group = await this.getCuratorGroup(groupId)
-    const groupCuratorIds = group.curators.toArray().map((id) => id.toNumber())
+    const groupCuratorIds = Array.from(group.curators).map((id) => id.toNumber())
 
     if (curatorId === undefined) {
       curatorId = await this.promptForCurator('Choose a Curator to remove', groupCuratorIds)

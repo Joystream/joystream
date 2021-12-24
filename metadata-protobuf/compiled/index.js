@@ -1185,6 +1185,232 @@ $root.ForumPostMetadata = (function() {
     return ForumPostMetadata;
 })();
 
+$root.ForumThreadMetadata = (function() {
+
+    /**
+     * Properties of a ForumThreadMetadata.
+     * @exports IForumThreadMetadata
+     * @interface IForumThreadMetadata
+     * @property {string|null} [title] ForumThreadMetadata title
+     * @property {Array.<string>|null} [tags] ForumThreadMetadata tags
+     */
+
+    /**
+     * Constructs a new ForumThreadMetadata.
+     * @exports ForumThreadMetadata
+     * @classdesc Represents a ForumThreadMetadata.
+     * @implements IForumThreadMetadata
+     * @constructor
+     * @param {IForumThreadMetadata=} [properties] Properties to set
+     */
+    function ForumThreadMetadata(properties) {
+        this.tags = [];
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ForumThreadMetadata title.
+     * @member {string} title
+     * @memberof ForumThreadMetadata
+     * @instance
+     */
+    ForumThreadMetadata.prototype.title = "";
+
+    /**
+     * ForumThreadMetadata tags.
+     * @member {Array.<string>} tags
+     * @memberof ForumThreadMetadata
+     * @instance
+     */
+    ForumThreadMetadata.prototype.tags = $util.emptyArray;
+
+    /**
+     * Creates a new ForumThreadMetadata instance using the specified properties.
+     * @function create
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {IForumThreadMetadata=} [properties] Properties to set
+     * @returns {ForumThreadMetadata} ForumThreadMetadata instance
+     */
+    ForumThreadMetadata.create = function create(properties) {
+        return new ForumThreadMetadata(properties);
+    };
+
+    /**
+     * Encodes the specified ForumThreadMetadata message. Does not implicitly {@link ForumThreadMetadata.verify|verify} messages.
+     * @function encode
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {IForumThreadMetadata} message ForumThreadMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ForumThreadMetadata.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.title);
+        if (message.tags != null && message.tags.length)
+            for (var i = 0; i < message.tags.length; ++i)
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.tags[i]);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ForumThreadMetadata message, length delimited. Does not implicitly {@link ForumThreadMetadata.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {IForumThreadMetadata} message ForumThreadMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ForumThreadMetadata.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ForumThreadMetadata message from the specified reader or buffer.
+     * @function decode
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ForumThreadMetadata} ForumThreadMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ForumThreadMetadata.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.ForumThreadMetadata();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.title = reader.string();
+                break;
+            case 2:
+                if (!(message.tags && message.tags.length))
+                    message.tags = [];
+                message.tags.push(reader.string());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ForumThreadMetadata message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ForumThreadMetadata} ForumThreadMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ForumThreadMetadata.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ForumThreadMetadata message.
+     * @function verify
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ForumThreadMetadata.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.title != null && message.hasOwnProperty("title"))
+            if (!$util.isString(message.title))
+                return "title: string expected";
+        if (message.tags != null && message.hasOwnProperty("tags")) {
+            if (!Array.isArray(message.tags))
+                return "tags: array expected";
+            for (var i = 0; i < message.tags.length; ++i)
+                if (!$util.isString(message.tags[i]))
+                    return "tags: string[] expected";
+        }
+        return null;
+    };
+
+    /**
+     * Creates a ForumThreadMetadata message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ForumThreadMetadata} ForumThreadMetadata
+     */
+    ForumThreadMetadata.fromObject = function fromObject(object) {
+        if (object instanceof $root.ForumThreadMetadata)
+            return object;
+        var message = new $root.ForumThreadMetadata();
+        if (object.title != null)
+            message.title = String(object.title);
+        if (object.tags) {
+            if (!Array.isArray(object.tags))
+                throw TypeError(".ForumThreadMetadata.tags: array expected");
+            message.tags = [];
+            for (var i = 0; i < object.tags.length; ++i)
+                message.tags[i] = String(object.tags[i]);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ForumThreadMetadata message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ForumThreadMetadata
+     * @static
+     * @param {ForumThreadMetadata} message ForumThreadMetadata
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ForumThreadMetadata.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.arrays || options.defaults)
+            object.tags = [];
+        if (options.defaults)
+            object.title = "";
+        if (message.title != null && message.hasOwnProperty("title"))
+            object.title = message.title;
+        if (message.tags && message.tags.length) {
+            object.tags = [];
+            for (var j = 0; j < message.tags.length; ++j)
+                object.tags[j] = message.tags[j];
+        }
+        return object;
+    };
+
+    /**
+     * Converts this ForumThreadMetadata to JSON.
+     * @function toJSON
+     * @memberof ForumThreadMetadata
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ForumThreadMetadata.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return ForumThreadMetadata;
+})();
+
 $root.MembershipMetadata = (function() {
 
     /**
@@ -1192,7 +1418,8 @@ $root.MembershipMetadata = (function() {
      * @exports IMembershipMetadata
      * @interface IMembershipMetadata
      * @property {string|null} [name] MembershipMetadata name
-     * @property {number|null} [avatar] MembershipMetadata avatar
+     * @property {number|null} [avatarObject] MembershipMetadata avatarObject
+     * @property {string|null} [avatarUri] MembershipMetadata avatarUri
      * @property {string|null} [about] MembershipMetadata about
      */
 
@@ -1220,12 +1447,20 @@ $root.MembershipMetadata = (function() {
     MembershipMetadata.prototype.name = "";
 
     /**
-     * MembershipMetadata avatar.
-     * @member {number} avatar
+     * MembershipMetadata avatarObject.
+     * @member {number|null|undefined} avatarObject
      * @memberof MembershipMetadata
      * @instance
      */
-    MembershipMetadata.prototype.avatar = 0;
+    MembershipMetadata.prototype.avatarObject = null;
+
+    /**
+     * MembershipMetadata avatarUri.
+     * @member {string|null|undefined} avatarUri
+     * @memberof MembershipMetadata
+     * @instance
+     */
+    MembershipMetadata.prototype.avatarUri = null;
 
     /**
      * MembershipMetadata about.
@@ -1234,6 +1469,20 @@ $root.MembershipMetadata = (function() {
      * @instance
      */
     MembershipMetadata.prototype.about = "";
+
+    // OneOf field names bound to virtual getters and setters
+    var $oneOfFields;
+
+    /**
+     * MembershipMetadata avatar.
+     * @member {"avatarObject"|"avatarUri"|undefined} avatar
+     * @memberof MembershipMetadata
+     * @instance
+     */
+    Object.defineProperty(MembershipMetadata.prototype, "avatar", {
+        get: $util.oneOfGetter($oneOfFields = ["avatarObject", "avatarUri"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
 
     /**
      * Creates a new MembershipMetadata instance using the specified properties.
@@ -1261,10 +1510,12 @@ $root.MembershipMetadata = (function() {
             writer = $Writer.create();
         if (message.name != null && Object.hasOwnProperty.call(message, "name"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.name);
-        if (message.avatar != null && Object.hasOwnProperty.call(message, "avatar"))
-            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.avatar);
+        if (message.avatarObject != null && Object.hasOwnProperty.call(message, "avatarObject"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.avatarObject);
         if (message.about != null && Object.hasOwnProperty.call(message, "about"))
             writer.uint32(/* id 3, wireType 2 =*/26).string(message.about);
+        if (message.avatarUri != null && Object.hasOwnProperty.call(message, "avatarUri"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.avatarUri);
         return writer;
     };
 
@@ -1303,7 +1554,10 @@ $root.MembershipMetadata = (function() {
                 message.name = reader.string();
                 break;
             case 2:
-                message.avatar = reader.uint32();
+                message.avatarObject = reader.uint32();
+                break;
+            case 4:
+                message.avatarUri = reader.string();
                 break;
             case 3:
                 message.about = reader.string();
@@ -1343,12 +1597,22 @@ $root.MembershipMetadata = (function() {
     MembershipMetadata.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        var properties = {};
         if (message.name != null && message.hasOwnProperty("name"))
             if (!$util.isString(message.name))
                 return "name: string expected";
-        if (message.avatar != null && message.hasOwnProperty("avatar"))
-            if (!$util.isInteger(message.avatar))
-                return "avatar: integer expected";
+        if (message.avatarObject != null && message.hasOwnProperty("avatarObject")) {
+            properties.avatar = 1;
+            if (!$util.isInteger(message.avatarObject))
+                return "avatarObject: integer expected";
+        }
+        if (message.avatarUri != null && message.hasOwnProperty("avatarUri")) {
+            if (properties.avatar === 1)
+                return "avatar: multiple values";
+            properties.avatar = 1;
+            if (!$util.isString(message.avatarUri))
+                return "avatarUri: string expected";
+        }
         if (message.about != null && message.hasOwnProperty("about"))
             if (!$util.isString(message.about))
                 return "about: string expected";
@@ -1369,8 +1633,10 @@ $root.MembershipMetadata = (function() {
         var message = new $root.MembershipMetadata();
         if (object.name != null)
             message.name = String(object.name);
-        if (object.avatar != null)
-            message.avatar = object.avatar >>> 0;
+        if (object.avatarObject != null)
+            message.avatarObject = object.avatarObject >>> 0;
+        if (object.avatarUri != null)
+            message.avatarUri = String(object.avatarUri);
         if (object.about != null)
             message.about = String(object.about);
         return message;
@@ -1391,15 +1657,22 @@ $root.MembershipMetadata = (function() {
         var object = {};
         if (options.defaults) {
             object.name = "";
-            object.avatar = 0;
             object.about = "";
         }
         if (message.name != null && message.hasOwnProperty("name"))
             object.name = message.name;
-        if (message.avatar != null && message.hasOwnProperty("avatar"))
-            object.avatar = message.avatar;
+        if (message.avatarObject != null && message.hasOwnProperty("avatarObject")) {
+            object.avatarObject = message.avatarObject;
+            if (options.oneofs)
+                object.avatar = "avatarObject";
+        }
         if (message.about != null && message.hasOwnProperty("about"))
             object.about = message.about;
+        if (message.avatarUri != null && message.hasOwnProperty("avatarUri")) {
+            object.avatarUri = message.avatarUri;
+            if (options.oneofs)
+                object.avatar = "avatarUri";
+        }
         return object;
     };
 
@@ -1954,6 +2227,216 @@ $root.PlaylistMetadata = (function() {
     };
 
     return PlaylistMetadata;
+})();
+
+$root.ProposalsDiscussionPostMetadata = (function() {
+
+    /**
+     * Properties of a ProposalsDiscussionPostMetadata.
+     * @exports IProposalsDiscussionPostMetadata
+     * @interface IProposalsDiscussionPostMetadata
+     * @property {string|null} [text] ProposalsDiscussionPostMetadata text
+     * @property {number|null} [repliesTo] ProposalsDiscussionPostMetadata repliesTo
+     */
+
+    /**
+     * Constructs a new ProposalsDiscussionPostMetadata.
+     * @exports ProposalsDiscussionPostMetadata
+     * @classdesc Represents a ProposalsDiscussionPostMetadata.
+     * @implements IProposalsDiscussionPostMetadata
+     * @constructor
+     * @param {IProposalsDiscussionPostMetadata=} [properties] Properties to set
+     */
+    function ProposalsDiscussionPostMetadata(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProposalsDiscussionPostMetadata text.
+     * @member {string} text
+     * @memberof ProposalsDiscussionPostMetadata
+     * @instance
+     */
+    ProposalsDiscussionPostMetadata.prototype.text = "";
+
+    /**
+     * ProposalsDiscussionPostMetadata repliesTo.
+     * @member {number} repliesTo
+     * @memberof ProposalsDiscussionPostMetadata
+     * @instance
+     */
+    ProposalsDiscussionPostMetadata.prototype.repliesTo = 0;
+
+    /**
+     * Creates a new ProposalsDiscussionPostMetadata instance using the specified properties.
+     * @function create
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {IProposalsDiscussionPostMetadata=} [properties] Properties to set
+     * @returns {ProposalsDiscussionPostMetadata} ProposalsDiscussionPostMetadata instance
+     */
+    ProposalsDiscussionPostMetadata.create = function create(properties) {
+        return new ProposalsDiscussionPostMetadata(properties);
+    };
+
+    /**
+     * Encodes the specified ProposalsDiscussionPostMetadata message. Does not implicitly {@link ProposalsDiscussionPostMetadata.verify|verify} messages.
+     * @function encode
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {IProposalsDiscussionPostMetadata} message ProposalsDiscussionPostMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProposalsDiscussionPostMetadata.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.text != null && Object.hasOwnProperty.call(message, "text"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.text);
+        if (message.repliesTo != null && Object.hasOwnProperty.call(message, "repliesTo"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.repliesTo);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ProposalsDiscussionPostMetadata message, length delimited. Does not implicitly {@link ProposalsDiscussionPostMetadata.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {IProposalsDiscussionPostMetadata} message ProposalsDiscussionPostMetadata message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProposalsDiscussionPostMetadata.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ProposalsDiscussionPostMetadata message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProposalsDiscussionPostMetadata} ProposalsDiscussionPostMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProposalsDiscussionPostMetadata.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProposalsDiscussionPostMetadata();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.text = reader.string();
+                break;
+            case 2:
+                message.repliesTo = reader.uint32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ProposalsDiscussionPostMetadata message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ProposalsDiscussionPostMetadata} ProposalsDiscussionPostMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProposalsDiscussionPostMetadata.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ProposalsDiscussionPostMetadata message.
+     * @function verify
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ProposalsDiscussionPostMetadata.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.text != null && message.hasOwnProperty("text"))
+            if (!$util.isString(message.text))
+                return "text: string expected";
+        if (message.repliesTo != null && message.hasOwnProperty("repliesTo"))
+            if (!$util.isInteger(message.repliesTo))
+                return "repliesTo: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a ProposalsDiscussionPostMetadata message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ProposalsDiscussionPostMetadata} ProposalsDiscussionPostMetadata
+     */
+    ProposalsDiscussionPostMetadata.fromObject = function fromObject(object) {
+        if (object instanceof $root.ProposalsDiscussionPostMetadata)
+            return object;
+        var message = new $root.ProposalsDiscussionPostMetadata();
+        if (object.text != null)
+            message.text = String(object.text);
+        if (object.repliesTo != null)
+            message.repliesTo = object.repliesTo >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ProposalsDiscussionPostMetadata message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ProposalsDiscussionPostMetadata
+     * @static
+     * @param {ProposalsDiscussionPostMetadata} message ProposalsDiscussionPostMetadata
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ProposalsDiscussionPostMetadata.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults) {
+            object.text = "";
+            object.repliesTo = 0;
+        }
+        if (message.text != null && message.hasOwnProperty("text"))
+            object.text = message.text;
+        if (message.repliesTo != null && message.hasOwnProperty("repliesTo"))
+            object.repliesTo = message.repliesTo;
+        return object;
+    };
+
+    /**
+     * Converts this ProposalsDiscussionPostMetadata to JSON.
+     * @function toJSON
+     * @memberof ProposalsDiscussionPostMetadata
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ProposalsDiscussionPostMetadata.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return ProposalsDiscussionPostMetadata;
 })();
 
 $root.SeriesMetadata = (function() {

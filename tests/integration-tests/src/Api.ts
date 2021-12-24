@@ -31,6 +31,9 @@ import {
   CategoryCreatedEventDetails,
   PostAddedEventDetails,
   ThreadCreatedEventDetails,
+  ProposalsCodexEventName,
+  ProposalDiscussionPostCreatedEventDetails,
+  ProposalsDiscussionEventName,
 } from './types'
 import {
   ApplicationId,
@@ -442,6 +445,17 @@ export class Api {
     return details
   }
 
+  public async retrieveProposalsCodexEventDetails(
+    result: ISubmittableResult,
+    eventName: ProposalsCodexEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'proposalsCodex', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
   public async retrieveForumEventDetails(result: ISubmittableResult, eventName: ForumEventName): Promise<EventDetails> {
     const details = await this.retrieveEventDetails(result, 'forum', eventName)
     if (!details) {
@@ -451,10 +465,31 @@ export class Api {
   }
 
   public async retrieveProposalCreatedEventDetails(result: ISubmittableResult): Promise<ProposalCreatedEventDetails> {
-    const details = await this.retrieveProposalsEngineEventDetails(result, 'ProposalCreated')
+    const details = await this.retrieveProposalsCodexEventDetails(result, 'ProposalCreated')
     return {
       ...details,
-      proposalId: details.event.data[1] as ProposalId,
+      proposalId: details.event.data[0] as ProposalId,
+    }
+  }
+
+  public async retrieveProposalsDiscussionEventDetails(
+    result: ISubmittableResult,
+    eventName: ProposalsDiscussionEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'proposalsDiscussion', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveProposalDiscussionPostCreatedEventDetails(
+    result: ISubmittableResult
+  ): Promise<ProposalDiscussionPostCreatedEventDetails> {
+    const details = await this.retrieveProposalsDiscussionEventDetails(result, 'PostCreated')
+    return {
+      ...details,
+      postId: details.event.data[0] as PostId,
     }
   }
 
@@ -500,6 +535,7 @@ export class Api {
 
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
+    announcementPeriodNr: number | null = null,
     blocksReserve = 3,
     intervalMs = BLOCKTIME
   ): Promise<void> {
@@ -527,9 +563,16 @@ export class Api {
 
         const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
 
+        const currentAnnouncementPeriodNr =
+          announcementPeriodNr === null ? null : (await this.api.query.council.announcementPeriodNr()).toNumber()
+
         debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
 
-        return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve)
+        return (
+          currentStage === targetStage &&
+          currentStageEndsIn.gten(blocksReserve) &&
+          announcementPeriodNr === currentAnnouncementPeriodNr
+        )
       },
       intervalMs
     )
@@ -551,7 +594,8 @@ export class Api {
     const details = await this.retrieveForumEventDetails(result, 'ThreadCreated')
     return {
       ...details,
-      threadId: details.event.data[0] as ThreadId,
+      threadId: details.event.data[1] as ThreadId,
+      postId: details.event.data[2] as PostId,
     }
   }
 

@@ -8,6 +8,7 @@ BN.prototype.toJSON = function () {
 export * from './content'
 export * from './membership'
 export * from './storage'
+export * from './council'
 export * from './workingGroups'
 export * from './proposals'
 export * from './proposalsDiscussion'

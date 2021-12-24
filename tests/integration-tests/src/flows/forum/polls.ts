@@ -32,7 +32,7 @@ export default async function polls({ api, query }: FlowProps): Promise<void> {
   const pollThreads: ThreadParams[] = memberIds.map((memberId, i) => ({
     categoryId,
     asMember: memberId,
-    title: `Poll ${i}`,
+    metadata: { value: { title: `Poll ${i}` } },
     text: `Poll ${i} desc`,
     poll: {
       description: `Poll ${i} question?`,

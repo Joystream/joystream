@@ -6,7 +6,7 @@
     "build": "./build.sh",
     "start": "./start.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
-    "lint": "echo \"Skippinng\"",
+    "lint": "yarn workspace query-node-mappings lint",
     "clean": "rm -rf ./generated",
     "clean:query-node": "rm -rf ./generated/graphql-server",
     "processor:start": "DEBUG=${DEBUG} hydra-processor run -e ../.env",
@@ -41,7 +41,7 @@
     "tslib": "^2.0.0",
     "@types/bn.js": "^4.11.6",
     "bn.js": "^5.1.2",
-    "@dzlzv/hydra-processor": "3.1.0-alpha.0",
+    "@joystream/hydra-processor": "3.1.0-alpha.13",
     "envsub": "4.0.7"
   },
   "volta": {

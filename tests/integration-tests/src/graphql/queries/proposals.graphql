@@ -264,10 +264,17 @@ fragment ProposalFields on Proposal {
   }
   statusSetAtBlock
   statusSetAtTime
+  isFinalized
   createdInEvent {
     id
     inBlock
     inExtrinsic
+  }
+  discussionThread {
+    id
+    mode {
+      ...ProposalDiscussionThreadModeFields
+    }
   }
 }
 

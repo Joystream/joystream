@@ -8,7 +8,7 @@ import { Application, ApplicationId, Opening, OpeningId, WorkerId } from '@joyst
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { JoyBTreeSet } from '@joystream/types/common'
+import { BTreeSet } from '@polkadot/types'
 import { registry } from '@joystream/types'
 import { lockIdByWorkingGroup } from '../../consts'
 import {
@@ -55,7 +55,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.openingIds.map((openingId, i) => {
-      const applicationsSet = new (JoyBTreeSet(ApplicationId))(registry, this.acceptedApplicationsIdsArrays[i])
+      const applicationsSet = new (BTreeSet.with(ApplicationId))(registry, this.acceptedApplicationsIdsArrays[i])
       this.debug(
         'Applications to accept:',
         this.acceptedApplicationsIdsArrays[i].map((id) => id.toNumber())
@@ -180,7 +180,6 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
         const isAccepted = acceptedApplicationsIds.some((id) => id.toNumber() === qApplication.runtimeId)
         if (isAccepted) {
           Utils.assert(qApplication.status.__typename === 'ApplicationStatusAccepted', 'Invalid application status')
-          console.log('qApplication.status', qApplication.status)
           // FIXME: Missing due to Hydra bug now
           // Utils.assert(qApplication.status.openingFilledEvent, 'Query node: Missing openingFilledEvent relation')
           // assert.equal(qApplication.status.openingFilledEvent.id, qEvent.id)

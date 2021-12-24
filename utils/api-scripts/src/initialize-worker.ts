@@ -1,9 +1,10 @@
 import { registry, types } from '@joystream/types'
-import { JoyBTreeSet, MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/common'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 import BN from 'bn.js'
+import { BTreeSet } from '@polkadot/types'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -144,7 +145,7 @@ async function main() {
   console.log('Filling the opening...')
   await txHelper.sendAndCheck(
     LeadRoleKeyPair,
-    [api.tx[groupModule].fillOpening(openingId, new (JoyBTreeSet(ApplicationId))(registry, [applicationId]))],
+    [api.tx[groupModule].fillOpening(openingId, new (BTreeSet.with(ApplicationId))(registry, [applicationId]))],
     'Failed to fill the opening'
   )
 

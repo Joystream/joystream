@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import { FindConditions, In, Raw } from 'typeorm'
 import {
   createDataObject,
@@ -11,7 +11,7 @@ import {
   logger,
   unexpectedData,
 } from './common'
-import { DataDirectory } from './generated/types'
+import { DataDirectory } from '../generated/types'
 import { ContentId, StorageObjectOwner } from '@joystream/types/augment'
 import { ContentId as Custom_ContentId } from '@joystream/types/storage'
 import { registry } from '@joystream/types'

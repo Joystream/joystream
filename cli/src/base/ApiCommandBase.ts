@@ -435,8 +435,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 let errorMsg = dispatchError.toString()
                 if (dispatchError.isModule) {
                   try {
-                    const { name, documentation } = this.getOriginalApi().registry.findMetaError(dispatchError.asModule)
-                    errorMsg = `${name} (${documentation})`
+                    const { name, docs } = this.getOriginalApi().registry.findMetaError(dispatchError.asModule)
+                    errorMsg = `${name} (${docs.join(', ')})`
                   } catch (e) {
                     // This probably means we don't have this error in the metadata
                     // In this case - continue (we'll just display dispatchError.toString())

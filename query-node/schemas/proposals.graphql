@@ -138,6 +138,9 @@ type Proposal @entity {
   "Current proposal status"
   status: ProposalStatus!
 
+  "If true then the proposal status is final and will not change form this point"
+  isFinalized: Boolean
+
   # Additional fileds to avoid the need for complex filtering through status variant relations:
 
   "Number of the block the current status was set at"

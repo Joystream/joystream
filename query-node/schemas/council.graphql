@@ -1,0 +1,282 @@
+# TODO:
+# - do we need some fulltext search for council/election?
+
+# workaround for https://github.com/Joystream/hydra/issues/434
+type VariantNone @variant {
+  _phantom: Int
+}
+
+################### Council ####################################################
+
+type CouncilStageUpdate @entity {
+  "The new stage council got into."
+  stage: CouncilStage!
+
+  "Block number at which change happened."
+  changedAt: BigInt!
+
+  "Council term during which the update happened (if any)."
+  electedCouncil: ElectedCouncil
+
+  "Election not completed due to insufficient candidates or winners."
+  electionProblem: ElectionProblem
+}
+
+type CouncilStageAnnouncing @variant {
+  "Number of candidates aspiring to be elected as council members."
+  candidatesCount: BigInt!
+}
+
+type CouncilStageElection @variant {
+  "Number of candidates aspiring to be elected as council members."
+  candidatesCount: BigInt!
+}
+
+type CouncilStageIdle @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+union CouncilStage = CouncilStageAnnouncing | CouncilStageElection | CouncilStageIdle | VariantNone
+
+enum ElectionProblem {
+  NOT_ENOUGH_CANDIDATES
+  NEW_COUNCIL_NOT_ELECTED
+}
+
+enum CandidacyStatus {
+  ACTIVE
+  WITHDRAWN
+  ELECTED
+  FAILED
+}
+
+type Candidate @entity {
+  "Account used for staking currency needed for the candidacy."
+  stakingAccountId: String!
+
+  "Account that will receive rewards if candidate's elected to the council."
+  rewardAccountId: String!
+
+  "Candidate's membership."
+  member: Membership!
+
+  "Election cycle"
+  electionRound: ElectionRound!
+
+  "Stake locked for the candidacy."
+  stake: BigInt!
+
+  "Reflects if the stake is still locked for candidacy or has been already released by the member."
+  stakeLocked: Boolean!
+
+  "Current candidate status"
+  status: CandidacyStatus!
+
+  "Sum of power of all votes received."
+  votePower: BigInt!
+
+  "Block in which the last vote was received."
+  lastVoteReceivedAtBlock: BigInt
+
+  "Event number in block in which the last vote was received."
+  lastVoteReceivedAtEventNumber: Int
+
+  "The metadata contained in note."
+  noteMetadata: CandidacyNoteMetadata!
+
+  "Votes received in referendums by this member."
+  votesReceived: [CastVote!]! @derivedFrom(field: "voteFor")
+}
+
+type CouncilMember @entity {
+  "Runtime council member id"
+  id: ID!
+
+  "Account used for staking currency for council membership."
+  stakingAccountId: String!
+
+  "Account that will receive used for reward currency for council membership."
+  rewardAccountId: String!
+
+  "Council member's membership."
+  member: Membership!
+
+  "Stake used for the council membership."
+  stake: BigInt!
+
+  "Block number in which council member received the last reward payment."
+  lastPaymentBlock: BigInt!
+
+  "Reward amount that should have been paid but couldn't be paid off due to insufficient budget."
+  unpaidReward: BigInt!
+
+  "Amount of reward collected by this council member so far."
+  accumulatedReward: BigInt!
+
+  electedInCouncil: ElectedCouncil!
+}
+
+type CandidacyNoteMetadata @entity {
+  "Candidacy header text."
+  header: String
+
+  "Candidate program in form of bullet points. Takes array with one empty string [''] as deletion request."
+  bulletPoints: [String!]
+
+  "Image uri of candidate's banner."
+  bannerImageUri: String
+
+  "Candidacy description (Markdown-formatted)."
+  description: String
+}
+
+################### Referendum #################################################
+
+# NOTE: Due to the bug https://github.com/Joystream/hydra/issues/467 `ReferendumStage*` variants were transformed to entities.
+#       It shouldn't have any negative impact on current usage, but it might need remodeling in the future depending on usage.
+
+type ReferendumStageVoting @entity {
+  "Block in which referendum started."
+  startedAtBlock: BigInt!
+
+  "Target number of winners."
+  winningTargetCount: BigInt!
+
+  "Election round"
+  electionRound: ElectionRound!
+}
+
+type ReferendumStageRevealing @entity {
+  "Block in which referendum started"
+  startedAtBlock: BigInt!
+
+  "Target number of winners"
+  winningTargetCount: BigInt!
+
+  "Election round."
+  electionRound: ElectionRound!
+}
+
+type CastVote @entity {
+  "Hashed vote that was casted before being revealed. Hex format."
+  commitment: String!
+
+  "Election round."
+  electionRound: ElectionRound!
+
+  "Stake used to back up the vote."
+  stake: BigInt!
+
+  "Reflects if the stake is still locked for candidacy or has been already released by the member."
+  stakeLocked: Boolean!
+
+  "Account that cast the vote."
+  castBy: String!
+
+  "Member receiving the vote."
+  voteFor: Candidate
+
+  "Vote's power."
+  votePower: BigInt!
+}
+
+################### Derived ####################################################
+
+type ElectedCouncil @entity {
+  "Members that were elected to the council."
+  councilMembers: [CouncilMember!]! @derivedFrom(field: "electedInCouncil")
+
+  "Changes to council status that were made during it's reign."
+  updates: [CouncilStageUpdate!]! @derivedFrom(field: "electedCouncil")
+
+  "Block number at which the council was elected."
+  electedAtBlock: Int!
+
+  "Block number at which the council reign ended and a new council was elected."
+  endedAtBlock: Int
+
+  "Time at which the council was elected."
+  electedAtTime: DateTime!
+
+  "Time at which the council reign ended and a new council was elected."
+  endedAtTime: DateTime
+
+  "Network running at the time of election."
+  electedAtNetwork: Network!
+
+  "Network running at the time of resignation."
+  endedAtNetwork: Network
+
+  # it might seems that derived field is wrongly set to `nextElectedCouncil`, but that's how it should be
+  "Elections held before the council was rightfully elected."
+  councilElections: [ElectionRound!]! @derivedFrom(field: "nextElectedCouncil")
+
+  # it might seems that derived field is wrongly set to `electedCouncil`, but that's how it should be
+  "Elections held before the next council was or will be rightfully elected."
+  nextCouncilElections: [ElectionRound!]! @derivedFrom(field: "electedCouncil")
+
+  "Sign if council is already resigned."
+  isResigned: Boolean!
+}
+
+type ElectionRound @entity {
+  "Election cycle ID."
+  cycleId: Int!
+
+  "Sign if election has already finished."
+  isFinished: Boolean!
+
+  "Block number at which the election ended."
+  endedAtBlock: Int
+
+  "Time at which the election ended."
+  endedAtTime: DateTime
+
+  "Network running at the time the election ended."
+  endedAtNetwork: Network
+
+  "Vote cast in the election round."
+  castVotes: [CastVote!]! @derivedFrom(field: "electionRound")
+
+  "Referendum voting stage that happened during this election round."
+  referendumStageVoting: ReferendumStageVoting @derivedFrom(field: "electionRound")
+
+  "Referendum revealing stage that happened during this election round."
+  referendumStageRevealing: ReferendumStageRevealing @derivedFrom(field: "electionRound")
+
+  "Council that is ruling during the election."
+  electedCouncil: ElectedCouncil!
+
+  "Council that was elected in this election round."
+  nextElectedCouncil: ElectedCouncil
+
+  "Candidates in this election round."
+  candidates: [Candidate!]! @derivedFrom(field: "electionRound")
+}
+
+# Not yet sure if this will be needed by apps using query node.
+#
+#type Budget @entity {
+#  "Block number at which the next rewards will be paid."
+#  nextRewardPaymentsAt: BigInt!
+#}
+#
+#type BudgetPayment @entity {
+#  "Block number at which the payment was done."
+#  paidAtBlock: Int!
+#
+#  "Member that was paid."
+#  member: Membership!
+#
+#  "Account that received the payment"
+#  account: String!
+#
+#  "Amount that was paid."
+#  amount: BigInt!
+#
+#  "Amount that couldn't be paid due to insufficient council budget's balance."
+#  unpaidAmount: BigInt!
+#}
