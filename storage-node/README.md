@@ -705,49 +705,58 @@ USAGE
   $ storage-node server
 
 OPTIONS
-  -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
+  -d, --uploads=uploads                                       (required) Data uploading directory (absolute path).
 
-  -e, --elasticSearchEndpoint=elasticSearchEndpoint  Elasticsearch endpoint (e.g.: http://some.com:8081).
-                                                     Log level could be set using the ELASTIC_LOG_LEVEL enviroment
-                                                     variable.
-                                                     Supported values: warn, error, debug, info. Default:debug
+  -e, --elasticSearchEndpoint=elasticSearchEndpoint           Elasticsearch endpoint (e.g.: http://some.com:8081).
+                                                              Log level could be set using the ELASTIC_LOG_LEVEL
+                                                              enviroment variable.
+                                                              Supported values: warn, error, debug, info. Default:debug
 
-  -h, --help                                         show CLI help
+  -h, --help                                                  show CLI help
 
-  -i, --syncInterval=syncInterval                    [default: 1] Interval between synchronizations (in minutes)
+  -i, --syncInterval=syncInterval                             [default: 1] Interval between synchronizations (in
+                                                              minutes)
 
-  -k, --keyFile=keyFile                              Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile                                       Key file for the account. Mandatory in non-dev
+                                                              environment.
 
-  -l, --logFileName=logFileName                      Absolute path to the rolling log file. Creates up to 3 files with
-                                                     50MB each
+  -l, --logFilePath=logFilePath                               Absolute path to the rolling log files.
 
-  -m, --dev                                          Use development mode
+  -m, --dev                                                   Use development mode
 
-  -o, --port=port                                    (required) Server port.
+  -n, --logMaxFileNumber=logMaxFileNumber                     [default: 7] Maximum rolling log files number.
 
-  -p, --password=password                            Key file password (optional). Could be overriden by ACCOUNT_PWD
-                                                     environment variable.
+  -o, --port=port                                             (required) Server port.
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint          (required) [default: http://localhost:8081/graphql] Query node
-                                                     endpoint (e.g.: http://some.com:8081/graphql)
+  -p, --password=password                                     Key file password (optional). Could be overriden by
+                                                              ACCOUNT_PWD environment variable.
 
-  -r, --syncWorkersNumber=syncWorkersNumber          [default: 20] Sync workers number (max async operations in
-                                                     progress).
+  -q, --queryNodeEndpoint=queryNodeEndpoint                   (required) [default: http://localhost:8081/graphql] Query
+                                                              node endpoint (e.g.: http://some.com:8081/graphql)
 
-  -s, --sync                                         Enable data synchronization.
+  -r, --syncWorkersNumber=syncWorkersNumber                   [default: 20] Sync workers number (max async operations in
+                                                              progress).
 
-  -t, --syncWorkersTimeout=syncWorkersTimeout        [default: 30] Asset downloading timeout for the syncronization (in
-                                                     minutes).
+  -s, --sync                                                  Enable data synchronization.
 
-  -u, --apiUrl=apiUrl                                [default: ws://localhost:9944] Runtime API URL. Mandatory in
-                                                     non-dev environment.
+  -t, --syncWorkersTimeout=syncWorkersTimeout                 [default: 30] Asset downloading timeout for the
+                                                              syncronization (in minutes).
 
-  -w, --worker=worker                                (required) Storage provider worker ID
+  -u, --apiUrl=apiUrl                                         [default: ws://localhost:9944] Runtime API URL. Mandatory
+                                                              in non-dev environment.
 
-  -y, --accountUri=accountUri                        Account URI (optional). Has a priority over the keyFile and
-                                                     password flags. Could be overriden by ACCOUNT_URI environment
-                                                     variable.
+  -w, --worker=worker                                         (required) Storage provider worker ID
+
+  -x, --logMaxFileSize=logMaxFileSize                         [default: 50000000] Maximum rolling log files size in
+                                                              bytes.
+
+  -y, --accountUri=accountUri                                 Account URI (optional). Has a priority over the keyFile
+                                                              and password flags. Could be overriden by ACCOUNT_URI
+                                                              environment variable.
+
+  -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly)  [default: daily] Log files update frequency.
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
+
 <!-- commandsstop -->

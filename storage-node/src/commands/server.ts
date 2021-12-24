@@ -1,7 +1,7 @@
 import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
-import logger, { initNewLogger } from '../services/logger'
+import logger, { initNewLogger, DatePatternByFrequency, Frequency } from '../services/logger'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import { ApiPromise } from '@polkadot/api'
 import { performSync, TempDirName } from '../services/sync/synchronizer'
@@ -75,10 +75,29 @@ export default class Server extends ApiCommandBase {
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
-    logFileName: flags.string({
+    logFilePath: flags.string({
       char: 'l',
       required: false,
-      description: `Absolute path to the rolling log file. Creates up to 3 files with 50MB each`,
+      description: `Absolute path to the rolling log files.`,
+    }),
+    logMaxFileNumber: flags.integer({
+      char: 'n',
+      required: false,
+      default: 7,
+      description: `Maximum rolling log files number.`,
+    }),
+    logMaxFileSize: flags.integer({
+      char: 'x',
+      required: false,
+      default: 50000000,
+      description: `Maximum rolling log files size in bytes.`,
+    }),
+    logFileChangeFrequency: flags.enum({
+      char: 'z',
+      description: `Log files update frequency.`,
+      options: Object.keys(DatePatternByFrequency),
+      default: 'daily',
+      required: false,
     }),
     ...ApiCommandBase.flags,
   }
@@ -94,8 +113,15 @@ Supported values: warn, error, debug, info. Default:debug`,
       await loadDataObjectIdCache(flags.uploads, TempDirName)
     }
 
-    if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFileName)) {
-      initNewLogger({ logSource, elasticSearchEndpoint: flags.elasticSearchEndpoint, filename: flags.logFileName })
+    if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
+      initNewLogger({
+        elasticSearchlogSource: logSource,
+        elasticSearchEndpoint: flags.elasticSearchEndpoint,
+        filePath: flags.logFilePath,
+        maxFileNumber: flags.logMaxFileNumber,
+        maxFileSize: flags.logMaxFileSize,
+        fileFrequency: flags.logFileChangeFrequency as Frequency, // type checked in the flags.enum
+      })
     }
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)

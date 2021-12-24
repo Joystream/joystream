@@ -9,7 +9,12 @@ import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
 import { AppConfig } from './controllers/common'
-import { createExpressLoggerOptions, httpLogger, errorLogger } from '../../services/logger'
+import {
+  createExpressErrorLoggerOptions,
+  createExpressDefaultLoggerOptions,
+  httpLogger,
+  errorLogger,
+} from '../../services/logger'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -20,7 +25,7 @@ import { createExpressLoggerOptions, httpLogger, errorLogger } from '../../servi
 export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
   const app = express()
-  const expressLoggerOptions = createExpressLoggerOptions()
+  const expressLoggerOptions = createExpressDefaultLoggerOptions()
 
   app.use(cors())
   app.use(express.json())
@@ -58,7 +63,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
   ) // Required signature.
 
   // Error logger
-  app.use(errorLogger(expressLoggerOptions))
+  const errorLoggerOptions = createExpressErrorLoggerOptions()
+  app.use(errorLogger(errorLoggerOptions))
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
