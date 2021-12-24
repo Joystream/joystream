@@ -96,42 +96,105 @@ export async function prepareDataObject(
   return dataObject
 }
 
-export function isVideoFullyActive(video: Video): boolean {
-  return (
+export interface IVideoActiveStatus {
+  isFullyActive: boolean
+  videoCategory: VideoCategory | undefined
+  channel: Channel
+  channelCategory: ChannelCategory | undefined
+}
+
+export function getVideoActiveStatus(video: Video): IVideoActiveStatus {
+  const isFullyActive =
     !!video.isPublic &&
     !video.isCensored &&
     video.thumbnailPhotoAvailability === AssetAvailability.ACCEPTED &&
     video.mediaAvailability === AssetAvailability.ACCEPTED
-  )
+  const videoCategory = video.category
+  const channel = video.channel
+  const channelCategory = channel.category
+
+  return {
+    isFullyActive,
+    videoCategory,
+    channel,
+    channelCategory,
+  }
 }
 
 export async function updateVideoActiveCounters(
   store: DatabaseManager,
-  video: Video,
-  isFullyActive: boolean
+  initialActiveStatus: IVideoActiveStatus | undefined,
+  activeStatus: IVideoActiveStatus | undefined
 ): Promise<void> {
-  const counterChange = isFullyActive ? 1 : -1
-
-  if (video.channel) {
-    const channel = video.channel
-    channel.activeVideosCounter += counterChange
-
-    await store.save<Channel>(channel)
+  // definition of generic type for Hydra DatabaseManager's methods
+  type EntityType<T> = {
+    new (...args: any[]): T
   }
 
-  if (video.channel && video.channel.category) {
-    const channelCategory = video.channel.category
-    channelCategory.activeVideosCounter += counterChange
+  async function updateSingleEntity<Entity extends VideoCategory | Channel>(
+    entity: Entity,
+    counterChange: number
+  ): Promise<void> {
+    entity.activeVideosCounter += counterChange
 
-    await store.save<ChannelCategory>(channelCategory)
+    await store.save<EntityType<Entity>>(entity)
   }
 
-  if (video.category) {
-    const category = video.category
-    category.activeVideosCounter += counterChange
+  async function reflectUpdate<Entity extends VideoCategory | Channel>(
+    oldEntity: Entity | undefined,
+    newEntity: Entity | undefined,
+    initFullyActive: boolean,
+    nowFullyActive: boolean
+  ): Promise<void> {
+    if (!oldEntity && !newEntity) {
+      return
+    }
 
-    await store.save<VideoCategory>(category)
+    const didEntityChange = oldEntity?.id.toString() !== newEntity?.id.toString()
+    const didFullyActiveChange = initFullyActive !== nowFullyActive
+
+    // escape if nothing changed
+    if (!didEntityChange && !didFullyActiveChange) {
+      return
+    }
+
+    if (!didEntityChange) {
+      // && didFullyActiveChange
+      const counterChange = nowFullyActive ? 1 : -1
+
+      await updateSingleEntity(newEntity as Entity, counterChange)
+
+      return
+    }
+
+    // didEntityChange === true
+
+    if (oldEntity) {
+      // if video was fully active before, prepare to decrease counter; increase counter otherwise
+      const counterChange = initFullyActive ? -1 : 1
+
+      await updateSingleEntity(oldEntity, counterChange)
+    }
+
+    if (newEntity) {
+      // if video is fully active now, prepare to increase counter; decrease counter otherwise
+      const counterChange = nowFullyActive ? 1 : -1
+
+      await updateSingleEntity(newEntity, counterChange)
+    }
   }
+
+  const items = ['videoCategory', 'channel', 'channelCategory']
+  const promises = items.map(
+    async (item) =>
+      await reflectUpdate(
+        initialActiveStatus?.[item],
+        activeStatus?.[item],
+        initialActiveStatus?.isFullyActive || false,
+        activeStatus?.isFullyActive || false
+      )
+  )
+  await Promise.all(promises)
 }
 
 /// ///////////////// Sudo extrinsic calls ///////////////////////////////////////

@@ -6,7 +6,7 @@ import { FindConditions, In } from 'typeorm'
 
 import { Content } from '../../../generated/types'
 
-import { inconsistentState, isVideoFullyActive, updateVideoActiveCounters, logger, getNextId } from '../common'
+import { inconsistentState, getVideoActiveStatus, updateVideoActiveCounters, logger, getNextId } from '../common'
 
 import { convertContentActorToDataObjectOwner, readProtobuf, readProtobufWithAssets, RawVideoMetadata } from './utils'
 
@@ -140,7 +140,8 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
 
   // load channel
   const channel = await db.get(Channel, {
-    where: { id: channelId.toString(), relations: ['category'] } as FindConditions<Channel>,
+    where: { id: channelId.toString() } as FindConditions<Channel>,
+    relations: ['category'],
   })
 
   // ensure channel exists
@@ -183,10 +184,8 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
   // save video
   await db.save<Video>(video)
 
-  // increase active video counters for channel, channel category, and video category
-  if (isVideoFullyActive(video)) {
-    await updateVideoActiveCounters(db, video, true)
-  }
+  // update video active counters
+  await updateVideoActiveCounters(db, undefined, getVideoActiveStatus(video))
 
   // emit log event
   logger.info('Video has been created', { id: videoId })
@@ -209,7 +208,7 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   }
 
   // remember if video is fully active before update
-  const wasFullyActive = isVideoFullyActive(video)
+  const initialVideoActivity = getVideoActiveStatus(video)
 
   // prepare changed metadata
   const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
@@ -253,13 +252,8 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   // save video
   await db.save<Video>(video)
 
-  // check if video is fully active
-  const isFullyActive = isVideoFullyActive(video)
-
-  // update video counters for channel, channel category, and video category if needed
-  if (wasFullyActive !== isFullyActive) {
-    await updateVideoActiveCounters(db, video, isFullyActive)
-  }
+  // update video active counters
+  await updateVideoActiveCounters(db, initialVideoActivity, getVideoActiveStatus(video))
 
   // delete old license if it's planned
   if (licenseToDelete) {
@@ -287,15 +281,13 @@ export async function content_VideoDeleted(db: DatabaseManager, event: Substrate
   }
 
   // remember if video is fully active before update
-  const wasFullyActive = isVideoFullyActive(video)
+  const initialVideoActivity = getVideoActiveStatus(video)
 
   // remove video
   await db.remove<Video>(video)
 
-  // decrease active video counters for channel, channel category, and video category
-  if (wasFullyActive) {
-    await updateVideoActiveCounters(db, video, false)
-  }
+  // update video active counters
+  await updateVideoActiveCounters(db, initialVideoActivity, undefined)
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
@@ -318,7 +310,7 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   }
 
   // remember if video is fully active before update
-  const wasFullyActive = isVideoFullyActive(video)
+  const initialVideoActivity = getVideoActiveStatus(video)
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -329,13 +321,8 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   // save video
   await db.save<Video>(video)
 
-  // check if video is fully active
-  const isFullyActive = isVideoFullyActive(video)
-
-  // update video counters for channel, channel category, and video category if needed
-  if (wasFullyActive !== isFullyActive) {
-    await updateVideoActiveCounters(db, video, isFullyActive)
-  }
+  // update video active counters
+  await updateVideoActiveCounters(db, initialVideoActivity, getVideoActiveStatus(video))
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })

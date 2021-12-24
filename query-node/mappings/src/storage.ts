@@ -3,7 +3,14 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions, In } from 'typeorm'
 
-import { inconsistentState, isVideoFullyActive, updateVideoActiveCounters, logger, prepareDataObject } from './common'
+import {
+  inconsistentState,
+  getVideoActiveStatus,
+  updateVideoActiveCounters,
+  IVideoActiveStatus,
+  logger,
+  prepareDataObject,
+} from './common'
 
 import { DataDirectory } from '../../generated/types'
 import { ContentId, ContentParameters, StorageObjectOwner } from '@joystream/types/augment'
@@ -164,7 +171,7 @@ async function updateSingleConnectedAsset<T extends Channel | Video>(
   }
 
   // remember if video is fully active before update
-  const wasFullyActive = type instanceof Video && isVideoFullyActive(item as Video)
+  const wasFullyActive = type instanceof Video && getVideoActiveStatus(item as Video)
 
   item[propertyName + 'Availability'] = AssetAvailability.ACCEPTED
 
@@ -179,13 +186,8 @@ async function updateSingleConnectedAsset<T extends Channel | Video>(
   } else {
     await db.save<Video>(item)
 
-    // check if video is fully active
-    const isFullyActive = isVideoFullyActive(item as Video)
-
-    // update video counters for channel, channel category, and video category if needed
-    if (wasFullyActive !== isFullyActive) {
-      await updateVideoActiveCounters(db, item as Video, isFullyActive)
-    }
+    // update video active counters
+    await updateVideoActiveCounters(db, wasFullyActive as IVideoActiveStatus, getVideoActiveStatus(item as Video))
 
     // emit log event
     logger.info('Video using Content has been accepted', {
@@ -235,7 +237,7 @@ async function disconnectSingleDataObjectRelation<T extends Channel | Video>(
   }
 
   // remember if video is fully active before update
-  const wasFullyActive = type instanceof Video && isVideoFullyActive(item as Video)
+  const wasFullyActive = type instanceof Video && getVideoActiveStatus(item as Video)
 
   item[propertyName + 'Availability'] = AssetAvailability.INVALID
   item[propertyName + 'DataObject'] = null
@@ -252,13 +254,8 @@ async function disconnectSingleDataObjectRelation<T extends Channel | Video>(
     // type instanceof Video
     await db.save<Video>(item)
 
-    // check if video is fully active
-    const isFullyActive = isVideoFullyActive(item as Video)
-
-    // update video counters for channel, channel category, and video category if needed
-    if (wasFullyActive !== isFullyActive) {
-      await updateVideoActiveCounters(db, item as Video, isFullyActive)
-    }
+    // update video active counters
+    await updateVideoActiveCounters(db, wasFullyActive as IVideoActiveStatus, undefined)
 
     // emit log event
     logger.info('Content has been disconnected from Video', {
