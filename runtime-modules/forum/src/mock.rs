@@ -575,8 +575,8 @@ pub fn good_category_description_new() -> Vec<u8> {
     b"This is a great new category description for the forum".to_vec()
 }
 
-/// Get a new good thread title
-pub fn good_thread_title() -> Vec<u8> {
+/// Get a new good thread metadata
+pub fn good_thread_metadata() -> Vec<u8> {
     b"Great new thread".to_vec()
 }
 
@@ -585,6 +585,7 @@ pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
 }
 
+/// Get a new metadata for the good thread
 pub fn good_thread_new_metadata() -> Vec<u8> {
     b"Brand new thread metadata".to_vec()
 }
@@ -728,6 +729,7 @@ pub fn create_thread_mock(
     thread_id
 }
 
+/// Create edit thread metadata mock
 pub fn edit_thread_metadata_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
@@ -747,10 +749,6 @@ pub fn edit_thread_metadata_mock(
         result
     );
     if result.is_ok() {
-        assert_eq!(
-            TestForumModule::thread_by_id(category_id, thread_id).metadata_hash,
-            Runtime::calculate_hash(new_metadata.as_slice()),
-        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadMetadataUpdated(

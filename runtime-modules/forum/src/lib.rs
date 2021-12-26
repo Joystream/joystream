@@ -266,9 +266,6 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
-    /// Metadata hash
-    pub metadata_hash: Hash,
-
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
@@ -951,7 +948,6 @@ decl_module! {
             // Build a new thread
             let new_thread = Thread {
                 category_id,
-                metadata_hash: T::calculate_hash(&metadata),
                 author_id: forum_user_id,
                 poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
@@ -994,14 +990,14 @@ decl_module! {
             Ok(())
         }
 
-        /// Edit thread title
+        /// Edit thread metadata
         ///
         /// <weight>
         ///
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread title.
+        /// - `V` is the length of the thread metadata.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -1021,15 +1017,11 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            let thread = Self::ensure_can_edit_thread_title(account_id, &category_id, &thread_id, &forum_user_id)?;
+            Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            // Update thread metadata
-            let metadata_hash = T::calculate_hash(&new_metadata);
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.metadata_hash = metadata_hash);
 
             // Store the event
             Self::deposit_event(
@@ -1830,7 +1822,7 @@ impl<T: Trait> Module<T> {
         Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
-    fn ensure_can_edit_thread_title(
+    fn ensure_can_edit_thread_metadata(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
