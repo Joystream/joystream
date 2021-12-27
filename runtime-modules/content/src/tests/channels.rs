@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use super::curators;
+use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use frame_support::traits::Currency;
@@ -248,54 +249,6 @@ fn succesful_channel_update() {
                 reward_account: None,
                 assets_to_remove: first_batch_ids,
                 collaborators: None,
-            },
-            Ok(()),
-        );
-    })
-}
-
-#[test]
-fn succesful_channel_creation() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        create_initial_storage_buckets();
-
-        // create an account with enought balance
-        let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
-        );
-
-        // 3 assets to be uploaded
-        let assets = StorageAssetsRecord {
-            object_creation_list: vec![
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"first".to_vec(),
-                },
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"second".to_vec(),
-                },
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"third".to_vec(),
-                },
-            ],
-            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-        };
-
-        // create channel
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: Some(assets),
-                meta: None,
-                reward_account: None,
-                collaborators: BTreeSet::new(),
             },
             Ok(()),
         );
@@ -807,5 +760,17 @@ fn channel_creation_doesnt_leave_bags_dangling() {
         let dyn_bag = DynamicBagIdType::<MemberId, ChannelId>::Channel(channel_id);
         let bag_id = storage::BagIdType::from(dyn_bag.clone());
         assert!(<Test as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_err());
+    })
+}
+
+#[test]
+fn succesful_channel_creation() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_account_balance_helper(FIRST_MEMBER_ORIGIN, 1000);
+        create_initial_storage_buckets();
+        CreateChannelFixture::default()
+            .with_actor(ContentActor::Member(FIRST_MEMBER_ID))
+            .call_and_assert(Ok(()));
     })
 }

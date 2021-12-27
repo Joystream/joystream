@@ -20,7 +20,7 @@ pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 
-/// Origins
+/// Accounts
 
 pub const LEAD_ORIGIN: u64 = 1;
 
@@ -721,4 +721,9 @@ pub fn create_channel_with_bag() {
         },
         Ok(()),
     );
+}
+
+// helper functions
+pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
+    let _ = Balances::deposit_creating(&account_id, balance);
 }
