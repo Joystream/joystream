@@ -3,7 +3,7 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
@@ -2554,7 +2554,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         .cloned()
         .collect::<BTreeMap<_, _>>();
 
-        assert!(<Entries<Test>>::contains_key(entry_id3));
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
         SubmitJudgmentFixture::default()
@@ -2563,11 +2563,14 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::entries(entry_id1).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id1).oracle_judgment_result,
             Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
-        assert_eq!(Bounty::entries(entry_id2).oracle_judgment_result, None);
-        assert!(!<Entries<Test>>::contains_key(entry_id3));
+        assert_eq!(
+            Bounty::entries(bounty_id, entry_id2).oracle_judgment_result,
+            None
+        );
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(
             Balances::total_balance(&account_id),
             initial_balance - entrant_stake
@@ -2652,7 +2655,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::entries(entry_id).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id).oracle_judgment_result,
             Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
 
@@ -2730,14 +2733,14 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             .cloned()
             .collect::<BTreeMap<_, _>>();
 
-        assert!(<Entries<Test>>::contains_key(entry_id));
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id));
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!<Entries<Test>>::contains_key(entry_id));
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id));
 
         // Cherry not returned.
         assert_eq!(

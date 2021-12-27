@@ -472,7 +472,9 @@ decl_storage! {
         pub BountyCount get(fn bounty_count): u32;
 
         /// Work entry storage map.
-        pub Entries get(fn entries): map hasher(blake2_128_concat) T::EntryId => Entry<T>;
+        pub Entries get(fn entries): double_map
+            hasher(blake2_128_concat) T::BountyId,
+            hasher(blake2_128_concat) T::EntryId => Entry<T>;
 
         /// Count of all work entries that have been created.
         pub EntryCount get(fn entry_count): u32;
@@ -1009,7 +1011,7 @@ decl_module! {
                 oracle_judgment_result: None,
             };
 
-            <Entries<T>>::insert(entry_id, entry);
+            <Entries<T>>::insert(bounty_id, entry_id, entry);
             EntryCount::mutate(|count| {
                 *count = next_entry_count_value
             });
@@ -1050,7 +1052,7 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1088,14 +1090,14 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            Self::ensure_work_entry_exists(&entry_id)?;
+            Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update entry
-            <Entries<T>>::mutate(entry_id, |entry| {
+            <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                 entry.work_submitted = true;
             });
 
@@ -1140,7 +1142,7 @@ decl_module! {
 
             ensure!(bounty.active_work_entry_count != 0, Error::<T>::NoActiveWorkEntries);
 
-            Self::validate_judgment(&bounty, &judgment)?;
+            Self::validate_judgment(&bounty_id, &bounty, &judgment)?;
 
             // Lookup for any winners in the judgment.
             let successful_bounty = Self::judgment_has_winners(&judgment);
@@ -1165,11 +1167,11 @@ decl_module! {
             for (entry_id, work_entry_judgment) in judgment.iter() {
                 // Update work entries for winners.
                 if matches!(*work_entry_judgment, OracleWorkEntryJudgment::Winner{ .. }) {
-                    <Entries<T>>::mutate(entry_id, |entry| {
+                    <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                         entry.oracle_judgment_result = Some(*work_entry_judgment);
                     });
                 } else {
-                    let entry = Self::entries(entry_id);
+                    let entry = Self::entries(bounty_id, entry_id);
 
                     Self::slash_work_entry_stake(&entry);
 
@@ -1214,7 +1216,7 @@ decl_module! {
                 Self::unexpected_bounty_stage_error(current_bounty_stage)
             );
 
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1524,13 +1526,16 @@ impl<T: Trait> Module<T> {
     }
 
     // Verifies work entry existence and retrieves an entry from the storage.
-    fn ensure_work_entry_exists(entry_id: &T::EntryId) -> Result<Entry<T>, DispatchError> {
+    fn ensure_work_entry_exists(
+        bounty_id: &T::BountyId,
+        entry_id: &T::EntryId,
+    ) -> Result<Entry<T>, DispatchError> {
         ensure!(
-            <Entries<T>>::contains_key(entry_id),
+            <Entries<T>>::contains_key(bounty_id, entry_id),
             Error::<T>::WorkEntryDoesntExist
         );
 
-        let entry = Self::entries(entry_id);
+        let entry = Self::entries(bounty_id, entry_id);
 
         Ok(entry)
     }
@@ -1591,7 +1596,11 @@ impl<T: Trait> Module<T> {
     }
 
     // Validates oracle judgment.
-    fn validate_judgment(bounty: &Bounty<T>, judgment: &OracleJudgmentOf<T>) -> DispatchResult {
+    fn validate_judgment(
+        bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
+        judgment: &OracleJudgmentOf<T>,
+    ) -> DispatchResult {
         // Total judgment reward accumulator.
         let mut reward_sum_from_judgment: BalanceOf<T> = Zero::zero();
 
@@ -1605,7 +1614,7 @@ impl<T: Trait> Module<T> {
             }
 
             // Check winner work submission.
-            let entry = Self::ensure_work_entry_exists(entry_id)?;
+            let entry = Self::ensure_work_entry_exists(bounty_id, entry_id)?;
             ensure!(
                 entry.work_submitted,
                 Error::<T>::WinnerShouldHasWorkSubmission
@@ -1625,7 +1634,7 @@ impl<T: Trait> Module<T> {
 
     // Removes the work entry and decrements active entry count in a bounty.
     fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::EntryId) {
-        <Entries<T>>::remove(entry_id);
+        <Entries<T>>::remove(bounty_id, entry_id);
 
         // Decrement work entry counter and update bounty record.
         <Bounties<T>>::mutate(bounty_id, |bounty| {
