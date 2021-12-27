@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 mod channels;
-//mod curators;
+mod curators;
 mod fixtures;
 mod mock;
 //mod videos;

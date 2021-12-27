@@ -40,7 +40,6 @@ pub const MEMBERS_COUNT: MemberId = 10;
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: MemberId = 201;
 pub const DEFAULT_CURATOR_ID: CuratorId = 202;
-pub const DEFAULT_CURATOR_GROUP_ID: CuratorGroupId = 203;
 pub const COLLABORATOR_MEMBER_ID: u64 = 204;
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;
@@ -179,27 +178,36 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
+        *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
         match *curator_id {
-            DEFAULT_CURATOR_ID => *account_id == 102,
+            DEFAULT_CURATOR_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID)).unwrap()
+            }
             _ => false,
         }
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         match *member_id {
-            DEFAULT_MEMBER_ID => *account_id == 101,
-            COLLABORATOR_MEMBER_ID => *account_id == 104,
+            DEFAULT_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+            COLLABORATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
+            }
             _ => false,
         }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
+        match *curator_id {
+            DEFAULT_CURATOR_ID => true,
+            _ => false,
+        }
     }
 }
 
