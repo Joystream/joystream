@@ -806,3 +806,14 @@ fn unsuccesful_channel_creation_with_collaborator_account() {
             .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
 }
+
+#[test]
+fn unsuccesful_channel_creation_with_uncorresponding_member_id_and_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(FIRST_MEMBER_ORIGIN)
+            .with_actor(ContentActor::Member(FIRST_MEMBER_ID + 1))
+            .call_and_assert(Ok(()));
+    })
+}
