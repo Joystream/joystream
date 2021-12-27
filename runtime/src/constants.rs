@@ -218,6 +218,7 @@ lazy_static! {
         ].to_vec()),
         // Bounty
         (BountyLockId::get(), [
+            InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
