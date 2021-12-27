@@ -764,13 +764,34 @@ fn channel_creation_doesnt_leave_bags_dangling() {
 }
 
 #[test]
-fn succesful_channel_creation() {
+fn succesful_channel_creation_with_member_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_account_balance_helper(FIRST_MEMBER_ORIGIN, 1000);
-        create_initial_storage_buckets();
         CreateChannelFixture::default()
+            .with_sender(FIRST_MEMBER_ORIGIN)
             .with_actor(ContentActor::Member(FIRST_MEMBER_ID))
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn succesful_channel_creation_with_curator_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(FIRST_MEMBER_ORIGIN)
+            .with_actor(ContentActor::Member(FIRST_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccesful_channel_creation_with_lead_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(LEAD_ORIGIN)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
 }
