@@ -19,7 +19,7 @@ impl CreateChannelFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: ChannelCreationParameters::<Test> {
                 assets: None,
                 meta: None,

@@ -17,7 +17,7 @@ fn successful_channel_deletion() {
 
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
+            &DEFAULT_MEMBER_ACCOUNT_ID,
             <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
@@ -43,8 +43,8 @@ fn successful_channel_deletion() {
 
         // create channel
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
                 meta: None,
@@ -57,8 +57,8 @@ fn successful_channel_deletion() {
         // attempt to delete channel with non zero assets should result in error: objects
         // are misspecified
         delete_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id,
             2u64,
             Err(Error::<Test>::InvalidBagSizeSpecified.into()),
@@ -66,8 +66,8 @@ fn successful_channel_deletion() {
 
         // successful deletion because we empty the bag first
         delete_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id,
             3u64, // now assets are 0
             Ok(()),
@@ -76,8 +76,8 @@ fn successful_channel_deletion() {
         // create a channel with no assets:
         let empty_channel_id = Content::next_channel_id();
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
@@ -88,8 +88,8 @@ fn successful_channel_deletion() {
         );
 
         delete_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             empty_channel_id,
             0u64,
             Ok(()),
@@ -106,7 +106,7 @@ fn successful_channel_assets_deletion() {
         create_initial_storage_buckets();
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
+            &DEFAULT_MEMBER_ACCOUNT_ID,
             <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
@@ -132,8 +132,8 @@ fn successful_channel_assets_deletion() {
         let channel_id = NextChannelId::<Test>::get();
         // create channel
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
                 meta: None,
@@ -148,8 +148,8 @@ fn successful_channel_assets_deletion() {
 
         // delete channel assets
         assert_ok!(Content::update_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
@@ -172,7 +172,7 @@ fn succesful_channel_update() {
 
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
+            &DEFAULT_MEMBER_ACCOUNT_ID,
             <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
@@ -212,8 +212,8 @@ fn succesful_channel_update() {
 
         // create channel with first batch of assets
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(first_batch),
                 meta: None,
@@ -225,8 +225,8 @@ fn succesful_channel_update() {
 
         // update channel by adding the second batch of assets
         update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
                 assets_to_upload: Some(second_batch),
@@ -240,8 +240,8 @@ fn succesful_channel_update() {
 
         // update channel by removing the first batch of assets
         update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id,
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
@@ -403,7 +403,7 @@ fn invalid_member_cannot_create_channel() {
         create_initial_storage_buckets();
         // Not a member
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
+            DEFAULT_MEMBER_ACCOUNT_ID,
             ContentActor::Member(UNKNOWN_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
@@ -424,8 +424,8 @@ fn invalid_member_cannot_update_channel() {
 
         create_initial_storage_buckets();
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
@@ -436,7 +436,7 @@ fn invalid_member_cannot_update_channel() {
         );
 
         update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
+            DEFAULT_MEMBER_ACCOUNT_ID,
             ContentActor::Member(UNKNOWN_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
@@ -460,8 +460,8 @@ fn invalid_member_cannot_delete_channel() {
         create_initial_storage_buckets();
 
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
@@ -472,7 +472,7 @@ fn invalid_member_cannot_delete_channel() {
         );
 
         delete_channel_mock(
-            FIRST_MEMBER_ORIGIN,
+            DEFAULT_MEMBER_ACCOUNT_ID,
             ContentActor::Member(UNKNOWN_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             0u64,
@@ -487,14 +487,17 @@ fn non_authorized_collaborators_cannot_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+        ]);
 
         create_initial_storage_buckets();
 
         // create channel
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(helper_generate_storage_assets(vec![2, 3])),
                 meta: None,
@@ -506,7 +509,7 @@ fn non_authorized_collaborators_cannot_update_channel() {
 
         // attempt for an non auth. collaborator to update channel assets
         update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
@@ -523,8 +526,8 @@ fn non_authorized_collaborators_cannot_update_channel() {
 
         // add collaborators
         update_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
@@ -543,13 +546,13 @@ fn non_authorized_collaborators_cannot_update_channel() {
         // attempt for a valid collaborator to update channel fields outside
         // of his scope
         update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
                 assets_to_upload: None,
                 new_meta: None,
-                reward_account: Some(Some(COLLABORATOR_MEMBER_ORIGIN)),
+                reward_account: Some(Some(COLLABORATOR_MEMBER_ACCOUNT_ID)),
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
             },
@@ -564,13 +567,16 @@ fn authorized_collaborators_can_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+        ]);
 
         create_initial_storage_buckets();
         // create channel
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(helper_generate_storage_assets(vec![2, 3])),
                 meta: None,
@@ -584,7 +590,7 @@ fn authorized_collaborators_can_update_channel() {
 
         // attempt for an auth. collaborator to update channel assets
         update_channel_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             ChannelUpdateParametersRecord {
@@ -609,8 +615,8 @@ fn channel_censoring() {
 
         let channel_id = Content::next_channel_id();
         assert_ok!(Content::create_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
@@ -673,8 +679,8 @@ fn channel_censoring() {
         let is_censored = true;
         assert_err!(
             Content::update_channel_censorship_status(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
                 channel_id,
                 is_censored,
                 vec![]
@@ -745,8 +751,8 @@ fn channel_creation_doesnt_leave_bags_dangling() {
         let channel_id = NextChannelId::<Test>::get();
         // create channel
         create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             ChannelCreationParametersRecord {
                 assets: Some(assets),
                 meta: Some(vec![]),
@@ -768,8 +774,8 @@ fn succesful_channel_creation_with_member_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(FIRST_MEMBER_ORIGIN)
-            .with_actor(ContentActor::Member(FIRST_MEMBER_ID))
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Ok(()));
     })
 }
@@ -779,8 +785,11 @@ fn succesful_channel_creation_with_curator_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(FIRST_MEMBER_ORIGIN)
-            .with_actor(ContentActor::Member(FIRST_MEMBER_ID))
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                DEFAULT_CURATOR_ID,
+                DEFAULT_CURATOR_GROUP_ID,
+            ))
             .call_and_assert(Ok(()));
     })
 }
@@ -801,7 +810,7 @@ fn unsuccesful_channel_creation_with_collaborator_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ORIGIN)
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
@@ -812,8 +821,8 @@ fn unsuccesful_channel_creation_with_uncorresponding_member_id_and_origin() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(FIRST_MEMBER_ORIGIN)
-            .with_actor(ContentActor::Member(FIRST_MEMBER_ID + 1))
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID + 1))
             .call_and_assert(Ok(()));
     })
 }

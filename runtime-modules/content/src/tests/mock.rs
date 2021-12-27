@@ -21,12 +21,14 @@ pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 
 /// Accounts
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
+pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
+pub const LEAD_ACCOUNT_ID: u64 = 103;
+pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 104;
 
 pub const LEAD_ORIGIN: u64 = 1;
-
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
 pub const SECOND_CURATOR_ORIGIN: u64 = 3;
-
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
@@ -36,19 +38,18 @@ pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
+pub const DEFAULT_MEMBER_ID: MemberId = 201;
+pub const DEFAULT_CURATOR_ID: CuratorId = 202;
+pub const DEFAULT_CURATOR_GROUP_ID: CuratorGroupId = 203;
+pub const COLLABORATOR_MEMBER_ID: u64 = 204;
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
-
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 // pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
-
-// members that act as collaborators
-pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 8;
-pub const COLLABORATOR_MEMBER_ID: MemberId = 9;
 
 /// Constants
 // initial balancer for an account
@@ -171,7 +172,10 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        *member_id < MEMBERS_COUNT
+        match *member_id {
+            DEFAULT_MEMBER_ID => true,
+            _ => false,
+        }
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
@@ -180,16 +184,18 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
-        let second_curator_account_id =
-            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
+        match *curator_id {
+            DEFAULT_CURATOR_ID => *account_id == 102,
+            _ => false,
+        }
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
+        match *member_id {
+            DEFAULT_MEMBER_ID => *account_id == 101,
+            COLLABORATOR_MEMBER_ID => *account_id == 104,
+            _ => false,
+        }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
@@ -314,9 +320,6 @@ impl storage::Trait for Test {
         }
     }
 }
-
-pub const DEFAULT_MEMBER_ID: u64 = 100;
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {

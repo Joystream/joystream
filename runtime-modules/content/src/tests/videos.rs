@@ -400,7 +400,7 @@ fn non_authorized_collaborators_cannot_add_video() {
 
         create_initial_storage_buckets();
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         // create channel
         create_channel_mock(
@@ -416,7 +416,7 @@ fn non_authorized_collaborators_cannot_add_video() {
         );
 
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
@@ -434,7 +434,7 @@ fn non_authorized_collaborators_cannot_update_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         create_initial_storage_buckets();
         // create channel
@@ -463,7 +463,7 @@ fn non_authorized_collaborators_cannot_update_video() {
         );
 
         update_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as Trait>::VideoId::one(),
             VideoUpdateParametersRecord {
@@ -484,7 +484,7 @@ fn non_authorized_collaborators_cannot_delete_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         create_initial_storage_buckets();
         // create channel
@@ -513,7 +513,7 @@ fn non_authorized_collaborators_cannot_delete_video() {
         );
 
         delete_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as Trait>::VideoId::one(),
             vec![
@@ -533,7 +533,7 @@ fn authorized_collaborators_can_add_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         create_initial_storage_buckets();
         // create channel
@@ -552,7 +552,7 @@ fn authorized_collaborators_can_add_video() {
         );
 
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
@@ -570,7 +570,7 @@ fn authorized_collaborators_can_update_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         create_initial_storage_buckets();
 
@@ -591,7 +591,7 @@ fn authorized_collaborators_can_update_video() {
 
         // create video
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
@@ -602,7 +602,7 @@ fn authorized_collaborators_can_update_video() {
         );
 
         update_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as Trait>::VideoId::one(),
             VideoUpdateParametersRecord {
@@ -623,7 +623,7 @@ fn authorized_collaborators_can_delete_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ACCOUNT_ID]);
 
         create_initial_storage_buckets();
         // create channel
@@ -643,7 +643,7 @@ fn authorized_collaborators_can_delete_video() {
 
         // create video
         create_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as storage::Trait>::ChannelId::one(),
             VideoCreationParametersRecord {
@@ -654,7 +654,7 @@ fn authorized_collaborators_can_delete_video() {
         );
 
         delete_video_mock(
-            COLLABORATOR_MEMBER_ORIGIN,
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             <Test as Trait>::VideoId::one(),
             vec![
