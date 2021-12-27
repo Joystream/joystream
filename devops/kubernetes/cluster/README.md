@@ -40,7 +40,8 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext platform=aws
+    --plaintext platform=aws --plaintext instanceType=t2.medium \
+    --plaintext numberOfAvailabilityZones=2 --plaintext clusterName=eksctl-joystream
    ```
 
    If deploying on minikube:

@@ -5,14 +5,30 @@ import { CaddyServiceDeployment, getProvider, isPlatformMinikube } from 'pulumi-
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
+import { readFileSync } from 'fs'
 
 export = async () => {
   const config = new pulumi.Config()
 
-  // Get's the Cluster provider and platform based on clusterStackRef platform config
-  const clusterStackRef = new pulumi.StackReference(config.require('clusterStackRef'))
-  const provider = await getProvider(clusterStackRef)
-  const isMinikube = await isPlatformMinikube(clusterStackRef)
+  const kubeconfigFile = config.get('kubeconfigFile')
+  const clusterStackRefInput = config.get('clusterStackRef')
+  let provider: k8s.Provider = new k8s.Provider('local', {})
+  let isMinikube: boolean = false
+
+  if (!kubeconfigFile && !clusterStackRefInput) {
+    throw new Error('Need to provide either a kubeconfig file or a stack reference')
+  }
+
+  if (kubeconfigFile) {
+    const kubeconfig = readFileSync(kubeconfigFile).toString()
+    provider = new k8s.Provider('cloud', { kubeconfig })
+    isMinikube = false
+  } else if (clusterStackRefInput) {
+    // Get's the Cluster provider and platform based on clusterStackRef platform config
+    const clusterStackRef = new pulumi.StackReference(clusterStackRefInput)
+    provider = await getProvider(clusterStackRef)
+    isMinikube = await isPlatformMinikube(clusterStackRef)
+  }
 
   const resourceOptions = { provider: provider }
 

@@ -18,3 +18,7 @@ template:
     encryptionKey:
       description: Key to encrypt the 7z containing secrets with
       default: '1234'
+    clusterStackRef:
+      description: Pulumi stack name used to deploy Kubernetes cluster
+    kubeconfigFile:
+      description: Relative or absolute path to the Kubeconfig file of an already deployed K8 cluster

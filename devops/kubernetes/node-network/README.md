@@ -42,10 +42,24 @@ After cloning this repo, from this working directory, run these commands:
     --plaintext nodeImage=joystream/node:latest --plaintext encryptionKey=password
    ```
 
-   Set the `clusterStackRef` config variable based on the name of the stack used to deploy the cluster
+   Set the `clusterStackRef` config variable based on the name of the stack used to deploy the cluster.
+
+   If you are logged in to the Pulumi CLI use the below format:
 
    ```bash
    $ pulumi config set clusterStackRef <USERNAME>/kubernetes-cluster/<STACK_NAME>
+   ```
+
+   If you are using Pulumi local (`pulumi login -l`), use the below format:
+
+   ```bash
+   $ pulumi config set clusterStackRef <STACK_NAME>
+   ```
+
+   If you are using an already deployed cluster, save the Kubeconfig as a file and set the `kubeconfigFile` config
+
+   ```bash
+   $ pulumi config set kubeconfigFile <PATH>
    ```
 
 1. Stand up the deployments:

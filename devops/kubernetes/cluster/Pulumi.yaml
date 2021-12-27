@@ -9,3 +9,12 @@ template:
       default: us-east-1
     platform:
       description: Platform on which you want to deploy the Kubernetes cluster e.g. minikube, aws
+    instanceType:
+      description: Instance type to be deployed
+      default: t2.medium
+    numberOfAvailabilityZones:
+      description: Number of Availability Zones to be used for the cluster
+      default: 2
+    clusterName:
+      description: Name of the cluster stack
+      default: eksctl-joystream
