@@ -795,3 +795,14 @@ fn unsuccesful_channel_creation_with_lead_account() {
             .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
 }
+
+#[test]
+fn unsuccesful_channel_creation_with_collaborator_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ORIGIN)
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
+    })
+}
