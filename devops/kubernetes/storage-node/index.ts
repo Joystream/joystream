@@ -13,7 +13,7 @@ const config = new pulumi.Config()
 const name = 'storage-node'
 
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
-const queryNodeHost = config.require('queryNodeHost')
+const queryNodeHost = config.require('queryNodeEndpoint')
 const workerId = config.require('workerId')
 const accountURI = config.get('accountURI')
 const keyFile = config.get('keyFile')
@@ -166,7 +166,7 @@ const deployment = new k8s.apps.v1.Deployment(
                   value: `${colossusPort}`,
                 },
                 {
-                  name: 'QUERY_NODE_HOST',
+                  name: 'QUERY_NODE_ENDPOINT',
                   value: queryNodeHost,
                 },
                 {
@@ -198,7 +198,8 @@ const deployment = new k8s.apps.v1.Deployment(
                 'server',
                 '--worker',
                 workerId,
-                '--port=3333',
+                '--port',
+                `${colossusPort}`,
                 '--uploads=/data',
                 '--sync',
                 '--syncInterval=1',

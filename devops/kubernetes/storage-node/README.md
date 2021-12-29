@@ -38,7 +38,7 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
-    --plaintext queryNodeHost='http://graphql-server.query-node-yszsbs2i:8081' \
+    --plaintext queryNodeEndpoint='http://graphql-server.query-node-yszsbs2i:8081' \
     --plaintext keyFile='../../../keyfile.json' --secret passphrase='' \
     --plaintext accountURI='//Alice' workerId=0 \
     --plaintext isMinikube=true --plaintext colossusImage='joystream/colossus:latest' \
