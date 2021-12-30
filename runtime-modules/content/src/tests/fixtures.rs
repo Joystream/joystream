@@ -359,6 +359,7 @@ impl UpdateChannelFixture {
             self.params.clone(),
         );
 
+        let channel_post = Content::channel_by_id(&self.channel_id);
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
         let balance_post = Balances::usable_balance(self.sender);
 
@@ -366,7 +367,7 @@ impl UpdateChannelFixture {
 
         match actual_result {
             Ok(()) => {
-                let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+                let owner = channel_post.owner.clone();
                 assert_eq!(
                     System::events().last().unwrap().event,
                     MetaEvent::content(RawEvent::ChannelUpdated(
@@ -396,12 +397,10 @@ impl UpdateChannelFixture {
                     deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
                 );
 
-                // objects uploaded: check for the number of objects uploaded
                 if let Some(assets) = self.params.assets_to_upload.as_ref() {
-                    assert_eq!(
-                        storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-                        assets.object_creation_list.len(),
-                    );
+                    assert!((beg_obj_id..end_obj_id).all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
                 }
 
                 assert!(!self.params.assets_to_remove.iter().any(|id| {
@@ -409,8 +408,6 @@ impl UpdateChannelFixture {
                 }));
             }
             Err(_) => {
-                let channel_post = Content::channel_by_id(&self.channel_id);
-
                 assert_eq!(channel_pre, channel_post);
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
