@@ -973,3 +973,20 @@ fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin()
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_update_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_id(ChannelId::zero())
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
