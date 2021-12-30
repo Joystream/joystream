@@ -4,10 +4,10 @@ use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok};
 
 // constants used
-pub const VOUCHER_MAX_OBJECT_NUMBER_LIMIT: u64 = 400;
-pub const VOUCHER_MAX_OBJECT_SIZE_LIMIT: u64 = 40;
-pub const STORAGE_BUCKET_OBJECT_NUMBER_LIMIT: u64 = 10;
-pub const STORAGE_BUCKET_OBJECT_SIZE_LIMIT: u64 = 100;
+pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 40;
+pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = 400;
+pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = 10;
+pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 = 100;
 pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
 pub const DATA_OBJECTS_NUMBER: u8 = 1;
 
@@ -731,8 +731,8 @@ pub fn create_initial_storage_buckets_helper() {
     assert_eq!(
         Storage::<Test>::update_storage_buckets_voucher_max_limits(
             Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            VOUCHER_MAX_OBJECT_NUMBER_LIMIT,
-            VOUCHER_MAX_OBJECT_SIZE_LIMIT,
+            VOUCHER_OBJECTS_SIZE_LIMIT,
+            VOUCHER_OBJECTS_NUMBER_LIMIT,
         ),
         Ok(())
     );
@@ -743,8 +743,8 @@ pub fn create_initial_storage_buckets_helper() {
             Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             None,
             STORAGE_BUCKET_ACCEPTING_BAGS,
-            STORAGE_BUCKET_OBJECT_SIZE_LIMIT,
-            STORAGE_BUCKET_OBJECT_NUMBER_LIMIT,
+            STORAGE_BUCKET_OBJECTS_SIZE_LIMIT,
+            STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT,
         ),
         Ok(())
     );
