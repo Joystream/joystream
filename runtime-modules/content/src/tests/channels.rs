@@ -888,3 +888,58 @@ fn unsuccessful_channel_creation_with_invalid_expected_data_size_fee() {
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_creation_with_insufficient_balance() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_no_bucket_available() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: STORAGE_BUCKET_OBJECT_SIZE_LIMIT + 1,
+                    ipfs_content_id: vec![1u8],
+                }],
+            })
+            .call_and_assert(Err(
+                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+            ));
+
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: (0..(STORAGE_BUCKET_OBJECT_NUMBER_LIMIT + 1))
+                    .map(|_| DataObjectCreationParameters {
+                        size: 1,
+                        ipfs_content_id: vec![1u8],
+                    })
+                    .collect(),
+            })
+            .call_and_assert(Err(
+                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+            ));
+    })
+}
