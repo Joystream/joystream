@@ -851,3 +851,21 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn successful_channel_creation_with_storage_upload_and_curator_context() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
+    })
+}
