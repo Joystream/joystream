@@ -78,64 +78,76 @@ impl CreateChannelFixture {
 
         let channel_id = Content::next_channel_id();
 
+        let channel_bag_id = Content::bag_id_for_channel(&channel_id);
+
         let actual_result =
             Content::create_channel(origin, self.actor.clone(), self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
-        if expected_result.is_ok() {
-            // ensure channel is on chain
-            assert_ok!(Content::ensure_channel_exists(&channel_id));
+        let balance_post = Balances::usable_balance(self.sender);
 
-            // channel counter increased
-            assert_eq!(
-                Content::next_channel_id(),
-                channel_id.saturating_add(One::one())
-            );
+        match actual_result {
+            Ok(()) => {
+                // ensure channel is on chain
+                assert_ok!(Content::ensure_channel_exists(&channel_id));
 
-            // dynamic bag for channel is created
-            let channel_bag_id = Content::bag_id_for_channel(&channel_id);
-            assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
-
-            // event correctly deposited
-            let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelCreated(
-                    self.actor.clone(),
-                    channel_id,
-                    ChannelRecord {
-                        owner: owner,
-                        is_censored: false,
-                        reward_account: self.params.reward_account.clone(),
-                        collaborators: self.params.collaborators.clone(),
-                        num_videos: Zero::zero(),
-                    },
-                    self.params.clone(),
-                ))
-            );
-
-            if let Some(assets) = self.params.assets.as_ref() {
-                // balance accounting is correct
-                let balance_post = Balances::usable_balance(self.sender);
-                let bag_deletion_prize = BalanceOf::<Test>::one();
-                let objects_deletion_prize = assets.object_creation_list.iter().fold(
-                    BalanceOf::<Test>::zero(),
-                    |acc, obj| {
-                        acc.saturating_add(<Test as storage::Trait>::DataObjectDeletionPrize::get())
-                    },
-                );
-
+                // channel counter increased
                 assert_eq!(
-                    balance_pre.saturating_sub(balance_post),
-                    bag_deletion_prize.saturating_add(objects_deletion_prize),
+                    Content::next_channel_id(),
+                    channel_id.saturating_add(One::one())
                 );
 
-                // objects uploaded: check for the number of objects uploaded
+                // dynamic bag for channel is created
+                assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
+
+                // event correctly deposited
+                let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
                 assert_eq!(
-                    storage::DataObjectsById::<Test>::iter_prefix(channel_bag_id).count(),
-                    assets.object_creation_list.len(),
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelCreated(
+                        self.actor.clone(),
+                        channel_id,
+                        ChannelRecord {
+                            owner: owner,
+                            is_censored: false,
+                            reward_account: self.params.reward_account.clone(),
+                            collaborators: self.params.collaborators.clone(),
+                            num_videos: Zero::zero(),
+                        },
+                        self.params.clone(),
+                    ))
                 );
+
+                if let Some(assets) = self.params.assets.as_ref() {
+                    // balance accounting is correct
+                    let bag_deletion_prize = BalanceOf::<Test>::one();
+                    let objects_deletion_prize = assets.object_creation_list.iter().fold(
+                        BalanceOf::<Test>::zero(),
+                        |acc, obj| {
+                            acc.saturating_add(
+                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+                            )
+                        },
+                    );
+
+                    assert_eq!(
+                        balance_pre.saturating_sub(balance_post),
+                        bag_deletion_prize.saturating_add(objects_deletion_prize),
+                    );
+
+                    // objects uploaded: check for the number of objects uploaded
+                    assert_eq!(
+                        storage::DataObjectsById::<Test>::iter_prefix(channel_bag_id).count(),
+                        assets.object_creation_list.len(),
+                    );
+                }
+            }
+            Err(_) => {
+                assert_eq!(balance_post, balance_pre);
+                assert!(!storage::Bags::<Test>::contains_key(channel_bag_id));
+                assert!(!ChannelById::<Test>::contains_key(channel_id));
+                assert_eq!(NextChannelId::<Test>::get(), channel_id);
             }
         }
     }

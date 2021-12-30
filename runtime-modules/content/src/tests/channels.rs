@@ -770,7 +770,7 @@ use frame_support::{assert_err, assert_ok};
 // }
 
 #[test]
-fn successful_channel_creation_with_member_account() {
+fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
@@ -781,7 +781,7 @@ fn successful_channel_creation_with_member_account() {
 }
 
 #[test]
-fn successful_channel_creation_with_curator_account() {
+fn successful_channel_creation_with_curator_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
@@ -793,7 +793,7 @@ fn successful_channel_creation_with_curator_account() {
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_lead_account() {
+fn unsuccessful_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
@@ -804,7 +804,7 @@ fn unsuccessful_channel_creation_with_lead_account() {
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_collaborator_account() {
+fn unsuccessful_channel_creation_with_collaborator_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
