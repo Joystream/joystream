@@ -161,99 +161,6 @@ use crate::*;
 // }
 
 // #[test]
-// fn successful_channel_update() {
-//     with_default_mock_builder(|| {
-//         // Run to block one to see emitted events
-//         run_to_block(1);
-
-//         create_initial_storage_buckets();
-
-//         // create an account with enought balance
-//         let _ = balances::Module::<Test>::deposit_creating(
-//             &DEFAULT_MEMBER_ACCOUNT_ID,
-//             <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
-//         );
-
-//         // 2 + 1 assets to be uploaded
-//         let first_obj_id = Storage::<Test>::next_data_object_id();
-//         let first_batch = StorageAssetsRecord {
-//             object_creation_list: vec![
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"first".to_vec(),
-//                 },
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"second".to_vec(),
-//                 },
-//             ],
-//             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-//         };
-//         let first_batch_ids =
-//             (first_obj_id..Storage::<Test>::next_data_object_id()).collect::<BTreeSet<_>>();
-
-//         let second_batch = StorageAssetsRecord {
-//             object_creation_list: vec![
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"first".to_vec(),
-//                 },
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"second".to_vec(),
-//                 },
-//             ],
-//             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-//         };
-
-//         let channel_id = NextChannelId::<Test>::get();
-
-//         // create channel with first batch of assets
-//         create_channel_mock(
-//             DEFAULT_MEMBER_ACCOUNT_ID,
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//             ChannelCreationParametersRecord {
-//                 assets: Some(first_batch),
-//                 meta: None,
-//                 reward_account: None,
-//                 collaborators: BTreeSet::new(),
-//             },
-//             Ok(()),
-//         );
-
-//         // update channel by adding the second batch of assets
-//         update_channel_mock(
-//             DEFAULT_MEMBER_ACCOUNT_ID,
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//             channel_id,
-//             ChannelUpdateParametersRecord {
-//                 assets_to_upload: Some(second_batch),
-//                 new_meta: None,
-//                 reward_account: None,
-//                 assets_to_remove: BTreeSet::new(),
-//                 collaborators: None,
-//             },
-//             Ok(()),
-//         );
-
-//         // update channel by removing the first batch of assets
-//         update_channel_mock(
-//             DEFAULT_MEMBER_ACCOUNT_ID,
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//             channel_id,
-//             ChannelUpdateParametersRecord {
-//                 assets_to_upload: None,
-//                 new_meta: None,
-//                 reward_account: None,
-//                 assets_to_remove: first_batch_ids,
-//                 collaborators: None,
-//             },
-//             Ok(()),
-//         );
-//     })
-// }
-
-// #[test]
 // fn lead_cannot_create_channel() {
 //     with_default_mock_builder(|| {
 //         create_initial_storage_buckets();
@@ -1018,3 +925,51 @@ fn successful_channel_creation_with_reward_account() {
 }
 
 // channel update tests
+#[test]
+fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_uncorresponding_curator_id_and_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+    })
+}

@@ -748,7 +748,7 @@ pub fn create_initial_storage_buckets_helper() {
     );
 }
 
-pub fn create_default_member_owner_channel() {
+pub fn create_default_member_owned_channel() {
     CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -761,7 +761,7 @@ pub fn create_default_member_owner_channel() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owner_channel() {
+pub fn create_default_curator_owned_channel() {
     let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
     CreateChannelFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
