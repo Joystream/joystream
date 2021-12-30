@@ -10,7 +10,7 @@ pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = 400;
 pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = 10;
 pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 = 100;
 pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
-pub const DATA_OBJECTS_NUMBER: u8 = 1;
+pub const DATA_OBJECTS_NUMBER: u8 = 2;
 
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
