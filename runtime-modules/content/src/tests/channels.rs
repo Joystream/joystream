@@ -4,8 +4,6 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::traits::Currency;
-use frame_support::{assert_err, assert_ok};
 
 // #[test]
 // fn successful_channel_deletion() {
@@ -819,8 +817,20 @@ fn unsuccessful_channel_creation_with_uncorresponding_member_id_and_origin() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID + 1))
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_uncorresponding_curator_id_and_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }

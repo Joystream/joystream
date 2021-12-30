@@ -133,6 +133,7 @@ impl CreateChannelFixture {
                         balance_pre.saturating_sub(balance_post),
                         bag_deletion_prize.saturating_add(objects_deletion_prize),
                     );
+
                     for id in beg_obj_id..end_obj_id {
                         assert!(storage::DataObjectsById::<Test>::contains_key(
                             &channel_bag_id,
