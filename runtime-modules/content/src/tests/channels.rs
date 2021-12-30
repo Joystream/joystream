@@ -869,3 +869,22 @@ fn successful_channel_creation_with_storage_upload_and_curator_context() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_creation_with_invalid_expected_data_size_fee() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets(StorageAssets::<Test> {
+                // setting a purposely high fee to trigger error
+                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
+    })
+}
