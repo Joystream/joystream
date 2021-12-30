@@ -73,15 +73,13 @@ impl CreateChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-
         let balance_pre = Balances::usable_balance(self.sender);
-
         let channel_id = Content::next_channel_id();
-
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
-
+        let beg_obj_id = storage::NextDataObjectId::<Test>::get();
         let actual_result =
             Content::create_channel(origin, self.actor.clone(), self.params.clone());
+        let end_obj_id = storage::NextDataObjectId::<Test>::get();
 
         assert_eq!(actual_result, expected_result);
 
@@ -135,19 +133,25 @@ impl CreateChannelFixture {
                         balance_pre.saturating_sub(balance_post),
                         bag_deletion_prize.saturating_add(objects_deletion_prize),
                     );
-
-                    // objects uploaded: check for the number of objects uploaded
-                    assert_eq!(
-                        storage::DataObjectsById::<Test>::iter_prefix(channel_bag_id).count(),
-                        assets.object_creation_list.len(),
-                    );
+                    for id in beg_obj_id..end_obj_id {
+                        assert!(storage::DataObjectsById::<Test>::contains_key(
+                            &channel_bag_id,
+                            id
+                        ));
+                    }
                 }
             }
             Err(_) => {
                 assert_eq!(balance_post, balance_pre);
-                assert!(!storage::Bags::<Test>::contains_key(channel_bag_id));
-                assert!(!ChannelById::<Test>::contains_key(channel_id));
+                assert!(!storage::Bags::<Test>::contains_key(&channel_bag_id));
+                assert!(!ChannelById::<Test>::contains_key(&channel_id));
                 assert_eq!(NextChannelId::<Test>::get(), channel_id);
+                for id in beg_obj_id..end_obj_id {
+                    assert!(!storage::DataObjectsById::<Test>::contains_key(
+                        &channel_bag_id,
+                        id
+                    ));
+                }
             }
         }
     }
