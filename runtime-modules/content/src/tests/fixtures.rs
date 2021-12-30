@@ -1,7 +1,8 @@
+use super::curators;
 use super::mock::*;
 use crate::*;
+use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use frame_support::{assert_err, assert_ok};
 
 // constants used
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 40;
@@ -13,8 +14,8 @@ pub const DATA_OBJECTS_NUMBER: u8 = 1;
 
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
-type ChannelId = <Test as storage::Trait>::ChannelId;
-type VideoId = <Test as Trait>::VideoId;
+//type ChannelId = <Test as storage::Trait>::ChannelId;
+//type VideoId = <Test as Trait>::VideoId;
 
 // fixtures
 pub struct CreateChannelFixture {
@@ -43,10 +44,6 @@ impl CreateChannelFixture {
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
-    }
-
-    pub fn with_params(self, params: ChannelCreationParameters<Test>) -> Self {
-        Self { params, ..self }
     }
 
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
@@ -130,7 +127,7 @@ impl CreateChannelFixture {
                     let bag_deletion_prize = BalanceOf::<Test>::zero();
                     let objects_deletion_prize = assets.object_creation_list.iter().fold(
                         BalanceOf::<Test>::zero(),
-                        |acc, obj| {
+                        |acc, _| {
                             acc.saturating_add(
                                 <Test as storage::Trait>::DataObjectDeletionPrize::get(),
                             )
@@ -142,25 +139,17 @@ impl CreateChannelFixture {
                         bag_deletion_prize.saturating_add(objects_deletion_prize),
                     );
 
-                    for id in beg_obj_id..end_obj_id {
-                        assert!(storage::DataObjectsById::<Test>::contains_key(
-                            &channel_bag_id,
-                            id
-                        ));
-                    }
+                    assert!((beg_obj_id..end_obj_id).all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                    }));
                 }
             }
             Err(_) => {
                 assert_eq!(balance_post, balance_pre);
+                assert_eq!(beg_obj_id, end_obj_id);
                 assert!(!storage::Bags::<Test>::contains_key(&channel_bag_id));
                 assert!(!ChannelById::<Test>::contains_key(&channel_id));
                 assert_eq!(NextChannelId::<Test>::get(), channel_id);
-                for id in beg_obj_id..end_obj_id {
-                    assert!(!storage::DataObjectsById::<Test>::contains_key(
-                        &channel_bag_id,
-                        id
-                    ));
-                }
             }
         }
     }
@@ -284,10 +273,6 @@ impl UpdateChannelFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_params(self, params: ChannelUpdateParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
-
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
@@ -343,22 +328,22 @@ impl UpdateChannelFixture {
                 .assets_to_upload
                 .as_ref()
                 .map_or(BalanceOf::<Test>::zero(), |assets| {
-                    assets.object_creation_list.iter().fold(
-                        BalanceOf::<Test>::zero(),
-                        |acc, obj| {
+                    assets
+                        .object_creation_list
+                        .iter()
+                        .fold(BalanceOf::<Test>::zero(), |acc, _| {
                             acc.saturating_add(
                                 <Test as storage::Trait>::DataObjectDeletionPrize::get(),
                             )
-                        },
-                    )
+                        })
                 });
 
         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
             self.params
                 .assets_to_remove
                 .iter()
-                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                .fold(BalanceOf::<Test>::zero(), |acc, id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, id)
                         .deletion_prize
                 })
         } else {
@@ -419,8 +404,8 @@ impl UpdateChannelFixture {
                     );
                 }
 
-                assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-                    !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                assert!(!self.params.assets_to_remove.iter().any(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                 }));
             }
             Err(_) => {
@@ -429,6 +414,10 @@ impl UpdateChannelFixture {
                 assert_eq!(channel_pre, channel_post);
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
+
+                assert!(self.params.assets_to_remove.iter().all(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                }));
             }
         }
     }
@@ -757,4 +746,31 @@ pub fn create_initial_storage_buckets_helper() {
         ),
         Ok(())
     );
+}
+
+pub fn create_default_member_owner_channel() {
+    CreateChannelFixture::default()
+        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+        .with_assets(StorageAssets::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_objects_helper(),
+        })
+        .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
+        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .call_and_assert(Ok(()));
+}
+
+pub fn create_default_curator_owner_channel() {
+    let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    CreateChannelFixture::default()
+        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+        .with_assets(StorageAssets::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_objects_helper(),
+        })
+        .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .call_and_assert(Ok(()));
 }

@@ -2,7 +2,7 @@
 
 use crate::*;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -456,49 +456,6 @@ pub fn run_to_block(n: u64) {
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 pub type Balances = balances::Module<Test>;
-
-pub fn update_channel_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    params: ChannelUpdateParameters<Test>,
-    result: DispatchResult,
-) {
-    let channel_pre = ChannelById::<Test>::get(channel_id.clone());
-
-    assert_eq!(
-        Content::update_channel(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            params.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                actor.clone(),
-                channel_id,
-                ChannelRecord {
-                    owner: channel_pre.owner.clone(),
-                    is_censored: channel_pre.is_censored,
-                    reward_account: params
-                        .reward_account
-                        .map_or_else(|| channel_pre.reward_account.clone(), |account| account),
-                    collaborators: params
-                        .collaborators
-                        .clone()
-                        .unwrap_or(channel_pre.collaborators),
-                    num_videos: channel_pre.num_videos,
-                },
-                params,
-            ))
-        );
-    }
-}
 
 pub fn delete_channel_mock(
     sender: u64,
