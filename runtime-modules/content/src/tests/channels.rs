@@ -1067,3 +1067,43 @@ fn successful_channel_update_with_assets_removed_by_member() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn successful_channel_update_with_assets_uploaded_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_update_with_assets_removed_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            // data objects ids start at index 1
+            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
+            .call_and_assert(Ok(()));
+    })
+}
