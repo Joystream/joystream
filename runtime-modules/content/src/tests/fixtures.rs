@@ -693,3 +693,51 @@ impl CreateChannelFixture {
 //         }
 //     }
 // }
+
+// helper functions
+pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
+    let _ = Balances::deposit_creating(&account_id, balance);
+}
+
+pub fn create_data_object_candidates(
+    starting_ipfs_index: u8,
+    number: u8,
+) -> Vec<DataObjectCreationParameters> {
+    let range = starting_ipfs_index..(starting_ipfs_index + number);
+
+    range
+        .into_iter()
+        .map(|idx| DataObjectCreationParameters {
+            size: 10 * idx as u64,
+            ipfs_content_id: vec![idx],
+        })
+        .collect()
+}
+
+pub fn create_single_data_object() -> Vec<DataObjectCreationParameters> {
+    create_data_object_candidates(1, 1)
+}
+
+pub fn create_initial_storage_buckets() {
+    // first set limits
+    assert_eq!(
+        Storage::<Test>::update_storage_buckets_voucher_max_limits(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            400,
+            40
+        ),
+        Ok(())
+    );
+
+    // create bucket(s)
+    assert_eq!(
+        Storage::<Test>::create_storage_bucket(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            None,
+            true,
+            100,
+            10,
+        ),
+        Ok(())
+    );
+}
