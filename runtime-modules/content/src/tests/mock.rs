@@ -456,41 +456,6 @@ pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 pub type Balances = balances::Module<Test>;
 
-pub fn create_channel_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: ChannelCreationParameters<Test>,
-    result: DispatchResult,
-) {
-    let channel_id = Content::next_channel_id();
-
-    assert_eq!(
-        Content::create_channel(Origin::signed(sender), actor.clone(), params.clone()),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        let owner = Content::actor_to_channel_owner(&actor).unwrap();
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                actor.clone(),
-                channel_id,
-                ChannelRecord {
-                    owner: owner,
-                    is_censored: false,
-                    reward_account: params.reward_account.clone(),
-
-                    collaborators: params.collaborators.clone(),
-                    num_videos: 0,
-                },
-                params,
-            ))
-        );
-    }
-}
-
 pub fn update_channel_mock(
     sender: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -697,40 +662,6 @@ pub fn create_initial_storage_buckets() {
             10,
         ),
         Ok(())
-    );
-}
-
-pub fn create_channel_with_bag() {
-    // 3 assets added at creation
-    let assets = StorageAssetsRecord {
-        object_creation_list: vec![
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"first".to_vec(),
-            },
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"second".to_vec(),
-            },
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"third".to_vec(),
-            },
-        ],
-        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-    };
-
-    // create channel
-    create_channel_mock(
-        FIRST_MEMBER_ORIGIN,
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParametersRecord {
-            assets: Some(assets),
-            meta: None,
-            reward_account: None,
-            collaborators: BTreeSet::new(),
-        },
-        Ok(()),
     );
 }
 
