@@ -173,6 +173,7 @@ impl ContentActorAuthenticator for Test {
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
         match *member_id {
             DEFAULT_MEMBER_ID => true,
+            COLLABORATOR_MEMBER_ID => true,
             _ => false,
         }
     }

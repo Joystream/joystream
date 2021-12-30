@@ -964,3 +964,33 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
     })
 }
+
+#[test]
+fn successful_channel_creation_with_collaborators_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::CollaboratorIsNotValidMember.into()));
+    })
+}
