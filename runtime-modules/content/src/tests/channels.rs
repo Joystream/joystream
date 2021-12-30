@@ -969,7 +969,7 @@ fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin()
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }
@@ -988,5 +988,26 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_channel_id(ChannelId::zero())
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn successful_channel_update_with_assets_uploaded_by_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
     })
 }
