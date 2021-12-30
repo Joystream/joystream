@@ -253,177 +253,186 @@ impl CreateChannelFixture {
 //     }
 // }
 
-// pub struct UpdateChannelFixture {
-//     sender: AccountId,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     channel_id: ChannelId,
-//     params: ChannelUpdateParameters<Test>,
-// }
+pub struct UpdateChannelFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: ChannelUpdateParameters<Test>,
+}
 
-// impl UpdateChannelFixture {
-//     pub fn default() -> Self {
-//         Self {
-//             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-//             actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
-//             channel_id: ChannelId::one(), // channel index starts at 1
-//             params: ChannelUpdateParameters::<Test> {
-//                 assets_to_upload: None,
-//                 new_meta: None,
-//                 reward_account: None,
-//                 assets_to_remove: BTreeSet::new(),
-//                 collaborators: None,
-//             },
-//         }
-//     }
+impl UpdateChannelFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(), // channel index starts at 1
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: None,
+                new_meta: None,
+                reward_account: None,
+                assets_to_remove: BTreeSet::new(),
+                collaborators: None,
+            },
+        }
+    }
 
-//     pub fn with_sender(self, sender: AccountId) -> Self {
-//         Self { sender, ..self }
-//     }
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
 
-//     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-//         Self { actor, ..self }
-//     }
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
 
-//     pub fn with_params(self, params: ChannelUpdateParameters<Test>) -> Self {
-//         Self { params, ..self }
-//     }
+    pub fn with_params(self, params: ChannelUpdateParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
 
-//     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-//         Self { channel_id, ..self }
-//     }
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
 
-//     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
-//         Self {
-//             params: ChannelUpdateParameters::<Test> {
-//                 assets_to_upload: Some(assets),
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
+    pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_upload: Some(assets),
+                ..self.params
+            },
+            ..self
+        }
+    }
 
-//     pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
-//         Self {
-//             params: ChannelUpdateParameters::<Test> {
-//                 assets_to_remove: assets,
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
+    pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                assets_to_remove: assets,
+                ..self.params
+            },
+            ..self
+        }
+    }
 
-//     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
-//         Self {
-//             params: ChannelUpdateParameters::<Test> {
-//                 collaborators: Some(collaborators),
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
+    pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                collaborators: Some(collaborators),
+                ..self.params
+            },
+            ..self
+        }
+    }
 
-//     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-//         Self {
-//             params: ChannelUpdateParameters::<Test> {
-//                 reward_account: Some(Some(reward_account)),
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
+    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                reward_account: Some(Some(reward_account)),
+                ..self.params
+            },
+            ..self
+        }
+    }
 
-//     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-//         let origin = Origin::signed(self.sender.clone());
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::usable_balance(self.sender);
+        let channel_pre = Content::channel_by_id(&self.channel_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
-//         let balance_pre = Balances::usable_balance(self.sender);
+        let deletion_prize_deposited =
+            self.params
+                .assets_to_upload
+                .as_ref()
+                .map_or(BalanceOf::<Test>::zero(), |assets| {
+                    assets.object_creation_list.iter().fold(
+                        BalanceOf::<Test>::zero(),
+                        |acc, obj| {
+                            acc.saturating_add(
+                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+                            )
+                        },
+                    )
+                });
 
-//         let channel_pre = Content::channel_by_id(&self.channel_id);
+        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+            self.params
+                .assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
 
-//         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
-//         let deletion_prize_deposited =
-//             self.params
-//                 .assets_to_upload
-//                 .as_ref()
-//                 .map_or(BalanceOf::<Test>::zero(), |assets| {
-//                     assets.object_creation_list.iter().fold(
-//                         BalanceOf::<Test>::zero(),
-//                         |acc, obj| {
-//                             acc.saturating_add(
-//                                 <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-//                             )
-//                         },
-//                     )
-//                 });
+        let actual_result = Content::update_channel(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        );
 
-//         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
-//             self.params
-//                 .assets_to_remove
-//                 .iter()
-//                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-//                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-//                         .deletion_prize
-//                 })
-//         } else {
-//             BalanceOf::<Test>::zero()
-//         };
+        let end_obj_id = storage::NextDataObjectId::<Test>::get();
+        let balance_post = Balances::usable_balance(self.sender);
 
-//         let actual_result = Content::update_channel(
-//             origin,
-//             self.actor.clone(),
-//             self.channel_id,
-//             self.params.clone(),
-//         );
+        assert_eq!(actual_result, expected_result);
 
-//         assert_eq!(actual_result, expected_result);
+        match actual_result {
+            Ok(()) => {
+                let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelUpdated(
+                        self.actor.clone(),
+                        self.channel_id,
+                        ChannelRecord {
+                            owner: owner,
+                            is_censored: channel_pre.is_censored,
+                            reward_account: self
+                                .params
+                                .reward_account
+                                .clone()
+                                .unwrap_or(channel_pre.reward_account),
+                            collaborators: self
+                                .params
+                                .collaborators
+                                .clone()
+                                .unwrap_or(channel_pre.collaborators),
+                            num_videos: channel_pre.num_videos,
+                        },
+                        self.params.clone(),
+                    ))
+                );
 
-//         if expected_result.is_ok() {
-//             let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
-//             assert_eq!(
-//                 System::events().last().unwrap().event,
-//                 MetaEvent::content(RawEvent::ChannelUpdated(
-//                     self.actor.clone(),
-//                     self.channel_id,
-//                     ChannelRecord {
-//                         owner: owner,
-//                         is_censored: channel_pre.is_censored,
-//                         reward_account: self
-//                             .params
-//                             .reward_account
-//                             .clone()
-//                             .unwrap_or(channel_pre.reward_account),
-//                         collaborators: self
-//                             .params
-//                             .collaborators
-//                             .clone()
-//                             .unwrap_or(channel_pre.collaborators),
-//                         num_videos: channel_pre.num_videos,
-//                     },
-//                     self.params.clone(),
-//                 ))
-//             );
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+                );
 
-//             let balance_post = Balances::usable_balance(self.sender);
+                // objects uploaded: check for the number of objects uploaded
+                if let Some(assets) = self.params.assets_to_upload.as_ref() {
+                    assert_eq!(
+                        storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
+                        assets.object_creation_list.len(),
+                    );
+                }
 
-//             assert_eq!(
-//                 balance_post.saturating_sub(balance_pre),
-//                 deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
-//             );
+                assert!(self.params.assets_to_remove.iter().all(|obj_id| {
+                    !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(_) => {
+                let channel_post = Content::channel_by_id(&self.channel_id);
 
-//             // objects uploaded: check for the number of objects uploaded
-//             if let Some(assets) = self.params.assets_to_upload.as_ref() {
-//                 assert_eq!(
-//                     storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-//                     assets.object_creation_list.len(),
-//                 );
-//             }
-
-//             assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-//                 !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-//             }));
-//         }
-//     }
-// }
+                assert_eq!(channel_pre, channel_post);
+                assert_eq!(balance_pre, balance_post);
+                assert_eq!(beg_obj_id, end_obj_id);
+            }
+        }
+    }
+}
 
 // pub struct UpdateVideoFixture {
 //     sender: AccountId,
