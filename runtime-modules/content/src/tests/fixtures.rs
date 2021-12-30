@@ -3,6 +3,14 @@ use crate::*;
 use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok};
 
+// constants used
+pub const VOUCHER_MAX_OBJECT_NUMBER_LIMIT: u64 = 400;
+pub const VOUCHER_MAX_OBJECT_SIZE_LIMIT: u64 = 40;
+pub const STORAGE_BUCKET_OBJECT_NUMBER: u64 = 100;
+pub const STORAGE_BUCKET_OBJECT_SIZE: u64 = 10;
+pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
+pub const DATA_OBJECTS_NUMBER: u8 = 1;
+
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
 type ChannelId = <Test as storage::Trait>::ChannelId;
@@ -119,7 +127,7 @@ impl CreateChannelFixture {
 
                 if let Some(assets) = self.params.assets.as_ref() {
                     // balance accounting is correct
-                    let bag_deletion_prize = BalanceOf::<Test>::one();
+                    let bag_deletion_prize = BalanceOf::<Test>::zero();
                     let objects_deletion_prize = assets.object_creation_list.iter().fold(
                         BalanceOf::<Test>::zero(),
                         |acc, obj| {
@@ -699,7 +707,7 @@ pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
-pub fn create_data_object_candidates(
+pub fn create_data_object_candidates_helper(
     starting_ipfs_index: u8,
     number: u8,
 ) -> Vec<DataObjectCreationParameters> {
@@ -714,17 +722,17 @@ pub fn create_data_object_candidates(
         .collect()
 }
 
-pub fn create_single_data_object() -> Vec<DataObjectCreationParameters> {
-    create_data_object_candidates(1, 1)
+pub fn create_data_objects_helper() -> Vec<DataObjectCreationParameters> {
+    create_data_object_candidates_helper(1, DATA_OBJECTS_NUMBER)
 }
 
-pub fn create_initial_storage_buckets() {
+pub fn create_initial_storage_buckets_helper() {
     // first set limits
     assert_eq!(
         Storage::<Test>::update_storage_buckets_voucher_max_limits(
             Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            400,
-            40
+            VOUCHER_MAX_OBJECT_NUMBER_LIMIT,
+            VOUCHER_MAX_OBJECT_SIZE_LIMIT,
         ),
         Ok(())
     );
@@ -734,9 +742,9 @@ pub fn create_initial_storage_buckets() {
         Storage::<Test>::create_storage_bucket(
             Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             None,
-            true,
-            100,
-            10,
+            STORAGE_BUCKET_ACCEPTING_BAGS,
+            STORAGE_BUCKET_OBJECT_NUMBER,
+            STORAGE_BUCKET_OBJECT_SIZE,
         ),
         Ok(())
     );

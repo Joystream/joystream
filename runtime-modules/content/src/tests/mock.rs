@@ -52,7 +52,7 @@ pub const SECOND_MEMBER_ID: MemberId = 2;
 
 /// Constants
 // initial balancer for an account
-pub const INITIAL_BALANCE: u32 = 1_000_000;
+pub const INITIAL_BALANCE: u64 = 1000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
