@@ -631,13 +631,27 @@ impl DeleteChannelFixture {
                 assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
             }
 
-            Err(_) => {
+            Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                assert!(ChannelById::<Test>::contains_key(&self.channel_id));
-                assert!(channel_objects_ids.iter().all(|id| {
-                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                }));
-                assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "ChannelDoesNotExist" => (),
+                        _ => {
+                            assert!(ChannelById::<Test>::contains_key(&self.channel_id));
+                            assert!(channel_objects_ids.iter().all(|id| {
+                                storage::DataObjectsById::<Test>::contains_key(
+                                    &bag_id_for_channel,
+                                    id,
+                                )
+                            }));
+                            assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+                        }
+                    }
+                }
             }
         }
     }
