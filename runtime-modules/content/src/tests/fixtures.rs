@@ -549,88 +549,91 @@ impl UpdateChannelFixture {
 //     }
 // }
 
-// pub struct DeleteChannelFixture {
-//     sender: AccountId,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     channel_id: ChannelId,
-//     num_objects_to_delete: u64,
-// }
+pub struct DeleteChannelFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    num_objects_to_delete: u64,
+}
 
-// impl DeleteChannelFixture {
-//     pub fn with_sender(self, sender: AccountId) -> Self {
-//         Self { sender, ..self }
-//     }
+impl DeleteChannelFixture {
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
 
-//     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-//         Self { actor, ..self }
-//     }
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
 
-//     pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
-//         Self {
-//             num_objects_to_delete,
-//             ..self
-//         }
-//     }
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
+        Self {
+            num_objects_to_delete,
+            ..self
+        }
+    }
 
-//     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-//         Self { channel_id, ..self }
-//     }
-//     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-//         let origin = Origin::signed(self.sender.clone());
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::usable_balance(self.sender);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
+            .deletion_prize
+            .unwrap_or(BalanceOf::<Test>::zero());
+        let objects_deletion_prize =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
+                    acc + obj.deletion_prize
+                });
 
-//         let balance_pre = Balances::usable_balance(self.sender);
+        let channel_objects_ids =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .map(|(id, _)| id)
+                .collect::<BTreeSet<_>>();
 
-//         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
+        let actual_result = Content::delete_channel(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.num_objects_to_delete,
+        );
 
-//         let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
-//             .deletion_prize
-//             .unwrap_or(BalanceOf::<Test>::zero());
+        let balance_post = Balances::usable_balance(self.sender);
+        assert_eq!(actual_result, expected_result);
 
-//         let objects_deletion_prize =
-//             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-//                 .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-//                     acc + obj.deletion_prize
-//                 });
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelDeleted(
+                        self.actor.clone(),
+                        self.channel_id,
+                    ))
+                );
 
-//         let actual_result = Content::delete_channel(
-//             origin,
-//             self.actor.clone(),
-//             self.channel_id,
-//             self.num_objects_to_delete,
-//         );
+                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
 
-//         assert_eq!(actual_result, expected_result);
+                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+                assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
+                assert!(!channel_objects_ids.iter().any(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                }));
+                assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+            }
 
-//         if expected_result.is_ok() {
-//             let balance_post = Balances::usable_balance(self.sender);
-
-//             // event emitted correctly
-//             assert_eq!(
-//                 System::events().last().unwrap().event,
-//                 MetaEvent::content(RawEvent::ChannelDeleted(
-//                     self.actor.clone(),
-//                     self.channel_id,
-//                 ))
-//             );
-
-//             let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
-
-//             assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
-
-//             // bag deleted
-//             assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-
-//             // all assets deleted
-//             assert_eq!(
-//                 storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-//                 0,
-//             );
-
-//             // channel deleted
-//             assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
-//         }
-//     }
-// }
+            Err(_) => {
+                assert_eq!(balance_pre, balance_post);
+                assert!(ChannelById::<Test>::contains_key(&self.channel_id));
+                assert!(channel_objects_ids.iter().all(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                }));
+                assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+            }
+        }
+    }
+}
 
 // pub struct DeleteVideoFixture {
 //     sender: AccountId,
