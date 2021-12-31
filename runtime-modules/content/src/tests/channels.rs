@@ -1787,3 +1787,19 @@ fn unsuccessful_member_channel_deletion_by_lead() {
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_deletion_by_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
