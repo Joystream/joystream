@@ -1401,3 +1401,25 @@ fn successful_channel_update_with_collaborator_set_updated_by_curator() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let unauthorized_curator_group_id =
+            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        UpdateChannelFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .with_collaborators(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
