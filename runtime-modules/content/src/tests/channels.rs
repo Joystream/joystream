@@ -1819,3 +1819,23 @@ fn successful_channel_deletion_by_member() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn successful_channel_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        DeleteChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
