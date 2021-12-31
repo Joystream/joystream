@@ -1568,3 +1568,37 @@ fn unsuccessful_channel_update_with_reward_account_updated_by_collaborator() {
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
+
+#[test]
+fn unsuccessful_member_channel_update_with_reward_account_updated_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_reward_account(Some(None))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn successful_curator_channel_update_with_reward_account_updated_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_reward_account(Some(None))
+            .call_and_assert(Ok(()));
+    })
+}
