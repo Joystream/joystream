@@ -1348,7 +1348,7 @@ fn unsuccessful_member_channel_update_with_assets_removed_by_lead() {
 }
 
 #[test]
-fn successful_channel_update_with_collaborator_set_updated_by_member() {
+fn successful_channel_update_with_collaborators_set_updated_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1365,7 +1365,7 @@ fn successful_channel_update_with_collaborator_set_updated_by_member() {
 }
 
 #[test]
-fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_member() {
+fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1382,7 +1382,7 @@ fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_mem
 }
 
 #[test]
-fn successful_channel_update_with_collaborator_set_updated_by_curator() {
+fn successful_channel_update_with_collaborators_set_updated_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1403,7 +1403,7 @@ fn successful_channel_update_with_collaborator_set_updated_by_curator() {
 }
 
 #[test]
-fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_curator() {
+fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1425,7 +1425,7 @@ fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_cur
 }
 
 #[test]
-fn unsuccessful_channel_update_with_collaborator_set_updated_by_collaborator() {
+fn unsuccessful_channel_update_with_collaborators_set_updated_by_collaborator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1442,7 +1442,7 @@ fn unsuccessful_channel_update_with_collaborator_set_updated_by_collaborator() {
 }
 
 #[test]
-fn unsuccessful_member_channel_update_with_collaborator_set_updated_by_lead() {
+fn unsuccessful_member_channel_update_with_collaborators_set_updated_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1459,7 +1459,7 @@ fn unsuccessful_member_channel_update_with_collaborator_set_updated_by_lead() {
 }
 
 #[test]
-fn successful_curator_channel_update_with_collaborator_set_updated_by_lead() {
+fn successful_curator_channel_update_with_collaborators_set_updated_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1642,5 +1642,22 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
                 ((DATA_OBJECTS_NUMBER as u64 + 1)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
             )
             .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_invalid_collaborators_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::CollaboratorIsNotValidMember.into()));
     })
 }
