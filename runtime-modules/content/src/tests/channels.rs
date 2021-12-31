@@ -703,7 +703,7 @@ fn unsuccessful_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         CreateChannelFixture::default()
-            .with_sender(LEAD_ORIGIN)
+            .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
@@ -1146,5 +1146,51 @@ fn successful_channel_update_with_assets_removed_by_lead() {
             // data objects ids start at index 1
             .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
+            INITIAL_BALANCE,
+        );
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(
+                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
+            ))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(
+                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
+            ))
+            // data objects ids start at index 1
+            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
