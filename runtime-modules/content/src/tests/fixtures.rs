@@ -397,7 +397,7 @@ impl UpdateChannelFixture {
                     deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
                 );
 
-                if let Some(assets) = self.params.assets_to_upload.as_ref() {
+                if self.params.assets_to_upload.is_some() {
                     assert!((beg_obj_id..end_obj_id).all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }));

@@ -25,7 +25,9 @@ pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
 pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
 pub const LEAD_ACCOUNT_ID: u64 = 103;
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 104;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 105;
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 105;
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 106;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 107;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
@@ -34,7 +36,9 @@ pub const MEMBERS_COUNT: MemberId = 10;
 pub const DEFAULT_MEMBER_ID: MemberId = 201;
 pub const DEFAULT_CURATOR_ID: CuratorId = 202;
 pub const COLLABORATOR_MEMBER_ID: u64 = 204;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 205;
+pub const UNAUTHORIZED_MEMBER_ID: u64 = 205;
+pub const UNAUTHORIZED_CURATOR_ID: u64 = 206;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 207;
 
 // initial balancer for an account
 pub const INITIAL_BALANCE: u64 = 1000;
@@ -158,6 +162,7 @@ impl ContentActorAuthenticator for Test {
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
         match *member_id {
             DEFAULT_MEMBER_ID => true,
+            UNAUTHORIZED_MEMBER_ID => true,
             COLLABORATOR_MEMBER_ID => true,
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => true,
             _ => false,
@@ -173,6 +178,12 @@ impl ContentActorAuthenticator for Test {
             DEFAULT_CURATOR_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID)).unwrap()
             }
+
+            UNAUTHORIZED_CURATOR_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID)).unwrap()
+            }
+
             _ => false,
         }
     }
@@ -182,6 +193,12 @@ impl ContentActorAuthenticator for Test {
             DEFAULT_MEMBER_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
             }
+
+            UNAUTHORIZED_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
                 *account_id
                     == ensure_signed(Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID))
@@ -199,6 +216,7 @@ impl ContentActorAuthenticator for Test {
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
         match *curator_id {
             DEFAULT_CURATOR_ID => true,
+            UNAUTHORIZED_CURATOR_ID => true,
             _ => false,
         }
     }
