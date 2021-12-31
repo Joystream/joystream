@@ -1474,3 +1474,20 @@ fn successful_curator_channel_update_with_collaborator_set_updated_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn successful_channel_update_with_reward_account_updated_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_reward_account(Some(None))
+            .call_and_assert(Ok(()));
+    })
+}

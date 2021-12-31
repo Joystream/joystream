@@ -307,10 +307,10 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
+    pub fn with_reward_account(self, reward_account: Option<Option<AccountId>>) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                reward_account: Some(Some(reward_account)),
+                reward_account,
                 ..self.params
             },
             ..self
