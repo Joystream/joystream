@@ -1756,18 +1756,34 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
     })
 }
 
-// #[test]
-// fn successful_curator_channel_deletion_by_lead() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn successful_curator_channel_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         create_initial_storage_buckets_helper();
-//         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-//         create_default_curator_owned_channel();
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
 
-//         UpdateChannelFixture::default()
-//             .with_sender(LEAD_ACCOUNT_ID)
-//             .with_actor(ContentActor::Lead)
-//             .call_and_assert(Ok(()));
-//     })
-// }
+        DeleteChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_member_channel_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}

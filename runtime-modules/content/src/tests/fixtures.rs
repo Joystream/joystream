@@ -557,6 +557,14 @@ pub struct DeleteChannelFixture {
 }
 
 impl DeleteChannelFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+        }
+    }
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
