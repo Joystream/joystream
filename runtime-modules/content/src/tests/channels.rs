@@ -1309,7 +1309,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_curator() {
 }
 
 #[test]
-fn unsuccessful_channel_update_with_assets_uploaded_by_lead() {
+fn unsuccessful_member_channel_update_with_assets_uploaded_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1330,7 +1330,7 @@ fn unsuccessful_channel_update_with_assets_uploaded_by_lead() {
 }
 
 #[test]
-fn unsuccessful_channel_update_with_assets_removed_by_lead() {
+fn unsuccessful_member_channel_update_with_assets_removed_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1421,5 +1421,56 @@ fn unsuccessful_channel_update_with_collaborator_set_updated_by_unauthorized_cur
             ))
             .with_collaborators(BTreeSet::new())
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_collaborator_set_updated_by_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_collaborators(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_member_channel_update_with_collaborator_set_updated_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_collaborators(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn successful_curator_channel_update_with_collaborator_set_updated_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_collaborators(BTreeSet::new())
+            .call_and_assert(Ok(()));
     })
 }
