@@ -1661,3 +1661,24 @@ fn unsuccessful_channel_update_with_invalid_collaborators_set() {
             .call_and_assert(Err(Error::<Test>::CollaboratorIsNotValidMember.into()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_update_with_invalid_expected_data_size_fee() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                // setting a purposely high fee to trigger error
+                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
+    })
+}
