@@ -712,6 +712,10 @@ pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
+pub fn slash_account_balance_helper(account_id: u64) {
+    let _ = Balances::slash(&account_id, Balances::total_balance(&account_id));
+}
+
 pub fn create_data_object_candidates_helper(
     starting_ipfs_index: u8,
     number: u8,
