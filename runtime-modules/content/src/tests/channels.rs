@@ -1602,3 +1602,26 @@ fn successful_curator_channel_update_with_reward_account_updated_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn unsuccessful_channel_update_with_data_limits_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
+                    ipfs_content_id: vec![1u8],
+                }],
+            })
+            .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
+    })
+}
