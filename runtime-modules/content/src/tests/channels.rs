@@ -1223,6 +1223,22 @@ fn successful_curator_channel_deletion_by_lead() {
 }
 
 #[test]
+fn unsuccessful_curator_channel_deletion_by_invalid_lead_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        DeleteChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID + 100)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_member_channel_deletion_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
