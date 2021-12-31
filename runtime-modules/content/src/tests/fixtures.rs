@@ -3,6 +3,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use sp_runtime::DispatchError;
 
 // constants used
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 40;
@@ -407,14 +408,23 @@ impl UpdateChannelFixture {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                 }));
             }
-            Err(_) => {
+            Err(err) => {
                 assert_eq!(channel_pre, channel_post);
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                assert!(self.params.assets_to_remove.iter().all(|id| {
-                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                }));
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "DataObjectDoesntExist" => (),
+                        _ => assert!(self.params.assets_to_remove.iter().all(|id| {
+                            storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                        })),
+                    }
+                }
             }
         }
     }
