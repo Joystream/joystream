@@ -9,8 +9,8 @@ logs:
   file:
     level: debug
     path: ./local/logs
-    maxFiles: 5
-    maxSize: 1000000
+    maxFiles: 30 # 30 days or 30 * 50 MB
+    maxSize: 50485760 # 50 MB
   console:
     level: verbose
   # elastic:
