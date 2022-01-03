@@ -1419,7 +1419,7 @@ fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
 }
 
 #[test]
-fn unsuccessful_video_update_by_member_with_invalid_object_ids() {
+fn unsuccessful_video_update_with_invalid_object_ids() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1433,5 +1433,20 @@ fn unsuccessful_video_update_by_member_with_invalid_object_ids() {
         UpdateVideoFixture::default()
             .with_assets_to_remove(invalid_objects_ids)
             .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_invalid_video_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        UpdateVideoFixture::default()
+            .with_video_id(Zero::zero())
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
     })
 }
