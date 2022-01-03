@@ -87,10 +87,10 @@ type Bounty @entity {
   "Current bounty stage"
   stage: BountyStage!
 
-  "Total amount available for the reward"
+  "Total amount currently available for the reward"
   totalFunding: BigInt!
 
-  "Bounty's discussion thread"
+  "Bounty discussion thread"
   discussionThread: ForumThread!
 
   "The contributions (in fund) made to the bounty"
