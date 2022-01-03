@@ -1047,7 +1047,7 @@ fn unsuccessful_video_deletion_by_curator_with_auth_failure() {
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(
                 default_curator_group_id,
-                DEFAULT_MEMBER_ACCOUNT_ID,
+                DEFAULT_CURATOR_ID,
             ))
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
@@ -1065,6 +1065,27 @@ fn unsuccessful_video_deletion_by_unauth_member() {
         DeleteVideoFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_by_unauth_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
+
+        let unauthorized_curator_group_id =
+            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        DeleteVideoFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
