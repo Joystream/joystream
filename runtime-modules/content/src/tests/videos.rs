@@ -789,10 +789,6 @@ fn unsuccessful_video_creation_with_lead_auth_failure() {
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
     })
 }
@@ -813,10 +809,6 @@ fn unsuccessful_video_creation_with_curator_auth_failure() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }
@@ -833,10 +825,6 @@ fn unsuccessful_video_creation_with_unauth_member() {
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
@@ -856,10 +844,6 @@ fn successful_video_creation_with_unauth_collaborator() {
             .with_actor(ContentActor::Collaborator(
                 UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
             ))
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
@@ -882,10 +866,6 @@ fn unsuccessful_video_creation_with_unauth_curator() {
                 unauthorized_curator_group_id,
                 UNAUTHORIZED_CURATOR_ID,
             ))
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
@@ -903,10 +883,23 @@ fn unsuccessful_video_creation_by_lead_with_member_owned_channel() {
         CreateVideoFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_id(Zero::zero())
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
     })
 }
