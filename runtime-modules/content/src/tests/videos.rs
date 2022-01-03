@@ -651,7 +651,7 @@ use frame_support::traits::Currency;
 // }
 
 #[test]
-fn successful_video_creation_with_member() {
+fn successful_video_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -671,7 +671,7 @@ fn successful_video_creation_with_member() {
 }
 
 #[test]
-fn successful_video_creation_with_collaborator() {
+fn successful_video_creation_by_collaborator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -692,7 +692,7 @@ fn successful_video_creation_with_collaborator() {
 }
 
 #[test]
-fn successful_video_creation_with_lead() {
+fn successful_video_creation_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -704,6 +704,30 @@ fn successful_video_creation_with_lead() {
         CreateVideoFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_creation_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
