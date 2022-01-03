@@ -1120,3 +1120,21 @@ fn unsuccessful_video_deletion_with_invalid_video_id() {
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
     })
 }
+
+#[test]
+fn unsuccessful_video_deletion_with_invalid_object_ids() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let invalid_objects_ids = ((2 * DATA_OBJECTS_NUMBER as u64)
+            ..(3 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        DeleteVideoFixture::default()
+            .with_assets_to_remove(invalid_objects_ids)
+            .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+    })
+}
