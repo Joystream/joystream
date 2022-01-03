@@ -597,7 +597,7 @@ fn successful_video_update_by_member_with_assets_removal() {
 }
 
 #[test]
-fn successful_video_creation_by_collaborator_with_assets_removal() {
+fn successful_video_update_by_collaborator_with_assets_removal() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -617,7 +617,7 @@ fn successful_video_creation_by_collaborator_with_assets_removal() {
 }
 
 #[test]
-fn successful_video_creation_by_lead_with_assets_removal() {
+fn successful_video_update_by_lead_with_assets_removal() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -923,5 +923,96 @@ fn unsuccessful_video_update_with_invalid_video_id() {
         UpdateVideoFixture::default()
             .with_video_id(Zero::zero())
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn successful_video_deletion_by_member_with_assets_removal() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_by_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_by_lead_with_member_owned_channel() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        DeleteVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn successful_video_deletion_by_lead_with_curator_owned_channel() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        DeleteVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_assets_to_remove(video_assets)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_deletion_by_curator_with_assets_removal() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
+        DeleteVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .with_assets_to_remove(video_assets)
+            .call_and_assert(Ok(()));
     })
 }
