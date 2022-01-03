@@ -820,3 +820,72 @@ fn unsuccessful_video_creation_with_curator_auth_failure() {
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }
+
+#[test]
+fn unsuccessful_video_creation_with_unauth_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        CreateVideoFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_unauth_collaborator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        CreateVideoFixture::default()
+            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Collaborator(
+                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
+            ))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_unauth_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let unauthorized_curator_group_id =
+            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        CreateVideoFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
