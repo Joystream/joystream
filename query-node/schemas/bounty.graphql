@@ -91,10 +91,10 @@ type Bounty @entity {
   discussionThread: ForumThread!
 
   "The contributions (in fund) made to the bounty"
-  contributions: [BountyContribution]!
+  contributions: [BountyContribution]! @derivedFrom(field: "bounty")
 
   "The work entries announce on the bounty"
-  entries: [BountyEntry!]
+  entries: [BountyEntry]! @derivedFrom(field: "bounty")
 
   # Events:
   "The event the bounty was created in"
@@ -156,7 +156,7 @@ union BountyEntryStatus =
 "Work data submitted into an entry"
 type BountyWorkData @entity {
   "The entry this work was submitted into"
-  entry: BountyEntry! @derivedFrom(field: "works")
+  entry: BountyEntry!
 
   "Title of the work"
   title: String!
@@ -171,7 +171,7 @@ type BountyEntry @entity {
   id: ID!
 
   "Bounty to which the work entry corresponds"
-  bounty: Bounty! @derivedFrom(field: "entries")
+  bounty: Bounty!
 
   "Member which submitted the work entry"
   worker: Membership!
@@ -187,7 +187,7 @@ type BountyEntry @entity {
   workSubmitted: Boolean!
 
   "All of the submitted works"
-  works: [BountyWorkData]!
+  works: [BountyWorkData]! @derivedFrom(field: "entry")
 
   "Work entry status"
   status: BountyEntryStatus!
@@ -202,7 +202,7 @@ type BountyContribution @entity {
   id: ID!
 
   "Bounty to which the contribution is made"
-  bounty: Bounty! @derivedFrom(field: "contributions")
+  bounty: Bounty!
 
   "Member making the contribution (if a member and not the council)"
   contributor: Membership
