@@ -18,6 +18,7 @@ $root.BountyMetadata = (function() {
      * @property {string|null} [title] BountyMetadata title
      * @property {string|null} [description] BountyMetadata description
      * @property {number|null} [discussionThread] BountyMetadata discussionThread
+     * @property {string|null} [bannerImageUri] BountyMetadata bannerImageUri
      */
 
     /**
@@ -60,6 +61,14 @@ $root.BountyMetadata = (function() {
     BountyMetadata.prototype.discussionThread = 0;
 
     /**
+     * BountyMetadata bannerImageUri.
+     * @member {string} bannerImageUri
+     * @memberof BountyMetadata
+     * @instance
+     */
+    BountyMetadata.prototype.bannerImageUri = "";
+
+    /**
      * Creates a new BountyMetadata instance using the specified properties.
      * @function create
      * @memberof BountyMetadata
@@ -89,6 +98,8 @@ $root.BountyMetadata = (function() {
             writer.uint32(/* id 2, wireType 2 =*/18).string(message.description);
         if (message.discussionThread != null && Object.hasOwnProperty.call(message, "discussionThread"))
             writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.discussionThread);
+        if (message.bannerImageUri != null && Object.hasOwnProperty.call(message, "bannerImageUri"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.bannerImageUri);
         return writer;
     };
 
@@ -131,6 +142,9 @@ $root.BountyMetadata = (function() {
                 break;
             case 3:
                 message.discussionThread = reader.uint32();
+                break;
+            case 4:
+                message.bannerImageUri = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -176,6 +190,9 @@ $root.BountyMetadata = (function() {
         if (message.discussionThread != null && message.hasOwnProperty("discussionThread"))
             if (!$util.isInteger(message.discussionThread))
                 return "discussionThread: integer expected";
+        if (message.bannerImageUri != null && message.hasOwnProperty("bannerImageUri"))
+            if (!$util.isString(message.bannerImageUri))
+                return "bannerImageUri: string expected";
         return null;
     };
 
@@ -197,6 +214,8 @@ $root.BountyMetadata = (function() {
             message.description = String(object.description);
         if (object.discussionThread != null)
             message.discussionThread = object.discussionThread >>> 0;
+        if (object.bannerImageUri != null)
+            message.bannerImageUri = String(object.bannerImageUri);
         return message;
     };
 
@@ -217,6 +236,7 @@ $root.BountyMetadata = (function() {
             object.title = "";
             object.description = "";
             object.discussionThread = 0;
+            object.bannerImageUri = "";
         }
         if (message.title != null && message.hasOwnProperty("title"))
             object.title = message.title;
@@ -224,6 +244,8 @@ $root.BountyMetadata = (function() {
             object.description = message.description;
         if (message.discussionThread != null && message.hasOwnProperty("discussionThread"))
             object.discussionThread = message.discussionThread;
+        if (message.bannerImageUri != null && message.hasOwnProperty("bannerImageUri"))
+            object.bannerImageUri = message.bannerImageUri;
         return object;
     };
 

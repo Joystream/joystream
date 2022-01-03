@@ -11,6 +11,9 @@ export interface IBountyMetadata {
 
     /** BountyMetadata discussionThread */
     discussionThread?: (number|null);
+
+    /** BountyMetadata bannerImageUri */
+    bannerImageUri?: (string|null);
 }
 
 /** Represents a BountyMetadata. */
@@ -30,6 +33,9 @@ export class BountyMetadata implements IBountyMetadata {
 
     /** BountyMetadata discussionThread. */
     public discussionThread: number;
+
+    /** BountyMetadata bannerImageUri. */
+    public bannerImageUri: string;
 
     /**
      * Creates a new BountyMetadata instance using the specified properties.

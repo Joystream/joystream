@@ -4,6 +4,7 @@ message BountyMetadata {
   optional string title = 1; // Bounty title
   optional string description = 2; // Bounty description
   optional uint32 discussionThread = 3; // Id of the forum thread used to discuss the bounty
+  optional string banner_image_uri = 4; // Image uri of the bounty's banner
 }
 
 message BountyWorkData {
