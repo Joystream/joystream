@@ -715,80 +715,105 @@ impl DeleteChannelFixture {
     }
 }
 
-// pub struct DeleteVideoFixture {
-//     sender: AccountId,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     video_id: VideoId,
-//     assets_to_remove: BTreeSet<DataObjectId<Test>>,
-// }
+pub struct DeleteVideoFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+}
 
-// impl DeleteVideoFixture {
-//     pub fn with_sender(self, sender: AccountId) -> Self {
-//         Self { sender, ..self }
-//     }
+impl DeleteVideoFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            assets_to_remove: BTreeSet::new(),
+        }
+    }
 
-//     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-//         Self { actor, ..self }
-//     }
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
 
-//     pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
-//         Self {
-//             assets_to_remove,
-//             ..self
-//         }
-//     }
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
 
-//     pub fn with_video_id(self, video_id: VideoId) -> Self {
-//         Self { video_id, ..self }
-//     }
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
 
-//     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-//         let origin = Origin::signed(self.sender.clone());
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
 
-//         let balance_pre = Balances::usable_balance(self.sender);
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::usable_balance(self.sender);
+        let video_pre = <VideoById<Test>>::get(&self.video_id);
+        let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
+        let deletion_prize =
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
+                        .deletion_prize
+                });
 
-//         let video_pre = <VideoById<Test>>::get(&self.video_id);
+        let actual_result = Content::delete_video(
+            origin,
+            self.actor.clone(),
+            self.video_id,
+            self.assets_to_remove.clone(),
+        );
 
-//         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+        let balance_post = Balances::usable_balance(self.sender);
+        let video_post = <VideoById<Test>>::get(&self.video_id);
 
-//         let deletion_prize =
-//             self.assets_to_remove
-//                 .iter()
-//                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-//                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-//                         .deletion_prize
-//                 });
+        assert_eq!(actual_result, expected_result);
 
-//         let actual_result = Content::delete_video(
-//             origin,
-//             self.actor.clone(),
-//             self.video_id,
-//             self.assets_to_remove.clone(),
-//         );
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
+                );
 
-//         assert_eq!(actual_result, expected_result);
+                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
 
-//         if expected_result.is_ok() {
-//             let balance_post = Balances::usable_balance(self.sender);
+                assert!(!self.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
+                }));
 
-//             // event emitted correctly
-//             assert_eq!(
-//                 System::events().last().unwrap().event,
-//                 MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
-//             );
+                assert!(!<VideoById<Test>>::contains_key(&self.video_id));
+            }
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                assert!(VideoById::<Test>::contains_key(&self.video_id));
+                assert_eq!(video_pre, video_post);
 
-//             assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
-
-//             // all assets deleted
-//             assert!(self.assets_to_remove.iter().all(|obj_id| {
-//                 !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-//             }));
-
-//             // video deleted
-//             assert!(!<VideoById<Test>>::contains_key(&self.video_id));
-//         }
-//     }
-// }
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "DataObjectDoesntExist" => (),
+                        _ => {
+                            assert!(self.assets_to_remove.iter().all(|id| {
+                                storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                            }));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 // helper functions
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
