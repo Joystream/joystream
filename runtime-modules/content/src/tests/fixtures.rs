@@ -469,6 +469,19 @@ pub struct UpdateVideoFixture {
 }
 
 impl UpdateVideoFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            params: VideoUpdateParameters::<Test> {
+                assets_to_upload: None,
+                assets_to_remove: BTreeSet::new(),
+                new_meta: None,
+            },
+        }
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
