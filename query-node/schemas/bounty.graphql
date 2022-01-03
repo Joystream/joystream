@@ -56,6 +56,9 @@ type Bounty @entity {
   "Bounty description"
   description: String!
 
+  "Bounty image uri"
+  bannerImageUri: String
+
   "Amount of funding provided by the creator"
   cherry: BigInt!
 
