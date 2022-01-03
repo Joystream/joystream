@@ -261,7 +261,7 @@ impl CreateVideoFixture {
                 }
             }
             Err(_) => {
-                assert!(VideoById::<Test>::contains_key(&video_id));
+                assert!(!VideoById::<Test>::contains_key(&video_id));
 
                 assert_eq!(Content::next_video_id(), video_id);
 
