@@ -998,7 +998,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_data_size_limits_exceeded() {
+fn unsuccessful_channel_creation_with_max_object_size_limits_exceeded() {
     with_default_mock_builder(|| {
         run_to_block(1);
 

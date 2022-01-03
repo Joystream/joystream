@@ -15,6 +15,7 @@ pub const DATA_OBJECTS_NUMBER: u8 = 2;
 
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
+type VideoId = <Test as Trait>::VideoId;
 
 // fixtures
 pub struct CreateChannelFixture {
@@ -186,10 +187,6 @@ impl CreateVideoFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_params(self, params: VideoCreationParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
-
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
@@ -265,7 +262,7 @@ impl CreateVideoFixture {
 
                 assert_eq!(Content::next_video_id(), video_id);
 
-                if let Some(assets) = self.params.assets.as_ref() {
+                if self.params.assets.is_some() {
                     assert_eq!(balance_pre, balance_post,);
 
                     assert!(!(beg_obj_id..end_obj_id).any(|id| {
@@ -464,124 +461,138 @@ impl UpdateChannelFixture {
     }
 }
 
-// pub struct UpdateVideoFixture {
-//     sender: AccountId,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     video_id: VideoId,
-//     params: VideoUpdateParameters<Test>,
-// }
+pub struct UpdateVideoFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    params: VideoUpdateParameters<Test>,
+}
 
-// impl UpdateVideoFixture {
-//     pub fn with_sender(self, sender: AccountId) -> Self {
-//         Self { sender, ..self }
-//     }
+impl UpdateVideoFixture {
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
 
-//     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-//         Self { actor, ..self }
-//     }
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
 
-//     pub fn with_params(self, params: VideoUpdateParameters<Test>) -> Self {
-//         Self { params, ..self }
-//     }
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
 
-//     pub fn with_video_id(self, video_id: VideoId) -> Self {
-//         Self { video_id, ..self }
-//     }
+    pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                assets_to_upload: Some(assets),
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                assets_to_remove: assets,
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::usable_balance(self.sender);
+        let video_pre = Content::video_by_id(&self.video_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+        let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
-//     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
-//         Self {
-//             params: VideoUpdateParameters::<Test> {
-//                 assets_to_upload: Some(assets),
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
-//     pub fn with_assets_to_remove(self, assets: BTreeSet<DataObjectId<Test>>) -> Self {
-//         Self {
-//             params: VideoUpdateParameters::<Test> {
-//                 assets_to_remove: assets,
-//                 ..self.params
-//             },
-//             ..self
-//         }
-//     }
-//     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-//         let origin = Origin::signed(self.sender.clone());
+        let deletion_prize_deposited =
+            self.params
+                .assets_to_upload
+                .as_ref()
+                .map_or(BalanceOf::<Test>::zero(), |assets| {
+                    assets
+                        .object_creation_list
+                        .iter()
+                        .fold(BalanceOf::<Test>::zero(), |acc, _| {
+                            acc.saturating_add(
+                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+                            )
+                        })
+                });
 
-//         let balance_pre = Balances::usable_balance(self.sender);
-//         let video_pre = Content::video_by_id(&self.video_id);
+        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+            self.params
+                .assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
 
-//         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+        let actual_result = Content::update_video(
+            origin,
+            self.actor.clone(),
+            self.video_id,
+            self.params.clone(),
+        );
 
-//         let deletion_prize_deposited =
-//             self.params
-//                 .assets_to_upload
-//                 .as_ref()
-//                 .map_or(BalanceOf::<Test>::zero(), |assets| {
-//                     assets.object_creation_list.iter().fold(
-//                         BalanceOf::<Test>::zero(),
-//                         |acc, obj| {
-//                             acc.saturating_add(
-//                                 <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-//                             )
-//                         },
-//                     )
-//                 });
+        let end_obj_id = storage::NextDataObjectId::<Test>::get();
+        let balance_post = Balances::usable_balance(self.sender);
+        let video_post = Content::video_by_id(&self.video_id);
 
-//         let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
-//             self.params
-//                 .assets_to_remove
-//                 .iter()
-//                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-//                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-//                         .deletion_prize
-//                 })
-//         } else {
-//             BalanceOf::<Test>::zero()
-//         };
+        assert_eq!(actual_result, expected_result);
 
-//         let actual_result = Content::update_video(
-//             origin,
-//             self.actor.clone(),
-//             self.video_id,
-//             self.params.clone(),
-//         );
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::VideoUpdated(
+                        self.actor.clone(),
+                        self.video_id,
+                        self.params.clone()
+                    ))
+                );
 
-//         assert_eq!(actual_result, expected_result);
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+                );
 
-//         if expected_result.is_ok() {
-//             let balance_post = Balances::usable_balance(self.sender);
+                if self.params.assets_to_upload.is_some() {
+                    assert!((beg_obj_id..end_obj_id).all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
+                }
 
-//             // event emitted correctly
-//             assert_eq!(
-//                 System::events().last().unwrap().event,
-//                 MetaEvent::content(RawEvent::VideoUpdated(
-//                     self.actor.clone(),
-//                     self.video_id,
-//                     self.params.clone()
-//                 ))
-//             );
+                assert!(!self.params.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(err) => {
+                assert_eq!(video_pre, video_post);
+                assert_eq!(balance_pre, balance_post);
+                assert_eq!(beg_obj_id, end_obj_id);
 
-//             assert_eq!(
-//                 balance_post.saturating_sub(balance_pre),
-//                 deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
-//             );
-
-//             // objects uploaded: check for the number of objects uploaded
-//             if let Some(assets) = self.params.assets_to_upload.as_ref() {
-//                 assert_eq!(
-//                     storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).count(),
-//                     assets.object_creation_list.len(),
-//                 );
-//             }
-
-//             assert!(self.params.assets_to_remove.iter().all(|obj_id| {
-//                 !storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
-//             }));
-//         }
-//     }
-// }
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "DataObjectDoesntExist" => (),
+                        _ => assert!(self.params.assets_to_remove.iter().all(|id| {
+                            storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                        })),
+                    }
+                }
+            }
+        }
+    }
+}
 
 pub struct DeleteChannelFixture {
     sender: AccountId,
@@ -842,5 +853,33 @@ pub fn create_default_curator_owned_channel() {
         })
         .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .call_and_assert(Ok(()));
+}
+
+pub fn create_default_member_owned_channel_with_video() {
+    create_default_member_owned_channel();
+    CreateVideoFixture::default()
+        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+        .with_assets(StorageAssets::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_objects_helper(),
+        })
+        .with_channel_id(NextChannelId::<Test>::get() - 1)
+        .call_and_assert(Ok(()));
+}
+
+pub fn create_default_curator_owned_channel_with_video() {
+    create_default_curator_owned_channel();
+    let curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
+
+    CreateVideoFixture::default()
+        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+        .with_assets(StorageAssets::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_objects_helper(),
+        })
+        .with_channel_id(NextChannelId::<Test>::get() - 1)
         .call_and_assert(Ok(()));
 }
