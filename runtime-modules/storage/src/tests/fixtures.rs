@@ -805,6 +805,28 @@ impl DeleteDynamicBagFixture {
     }
 }
 
+pub struct CanDeleteDynamicBagWithObjectsFixture {
+    bag_id: DynamicBagId<Test>,
+}
+
+impl CanDeleteDynamicBagWithObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            bag_id: Default::default(),
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::can_delete_dynamic_bag_with_objects(&self.bag_id.clone());
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 pub struct DeleteStorageBucketFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -1118,6 +1140,58 @@ impl CreateDynamicBagFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             Storage::create_dynamic_bag(self.bag_id.clone(), self.deletion_prize.clone());
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let bag_id: BagId<Test> = self.bag_id.clone().into();
+            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+        }
+    }
+}
+
+pub struct CreateDynamicBagWithObjectsFixture {
+    bag_id: DynamicBagId<Test>,
+    deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+    upload_parameters: UploadParameters<Test>,
+}
+
+impl CreateDynamicBagWithObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            bag_id: Default::default(),
+            deletion_prize: Default::default(),
+            upload_parameters: Default::default(),
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn with_deletion_prize(
+        self,
+        deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+    ) -> Self {
+        Self {
+            deletion_prize: deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn with_objects(self, upload_parameters: UploadParameters<Test>) -> Self {
+        Self {
+            upload_parameters,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::create_dynamic_bag_with_objects_constraints(
+            self.bag_id.clone(),
+            self.deletion_prize.clone(),
+            self.upload_parameters.clone(),
+        );
 
         assert_eq!(actual_result, expected_result);
 

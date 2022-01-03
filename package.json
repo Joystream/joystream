@@ -27,6 +27,7 @@
     "pioneer",
     "pioneer/packages/*",
     "utils/api-scripts",
+    "utils/migration-scripts",
     "query-node",
     "query-node/mappings",
     "query-node/generated/graphql-server",

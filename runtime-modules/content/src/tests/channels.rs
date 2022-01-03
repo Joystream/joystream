@@ -12,10 +12,12 @@ fn successful_channel_deletion() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets added at creation
@@ -66,7 +68,7 @@ fn successful_channel_deletion() {
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            3u64,
+            3u64, // now assets are 0
             Ok(()),
         );
 
@@ -83,11 +85,12 @@ fn successful_channel_deletion() {
             },
             Ok(()),
         );
+
         delete_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             empty_channel_id,
-            43u64, // this param will be discarded if channel has no assets
+            0u64,
             Ok(()),
         );
     })
@@ -99,10 +102,11 @@ fn successful_channel_assets_deletion() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets
@@ -163,10 +167,12 @@ fn succesful_channel_update() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 2 + 1 assets to be uploaded
@@ -254,10 +260,12 @@ fn succesful_channel_creation() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // create an account with enought balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         // 3 assets to be uploaded
@@ -297,6 +305,7 @@ fn succesful_channel_creation() {
 #[test]
 fn lead_cannot_create_channel() {
     with_default_mock_builder(|| {
+        create_initial_storage_buckets();
         assert_err!(
             Content::create_channel(
                 Origin::signed(LEAD_ORIGIN),
@@ -438,6 +447,7 @@ fn invalid_member_cannot_create_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         // Not a member
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -459,6 +469,7 @@ fn invalid_member_cannot_update_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -493,6 +504,8 @@ fn invalid_member_cannot_delete_channel() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -522,6 +535,8 @@ fn non_authorized_collaborators_cannot_update_channel() {
         run_to_block(1);
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
 
         // create channel
         create_channel_mock(
@@ -598,6 +613,7 @@ fn authorized_collaborators_can_update_channel() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -747,5 +763,49 @@ fn channel_censoring() {
             is_censored,
             vec![]
         ));
+    })
+}
+
+#[test]
+fn channel_creation_doesnt_leave_bags_dangling() {
+    with_default_mock_builder(|| {
+        // in order to emit events
+        run_to_block(1);
+
+        create_initial_storage_buckets();
+        // number of assets big enought to make upload_data_objects throw
+        let asset_num = 100_000usize;
+        let mut object_creation_list =
+            Vec::<DataObjectCreationParameters>::with_capacity(asset_num);
+        for _i in 0..asset_num {
+            object_creation_list.push(DataObjectCreationParameters {
+                size: 1_000_000, // size big enought to make upload_data_objects throw
+                ipfs_content_id: b"test".to_vec(),
+            });
+        }
+
+        let assets = StorageAssetsRecord {
+            object_creation_list: object_creation_list,
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        };
+
+        let channel_id = NextChannelId::<Test>::get();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(assets),
+                meta: Some(vec![]),
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()),
+        );
+
+        // ensure that no bag are left dangling
+        let dyn_bag = DynamicBagIdType::<MemberId, ChannelId>::Channel(channel_id);
+        let bag_id = storage::BagIdType::from(dyn_bag.clone());
+        assert!(<Test as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id).is_err());
     })
 }
