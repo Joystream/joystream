@@ -75,9 +75,9 @@
   dependencies:
     xss "^1.0.8"
 
-"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz":
-  version "1.7.27"
-  resolved "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz#f29765a3a182204bf2bb166a3ed10c7273637af9"
+"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz":
+  version "1.7.28"
+  resolved "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz#24c9c54e14ae0ba13c894738b4b87301f5801b26"
   dependencies:
     "@types/lru-cache" "^4.1.1"
     apollo-link "^1.2.13"
@@ -28736,11 +28736,11 @@ warning@^4.0.1, warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-"warthog@https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz", "warthog@https://github.com/Joystream/warthog/releases/download/v2.37.2-sumer/joystream-warthog-v2.37.2-sumer.tgz", "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
-  version "2.37.2-sumer"
-  resolved "https://github.com/Joystream/warthog/releases/download/v2.37.2-sumer/joystream-warthog-v2.37.2-sumer.tgz#137cba2542502f21acf158d64e54dd700091db71"
+"warthog@https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz", "warthog@https://github.com/Joystream/warthog/releases/download/v2.37.3-sumer/joystream-warthog-v2.37.3-sumer.tgz", "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
+  version "2.37.3-sumer"
+  resolved "https://github.com/Joystream/warthog/releases/download/v2.37.3-sumer/joystream-warthog-v2.37.3-sumer.tgz#6830f1ab694414cfdbeee664057d308768b1b3ba"
   dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
+    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz"
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
     "@types/caller" "^1.0.0"
