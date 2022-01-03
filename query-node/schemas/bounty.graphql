@@ -94,10 +94,10 @@ type Bounty @entity {
   discussionThread: ForumThread!
 
   "The contributions (in fund) made to the bounty"
-  contributions: [BountyContribution]! @derivedFrom(field: "bounty")
+  contributions: [BountyContribution] @derivedFrom(field: "bounty")
 
   "The work entries announce on the bounty"
-  entries: [BountyEntry]! @derivedFrom(field: "bounty")
+  entries: [BountyEntry] @derivedFrom(field: "bounty")
 
   # Events:
   "The event the bounty was created in"
@@ -190,7 +190,7 @@ type BountyEntry @entity {
   workSubmitted: Boolean!
 
   "All of the submitted works"
-  works: [BountyWorkData]! @derivedFrom(field: "entry")
+  works: [BountyWorkData] @derivedFrom(field: "entry")
 
   "Work entry status"
   status: BountyEntryStatus!
