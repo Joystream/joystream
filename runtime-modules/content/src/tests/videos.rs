@@ -1105,3 +1105,18 @@ fn unsuccessful_video_deletion_by_unauth_curator() {
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
+
+#[test]
+fn unsuccessful_video_deletion_with_invalid_video_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        DeleteVideoFixture::default()
+            .with_video_id(Zero::zero())
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}

@@ -772,7 +772,6 @@ impl DeleteVideoFixture {
         );
 
         let balance_post = Balances::usable_balance(self.sender);
-        let video_post = <VideoById<Test>>::get(&self.video_id);
 
         assert_eq!(actual_result, expected_result);
 
@@ -793,8 +792,6 @@ impl DeleteVideoFixture {
             }
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                assert!(VideoById::<Test>::contains_key(&self.video_id));
-                assert_eq!(video_pre, video_post);
 
                 if let DispatchError::Module {
                     message: Some(error_msg),
@@ -802,8 +799,20 @@ impl DeleteVideoFixture {
                 } = err
                 {
                     match error_msg {
-                        "DataObjectDoesntExist" => (),
+                        "DataObjectDoesntExist" => {
+                            let video_post = <VideoById<Test>>::get(&self.video_id);
+                            assert_eq!(video_pre, video_post);
+                            assert!(VideoById::<Test>::contains_key(&self.video_id));
+                        }
+                        "VideoDoesNotExist" => {
+                            assert!(self.assets_to_remove.iter().all(|id| {
+                                storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                            }));
+                        }
                         _ => {
+                            let video_post = <VideoById<Test>>::get(&self.video_id);
+                            assert_eq!(video_pre, video_post);
+                            assert!(VideoById::<Test>::contains_key(&self.video_id));
                             assert!(self.assets_to_remove.iter().all(|id| {
                                 storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
                             }));
