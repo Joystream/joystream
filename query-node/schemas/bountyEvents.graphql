@@ -17,6 +17,9 @@ type BountyCreatedEvent implements Event @entity {
   indexInBlock: Int!
 
   ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
 }
 
 type BountyMaxFundingReachedEvent implements Event @entity {
@@ -38,6 +41,9 @@ type BountyMaxFundingReachedEvent implements Event @entity {
   indexInBlock: Int!
 
   ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
 }
 
 type WorkEntryAnnouncedEvent implements Event @entity {
@@ -59,4 +65,7 @@ type WorkEntryAnnouncedEvent implements Event @entity {
   indexInBlock: Int!
 
   ### SPECIFIC DATA ###
+
+  "Related work entry"
+  entry: BountyEntry!
 }

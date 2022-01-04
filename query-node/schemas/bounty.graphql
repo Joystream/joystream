@@ -101,10 +101,10 @@ type Bounty @entity {
 
   # Events:
   "The event the bounty was created in"
-  createdInEvent: BountyCreatedEvent!
+  createdInEvent: BountyCreatedEvent! @derivedFrom(field: "bounty")
 
   "Event emitted if a bounty reached its maximum funding amount"
-  maxFundingReachedEvent: BountyMaxFundingReachedEvent
+  maxFundingReachedEvent: BountyMaxFundingReachedEvent @derivedFrom(field: "bounty")
 }
 
 "Initial status during creation in Working Period."
@@ -197,7 +197,7 @@ type BountyEntry @entity {
 
   # Events
   "The event the work entry was created in"
-  announcedInEvent: WorkEntryAnnouncedEvent!
+  announcedInEvent: WorkEntryAnnouncedEvent! @derivedFrom(field: "entry")
 }
 
 type BountyContribution @entity {
