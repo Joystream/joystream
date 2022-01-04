@@ -74,6 +74,8 @@ pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
+pub const INITIAL_BALANCE: u64 = 10_000;
+pub const BAG_DELETION_PRIZE_VALUE: u64 = 100;
 
 impl crate::Trait for Test {
     type Event = TestEvent;

@@ -25,10 +25,11 @@ use mocks::{
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
     MaxRandomIterationNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
-    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
-    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
+    ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE,
+    STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -5383,7 +5384,7 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
 }
 
 #[test]
-fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() {
+fn cannot_delete_dynamic_bags_with_objects_with_sufficient_treasury_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5392,14 +5393,11 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
 
         create_storage_buckets(10);
 
-        let deletion_prize_value = 100;
-        let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
-        let initial_balance = 10000;
-        increase_account_balance(&deletion_prize_account_id, initial_balance);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
-            prize: deletion_prize_value,
-            account_id: deletion_prize_account_id,
+            prize: BAG_DELETION_PRIZE_VALUE,
+            account_id: DEFAULT_MEMBER_ACCOUNT_ID,
         });
 
         let upload_parameters = UploadParameters::<Test> {
@@ -5412,7 +5410,7 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
         // pre-check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance
+            INITIAL_BALANCE
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
@@ -5428,11 +5426,27 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
         // Corrupt module balance enough so that it doesn't reach sufficient balance for deletion
         let _ = Balances::slash(
             &<StorageTreasury<Test>>::module_account_id(),
-            deletion_prize_value,
+            BAG_DELETION_PRIZE_VALUE,
         );
 
         CanDeleteDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
+}
+
+fn default_bag_deletion_prize() -> Option<DynamicBagDeletionPrize<Test>> {
+    Some(DynamicBagDeletionPrize::<Test> {
+        prize: BAG_DELETION_PRIZE_VALUE,
+        account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+    })
+}
+
+fn default_upload_parameters() -> UploadParameters<Test> {
+    let upload_parameters = UploadParameters::<Test> {
+        bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
+        object_creation_list: create_single_data_object(),
+        deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+        expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+    };
 }
