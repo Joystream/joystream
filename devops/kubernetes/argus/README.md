@@ -41,7 +41,7 @@ After cloning this repo, from this working directory, run these commands:
     --plaintext queryNodeHost='https://34.197.252.42.nip.io/server/graphql' --plaintext isMinikube=true \
     --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
     --plaintext argusImage='joystream/distributor-node:latest' \
-    --plaintext keys='[{ "suri": "//Alice" }]' --plaintext buckets="all" --plaintext workerId=0
+    --plaintext keys='[{ "suri": "//Alice" }]' --plaintext buckets='["1:0","1:1"]' --plaintext workerId=0
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
