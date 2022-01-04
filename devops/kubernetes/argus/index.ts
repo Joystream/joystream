@@ -4,20 +4,23 @@ import * as eks from '@pulumi/eks'
 import * as docker from '@pulumi/docker'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
-import { CaddyServiceDeployment } from 'pulumi-common'
+import { CaddyServiceDeployment, CustomPersistentVolume } from 'pulumi-common'
 
 const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
 
 const queryNodeHost = config.require('queryNodeHost')
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
-let configArgusImage = config.require('argusImage')
+const configArgusImage = config.require('argusImage')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const keys = config.require('keys')
-const buckets = config.get('buckets') || 'all'
+const buckets = config.require('buckets')
 const workerId = config.require('workerId')
 const name = 'argus-node'
 const isMinikube = config.getBoolean('isMinikube')
+const dataStorage = config.getNumber('dataStorage') || 10
+const logStorage = config.getNumber('logStorage') || 2
+const cacheStorage = config.getNumber('cacheStorage') || 10
 
 export let kubeconfig: pulumi.Output<any>
 export let argusImage: pulumi.Output<string> = pulumi.interpolate`${configArgusImage}`
@@ -69,25 +72,41 @@ export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
 
-const pvc = new k8s.core.v1.PersistentVolumeClaim(
-  `${name}-pvc`,
-  {
-    metadata: {
-      labels: appLabels,
-      namespace: namespaceName,
-      name: `${name}-pvc`,
-    },
-    spec: {
-      accessModes: ['ReadWriteOnce'],
-      resources: {
-        requests: {
-          storage: `10Gi`,
-        },
-      },
-    },
-  },
+const dataPVC = new CustomPersistentVolume(
+  'data',
+  { namespaceName: namespaceName, storage: dataStorage },
   resourceOptions
 )
+const logsPVC = new CustomPersistentVolume(
+  'logs',
+  { namespaceName: namespaceName, storage: logStorage },
+  resourceOptions
+)
+const cachePVC = new CustomPersistentVolume(
+  'cache',
+  { namespaceName: namespaceName, storage: cacheStorage },
+  resourceOptions
+)
+
+// const pvc = new k8s.core.v1.PersistentVolumeClaim(
+//   `${name}-pvc`,
+//   {
+//     metadata: {
+//       labels: appLabels,
+//       namespace: namespaceName,
+//       name: `${name}-pvc`,
+//     },
+//     spec: {
+//       accessModes: ['ReadWriteOnce'],
+//       resources: {
+//         requests: {
+//           storage: `10Gi`,
+//         },
+//       },
+//     },
+//   },
+//   resourceOptions
+// )
 
 // Create a Deployment
 const deployment = new k8s.apps.v1.Deployment(
@@ -141,17 +160,17 @@ const deployment = new k8s.apps.v1.Deployment(
               ports: [{ containerPort: 3334 }],
               volumeMounts: [
                 {
-                  name: 'persistent-data',
+                  name: 'data',
                   mountPath: '/data',
                   subPath: 'data',
                 },
                 {
-                  name: 'persistent-data',
+                  name: 'logs',
                   mountPath: '/logs',
                   subPath: 'logs',
                 },
                 {
-                  name: 'persistent-data',
+                  name: 'cache',
                   mountPath: '/cache',
                   subPath: 'cache',
                 },
@@ -160,9 +179,21 @@ const deployment = new k8s.apps.v1.Deployment(
           ],
           volumes: [
             {
-              name: 'persistent-data',
+              name: 'data',
               persistentVolumeClaim: {
-                claimName: `${name}-pvc`,
+                claimName: dataPVC.pvc.metadata.name,
+              },
+            },
+            {
+              name: 'logs',
+              persistentVolumeClaim: {
+                claimName: logsPVC.pvc.metadata.name,
+              },
+            },
+            {
+              name: 'cache',
+              persistentVolumeClaim: {
+                claimName: cachePVC.pvc.metadata.name,
               },
             },
           ],

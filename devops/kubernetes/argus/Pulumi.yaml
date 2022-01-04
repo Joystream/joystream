@@ -22,6 +22,14 @@ template:
       description: Specifies the keys available within distributor node CLI
     buckets:
       description: Specifies the buckets distributed by the node
-      default: 'all'
     workerId:
       description: ID of the node operator (distribution working group worker)
+    dataStorage:
+      description: Amount of storage (in Gi) assigned for the data directory
+      default: 10
+    logStorage:
+      description: Amount of storage (in Gi) assigned for the logs directory
+      default: 2
+    cacheStorage:
+      description: Amount of storage (in Gi) assigned for the cache directory
+      default: 10
