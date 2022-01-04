@@ -1162,7 +1162,7 @@ pub struct CreateDynamicBagWithObjectsFixture {
 impl CreateDynamicBagWithObjectsFixture {
     pub fn default() -> Self {
         Self {
-            sender: DEFAULT_ACCOUNT_ID,
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
             bag_id: Default::default(),
             deletion_prize: Default::default(),
             upload_parameters: Default::default(),
@@ -1211,7 +1211,9 @@ impl CreateDynamicBagWithObjectsFixture {
                 let bag = crate::Bags::<Test>::get(&bag_id);
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    bag.deletion_prize.unwrap_or_else(|| Zero::zero())
+                    self.deletion_prize
+                        .as_ref()
+                        .map_or_else(|| Zero::zero(), |dprize| dprize.prize)
                 );
 
                 let total_size_required = self
