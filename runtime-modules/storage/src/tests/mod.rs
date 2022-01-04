@@ -5383,7 +5383,7 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
 }
 
 #[test]
-fn cannot_delete_dynamic_bags_with_objects_with_unsufficient_treasury_balance() {
+fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);

@@ -2,6 +2,8 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_runtime::{traits::Zero, DispatchError};
+
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -1151,6 +1153,7 @@ impl CreateDynamicBagFixture {
 }
 
 pub struct CreateDynamicBagWithObjectsFixture {
+    sender: u64,
     bag_id: DynamicBagId<Test>,
     deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
     upload_parameters: UploadParameters<Test>,
@@ -1159,6 +1162,7 @@ pub struct CreateDynamicBagWithObjectsFixture {
 impl CreateDynamicBagWithObjectsFixture {
     pub fn default() -> Self {
         Self {
+            sender: DEFAULT_ACCOUNT_ID,
             bag_id: Default::default(),
             deletion_prize: Default::default(),
             upload_parameters: Default::default(),
@@ -1187,17 +1191,59 @@ impl CreateDynamicBagWithObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.sender);
+        let bag_id: BagId<Test> = self.bag_id.clone().into();
+
         let actual_result = Storage::create_dynamic_bag_with_objects_constraints(
             self.bag_id.clone(),
             self.deletion_prize.clone(),
             self.upload_parameters.clone(),
         );
 
+        let balance_post = Balances::usable_balance(self.sender);
+
         assert_eq!(actual_result, expected_result);
 
-        if actual_result.is_ok() {
-            let bag_id: BagId<Test> = self.bag_id.clone().into();
-            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+        match actual_result {
+            Ok(()) => {
+                assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+
+                let bag = crate::Bags::<Test>::get(&bag_id);
+                assert_eq!(
+                    balance_pre.saturating_sub(balance_post),
+                    bag.deletion_prize.unwrap_or_else(|| Zero::zero())
+                );
+
+                let total_size_required = self
+                    .upload_parameters
+                    .object_creation_list
+                    .iter()
+                    .fold(0, |acc, it| acc + it.size);
+                let total_objects_required =
+                    self.upload_parameters.object_creation_list.len() as u64;
+
+                assert!(bag.stored_by.iter().all(|id| {
+                    let bucket = crate::StorageBucketById::<Test>::get(id);
+                    let enough_size =
+                        bucket.voucher.size_limit >= total_size_required + bucket.voucher.size_used;
+                    let enough_objects = bucket.voucher.objects_limit
+                        >= total_objects_required + bucket.voucher.objects_used;
+                    enough_size && enough_objects && bucket.accepting_new_bags
+                }));
+            }
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "DynamicBagExists" => (),
+                        _ => assert!(!crate::Bags::<Test>::contains_key(&bag_id)),
+                    }
+                }
+            }
         }
     }
 }
