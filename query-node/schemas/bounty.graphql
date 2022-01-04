@@ -156,18 +156,6 @@ union BountyEntryStatus =
   | BountyEntryStatusRejected
   | BountyEntryStatusCashedOut
 
-"Work data submitted into an entry"
-type BountyWorkData @entity {
-  "The entry this work was submitted into"
-  entry: BountyEntry!
-
-  "Title of the work"
-  title: String!
-
-  "Description which contains the work itself as a URL, a BLOB, or just text"
-  description: String!
-}
-
 type BountyEntry @entity {
   # Work entry creation parameters:
   "Work Entry Id"
@@ -189,15 +177,15 @@ type BountyEntry @entity {
   "Whether at least one work has been submitted"
   workSubmitted: Boolean!
 
-  "All of the submitted works"
-  works: [BountyWorkData] @derivedFrom(field: "entry")
-
   "Work entry status"
   status: BountyEntryStatus!
 
   # Events
   "The event the work entry was created in"
   announcedInEvent: WorkEntryAnnouncedEvent! @derivedFrom(field: "entry")
+
+  "All of the submitted work events"
+  works: [WorkSubmittedEvent] @derivedFrom(field: "entry")
 }
 
 type BountyContribution @entity {
