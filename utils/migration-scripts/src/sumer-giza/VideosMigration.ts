@@ -8,6 +8,8 @@ import moment from 'moment'
 import { VIDEO_THUMB_TARGET_SIZE } from './ImageResizer'
 import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from './AssetsMigration'
 import { MigrationResult } from './BaseMigration'
+import { Logger } from 'winston'
+import { createLogger } from '../logging'
 
 export type VideosMigrationConfig = AssetsMigrationConfig & {
   videoBatchSize: number
@@ -26,6 +28,7 @@ export class VideosMigration extends AssetsMigration {
   protected channelsMap: Map<number, number>
   protected videoIds: number[]
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
+  protected logger: Logger
 
   public constructor({ api, queryNodeApi, config, videoIds, channelsMap, forcedChannelOwner }: VideosMigrationParams) {
     super({ api, queryNodeApi, config })
@@ -33,6 +36,7 @@ export class VideosMigration extends AssetsMigration {
     this.channelsMap = channelsMap
     this.videoIds = videoIds
     this.forcedChannelOwner = forcedChannelOwner
+    this.logger = createLogger(this.name)
   }
 
   private getNewChannelId(oldChannelId: number): number {
@@ -43,58 +47,62 @@ export class VideosMigration extends AssetsMigration {
     return newChannelId
   }
 
+  protected async migrateBatch(videos: VideoFieldsFragment[]): Promise<void> {
+    const { api } = this
+    const txs = _.flatten(await Promise.all(videos.map((v) => this.prepareVideo(v))))
+    const result = await api.sendExtrinsic(this.sudo, api.tx.utility.batch(txs))
+    const videoCreatedEvents = api.findEvents(result, 'content', 'VideoCreated')
+    const newVideoIds: VideoId[] = videoCreatedEvents.map((e) => e.data[2])
+    if (videoCreatedEvents.length !== videos.length) {
+      this.extractFailedMigrations(result, videos)
+    }
+    const newVideoMapEntries: [number, number][] = []
+    let newVideoIdIndex = 0
+    videos.forEach(({ id }) => {
+      if (this.failedMigrations.has(parseInt(id))) {
+        return
+      }
+      const newVideoId = newVideoIds[newVideoIdIndex++].toNumber()
+      this.idsMap.set(parseInt(id), newVideoId)
+      newVideoMapEntries.push([parseInt(id), newVideoId])
+    })
+    if (newVideoMapEntries.length) {
+      this.logger.info('Video map entries added!', { newVideoMapEntries })
+      const dataObjectsUploadedEvents = api.findEvents(result, 'storage', 'DataObjectsUploaded')
+      this.assetsManager.queueUploadsFromEvents(dataObjectsUploadedEvents)
+    }
+  }
+
   public async run(): Promise<MigrationResult> {
     await this.init()
     const {
-      api,
       videoIds,
       config: { videoBatchSize },
     } = this
     const idsToMigrate = videoIds.filter((id) => !this.idsMap.has(id)).sort((a, b) => a - b)
     if (idsToMigrate.length < videoIds.length) {
       const alreadyMigratedVideosNum = videoIds.length - idsToMigrate.length
-      console.log(
+      this.logger.info(
         (idsToMigrate.length ? `${alreadyMigratedVideosNum}/${videoIds.length}` : 'All') +
           ' videos already migrated, skippping...'
       )
     }
     while (idsToMigrate.length) {
       const idsBatch = idsToMigrate.splice(0, videoBatchSize)
-      console.log(`Fetching a batch of ${idsBatch.length} videos...`)
+      this.logger.info(`Fetching a batch of ${idsBatch.length} videos...`)
       const videosBatch = (await this.queryNodeApi.getVideosByIds(idsBatch)).sort(
         (a, b) => parseInt(a.id) - parseInt(b.id)
       )
       if (videosBatch.length < idsBatch.length) {
-        console.error(
+        this.logger.warn(
           `Some videos were not be found: ${_.difference(
             idsBatch,
             videosBatch.map((v) => parseInt(v.id))
           )}`
         )
       }
-      const txs = _.flatten(await Promise.all(videosBatch.map((v) => this.prepareVideo(v))))
-      const result = await api.sendExtrinsic(this.sudo, api.tx.utility.batch(txs))
-      const videoCreatedEvents = api.findEvents(result, 'content', 'VideoCreated')
-      const newVideoIds: VideoId[] = videoCreatedEvents.map((e) => e.data[2])
-      if (videoCreatedEvents.length !== videosBatch.length) {
-        this.extractFailedSudoAsMigrations(result, videosBatch)
-      }
-
-      const dataObjectsUploadedEvents = api.findEvents(result, 'storage', 'DataObjectsUploaded')
-      const newVideoMapEntries: [number, number][] = []
-      let newVideoIdIndex = 0
-      videosBatch.forEach(({ id }) => {
-        if (this.failedMigrations.has(parseInt(id))) {
-          return
-        }
-        const newVideoId = newVideoIds[newVideoIdIndex++].toNumber()
-        this.idsMap.set(parseInt(id), newVideoId)
-        newVideoMapEntries.push([parseInt(id), newVideoId])
-      })
-      if (newVideoMapEntries.length) {
-        console.log('Video map entries added!', newVideoMapEntries)
-        await this.assetsManager.uploadFromEvents(dataObjectsUploadedEvents)
-      }
+      await this.executeBatchMigration(videosBatch)
+      await this.assetsManager.processQueuedUploads()
     }
     return this.getResult()
   }

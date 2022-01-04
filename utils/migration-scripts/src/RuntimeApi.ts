@@ -61,7 +61,7 @@ export class RuntimeApi extends ApiPromise {
     return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
-  private formatDispatchError(err: DispatchError): string {
+  public formatDispatchError(err: DispatchError): string {
     try {
       const { name, docs } = this.registry.findMetaError(err.asModule)
       return `${name} (${docs.join(', ')})`
@@ -81,7 +81,11 @@ export class RuntimeApi extends ApiPromise {
     return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
   }
 
-  sendExtrinsic(keyPair: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+  sendExtrinsic(
+    keyPair: KeyringPair,
+    tx: SubmittableExtrinsic<'promise'>,
+    waitUntilFinalized = true
+  ): Promise<SubmittableResult> {
     let txName = `${tx.method.section}.${tx.method.method}`
     if (txName === 'sudo.sudo') {
       const innerCall = tx.args[0] as Call
@@ -95,7 +99,7 @@ export class RuntimeApi extends ApiPromise {
           return
         }
 
-        if (result.status.isInBlock) {
+        if ((!waitUntilFinalized && result.status.isInBlock) || result.status.isFinalized) {
           unsubscribe()
           result.events
             .filter(({ event }) => event.section === 'system')

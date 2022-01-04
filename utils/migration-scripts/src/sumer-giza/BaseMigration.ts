@@ -3,6 +3,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { QueryNodeApi } from './sumer-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { Keyring } from '@polkadot/keyring'
+import { Logger } from 'winston'
 import path from 'path'
 import nodeCleanup from 'node-cleanup'
 import _ from 'lodash'
@@ -37,6 +38,8 @@ export abstract class BaseMigration {
   protected config: BaseMigrationConfig
   protected failedMigrations: Set<number>
   protected idsMap: Map<number, number>
+  protected pendingMigrationIteration: Promise<void> | undefined
+  protected abstract logger: Logger
 
   public constructor({ api, queryNodeApi, config }: BaseMigrationParams) {
     this.api = api
@@ -54,11 +57,13 @@ export abstract class BaseMigration {
 
   public async init(): Promise<void> {
     this.loadMigrationState()
-    nodeCleanup(() => this.saveMigrationState())
+    nodeCleanup(this.onExit.bind(this))
     await this.loadSudoKey()
   }
 
   public abstract run(): Promise<MigrationResult>
+
+  protected abstract migrateBatch(batch: { id: string }[]): Promise<void>
 
   protected getMigrationStateJson(): MigrationStateJson {
     return {
@@ -76,7 +81,25 @@ export abstract class BaseMigration {
     }
   }
 
+  protected onExit(exitCode: number | null, signal: string | null): void | false {
+    nodeCleanup.uninstall() // don't call cleanup handler again
+    this.logger.info('Exitting...')
+    if (signal && this.pendingMigrationIteration) {
+      this.logger.info('Waiting for currently pending migration iteration to finalize...')
+      this.pendingMigrationIteration.then(() => {
+        this.saveMigrationState()
+        this.logger.info('Done.')
+        process.kill(process.pid, signal)
+      })
+      return false
+    } else {
+      this.saveMigrationState()
+      this.logger.info('Done.')
+    }
+  }
+
   protected saveMigrationState(): void {
+    this.logger.info('Saving migration state...')
     const stateFilePath = this.getMigrationStateFilePath()
     const migrationState = this.getMigrationStateJson()
     fs.writeFileSync(stateFilePath, JSON.stringify(migrationState, undefined, 2))
@@ -92,22 +115,63 @@ export abstract class BaseMigration {
     }
   }
 
-  protected extractFailedSudoAsMigrations<T extends { id: string }>(result: SubmittableResult, batch: T[]): void {
+  protected async executeBatchMigration<T extends { id: string }>(batch: T[]): Promise<void> {
+    this.pendingMigrationIteration = this.migrateBatch(batch)
+    await this.pendingMigrationIteration
+    this.pendingMigrationIteration = undefined
+  }
+
+  /**
+   * Extract failed migrations (entity ids) from batch transaction result.
+   * Assumptions:
+   * - Each entity is migrated with a constant number of calls (2 by default: balnces.transferKeepAlive and sudo.sudoAs)
+   * - Ordering of the entities in the `batch` array matches the ordering of the batched calls through which they are migrated
+   * - Last call for each entity is always sudo.sudoAs
+   * - There is only one sudo.sudoAs call per entity
+   *
+   * Entity migration is considered failed if sudo.sudoAs call failed or was not executed at all, regardless of
+   * the result of any of the previous calls associated with that entity migration.
+   * (This means that regardless of whether balnces.transferKeepAlive failed and interrupted the batch or balnces.transferKeepAlive
+   * succeeded, but sudo.sudoAs failed - in both cases the migration is considered failed and should be fully re-executed on
+   * the next script run)
+   */
+  protected extractFailedMigrations<T extends { id: string }>(
+    result: SubmittableResult,
+    batch: T[],
+    callsPerEntity = 2
+  ): void {
     const { api } = this
+    const batchInterruptedEvent = api.findEvent(result, 'utility', 'BatchInterrupted')
     const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
-    if (sudoAsDoneEvents.length !== batch.length) {
-      throw new Error(`Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`)
+    const numberOfSuccesfulCalls = batchInterruptedEvent
+      ? batchInterruptedEvent.data[0].toNumber()
+      : callsPerEntity * batch.length
+    const numberOfMigratedEntites = Math.floor(numberOfSuccesfulCalls / callsPerEntity)
+    if (sudoAsDoneEvents.length !== numberOfMigratedEntites) {
+      throw new Error(
+        `Unexpected number of SudoAsDone events (expected: ${numberOfMigratedEntites}, got: ${sudoAsDoneEvents.length})! ` +
+          `Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`
+      )
     }
     const failedIds: number[] = []
-    sudoAsDoneEvents.forEach(({ data: [sudoAsDone] }, i) => {
-      if (sudoAsDone.isFalse) {
-        const id = parseInt(batch[i].id)
-        failedIds.push(id)
-        this.failedMigrations.add(id)
+    batch.forEach((entity, i) => {
+      const entityId = parseInt(entity.id)
+      if (i >= numberOfMigratedEntites || sudoAsDoneEvents[i].data[0].isFalse) {
+        failedIds.push(entityId)
+        this.failedMigrations.add(entityId)
       }
     })
+
+    if (batchInterruptedEvent) {
+      this.logger.error(
+        `Batch interrupted at call ${numberOfSuccesfulCalls}: ${this.api.formatDispatchError(
+          batchInterruptedEvent.data[1]
+        )}`
+      )
+    }
+
     if (failedIds.length) {
-      console.error(`Failed to migrate:`, failedIds)
+      this.logger.error(`Failed to migrate:`, { failedIds })
     }
   }
 

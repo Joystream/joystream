@@ -16,7 +16,9 @@ import { ContentHash } from './ContentHash'
 import { promisify } from 'util'
 import { createType } from '@joystream/types'
 import { Readable, pipeline } from 'stream'
+import { Logger } from 'winston'
 import _ from 'lodash'
+import { createLogger } from '../logging'
 
 export type AssetsManagerConfig = {
   preferredDownloadSpEndpoints?: string[]
@@ -56,6 +58,7 @@ export class AssetsManager {
   private resizer: ImageResizer
   private queuedUploads: Set<string>
   private isQueueProcessing = false
+  private logger: Logger
 
   public get queueSize(): number {
     return this.queuedUploads.size
@@ -79,6 +82,7 @@ export class AssetsManager {
     this.config = config
     this.resizer = new ImageResizer()
     this.queuedUploads = new Set()
+    this.logger = createLogger('Assets Manager')
     fs.mkdirSync(this.tmpAssetPath(''), { recursive: true })
     fs.mkdirSync(this.assetPath(''), { recursive: true })
   }
@@ -116,7 +120,7 @@ export class AssetsManager {
     targetSize?: [number, number]
   ): Promise<DataObjectCreationParameters | undefined> {
     if (data.liaisonJudgement !== 'ACCEPTED') {
-      console.error(
+      this.logger.warn(
         `Data object ${data.joystreamContentId} has invalid liason judgement: ${data.liaisonJudgement}. Skipping...`
       )
       return
@@ -126,7 +130,7 @@ export class AssetsManager {
     try {
       path = await this.fetchAssetWithRetry(data.joystreamContentId, objectSize)
     } catch (e) {
-      console.error(`Data object ${data.joystreamContentId} was not fetched: ${(e as Error).message}`)
+      this.logger.error(`Data object ${data.joystreamContentId} was not fetched: ${(e as Error).message}`)
       return
     }
     if (targetSize) {
@@ -135,7 +139,7 @@ export class AssetsManager {
         // Re-estabilish object size
         objectSize = fs.statSync(path).size
       } catch (e) {
-        console.error(
+        this.logger.error(
           `Could not resize image ${path} to target size ${targetSize[0]}/${targetSize[1]}: ${(e as Error).message}`
         )
       }
@@ -256,7 +260,7 @@ export class AssetsManager {
     } catch (e) {
       uploadSuccesful = false
       const msg = this.reqErrorMessage(e)
-      console.error(`Upload of object ${dataObjectId} to ${uploadSpEndpoint} failed: ${msg}`)
+      this.logger.error(`Upload of object ${dataObjectId} to ${uploadSpEndpoint} failed: ${msg}`)
     }
 
     if (uploadSuccesful) {
@@ -265,7 +269,7 @@ export class AssetsManager {
       try {
         fs.rmSync(dataPath)
       } catch (e) {
-        console.error(`Could not remove file "${dataPath}" after succesful upload...`)
+        this.logger.error(`Could not remove file "${dataPath}" after succesful upload...`)
       }
     }
   }
@@ -275,7 +279,7 @@ export class AssetsManager {
       throw new Error('Uploads queue is already beeing processed!')
     }
     this.isQueueProcessing = true
-    console.log(`Uploading ${this.queueSize} data objects...`)
+    this.logger.info(`Uploading ${this.queueSize} data objects...`)
     await Promise.all(
       Array.from(this.queuedUploads).map((queuedUpload) => {
         const [bagId, objectId] = queuedUpload.split('|')
@@ -299,10 +303,14 @@ export class AssetsManager {
     this.queuedUploads.add(`${bagIdStr}|${objectId.toString()}`)
   }
 
-  public async uploadFromEvents(events: IEvent<[Vec<DataObjectId>, UploadParameters, Balance]>[]): Promise<void> {
+  public queueUploadsFromEvents(events: IEvent<[Vec<DataObjectId>, UploadParameters, Balance]>[]): void {
+    let queuedUploads = 0
     events.map(({ data: [objectIds, uploadParams] }) => {
-      objectIds.forEach((objectId) => this.queueUpload(uploadParams.bagId, objectId))
+      objectIds.forEach((objectId) => {
+        this.queueUpload(uploadParams.bagId, objectId)
+        ++queuedUploads
+      })
     })
-    await this.processQueuedUploads()
+    this.logger.info(`Added ${queuedUploads} new data object uploads to the upload queue`)
   }
 }

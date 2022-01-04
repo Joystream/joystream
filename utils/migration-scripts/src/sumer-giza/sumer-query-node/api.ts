@@ -30,12 +30,15 @@ import {
   VideoFieldsFragment,
   WorkerFieldsFragment,
 } from './generated/queries'
+import { Logger } from 'winston'
+import { createLogger } from '../../logging'
 
 export class QueryNodeApi {
   private endpoint: string
   private apolloClient: ApolloClient<NormalizedCacheObject>
   private retryAttempts: number
   private retryIntervalMs: number
+  private logger: Logger
 
   public constructor(endpoint: string, retryAttempts = 5, retryIntervalMs = 5000) {
     this.endpoint = endpoint
@@ -46,6 +49,7 @@ export class QueryNodeApi {
       cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
+    this.logger = createLogger('Query Node Api')
   }
 
   private async query<T>(queryFunc: () => Promise<ApolloQueryResult<T>>): Promise<ApolloQueryResult<T>> {
@@ -56,11 +60,11 @@ export class QueryNodeApi {
         return result
       } catch (e) {
         if (e instanceof Error && isApolloError(e) && e.networkError) {
-          console.error(`Query node (${this.endpoint}) network error: ${e.networkError.message}`)
+          this.logger.error(`${this.endpoint} network error: ${e.networkError.message}`)
           if (attempts++ > this.retryAttempts) {
             throw new Error(`Maximum number of query retry attempts reached for ${this.endpoint}`)
           }
-          console.log(`Retrying in ${this.retryIntervalMs}ms...`)
+          this.logger.info(`Retrying in ${this.retryIntervalMs}ms...`)
           await new Promise((resolve) => setTimeout(resolve, this.retryIntervalMs))
         } else {
           throw e
