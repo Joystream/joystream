@@ -88,26 +88,6 @@ const cachePVC = new CustomPersistentVolume(
   resourceOptions
 )
 
-// const pvc = new k8s.core.v1.PersistentVolumeClaim(
-//   `${name}-pvc`,
-//   {
-//     metadata: {
-//       labels: appLabels,
-//       namespace: namespaceName,
-//       name: `${name}-pvc`,
-//     },
-//     spec: {
-//       accessModes: ['ReadWriteOnce'],
-//       resources: {
-//         requests: {
-//           storage: `10Gi`,
-//         },
-//       },
-//     },
-//   },
-//   resourceOptions
-// )
-
 // Create a Deployment
 const deployment = new k8s.apps.v1.Deployment(
   name,
