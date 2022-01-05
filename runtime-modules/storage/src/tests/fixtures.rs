@@ -104,6 +104,7 @@ impl EventFixture {
 
 const DEFAULT_ACCOUNT_ID: u64 = 1;
 const DEFAULT_WORKER_ID: u64 = 1;
+pub const DEFAULT_DATA_OBJECTS_NUMBER: u8 = 10;
 
 pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
@@ -1170,7 +1171,7 @@ impl CreateDynamicBagWithObjectsFixture {
             upload_parameters: UploadParameters::<Test> {
                 bag_id: bag_id.into(),
                 expected_data_size_fee: crate::Module::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: vec![],
+                object_creation_list: create_data_object_candidates(1, DEFAULT_DATA_OBJECTS_NUMBER),
                 deletion_prize_source_account_id: sender_acc,
             },
         }

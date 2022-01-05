@@ -2846,7 +2846,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::DynamicBagExists
         );
 
-        // call can upload data explicitly
         let bag_change = upload_params
             .as_ref()
             .map(|params| {

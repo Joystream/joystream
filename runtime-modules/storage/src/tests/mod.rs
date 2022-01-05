@@ -5165,12 +5165,12 @@ fn unsuccessful_dyn_bag_creation_with_existing_bag_id() {
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize() {
+fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize_and_upload_fees() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         CreateDynamicBagWithObjectsFixture::default()
             .with_deletion_prize(default_bag_deletion_prize())
-            .call_and_assert(Err(Error::<Test>::DynamicBagExists.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     })
 }
