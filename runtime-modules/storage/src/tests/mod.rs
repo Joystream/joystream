@@ -5345,6 +5345,25 @@ fn unsuccessful_dyn_bag_creation_with_dynamic_and_param_bag_differing() {
             .call_and_assert(Err(Error::<Test>::BagsNotCoherent.into()));
     })
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_upload_blocking() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        UpdateUploadingBlockedStatusFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_new_status(true)
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .call_and_assert(Err(Error::<Test>::UploadingBlocked.into()));
+    })
+}
+
 #[test]
 fn successful_dyn_bag_creation_with_upload_and_no_deletion_prize() {
     build_test_externalities().execute_with(|| {
