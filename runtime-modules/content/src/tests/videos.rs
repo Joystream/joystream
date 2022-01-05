@@ -28,25 +28,19 @@ fn video_creation_successful() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // depositi initial balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: None,
-                reward_account: None,
-                collaborators: BTreeSet::new(),
-            },
-            Ok(()),
-        );
+        create_initial_storage_buckets();
+
+        create_channel_with_bag();
 
         let params = VideoCreationParametersRecord {
             assets: Some(StorageAssetsRecord {
@@ -84,24 +78,15 @@ fn video_update_successful() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets();
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: None,
-                reward_account: None,
-                collaborators: BTreeSet::new(),
-            },
-            Ok(()),
-        );
+        create_channel_with_bag();
 
         // create video with 3 assets
         let params = VideoCreationParametersRecord {
@@ -413,6 +398,8 @@ fn non_authorized_collaborators_cannot_add_video() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
         // create channel
@@ -449,6 +436,7 @@ fn non_authorized_collaborators_cannot_update_video() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -498,6 +486,7 @@ fn non_authorized_collaborators_cannot_delete_video() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -546,6 +535,7 @@ fn authorized_collaborators_can_add_video() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
@@ -581,6 +571,8 @@ fn authorized_collaborators_can_update_video() {
         run_to_block(1);
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
 
         // create channel
         create_channel_mock(
@@ -633,6 +625,7 @@ fn authorized_collaborators_can_delete_video() {
 
         helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
 
+        create_initial_storage_buckets();
         // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
