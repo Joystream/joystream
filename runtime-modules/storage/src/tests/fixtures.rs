@@ -1161,11 +1161,18 @@ pub struct CreateDynamicBagWithObjectsFixture {
 
 impl CreateDynamicBagWithObjectsFixture {
     pub fn default() -> Self {
+        let bag_id = DynamicBagId::<Test>::default();
+        let sender_acc = DEFAULT_MEMBER_ACCOUNT_ID;
         Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            bag_id: Default::default(),
-            deletion_prize: Default::default(),
-            upload_parameters: Default::default(),
+            sender: sender_acc.clone(),
+            bag_id: bag_id.clone(),
+            deletion_prize: None,
+            upload_parameters: UploadParameters::<Test> {
+                bag_id: bag_id.into(),
+                expected_data_size_fee: crate::Module::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: vec![],
+                deletion_prize_source_account_id: sender_acc,
+            },
         }
     }
 
