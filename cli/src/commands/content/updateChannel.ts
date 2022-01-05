@@ -11,9 +11,13 @@ import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import ExitCodes from '../../ExitCodes'
+
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     input: flags.string({
       char: 'i',
       required: true,
@@ -69,39 +73,58 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     return assetsToRemove.map((a) => a.id)
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
-      flags: { input },
+      flags: { input, context },
       args: { channelId },
     } = this.parse(UpdateChannelCommand)
 
     // Context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
-    const memberId = await this.getRequiredMemberId(true)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
 
+    if (channelInput.rewardAccount !== undefined && actor.type === 'Collaborator') {
+      this.error("Collaborators are not allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
+    }
+
+    if (channelInput.collaborators !== undefined && actor.type === 'Collaborator') {
+      this.error("Collaborators are not allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
+    }
+
+    if (channelInput.collaborators) {
+      await this.validateCollaborators(channelInput.collaborators)
+    }
+
     const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
-    const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
-    const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
-    // Set assets indexes in the metadata
-    const [coverPhotoIndex, avatarPhotoIndex] = this.assetsIndexes([coverPhotoPath, avatarPhotoPath], inputPaths)
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
+      { coverPhotoPath, avatarPhotoPath },
+      input
+    )
+    // Set assets indices in the metadata
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
-    meta.coverPhoto = coverPhotoIndex
-    meta.avatarPhoto = avatarPhotoIndex
+    meta.coverPhoto = assetIndices.coverPhotoPath
+    meta.avatarPhoto = assetIndices.avatarPhotoPath
 
     // Preare and send the extrinsic
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const assetsToRemove = await this.getAssetsToRemove(channelId, coverPhotoIndex, avatarPhotoIndex)
+    const assetsToRemove = await this.getAssetsToRemove(
+      channelId,
+      assetIndices.coverPhotoPath,
+      assetIndices.avatarPhotoPath
+    )
+
+    const collaborators = createType('Option<BTreeSet<MemberId>>', channelInput.collaborators)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets_to_upload: assetsToUpload,
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
+      collaborators,
     }
 
     this.jsonPrettyPrint(
@@ -110,7 +133,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'updateChannel', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'updateChannel', [
       actor,
       channelId,
       channelUpdateParameters,
@@ -119,8 +142,8 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        account,
-        memberId,
+        keypair,
+        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

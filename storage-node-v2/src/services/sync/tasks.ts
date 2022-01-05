@@ -71,18 +71,20 @@ export class DownloadFileTask implements SyncTask {
   uploadsDirectory: string
   tempDirectory: string
   url: string
-
+  downloadTimeout: number
   constructor(
     baseUrl: string,
     dataObjectId: string,
     expectedHash: string | undefined,
     uploadsDirectory: string,
-    tempDirectory: string
+    tempDirectory: string,
+    downloadTimeout: number
   ) {
     this.dataObjectId = dataObjectId
     this.expectedHash = expectedHash
     this.uploadsDirectory = uploadsDirectory
     this.tempDirectory = tempDirectory
+    this.downloadTimeout = downloadTimeout
     this.url = urljoin(baseUrl, 'api/v1/files', dataObjectId)
   }
 
@@ -97,7 +99,7 @@ export class DownloadFileTask implements SyncTask {
     // This partial downloads will be cleaned up during the next sync iteration.
     const tempFilePath = path.join(this.uploadsDirectory, this.tempDirectory, uuidv4())
     try {
-      const timeoutMs = 30 * 60 * 1000 // 30 min for large files (~ 10 GB)
+      const timeoutMs = this.downloadTimeout * 60 * 1000
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
       const request = (superagent.get(this.url).timeout(timeoutMs) as unknown) as NodeJS.ReadableStream
@@ -149,6 +151,7 @@ export class PrepareDownloadFileTask implements SyncTask {
   uploadsDirectory: string
   tempDirectory: string
   api?: ApiPromise
+  downloadTimeout: number
 
   constructor(
     operatorUrlCandidates: string[],
@@ -157,6 +160,7 @@ export class PrepareDownloadFileTask implements SyncTask {
     uploadsDirectory: string,
     tempDirectory: string,
     taskSink: TaskSink,
+    downloadTimeout: number,
     api?: ApiPromise
   ) {
     this.api = api
@@ -166,6 +170,7 @@ export class PrepareDownloadFileTask implements SyncTask {
     this.operatorUrlCandidates = operatorUrlCandidates
     this.uploadsDirectory = uploadsDirectory
     this.tempDirectory = tempDirectory
+    this.downloadTimeout = downloadTimeout
   }
 
   description(): string {
@@ -209,7 +214,8 @@ export class PrepareDownloadFileTask implements SyncTask {
             this.dataObjectId,
             hash,
             this.uploadsDirectory,
-            this.tempDirectory
+            this.tempDirectory,
+            this.downloadTimeout
           )
 
           return this.taskSink.add([newTask])

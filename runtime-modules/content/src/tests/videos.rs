@@ -1,9 +1,8 @@
 #![cfg(test)]
-
 use super::curators;
 use super::mock::*;
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok};
 
 fn create_member_channel() -> ChannelId {
@@ -15,8 +14,9 @@ fn create_member_channel() -> ChannelId {
         ContentActor::Member(FIRST_MEMBER_ID),
         ChannelCreationParametersRecord {
             assets: None,
-            meta: Some(vec![]),
+            meta: None,
             reward_account: None,
+            collaborators: BTreeSet::<MemberId>::new(),
         }
     ));
 
@@ -28,24 +28,19 @@ fn video_creation_successful() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets();
+
         // depositi initial balance
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: Some(vec![]),
-                reward_account: None,
-            },
-            Ok(()),
-        );
+        create_initial_storage_buckets();
+
+        create_channel_with_bag();
 
         let params = VideoCreationParametersRecord {
             assets: Some(StorageAssetsRecord {
@@ -83,23 +78,15 @@ fn video_update_successful() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets();
         let _ = balances::Module::<Test>::deposit_creating(
             &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
+            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
         );
 
         let channel_id = NextChannelId::<Test>::get();
 
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: None,
-                meta: Some(vec![]),
-                reward_account: None,
-            },
-            Ok(()),
-        );
+        create_channel_with_bag();
 
         // create video with 3 assets
         let params = VideoCreationParametersRecord {
@@ -401,6 +388,282 @@ fn featured_videos() {
                 vec![1, 2, 3]
             ),
             Error::<Test>::ActorNotAuthorized
+        );
+    })
+}
+
+#[test]
+fn non_authorized_collaborators_cannot_add_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets();
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        create_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn non_authorized_collaborators_cannot_update_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // create video
+        create_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Ok(()),
+        );
+
+        update_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            VideoUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn non_authorized_collaborators_cannot_delete_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            },
+            Ok(()),
+        );
+
+        // create video
+        create_video_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Ok(()),
+        );
+
+        delete_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            vec![
+                DataObjectId::<Test>::one(),
+                DataObjectId::<Test>::from(2u64),
+            ]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn authorized_collaborators_can_add_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+
+        create_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn authorized_collaborators_can_update_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
+
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+
+        // create video
+        create_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Ok(()),
+        );
+
+        update_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            VideoUpdateParametersRecord {
+                assets_to_upload: Some(helper_generate_storage_assets(vec![5])),
+                new_meta: None,
+                assets_to_remove: vec![DataObjectId::<Test>::one()]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn authorized_collaborators_can_delete_video() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        helper_init_accounts(vec![FIRST_MEMBER_ORIGIN, COLLABORATOR_MEMBER_ORIGIN]);
+
+        create_initial_storage_buckets();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![2, 3])),
+                meta: None,
+                reward_account: None,
+                collaborators: vec![COLLABORATOR_MEMBER_ID]
+                    .into_iter()
+                    .collect::<BTreeSet<_>>(),
+            },
+            Ok(()),
+        );
+
+        // create video
+        create_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as storage::Trait>::ChannelId::one(),
+            VideoCreationParametersRecord {
+                assets: Some(helper_generate_storage_assets(vec![1, 2])),
+                meta: None,
+            },
+            Ok(()),
+        );
+
+        delete_video_mock(
+            COLLABORATOR_MEMBER_ORIGIN,
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            <Test as Trait>::VideoId::one(),
+            vec![
+                DataObjectId::<Test>::one(),
+                DataObjectId::<Test>::from(2u64),
+            ]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+            Ok(()),
         );
     })
 }

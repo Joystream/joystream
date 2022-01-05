@@ -1,6 +1,6 @@
 # Amazon EKS Cluster: Hello World!
 
-This example deploys an EKS Kubernetes cluster with custom ipfs image
+Deploy storage-node to a Kubernetes cluster
 
 ## Deploying the App
 
@@ -37,20 +37,22 @@ After cloning this repo, from this working directory, run these commands:
 1. Set the required configuration variables in `Pulumi.<stack>.yaml`
 
    ```bash
-   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
-    --plaintext isMinikube=true --plaintext isAnonymous=true
+   $ pulumi config set-all --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
+    --plaintext queryNodeEndpoint='http://graphql-server.query-node-yszsbs2i:8081' \
+    --plaintext keyFile='../../../keyfile.json' --secret passphrase='' \
+    --plaintext accountURI='//Alice' workerId=0 \
+    --plaintext isMinikube=true --plaintext colossusImage='joystream/colossus:latest' \
+    --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user
    ```
 
-   If running for production use the below mentioned config
+   If you want to build the stack on AWS set the `isMinikube` config to `false`
 
    ```bash
-   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' --plaintext isAnonymous=false --plaintext isMinikube=false \
-    --plaintext providerId=<ID> --plaintext keyFile=<PATH> --plaintext publicURL=<DOMAIN> --secret passphrase=<PASSPHRASE>
+   $ pulumi config set isMinikube false
    ```
 
-   You can also set the `storage` and the `colossusPort` config parameters if required
+   You can also set the `storage` and the `colossusPort` config parameters if required. Check `Pulumi.yaml` file
+   for additional parameters.
 
 1. Stand up the EKS cluster:
 

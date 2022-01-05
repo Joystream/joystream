@@ -37,7 +37,7 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=${COLOSSUS_1_ACCOUNT_URI}
+      - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
@@ -81,7 +81,7 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
     #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
-    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
     command: ['yarn', 'joystream-distributor', 'start']
 
   colossus-2:
@@ -102,7 +102,7 @@ services:
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
-      - ACCOUNT_URI=${COLOSSUS_2_ACCOUNT_URI}
+      - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
     command: [
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
@@ -146,7 +146,7 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
     #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
-    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
     command: ['yarn', 'joystream-distributor', 'start']
 
   db:
@@ -177,7 +177,7 @@ services:
       - DB_HOST=db
       - WARTHOG_APP_PORT=${GRAPHQL_SERVER_PORT}
     ports:
-      - '127.0.0.1:${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}'
+      - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
     depends_on:
       - db
     volumes:
@@ -247,7 +247,7 @@ services:
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - DEBUG=*
     ports:
-      - '127.0.0.1:${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}'
+      - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:
       - db
       - redis
@@ -257,7 +257,7 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - '127.0.0.1:6379:6379'
+      - "127.0.0.1:6379:6379"
 
   pioneer:
     image: nginx
@@ -266,7 +266,7 @@ services:
     volumes:
       - ./pioneer/packages/apps/build:/usr/share/nginx/html
     ports:
-      - "127.0.0.1:3000:80"
+      - "3000:80"
     environment:
       - NGINX_PORT=80
 
@@ -280,7 +280,7 @@ services:
       - PROVIDER=ws://joystream-node:9944
       - ENDOWMENT=0
     ports:
-      - "127.0.0.1:3002:3002"
+      - "3002:3002"
 
   orion:
     container_name: orion
@@ -289,6 +289,7 @@ services:
       - ORION_PORT=6116
       - ORION_MONGO_HOSTNAME=mongo
       - ORION_FEATURED_CONTENT_SECRET=password123
+      - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
     ports:
       - "6116:6116"
     depends_on:

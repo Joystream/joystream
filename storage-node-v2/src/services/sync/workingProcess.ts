@@ -1,4 +1,3 @@
-import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
 import { SyncTask } from './tasks'
 import logger from '../../services/logger'
@@ -32,17 +31,13 @@ export interface TaskSource {
  */
 export class WorkingStack implements TaskSink, TaskSource {
   workingStack: SyncTask[]
-  lock: AwaitLock
 
   constructor() {
     this.workingStack = []
-    this.lock = new AwaitLock()
   }
 
   async get(): Promise<SyncTask | null> {
-    await this.lock.acquireAsync()
     const task = this.workingStack.pop()
-    this.lock.release()
 
     if (task !== undefined) {
       return task
@@ -52,12 +47,9 @@ export class WorkingStack implements TaskSink, TaskSource {
   }
 
   async add(tasks: SyncTask[]): Promise<void> {
-    await this.lock.acquireAsync()
-
     if (tasks !== null) {
       this.workingStack.push(...tasks)
     }
-    this.lock.release()
   }
 }
 

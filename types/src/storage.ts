@@ -10,6 +10,7 @@ import {
   Option,
   u32,
   u128,
+  Tuple,
 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -50,10 +51,22 @@ export class DataObject
 
 export class DataObjectIdSet extends BTreeSet.with(DataObjectId) {}
 export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
-export class DistributionBucketId extends u64 {}
+export class DistributionBucketIndex extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends BTreeSet.with(StorageBucketId) {}
-export class DistributionBucketIdSet extends BTreeSet.with(DistributionBucketId) {}
+export class DistributionBucketIndexSet extends BTreeSet.with(DistributionBucketIndex) {}
+
+export type IDistributionBucketId = {
+  distribution_bucket_family_id: DistributionBucketFamilyId
+  distribution_bucket_index: DistributionBucketIndex
+}
+
+export class DistributionBucketId
+  extends JoyStructDecorated({
+    distribution_bucket_family_id: DistributionBucketFamilyId,
+    distribution_bucket_index: DistributionBucketIndex,
+  })
+  implements IDistributionBucketId {}
 
 export type IDynamicBagDeletionPrize = {
   account_id: AccountId
@@ -151,7 +164,7 @@ export class Voucher
 export const StorageBucketOperatorStatusDef = {
   Missing: Null,
   InvitedStorageWorker: WorkerId,
-  StorageWorker: WorkerId,
+  StorageWorker: Tuple.with([WorkerId, AccountId]),
 } as const
 export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
 
@@ -159,7 +172,6 @@ export type IStorageBucket = {
   operator_status: StorageBucketOperatorStatus
   accepting_new_bags: bool
   voucher: Voucher
-  metadata: Bytes
 }
 
 export class StorageBucket
@@ -167,7 +179,6 @@ export class StorageBucket
     operator_status: StorageBucketOperatorStatus,
     accepting_new_bags: bool,
     voucher: Voucher,
-    metadata: Bytes,
   })
   implements IStorageBucket {}
 
@@ -221,12 +232,12 @@ export class DistributionBucket
   implements IDistributionBucket {}
 
 export type IDistributionBucketFamily = {
-  distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>
+  next_distribution_bucket_index: DistributionBucketIndex
 }
 
 export class DistributionBucketFamily
   extends JoyStructDecorated({
-    distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+    next_distribution_bucket_index: DistributionBucketIndex,
   })
   implements IDistributionBucketFamily {}
 
@@ -258,12 +269,13 @@ export const storageTypes: RegistryTypes = {
   StorageBucketOperatorStatus,
   DataObject,
   DistributionBucketId,
+  DistributionBucketIndex,
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
   // Utility types:
   DataObjectIdMap,
-  DistributionBucketIdSet,
+  DistributionBucketIndexSet,
   DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes

@@ -26,19 +26,15 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let {
       args: { id, status },
       flags: { rationale },
     } = this.parse(UpdateVideoCensorshipStatusCommand)
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-
     const video = await this.getApi().videoById(id)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getCurationActorByChannel(channel)
-
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getCurationActorByChannel(channel)
 
     if (status === undefined) {
       status = await this.simplePrompt({
@@ -64,7 +60,7 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
       })) as string
     }
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCensorshipStatus', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideoCensorshipStatus', [
       actor,
       id,
       status,

@@ -1,6 +1,7 @@
 import { JSONSchema4 } from 'json-schema'
 import winston from 'winston'
 import { MAX_CONCURRENT_RESPONSE_TIME_CHECKS } from '../services/networking/NetworkingService'
+import { BucketIdParserService } from '../services/parsers/BucketIdParserService'
 import { objectSchema } from './utils'
 
 export const bytesizeUnits = ['B', 'K', 'M', 'G', 'T']
@@ -236,11 +237,13 @@ export const configSchema: JSONSchema4 = objectSchema({
     },
     buckets: {
       description:
-        'Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed.',
-      title: 'Bucket ids',
+        'Set of bucket ids distributed by the node. ' +
+        'If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed. ' +
+        'Expected bucket id format is: {familyId}:{bucketIndex}',
+      title: "Distributed buckets' ids",
       type: 'array',
       uniqueItems: true,
-      items: { type: 'integer', minimum: 0 },
+      items: { type: 'string', pattern: BucketIdParserService.bucketIdStrRegex.source },
       minItems: 1,
     },
     workerId: {

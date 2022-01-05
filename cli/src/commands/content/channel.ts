@@ -11,7 +11,7 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { channelId } = this.parse(ChannelCommand).args
     const channel = await this.getApi().channelById(channelId)
     if (channel) {
@@ -20,14 +20,17 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
         'Owner': JSON.stringify(channel.owner.toJSON()),
         'IsCensored': channel.is_censored.toString(),
         'RewardAccount': channel.reward_account.unwrapOr('NONE').toString(),
-        'DeletionPrizeAccount': channel.deletion_prize_source_account_id.toString(),
       })
 
       displayHeader(`Media`)
-
       displayCollapsedRow({
         'NumberOfVideos': channel.num_videos.toNumber(),
       })
+
+      displayHeader(`Collaborators`)
+      const collaboratorIds = Array.from(channel.collaborators)
+      const collaborators = await this.getApi().getMembers(collaboratorIds)
+      this.log(collaborators.map((c, i) => `${collaboratorIds[i].toString()} (${c.handle.toString()})`).join(', '))
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)
     }

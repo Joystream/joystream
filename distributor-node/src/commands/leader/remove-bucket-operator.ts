@@ -6,14 +6,7 @@ export default class LeaderRemoveBucketOperator extends AccountsCommandBase {
   Requires distribution working group leader permissions.`
 
   static flags = {
-    bucketId: flags.integer({
-      char: 'B',
-      description: 'Distribution bucket id',
-      required: true,
-    }),
-    familyId: flags.integer({
-      char: 'f',
-      description: 'Distribution bucket family id',
+    bucketId: flags.bucketId({
       required: true,
     }),
     workerId: flags.integer({
@@ -25,13 +18,16 @@ export default class LeaderRemoveBucketOperator extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { bucketId, familyId, workerId } = this.parse(LeaderRemoveBucketOperator).flags
+    const { bucketId, workerId } = this.parse(LeaderRemoveBucketOperator).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Removing distribution bucket operator (bucket: ${bucketId}, worker: ${workerId})...`)
+    this.log(`Removing distribution bucket operator...`, {
+      bucketId: bucketId.toHuman(),
+      workerId,
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
-      this.api.tx.storage.removeDistributionBucketOperator(familyId, bucketId, workerId)
+      this.api.tx.storage.removeDistributionBucketOperator(bucketId, workerId)
     )
     this.log('Bucket operator succesfully removed!')
   }

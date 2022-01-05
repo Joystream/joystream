@@ -29,6 +29,12 @@ export default class DevSync extends Command {
       description: 'Sync workers number (max async operations in progress).',
       default: 20,
     }),
+    syncWorkersTimeout: flags.integer({
+      char: 't',
+      required: false,
+      description: 'Asset downloading timeout for the syncronization (in minutes).',
+      default: 30,
+    }),
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
@@ -53,13 +59,12 @@ export default class DevSync extends Command {
 
     logger.info('Syncing...')
 
-    const syncWorkersNumber = flags.syncWorkersNumber
-
     try {
       await performSync(
         undefined,
         flags.workerId,
-        syncWorkersNumber,
+        flags.syncWorkersNumber,
+        flags.syncWorkersTimeout,
         flags.queryNodeEndpoint,
         flags.uploads,
         flags.dataSourceOperatorUrl

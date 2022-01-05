@@ -15,12 +15,10 @@ USAGE
   $ joystream-distributor operator:accept-invitation
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -w, --workerId=workerId      (required) ID of the invited operator (distribution group worker)
 
@@ -41,14 +39,12 @@ USAGE
   $ joystream-distributor operator:set-metadata
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
 
   -e, --endpoint=endpoint      Root distribution node endpoint
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -i, --input=input            Path to JSON metadata file
 

@@ -31,7 +31,7 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 // import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
-import { VideoId } from '@joystream/types/content'
+import { VideoId, VideoCategoryId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
@@ -1801,6 +1801,18 @@ export class Api {
 
   async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
     return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  public async getNumberOfOutstandingVideos(): Promise<number> {
+    return (await this.api.query.content.videoById.entries<VideoId>()).length
+  }
+
+  public async getNumberOfOutstandingChannels(): Promise<number> {
+    return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
+    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
   }
 
   // Create a mock channel, throws on failure

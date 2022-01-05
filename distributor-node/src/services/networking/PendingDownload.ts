@@ -2,6 +2,8 @@ export enum PendingDownloadStatusType {
   Waiting = 'Waiting',
   LookingForSource = 'LookingForSource',
   Downloading = 'Downloading',
+  Failed = 'Failed',
+  Completed = 'Completed',
 }
 
 export type PendingDownloadStatusWaiting = {
@@ -18,23 +20,26 @@ export type PendingDownloadStatusDownloading = {
   contentType?: string
 }
 
+export type PendingDownloadStatusFailed = {
+  type: PendingDownloadStatusType.Failed
+}
+
+export type PendingDownloadStatusCompleted = {
+  type: PendingDownloadStatusType.Completed
+}
+
 export type PendingDownloadStatus =
   | PendingDownloadStatusWaiting
   | PendingDownloadStatusLookingForSource
   | PendingDownloadStatusDownloading
-
-export const STATUS_ORDER = [
-  PendingDownloadStatusType.Waiting,
-  PendingDownloadStatusType.LookingForSource,
-  PendingDownloadStatusType.Downloading,
-] as const
+  | PendingDownloadStatusFailed
+  | PendingDownloadStatusCompleted
 
 export class PendingDownload {
   private objectId: string
   private objectSize: number
   private status: PendingDownloadStatus = { type: PendingDownloadStatusType.Waiting }
   private statusHandlers: Map<PendingDownloadStatusType, (() => void)[]> = new Map()
-  private cleanupHandlers: (() => void)[] = []
 
   constructor(objectId: string, objectSize: number) {
     this.objectId = objectId
@@ -64,21 +69,28 @@ export class PendingDownload {
     this.statusHandlers.set(statusType, [...currentHandlers, handler])
   }
 
-  private registerCleanupHandler(handler: () => void) {
-    this.cleanupHandlers.push(handler)
+  public onError(handler: () => void): void {
+    this.registerStatusHandler(PendingDownloadStatusType.Failed, handler)
   }
 
-  untilStatus<T extends PendingDownloadStatusType>(statusType: T): Promise<void> {
+  sourceData(): Promise<PendingDownloadStatusDownloading> {
     return new Promise((resolve, reject) => {
-      if (STATUS_ORDER.indexOf(this.status.type) >= STATUS_ORDER.indexOf(statusType)) {
-        return resolve()
+      if (this.status.type === PendingDownloadStatusType.Completed) {
+        return reject(new Error(`Trying to get source data from already completed download task`))
       }
-      this.registerStatusHandler(statusType, () => resolve())
-      this.registerCleanupHandler(() => reject(new Error(`Could not download object ${this.objectId} from any source`)))
-    })
-  }
+      if (this.status.type === PendingDownloadStatusType.Failed) {
+        return reject(new Error(`Could not download object ${this.objectId} from any source`))
+      }
+      if (this.status.type === PendingDownloadStatusType.Downloading) {
+        return resolve(this.status)
+      }
 
-  cleanup(): void {
-    this.cleanupHandlers.forEach((handler) => handler())
+      this.registerStatusHandler(PendingDownloadStatusType.Downloading, () =>
+        resolve({ ...this.status } as PendingDownloadStatusDownloading)
+      )
+      this.registerStatusHandler(PendingDownloadStatusType.Failed, () =>
+        reject(new Error(`Could not download object ${this.objectId} from any source`))
+      )
+    })
   }
 }

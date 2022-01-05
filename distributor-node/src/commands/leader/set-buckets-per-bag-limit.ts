@@ -18,7 +18,7 @@ export default class LeaderSetBucketsPerBagLimit extends AccountsCommandBase {
     const { limit } = this.parse(LeaderSetBucketsPerBagLimit).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Setting new buckets per bag limit (${limit})...`)
+    this.log(`Setting new buckets per bag limit...`, { limit })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateDistributionBucketsPerBagLimit(limit)

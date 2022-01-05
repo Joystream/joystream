@@ -141,7 +141,7 @@ Returns list of distributed buckets
 ```json
 {
   "bucketIds": [
-    0
+    "string"
   ]
 }
 ```
@@ -356,7 +356,7 @@ This operation does not require authentication
 ```json
 {
   "bucketIds": [
-    0
+    "string"
   ]
 }
 
@@ -369,7 +369,7 @@ oneOf
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|object|false|none|none|
-|» bucketIds|[integer]|true|none|none|
+|» bucketIds|[string]|true|none|none|
 
 xor
 

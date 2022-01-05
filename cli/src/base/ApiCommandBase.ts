@@ -16,6 +16,9 @@ import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import QueryNodeApi from '../QueryNodeApi'
+import { formatBalance } from '@polkadot/util'
+import BN from 'bn.js'
+import _ from 'lodash'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -186,9 +189,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       } while (!this.isQueryNodeUriValid(selectedUri))
     }
 
-    await this.setPreservedState({ queryNodeUri: selectedUri })
+    const queryNodeUri = selectedUri === 'none' ? null : selectedUri
 
-    return selectedUri === 'none' ? null : selectedUri
+    await this.setPreservedState({ queryNodeUri })
+
+    return queryNodeUri
   }
 
   isApiUriValid(uri: string): boolean {
@@ -214,13 +219,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // This is needed to correctly handle some structs, enums etc.
   // Where the main typeDef doesn't provide enough information
-  protected getRawTypeDef(type: keyof InterfaceTypes) {
+  protected getRawTypeDef(type: keyof InterfaceTypes): TypeDef {
     const instance = this.createType(type)
     return getTypeDef(instance.toRawType())
   }
 
   // Prettifier for type names which are actually JSON strings
-  protected prettifyJsonTypeName(json: string) {
+  protected prettifyJsonTypeName(json: string): string {
     const obj = JSON.parse(json) as { [key: string]: string }
     return (
       '{\n' +
@@ -232,7 +237,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   // Get param name based on TypeDef object
-  protected paramName(typeDef: TypeDef) {
+  protected paramName(typeDef: TypeDef): string {
     return chalk.green(
       typeDef.displayName ||
         typeDef.name ||
@@ -428,7 +433,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   // More typesafe version
-  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
+  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions): Promise<Codec> {
     return await this.promptForParam(type, options)
   }
 
@@ -498,6 +503,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async sendAndFollowTx(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+    // Calculate fee and ask for confirmation
+    const fee = await this.getApi().estimateFee(account, tx)
+
+    await this.requireConfirmation(
+      `Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account, do you confirm the transfer?`
+    )
+
     try {
       const res = await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
@@ -509,6 +521,22 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         throw e
       }
     }
+  }
+
+  private humanize(p: unknown): any {
+    if (Array.isArray(p)) {
+      return p.map((v) => this.humanize(v))
+    } else if (typeof p === 'object' && p !== null) {
+      if ((p as any).toHuman) {
+        return (p as Codec).toHuman()
+      } else if (p instanceof BN) {
+        return p.toString()
+      } else {
+        return _.mapValues(p, this.humanize.bind(this))
+      }
+    }
+
+    return p
   }
 
   async sendAndFollowNamedTx<
@@ -526,8 +554,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         `\nSending ${module}.${method} extrinsic from ${account.meta.name ? account.meta.name : account.address}...`
       )
     )
+    this.log('Tx params:', this.humanize(params))
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
-    return await this.sendAndFollowTx(account, tx) //, warnOnly)
+    return this.sendAndFollowTx(account, tx)
   }
 
   public findEvent<

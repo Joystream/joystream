@@ -22,7 +22,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     ...WorkingGroupsCommandBase.flags,
   }
 
-  formatReward(reward?: Reward) {
+  formatReward(reward?: Reward): string {
     return reward
       ? formatBalance(reward.value) +
           (reward.interval ? ` / ${reward.interval} block(s)` : '') +
@@ -30,12 +30,10 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       : 'NONE'
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsUpdateWorkerReward)
 
-    const account = await this.getRequiredSelectedAccount()
-    // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const workerId = parseInt(args.workerId)
     // This will also make sure the worker is valid
@@ -54,12 +52,12 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       createParamOptions('new_amount', undefined, positiveInt())
     )) as BalanceOfMint
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
-      workerId,
-      newRewardValue,
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'updateRewardAmount',
+      [workerId, newRewardValue]
+    )
 
     const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
     this.log(chalk.green(`Worker ${chalk.magentaBright(workerId)} reward has been updated!`))

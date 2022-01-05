@@ -1,6 +1,6 @@
 ## buckets Type
 
-`integer[]`
+`string[]`
 
 ## buckets Constraints
 
