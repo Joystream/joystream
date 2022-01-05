@@ -5263,6 +5263,19 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
 }
 
 #[test]
+fn unsuccessful_dyn_bag_creation_with_dynamic_and_param_bag_differing() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_params_bag_id(DynamicBagId::<Test>::Channel(0u64).into())
+            .call_and_assert(Err(Error::<Test>::BagsNotCoherent.into()));
+    })
+}
+#[test]
 fn successful_dyn_bag_creation_with_upload_and_no_deletion_prize() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);

@@ -2852,14 +2852,15 @@ impl<T: Trait> Module<T> {
         let bag_change = upload_params
             .as_ref()
             .map(|params| {
-                // ensure coherent account ids for prize
+                // ensure coherent account ids & bag ids
                 if let Some(deletion_prize) = deletion_prize {
                     ensure!(
                         params.deletion_prize_source_account_id == deletion_prize.account_id,
                         Error::<T>::AccountsNotCoherent,
                     );
-                    ensure!(bag_id == params.bag_id, Error::<T>::BagsNotCoherent,);
                 }
+                ensure!(bag_id == params.bag_id, Error::<T>::BagsNotCoherent);
+
                 Self::validate_bag_change(params)
             })
             .transpose()?;
