@@ -33,9 +33,9 @@
   dependencies:
     xss "^1.0.8"
 
-"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz":
-  version "1.7.27"
-  resolved "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz#f29765a3a182204bf2bb166a3ed10c7273637af9"
+"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz":
+  version "1.7.28"
+  resolved "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz#24c9c54e14ae0ba13c894738b4b87301f5801b26"
   dependencies:
     "@types/lru-cache" "^4.1.1"
     apollo-link "^1.2.13"
@@ -206,9 +206,9 @@
     regenerator-runtime "^0.13.4"
 
 "@babel/runtime@^7.16.3":
-  version "7.16.5"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.16.5.tgz#7f3e34bf8bdbbadf03fbb7b1ea0d929569c9487a"
-  integrity sha512-TXWihFIS3Pyv5hzR7j6ihmeLkZfrXGxAr5UfSl8CHf+6q/wpiYDkUau0czckpYG8QmnCIuPpdLtuA9VmuGGyMA==
+  version "7.16.7"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.16.7.tgz#03ff99f64106588c9c403c6ecb8c3bafbbdff1fa"
+  integrity sha512-9E9FJowqAsytyOY6LG+1KuueckRL+aQW+mKvXRXnuFGyRAyepJPmEo9vgMfXUA6O9u3IeEdv9MAkppFcaQwogQ==
   dependencies:
     regenerator-runtime "^0.13.4"
 
@@ -306,15 +306,15 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@3.1.0-alpha.15":
-  version "3.1.0-alpha.15"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.15.tgz#f63a915f6b50ae89af826963000f26003e499e96"
-  integrity sha512-gw/jPXXRZT+ySWFuGEVz7INzNXEGnc7AYtRbK2z4cS41wfiM0mXzAlknUZMCf+yQcollQ7lFjlvF0KPTongioA==
+"@joystream/hydra-cli@3.1.0-alpha.16":
+  version "3.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.16.tgz#3bebe326b2ae6ad96b821797ca699c581217ac45"
+  integrity sha512-2Dq5fBqJWdqE0OhvI/kBA0i3gngnDmd0AaSFhJ03LE3mKTvzhapaOyWmEgO9vqQCSopSi0wWorizzksnu2+GQw==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
     "@inquirer/select" "^0.0.13-alpha.0"
-    "@joystream/warthog" "~2.41.1"
+    "@joystream/warthog" "~2.41.2"
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -342,10 +342,10 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@3.1.0-alpha.15":
-  version "3.1.0-alpha.15"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.15.tgz#c230846f0d26a76f9202fea200517147ea71775a"
-  integrity sha512-cs5cCW/1XrqyLMbxXrzLuXIOCu7io6XmHlKyOeZYMKc6nf5O1FRJMwENw1DNg5e5oI6aW9BFT7KMLfwM+1Hx9g==
+"@joystream/hydra-typegen@3.1.0-alpha.16":
+  version "3.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.16.tgz#5756b714767be8f3b237dba270386113c64b1245"
+  integrity sha512-ik1iegF7qZXeumsJ8baeff5VAxgrc6+yyRIZNFgWrCRDVEnP613XNFpUIcKzuXme7BhCVeaY5ynLaQUtU6lcUw==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
@@ -358,12 +358,12 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@~2.41.1":
-  version "2.41.1"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.1.tgz#060be37d988c11fd74b457c663811ad21e1b0e86"
-  integrity sha512-ysUaivwy8slX2B5jeFVV8pgwfzdDTPTHh5focqQJJCHhGBbNmzIkjXcRKehRrKypJe3xoDO75PhvoI/x67ELnQ==
+"@joystream/warthog@~2.41.2":
+  version "2.41.2"
+  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.2.tgz#6d3cf5c977320d1c77be518e848e011a9699b22d"
+  integrity sha512-1w6aT5P3xiI/HaTtqJrVj4Yp1/gxG8cGTeYgzlwr3iq8J11skwE4rLCHQucHfVueyBX49AaqWrhl+wI2ACqk4Q==
   dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
+    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz"
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
     "@types/caller" "^1.0.0"
@@ -1838,9 +1838,9 @@ camelcase@^5.0.0:
   integrity sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==
 
 camelcase@^6.2.1:
-  version "6.2.1"
-  resolved "https://registry.yarnpkg.com/camelcase/-/camelcase-6.2.1.tgz#250fd350cfd555d0d2160b1d51510eaf8326e86e"
-  integrity sha512-tVI4q5jjFV5CavAU8DXfza/TJcZutVKo/5Foskmsqcm0MsL91moHvwiGNnqaa2o6PF/7yT5ikDRcVcl8Rj6LCA==
+  version "6.3.0"
+  resolved "https://registry.yarnpkg.com/camelcase/-/camelcase-6.3.0.tgz#5685b95eb209ac9c0c177467778c9c84df58ba9a"
+  integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 camelize@^1.0.0:
   version "1.0.0"
@@ -5355,11 +5355,11 @@ rxjs@^6.3.3, rxjs@^6.5.1:
     tslib "^1.9.0"
 
 rxjs@^7.3.0:
-  version "7.4.0"
-  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.4.0.tgz#a12a44d7eebf016f5ff2441b87f28c9a51cebc68"
-  integrity sha512-7SQDi7xeTMCJpqViXh8gL/lebcwlp3d831F05+9B44A4B0WfsEwUQHR64gsH1kvJ+Ep/J9K2+n1hVl1CsGN23w==
+  version "7.5.1"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.5.1.tgz#af73df343cbcab37628197f43ea0c8256f54b157"
+  integrity sha512-KExVEeZWxMZnZhUZtsJcFwz8IvPvgu4G2Z2QyqjZQzUGr32KDYuSxrEYO4w3tFFNbfLozcrKUTvTPi+E9ywJkQ==
   dependencies:
-    tslib "~2.1.0"
+    tslib "^2.1.0"
 
 safe-buffer@5.1.2, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.2"
@@ -5921,11 +5921,6 @@ tslib@^2.0.0, tslib@^2.1.0, tslib@~2.3.0:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.3.1.tgz#e8a335add5ceae51aa261d32a490158ef042ef01"
   integrity sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==
-
-tslib@~2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.1.0.tgz#da60860f1c2ecaa5703ab7d39bc05b6bf988b97a"
-  integrity sha512-hcVC3wYEziELGGmEEXue7D75zbwIIVUMWAVbHItGPx0ziyXxrOMQx4rQEVEV45Ut/1IotuEvwqPopzIOkDMf0A==
 
 tunnel-agent@^0.6.0:
   version "0.6.0"
