@@ -184,6 +184,15 @@ impl CreateStorageBucketFixture {
             None
         }
     }
+
+    pub fn create_several(&self, bucket_number: u64) -> BTreeSet<u64> {
+        let mut bucket_ids = BTreeSet::new();
+        for _ in 0..bucket_number {
+            let bucket_id = self.call_and_assert(Ok(())).unwrap();
+            bucket_ids.insert(bucket_id);
+        }
+        bucket_ids
+    }
 }
 
 pub struct AcceptStorageBucketInvitationFixture {

@@ -5150,8 +5150,7 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         let starting_block = 1;
         run_to_block(starting_block);
 
-        // set limit size 100 and limit obj number 20
-        set_max_voucher_limits_with_params(100, 20);
+        set_max_voucher_limits();
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
@@ -5220,7 +5219,7 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         run_to_block(starting_block);
 
         // set limit size 100 and limit obj number 20
-        set_max_voucher_limits_with_params(100, 20);
+        set_max_voucher_limits();
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
@@ -5287,8 +5286,7 @@ fn create_dynamic_bag_with_objects_fails_with_insufficient_balance() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        // set limit size 100 and limit obj number 20
-        set_max_voucher_limits_with_params(100, 20);
+        set_max_voucher_limits();
         // create 3 buckets with size limit 10 and objects limit 3
         create_storage_buckets_with_limits(3, 10, 3);
 
@@ -5381,7 +5379,7 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
 }
 
 #[test]
-fn cannot_delete_dynamic_bags_with_objects_with_sufficient_treasury_balance() {
+fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
