@@ -5225,3 +5225,23 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
             .call_and_assert(Err(Error::<Test>::MaxDataObjectSizeExceeded.into()));
     })
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let objects: Vec<DataObjectCreationParameters> = (1..2)
+            .map(|idx| DataObjectCreationParameters {
+                size: DEFAULT_STORAGE_BUCKET_SIZE_LIMIT + 1,
+                ipfs_content_id: vec![idx],
+            })
+            .collect();
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_objects(objects)
+            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+    })
+}
