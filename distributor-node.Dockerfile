@@ -12,7 +12,7 @@ COPY ./package.json package.json
 EXPOSE 3334
 
 # Build & cleanup
-# (must be inside a signle "RUN", see: https://stackoverflow.com/questions/40212836/docker-image-larger-than-its-filesystem)
+# (must be inside a single "RUN", see: https://stackoverflow.com/questions/40212836/docker-image-larger-than-its-filesystem)
 RUN \
   yarn --frozen-lockfile &&\
   yarn workspace @joystream/types build &&\
@@ -21,8 +21,6 @@ RUN \
   find . -name "node_modules" -type d -prune &&\
   yarn --frozen-lockfile --production &&\
   yarn cache clean
-
-ENV CONFIG_PATH ./distributor-node/config/docker/config.docker.yml
 
 ENTRYPOINT ["yarn", "joystream-distributor"]
 CMD ["start"]

@@ -102,7 +102,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, 
   Text: (content) => [
     new ParsedParam(
       'Content',
-      <ReactMarkdown className='TextProposalContent' source={content.toString()} linkTarget='_blank' />,
+      <ReactMarkdown className='TextProposalContent' source={bytesToString(content)} linkTarget='_blank' />,
       true
     )
   ],

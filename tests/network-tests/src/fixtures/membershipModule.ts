@@ -33,6 +33,8 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
 
     this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
 
+    // Note: Member alias is dervied from the account so if it is not unique the member registration
+    // will fail with HandleAlreadyRegistered error
     this.memberIds = (
       await Promise.all(
         this.accounts.map((account) =>
@@ -46,6 +48,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
     this.debug(`Registered ${this.memberIds.length} new members`)
 
     assert.equal(this.memberIds.length, this.accounts.length)
+    // log the member id and corresponding key id
   }
 }
 
@@ -60,10 +63,16 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
-    // Assertions
-    const membership = await this.api.getMemberIds(this.account)
+    let memberId
+    try {
+      memberId = await this.api.getMemberId(this.account)
+    } catch (err) {
+      // member id not found
+    }
 
-    assert(membership.length === 0, 'Account must not be associated with a member')
+    if (memberId) {
+      throw new Error('Account must not be associated with a member')
+    }
 
     // Fee estimation and transfer
     const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
