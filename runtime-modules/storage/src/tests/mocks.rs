@@ -76,6 +76,8 @@ pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 pub const INITIAL_BALANCE: u64 = 10_000;
 pub const BAG_DELETION_PRIZE_VALUE: u64 = 100;
+pub const VOUCHER_SIZE_LIMIT: u64 = 100;
+pub const VOUCHER_OBJECTS_LIMIT: u64 = 1;
 
 impl crate::Trait for Test {
     type Event = TestEvent;

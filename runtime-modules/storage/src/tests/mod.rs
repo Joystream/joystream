@@ -29,7 +29,7 @@ use mocks::{
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE,
-    STORAGE_WG_LEADER_ACCOUNT_ID,
+    STORAGE_WG_LEADER_ACCOUNT_ID, VOUCHER_OBJECTS_LIMIT, VOUCHER_SIZE_LIMIT,
 };
 
 use fixtures::*;
@@ -3050,10 +3050,7 @@ fn set_storage_bucket_voucher_limits_fails_with_invalid_storage_bucket() {
 }
 
 fn set_max_voucher_limits() {
-    let new_size_limit = 100;
-    let new_objects_limit = 1;
-
-    set_max_voucher_limits_with_params(new_size_limit, new_objects_limit);
+    set_max_voucher_limits_with_params(VOUCHER_SIZE_LIMIT, VOUCHER_OBJECTS_LIMIT);
 }
 
 fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
@@ -5285,7 +5282,7 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
 }
 
 #[test]
-fn create_dynamic_bag_with_objects_fails_with_unsufficient_balance() {
+fn create_dynamic_bag_with_objects_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5443,10 +5440,11 @@ fn default_bag_deletion_prize() -> Option<DynamicBagDeletionPrize<Test>> {
 }
 
 fn default_upload_parameters() -> UploadParameters<Test> {
-    let upload_parameters = UploadParameters::<Test> {
+    let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+    UploadParameters::<Test> {
         bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
         object_creation_list: create_single_data_object(),
         deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
         expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-    };
+    }
 }
