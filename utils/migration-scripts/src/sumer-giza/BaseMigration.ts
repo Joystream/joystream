@@ -8,6 +8,7 @@ import path from 'path'
 import nodeCleanup from 'node-cleanup'
 import _ from 'lodash'
 import fs from 'fs'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 export type MigrationResult = {
   idsMap: Map<number, number>
@@ -63,7 +64,7 @@ export abstract class BaseMigration {
 
   public abstract run(): Promise<MigrationResult>
 
-  protected abstract migrateBatch(batch: { id: string }[]): Promise<void>
+  protected abstract migrateBatch(batchTx: SubmittableExtrinsic<'promise'>, batch: { id: string }[]): Promise<void>
 
   protected getMigrationStateJson(): MigrationStateJson {
     return {
@@ -87,19 +88,19 @@ export abstract class BaseMigration {
     if (signal && this.pendingMigrationIteration) {
       this.logger.info('Waiting for currently pending migration iteration to finalize...')
       this.pendingMigrationIteration.then(() => {
-        this.saveMigrationState()
+        this.saveMigrationState(true)
         this.logger.info('Done.')
         process.kill(process.pid, signal)
       })
       return false
     } else {
-      this.saveMigrationState()
+      this.saveMigrationState(true)
       this.logger.info('Done.')
     }
   }
 
-  protected saveMigrationState(): void {
-    this.logger.info('Saving migration state...')
+  protected saveMigrationState(isExitting: boolean): void {
+    this.logger.info(`Saving ${isExitting ? 'final' : 'intermediate'} migration state...`)
     const stateFilePath = this.getMigrationStateFilePath()
     const migrationState = this.getMigrationStateJson()
     fs.writeFileSync(stateFilePath, JSON.stringify(migrationState, undefined, 2))
@@ -115,8 +116,14 @@ export abstract class BaseMigration {
     }
   }
 
-  protected async executeBatchMigration<T extends { id: string }>(batch: T[]): Promise<void> {
-    this.pendingMigrationIteration = this.migrateBatch(batch)
+  protected async executeBatchMigration<T extends { id: string }>(
+    batchTx: SubmittableExtrinsic<'promise'>,
+    batch: T[]
+  ): Promise<void> {
+    this.pendingMigrationIteration = (async () => {
+      await this.migrateBatch(batchTx, batch)
+      this.saveMigrationState(false)
+    })()
     await this.pendingMigrationIteration
     this.pendingMigrationIteration = undefined
   }

@@ -10,6 +10,7 @@ import _ from 'lodash'
 import { MigrationResult } from './BaseMigration'
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 export type ChannelsMigrationConfig = AssetsMigrationConfig & {
   channelIds: number[]
@@ -52,10 +53,9 @@ export class ChannelMigration extends AssetsMigration {
     return ownerMember
   }
 
-  protected async migrateBatch(channels: ChannelFieldsFragment[]): Promise<void> {
+  protected async migrateBatch(tx: SubmittableExtrinsic<'promise'>, channels: ChannelFieldsFragment[]): Promise<void> {
     const { api } = this
-    const txs = _.flatten(await Promise.all(channels.map((c) => this.prepareChannel(c))))
-    const result = await api.sendExtrinsic(this.sudo, api.tx.utility.batch(txs))
+    const result = await api.sendExtrinsic(this.sudo, tx)
     const channelCreatedEvents = api.findEvents(result, 'content', 'ChannelCreated')
     const newChannelIds: ChannelId[] = channelCreatedEvents.map((e) => e.data[1])
     if (channelCreatedEvents.length !== channels.length) {
@@ -81,6 +81,7 @@ export class ChannelMigration extends AssetsMigration {
   public async run(): Promise<ChannelsMigrationResult> {
     await this.init()
     const {
+      api,
       config: { channelIds, channelBatchSize },
     } = this
     const ids = channelIds.sort((a, b) => a - b)
@@ -106,7 +107,9 @@ export class ChannelMigration extends AssetsMigration {
         )
       }
       if (channelsToMigrate.length) {
-        await this.executeBatchMigration(channelsToMigrate)
+        const calls = _.flatten(await Promise.all(channelsToMigrate.map((c) => this.prepareChannel(c))))
+        const batchTx = api.tx.utility.batch(calls)
+        await this.executeBatchMigration(batchTx, channelsToMigrate)
         await this.assetsManager.processQueuedUploads()
       }
       const videoIdsToMigrate: number[] = channelsBatch.reduce<number[]>(

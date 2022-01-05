@@ -27,9 +27,9 @@ export abstract class AssetsMigration extends BaseMigration {
 
   public abstract run(): Promise<MigrationResult>
 
-  protected saveMigrationState(): void {
-    super.saveMigrationState()
-    if (this.assetsManager.queueSize) {
+  protected saveMigrationState(isExitting: boolean): void {
+    super.saveMigrationState(isExitting)
+    if (isExitting && this.assetsManager.queueSize) {
       const failedUploadsFilePath = this.getMigrationStateFilePath().replace(
         '.json',
         `FailedUploads_${Date.now()}.json`

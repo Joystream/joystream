@@ -10,6 +10,7 @@ import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from '.
 import { MigrationResult } from './BaseMigration'
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 export type VideosMigrationConfig = AssetsMigrationConfig & {
   videoBatchSize: number
@@ -47,10 +48,9 @@ export class VideosMigration extends AssetsMigration {
     return newChannelId
   }
 
-  protected async migrateBatch(videos: VideoFieldsFragment[]): Promise<void> {
+  protected async migrateBatch(tx: SubmittableExtrinsic<'promise'>, videos: VideoFieldsFragment[]): Promise<void> {
     const { api } = this
-    const txs = _.flatten(await Promise.all(videos.map((v) => this.prepareVideo(v))))
-    const result = await api.sendExtrinsic(this.sudo, api.tx.utility.batch(txs))
+    const result = await api.sendExtrinsic(this.sudo, tx)
     const videoCreatedEvents = api.findEvents(result, 'content', 'VideoCreated')
     const newVideoIds: VideoId[] = videoCreatedEvents.map((e) => e.data[2])
     if (videoCreatedEvents.length !== videos.length) {
@@ -76,6 +76,7 @@ export class VideosMigration extends AssetsMigration {
   public async run(): Promise<MigrationResult> {
     await this.init()
     const {
+      api,
       videoIds,
       config: { videoBatchSize },
     } = this
@@ -101,7 +102,9 @@ export class VideosMigration extends AssetsMigration {
           )}`
         )
       }
-      await this.executeBatchMigration(videosBatch)
+      const calls = _.flatten(await Promise.all(videosBatch.map((v) => this.prepareVideo(v))))
+      const batchTx = api.tx.utility.batch(calls)
+      await this.executeBatchMigration(batchTx, videosBatch)
       await this.assetsManager.processQueuedUploads()
     }
     return this.getResult()
