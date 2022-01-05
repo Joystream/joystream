@@ -5364,23 +5364,8 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
         run_to_block(starting_block);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
-
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-
-        let deletion_prize = Some(DynamicBagDeletionPrize::<Test> {
-            prize: BAG_DELETION_PRIZE_VALUE,
-            account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-        });
-
-        let upload_parameters = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::from(dynamic_bag_id.clone()),
-            object_creation_list: create_single_data_object(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-        };
-
         // pre-check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
@@ -5393,11 +5378,10 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
 
         CreateDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize.clone())
-            .with_objects(upload_parameters)
+            .with_deletion_prize(default_bag_deletion_prize())
+            .with_objects(default_upload_parameters())
             .call_and_assert(Ok(()));
 
-        // Corrupt module balance enough so that it doesn't reach sufficient balance for deletion
         let _ = Balances::slash(
             &<StorageTreasury<Test>>::module_account_id(),
             BAG_DELETION_PRIZE_VALUE,
