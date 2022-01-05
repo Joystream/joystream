@@ -5104,7 +5104,7 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
         CreateDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(deletion_prize.clone())
-            .with_objects(upload_parameters)
+            .with_upload_parameters(upload_parameters)
             .call_and_assert(Ok(()));
 
         CanDeleteDynamicBagWithObjectsFixture::default()
@@ -5135,7 +5135,7 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
         CreateDynamicBagWithObjectsFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(default_bag_deletion_prize())
-            .with_objects(default_upload_parameters())
+            .with_upload_parameters(default_upload_parameters())
             .call_and_assert(Ok(()));
 
         let _ = Balances::slash(

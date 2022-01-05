@@ -1169,6 +1169,53 @@ impl CreateDynamicBagWithObjectsFixture {
         }
     }
 
+    pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                expected_data_size_fee,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_params_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                bag_id,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_objects(self, object_creation_list: Vec<DataObjectCreationParameters>) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                object_creation_list,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_upload_parameters(self, upload_parameters: UploadParameters<Test>) -> Self {
+        Self {
+            upload_parameters,
+            ..self
+        }
+    }
+
+    pub fn with_objects_prize_source_account(self, deletion_prize_source_account_id: u64) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                deletion_prize_source_account_id,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
     pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
         Self { bag_id, ..self }
     }
@@ -1179,13 +1226,6 @@ impl CreateDynamicBagWithObjectsFixture {
     ) -> Self {
         Self {
             deletion_prize: deletion_prize,
-            ..self
-        }
-    }
-
-    pub fn with_objects(self, upload_parameters: UploadParameters<Test>) -> Self {
-        Self {
-            upload_parameters,
             ..self
         }
     }
