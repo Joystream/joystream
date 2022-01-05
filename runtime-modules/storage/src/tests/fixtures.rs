@@ -9,7 +9,6 @@ use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
-    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 

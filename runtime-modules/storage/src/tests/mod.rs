@@ -3103,7 +3103,7 @@ fn create_dynamic_bag_succeeded() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        let bucket_ids = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -3407,28 +3407,6 @@ fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
         .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
         .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
         .create_several(buckets_number)
-}
-
-fn create_storage_buckets_with_limits(
-    buckets_number: u64,
-    size_limit: u64,
-    objects_limit: u64,
-) -> BTreeSet<u64> {
-    let mut bucket_ids = BTreeSet::new();
-
-    for _ in 0..buckets_number {
-        let bucket_id = CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(None)
-            .with_objects_limit(objects_limit)
-            .with_size_limit(size_limit)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        bucket_ids.insert(bucket_id);
-    }
-
-    bucket_ids
 }
 
 #[test]
@@ -5152,12 +5130,13 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         let starting_block = 1;
         run_to_block(starting_block);
 
-        set_max_voucher_limits();
-
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        // create 10 buckets each with size limit 10 and num object limit 1
-        create_storage_buckets_with_limits(10, 10, 1);
+        set_max_voucher_limits();
+        CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
+            .create_several(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -5220,13 +5199,13 @@ fn create_dynamic_bag_with_objects_fails_with_no_bucket_availables_with_sufficie
         let starting_block = 1;
         run_to_block(starting_block);
 
-        // set limit size 100 and limit obj number 20
-        set_max_voucher_limits();
-
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        // create 10 buckets each with size limit 1 and num object limit 10
-        create_storage_buckets_with_limits(10, 1, 10);
+        set_max_voucher_limits();
+        CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
+            .create_several(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -5288,9 +5267,7 @@ fn create_dynamic_bag_with_objects_fails_with_insufficient_balance() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        set_max_voucher_limits();
-        // create 3 buckets with size limit 10 and objects limit 3
-        create_storage_buckets_with_limits(3, 10, 3);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
