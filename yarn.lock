@@ -98,9 +98,9 @@
   dependencies:
     xss "^1.0.8"
 
-"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz":
-  version "1.7.27"
-  resolved "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz#f29765a3a182204bf2bb166a3ed10c7273637af9"
+"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz":
+  version "1.7.28"
+  resolved "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz#24c9c54e14ae0ba13c894738b4b87301f5801b26"
   dependencies:
     "@types/lru-cache" "^4.1.1"
     apollo-link "^1.2.13"
@@ -3110,12 +3110,12 @@
     lodash "^4.17.15"
     moment "^2.24.0"
 
-"@joystream/warthog@2.41.1", "@joystream/warthog@~2.41.2":
-  version "2.41.1"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.1.tgz#060be37d988c11fd74b457c663811ad21e1b0e86"
-  integrity sha512-ysUaivwy8slX2B5jeFVV8pgwfzdDTPTHh5focqQJJCHhGBbNmzIkjXcRKehRrKypJe3xoDO75PhvoI/x67ELnQ==
+"@joystream/warthog@2.41.2", "@joystream/warthog@~2.41.2":
+  version "2.41.2"
+  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.2.tgz#6d3cf5c977320d1c77be518e848e011a9699b22d"
+  integrity sha512-1w6aT5P3xiI/HaTtqJrVj4Yp1/gxG8cGTeYgzlwr3iq8J11skwE4rLCHQucHfVueyBX49AaqWrhl+wI2ACqk4Q==
   dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
+    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz"
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
     "@types/caller" "^1.0.0"
