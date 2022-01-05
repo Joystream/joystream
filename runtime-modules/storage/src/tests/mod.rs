@@ -22,7 +22,7 @@ use crate::{
 };
 
 use mocks::{
-    build_test_externalities, Balances, DataObjectDeletionPrize,
+    build_test_externalities, Balances, BlacklistSizeLimit, DataObjectDeletionPrize,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
     MaxRandomIterationNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
@@ -5361,6 +5361,37 @@ fn unsuccessful_dyn_bag_creation_with_upload_blocking() {
 
         CreateDynamicBagWithObjectsFixture::default()
             .call_and_assert(Err(Error::<Test>::UploadingBlocked.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_blacklisted_ipfs_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let objects: Vec<DataObjectCreationParameters> = (0..BlacklistSizeLimit::get())
+            .map(|idx| DataObjectCreationParameters {
+                size: DEFAULT_DATA_OBJECTS_SIZE,
+                ipfs_content_id: vec![idx.try_into().unwrap()],
+            })
+            .collect();
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(
+                objects
+                    .iter()
+                    .map(|obj| obj.ipfs_content_id.clone())
+                    .collect(),
+            )
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_objects(objects)
+            .call_and_assert(Err(Error::<Test>::DataObjectBlacklisted.into()));
     })
 }
 
