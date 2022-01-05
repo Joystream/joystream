@@ -5205,3 +5205,23 @@ fn unsuccessful_dyn_bag_creation_with_zero_objects_size() {
             .call_and_assert(Err(Error::<Test>::ZeroObjectSize.into()));
     })
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let objects: Vec<DataObjectCreationParameters> = (1..DEFAULT_DATA_OBJECTS_NUMBER)
+            .into_iter()
+            .map(|idx| DataObjectCreationParameters {
+                // set size high on purpose to trigger error
+                size: 1_000_000,
+                ipfs_content_id: vec![idx],
+            })
+            .collect();
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_objects(objects)
+            .call_and_assert(Err(Error::<Test>::MaxDataObjectSizeExceeded.into()));
+    })
+}
