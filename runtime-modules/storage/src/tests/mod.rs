@@ -10,6 +10,7 @@ use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::{repeat, FromIterator};
+use std::convert::TryInto;
 
 use common::working_group::WorkingGroup;
 
@@ -5154,6 +5155,9 @@ fn unsuccessful_dyn_bag_creation_with_existing_bag_id() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id)
@@ -5169,6 +5173,8 @@ fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize_and_upl
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
         CreateDynamicBagWithObjectsFixture::default()
             .with_deletion_prize(default_bag_deletion_prize())
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
@@ -5179,6 +5185,9 @@ fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize_and_upl
 fn unsuccessful_dyn_bag_creation_with_different_accounts_for_prize_and_params() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         CreateDynamicBagWithObjectsFixture::default()
             .with_deletion_prize(default_bag_deletion_prize())
@@ -5192,11 +5201,14 @@ fn unsuccessful_dyn_bag_creation_with_zero_objects_size() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
         let objects: Vec<DataObjectCreationParameters> = (1..DEFAULT_DATA_OBJECTS_NUMBER)
             .into_iter()
             .map(|idx| DataObjectCreationParameters {
                 size: 0,
-                ipfs_content_id: vec![idx],
+                ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
 
@@ -5211,12 +5223,15 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
         let objects: Vec<DataObjectCreationParameters> = (1..DEFAULT_DATA_OBJECTS_NUMBER)
             .into_iter()
             .map(|idx| DataObjectCreationParameters {
                 // set size high on purpose to trigger error
                 size: 1_000_000,
-                ipfs_content_id: vec![idx],
+                ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
 
@@ -5231,6 +5246,7 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let objects: Vec<DataObjectCreationParameters> = (1..2)
@@ -5243,5 +5259,17 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
         CreateDynamicBagWithObjectsFixture::default()
             .with_objects(objects)
             .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+    })
+}
+
+#[test]
+fn successful_dyn_bag_creation_with_upload_and_no_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateDynamicBagWithObjectsFixture::default().call_and_assert(Ok(()));
     })
 }
