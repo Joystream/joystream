@@ -27,9 +27,11 @@ use mocks::{
     MaxRandomIterationNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
     ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
-    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE,
-    STORAGE_WG_LEADER_ACCOUNT_ID, VOUCHER_OBJECTS_LIMIT, VOUCHER_SIZE_LIMIT,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, STORAGE_WG_LEADER_ACCOUNT_ID,
+    VOUCHER_OBJECTS_LIMIT, VOUCHER_SIZE_LIMIT,
 };
 
 use fixtures::*;
@@ -3101,7 +3103,7 @@ fn create_dynamic_bag_succeeded() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        create_storage_buckets(10);
+        let bucket_ids = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -3400,11 +3402,11 @@ fn test_storage_bucket_iterators() {
 
 fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
     set_max_voucher_limits();
-
-    let objects_limit = 1;
-    let size_limit = 100;
-
-    create_storage_buckets_with_limits(buckets_number, size_limit, objects_limit)
+    CreateStorageBucketFixture::default()
+        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+        .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
+        .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
+        .create_several(buckets_number)
 }
 
 fn create_storage_buckets_with_limits(
@@ -5073,7 +5075,7 @@ fn create_dynamic_bag_with_objects_succeeds() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        create_storage_buckets(10);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -5337,7 +5339,7 @@ fn can_delete_dynamic_bags_with_objects_succeeded() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        create_storage_buckets(10);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -5386,7 +5388,7 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        create_storage_buckets(10);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 

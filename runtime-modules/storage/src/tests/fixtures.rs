@@ -9,6 +9,7 @@ use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
@@ -183,15 +184,6 @@ impl CreateStorageBucketFixture {
 
             None
         }
-    }
-
-    pub fn create_several(&self, bucket_number: u64) -> BTreeSet<u64> {
-        let mut bucket_ids = BTreeSet::new();
-        for _ in 0..bucket_number {
-            let bucket_id = self.call_and_assert(Ok(())).unwrap();
-            bucket_ids.insert(bucket_id);
-        }
-        bucket_ids
     }
 }
 
@@ -2099,5 +2091,17 @@ impl SetDistributionBucketFamilyMetadataFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+// helper methods
+impl CreateStorageBucketFixture {
+    pub fn create_several(&self, bucket_number: u64) -> BTreeSet<u64> {
+        let mut bucket_ids = BTreeSet::new();
+        for _ in 0..bucket_number {
+            let bucket_id = self.call_and_assert(Ok(())).unwrap();
+            bucket_ids.insert(bucket_id);
+        }
+        bucket_ids
     }
 }
