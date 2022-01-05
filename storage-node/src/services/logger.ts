@@ -3,6 +3,8 @@ import ecsformat from '@elastic/ecs-winston-format'
 import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
+import 'winston-daily-rotate-file'
+import path from 'path'
 
 /**
  * Possible log levels.
@@ -83,76 +85,57 @@ const proxy = new Proxy(InnerLogger, {
 export default proxy
 
 /**
- * Creates Express-Winston logger handler.
- * @param logSource - source tag for log entries.
- * @param elasticSearchEndpoint - elastic search engine endpoint (optional).
- * @returns  Express-Winston logger handler
+ * Creates Express-Winston default logger options.
  *
  */
-export function httpLogger(logSource: string, elasticSearchEndpoint?: string): Handler {
-  // ElasticSearch server date format.
-  const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
-
-  const transports: winston.transport[] = [
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.timestamp({ format: elasticDateFormat }), winston.format.json()),
-    }),
-  ]
-
-  if (elasticSearchEndpoint) {
-    const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
-    transports.push(esTransport)
+export function createExpressDefaultLoggerOptions(): expressWinston.LoggerOptions {
+  return {
+    winstonInstance: proxy,
+    level: 'http',
   }
+}
 
-  const opts: expressWinston.LoggerOptions = {
-    transports,
-    meta: true,
-    msg: 'HTTP {{req.method}} {{req.url}}',
-    expressFormat: true,
-    colorize: false,
+/**
+ * Creates Express-Winston error logger options.
+ *
+ */
+export function createExpressErrorLoggerOptions(): expressWinston.LoggerOptions {
+  return {
+    winstonInstance: proxy,
+    level: 'error',
+    msg: '{{req.method}} {{req.path}}: Error {{res.statusCode}}: {{err.message}}',
   }
-
-  return expressWinston.logger(opts)
 }
 
 /**
  * Creates Express-Winston error logger.
  *
+ * @param options - express winston logger options.
  * @returns  Express-Winston error logger
  *
  */
-export function errorLogger(): ErrorRequestHandler {
-  return expressWinston.errorLogger({
-    transports: [new winston.transports.Console()],
-    format: winston.format.combine(winston.format.json()),
-  })
+export function errorLogger(options: expressWinston.LoggerOptions): ErrorRequestHandler {
+  return expressWinston.errorLogger(options)
 }
 
 /**
- * Creates clean Console Winston logger for standard output.
+ * Creates Express-Winston logger handler.
  *
- * @returns Winston logger
+ * @param options - express winston logger options.
+ * @returns  Express-Winston logger handler
  *
  */
-export function createStdConsoleLogger(): winston.Logger {
-  const format = winston.format.printf((info) => `${info.message}`)
-
-  const transports = [new winston.transports.Console()]
-
-  return winston.createLogger({
-    levels,
-    format,
-    transports,
-  })
+export function httpLogger(options: expressWinston.LoggerOptions): Handler {
+  return expressWinston.logger(options)
 }
+
 /**
- * Creates Winston logger with Elastic search.
- * @param logSource - source tag for log entries.
- * @param elasticSearchEndpoint - elastic search engine endpoint.
+ * Creates Winston logger with ElasticSearch and File transports.
+ * @param customOptions - logger options
  * @returns Winston logger
  *
  */
-function createElasticLogger(logSource: string, elasticSearchEndpoint: string): winston.Logger {
+function createCustomLogger(customOptions: LogConfig): winston.Logger {
   const loggerOptions = createDefaultLoggerOptions()
 
   // Transports
@@ -161,8 +144,19 @@ function createElasticLogger(logSource: string, elasticSearchEndpoint: string): 
     transports = Array.isArray(loggerOptions.transports) ? loggerOptions.transports : [loggerOptions.transports]
   }
 
-  const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
-  transports.push(esTransport)
+  if (customOptions.elasticSearchEndpoint) {
+    transports.push(createElasticTransport(customOptions.elasticSearchlogSource, customOptions.elasticSearchEndpoint))
+  }
+  if (customOptions.filePath) {
+    transports.push(
+      createFileTransport(
+        customOptions.filePath,
+        customOptions.fileFrequency,
+        customOptions.maxFileNumber,
+        customOptions.maxFileSize
+      )
+    )
+  }
 
   // Logger
   const logger = winston.createLogger(loggerOptions)
@@ -180,11 +174,10 @@ function createElasticLogger(logSource: string, elasticSearchEndpoint: string): 
 /**
  * Updates the default system logger with elastic search capabilities.
  *
- * @param logSource - source tag for log entries.
- * @param elasticSearchEndpoint - elastic search engine endpoint.
+ * @param customOptions - logger options
  */
-export function initElasticLogger(logSource: string, elasticSearchEndpoint: string): void {
-  InnerLogger = createElasticLogger(logSource, elasticSearchEndpoint)
+export function initNewLogger(options: LogConfig): void {
+  InnerLogger = createCustomLogger(options)
 }
 
 /**
@@ -210,6 +203,67 @@ function createElasticTransport(logSource: string, elasticSearchEndpoint: string
     index: 'storage-node',
     format: ecsformat(),
     source: logSource,
+    retryLimit: 10,
   }
   return new ElasticsearchTransport(esTransportOpts)
+}
+
+/**
+ * Creates winston logger file transport.
+ *
+ * @param fileName - log file path
+ * @param fileFrequency - file frequence (daily,montly, etc.)
+ * @param maxFiles - maximum number of the log files
+ * @param maxSize - maximum log file size
+ * @returns winston file transport
+ */
+function createFileTransport(
+  filepath: string,
+  fileFrequency: Frequency,
+  maxFiles: number,
+  maxSize: number
+): winston.transport {
+  const options = {
+    filename: path.join(filepath, 'colossus-%DATE%.log'),
+    datePattern: DatePatternByFrequency[fileFrequency || 'daily'],
+    maxSize,
+    maxFiles,
+    level: 'debug',
+    format: ecsformat(),
+  }
+
+  return new winston.transports.DailyRotateFile(options)
+}
+
+export const DatePatternByFrequency = {
+  yearly: 'YYYY',
+  monthly: 'YYYY-MM',
+  daily: 'YYYY-MM-DD',
+  hourly: 'YYYY-MM-DD-HH',
+}
+
+/** File frequency for  */
+export type Frequency = keyof typeof DatePatternByFrequency
+
+/**
+ * Configuration for the ElasticSearch and File loggers
+ */
+export type LogConfig = {
+  /** Path to log files */
+  filePath?: string
+
+  /** Maximum log file size */
+  maxFileSize: number
+
+  /** Maximum number of the log files */
+  maxFileNumber: number
+
+  /** Log files update frequency (yearly, monthly, daily, hourly) */
+  fileFrequency: Frequency
+
+  /** Source tag for log entries. */
+  elasticSearchlogSource: string
+
+  /** Elastic search engine endpoint */
+  elasticSearchEndpoint?: string
 }

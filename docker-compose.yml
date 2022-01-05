@@ -29,6 +29,7 @@ services:
     volumes:
       - /data
       - /keystore
+      - /logs
     ports:
       - '127.0.0.1:3333:3333'
     env_file:
