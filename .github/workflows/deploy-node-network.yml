@@ -14,7 +14,7 @@ on:
       keyName:
         description: 'SSH key pair on AWS'
         required: false
-        default: 'joystream-github-action-key'
+        default: 'anuj-key'
       numberOfValidators:
         description: 'Number of validators to deploy'
         required: false
@@ -22,7 +22,7 @@ on:
       validatorInstanceType:
         description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
         required: false
-        default: 't2.micro'
+        default: 't2.large'
       buildInstanceType:
         description: 'AWS EC2 instance type for Build Instance (t2.micro, t2.large)'
         required: false
@@ -30,11 +30,15 @@ on:
       rpcInstanceType:
         description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
         required: false
-        default: 't2.micro'
+        default: 't2.large'
       ec2AMI:
-        description: 'Pre-built AMI ID'
+        description: 'Pre-built AMI ID (ami-0090c9c49dc765fbb)'
         required: false
-        default: 'ami-0090c9c49dc765fbb'
+        default: ''
+      networkSuffix:
+        description: 'Network suffix that will be added to the network name'
+        required: false
+        default: '8129'
 
 defaults:
   run:
@@ -60,12 +64,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # - name: Run deploy-infra
-      #   run: |
-      #     echo "Running deploy-infra"
-      #     cp deploy-infra.sample.cfg deploy-infra.cfg
-      #     echo EC2_AMI_ID="ami-0090c9c49dc765fbb" >> deploy-infra.cfg
-
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         id: deploy_stack
@@ -81,33 +79,82 @@ jobs:
             EC2AMI=${{ github.event.inputs.ec2AMI }},
             NumberOfValidators=${{ github.event.inputs.numberOfValidators }}
 
-      - name: Prepare inventory
+      - name: Prepare inventory for Ansible
         run: |
-          echo -e "[build]\n${{ steps.deploy_stack.outputs.PublicIp }}\n" > inventory
-          echo -e "[validators]\n$VALIDATORS\n" > inventory
-          echo -e "[rpc]\n$RPC_NODES" > inventory
+          ASG=${{ steps.deploy_stack.outputs.AutoScalingId }}
+
+          VALIDATORS=""
+
+          INSTANCES=$(aws autoscaling describe-auto-scaling-instances \
+            --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
+
+          for ID in $INSTANCES
+          do
+            IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --output text)
+            VALIDATORS+="$IP\n"
+          done
+
+          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n" >> inventory
+          echo -e "[validators]\n$VALIDATORS" >> inventory
+          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
           cat inventory
 
-      # - name: Run playbook
-      #   uses: dawidd6/action-ansible-playbook@v2
-      #   with:
-      #     playbook: deploy-playground-playbook.yml
-      #     directory: devops/aws
-      #     requirements: requirements.yml
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     inventory: |
-      #       [all]
-      #       ${{ steps.deploy_stack.outputs.PublicIp }}
-      #     options: |
-      #       --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
-      #                     branch_name=${{ github.event.inputs.branchName }}"
+      - name: Run playbook to compile joystream-node on build server
+        uses: dawidd6/action-ansible-playbook@v2
+        if: github.event.inputs.ec2AMI == ''
+        with:
+          playbook: build-code.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "branch_name=${{ github.event.inputs.branchName }} \
+                          git_repo=${{ github.event.inputs.gitRepo }} data_path=mydata"
 
-      # # TODO: Remove only if any of the above steps fail
-      # - name: Delete CloudFormation Stack
-      #   if: always()
-      #   continue-on-error: true
-      #   run: |
-      #     echo "Deleting ${{ env.STACK_NAME }} stack"
-      #     aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
-      #     echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
-      #     aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
+      - name: Run playbook to install additional utils on build server
+        uses: dawidd6/action-ansible-playbook@v2
+        if: github.event.inputs.ec2AMI == ''
+        with:
+          playbook: setup-admin.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+
+      - name: Run playbook to configure chain-spec and pioneer
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: chain-spec-pioneer.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "network_suffix=${{ github.event.inputs.networkSuffix }} data_path=mydata \
+                          number_of_validators=${{ github.event.inputs.numberOfValidators }} \
+                          git_repo=${{ github.event.inputs.gitRepo }} deployment_type=live \
+                          bucket_name=${{ steps.deploy_stack.outputs.S3BucketName }} \
+                          branch_name=${{ github.event.inputs.branchName }}"
+
+      - name: Save the output as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: data-chainspec-auth
+          path: devops/aws/mydata
+
+      - name: Print output URL's
+        run: |
+          echo -e "Pioneer URL: https://${{ steps.deploy_stack.outputs.DomainName }}"
+          echo -e "RPC: https://${{ steps.deploy_stack.outputs.RPCPublicIp }}.nip.io/ws-rpc"
+
+      - name: Delete CloudFormation Stack if any step failed
+        if: failure()
+        run: |
+          echo "Empty the bucket"
+          aws s3 rm s3://${{ steps.deploy_stack.outputs.S3BucketName }} --recursive || echo "No bucket"
+          echo "Deleting ${{ env.STACK_NAME }} stack"
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}

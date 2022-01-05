@@ -212,22 +212,22 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
       Bucket: !Ref S3Bucket
 
-  # CloudFrontDistribution:
-  #   Type: AWS::CloudFront::Distribution
-  #   Properties:
-  #     DistributionConfig:
-  #       Origins:
-  #       - DomainName: !Select [1, !Split ["//", !GetAtt S3Bucket.WebsiteURL]]
-  #         Id: pioneer-origin-s3
-  #         CustomOriginConfig:
-  #           OriginProtocolPolicy: http-only
-  #       DefaultCacheBehavior:
-  #         TargetOriginId: pioneer-origin-s3
-  #         ViewerProtocolPolicy: redirect-to-https
-  #         ForwardedValues:
-  #           QueryString: true
-  #       Enabled: true
-  #       HttpVersion: http2
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Select [1, !Split ["//", !GetAtt S3Bucket.WebsiteURL]]
+          Id: pioneer-origin-s3
+          CustomOriginConfig:
+            OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: pioneer-origin-s3
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: true
+        Enabled: true
+        HttpVersion: http2
 
 Outputs:
   AutoScalingId:
