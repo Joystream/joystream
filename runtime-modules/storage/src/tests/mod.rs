@@ -5148,3 +5148,18 @@ fn cannot_delete_dynamic_bags_with_objects_with_insufficient_treasury_balance() 
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_existing_bag_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id)
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .call_and_assert(Err(Error::<Test>::DynamicBagExists.into()));
+    })
+}

@@ -13,7 +13,7 @@ use super::mocks::{
 };
 
 use crate::tests::mocks::{
-    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
@@ -1161,7 +1161,7 @@ pub struct CreateDynamicBagWithObjectsFixture {
 
 impl CreateDynamicBagWithObjectsFixture {
     pub fn default() -> Self {
-        let bag_id = DynamicBagId::<Test>::default();
+        let bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let sender_acc = DEFAULT_MEMBER_ACCOUNT_ID;
         Self {
             sender: sender_acc.clone(),
