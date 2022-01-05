@@ -5303,6 +5303,19 @@ fn unsuccessful_dyn_bag_creation_with_empty_ipfs_ids() {
             .call_and_assert(Err(Error::<Test>::EmptyContentId.into()));
     })
 }
+#[test]
+fn unsuccessful_dyn_bag_creation_with_empty_objects_list() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_objects(vec![])
+            .call_and_assert(Err(Error::<Test>::NoObjectsOnUpload.into()));
+    })
+}
 
 #[test]
 fn unsuccessful_dyn_bag_creation_with_dynamic_and_param_bag_differing() {
