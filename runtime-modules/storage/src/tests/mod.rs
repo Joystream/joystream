@@ -5174,3 +5174,15 @@ fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize_and_upl
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     })
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_different_accounts_for_prize_and_params() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_deletion_prize(default_bag_deletion_prize())
+            .with_objects_prize_source_account(DEFAULT_MEMBER_ACCOUNT_ID + 100)
+            .call_and_assert(Err(Error::<Test>::AccountsNotCoherent.into()));
+    })
+}
