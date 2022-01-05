@@ -103,6 +103,7 @@ export function createExpressErrorLoggerOptions(): expressWinston.LoggerOptions 
   return {
     winstonInstance: proxy,
     level: 'error',
+    msg: '{{req.method}} {{req.path}}: Error {{res.statusCode}}: {{err.message}}',
   }
 }
 
