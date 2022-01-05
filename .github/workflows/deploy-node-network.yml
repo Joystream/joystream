@@ -1,0 +1,113 @@
+name: Deploy node network
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRepo:
+        description: 'Code repository'
+        required: false
+        default: 'https://github.com/Joystream/joystream.git'
+      branchName:
+        description: 'Branch to deploy'
+        required: false
+        default: 'master'
+      keyName:
+        description: 'SSH key pair on AWS'
+        required: false
+        default: 'joystream-github-action-key'
+      numberOfValidators:
+        description: 'Number of validators to deploy'
+        required: false
+        default: '2'
+      validatorInstanceType:
+        description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
+        required: false
+        default: 't2.micro'
+      buildInstanceType:
+        description: 'AWS EC2 instance type for Build Instance (t2.micro, t2.large)'
+        required: false
+        default: 't2.xlarge'
+      rpcInstanceType:
+        description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
+        required: false
+        default: 't2.micro'
+      ec2AMI:
+        description: 'Pre-built AMI ID'
+        required: false
+        default: 'ami-0090c9c49dc765fbb'
+
+defaults:
+  run:
+    working-directory: devops/aws
+
+jobs:
+  deploy-node-network:
+    name: Create CloudFormation stack and run Ansible playbook
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: ga-node-network-${{ github.event.inputs.branchName }}-${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Ansible dependencies
+        run: pipx inject ansible-core boto3 botocore
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # - name: Run deploy-infra
+      #   run: |
+      #     echo "Running deploy-infra"
+      #     cp deploy-infra.sample.cfg deploy-infra.cfg
+      #     echo EC2_AMI_ID="ami-0090c9c49dc765fbb" >> deploy-infra.cfg
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        id: deploy_stack
+        with:
+          name: ${{ env.STACK_NAME }}
+          template: devops/aws/cloudformation/infrastructure.yml
+          no-fail-on-empty-changeset: '1'
+          parameter-overrides: >-
+            KeyName=${{ github.event.inputs.keyName }},
+            ValidatorEC2InstanceType=${{ github.event.inputs.validatorInstanceType }},
+            RPCEC2InstanceType=${{ github.event.inputs.rpcInstanceType }},
+            BuildEC2InstanceType=${{ github.event.inputs.buildInstanceType }},
+            EC2AMI=${{ github.event.inputs.ec2AMI }},
+            NumberOfValidators=${{ github.event.inputs.numberOfValidators }}
+
+      - name: Prepare inventory
+        run: |
+          echo -e "[build]\n${{ steps.deploy_stack.outputs.PublicIp }}\n" > inventory
+          echo -e "[validators]\n$VALIDATORS\n" > inventory
+          echo -e "[rpc]\n$RPC_NODES" > inventory
+          cat inventory
+
+      # - name: Run playbook
+      #   uses: dawidd6/action-ansible-playbook@v2
+      #   with:
+      #     playbook: deploy-playground-playbook.yml
+      #     directory: devops/aws
+      #     requirements: requirements.yml
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     inventory: |
+      #       [all]
+      #       ${{ steps.deploy_stack.outputs.PublicIp }}
+      #     options: |
+      #       --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
+      #                     branch_name=${{ github.event.inputs.branchName }}"
+
+      # # TODO: Remove only if any of the above steps fail
+      # - name: Delete CloudFormation Stack
+      #   if: always()
+      #   continue-on-error: true
+      #   run: |
+      #     echo "Deleting ${{ env.STACK_NAME }} stack"
+      #     aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+      #     echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+      #     aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
