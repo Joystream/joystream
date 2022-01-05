@@ -133,16 +133,6 @@ export type AppConfig = {
   enableUploadingAuth: boolean
 
   /**
-   * Source tag for log entries for ElasticSearch.
-   */
-  logSource: string
-
-  /**
-   * ElasticSearch logging endpoint URL
-   */
-  elasticSearchEndpoint?: string
-
-  /**
    * Max file size for uploading limit.
    */
   maxFileSize: number
