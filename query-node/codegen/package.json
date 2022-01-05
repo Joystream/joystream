@@ -5,7 +5,6 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "postinstall": "cd .. && yarn workspace query-node-mappings postHydraCLIInstall"
   },
   "dependencies": {
     "@joystream/hydra-cli": "3.1.0-alpha.16",

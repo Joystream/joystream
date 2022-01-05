@@ -11,8 +11,6 @@
     "lint": "eslint . --quiet --ext .ts",
     "checks": "prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",
-    "postinstall": "yarn ts-node ./scripts/postInstall.ts",
-    "postHydraCLIInstall": "yarn ts-node ./scripts/postHydraCLIInstall.ts",
     "bootstrap-data:fetch:members": "yarn ts-node ./bootstrap-data/scripts/fetchMembersData.ts",
     "bootstrap-data:fetch:categories": "yarn ts-node ./bootstrap-data/scripts/fetchCategories.ts",
     "bootstrap-data:fetch:workingGroups": "yarn ts-node ./bootstrap-data/scripts/fetchWorkingGroupsData.ts",
@@ -25,7 +23,7 @@
     "@joystream/metadata-protobuf": "^1.0.0",
     "@joystream/sumer-types": "npm:@joystream/types@^0.16.0",
     "@joystream/types": "^0.17.0",
-    "@joystream/warthog": "2.39.0",
+    "@joystream/warthog": "2.41.2",
     "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
