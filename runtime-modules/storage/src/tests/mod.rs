@@ -5263,6 +5263,28 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
 }
 
 #[test]
+fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_objects_available() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let objects: Vec<DataObjectCreationParameters> = (1..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
+            + 1))
+            .map(|idx| DataObjectCreationParameters {
+                size: DEFAULT_DATA_OBJECTS_SIZE,
+                ipfs_content_id: vec![idx.try_into().unwrap()],
+            })
+            .collect();
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_objects(objects)
+            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_dyn_bag_creation_with_dynamic_and_param_bag_differing() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
