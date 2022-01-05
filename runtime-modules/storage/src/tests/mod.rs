@@ -5300,3 +5300,21 @@ fn successful_dyn_bag_creation_with_all_parameters_specified() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn unsuccessful_dyn_bag_creation_with_no_bucket_accepting() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        set_max_voucher_limits();
+        CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_accepting_new_bags(false)
+            .create_several(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+    })
+}
