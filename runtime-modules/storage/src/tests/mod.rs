@@ -5273,3 +5273,17 @@ fn successful_dyn_bag_creation_with_upload_and_no_deletion_prize() {
         CreateDynamicBagWithObjectsFixture::default().call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn successful_dyn_bag_creation_with_all_parameters_specified() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreateDynamicBagWithObjectsFixture::default()
+            .with_deletion_prize(default_bag_deletion_prize())
+            .call_and_assert(Ok(()));
+    })
+}
