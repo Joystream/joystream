@@ -44,7 +44,7 @@ export class StorageNodeApi {
     const [options, timeout] = this.reqConfigWithTimeout({}, this.config.limits.outboundRequestsTimeoutMs)
     this.logger.debug('Checking object availibility', { objectId })
     try {
-      await this.filesApi.publicApiGetFileHeaders(objectId, options)
+      await this.filesApi.filesApiGetFileHeaders(objectId, options)
       this.logger.debug('Data object available', { objectId })
       return true
     } catch (err) {
@@ -71,7 +71,7 @@ export class StorageNodeApi {
       options.headers.Range = `bytes=${startAt}-`
     }
     try {
-      const response: StorageNodeDownloadResponse = await this.filesApi.publicApiGetFile(objectId, options)
+      const response: StorageNodeDownloadResponse = await this.filesApi.filesApiGetFile(objectId, options)
       response.data.on('end', () => clearTimeout(timeout))
       response.data.on('error', () => clearTimeout(timeout))
       return response

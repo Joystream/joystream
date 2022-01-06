@@ -91,8 +91,6 @@ export type Channel = BaseGraphQlObject & {
   categoryId?: Maybe<Scalars['String']>
   /** Reward account where revenue is sent if set. */
   rewardAccount?: Maybe<Scalars['String']>
-  /** Destination account for the prize associated with channel deletion */
-  deletionPrizeDestAccount: Scalars['String']
   /** The title of the Channel */
   title?: Maybe<Scalars['String']>
   /** The description of a Channel */
@@ -108,7 +106,9 @@ export type Channel = BaseGraphQlObject & {
   language?: Maybe<Language>
   languageId?: Maybe<Scalars['String']>
   videos: Array<Video>
+  /** Number of the block the channel was created in */
   createdInBlock: Scalars['Int']
+  collaborators: Array<Membership>
 }
 
 export type ChannelCategoriesByNameFtsOutput = {
@@ -228,7 +228,6 @@ export type ChannelCreateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
   rewardAccount?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount: Scalars['String']
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   coverPhoto?: Maybe<Scalars['ID']>
@@ -259,8 +258,6 @@ export enum ChannelOrderByInput {
   CategoryDesc = 'category_DESC',
   RewardAccountAsc = 'rewardAccount_ASC',
   RewardAccountDesc = 'rewardAccount_DESC',
-  DeletionPrizeDestAccountAsc = 'deletionPrizeDestAccount_ASC',
-  DeletionPrizeDestAccountDesc = 'deletionPrizeDestAccount_DESC',
   TitleAsc = 'title_ASC',
   TitleDesc = 'title_DESC',
   DescriptionAsc = 'description_ASC',
@@ -284,7 +281,6 @@ export type ChannelUpdateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
   rewardAccount?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount?: Maybe<Scalars['String']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   coverPhoto?: Maybe<Scalars['ID']>
@@ -325,11 +321,6 @@ export type ChannelWhereInput = {
   rewardAccount_startsWith?: Maybe<Scalars['String']>
   rewardAccount_endsWith?: Maybe<Scalars['String']>
   rewardAccount_in?: Maybe<Array<Scalars['String']>>
-  deletionPrizeDestAccount_eq?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount_contains?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount_startsWith?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount_endsWith?: Maybe<Scalars['String']>
-  deletionPrizeDestAccount_in?: Maybe<Array<Scalars['String']>>
   title_eq?: Maybe<Scalars['String']>
   title_contains?: Maybe<Scalars['String']>
   title_startsWith?: Maybe<Scalars['String']>
@@ -359,6 +350,9 @@ export type ChannelWhereInput = {
   videos_none?: Maybe<VideoWhereInput>
   videos_some?: Maybe<VideoWhereInput>
   videos_every?: Maybe<VideoWhereInput>
+  collaborators_none?: Maybe<MembershipWhereInput>
+  collaborators_some?: Maybe<MembershipWhereInput>
+  collaborators_every?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<ChannelWhereInput>>
   OR?: Maybe<Array<ChannelWhereInput>>
 }
@@ -512,6 +506,8 @@ export type DistributionBucket = BaseGraphQlObject & {
   version: Scalars['Int']
   family: DistributionBucketFamily
   familyId: Scalars['String']
+  /** Bucket index within the family */
+  bucketIndex: Scalars['Int']
   operators: Array<DistributionBucketOperator>
   /** Whether the bucket is accepting any new bags */
   acceptingNewBags: Scalars['Boolean']
@@ -528,6 +524,7 @@ export type DistributionBucketConnection = {
 
 export type DistributionBucketCreateInput = {
   family: Scalars['ID']
+  bucketIndex: Scalars['Float']
   acceptingNewBags: Scalars['Boolean']
   distributing: Scalars['Boolean']
 }
@@ -1028,6 +1025,8 @@ export enum DistributionBucketOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   FamilyAsc = 'family_ASC',
   FamilyDesc = 'family_DESC',
+  BucketIndexAsc = 'bucketIndex_ASC',
+  BucketIndexDesc = 'bucketIndex_DESC',
   AcceptingNewBagsAsc = 'acceptingNewBags_ASC',
   AcceptingNewBagsDesc = 'acceptingNewBags_DESC',
   DistributingAsc = 'distributing_ASC',
@@ -1036,6 +1035,7 @@ export enum DistributionBucketOrderByInput {
 
 export type DistributionBucketUpdateInput = {
   family?: Maybe<Scalars['ID']>
+  bucketIndex?: Maybe<Scalars['Float']>
   acceptingNewBags?: Maybe<Scalars['Boolean']>
   distributing?: Maybe<Scalars['Boolean']>
 }
@@ -1065,6 +1065,12 @@ export type DistributionBucketWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  bucketIndex_eq?: Maybe<Scalars['Int']>
+  bucketIndex_gt?: Maybe<Scalars['Int']>
+  bucketIndex_gte?: Maybe<Scalars['Int']>
+  bucketIndex_lt?: Maybe<Scalars['Int']>
+  bucketIndex_lte?: Maybe<Scalars['Int']>
+  bucketIndex_in?: Maybe<Array<Scalars['Int']>>
   acceptingNewBags_eq?: Maybe<Scalars['Boolean']>
   acceptingNewBags_in?: Maybe<Array<Scalars['Boolean']>>
   distributing_eq?: Maybe<Scalars['Boolean']>
@@ -1483,6 +1489,7 @@ export type Membership = BaseGraphQlObject & {
   /** The type of subscription the member has purchased if any. */
   subscription?: Maybe<Scalars['Int']>
   channels: Array<Channel>
+  collaboratorInChannels: Array<Channel>
 }
 
 export type MembershipConnection = {
@@ -1616,6 +1623,9 @@ export type MembershipWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
+  collaboratorInChannels_none?: Maybe<ChannelWhereInput>
+  collaboratorInChannels_some?: Maybe<ChannelWhereInput>
+  collaboratorInChannels_every?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<MembershipWhereInput>>
   OR?: Maybe<Array<MembershipWhereInput>>
 }
@@ -2618,6 +2628,7 @@ export type StorageBucketOperatorStatus =
 
 export type StorageBucketOperatorStatusActive = {
   workerId: Scalars['Int']
+  transactorAccountId: Scalars['String']
 }
 
 export type StorageBucketOperatorStatusInvited = {

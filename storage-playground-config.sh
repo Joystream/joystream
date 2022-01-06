@@ -14,7 +14,7 @@ cd $SCRIPT_PATH
 HOST_IP=$(tests/network-tests/get-host-ip.sh)
 
 ## Colossus 1
-CLI=storage-node-v2/bin/run
+CLI=storage-node/bin/run
 TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
 
 ${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_WORKER_URI}

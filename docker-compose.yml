@@ -26,10 +26,11 @@ services:
     volumes:
       - colossus-1-data:/data
       - colossus-1-keystore:/keystore
+      - colossus-1-logs:/logs
       - type: bind
         source: .
         target: /joystream
-    working_dir: /joystream/storage-node-v2
+    working_dir: /joystream/storage-node
     ports:
       - 3333:3333
     env_file:
@@ -42,7 +43,8 @@ services:
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
-      '--apiUrl=${JOYSTREAM_NODE_WS}'
+      '--apiUrl=${JOYSTREAM_NODE_WS}',
+      '--logFilePath=/logs'
     ]
 
   distributor-1:
@@ -91,10 +93,11 @@ services:
     volumes:
       - colossus-2-data:/data
       - colossus-2-keystore:/keystore
+      - colossus-2-logs:/logs
       - type: bind
         source: .
         target: /joystream
-    working_dir: /joystream/storage-node-v2
+    working_dir: /joystream/storage-node
     ports:
       - 3335:3333
     env_file:
@@ -107,7 +110,8 @@ services:
       'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
-      '--apiUrl=${JOYSTREAM_NODE_WS}'
+      '--apiUrl=${JOYSTREAM_NODE_WS}',
+      '--logFilePath=/logs'
     ]
 
   distributor-2:
@@ -312,9 +316,13 @@ volumes:
     driver: local
   colossus-1-keystore:
     driver: local
+  colossus-1-logs:
+    driver: local
   colossus-2-data:
     driver: local
   colossus-2-keystore:
+    driver: local
+  colossus-2-logs:
     driver: local
   distributor-1-logs:
     driver: local

@@ -23,14 +23,14 @@ const colossusPort = parseInt(config.get('colossusPort') || '3333')
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
 
-let additionalVolumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
-let additionalVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
+const additionalVolumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
+const additionalVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
 
 if (!accountURI && !keyFile) {
   throw new Error('Must specify either Key file or Account URI')
 }
 
-let additionalParams: string[] | pulumi.Input<string>[] = []
+const additionalParams: string[] | pulumi.Input<string>[] = []
 
 export let kubeconfig: pulumi.Output<any>
 export let colossusImage: pulumi.Output<string> = pulumi.interpolate`${configColossusImage}`
@@ -150,7 +150,7 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'colossus',
               image: colossusImage,
               imagePullPolicy: 'IfNotPresent',
-              workingDir: '/joystream/storage-node-v2',
+              workingDir: '/joystream/storage-node',
               env: [
                 {
                   name: 'WS_PROVIDER_ENDPOINT_URI',
