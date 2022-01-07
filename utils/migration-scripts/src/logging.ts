@@ -10,6 +10,7 @@ winston.addColors(colors)
 
 export function createLogger(label: string): Logger {
   return winston.createLogger({
+    level: 'debug',
     transports: [new winston.transports.Console()],
     defaultMeta: { label },
     format: winston.format.combine(

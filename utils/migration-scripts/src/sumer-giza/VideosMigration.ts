@@ -31,12 +31,12 @@ export class VideosMigration extends AssetsMigration {
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   protected logger: Logger
 
-  public constructor({ api, queryNodeApi, config, videoIds, channelsMap, forcedChannelOwner }: VideosMigrationParams) {
-    super({ api, queryNodeApi, config })
-    this.config = config
-    this.channelsMap = channelsMap
-    this.videoIds = videoIds
-    this.forcedChannelOwner = forcedChannelOwner
+  public constructor(params: VideosMigrationParams) {
+    super(params)
+    this.config = params.config
+    this.channelsMap = params.channelsMap
+    this.videoIds = params.videoIds
+    this.forcedChannelOwner = params.forcedChannelOwner
     this.logger = createLogger(this.name)
   }
 

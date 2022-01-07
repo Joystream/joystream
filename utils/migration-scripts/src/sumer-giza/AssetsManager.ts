@@ -25,6 +25,7 @@ export type AssetsManagerConfig = {
   uploadSpBucketId: number
   uploadSpEndpoint: string
   dataDir: string
+  migrationStatePath: string
 }
 
 export type AssetsManagerParams = {
@@ -58,6 +59,7 @@ export class AssetsManager {
   private resizer: ImageResizer
   private queuedUploads: Set<string>
   private isQueueProcessing = false
+  private queueFilePath: string
   private logger: Logger
 
   public get queueSize(): number {
@@ -85,6 +87,8 @@ export class AssetsManager {
     this.logger = createLogger('Assets Manager')
     fs.mkdirSync(this.tmpAssetPath(''), { recursive: true })
     fs.mkdirSync(this.assetPath(''), { recursive: true })
+    this.queueFilePath = path.join(this.config.migrationStatePath, `unprocessedUploads_${Date.now()}.json`)
+    this.logger.info(`Failed/pending uploads will be saved to ${this.queueFilePath}`)
   }
 
   private static async getSumerStorageProviderEndpoints(queryNodeApi: QueryNodeApi): Promise<string[]> {
@@ -126,13 +130,7 @@ export class AssetsManager {
       return
     }
     let objectSize = new BN(data.size).toNumber()
-    let path: string
-    try {
-      path = await this.fetchAssetWithRetry(data.joystreamContentId, objectSize)
-    } catch (e) {
-      this.logger.error(`Data object ${data.joystreamContentId} was not fetched: ${(e as Error).message}`)
-      return
-    }
+    const path = await this.fetchAssetWithRetry(data.joystreamContentId, objectSize)
     if (targetSize) {
       try {
         await this.resizer.resize(path, targetSize)
@@ -264,13 +262,7 @@ export class AssetsManager {
     }
 
     if (uploadSuccesful) {
-      // Remove asset from queuedUploads and temporary storage
-      this.queuedUploads.delete(`${bagId}|${dataObjectId}`)
-      try {
-        fs.rmSync(dataPath)
-      } catch (e) {
-        this.logger.error(`Could not remove file "${dataPath}" after succesful upload...`)
-      }
+      this.finalizeUpload(bagId, dataObjectId, dataPath)
     }
   }
 
@@ -294,13 +286,25 @@ export class AssetsManager {
     this.queuedUploads = new Set(queue)
   }
 
-  public saveQueue(queueFilePath: string): void {
-    fs.writeFileSync(queueFilePath, JSON.stringify(Array.from(this.queuedUploads)))
+  public saveQueue(): void {
+    fs.writeFileSync(this.queueFilePath, JSON.stringify(Array.from(this.queuedUploads)))
+    this.logger.debug(`${this.queueFilePath} updated`, { queueSize: this.queuedUploads.size })
   }
 
   private queueUpload(bagId: BagId, objectId: DataObjectId): void {
     const bagIdStr = `dynamic:channel:${bagId.asType('Dynamic').asType('Channel').toString()}`
     this.queuedUploads.add(`${bagIdStr}|${objectId.toString()}`)
+    this.saveQueue()
+  }
+
+  private finalizeUpload(bagId: string, dataObjectId: number, dataPath: string) {
+    this.queuedUploads.delete(`${bagId}|${dataObjectId}`)
+    this.saveQueue()
+    try {
+      fs.rmSync(dataPath)
+    } catch (e) {
+      this.logger.error(`Could not remove file "${dataPath}" after succesful upload...`)
+    }
   }
 
   public queueUploadsFromEvents(events: IEvent<[Vec<DataObjectId>, UploadParameters, Balance]>[]): void {
