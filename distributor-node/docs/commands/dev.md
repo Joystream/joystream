@@ -21,6 +21,8 @@ OPTIONS
   -c, --configPath=configPath      [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                    directory)
 
+  -e, --endpoint=endpoint          (required)
+
   -y, --yes                        Answer "yes" to any prompt, skipping any manual confirmations
 ```
 

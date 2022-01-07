@@ -144,7 +144,7 @@ export interface FileLoggingOptions {
    */
   path: string
   /**
-   * Maximum number of log files to store
+   * Maximum number of log files to store. Recommended to be at least 7 when frequency is set to `daily` and at least 24 * 7 when frequency is set to `hourly`
    */
   maxFiles?: number
   /**

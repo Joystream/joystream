@@ -65,7 +65,8 @@ export const configSchema: JSONSchema4 = objectSchema({
               type: 'string',
             },
             maxFiles: {
-              description: 'Maximum number of log files to store',
+              description:
+                'Maximum number of log files to store. Recommended to be at least 7 when frequency is set to `daily` and at least 24 * 7 when frequency is set to `hourly`',
               type: 'integer',
               minimum: 1,
             },

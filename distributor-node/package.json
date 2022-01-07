@@ -133,7 +133,7 @@
     "generate:types:operator-api": "yarn openapi-typescript ./src/api-spec/operator.yml -o ./src/types/generated/OperatorApi.ts -c ../prettierrc.js",
     "generate:types:api": "yarn generate:types:public-api && yarn generate:types:operator-api",
     "generate:types:all": "yarn generate:types:json-schema && yarn generate:types:graphql && yarn generate:types:api",
-    "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../storage-node-v2/src/api-spec/openapi.yaml -g typescript-axios -o ./src/services/networking/storage-node/generated",
+    "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../storage-node/src/api-spec/openapi.yaml -g typescript-axios -o ./src/services/networking/storage-node/generated",
     "generate:api:all": "yarn generate:api:storage-node",
     "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./docs/commands",
     "generate:docs:config": "yarn ts-node --transpile-only ./src/schemas/scripts/generateConfigDoc.ts",
