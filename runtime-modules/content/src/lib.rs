@@ -538,17 +538,20 @@ pub struct Post_<
     pub video_reference: VideoId,
 }
 
-/// A boolean for selecting the post type
+/// Post type structured as linked list with the video post as beginning
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PostType {
+pub enum PostType<ParentPostId> {
+    /// Equivalent to a video description
     VideoPost,
-    Comment,
+
+    /// Comment to a post with specified id
+    Comment(ParentPostId),
 }
 
 impl Default for PostType {
     fn default() -> Self {
-        PostType::Comment
+        PostType::VideoPost
     }
 }
 
@@ -571,11 +574,8 @@ impl Default for CleanupActor {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PostCreationParameters<PostId, VideoId> {
-    /// parent post if set
-    parent_id: Option<PostId>,
-
     /// content
-    post_type: PostType,
+    post_type: PostType<PostId>,
 
     /// video reference
     video_reference: VideoId,
