@@ -8,7 +8,7 @@ import { ProcessManager } from './utils'
 import fs from 'fs'
 import { Keyring } from '@polkadot/keyring'
 
-const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../storage-node-v2')
+const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../storage-node')
 
 export class StorageCLI extends CLI {
   constructor(defaultSuri?: string) {

@@ -97,19 +97,6 @@ export interface InlineResponse201 {
 /**
  *
  * @export
- * @interface InlineResponse2011
- */
-export interface InlineResponse2011 {
-  /**
-   *
-   * @type {string}
-   * @memberof InlineResponse2011
-   */
-  token?: string
-}
-/**
- *
- * @export
  * @interface TokenRequest
  */
 export interface TokenRequest {
@@ -189,37 +176,6 @@ export interface VersionResponse {
  */
 export const FilesApiAxiosParamCreator = function (configuration?: Configuration) {
   return {
-    /**
-     * Get auth token from a server.
-     * @param {TokenRequest} [tokenRequest] Token request parameters,
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    filesApiAuthTokenForUploading: async (tokenRequest?: TokenRequest, options: any = {}): Promise<RequestArgs> => {
-      const localVarPath = `/authToken`
-      // use dummy base URL string because the URL constructor only accepts absolute URLs.
-      const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL)
-      let baseOptions
-      if (configuration) {
-        baseOptions = configuration.baseOptions
-      }
-
-      const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options }
-      const localVarHeaderParameter = {} as any
-      const localVarQueryParameter = {} as any
-
-      localVarHeaderParameter['Content-Type'] = 'application/json'
-
-      setSearchParams(localVarUrlObj, localVarQueryParameter, options.query)
-      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
-      localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers }
-      localVarRequestOptions.data = serializeDataIfNeeded(tokenRequest, localVarRequestOptions, configuration)
-
-      return {
-        url: toPathString(localVarUrlObj),
-        options: localVarRequestOptions,
-      }
-    },
     /**
      * Returns a media file.
      * @param {string} id Data object ID
@@ -315,9 +271,6 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
       const localVarQueryParameter = {} as any
       const localVarFormParams = new ((configuration && configuration.formDataCtor) || FormData)()
 
-      // authentication UploadAuth required
-      await setApiKeyToObject(localVarHeaderParameter, 'x-api-key', configuration)
-
       if (file !== undefined) {
         localVarFormParams.append('file', file as any)
       }
@@ -356,19 +309,6 @@ export const FilesApiAxiosParamCreator = function (configuration?: Configuration
 export const FilesApiFp = function (configuration?: Configuration) {
   const localVarAxiosParamCreator = FilesApiAxiosParamCreator(configuration)
   return {
-    /**
-     * Get auth token from a server.
-     * @param {TokenRequest} [tokenRequest] Token request parameters,
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    async filesApiAuthTokenForUploading(
-      tokenRequest?: TokenRequest,
-      options?: any
-    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<InlineResponse2011>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.filesApiAuthTokenForUploading(tokenRequest, options)
-      return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
-    },
     /**
      * Returns a media file.
      * @param {string} id Data object ID
@@ -431,15 +371,6 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
   const localVarFp = FilesApiFp(configuration)
   return {
     /**
-     * Get auth token from a server.
-     * @param {TokenRequest} [tokenRequest] Token request parameters,
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    filesApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any): AxiosPromise<InlineResponse2011> {
-      return localVarFp.filesApiAuthTokenForUploading(tokenRequest, options).then((request) => request(axios, basePath))
-    },
-    /**
      * Returns a media file.
      * @param {string} id Data object ID
      * @param {*} [options] Override http request option.
@@ -487,19 +418,6 @@ export const FilesApiFactory = function (configuration?: Configuration, basePath
  * @extends {BaseAPI}
  */
 export class FilesApi extends BaseAPI {
-  /**
-   * Get auth token from a server.
-   * @param {TokenRequest} [tokenRequest] Token request parameters,
-   * @param {*} [options] Override http request option.
-   * @throws {RequiredError}
-   * @memberof FilesApi
-   */
-  public filesApiAuthTokenForUploading(tokenRequest?: TokenRequest, options?: any) {
-    return FilesApiFp(this.configuration)
-      .filesApiAuthTokenForUploading(tokenRequest, options)
-      .then((request) => request(this.axios, this.basePath))
-  }
-
   /**
    * Returns a media file.
    * @param {string} id Data object ID

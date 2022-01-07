@@ -45,10 +45,10 @@ export type BucketsResponse = BucketsResponseOneOf | BucketsResponseOneOf1
 export interface BucketsResponseOneOf {
   /**
    *
-   * @type {Array<number>}
+   * @type {Array<string>}
    * @memberof BucketsResponseOneOf
    */
-  bucketIds: Array<number>
+  bucketIds: Array<string>
 }
 /**
  *
