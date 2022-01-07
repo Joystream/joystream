@@ -13,6 +13,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
     throw new Error('Active storage leader is required in this flow!')
   }
   const leaderSuri = api.getSuri(leader.role_account_id)
+  const transactorKey = '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU' // //Colossus1
 
   const operatorId = leaderId.toString()
 
@@ -28,7 +29,14 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
     '--size',
     '10000000000',
   ])
-  await cli.run('operator:accept-invitation', ['--workerId', operatorId, '--bucketId', bucketId])
+  await cli.run('operator:accept-invitation', [
+    '--workerId',
+    operatorId,
+    '--bucketId',
+    bucketId,
+    '--transactorAccountId',
+    transactorKey,
+  ])
   await cli.run('leader:update-bag', ['--add', bucketId, '--bagId', 'static:council'])
   await cli.run('leader:update-dynamic-bag-policy', ['--bagType', 'Channel', '--number', '1'])
   await cli.run('operator:set-metadata', [

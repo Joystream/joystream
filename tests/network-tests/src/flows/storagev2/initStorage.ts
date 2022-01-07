@@ -14,6 +14,7 @@ type StorageBucketConfig = {
   storageLimit: BN
   objectsLimit: number
   operatorId: number
+  transactorKey: string
 }
 
 type InitStorageConfig = {
@@ -46,6 +47,7 @@ export const singleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
+      transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
     },
   ],
 }
@@ -62,6 +64,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
+      transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
     },
     {
       metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
@@ -69,6 +72,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
+      transactorKey: process.env.COLOSSUS_2_TRANSACTOR_KEY || '5FbzYmQ3HogiEEDSXPYJe58yCcmSh3vsZLodTdBB6YuLDAj7', // //Colossus2
     },
   ],
 }
@@ -124,8 +128,8 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     })
 
     // Accept invitations
-    const acceptInvitationTxs = Array.from(bucketById.keys()).map((bucketId, i) =>
-      api.tx.storage.acceptStorageBucketInvitation(operatorIds[i], bucketId)
+    const acceptInvitationTxs = Array.from(bucketById.entries()).map(([bucketId, bucketConfig], i) =>
+      api.tx.storage.acceptStorageBucketInvitation(operatorIds[i], bucketId, bucketConfig.transactorKey)
     )
     await api.signAndSendManyByMany(acceptInvitationTxs, operatorKeys)
 

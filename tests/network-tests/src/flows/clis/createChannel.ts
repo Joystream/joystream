@@ -30,7 +30,6 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   // Init CLI, import & select channel owner key
   await joystreamCli.init()
   await joystreamCli.importKey(channelOwnerKeypair.key)
-  await joystreamCli.chooseKey(channelOwnerKeypair.key.address)
 
   // Create channel
   const avatarPhotoPath = tmpFileManager.randomImgFile(300, 300)

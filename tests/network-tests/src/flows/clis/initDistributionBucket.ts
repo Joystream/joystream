@@ -19,29 +19,14 @@ export default async function initDistributionBucket({ api }: FlowProps): Promis
 
   await cli.run('leader:set-buckets-per-bag-limit', ['--limit', '10'])
   const { out: familyId } = await cli.run('leader:create-bucket-family')
-  const { out: bucketId } = await cli.run('leader:create-bucket', ['--familyId', familyId, '--acceptingBags', 'yes'])
-  await cli.run('leader:update-bag', ['--bagId', 'static:council', '--familyId', familyId, '--add', bucketId])
+  const { out: bucketIndex } = await cli.run('leader:create-bucket', ['--familyId', familyId, '--acceptingBags', 'yes'])
+  const bucketId = `${familyId}:${bucketIndex}`
+  await cli.run('leader:update-bag', ['--bagId', 'static:council', '--familyId', familyId, '--add', bucketIndex])
   await cli.run('leader:update-dynamic-bag-policy', ['--type', 'Channel', '--policy', `${familyId}:1`])
-  await cli.run('leader:update-bucket-mode', ['--familyId', familyId, '--bucketId', bucketId, '--mode', 'on'])
-  await cli.run('leader:invite-bucket-operator', [
-    '--familyId',
-    familyId,
-    '--bucketId',
-    bucketId,
-    '--workerId',
-    operatorId,
-  ])
-  await cli.run('operator:accept-invitation', [
-    '--familyId',
-    familyId,
-    '--bucketId',
-    bucketId,
-    '--workerId',
-    operatorId,
-  ])
+  await cli.run('leader:update-bucket-mode', ['--bucketId', bucketId, '--mode', 'on'])
+  await cli.run('leader:invite-bucket-operator', ['--bucketId', bucketId, '--workerId', operatorId])
+  await cli.run('operator:accept-invitation', ['--bucketId', bucketId, '--workerId', operatorId])
   await cli.run('operator:set-metadata', [
-    '--familyId',
-    familyId,
     '--bucketId',
     bucketId,
     '--workerId',
