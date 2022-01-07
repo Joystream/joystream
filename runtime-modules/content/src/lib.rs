@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::{cmp::max, convert::TryFrom, hash::Hash, mem::size_of};
+use core::{cmp::max, hash::Hash, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -131,10 +131,14 @@ pub trait Trait:
     type MaxModerators: Get<u64>;
 
     /// Price per byte
-    type PricePerByte: Get<usize>;
+    type PricePerByte: Get<<Self as balances::Trait>::Balance>;
 
-    /// Margin
-    type CleanupMargin: Get<u32>;
+    /// Cleanup Margin used in bloat bond calculation
+    type CleanupMargin: Get<<Self as balances::Trait>::Balance>;
+
+    // TODO: make it a function of the create_post extrinsic weights when weights will be established
+    /// Cleanup Cost used in bloat bond calculation
+    type CleanupCost: Get<<Self as balances::Trait>::Balance>;
 
     /// Post module Id
     type VideoCommentsModuleId: Get<ModuleId>;
@@ -1450,48 +1454,29 @@ decl_module! {
             let video = Self::ensure_video_exists(&params.video_reference)?;
             let owner = <ChannelById<T>>::get(video.in_channel).owner;
 
-            // if it is a comment:
-        match params.post_type {
-        PostType::<T>::Comment(parent_id) => {
+            match params.post_type {
+                PostType::<T>::Comment(parent_id) => {
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
-
                     Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
-
                     ensure_actor_authorized_to_comment::<T>(&sender, &actor)?;
-        },
+                },
                 _ => ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
             }
 
-            // compute initial bloat bond
-            let storage_price = u32::try_from(
-                    size_of::<Post<T>>()
-                    .saturating_mul(T::PricePerByte::get()))
-                .map_err(
-                    |_| DispatchError::Other("initial bloat bond conversion error")
-            )?;
+            let initial_bloat_bond = Self::compute_initial_bloat_bond();
 
-            // get next post id
             let post_id = <NextPostId<T>>::get();
-
-            // TODO: this cost should be a function of the WeightInfo trait
-            let cleanup_cost = 1;
-
-            // initial bloat bond
-            let initial_bloat_bond = max(
-                storage_price,
-                cleanup_cost.saturating_add(T::CleanupMargin::get()
-            ));
 
             // transfer bloat bond to post treasury account
             Self::transfer_to_post_treasury_account(
                 post_id,
-                <T as balances::Trait>::Balance::from(initial_bloat_bond),
+                initial_bloat_bond.clone(),
                 sender
             )?;
 
             let post = Post::<T> {
                 author: actor,
-                bloat_bond: <T as balances::Trait>::Balance::from(initial_bloat_bond),
+                bloat_bond: initial_bloat_bond,
                 replies_count: T::PostId::zero(),
                 video_reference: params.video_reference.clone(),
                 post_type: params.post_type.clone(),
@@ -1550,23 +1535,17 @@ decl_module! {
             params: PostDeletionParameters<<T as frame_system::Trait>::Hash>,
         ) {
             let sender = ensure_signed(origin.clone())?;
-
-            // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
-
             let rationale = params.rationale.clone();
 
-
-            // verify witness
             if let PostType::<T>::VideoPost = post.post_type {
                 Self::ensure_witness_verification(
-            params.witness.clone(),
-            post.replies_count
-        )?;
+                    params.witness.clone(),
+                    post.replies_count
+                )?;
             }
 
-            // ensure post can be deleted by actor
-            let channel_id = <VideoById<T>>::get(&video_id).in_channel;
+            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
             let cleanup_actor = Self::ensure_can_delete_post(
                 origin,
                 &actor,
@@ -1576,10 +1555,9 @@ decl_module! {
 
             // if deletion actor is a moderator, he must provide rationale
             if let CleanupActor::Moderator = cleanup_actor {
-                ensure!(rationale != None, Error::<T>::RationaleNotProvidedByModerator);
+                ensure!(rationale.is_some(), Error::<T>::RationaleNotProvidedByModerator);
             }
 
-            // proceeed to cleanup
             Self::cleanup(&sender, cleanup_actor, post.bloat_bond, post_id)?;
 
             //
@@ -1840,15 +1818,14 @@ impl<T: Trait> Module<T> {
         match cleanup_actor {
             CleanupActor::PostAuthor => {
                 let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
-                match bloat_bond > cap {
-                    true => {
-                        // if cap is exceeded, refund cap and burn the difference
-                        let diff = bloat_bond.saturating_sub(cap);
-                        Self::pay_off(post_id, cap, sender)?;
-                        let _ = balances::Module::<T>::burn(diff);
-                    }
-                    // else refund bloat bond
-                    _ => Self::pay_off(post_id, bloat_bond, sender)?,
+
+                // if cap is exceeded, refund cap and burn the difference
+                if bloat_bond > cap {
+                    let diff = bloat_bond.saturating_sub(cap);
+                    Self::pay_off(post_id, cap, sender)?;
+                    let _ = balances::Module::<T>::burn(diff);
+                } else {
+                    Self::pay_off(post_id, bloat_bond, sender)?
                 }
             }
             _ => {
@@ -1878,6 +1855,15 @@ impl<T: Trait> Module<T> {
             }
             PostType::<T>::VideoPost => PostById::<T>::remove_prefix(video_id),
         }
+    }
+
+    fn compute_initial_bloat_bond() -> <T as balances::Trait>::Balance {
+        let storage_price =
+            T::PricePerByte::get().saturating_mul((size_of::<Post<T>>() as u32).into());
+
+        let cleanup_cost = T::CleanupCost::get().saturating_add(T::CleanupMargin::get());
+
+        max(storage_price, cleanup_cost)
     }
 
     fn ensure_witness_verification(
