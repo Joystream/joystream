@@ -355,12 +355,17 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
 }
 
 // Enure actor can create post: same rules as if he is trying to update channel
-pub fn ensure_actor_authorized_to_create_post<T: Trait>(
-    origin: T::Origin,
+pub fn ensure_actor_authorized_to_comment<T: Trait>(
+    sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
+    if let ContentActor::Member(member_id) = actor {
+        // authenticate member
+        ensure_member_auth_success::<T>(member_id, sender)?;
+    } else {
+        return Err(Error::<T>::ActorNotAuthorized.into());
+    }
+    Ok(())
 }
 
 // Enure actor can edit post

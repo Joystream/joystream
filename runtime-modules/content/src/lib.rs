@@ -1461,12 +1461,7 @@ decl_module! {
                         return Err(Error::<T>::CannotCommentToNonExistingVideoPost.into());
                     }
                 }
-                if let ContentActor::Member(member_id) = actor {
-                    // authenticate member
-                    ensure_member_auth_success::<T>(&member_id, &sender)?;
-                } else {
-                    return Err(Error::<T>::ActorNotAuthorized.into());
-                }
+                ensure_actor_authorized_to_comment::<T>(&sender, &actor)?;
 
             // if it is a post video
             } else {
