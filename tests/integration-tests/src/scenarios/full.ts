@@ -39,7 +39,7 @@ scenario(async ({ job, env }) => {
   const membershipSystemJob = job('membership system', membershipSystem).requires(
     runtimeUpgradeProposalJob || councilJob
   )
-
+/*
   // All other jobs should be executed after membershipSystemJob,
   // otherwise changing membershipPrice etc. may break them
 
@@ -76,7 +76,7 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
-
+*/
   // Council
   const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
   job('council election failures', failToElect).requires(secondCouncilJob)
