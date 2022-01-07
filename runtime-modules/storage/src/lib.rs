@@ -2874,13 +2874,14 @@ impl<T: Trait> Module<T> {
             }));
 
         // either bag_prize account or objects_prize account used (provided they are the same)
-        let designated_account =
-            deletion_prize
-                .as_ref()
-                .map(|dp| dp.account_id.clone())
-                .or(upload_params
+        let designated_account = deletion_prize
+            .as_ref()
+            .map(|dp| dp.account_id.clone())
+            .or_else(|| {
+                upload_params
                     .as_ref()
-                    .map(|p| p.deletion_prize_source_account_id.clone()));
+                    .map(|p| p.deletion_prize_source_account_id.clone())
+            });
 
         Self::ensure_sufficient_balance_for_upload(designated_account, total_upload_fee)?;
 
