@@ -4,7 +4,7 @@
 
 #[cfg(test)]
 mod tests;
-
+use core::marker::PhantomData;
 mod errors;
 mod permissions;
 
@@ -37,11 +37,10 @@ pub use common::storage::{
     StorageSystem,
 };
 
-pub use common::{
-    currency::{BalanceOf, GovernanceCurrency},
-    working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
-};
+pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership, Url};
+
+pub type Balances<T> = balances::Module<T>;
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
@@ -78,6 +77,59 @@ pub trait NumericIdentifier:
 
 impl NumericIdentifier for u64 {}
 
+/// Operations with local pallet account.
+pub trait ModuleAccount<T: balances::Trait> {
+    /// The module id, used for deriving its sovereign account ID.
+    type ModuleId: Get<ModuleId>;
+
+    /// The account ID of the module account.
+    fn module_account_id() -> T::AccountId {
+        Self::ModuleId::get().into_sub_account(Vec::<u8>::new())
+    }
+
+    /// Transfer tokens from the module account to the destination account (spends from
+    /// module account).
+    fn withdraw(dest_account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &Self::module_account_id(),
+            dest_account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    /// Transfer tokens from the destination account to the module account (fills module account).
+    fn deposit(src_account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            src_account_id,
+            &Self::module_account_id(),
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    /// Displays usable balance for the module account.
+    fn usable_balance() -> BalanceOf<T> {
+        <Balances<T>>::usable_balance(&Self::module_account_id())
+    }
+}
+
+/// Implementation of the ModuleAccountHandler.
+pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
+    /// Phantom marker for the trait.
+    trait_marker: PhantomData<T>,
+
+    /// Phantom marker for the module id type.
+    module_id_marker: PhantomData<ModId>,
+}
+
+impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
+    type ModuleId = ModId;
+}
+
+/// Local module account handler.
+pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -85,7 +137,6 @@ pub trait Trait:
     + Clone
     + StorageOwnership
     + MembershipTypes
-    + GovernanceCurrency
     + balances::Trait
 {
     /// The overarching event type.
@@ -140,8 +191,8 @@ pub trait Trait:
     /// Cleanup Cost used in bloat bond calculation
     type CleanupCost: Get<<Self as balances::Trait>::Balance>;
 
-    /// Post module Id
-    type VideoCommentsModuleId: Get<ModuleId>;
+    /// Content Module Id
+    type ModuleId: Get<ModuleId>;
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
@@ -628,9 +679,6 @@ decl_storage! {
 
         pub PersonById get(fn person_by_id): map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
 
-        pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
-            map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T>;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
@@ -1031,34 +1079,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCategoryDeleted(actor, category_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn request_channel_transfer(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _request: ChannelOwnershipTransferRequest<T>,
-        ) {
-            // requester must be new_owner
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_channel_transfer_request(
-            _origin,
-            _request_id: T::ChannelOwnershipTransferRequestId,
-        ) {
-            // origin must be original requester (ie. proposed new channel owner)
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_channel_transfer(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _request_id: T::ChannelOwnershipTransferRequestId,
-        ) {
-            // only current owner of channel can approve
-            Self::not_implemented()?;
-        }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
@@ -1464,15 +1484,9 @@ decl_module! {
             }
 
             let initial_bloat_bond = Self::compute_initial_bloat_bond();
-
             let post_id = <NextPostId<T>>::get();
 
-            // transfer bloat bond to post treasury account
-            Self::transfer_to_post_treasury_account(
-                post_id,
-                initial_bloat_bond.clone(),
-                sender
-            )?;
+           <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
 
             let post = Post::<T> {
                 author: actor,
@@ -1558,7 +1572,7 @@ decl_module! {
                 ensure!(rationale.is_some(), Error::<T>::RationaleNotProvidedByModerator);
             }
 
-            Self::cleanup(&sender, cleanup_actor, post.bloat_bond, post_id)?;
+            Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1779,41 +1793,10 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn pay_off(
-        post_id: T::PostId,
-        amount: <T as balances::Trait>::Balance,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::VideoCommentsModuleId::get().into_sub_account(post_id);
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
-            &state_cleanup_treasury_account,
-            account_id,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
-    }
-
-    fn transfer_to_post_treasury_account(
-        post_id: T::PostId,
-        amount: <T as balances::Trait>::Balance,
-        account_id: T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::VideoCommentsModuleId::get().into_sub_account(post_id);
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
-            &account_id,
-            &state_cleanup_treasury_account,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
-    }
-
-    fn cleanup(
+    fn refund(
         sender: &<T as frame_system::Trait>::AccountId,
         cleanup_actor: CleanupActor,
         bloat_bond: <T as balances::Trait>::Balance,
-        post_id: T::PostId,
     ) -> DispatchResult {
         match cleanup_actor {
             CleanupActor::PostAuthor => {
@@ -1822,10 +1805,10 @@ impl<T: Trait> Module<T> {
                 // if cap is exceeded, refund cap and burn the difference
                 if bloat_bond > cap {
                     let diff = bloat_bond.saturating_sub(cap);
-                    Self::pay_off(post_id, cap, sender)?;
+                    ContentTreasury::<T>::withdraw(&sender, cap)?;
                     let _ = balances::Module::<T>::burn(diff);
                 } else {
-                    Self::pay_off(post_id, bloat_bond, sender)?
+                    ContentTreasury::<T>::withdraw(&sender, bloat_bond)?;
                 }
             }
             _ => {
@@ -1839,7 +1822,7 @@ impl<T: Trait> Module<T> {
         if <VideoPostIdByVideoId<T>>::contains_key(video_id) {
             let post_id = <VideoPostIdByVideoId<T>>::get(video_id);
             let bloat_bond = <PostById<T>>::get(video_id, post_id).bloat_bond;
-            Self::cleanup(&sender, CleanupActor::PostAuthor, bloat_bond, post_id)?;
+            Self::refund(&sender, CleanupActor::PostAuthor, bloat_bond)?;
         }
         Ok(())
     }
