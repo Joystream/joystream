@@ -363,17 +363,26 @@ pub struct VideoUpdateParameters<ContentParameters> {
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Video<ChannelId, SeriesId> {
+pub struct VideoRecord<ChannelId, SeriesId, PostId> {
+    /// Channel to which the video belongs
     pub in_channel: ChannelId,
+
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
     pub in_series: Option<SeriesId>,
+
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
+
     /// enable or not comments
     pub enable_comments: bool,
+
+    /// First post to a video works as a description
+    pub video_post_id: Option<PostId>,
 }
 
+pub type Video<T> =
+    VideoRecord<<T as StorageOwnership>::ChannelId, <T as Trait>::SeriesId, <T as Trait>::PostId>;
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -511,16 +520,9 @@ pub struct Person<MemberId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Post_<
-    MemberId: Default + Clone + Copy,
-    CuratorGroupId: Default + Clone + Copy,
-    CuratorId: Default + Clone + Copy,
-    Balance,
-    PostId,
-    VideoId,
-> {
+pub struct PostRecord<ContentActor, Balance, PostId, PostType, VideoId> {
     /// Author of post.
-    pub author: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    pub author: ContentActor,
 
     /// Cleanup pay off
     pub bloat_bond: Balance,
@@ -531,17 +533,27 @@ pub struct Post_<
     /// video associated to the post (instead of the body hash as in the blog module)
     pub post_type: PostType,
 
-    /// parent comment if any
-    pub parent_id: Option<PostId>,
-
     /// video reference
     pub video_reference: VideoId,
 }
 
+/// alias for Post
+pub type Post<T> = PostRecord<
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as balances::Trait>::Balance,
+    <T as Trait>::PostId,
+    PostType<T>,
+    <T as Trait>::VideoId,
+>;
+
 /// Post type structured as linked list with the video post as beginning
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PostType<ParentPostId> {
+pub enum PostTypeRecord<ParentPostId> {
     /// Equivalent to a video description
     VideoPost,
 
@@ -549,11 +561,13 @@ pub enum PostType<ParentPostId> {
     Comment(ParentPostId),
 }
 
-impl Default for PostType {
+impl<ParentPostId> Default for PostTypeRecord<ParentPostId> {
     fn default() -> Self {
-        PostType::VideoPost
+        PostTypeRecord::<ParentPostId>::VideoPost
     }
 }
+
+pub type PostType<T> = PostTypeRecord<<T as Trait>::PostId>;
 
 /// A boolean in order to differenciate between post author and moderator / owner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -573,23 +587,16 @@ impl Default for CleanupActor {
 /// Information on the post being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostCreationParameters<PostId, VideoId> {
+pub struct PostCreationParametersRecord<PostType, VideoId> {
     /// content
-    post_type: PostType<PostId>,
+    post_type: PostType,
 
     /// video reference
     video_reference: VideoId,
 }
 
-/// alias for Post
-pub type Post<T> = Post_<
-    <T as MembershipTypes>::MemberId,
-    <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as ContentActorAuthenticator>::CuratorId,
-    <T as balances::Trait>::Balance,
-    <T as Trait>::PostId,
-    <T as Trait>::VideoId,
->;
+pub type PostCreationParameters<T> =
+    PostCreationParametersRecord<PostType<T>, <T as Trait>::VideoId>;
 
 /// Information on the post being deleted
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -607,7 +614,7 @@ decl_storage! {
 
         pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
-        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T::ChannelId, T::SeriesId>;
+        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
@@ -1083,7 +1090,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let video: Video<T::ChannelId, T::SeriesId> = Video {
+            let video = Video::<T> {
                 in_channel: channel_id,
                 // keep track of which season the video is in if it is an 'episode'
                 // - prevent removing a video if it is in a season (because order is important)
@@ -1092,6 +1099,7 @@ decl_module! {
                 is_censored: false,
                 /// comments enabled or not
                 enable_comments: params.enable_comments,
+        video_post_id:  None,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1367,13 +1375,9 @@ decl_module! {
             video_id: T::VideoId,
             is_censored: bool,
             rationale: Vec<u8>,
-        ) {
+        ) -> DispatchResult {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
-
-            if video.is_censored == is_censored {
-                return Ok(())
-            }
 
             ensure_actor_authorized_to_censor::<T>(
                 origin,
@@ -1394,12 +1398,14 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             Self::deposit_event(
-            RawEvent::VideoCensorshipStatusUpdated(
-            actor,
-            video_id,
-            is_censored,
-            rationale
-        ));
+                RawEvent::VideoCensorshipStatusUpdated(
+                    actor,
+                    video_id,
+                    is_censored,
+                    rationale
+            ));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1435,7 +1441,7 @@ decl_module! {
         pub fn create_post(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: PostCreationParameters<T::PostId, T::VideoId>,
+            params: PostCreationParameters<T>,
         ) -> DispatchResult {
 
             let sender = ensure_signed(origin.clone())?;
@@ -1445,28 +1451,15 @@ decl_module! {
             let owner = <ChannelById<T>>::get(video.in_channel).owner;
 
             // if it is a comment:
-            if let PostType::Comment = params.post_type {
-                // ensure comments are enabled
-                ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
+        match params.post_type {
+        PostType::<T>::Comment(parent_id) => {
+                    ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
 
-                // ensure parent video post exists
-                match params.parent_id {
-                    Some(parent_id) => {
-                        let _ = Self::ensure_post_exists(
-                        params.video_reference,
-                        parent_id,
-                        )?;
-                    }
-                    _ => {
-                        return Err(Error::<T>::CannotCommentToNonExistingVideoPost.into());
-                    }
-                }
-                ensure_actor_authorized_to_comment::<T>(&sender, &actor)?;
+                    Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
 
-            // if it is a post video
-            } else {
-                // ensure channel owner
-                ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
+                    ensure_actor_authorized_to_comment::<T>(&sender, &actor)?;
+        },
+                _ => ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
             }
 
             // compute initial bloat bond
@@ -1496,11 +1489,10 @@ decl_module! {
                 sender
             )?;
 
-            let post: Post<T> = Post_ {
+            let post = Post::<T> {
                 author: actor,
                 bloat_bond: <T as balances::Trait>::Balance::from(initial_bloat_bond),
                 replies_count: T::PostId::zero(),
-                parent_id:params.parent_id.clone(),
                 video_reference: params.video_reference.clone(),
                 post_type: params.post_type.clone(),
             };
@@ -1513,17 +1505,15 @@ decl_module! {
             <PostById<T>>::insert(&params.video_reference, &post_id, post);
 
             // increment replies count in the parent post
-            if let PostType::Comment = params.post_type {
-                if let Some(parent_id) = params.parent_id {
-                    <PostById<T>>::mutate(
-                    params.video_reference,
+            match params.post_type {
+                PostType::<T>::Comment(parent_id) => <PostById<T>>::mutate(
+                    &params.video_reference,
                     parent_id,
-                    |x| x.replies_count = x.replies_count.saturating_add(One::one()))
-                }
-            } else {
-                // insert video post for corresponding videoid
-                <VideoPostIdByVideoId<T>>::insert(params.video_reference, post_id);
-            }
+                    |x| x.replies_count = x.replies_count.saturating_add(One::one())),
+                _ => VideoById::<T>::mutate(
+                    &params.video_reference,
+                    |video| video.video_post_id = Some(post_id.clone())),
+            };
 
             // deposit event
             Self::deposit_event(RawEvent::PostCreated(actor, params, post_id));
@@ -1564,13 +1554,15 @@ decl_module! {
             // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
 
-            let witness = params.witness.clone();
             let rationale = params.rationale.clone();
 
 
             // verify witness
-            if let PostType::VideoPost = post.post_type {
-                Self::ensure_witness_verification(witness, post.replies_count)?;
+            if let PostType::<T>::VideoPost = post.post_type {
+                Self::ensure_witness_verification(
+            params.witness.clone(),
+            post.replies_count
+        )?;
             }
 
             // ensure post can be deleted by actor
@@ -1594,7 +1586,7 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-           Self::delete_post_inner(post.post_type, post_id, video_id, post.parent_id);
+           Self::delete_post_inner(post.post_type, post_id, video_id);
 
             // deposit event
             Self::deposit_event(
@@ -1699,9 +1691,7 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    fn ensure_video_exists(
-        video_id: &T::VideoId,
-    ) -> Result<Video<T::ChannelId, T::SeriesId>, Error<T>> {
+    fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
@@ -1710,7 +1700,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: Video<T::ChannelId, T::SeriesId>) -> DispatchResult {
+    fn ensure_video_can_be_removed(video: Video<T>) -> DispatchResult {
         ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
         Ok(())
     }
@@ -1877,27 +1867,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn delete_post_inner(
-        post_type: PostType,
-        post_id: T::PostId,
-        video_id: T::VideoId,
-        maybe_parent_id: Option<T::PostId>,
-    ) {
+    fn delete_post_inner(post_type: PostType<T>, post_id: T::PostId, video_id: T::VideoId) {
         // two possible cases:
         match post_type {
-            // post is a comment
-            PostType::Comment => {
+            PostType::<T>::Comment(parent_id) => {
                 PostById::<T>::remove(video_id, post_id);
-                // decrement parent's replies count
-                if let Some(parent_id) = maybe_parent_id {
-                    <PostById<T>>::mutate(&video_id, &parent_id, |x| {
-                        x.replies_count = x.replies_count.saturating_sub(One::one())
-                    });
-                }
+                <PostById<T>>::mutate(&video_id, &parent_id, |x| {
+                    x.replies_count = x.replies_count.saturating_sub(One::one())
+                });
             }
-
-            // post is a video post
-            PostType::VideoPost => PostById::<T>::remove_prefix(video_id),
+            PostType::<T>::VideoPost => PostById::<T>::remove_prefix(video_id),
         }
     }
 
@@ -1964,8 +1943,7 @@ decl_event!(
         PostId = <T as Trait>::PostId,
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
-        PostCreationParameters =
-            PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
+        PostCreationParameters = PostCreationParameters<T>,
         BTreeSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         PostDeletionParameters = PostDeletionParameters<<T as frame_system::Trait>::Hash>,
