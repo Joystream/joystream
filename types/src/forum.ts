@@ -40,7 +40,6 @@ export class Post extends JoyStructDecorated({
 }) {}
 
 export class Thread extends JoyStructDecorated({
-  metadata_hash: Hash,
   category_id: CategoryId,
   author_id: ForumUserId,
   poll: Option.with(Poll),

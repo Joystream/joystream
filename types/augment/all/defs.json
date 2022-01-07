@@ -112,7 +112,6 @@
         "sticky_thread_ids": "Vec<ThreadId>"
     },
     "Thread": {
-        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
         "poll": "Option<Poll>",
@@ -147,7 +146,6 @@
         "poll_alternatives": "Vec<Bytes>"
     },
     "ThreadOf": {
-        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
         "poll": "Option<Poll>",

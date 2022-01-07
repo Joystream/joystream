@@ -353,12 +353,12 @@ declare module '@polkadot/api/types/submittable' {
       addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, CuratorId]>;
       addPersonToVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, PersonId]>;
       cancelChannelTransferRequest: AugmentedSubmittable<(requestId: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ChannelOwnershipTransferRequestId]>;
-      createChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCreationParameters | { assets?: any; meta?: any; reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCreationParameters]>;
-      createChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryCreationParameters]>;
       /**
        * Add new curator group to runtime storage
        **/
       createCuratorGroup: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      createChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCreationParameters | { assets?: any; meta?: any; reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCreationParameters]>;
+      createChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryCreationParameters]>;
       createPerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, params: PersonCreationParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonCreationParameters]>;
       createPlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: PlaylistCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, PlaylistCreationParameters]>;
       createSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, SeriesParameters]>;
@@ -371,13 +371,13 @@ declare module '@polkadot/api/types/submittable' {
       deleteVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId]>;
       deleteVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId]>;
       /**
-       * Remove assets of a channel from storage
-       **/
-      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, Vec<ContentId>]>;
-      /**
        * Remove curator from a given curator group
        **/
       removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, CuratorId]>;
+      /**
+       * Remove assets of a channel from storage
+       **/
+      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, Vec<ContentId>]>;
       removePersonFromVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId]>;
       requestChannelTransfer: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, request: ChannelOwnershipTransferRequest | { channel_id?: any; new_owner?: any; payment?: any; new_reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelOwnershipTransferRequest]>;
       /**
@@ -920,14 +920,14 @@ declare module '@polkadot/api/types/submittable' {
        **/
       editPostText: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, newText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, CategoryId, ThreadId, PostId, Bytes]>;
       /**
-       * Edit thread title
+       * Edit thread metadata
        * 
        * <weight>
        * 
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth
-       * - `V` is the length of the thread title.
+       * - `V` is the length of the thread metadata.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2242,19 +2242,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       addPost: AugmentedSubmittable<(postAuthorId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array, editable: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, ThreadId, Bytes, bool]>;
       /**
-       * Changes thread permission mode.
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W)` if ThreadMode is close or O(1) otherwise where:
-       * - `W` is the number of whitelisted members in `mode`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
-      changeThreadMode: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, mode: ThreadMode | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, ThreadId, ThreadMode]>;
-      /**
        * Remove post from storage, with the last parameter indicating whether to also hide it
        * in the UI.
        * 
@@ -2267,6 +2254,19 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       deletePost: AugmentedSubmittable<(deleterId: MemberId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, hide: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, PostId, ThreadId, bool]>;
+      /**
+       * Changes thread permission mode.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` if ThreadMode is close or O(1) otherwise where:
+       * - `W` is the number of whitelisted members in `mode`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      changeThreadMode: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, mode: ThreadMode | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, ThreadId, ThreadMode]>;
       /**
        * Updates a post with author origin check. Update attempts number is limited.
        * 
@@ -2461,26 +2461,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       cancelDeferredSlash: AugmentedSubmittable<(era: EraIndex | AnyNumber | Uint8Array, slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [EraIndex, Vec<u32>]>;
       /**
-       * Declare no desire to either validate or nominate.
-       * 
-       * Effects will be felt at the beginning of the next era.
-       * 
-       * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
-       * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
-       * # <weight>
-       * - Independent of the arguments. Insignificant complexity.
-       * - Contains one read.
-       * - Writes are limited to the `origin` account key.
-       * --------
-       * Weight: O(1)
-       * DB Weight:
-       * - Read: EraElectionStatus, Ledger
-       * - Write: Validators, Nominators
-       * # </weight>
-       **/
-      chill: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-      /**
        * Force there to be a new era at the end of the next session. After this, it will be
        * reset to normal (non-forced) behaviour.
        * 
@@ -2529,6 +2509,26 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       forceUnstake: AugmentedSubmittable<(stash: AccountId | string | Uint8Array, numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, u32]>;
+      /**
+       * Declare no desire to either validate or nominate.
+       * 
+       * Effects will be felt at the beginning of the next era.
+       * 
+       * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+       * And, it can be only called when [`EraElectionStatus`] is `Closed`.
+       * 
+       * # <weight>
+       * - Independent of the arguments. Insignificant complexity.
+       * - Contains one read.
+       * - Writes are limited to the `origin` account key.
+       * --------
+       * Weight: O(1)
+       * DB Weight:
+       * - Read: EraElectionStatus, Ledger
+       * - Write: Validators, Nominators
+       * # </weight>
+       **/
+      chill: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
       /**
        * Increments the ideal number of validators.
        * 
@@ -3185,19 +3185,6 @@ declare module '@polkadot/api/types/submittable' {
        **/
       remark: AugmentedSubmittable<(remark: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
       /**
-       * Set the new changes trie configuration.
-       * 
-       * # <weight>
-       * - `O(1)`
-       * - 1 storage write or delete (codec `O(1)`).
-       * - 1 call to `deposit_log`: Uses `append` API, so O(1)
-       * - Base Weight: 7.218 µs
-       * - DB Weight:
-       * - Writes: Changes Trie, System Digest
-       * # </weight>
-       **/
-      setChangesTrieConfig: AugmentedSubmittable<(changesTrieConfig: Option<ChangesTrieConfiguration> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<ChangesTrieConfiguration>]>;
-      /**
        * Set the new runtime code.
        * 
        * # <weight>
@@ -3232,6 +3219,19 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       setHeapPages: AugmentedSubmittable<(pages: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Set the new changes trie configuration.
+       * 
+       * # <weight>
+       * - `O(1)`
+       * - 1 storage write or delete (codec `O(1)`).
+       * - 1 call to `deposit_log`: Uses `append` API, so O(1)
+       * - Base Weight: 7.218 µs
+       * - DB Weight:
+       * - Writes: Changes Trie, System Digest
+       * # </weight>
+       **/
+      setChangesTrieConfig: AugmentedSubmittable<(changesTrieConfig: Option<ChangesTrieConfiguration> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<ChangesTrieConfiguration>]>;
       /**
        * Set some items of storage.
        * 
