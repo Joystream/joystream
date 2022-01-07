@@ -39,7 +39,7 @@ scenario(async ({ job, env }) => {
   const membershipSystemJob = job('membership system', membershipSystem).requires(
     runtimeUpgradeProposalJob || councilJob
   )
-/*
+  /*
   // All other jobs should be executed after membershipSystemJob,
   // otherwise changing membershipPrice etc. may break them
 
