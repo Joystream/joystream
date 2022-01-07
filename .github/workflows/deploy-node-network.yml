@@ -3,42 +3,10 @@ name: Deploy node network
 on:
   workflow_dispatch:
     inputs:
-      gitRepo:
-        description: 'Code repository'
-        required: false
-        default: 'https://github.com/Joystream/joystream.git'
-      branchName:
-        description: 'Branch to deploy'
-        required: false
-        default: 'master'
-      keyName:
-        description: 'SSH key pair on AWS'
-        required: false
-        default: 'anuj-key'
-      numberOfValidators:
-        description: 'Number of validators to deploy'
-        required: false
-        default: '2'
-      validatorInstanceType:
-        description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
-        required: false
-        default: 't2.large'
-      buildInstanceType:
-        description: 'AWS EC2 instance type for Build Instance (t2.micro, t2.large)'
-        required: false
-        default: 't2.xlarge'
-      rpcInstanceType:
-        description: 'AWS EC2 instance type for Validators (t2.micro, t2.large)'
-        required: false
-        default: 't2.large'
-      ec2AMI:
-        description: 'Pre-built AMI ID (ami-0090c9c49dc765fbb)'
-        required: false
+      jsonInput:
+        description: 'Json input (refer to .pipelines/deploy-node-network-inputs.json)'
+        required: true
         default: ''
-      networkSuffix:
-        description: 'Network suffix that will be added to the network name'
-        required: false
-        default: '8129'
 
 defaults:
   run:
@@ -49,10 +17,40 @@ jobs:
     name: Create CloudFormation stack and run Ansible playbook
     runs-on: ubuntu-latest
     env:
-      STACK_NAME: ga-node-network-${{ github.event.inputs.branchName }}-${{ github.run_number }}
+      STACK_NAME: ga-deploy-node-network-${{ github.run_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Set env variables
+        id: myoutputs # set the outputs
+        run: |
+          jsonInput='${{ github.event.inputs.jsonInput }}'
+          echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
+          echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
+          echo ::set-output name=keyName::$(echo $jsonInput | jq -r '.keyName.value')
+          echo ::set-output name=numberOfValidators::$(echo $jsonInput | jq -r '.numberOfValidators.value')
+          echo ::set-output name=validatorInstanceType::$(echo $jsonInput | jq -r '.validatorInstanceType.value')
+          echo ::set-output name=buildInstanceType::$(echo $jsonInput | jq -r '.buildInstanceType.value')
+          echo ::set-output name=rpcInstanceType::$(echo $jsonInput | jq -r '.rpcInstanceType.value')
+          echo ::set-output name=ec2AMI::$(echo $jsonInput | jq -r '.ec2AMI.value')
+          echo ::set-output name=networkSuffix::$(echo $jsonInput | jq -r '.networkSuffix.value')
+          initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
+          initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
+          if [ -z "$initialBalancesFile" ]
+          then
+            echo ::set-output name=initialBalancesFilePath::''
+          else
+            wget $initialBalancesFile -O initial-balances.json
+            echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
+          fi
+          if [ -z "$initialMembersFile" ]
+          then
+            echo ::set-output name=initialMembersFilePath::''
+          else
+            wget $initialMembersFile -O initial-members.json
+            echo ::set-output name=initialMembersFilePath::'initial-members.json'
+          fi
 
       - name: Install Ansible dependencies
         run: pipx inject ansible-core boto3 botocore
@@ -72,12 +70,12 @@ jobs:
           template: devops/aws/cloudformation/infrastructure.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
-            KeyName=${{ github.event.inputs.keyName }},
-            ValidatorEC2InstanceType=${{ github.event.inputs.validatorInstanceType }},
-            RPCEC2InstanceType=${{ github.event.inputs.rpcInstanceType }},
-            BuildEC2InstanceType=${{ github.event.inputs.buildInstanceType }},
-            EC2AMI=${{ github.event.inputs.ec2AMI }},
-            NumberOfValidators=${{ github.event.inputs.numberOfValidators }}
+            KeyName=${{ steps.myoutputs.outputs.keyName }},
+            ValidatorEC2InstanceType=${{ steps.myoutputs.outputs.validatorInstanceType }},
+            RPCEC2InstanceType=${{ steps.myoutputs.outputs.rpcInstanceType }},
+            BuildEC2InstanceType=${{ steps.myoutputs.outputs.buildInstanceType }},
+            EC2AMI=${{ steps.myoutputs.outputs.ec2AMI }},
+            NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }}
 
       - name: Prepare inventory for Ansible
         run: |
@@ -101,7 +99,7 @@ jobs:
 
       - name: Run playbook to compile joystream-node on build server
         uses: dawidd6/action-ansible-playbook@v2
-        if: github.event.inputs.ec2AMI == ''
+        if: steps.myoutputs.outputs.ec2AMI == ''
         with:
           playbook: build-code.yml
           directory: devops/aws
@@ -109,12 +107,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
             --inventory inventory
-            --extra-vars "branch_name=${{ github.event.inputs.branchName }} \
-                          git_repo=${{ github.event.inputs.gitRepo }} data_path=mydata"
+            --extra-vars "branch_name=${{ steps.myoutputs.outputs.branchName }} \
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata"
 
       - name: Run playbook to install additional utils on build server
         uses: dawidd6/action-ansible-playbook@v2
-        if: github.event.inputs.ec2AMI == ''
+        if: steps.myoutputs.outputs.ec2AMI == ''
         with:
           playbook: setup-admin.yml
           directory: devops/aws
@@ -132,11 +130,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
             --inventory inventory
-            --extra-vars "network_suffix=${{ github.event.inputs.networkSuffix }} data_path=mydata \
-                          number_of_validators=${{ github.event.inputs.numberOfValidators }} \
-                          git_repo=${{ github.event.inputs.gitRepo }} deployment_type=live \
+            --extra-vars "network_suffix=${{ steps.myoutputs.outputs.networkSuffix }} data_path=mydata \
+                          number_of_validators=${{ steps.myoutputs.outputs.numberOfValidators }} \
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} deployment_type=live \
                           bucket_name=${{ steps.deploy_stack.outputs.S3BucketName }} \
-                          branch_name=${{ github.event.inputs.branchName }}"
+                          branch_name=${{ steps.myoutputs.outputs.branchName }} \
+                          initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
+                          initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }}"
 
       - name: Save the output as an artifact
         uses: actions/upload-artifact@v2
@@ -147,7 +147,7 @@ jobs:
       - name: Print output URL's
         run: |
           echo -e "Pioneer URL: https://${{ steps.deploy_stack.outputs.DomainName }}"
-          echo -e "RPC: https://${{ steps.deploy_stack.outputs.RPCPublicIp }}.nip.io/ws-rpc"
+          echo -e "RPC: wss://${{ steps.deploy_stack.outputs.RPCPublicIp }}.nip.io/ws-rpc"
 
       - name: Delete CloudFormation Stack if any step failed
         if: failure()
