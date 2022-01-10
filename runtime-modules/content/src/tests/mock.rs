@@ -24,6 +24,8 @@ pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 
 /// Origins
 
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
+
 pub const LEAD_ORIGIN: u64 = 1;
 
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
@@ -39,6 +41,7 @@ pub const INITIAL_BALANCE: u64 = 1000;
 pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
+pub const DEFAULT_MEMBER_ID: u64 = 201;
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;

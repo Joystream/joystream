@@ -2,6 +2,7 @@
 
 mod channels;
 mod curators;
+mod fixtures;
 mod mock;
 mod posts;
 mod videos;
