@@ -42,6 +42,36 @@ services:
       - ACCOUNT_URI=//Alice
       # enable ElasticSearch server
       # - ELASTIC_SEARCH_ENDPOINT=host.docker.internal:9200
+
+  distributor-node:
+    image: joystream/distributor-node
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: distributor-node.Dockerfile
+    volumes:
+      - /data
+      - /cache
+    ports:
+      - 127.0.0.1:3334:3334
+    # Node configuration can be overriden via env, for exampe:
+    # environment:
+    #   JOYSTREAM_DISTRIBUTOR__ID: node-id
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: qn-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: sn-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: assets-dir
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: cache-state-dir
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE__LEVEL: debug
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /tmp
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
+    #   JOYSTREAM_DISTRIBUTOR__PORT: 1234
+    #   JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"//Bob\"}]"
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
+    #   JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
+    command: ["start"]
+
   db:
     image: postgres:12
     restart: always

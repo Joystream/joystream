@@ -1,0 +1,94 @@
+fragment DistributionBucketOperatorDetails on DistributionBucketOperator {
+  workerId
+  status
+}
+
+fragment DistributionBucketDetails on DistributionBucket {
+  id
+  operators {
+    ...DistributionBucketOperatorDetails
+  }
+}
+
+fragment StorageBucketDetails on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+  operatorStatus {
+    __typename
+  }
+}
+
+fragment DataObjectDetails on StorageDataObject {
+  id
+  size
+  ipfsHash
+  isAccepted
+  storageBag {
+    storageBuckets {
+      ...StorageBucketDetails
+    }
+    distributionBuckets {
+      ...DistributionBucketDetails
+    }
+  }
+}
+
+query getDataObjectDetails($id: ID!) {
+  storageDataObjectByUniqueInput(where: { id: $id }) {
+    ...DataObjectDetails
+  }
+}
+
+fragment DistirubtionBucketWithObjects on DistributionBucket {
+  id
+  bags {
+    objects {
+      id
+      size
+      ipfsHash
+    }
+  }
+}
+
+query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
+  distributionBuckets(where: { id_in: $ids }) {
+    ...DistirubtionBucketWithObjects
+  }
+}
+
+query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
+  distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
+    ...DistirubtionBucketWithObjects
+  }
+}
+
+fragment StorageBucketOperatorFields on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+fragment StorageBucketsConnectionFields on StorageBucketConnection {
+  edges {
+    node {
+      ...StorageBucketOperatorFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
+query getActiveStorageBucketOperatorsData($limit: Int!, $lastCursor: String) {
+  storageBucketsConnection(
+    first: $limit
+    after: $lastCursor
+    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
+  ) {
+    ...StorageBucketsConnectionFields
+  }
+}

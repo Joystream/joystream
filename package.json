@@ -19,6 +19,7 @@
     "cli",
     "types",
     "storage-node",
+    "distributor-node",
     "devops/eslint-config",
     "devops/prettier-config",
     "pioneer",
