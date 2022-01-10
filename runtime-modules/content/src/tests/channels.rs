@@ -4,124 +4,125 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
+use frame_support::{assert_err, assert_ok};
 
-// #[test]
-// fn channel_censoring() {
-//     with_default_mock_builder(|| {
-//         // Run to block one to see emitted events
-//         run_to_block(1);
+#[test]
+fn channel_censoring() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
 
-//         let channel_id = Content::next_channel_id();
-//         assert_ok!(Content::create_channel(
-//             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//             ChannelCreationParametersRecord {
-//                 assets: None,
-//                 meta: None,
-//                 reward_account: None,
-//                 collaborators: BTreeSet::new(),
-//             }
-//         ));
+        let channel_id = Content::next_channel_id();
+        assert_ok!(Content::create_channel(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            }
+        ));
 
-//         let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
-//         // Curator can censor channels
-//         let is_censored = true;
-//         assert_ok!(Content::update_channel_censorship_status(
-//             Origin::signed(FIRST_CURATOR_ORIGIN),
-//             ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//             channel_id,
-//             is_censored,
-//             vec![]
-//         ));
+        // Curator can censor channels
+        let is_censored = true;
+        assert_ok!(Content::update_channel_censorship_status(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+            channel_id,
+            is_censored,
+            vec![]
+        ));
 
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
-//                 ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//                 channel_id,
-//                 is_censored,
-//                 vec![]
-//             ))
-//         );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
+                ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+                channel_id,
+                is_censored,
+                vec![]
+            ))
+        );
 
-//         let channel = Content::channel_by_id(channel_id);
+        let channel = Content::channel_by_id(channel_id);
 
-//         assert!(channel.is_censored);
+        assert!(channel.is_censored);
 
-//         // Curator can un-censor channels
-//         let is_censored = false;
-//         assert_ok!(Content::update_channel_censorship_status(
-//             Origin::signed(FIRST_CURATOR_ORIGIN),
-//             ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//             channel_id,
-//             is_censored,
-//             vec![]
-//         ));
+        // Curator can un-censor channels
+        let is_censored = false;
+        assert_ok!(Content::update_channel_censorship_status(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+            channel_id,
+            is_censored,
+            vec![]
+        ));
 
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
-//                 ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//                 channel_id,
-//                 is_censored,
-//                 vec![]
-//             ))
-//         );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
+                ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+                channel_id,
+                is_censored,
+                vec![]
+            ))
+        );
 
-//         let channel = Content::channel_by_id(channel_id);
+        let channel = Content::channel_by_id(channel_id);
 
-//         assert!(!channel.is_censored);
+        assert!(!channel.is_censored);
 
-//         // Member cannot censor channels
-//         let is_censored = true;
-//         assert_err!(
-//             Content::update_channel_censorship_status(
-//                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-//                 ContentActor::Member(DEFAULT_MEMBER_ID),
-//                 channel_id,
-//                 is_censored,
-//                 vec![]
-//             ),
-//             Error::<Test>::ActorNotAuthorized
-//         );
+        // Member cannot censor channels
+        let is_censored = true;
+        assert_err!(
+            Content::update_channel_censorship_status(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                channel_id,
+                is_censored,
+                vec![]
+            ),
+            Error::<Test>::ActorNotAuthorized
+        );
 
-//         let curator_channel_id = Content::next_channel_id();
+        let curator_channel_id = Content::next_channel_id();
 
-//         // create curator channel
-//         assert_ok!(Content::create_channel(
-//             Origin::signed(FIRST_CURATOR_ORIGIN),
-//             ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//             ChannelCreationParametersRecord {
-//                 assets: None,
-//                 meta: None,
-//                 reward_account: None,
-//                 collaborators: BTreeSet::new(),
-//             }
-//         ));
+        // create curator channel
+        assert_ok!(Content::create_channel(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+            ChannelCreationParametersRecord {
+                assets: None,
+                meta: None,
+                reward_account: None,
+                collaborators: BTreeSet::new(),
+            }
+        ));
 
-//         // Curator cannot censor curator group channels
-//         assert_err!(
-//             Content::update_channel_censorship_status(
-//                 Origin::signed(FIRST_CURATOR_ORIGIN),
-//                 ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-//                 curator_channel_id,
-//                 is_censored,
-//                 vec![]
-//             ),
-//             Error::<Test>::CannotCensoreCuratorGroupOwnedChannels
-//         );
+        // Curator cannot censor curator group channels
+        assert_err!(
+            Content::update_channel_censorship_status(
+                Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+                ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
+                curator_channel_id,
+                is_censored,
+                vec![]
+            ),
+            Error::<Test>::CannotCensoreCuratorGroupOwnedChannels
+        );
 
-//         // Lead can still censor curator group channels
-//         assert_ok!(Content::update_channel_censorship_status(
-//             Origin::signed(LEAD_ORIGIN),
-//             ContentActor::Lead,
-//             curator_channel_id,
-//             is_censored,
-//             vec![]
-//         ));
-//     })
-// }
+        // Lead can still censor curator group channels
+        assert_ok!(Content::update_channel_censorship_status(
+            Origin::signed(LEAD_ACCOUNT_ID),
+            ContentActor::Lead,
+            curator_channel_id,
+            is_censored,
+            vec![]
+        ));
+    })
+}
 
 // channel creation tests
 #[test]
