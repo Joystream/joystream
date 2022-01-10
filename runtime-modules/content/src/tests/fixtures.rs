@@ -80,6 +80,20 @@ impl CreatePostFixture {
                         assert_eq!(replies_post, replies_pre.saturating_add(One::one()));
                     }
                 }
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::PostCreated(
+                        Post::<T> {
+                            author: self.actor,
+                            bloat_bond: initial_bloat_bond,
+                            replies_count: T::PostId::zero(),
+                            video_reference: params.video_reference,
+                            post_type: params.post_type,
+                        },
+                        post_id,
+                        self.actor,
+                    ))
+                );
             }
             Err(_) => {
                 assert_eq!(balance_pre, balance_post);
