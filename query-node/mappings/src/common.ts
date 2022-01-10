@@ -197,6 +197,28 @@ export async function updateVideoActiveCounters(
   await Promise.all(promises)
 }
 
+export async function updateChannelCategoryVideoActiveCounter(
+  store: DatabaseManager,
+  originalCategory: ChannelCategory | undefined,
+  newCategory: ChannelCategory | undefined,
+  videosCount: number
+) {
+  // escape if no counter change needed
+  if (!videosCount || originalCategory === newCategory) {
+    return
+  }
+
+  if (originalCategory) {
+    originalCategory.activeVideosCounter -= videosCount
+    await store.save<ChannelCategory>(originalCategory)
+  }
+
+  if (newCategory) {
+    newCategory.activeVideosCounter += videosCount
+    await store.save<ChannelCategory>(newCategory)
+  }
+}
+
 /// ///////////////// Sudo extrinsic calls ///////////////////////////////////////
 
 // soft-peg interface for typegen-generated `*Call` types

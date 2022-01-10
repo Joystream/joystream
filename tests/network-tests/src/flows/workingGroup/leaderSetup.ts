@@ -4,21 +4,22 @@ import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
-// import { KeyringPair } from '@polkadot/keyring/types'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
 import { extendDebug } from '../../Debugger'
+import { CliApi } from '../../CliApi'
 
 export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
+  storage: async function ({ api, env, cli }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, cli, WorkingGroups.StorageWorkingGroup)
   },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  content: async function ({ api, env, cli }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, cli, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }
 
 // Worker application happy case scenario
-async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, cli: CliApi, group: WorkingGroups): Promise<void> {
   const debug = extendDebug(`flow:leaderSetup:${group}`)
   debug('Started')
 
@@ -51,6 +52,9 @@ async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroup
   const hiredLead = await api.getGroupLead(group)
   assert.notEqual(hiredLead, undefined, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
+
+  debug(`Importing leader's account to CLI`)
+  await cli.importAccount(leadKeyPair)
 
   debug('Done')
 

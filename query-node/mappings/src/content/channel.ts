@@ -16,7 +16,7 @@ import {
 import { disconnectDataObjectRelations } from '../storage'
 
 import { Channel, ChannelCategory, DataObject, AssetAvailability } from 'query-node'
-import { inconsistentState, logger } from '../common'
+import { inconsistentState, logger, updateChannelCategoryVideoActiveCounter } from '../common'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -71,12 +71,17 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
   const { channelId, channelUpdateParameters, contentActor } = new Content.ChannelUpdatedEvent(event).data
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await db.get(Channel, {
+    where: { id: channelId.toString() } as FindConditions<Channel>,
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
     return inconsistentState('Non-existing channel update requested', channelId)
   }
+
+  const originalCategory = channel.category
 
   // prepare changed metadata
   const newMetadata = channelUpdateParameters.new_meta.unwrapOr(null)
@@ -112,6 +117,9 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
   // save channel
   await db.save<Channel>(channel)
 
+  // transfer video active counter value to new category
+  await updateChannelCategoryVideoActiveCounter(db, originalCategory, channel.category, channel.activeVideosCounter)
+
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
 }
@@ -146,7 +154,10 @@ export async function content_ChannelCensorshipStatusUpdated(db: DatabaseManager
   const { channelId, isCensored } = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
 
   // load event
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await db.get(Channel, {
+    where: { id: channelId.toString() } as FindConditions<Channel>,
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
@@ -161,6 +172,14 @@ export async function content_ChannelCensorshipStatusUpdated(db: DatabaseManager
 
   // save channel
   await db.save<Channel>(channel)
+
+  // update active video counter for category (if any)
+  await updateChannelCategoryVideoActiveCounter(
+    db,
+    isCensored.isTrue ? channel.category : undefined,
+    isCensored.isTrue ? undefined : channel.category,
+    channel.activeVideosCounter
+  )
 
   // emit log event
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })

@@ -125,6 +125,8 @@ export type ChannelCategoryOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'name_ASC' |
   'name_DESC' |
+  'activeVideosCounter_ASC' |
+  'activeVideosCounter_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC'
 
@@ -152,6 +154,8 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'title_DESC' |
   'description_ASC' |
   'description_DESC' |
+  'activeVideosCounter_ASC' |
+  'activeVideosCounter_DESC' |
   'coverPhotoDataObject_ASC' |
   'coverPhotoDataObject_DESC' |
   'coverPhotoDataObjectId_ASC' |
@@ -246,6 +250,8 @@ export type VideoCategoryOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'name_ASC' |
   'name_DESC' |
+  'activeVideosCounter_ASC' |
+  'activeVideosCounter_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC'
 
@@ -789,11 +795,13 @@ export interface DataObjectWhereUniqueInput {
 
 export interface ChannelCategoryCreateInput {
   name?: String | null
+  activeVideosCounter: Float
   createdInBlock: Float
 }
 
 export interface ChannelCategoryUpdateInput {
   name?: String | null
+  activeVideosCounter?: Float | null
   createdInBlock?: Float | null
 }
 
@@ -827,6 +835,12 @@ export interface ChannelCategoryWhereInput {
   name_startsWith?: String | null
   name_endsWith?: String | null
   name_in?: String[] | String | null
+  activeVideosCounter_eq?: Int | null
+  activeVideosCounter_gt?: Int | null
+  activeVideosCounter_gte?: Int | null
+  activeVideosCounter_lt?: Int | null
+  activeVideosCounter_lte?: Int | null
+  activeVideosCounter_in?: Int[] | Int | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
@@ -854,6 +868,7 @@ export interface ChannelCreateInput {
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
+  activeVideosCounter: Float
   coverPhotoDataObject?: ID_Input | null
   coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls: Array<String>
@@ -879,6 +894,7 @@ export interface ChannelUpdateInput {
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
+  activeVideosCounter?: Float | null
   coverPhotoDataObject?: ID_Input | null
   coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls?: String[] | String | null
@@ -940,6 +956,12 @@ export interface ChannelWhereInput {
   description_startsWith?: String | null
   description_endsWith?: String | null
   description_in?: String[] | String | null
+  activeVideosCounter_eq?: Int | null
+  activeVideosCounter_gt?: Int | null
+  activeVideosCounter_gte?: Int | null
+  activeVideosCounter_lt?: Int | null
+  activeVideosCounter_lte?: Int | null
+  activeVideosCounter_in?: Int[] | Int | null
   coverPhotoDataObjectId_eq?: ID_Input | null
   coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
   coverPhotoUrls_containsAll?: String[] | String | null
@@ -1254,11 +1276,13 @@ export interface NextEntityIdWhereUniqueInput {
 
 export interface VideoCategoryCreateInput {
   name?: String | null
+  activeVideosCounter: Float
   createdInBlock: Float
 }
 
 export interface VideoCategoryUpdateInput {
   name?: String | null
+  activeVideosCounter?: Float | null
   createdInBlock?: Float | null
 }
 
@@ -1292,6 +1316,12 @@ export interface VideoCategoryWhereInput {
   name_startsWith?: String | null
   name_endsWith?: String | null
   name_in?: String[] | String | null
+  activeVideosCounter_eq?: Int | null
+  activeVideosCounter_gt?: Int | null
+  activeVideosCounter_gte?: Int | null
+  activeVideosCounter_lt?: Int | null
+  activeVideosCounter_lte?: Int | null
+  activeVideosCounter_in?: Int[] | Int | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null

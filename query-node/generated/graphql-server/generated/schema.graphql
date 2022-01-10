@@ -719,6 +719,7 @@ type ChannelCategoryConnection {
 
 input ChannelCategoryCreateInput {
   name: String
+  activeVideosCounter: Float!
   createdInBlock: Float!
 }
 
@@ -736,12 +737,15 @@ enum ChannelCategoryOrderByInput {
   deletedAt_DESC
   name_ASC
   name_DESC
+  activeVideosCounter_ASC
+  activeVideosCounter_DESC
   createdInBlock_ASC
   createdInBlock_DESC
 }
 
 input ChannelCategoryUpdateInput {
   name: String
+  activeVideosCounter: Float
   createdInBlock: Float
 }
 
@@ -775,6 +779,12 @@ input ChannelCategoryWhereInput {
   name_startsWith: String
   name_endsWith: String
   name_in: [String!]
+  activeVideosCounter_eq: Int
+  activeVideosCounter_gt: Int
+  activeVideosCounter_gte: Int
+  activeVideosCounter_lt: Int
+  activeVideosCounter_lte: Int
+  activeVideosCounter_in: [Int!]
   createdInBlock_eq: Int
   createdInBlock_gt: Int
   createdInBlock_gte: Int
@@ -808,6 +818,7 @@ input ChannelCreateInput {
   rewardAccount: String
   title: String
   description: String
+  activeVideosCounter: Float!
   coverPhotoDataObject: ID
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]!
@@ -853,6 +864,8 @@ enum ChannelOrderByInput {
   title_DESC
   description_ASC
   description_DESC
+  activeVideosCounter_ASC
+  activeVideosCounter_DESC
   coverPhotoDataObject_ASC
   coverPhotoDataObject_DESC
   coverPhotoDataObjectId_ASC
@@ -887,6 +900,7 @@ input ChannelUpdateInput {
   rewardAccount: String
   title: String
   description: String
+  activeVideosCounter: Float
   coverPhotoDataObject: ID
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]
@@ -948,6 +962,12 @@ input ChannelWhereInput {
   description_startsWith: String
   description_endsWith: String
   description_in: [String!]
+  activeVideosCounter_eq: Int
+  activeVideosCounter_gt: Int
+  activeVideosCounter_gte: Int
+  activeVideosCounter_lt: Int
+  activeVideosCounter_lte: Int
+  activeVideosCounter_in: [Int!]
   coverPhotoDataObjectId_eq: ID
   coverPhotoDataObjectId_in: [ID!]
   coverPhotoUrls_containsAll: [String!]
@@ -1664,6 +1684,7 @@ type VideoCategoryConnection {
 
 input VideoCategoryCreateInput {
   name: String
+  activeVideosCounter: Float!
   createdInBlock: Float!
 }
 
@@ -1681,12 +1702,15 @@ enum VideoCategoryOrderByInput {
   deletedAt_DESC
   name_ASC
   name_DESC
+  activeVideosCounter_ASC
+  activeVideosCounter_DESC
   createdInBlock_ASC
   createdInBlock_DESC
 }
 
 input VideoCategoryUpdateInput {
   name: String
+  activeVideosCounter: Float
   createdInBlock: Float
 }
 
@@ -1720,6 +1744,12 @@ input VideoCategoryWhereInput {
   name_startsWith: String
   name_endsWith: String
   name_in: [String!]
+  activeVideosCounter_eq: Int
+  activeVideosCounter_gt: Int
+  activeVideosCounter_gte: Int
+  activeVideosCounter_lt: Int
+  activeVideosCounter_lte: Int
+  activeVideosCounter_in: [Int!]
   createdInBlock_eq: Int
   createdInBlock_gt: Int
   createdInBlock_gte: Int

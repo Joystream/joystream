@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { decodeAddress } from '@polkadot/keyring'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
@@ -36,6 +37,7 @@ import { VideoId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/content-metadata-protobuf'
 import { assert } from 'chai'
+import { v4 as uuid } from 'uuid'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -117,8 +119,7 @@ export class ApiFactory {
   }
 
   public createCustomKeyPair(customPath: string): KeyringPair {
-    const uri = `${this.miniSecret}//testing//${customPath}`
-    return this.keyring.addFromUri(uri)
+    return this.keyring.addFromUri(customPath + uuid().substring(0, 8))
   }
 
   public keyGenInfo(): { start: number; final: number } {
@@ -818,6 +819,10 @@ export class Api {
     )
   }
 
+  public unpackContentId(hexFormat: string): ContentId {
+    return this.api.createType('ContentId', hexFormat)
+  }
+
   public getBlockDuration(): BN {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
   }
@@ -1145,6 +1150,21 @@ export class Api {
     return this.makeSudoCall(
       this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module)
     )
+  }
+
+  public decodeContentId(contentId: string): ContentId {
+    return ContentId.decode(this.api.registry, contentId)
+  }
+
+  public async acceptContent(
+    workerAccount: string,
+    workerId: number,
+    contentId: ContentId
+  ): Promise<ISubmittableResult> {
+    // not sure why is this needed to convert contentId, but it's essential
+    const decodedContentId = decodeAddress(contentId)
+
+    return this.sender.signAndSend(this.api.tx.dataDirectory.acceptContent(workerId, decodedContentId), workerAccount)
   }
 
   public async proposeCreateWorkingGroupLeaderOpening(leaderOpening: {

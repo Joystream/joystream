@@ -10,6 +10,7 @@ import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
 import fs from 'fs'
+import { CliApi } from './CliApi'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -42,7 +43,6 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   }
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
-
   const queryNodeProvider = new ApolloClient({
     link: new HttpLink({ uri: queryNodeUrl, fetch }),
     cache: new InMemoryCache(),
@@ -51,9 +51,11 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const query = new QueryNodeApi(queryNodeProvider)
 
+  const cli = new CliApi()
+
   const debug = extendDebug('scenario')
 
-  const jobs = new JobManager({ apiFactory, query, env })
+  const jobs = new JobManager({ apiFactory, query, env, cli })
 
   await scene({ env, debug, job: jobs.createJob.bind(jobs) })
 

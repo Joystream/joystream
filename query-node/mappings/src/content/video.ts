@@ -184,8 +184,11 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
   // save video
   await db.save<Video>(video)
 
-  // update video active counters
-  await updateVideoActiveCounters(db, undefined, getVideoActiveStatus(video))
+  // update video active counters (if needed)
+  const videoActiveStatus = getVideoActiveStatus(video)
+  if (videoActiveStatus.isFullyActive) {
+    await updateVideoActiveCounters(db, undefined, videoActiveStatus)
+  }
 
   // emit log event
   logger.info('Video has been created', { id: videoId })
@@ -208,7 +211,7 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   }
 
   // remember if video is fully active before update
-  const initialVideoActivity = getVideoActiveStatus(video)
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
 
   // prepare changed metadata
   const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
@@ -253,7 +256,7 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   await db.save<Video>(video)
 
   // update video active counters
-  await updateVideoActiveCounters(db, initialVideoActivity, getVideoActiveStatus(video))
+  await updateVideoActiveCounters(db, initialVideoActiveStatus, getVideoActiveStatus(video))
 
   // delete old license if it's planned
   if (licenseToDelete) {
@@ -281,13 +284,15 @@ export async function content_VideoDeleted(db: DatabaseManager, event: Substrate
   }
 
   // remember if video is fully active before update
-  const initialVideoActivity = getVideoActiveStatus(video)
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
 
   // remove video
   await db.remove<Video>(video)
 
-  // update video active counters
-  await updateVideoActiveCounters(db, initialVideoActivity, undefined)
+  // update video active counters (if needed)
+  if (initialVideoActiveStatus.isFullyActive) {
+    await updateVideoActiveCounters(db, initialVideoActiveStatus, undefined)
+  }
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
@@ -310,7 +315,7 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   }
 
   // remember if video is fully active before update
-  const initialVideoActivity = getVideoActiveStatus(video)
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -322,7 +327,7 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   await db.save<Video>(video)
 
   // update video active counters
-  await updateVideoActiveCounters(db, initialVideoActivity, getVideoActiveStatus(video))
+  await updateVideoActiveCounters(db, initialVideoActiveStatus, getVideoActiveStatus(video))
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })

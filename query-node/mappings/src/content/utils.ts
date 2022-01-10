@@ -225,6 +225,13 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     const metaAsObject = convertMetadataToObject<ChannelMetadata.AsObject>(meta)
     const result = (metaAsObject as any) as Partial<Channel>
 
+    // prepare channel category if needed
+    if ('category' in metaAsObject) {
+      const category = await prepareChannelCategory(metaAsObject.category, parameters.db)
+      delete metaAsObject.category // make sure temporary value will not interfere
+      category.integrateInto(result, 'category')
+    }
+
     // prepare cover photo asset if needed
     if ('coverPhoto' in metaAsObject) {
       const asset = await extractAsset({
@@ -716,6 +723,29 @@ function prepareVideoMetadata(
   } as RawVideoMetadata
 
   return rawMeta
+}
+
+async function prepareChannelCategory(
+  categoryId: number | undefined,
+  db: DatabaseManager
+): Promise<PropertyChange<ChannelCategory>> {
+  // is category being unset?
+  if (categoryId === undefined) {
+    return PropertyChange.newUnset()
+  }
+
+  // load video category
+  const category = await db.get(ChannelCategory, {
+    where: { id: categoryId.toString() } as FindConditions<ChannelCategory>,
+  })
+
+  // ensure video category exists
+  if (!category) {
+    invalidMetadata('Non-existing channel category association with video requested', categoryId)
+    return PropertyChange.newNoChange()
+  }
+
+  return PropertyChange.newChange(category)
 }
 
 async function prepareVideoCategory(
