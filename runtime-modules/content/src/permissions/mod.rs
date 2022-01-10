@@ -231,7 +231,7 @@ pub fn ensure_actor_is_channel_owner<T: Trait>(
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     let resulting_owner = actor_to_channel_owner::<T>(actor)?;
-    ensure!(resulting_owner == owner, Error::<T>::ActorNotAuthorized);
+    ensure!(resulting_owner == *owner, Error::<T>::ActorNotAuthorized);
     Ok(())
 }
 
@@ -260,7 +260,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
     ensure_actor_auth_success::<T>(&sender, actor)?;
     match actor {
         ContentActor::Lead => Ok(()),
-        ContentActor::Curator(curator_group_id, curator_id) => {
+        ContentActor::Curator(..) => {
             // Curators cannot censor curator group channels
             if let ChannelOwner::CuratorGroup(_) = owner {
                 Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels.into())

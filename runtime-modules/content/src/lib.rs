@@ -1504,7 +1504,7 @@ decl_module! {
             <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
 
             <NextPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
-            <PostById<T>>::insert(&params.video_reference, &post_id, post);
+            <PostById<T>>::insert(&params.video_reference, &post_id, post.clone());
 
             // increment replies count in the parent post
             match params.post_type {
@@ -1512,7 +1512,7 @@ decl_module! {
                     &params.video_reference,
                     parent_id,
                     |x| x.replies_count = x.replies_count.saturating_add(One::one())),
-                _ => VideoById::<T>::mutate(
+                PostType::<T>::VideoPost => VideoById::<T>::mutate(
                     &params.video_reference,
                     |video| video.video_post_id = Some(post_id.clone())),
             };
@@ -1551,7 +1551,6 @@ decl_module! {
 
             // deposit event
             Self::deposit_event(RawEvent::PostTextUpdated(actor, new_text, post_id, video_id));
-
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1593,21 +1592,29 @@ decl_module! {
                 }
             };
 
-            Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
-
             //
             // == MUTATION_SAFE ==
             //
 
-           Self::delete_post_inner(post.post_type, post_id, video_id);
+            Self::refund(&sender, cleanup_actor, post.bloat_bond.clone())?;
+
+            match post.post_type {
+                PostType::<T>::Comment(parent_id) => {
+                    PostById::<T>::remove(&video_id, &post_id);
+                    <PostById<T>>::mutate(&video_id, &parent_id, |x| {
+                        x.replies_count = x.replies_count.saturating_sub(One::one())
+                    });
+                }
+                PostType::<T>::VideoPost => PostById::<T>::remove_prefix(&video_id),
+            }
 
             // deposit event
             Self::deposit_event(
                 RawEvent::PostDeleted(
-                actor,
-                video_id,
-                post_id,
-                params,
+                    post,
+                    post_id,
+                    video_id,
+                    actor,
             ));
         }
 
@@ -1762,38 +1769,6 @@ impl<T: Trait> Module<T> {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
 
-    fn ensure_can_delete_post(
-        origin: T::Origin,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        channel_id: &T::ChannelId,
-        author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Result<CleanupActor, DispatchError> {
-        // if post author
-        if author == actor {
-            return Ok(CleanupActor::PostAuthor);
-        }
-
-        // if moderator
-        if let ContentActor::Member(member_id) = actor {
-            let channel = <ChannelById<T>>::get(channel_id);
-            if channel.moderator_set.contains(member_id) {
-                return Ok(CleanupActor::Moderator);
-            }
-        }
-
-        // if channel owner
-        match ensure_actor_is_channel_owner::<T>(
-            origin,
-            actor,
-            &<ChannelById<T>>::get(channel_id).owner,
-        ) {
-            Ok(()) => Ok(CleanupActor::ChannelOwner),
-
-            // actor not authorized since it has not passed any checks
-            Err(e) => Err(e.into()),
-        }
-    }
-
     fn refund(
         sender: &<T as frame_system::Trait>::AccountId,
         cleanup_actor: CleanupActor,
@@ -1826,19 +1801,6 @@ impl<T: Trait> Module<T> {
             Self::refund(&sender, CleanupActor::PostAuthor, bloat_bond)?;
         }
         Ok(())
-    }
-
-    fn delete_post_inner(post_type: PostType<T>, post_id: T::PostId, video_id: T::VideoId) {
-        // two possible cases:
-        match post_type {
-            PostType::<T>::Comment(parent_id) => {
-                PostById::<T>::remove(video_id, post_id);
-                <PostById<T>>::mutate(&video_id, &parent_id, |x| {
-                    x.replies_count = x.replies_count.saturating_sub(One::one())
-                });
-            }
-            PostType::<T>::VideoPost => PostById::<T>::remove_prefix(video_id),
-        }
     }
 
     fn compute_initial_bloat_bond() -> <T as balances::Trait>::Balance {
@@ -1916,7 +1878,6 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
-        PostDeletionParameters = PostDeletionParameters<<T as frame_system::Trait>::Hash>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2035,7 +1996,7 @@ decl_event!(
         // Posts & Replies
         PostCreated(Post, PostId, ContentActor),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(ContentActor, VideoId, PostId, PostDeletionParameters),
+        PostDeleted(Post, PostId, VideoId, ContentActor),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, ModeratorSet),
