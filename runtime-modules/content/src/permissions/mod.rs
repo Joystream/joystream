@@ -227,50 +227,12 @@ pub fn ensure_actor_can_edit_text_post<T: Trait>(
 
 // Enure actor can update channels and videos in the channel
 pub fn ensure_actor_is_channel_owner<T: Trait>(
-    origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Only owner of a channel can update and delete channel assets.
-    // Lead can update and delete curator group owned channel assets.
-    match actor {
-        ContentActor::Lead => {
-                Err(Error::<T>::ActorNotAuthorized.into())
-            }
-        ContentActor::Curator(curator_group_id, curator_id) => {
-            let sender = ensure_signed(origin)?;
-
-            // Authorize curator, performing all checks to ensure curator can act
-            CuratorGroup::<T>::perform_curator_in_group_auth(
-                curator_id,
-                curator_group_id,
-                &sender,
-            )?;
-
-            // Ensure curator group is the channel owner.
-            ensure!(
-                *owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                Error::<T>::ActorNotAuthorized
-            );
-
-            Ok(())
-        }
-        ContentActor::Member(member_id) => {
-            let sender = ensure_signed(origin)?;
-
-            ensure_member_auth_success::<T>(member_id, &sender)?;
-
-            // Ensure the member is the channel owner.
-            ensure!(
-                *owner == ChannelOwner::Member(*member_id),
-                Error::<T>::ActorNotAuthorized
-            );
-
-            Ok(())
-        }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
-    }
+    let owner = actor_to_channel_owner::<T>(actor)?;
+    ensure!(actor == owner, Error::<T>::ActorNotAuthorized);
+    Ok(())
 }
 
 // Enure actor can update or delete channels and videos
@@ -294,21 +256,11 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
     // Only lead can censor curator group owned channels and videos
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
     match actor {
-        ContentActor::Lead => {
-            let sender = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&sender)
-        },
+        ContentActor::Lead => Ok(()),
         ContentActor::Curator(curator_group_id, curator_id) => {
-            let sender = ensure_signed(origin)?;
-
-            // Authorize curator, performing all checks to ensure curator can act
-            CuratorGroup::<T>::perform_curator_in_group_auth(
-                curator_id,
-                curator_group_id,
-                &sender,
-            )?;
-
             // Curators cannot censor curator group channels
             if let ChannelOwner::CuratorGroup(_) = owner {
                 Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels.into())
@@ -330,51 +282,118 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     // Only lead and curators can manage categories
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
     match actor {
-        ContentActor::Lead => {
-            let sender = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&sender)
-        },
-        ContentActor::Curator(curator_group_id, curator_id) => {
-            let sender = ensure_signed(origin)?;
-
-            // Authorize curator, performing all checks to ensure curator can act
-            CuratorGroup::<T>::perform_curator_in_group_auth(
-                curator_id,
-                curator_group_id,
-                &sender,
-            )
-        },
-        ContentActor::Member(_) => {
-            // Members cannot censore channels!
-            Err(Error::<T>::ActorNotAuthorized.into())
-        }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
+        ContentActor::Member(_) => Err(Error::<T>::ActorNotAuthorized.into()),
+        _ => Ok(()),
     }
 }
 
-// Enure actor can create post: same rules as if he is trying to update channel
-pub fn ensure_actor_authorized_to_comment<T: Trait>(
+// authenticate actor
+pub fn ensure_actor_auth_success<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
-    if let ContentActor::Member(member_id) = actor {
-        // authenticate member
-        ensure_member_auth_success::<T>(member_id, sender)?;
-    } else {
-        return Err(Error::<T>::ActorNotAuthorized.into());
+    match actor {
+        ContentActor::Lead => ensure_lead_auth_success::<T>(sender),
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
+        }
+        ContentActor::Member(member_id) => ensure_member_auth_success::<T>(member_id, sender),
     }
+}
+
+// Enure actor can create a post comment
+pub fn ensure_actor_authorized_to_add_comment<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(sender, actor)
+}
+
+// Enure actor can create a post comment
+pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    post: &Post<T>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(sender, actor)?;
+    ensure_actor_is_comment_author::<T>(actor, &post.author)
+}
+
+// Enure actor can create post: same rules as if he is trying to update channel
+pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+    post: &Post<T>,
+) -> Result<CleanupActor, DispatchError> {
+    ensure_actor_auth_success::<T>(sender, actor)?;
+    let actor_is_owner = ensure_actor_is_channel_owner::<T>(actor, &channel.owner)
+        .map(|_| CleanupActor::ChannelOwner);
+    let actor_is_author =
+        ensure_actor_is_comment_author::<T>(actor, &post.author).map(|_| CleanupActor::PostAuthor);
+    let actor_is_moderator = ensure_actor_is_moderator::<T>(actor, &channel.moderator_set)
+        .map(|_| CleanupActor::Moderator);
+
+    actor_is_owner.or(actor_is_author).or(actor_is_moderator)
+}
+
+// Enure actor can create post: same rules as if he is trying to update channel
+pub fn ensure_actor_authorized_to_remove_video_post<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(sender, actor)?;
+    ensure_actor_is_channel_owner::<T>(actor, channel.owner)
+}
+
+// Ensure actor is a moderator
+pub fn ensure_actor_is_moderator<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    moderators: &BTreeSet<T::MemberId>,
+) -> DispatchResult {
+    match actor {
+        ContentActor::Member(member_id) => {
+            ensure!(
+                moderators.contains(member_id),
+                Error::<T>::ModeratorDoesNotExist
+            );
+            Ok(())
+        }
+        _ => Err(Error::<T>::ActorNotAuthorized.into()),
+    }
+}
+// Enure actor is comment author
+pub fn ensure_actor_is_comment_author<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    // authenticate actor
+    ensure!(actor == author, Error::<T>::ActorNotAuthorized);
     Ok(())
 }
 
-// Enure actor can edit post
-pub fn ensure_actor_authorized_to_edit_post<T: Trait>(
-    origin: T::Origin,
+pub fn actor_to_channel_owner<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-) -> DispatchResult {
-    ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
+) -> ActorToChannelOwnerResult<T> {
+    match actor {
+            // Lead should use their member or curator role to create channels
+            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
+            ContentActor::Curator(
+                curator_group_id,
+                _curator_id
+            ) => {
+                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
+            }
+            ContentActor::Member(member_id) => {
+                Ok(ChannelOwner::Member(*member_id))
+            }
+            // TODO:
+            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+        }
 }
 
 // pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(

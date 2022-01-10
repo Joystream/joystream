@@ -624,7 +624,7 @@ impl<ParentPostId> Default for PostTypeRecord<ParentPostId> {
 
 pub type PostType<T> = PostTypeRecord<<T as Trait>::PostId>;
 
-/// A boolean in order to differenciate between post author and moderator / owner
+/// An enum in order to differenciate between post author and moderator / owner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum CleanupActor {
@@ -857,7 +857,7 @@ decl_module! {
             )?;
 
             // The channel owner will be..
-            let channel_owner = Self::actor_to_channel_owner(&actor)?;
+            let channel_owner = actor_to_channel_owner::<T>(&actor)?;
 
             // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
@@ -1078,7 +1078,6 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelCategoryDeleted(actor, category_id));
         }
-
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
@@ -1528,12 +1527,16 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_text: Vec<u8>,
         ) {
-            ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin.clone())?;
             // ensure channel exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
+            let video = VideoById::<T>::get(video_id);
+            let channel = ChannelById::<T>::get(video.in_channel);
 
-            // ensure actor is post author
-            ensure_actor_can_edit_text_post::<T>(&actor, origin, &post.author)?;
+            match post.post_type {
+                PostType::<T>::VideoPost => ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?,
+                PostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(&sender, &actor, &post)?
+            };
 
             // deposit event
             Self::deposit_event(RawEvent::PostTextUpdated(actor, new_text, post_id, video_id));
@@ -1550,27 +1553,9 @@ decl_module! {
         ) {
             let sender = ensure_signed(origin.clone())?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
+            let video = VideoById::<T>::get(video_id);
+            let channel = ChannelById::<T>::get(video.in_channel);
             let rationale = params.rationale.clone();
-
-            if let PostType::<T>::VideoPost = post.post_type {
-                Self::ensure_witness_verification(
-                    params.witness.clone(),
-                    post.replies_count
-                )?;
-            }
-
-            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
-            let cleanup_actor = Self::ensure_can_delete_post(
-                origin,
-                &actor,
-                &channel_id,
-                &post.author
-            )?;
-
-            // if deletion actor is a moderator, he must provide rationale
-            if let CleanupActor::Moderator = cleanup_actor {
-                ensure!(rationale.is_some(), Error::<T>::RationaleNotProvidedByModerator);
-            }
 
             Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
 
@@ -1727,26 +1712,6 @@ impl<T: Trait> Module<T> {
                 _ => None,
             })
             .collect()
-    }
-
-    fn actor_to_channel_owner(
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> ActorToChannelOwnerResult<T> {
-        match actor {
-            // Lead should use their member or curator role to create channels
-            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
-            ContentActor::Curator(
-                curator_group_id,
-                _curator_id
-            ) => {
-                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
-            }
-            ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
-        }
     }
 
     fn ensure_post_exists(video_id: T::VideoId, post_id: T::PostId) -> Result<Post<T>, Error<T>> {
