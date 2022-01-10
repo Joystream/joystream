@@ -347,7 +347,7 @@ pub fn ensure_actor_authorized_to_remove_video_post<T: Trait>(
     channel: &Channel<T>,
 ) -> DispatchResult {
     ensure_actor_auth_success::<T>(sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, channel.owner)
+    ensure_actor_is_channel_owner::<T>(actor, &channel.owner)
 }
 
 // Ensure actor is a moderator

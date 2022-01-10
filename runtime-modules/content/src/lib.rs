@@ -1555,7 +1555,32 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
-            let rationale = params.rationale.clone();
+
+            let cleanup_actor = match post.post_type {
+                PostType::<T>::VideoPost => {
+                    Self::ensure_witness_verification(
+                        params.witness,
+                        post.replies_count,
+                    )?;
+                    ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor,&channel)?;
+                    CleanupActor::ChannelOwner
+                },
+                PostType::<T>::Comment(_) => {
+                    let cleanup_actor = ensure_actor_authorized_to_remove_comment::<T>(
+                        &sender,
+                        &actor,
+                        &channel,
+                        &post
+                    )?;
+                    if let CleanupActor::Moderator = &cleanup_actor {
+                        ensure!(
+                            params.rationale.is_some(),
+                            Error::<T>::RationaleNotProvidedByModerator
+                        );
+                    }
+                    cleanup_actor
+                }
+            };
 
             Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
 
