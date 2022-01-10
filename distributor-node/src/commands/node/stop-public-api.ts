@@ -10,8 +10,4 @@ export default class NodeStopPublicApiCommand extends NodeCommandBase {
   protected reqUrl(): string {
     return '/api/v1/stop-api'
   }
-
-  protected reqBody(): Record<string, unknown> {
-    return {}
-  }
 }

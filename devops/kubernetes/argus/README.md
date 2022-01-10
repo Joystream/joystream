@@ -1,6 +1,6 @@
-# Amazon EKS Cluster: Hello World!
+# Argus deployment on Minikube or EKS
 
-Deploy storage-node to a Kubernetes cluster
+This project deploys an Argus node on an EKS or a minikube cluster
 
 ## Deploying the App
 
@@ -37,12 +37,11 @@ After cloning this repo, from this working directory, run these commands:
 1. Set the required configuration variables in `Pulumi.<stack>.yaml`
 
    ```bash
-   $ pulumi config set-all --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
-    --plaintext queryNodeEndpoint='http://graphql-server.query-node-yszsbs2i:8081' \
-    --plaintext keyFile='../../../keyfile.json' --secret passphrase='' \
-    --plaintext accountURI='//Alice' workerId=0 \
-    --plaintext isMinikube=true --plaintext colossusImage='joystream/colossus:latest' \
-    --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user
+   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
+    --plaintext queryNodeHost='https://34.197.252.42.nip.io/server/graphql' --plaintext isMinikube=true \
+    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
+    --plaintext argusImage='joystream/distributor-node:latest' \
+    --plaintext keys='[{ "suri": "//Alice" }]' --plaintext buckets='["1:0","1:1"]' --plaintext workerId=0
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
@@ -51,13 +50,15 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi config set isMinikube false
    ```
 
-   You can also set the `storage` and the `colossusPort` config parameters if required. Check `Pulumi.yaml` file
-   for additional parameters.
-
 1. Stand up the EKS cluster:
 
    Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
    new EKS cluster takes between 10-15 minutes.
+
+1. If you are using Minikube, run `minikube service argus-node -n $(pulumi stack output namespaceName)`
+
+   This will setup a proxy for your `argus-node` service, which can then be accessed at
+   the URL given in the output
 
 1. Once the stack if up and running, we will modify the Caddy config to get SSL certificate for the load balancer
 

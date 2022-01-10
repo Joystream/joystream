@@ -1,6 +1,7 @@
 import { Command, flags } from '@oclif/command'
 import { hashFile } from '../../services/helpers/hashing'
-import logger, { createStdConsoleLogger } from '../../services/logger'
+import logger from '../../services/logger'
+import { print } from '../../services/helpers/stdout'
 
 /**
  * CLI command:
@@ -32,8 +33,6 @@ export default class DevMultihash extends Command {
 
     logger.info(`Hash: ${multi}`)
 
-    const stdConsoleLogger = createStdConsoleLogger()
-
-    stdConsoleLogger.info(multi)
+    print(multi)
   }
 }

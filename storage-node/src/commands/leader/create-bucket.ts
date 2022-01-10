@@ -1,7 +1,8 @@
 import { createStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import logger, { createStdConsoleLogger } from '../../services/logger'
+import logger from '../../services/logger'
+import { print } from '../../services/helpers/stdout'
 
 /**
  * CLI command:
@@ -56,9 +57,8 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       objectNumber
     )
     if (success) {
-      const stdConsoleLogger = createStdConsoleLogger()
-
-      stdConsoleLogger.info(bucketId)
+      const castedBucketId = bucketId as number
+      print(castedBucketId.toString())
     }
     this.exitAfterRuntimeCall(success)
   }
