@@ -40,7 +40,29 @@ impl CreatePostFixture {
         Self { params, ..self }
     }
 
-    pub fn call_and_assert(expected_result: DispatchResult) {}
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::usable_balance(self.sender);
+        let initial_bloat_bond = Content::compute_initial_bloat_bond();
+        let post_id = Content::next_post_id();
+
+        let actual_result = Content::create_post(origin, self.actor.clone(), self.params.clone());
+
+        let balance_post = Balances::usable_balance(self.sender);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(balance_pre.saturating_sub(balance_post), initial_bloat_bond);
+                assert_eq!(post_id.saturating_add(One::one()), Content::next_post_id());
+            }
+            Err(_err) => {
+                assert_eq!(balance_pre, balance_post);
+                assert_eq!(post_id, Content::next_post_id());
+            }
+        }
+    }
 }
 
 // helpers
