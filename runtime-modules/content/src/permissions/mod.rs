@@ -230,8 +230,8 @@ pub fn ensure_actor_is_channel_owner<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    let owner = actor_to_channel_owner::<T>(actor)?;
-    ensure!(actor == owner, Error::<T>::ActorNotAuthorized);
+    let resulting_owner = actor_to_channel_owner::<T>(actor)?;
+    ensure!(resulting_owner == owner, Error::<T>::ActorNotAuthorized);
     Ok(())
 }
 
@@ -304,7 +304,9 @@ pub fn ensure_actor_auth_success<T: Trait>(
     }
 }
 
-// Enure actor can create a post comment
+// POST RELATED PERMISSIONS
+
+// Enure actor can add a comment
 pub fn ensure_actor_authorized_to_add_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -312,7 +314,27 @@ pub fn ensure_actor_authorized_to_add_comment<T: Trait>(
     ensure_actor_auth_success::<T>(sender, actor)
 }
 
-// Enure actor can create a post comment
+// Ensure actor can add a video post
+pub fn ensure_actor_authorized_to_add_video_post<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(sender, actor)?;
+    ensure_actor_is_channel_owner::<T>(actor, owner)
+}
+
+// Enure actor can edit a video post description
+pub fn ensure_actor_authorized_to_edit_video_post<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(sender, actor)?;
+    ensure_actor_is_channel_owner::<T>(actor, owner)
+}
+
+// Enure actor can edit a post comment text
 pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

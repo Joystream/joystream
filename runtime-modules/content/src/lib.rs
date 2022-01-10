@@ -1471,21 +1471,23 @@ decl_module! {
 
             // ensure channel is valid
             let video = Self::ensure_video_exists(&params.video_reference)?;
-            let owner = <ChannelById<T>>::get(video.in_channel).owner;
+            let owner = ChannelById::<T>::get(video.in_channel).owner;
 
             match params.post_type {
                 PostType::<T>::Comment(parent_id) => {
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
                     Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
-                    ensure_actor_authorized_to_comment::<T>(&sender, &actor)?;
+                    ensure_actor_authorized_to_add_comment::<T>(&sender, &actor)?
                 },
-                _ => ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
-            }
+                PostType::<T>::VideoPost => ensure_actor_authorized_to_add_video_post::<T>(
+                    &sender,
+                    &actor,
+                    &owner
+                )?
+            };
 
             let initial_bloat_bond = Self::compute_initial_bloat_bond();
             let post_id = <NextPostId<T>>::get();
-
-           <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
 
             let post = Post::<T> {
                 author: actor,
@@ -1498,6 +1500,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
 
             <NextPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
             <PostById<T>>::insert(&params.video_reference, &post_id, post);
@@ -1514,7 +1518,7 @@ decl_module! {
             };
 
             // deposit event
-            Self::deposit_event(RawEvent::PostCreated(actor, params, post_id));
+            Self::deposit_event(RawEvent::PostCreated(post, post_id, actor));
 
             Ok(())
         }
@@ -1528,14 +1532,21 @@ decl_module! {
             new_text: Vec<u8>,
         ) {
             let sender = ensure_signed(origin.clone())?;
-            // ensure channel exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
 
             match post.post_type {
-                PostType::<T>::VideoPost => ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?,
-                PostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(&sender, &actor, &post)?
+                PostType::<T>::VideoPost => ensure_actor_authorized_to_edit_video_post::<T>(
+                    &sender,
+                    &actor,
+                    &channel.owner
+                )?,
+                PostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(
+                    &sender,
+                    &actor,
+                    &post
+                )?
             };
 
             // deposit event
@@ -1899,11 +1910,11 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        Post = Post<T>,
         PostId = <T as Trait>::PostId,
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
-        PostCreationParameters = PostCreationParameters<T>,
-        BTreeSet = BTreeSet<<T as MembershipTypes>::MemberId>,
+        ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         PostDeletionParameters = PostDeletionParameters<<T as frame_system::Trait>::Hash>,
     {
@@ -2022,11 +2033,11 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
 
         // Posts & Replies
-        PostCreated(ContentActor, PostCreationParameters, PostId),
+        PostCreated(Post, PostId, ContentActor),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
         PostDeleted(ContentActor, VideoId, PostId, PostDeletionParameters),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
-        ModeratorSetUpdated(ChannelId, BTreeSet),
+        ModeratorSetUpdated(ChannelId, ModeratorSet),
     }
 );
