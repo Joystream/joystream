@@ -31,7 +31,9 @@
     "@types/sharp": "^0.29.2",
     "form-data": "^4.0.0",
     "node-cleanup": "^2.1.2",
-    "@types/node-cleanup": "^2.1.2"
+    "@types/node-cleanup": "^2.1.2",
+    "winston": "^3.3.3",
+    "fast-safe-stringify": "^2.1.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
