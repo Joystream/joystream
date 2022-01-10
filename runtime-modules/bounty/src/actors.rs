@@ -58,7 +58,7 @@ impl<T: Trait> BountyActorManager<T> {
         }
     }
 
-    // Validate balance is sufficient for the bounty
+    /// Validate balance is sufficient for the bounty
     pub(crate) fn validate_balance_sufficiency(
         &self,
         required_balance: BalanceOf<T>,
@@ -85,7 +85,7 @@ impl<T: Trait> BountyActorManager<T> {
         T::CouncilBudgetManager::get_budget() >= amount
     }
 
-    // Validate that provided actor relates to the initial BountyActor.
+    /// Validate that provided actor relates to the initial BountyActor.
     pub(crate) fn validate_actor(&self, actor: &BountyActor<MemberId<T>>) -> DispatchResult {
         let initial_actor = match self {
             BountyActorManager::Council => BountyActor::Council,
@@ -97,7 +97,7 @@ impl<T: Trait> BountyActorManager<T> {
         Ok(())
     }
 
-    // Transfer funds for the bounty creation.
+    /// Transfer funds for the bounty creation.
     pub(crate) fn transfer_funds_to_bounty_account(
         &self,
         bounty_id: T::BountyId,
@@ -122,7 +122,7 @@ impl<T: Trait> BountyActorManager<T> {
         Ok(())
     }
 
-    // Restore a balance for the bounty creator.
+    /// Restore a balance for the bounty creator.
     pub(crate) fn transfer_funds_from_bounty_account(
         &self,
         bounty_id: T::BountyId,

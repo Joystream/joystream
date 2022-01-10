@@ -18,7 +18,7 @@ use fixtures::{
     run_to_block, set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture,
     CreateBountyFixture, EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture,
     VetoBountyFixture, WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture,
-    WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY,
+    WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_CHERRY,
 };
 use mocks::{
     build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, MinFundingLimit, System,
@@ -345,11 +345,23 @@ fn create_bounty_fails_with_insufficient_cherry_value() {
 }
 
 #[test]
+fn create_bounty_fails_with_insufficient_oracle_cherry_value() {
+    build_test_externalities().execute_with(|| {
+        // set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_oracle_cherry(0)
+            .call_and_assert(Err(Error::<Test>::OracleCherryLessThenMinimumAllowed.into()));
+    });
+}
+
+#[test]
 fn create_bounty_transfers_member_balance_correctly() {
     build_test_externalities().execute_with(|| {
         let member_id = 1;
         let account_id = 1;
         let cherry = 100;
+        let oracle_cherry = 100;
         let initial_balance = 500;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
@@ -359,18 +371,19 @@ fn create_bounty_transfers_member_balance_correctly() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance - cherry
+            initial_balance - cherry - oracle_cherry
         );
 
         let bounty_id = 1;
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            cherry
+            cherry + oracle_cherry
         );
     });
 }
@@ -379,6 +392,7 @@ fn create_bounty_transfers_member_balance_correctly() {
 fn create_bounty_transfers_the_council_balance_correctly() {
     build_test_externalities().execute_with(|| {
         let cherry = 100;
+        let oracle_cherry = 100;
         let initial_balance = 500;
 
         set_council_budget(initial_balance);
@@ -386,15 +400,19 @@ fn create_bounty_transfers_the_council_balance_correctly() {
         // Insufficient member controller account balance.
         CreateBountyFixture::default()
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
-        assert_eq!(get_council_budget(), initial_balance - cherry);
+        assert_eq!(
+            get_council_budget(),
+            initial_balance - cherry - oracle_cherry
+        );
 
         let bounty_id = 1;
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            cherry
+            cherry + oracle_cherry
         );
     });
 }
@@ -477,10 +495,11 @@ fn create_bounty_fails_with_insufficient_balances() {
         let member_id = 1;
         let account_id = 1;
         let cherry = 100;
-
+        let oracle_cherry = 100;
         // Insufficient council budget.
         CreateBountyFixture::default()
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
 
         // Insufficient member controller account balance.
@@ -488,6 +507,7 @@ fn create_bounty_fails_with_insufficient_balances() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
     });
 }
@@ -500,16 +520,21 @@ fn cancel_bounty_succeeds_full_test() {
 
         let initial_balance = 500;
         let cherry = 100;
+        let oracle_cherry = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        assert_eq!(get_council_budget(), initial_balance - cherry);
+        assert_eq!(
+            get_council_budget(),
+            initial_balance - cherry - oracle_cherry
+        );
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -518,6 +543,11 @@ fn cancel_bounty_succeeds_full_test() {
         assert_eq!(get_council_budget(), initial_balance);
 
         EventFixture::contains_crate_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            BountyActor::Council,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
             bounty_id,
             BountyActor::Council,
         ));
@@ -682,16 +712,21 @@ fn veto_bounty_succeeds() {
 
         let initial_balance = 500;
         let cherry = 100;
+        let oracle_cherry = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        assert_eq!(get_council_budget(), initial_balance - cherry);
+        assert_eq!(
+            get_council_budget(),
+            initial_balance - cherry - oracle_cherry
+        );
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -776,6 +811,7 @@ fn fund_bounty_succeeds_by_member() {
         let member_id = 1;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
+        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
         increase_total_balance_issuance_using_account_id(
@@ -786,6 +822,7 @@ fn fund_bounty_succeeds_by_member() {
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -812,7 +849,7 @@ fn fund_bounty_succeeds_by_member() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry
+            amount + cherry + oracle_cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
@@ -833,12 +870,14 @@ fn fund_bounty_succeeds_by_council() {
         let amount = 100;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
+        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
 
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -852,7 +891,7 @@ fn fund_bounty_succeeds_by_council() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - amount - cherry
+            initial_balance - amount - cherry - oracle_cherry
         );
 
         assert_eq!(
@@ -862,7 +901,7 @@ fn fund_bounty_succeeds_by_council() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry
+            amount + cherry + oracle_cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
@@ -930,16 +969,14 @@ fn multiple_fund_bounty_succeed() {
         let member_id = 1;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
+        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
-        increase_total_balance_issuance_using_account_id(
-            COUNCIL_BUDGET_ACCOUNT_ID,
-            initial_balance,
-        );
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -965,7 +1002,7 @@ fn multiple_fund_bounty_succeed() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            2 * amount + cherry
+            2 * amount + cherry + oracle_cherry
         );
     });
 }
@@ -1251,6 +1288,7 @@ fn withdraw_member_funding_with_half_cherry() {
         let member_id2 = 2;
         let initial_balance = 500;
         let cherry = 200;
+        let oracle_cherry = 200;
         let funding_period = 10;
 
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
@@ -1260,6 +1298,7 @@ fn withdraw_member_funding_with_half_cherry() {
         CreateBountyFixture::default()
             .with_limited_funding(max_amount, max_amount, funding_period)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -1293,7 +1332,7 @@ fn withdraw_member_funding_with_half_cherry() {
         // On funding amount + creation funding + half of the cherry left.
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry / 2
+            amount + cherry / 2 + oracle_cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
@@ -1540,6 +1579,7 @@ fn bounty_removal_succeeds() {
         let amount = 100;
         let initial_balance = 500;
         let cherry = 100;
+        let oracle_cherry = 100;
         let account_id = 1;
         let member_id = 1;
         let funding_period = 10;
@@ -1555,6 +1595,7 @@ fn bounty_removal_succeeds() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .with_limited_funding(max_amount, max_amount, funding_period)
             .call_and_assert(Ok(()));
 
@@ -1612,7 +1653,8 @@ fn bounty_removal_succeeds() {
 
         let cherry_remaining_fraction = cherry - (cherry * 2 / 3) + amount;
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id))
+                - oracle_cherry,
             cherry_remaining_fraction
         );
 
@@ -2591,6 +2633,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
         let initial_balance = 500;
         let max_amount = 100;
         let cherry = DEFAULT_BOUNTY_CHERRY;
+        let oracle_cherry = 10;
         let entrant_stake = 37;
         let working_period = 10;
         let judging_period = 10;
@@ -2603,6 +2646,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
             .with_work_period(working_period)
             .with_judging_period(judging_period)
             .with_cherry(cherry)
+            .with_oracle_cherry(oracle_cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;

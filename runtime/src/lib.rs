@@ -923,6 +923,7 @@ parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const ClosedContractSizeLimit: u32 = 50;
     pub const MinCherryLimit: Balance = 10;
+    pub const MinOracleCherryLimit: Balance = 10;
     pub const MinFundingLimit: Balance = 10;
     pub const MinWorkEntrantStake: Balance = 100;
 }
@@ -938,6 +939,7 @@ impl bounty::Trait for Runtime {
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
     type MinCherryLimit = MinCherryLimit;
+    type MinOracleCherryLimit = MinOracleCherryLimit;
     type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
 }
