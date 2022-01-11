@@ -129,6 +129,25 @@ impl EditPostTextFixture {
             new_text: b"sample text".to_vec(),
         }
     }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn with_post_id(self, post_id: PostId) -> Self {
+        Self { post_id, ..self }
+    }
+
+    pub fn with_actor(
+        self,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> Self {
+        Self { actor, ..self }
+    }
 }
 
 // helpers
@@ -173,7 +192,7 @@ pub fn create_default_member_channel_with_video_and_posts() {
     assert_ok!(Content::create_post(
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
-        PostCreationParameters {
+        PostCreationParameters::<Test> {
             post_type: PostType::<Test>::Comment(One::one()),
             video_reference: One::one(),
         }
