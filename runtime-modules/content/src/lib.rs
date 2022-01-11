@@ -345,7 +345,7 @@ pub struct ChannelCreationParameters_<ContentParameters, AccountId, MemberId: Or
     /// optional reward account
     reward_account: Option<AccountId>,
     /// optional moderator set
-    moderator_set: Option<BTreeSet<MemberId>>,
+    moderator_set: BTreeSet<MemberId>,
 }
 
 type ChannelCreationParameters<T> = ChannelCreationParameters_<
@@ -887,7 +887,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                moderator_set: params.moderator_set.clone().unwrap_or(BTreeSet::new()),
+                moderator_set: params.moderator_set.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 

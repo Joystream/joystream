@@ -672,7 +672,7 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
 }
 
 #[test]
-pub fn unsuccessful_comment_update_with_invalid_moderator() {
+pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
     with_default_mock_builder(|| {
         run_to_block(1);
         increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
@@ -683,5 +683,24 @@ pub fn unsuccessful_comment_update_with_invalid_moderator() {
             .with_actor(ContentActor::Member(UNAUTHORIZED_MODERATOR_ID))
             .with_post_id(PostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MODERATOR_ID))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: None,
+                rationale: None,
+            })
+            .with_post_id(PostId::from(2u64))
+            .call_and_assert(Err(Error::<Test>::RationaleNotProvidedByModerator.into()))
     })
 }

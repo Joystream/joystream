@@ -317,7 +317,9 @@ pub fn create_default_member_channel_with_video() {
             assets: vec![],
             meta: vec![],
             reward_account: None,
-            moderator_set: None,
+            moderator_set: vec![DEFAULT_MODERATOR_ID]
+                .into_iter()
+                .collect::<BTreeSet<_>>(),
         }
     ));
 
@@ -342,7 +344,9 @@ pub fn create_default_curator_channel_with_video() {
             assets: vec![],
             meta: vec![],
             reward_account: None,
-            moderator_set: None,
+            moderator_set: vec![DEFAULT_MODERATOR_ID]
+                .into_iter()
+                .collect::<BTreeSet<_>>(),
         }
     ));
 
