@@ -7,7 +7,7 @@ use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, Hash, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
 
@@ -29,6 +29,11 @@ pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
 pub const LEAD_ACCOUNT_ID: u64 = 103;
 pub const DEFAULT_MODERATOR_ACCOUNT_ID: u64 = 104;
 
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 111;
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
+pub const UNAUTHORZIZED_LEAD_ACCOUNT_ID: u64 = 113;
+pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 114;
+
 pub const LEAD_ORIGIN: u64 = 1;
 
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
@@ -47,6 +52,10 @@ pub const MEMBERS_COUNT: MemberId = 10;
 pub const DEFAULT_MEMBER_ID: u64 = 201;
 pub const DEFAULT_CURATOR_ID: u64 = 202;
 pub const DEFAULT_MODERATOR_ID: u64 = 204;
+
+pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
+pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
+pub const UNAUTHORIZED_MODERATOR_ID: u64 = 214;
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
@@ -154,16 +163,6 @@ impl ContentActorAuthenticator for Test {
     type CuratorId = u64;
     type CuratorGroupId = u64;
 
-    fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        match *member_id {
-            DEFAULT_MEMBER_ID => true,
-            UNAUTHORIZED_MEMBER_ID => true,
-            MODERATOR_MEMBER_ID => true,
-            UNAUTHORIZED_MODERATOR_MEMBER_ID => true,
-            _ => false,
-        }
-    }
-
     fn is_lead(account_id: &Self::AccountId) -> bool {
         *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
     }
@@ -196,13 +195,11 @@ impl ContentActorAuthenticator for Test {
 
             UNAUTHORIZED_MODERATOR_MEMBER_ID => {
                 *account_id
-                    == ensure_signed(Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID))
-                        .unwrap()
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)).unwrap()
             }
 
             MODERATOR_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
+                *account_id == ensure_signed(Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID)).unwrap()
             }
             _ => false,
         }
@@ -255,6 +252,7 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const MaxModerators: u64 = 5;
     pub const CleanupMargin: u32 = 3;
+    pub const CleanupCost: u32 = 1;
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
@@ -311,6 +309,9 @@ impl Trait for Test {
 
     /// bloat bond cap
     type BloatBondCap = BloatBondCap;
+
+    /// cleanup cost
+    type CleanupCost = CleanupCost;
 }
 
 pub type System = frame_system::Module<Test>;
