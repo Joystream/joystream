@@ -70,9 +70,6 @@ decl_error! {
         /// Partecipant is not a member
         ReplyDoesNotExist,
 
-        /// mismatch between channel id and video channel id in a post
-        VideoAndPostChannelMismatch,
-
         /// comments disabled
         CommentsDisabled,
 
