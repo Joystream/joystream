@@ -128,6 +128,35 @@ pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
     })
 }
 
+#[test]
+pub fn successful_post_creation_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        CreatePostFixture::default().call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_post_creation_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_post();
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+
+        CreatePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Ok(()))
+    })
+}
+
 //use sp_runtime::traits::Hash;
 
 // pub const UNKNOWN_VIDEO_ID: u64 = 7777;
