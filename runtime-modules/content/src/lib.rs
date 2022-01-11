@@ -1820,22 +1820,16 @@ impl<T: Trait> Module<T> {
         max(storage_price, cleanup_cost)
     }
 
+    // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
         witness: Option<HashOutput<T>>,
         replies_count: T::PostId,
     ) -> DispatchResult {
-        // If we are trying to delete a video post we need witness verification
-        match witness {
-            None => {
-                return Err(Error::<T>::WitnessNotProvided.into());
-            }
-            Some(witness) => {
-                ensure!(
-                    <T as Hash>::hash_of(&replies_count) == witness,
-                    Error::<T>::WitnessVerificationFailed,
-                );
-            }
-        }
+        let wit_hash = witness.ok_or(Error::<T>::WitnessNotProvided)?;
+        ensure!(
+            <T as Hash>::hash_of(&replies_count) == wit_hash,
+            Error::<T>::WitnessVerificationFailed,
+        );
         Ok(())
     }
 }
