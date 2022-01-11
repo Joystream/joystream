@@ -57,7 +57,7 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
 }
 
 #[test]
-pub fn unsuccessful_post_creation_with_member_not_channel_owner() {
+pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
         increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_channel_with_video();
@@ -70,7 +70,7 @@ pub fn unsuccessful_post_creation_with_member_not_channel_owner() {
 }
 
 #[test]
-pub fn unsuccessful_post_creation_with_curator_not_channel_owner() {
+pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
         increase_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_channel_with_video();
@@ -547,6 +547,7 @@ pub fn unsuccessful_post_deletion_with_invalid_post_id() {
             .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
     })
 }
+
 #[test]
 pub fn unsuccessful_post_deletion_with_invalid_video_id() {
     with_default_mock_builder(|| {
@@ -557,5 +558,50 @@ pub fn unsuccessful_post_deletion_with_invalid_video_id() {
         DeletePostFixture::default()
             .with_post_id(PostId::zero())
             .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        DeletePostFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_post();
+
+        let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_deletion_with_invalid_witness() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .call_and_assert(Err(Error::<Test>::WitnessVerificationFailed.into()))
     })
 }
