@@ -8,6 +8,7 @@ use sp_runtime::DispatchError;
 // type aliases
 type AccountId = <Test as frame_system::Trait>::AccountId;
 type VideoId = <Test as Trait>::VideoId;
+type PostId = <Test as Trait>::PostId;
 
 // fixtures
 pub struct CreatePostFixture {
@@ -123,8 +124,8 @@ impl EditPostTextFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            video_id: One::one(),
-            post_id: One::one(),
+            video_id: VideoId::one(),
+            post_id: PostId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             new_text: b"sample text".to_vec(),
         }
@@ -147,6 +148,31 @@ impl EditPostTextFixture {
         actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> Self {
         Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::edit_post_text(
+            origin,
+            self.video_id,
+            self.post_id,
+            self.actor.clone(),
+            self.new_text.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::PostTextUpdated(
+                    self.actor,
+                    self.new_text,
+                    self.post_id,
+                    self.video_id,
+                ))
+            );
+        }
     }
 }
 
