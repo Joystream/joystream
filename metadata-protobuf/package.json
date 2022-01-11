@@ -19,6 +19,10 @@
   "author": "Joystream Contributors",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "build": "yarn compile && rm -rf lib && tsc",
     "compile": "yarn ts-node ./scripts/compile.ts",
