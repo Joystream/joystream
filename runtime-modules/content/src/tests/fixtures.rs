@@ -365,7 +365,7 @@ pub fn create_default_member_channel_with_video_and_post() {
 
 pub fn create_default_curator_channel_with_video_and_post() {
     create_default_curator_channel_with_video();
-    let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    let default_curator_group_id = Content::next_curator_group_id() - 1;
     CreatePostFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_actor(ContentActor::Curator(
