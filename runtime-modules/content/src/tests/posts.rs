@@ -55,6 +55,49 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
     })
 }
 
+#[test]
+pub fn unsuccessful_post_creation_with_member_not_channel_owner() {
+    with_default_mock_builder(|| {
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video();
+
+        CreatePostFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_creation_with_curator_not_channel_owner() {
+    with_default_mock_builder(|| {
+        increase_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video();
+
+        let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        CreatePostFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_creation_with_lead() {
+    with_default_mock_builder(|| {
+        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video();
+
+        CreatePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()))
+    })
+}
+
 //use sp_runtime::traits::Hash;
 
 // pub const UNKNOWN_VIDEO_ID: u64 = 7777;
