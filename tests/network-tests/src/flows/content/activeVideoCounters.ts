@@ -12,8 +12,8 @@ export default async function activeVideoCounters({ api, query, cli, env }: Flow
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
-  const electCouncilFixture = new ActiveVideoCountersFixture(api, query, cli, env, paidTerms)
-  await new FixtureRunner(electCouncilFixture).run()
+  const activeVideoCountersFixture = new ActiveVideoCountersFixture(api, query, cli, env, paidTerms)
+  await new FixtureRunner(activeVideoCountersFixture).run()
 
   debug('Done')
 }
