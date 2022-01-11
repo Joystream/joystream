@@ -197,6 +197,29 @@ impl DeletePostFixture {
             },
         }
     }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn with_post_id(self, post_id: PostId) -> Self {
+        Self { post_id, ..self }
+    }
+
+    pub fn with_actor(
+        self,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_params(self, params: PostDeletionParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
 }
 
 // helpers
