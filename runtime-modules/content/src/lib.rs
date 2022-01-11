@@ -1809,7 +1809,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn compute_initial_bloat_bond() -> <T as balances::Trait>::Balance {
+    fn compute_initial_bloat_bond() -> BalanceOf<T> {
         let storage_price =
             T::PricePerByte::get().saturating_mul((size_of::<Post<T>>() as u32).into());
 
