@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::{cmp::max, hash::Hash, mem::size_of};
+use core::{cmp::max, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -26,7 +26,9 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{AccountIdConversion, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{
+    AccountIdConversion, Hash, MaybeSerializeDeserialize, Member, Saturating,
+};
 use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -41,6 +43,7 @@ pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership,
 
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type HashOutput<T> = <T as Hash>::Output;
 
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
@@ -66,7 +69,6 @@ pub trait NumericIdentifier:
     + Default
     + Copy
     + Clone
-    + Hash
     + MaybeSerializeDeserialize
     + Eq
     + PartialEq
@@ -138,6 +140,7 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + balances::Trait
+    + Hash
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -196,9 +199,6 @@ pub trait Trait:
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
-
-    // hash computation
-    fn hash_of<E: Encode>(e: &E) -> Self::Hash;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -656,14 +656,14 @@ pub type PostCreationParameters<T> =
 /// Information on the post being deleted
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostDeletionParametersRecord<Hash> {
+pub struct PostDeletionParametersRecord<HashOutput> {
     /// optional witnesses in case of video post deletion
-    witness: Option<Hash>,
+    witness: Option<HashOutput>,
     /// rationale in case actor is moderator
     rationale: Option<Vec<u8>>,
 }
 
-pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system>::Hash>;
+pub type PostDeletionParameters<T> = PostDeletionParametersRecord<HashOutput<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1821,7 +1821,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_witness_verification(
-        witness: Option<<T as frame_system::Trait>::Hash>,
+        witness: Option<HashOutput<T>>,
         replies_count: T::PostId,
     ) -> DispatchResult {
         // If we are trying to delete a video post we need witness verification
@@ -1831,7 +1831,7 @@ impl<T: Trait> Module<T> {
             }
             Some(witness) => {
                 ensure!(
-                    T::hash_of(&replies_count) == witness,
+                    <T as Hash>::hash_of(&replies_count) == witness,
                     Error::<T>::WitnessVerificationFailed,
                 );
             }

@@ -9,11 +9,15 @@ use sp_runtime::DispatchError;
 type AccountId = <Test as frame_system::Trait>::AccountId;
 type VideoId = <Test as Trait>::VideoId;
 type PostId = <Test as Trait>::PostId;
+type MemberId = <Test as MembershipTypes>::MemberId;
+type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
+type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
+type ContentActor = ContentActor<CuratorgGroupId, CuratorId, MemberId>;
 
 // fixtures
 pub struct CreatePostFixture {
     sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    actor: ContentActor,
     params: PostCreationParameters<Test>,
 }
 
@@ -33,7 +37,7 @@ impl CreatePostFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_actor(self, actor: AccountId) -> Self {
+    pub fn with_actor(self, actor: ContentActor) -> Self {
         Self { actor, ..self }
     }
 
@@ -116,7 +120,7 @@ pub struct EditPostTextFixture {
     sender: AccountId,
     video_id: VideoId,
     post_id: PostId,
-    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: ContentActor,
     new_text: Vec<u8>,
 }
 
@@ -143,10 +147,7 @@ impl EditPostTextFixture {
         Self { post_id, ..self }
     }
 
-    pub fn with_actor(
-        self,
-        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Self {
+    pub fn with_actor(self, actor: ContentActor) -> Self {
         Self { actor, ..self }
     }
 
@@ -180,8 +181,8 @@ pub struct DeletePostFixture {
     sender: AccountId,
     post_id: PostId,
     video_id: VideoId,
-    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    params: PostDeletionParameters<Hash>,
+    actor: ContentActor,
+    params: PostDeletionParameters<Test>,
 }
 
 impl DeletePostFixture {
@@ -192,7 +193,7 @@ impl DeletePostFixture {
             video_id: VideoId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: PostDeletionParameters::<Test> {
-                witness: Test::hash_of(PostId::zero()),
+                witness: Test::hash_of(0u64),
                 rationale: Some(b"rationale".to_vec()),
             },
         }
@@ -210,10 +211,7 @@ impl DeletePostFixture {
         Self { post_id, ..self }
     }
 
-    pub fn with_actor(
-        self,
-        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Self {
+    pub fn with_actor(self, actor: ContentActor) -> Self {
         Self { actor, ..self }
     }
 
