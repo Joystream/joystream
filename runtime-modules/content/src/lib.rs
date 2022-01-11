@@ -1576,7 +1576,7 @@ decl_module! {
                         params.witness,
                         post.replies_count,
                     )?;
-                    ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor,&channel)?;
+                    ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor, &channel)?;
                     CleanupActor::ChannelOwner
                 },
                 PostType::<T>::Comment(_) => {

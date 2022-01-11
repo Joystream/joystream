@@ -261,7 +261,17 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
         increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        create_default_curator_channel_with_video_and_post();
+
+        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        CreatePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::one()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Ok(()));
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
@@ -465,5 +475,62 @@ pub fn successful_post_update_by_curator() {
                 DEFAULT_CURATOR_ID,
             ))
             .call_and_assert(Ok(()))
+    })
+}
+
+// delete post tests
+#[test]
+pub fn unsuccessful_post_deletion_with_member_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        DeletePostFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_post();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        DeletePostFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_post();
+
+        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        CreatePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::one()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Ok(()));
+
+        DeletePostFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_post_id(PostId::from(2u64))
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
     })
 }
