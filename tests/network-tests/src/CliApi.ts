@@ -7,7 +7,7 @@ export interface ICreatedVideoData {
   videoId: number
   assetContentIds: string[]
 }
-
+Buffer
 /**
   Adapter for calling CLI commands from integration tests.
 */
@@ -29,6 +29,9 @@ export class CliApi {
   ): { error: boolean; stdout: string; stderr: string } {
     // use sync spawn if that works without issues
     const output = spawnSync('yarn', ['joystream-cli', ...parameters], { env })
+    console.log('cli - output:', output)
+    console.log('cli - stdout:', output.stdout.toString())
+    console.log('cli - stderr:', output.stderr.toString())
 
     return {
       error: !!output.error,
