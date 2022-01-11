@@ -888,3 +888,24 @@ pub fn successful_comment_deletion_by_lead_author() {
             .call_and_assert(Ok(()))
     })
 }
+
+#[test]
+pub fn successful_comment_deletion_by_moderator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MODERATOR_ID))
+            .with_post_id(PostId::from(2u64))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: Some(b"rationale".to_vec()),
+            })
+            .call_and_assert(Ok(()))
+    })
+}
