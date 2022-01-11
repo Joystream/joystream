@@ -27,8 +27,7 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "prepublishOnly": "npm run prepack",
-    "prepack": "npm run checks && npm run build"
+    "prepack": "npm run build && npm run checks"
   },
   "files": [
     "lib/**/*",
