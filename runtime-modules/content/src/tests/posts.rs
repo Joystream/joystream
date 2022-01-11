@@ -296,3 +296,36 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
             .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
     })
 }
+
+#[test]
+pub fn unsuccessful_post_update_by_member_not_channel_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_comment();
+
+        let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
