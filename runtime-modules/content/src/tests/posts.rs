@@ -746,3 +746,47 @@ pub fn successful_post_deletion_by_curator() {
             .call_and_assert(Ok(()))
     })
 }
+
+#[test]
+pub fn successful_comment_deletion_by_member_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_post_id(PostId::from(2u64))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_comment_deletion_by_curator_onwer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_comment();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_post_id(PostId::from(2u64))
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
