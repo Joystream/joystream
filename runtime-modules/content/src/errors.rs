@@ -96,5 +96,8 @@ decl_error! {
 
         /// rationale not provided
         RationaleNotProvidedByModerator,
+
+        /// insufficient balance
+        InsufficientBalance,
     }
 }

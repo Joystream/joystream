@@ -1497,6 +1497,10 @@ decl_module! {
                 post_type: params.post_type.clone(),
             };
 
+            ensure!(
+                Balances::<T>::usable_balance(&sender) >= initial_bloat_bond,
+                Error::<T>::InsufficientBalance,
+            );
             //
             // == MUTATION SAFE ==
             //
