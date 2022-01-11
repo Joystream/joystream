@@ -31,7 +31,7 @@ pub const DEFAULT_MODERATOR_ACCOUNT_ID: u64 = 104;
 
 pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 111;
 pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
-pub const UNAUTHORZIZED_LEAD_ACCOUNT_ID: u64 = 113;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 114;
 
 pub const LEAD_ORIGIN: u64 = 1;
@@ -193,7 +193,7 @@ impl ContentActorAuthenticator for Test {
                     == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
             }
 
-            UNAUTHORIZED_MODERATOR_MEMBER_ID => {
+            UNAUTHORIZED_MODERATOR_ID => {
                 *account_id
                     == ensure_signed(Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)).unwrap()
             }

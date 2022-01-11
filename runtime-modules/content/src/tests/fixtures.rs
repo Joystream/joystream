@@ -108,7 +108,7 @@ impl CreatePostFixture {
                     PostType::<Test>::VideoPost => {
                         assert_eq!(video_pre, video_post);
                     }
-                    PostType::<Test>::Comment(parent_id) => {
+                    PostType::<Test>::Comment(_) => {
                         assert_eq!(replies_count_post, replies_count_pre);
                     }
                 }
@@ -333,6 +333,31 @@ pub fn create_default_member_channel_with_video() {
     ));
 }
 
+pub fn create_default_curator_channel_with_video() {
+    let default_curator_group = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    assert_ok!(Content::create_channel(
+        Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+        ContentActor::Curator(default_curator_group, DEFAULT_CURATOR_ID),
+        ChannelCreationParameters::<Test> {
+            assets: vec![],
+            meta: vec![],
+            reward_account: None,
+            moderator_set: None,
+        }
+    ));
+
+    assert_ok!(Content::create_video(
+        Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+        ContentActor::Curator(default_curator_group, DEFAULT_CURATOR_ID),
+        ChannelId::one(),
+        VideoCreationParameters {
+            assets: vec![],
+            meta: vec![],
+            enable_comments: true,
+        }
+    ));
+}
+
 pub fn create_default_member_channel_with_video_and_posts() {
     create_default_member_channel_with_video();
 
@@ -355,4 +380,8 @@ pub fn create_default_member_channel_with_video_and_posts() {
             video_reference: One::one(),
         }
     ));
+}
+
+pub fn increase_balance_helper(account: AccountId, amount: BalanceOf<Test>) {
+    let _ = Balances::<Test>::deposit_creating(&account, amount);
 }

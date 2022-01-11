@@ -1,9 +1,50 @@
 #![cfg(test)]
-
-use super::curators;
+use super::curators::add_curator_to_new_group;
+use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, traits::Currency};
+
+#[test]
+pub fn unsuccessful_post_creation_with_member_auth_failed() {
+    with_default_mock_builder(|| {
+        create_default_member_channel_with_video();
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreatePostFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_creation_with_curator_auth_failed() {
+    with_default_mock_builder(|| {
+        create_default_curator_channel_with_video();
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        CreatePostFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_creation_with_lead_auth_failed() {
+    with_default_mock_builder(|| {
+        create_default_curator_channel_with_video();
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        CreatePostFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
+    })
+}
 //use sp_runtime::traits::Hash;
 
 // pub const UNKNOWN_VIDEO_ID: u64 = 7777;
