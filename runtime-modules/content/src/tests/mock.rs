@@ -282,6 +282,8 @@ impl Trait for Test {
 
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
+pub type Balances = balances::Module<Test>;
+
 // #[derive (Default)]
 pub struct ExtBuilder {
     next_channel_category_id: u64,

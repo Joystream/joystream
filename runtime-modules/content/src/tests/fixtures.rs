@@ -85,18 +85,18 @@ impl CreatePostFixture {
                         assert_eq!(replies_post, replies_pre.saturating_add(One::one()));
                     }
                 }
+
                 assert_eq!(
                     System::events().last().unwrap().event,
                     MetaEvent::content(RawEvent::PostCreated(
-                        Post::<T> {
-                            author: self.actor,
+                        Post::<Test> {
+                            author: self.actor.clone(),
                             bloat_bond: initial_bloat_bond,
-                            replies_count: T::PostId::zero(),
-                            video_reference: params.video_reference,
-                            post_type: params.post_type,
+                            replies_count: PostId::zero(),
+                            video_reference: self.params.video_reference,
+                            post_type: self.params.post_type,
                         },
                         post_id,
-                        self.actor,
                     ))
                 );
             }
@@ -217,6 +217,64 @@ impl DeletePostFixture {
 
     pub fn with_params(self, params: PostDeletionParameters<Test>) -> Self {
         Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender);
+        let balance_pre = Balances::usable_balance(&self.sender);
+        let initial_bloat_bond = Content::compute_initial_bloat_bond();
+        let post = Content::post_by_id(&self.video_id, &self.post_id);
+        let replies_count_pre = match &post.post_type {
+            PostType::<Test>::Comment(parent_id) => {
+                Content::ensure_post_exists(&self.params.video_reference, parent_id)
+                    .unwrap_or(Zero::zero())
+            }
+            PostType::<Test>::VideoPost => Zero::zero(),
+        };
+        let video_pre = Content::video_by_id(&self.params.video_reference);
+
+        let actual_result = Content::delete_post(
+            origin,
+            self.post_id,
+            self.video_id,
+            self.actor.clone(),
+            self.params.clone(),
+        );
+
+        let balance_post = Balances::usable_balance(&self.sender);
+        let video_post = Content::video_by_id(&self.params.video_reference);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(balance_post, balance_pre.saturating_add(initial_bloat_bond));
+                assert!(!PostById::<Test>::contains_key(
+                    &self.video_id,
+                    &self.post_id
+                ));
+                match &post.post_type {
+                    PostType::<Test>::VideoPost => assert_eq!(
+                        PostById::<Test>::prefix_iter(&self.video_id).count(),
+                        0usize,
+                    ),
+                    PostType::<Test>::Comment(parent_id) => {
+                        let replies_count_post =
+                            Content::ensure_post_exists(&self.params.video_reference, parent_id)
+                                .unwrap_or(PostId::zero());
+                        assert_eq!(
+                            replies_count_pre,
+                            replies_count_post.saturating_add(PostId::one())
+                        )
+                    }
+                };
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::PostDeleted(post, self.post_id, self.actor))
+                );
+            }
+            Err(_err) => (),
+        }
     }
 }
 

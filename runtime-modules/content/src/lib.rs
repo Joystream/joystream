@@ -1520,7 +1520,7 @@ decl_module! {
             };
 
             // deposit event
-            Self::deposit_event(RawEvent::PostCreated(post, post_id, actor));
+            Self::deposit_event(RawEvent::PostCreated(post, post_id));
 
             Ok(())
         }
@@ -1621,7 +1621,6 @@ decl_module! {
                 RawEvent::PostDeleted(
                     post,
                     post_id,
-                    video_id,
                     actor,
             ));
         }
@@ -1630,6 +1629,7 @@ decl_module! {
         fn react_to_post(
             origin,
             member_id: T::MemberId,
+            video_id: T::VideoId,
             post_id: T::PostId,
             reaction_id: T::ReactionId,
         ) {
@@ -1640,7 +1640,7 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            Self::deposit_event(RawEvent::ReactionToPost(member_id, post_id, reaction_id));
+            Self::deposit_event(RawEvent::ReactionToPost(member_id, video_id, post_id, reaction_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1996,10 +1996,10 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
 
         // Posts & Replies
-        PostCreated(Post, PostId, ContentActor),
+        PostCreated(Post, PostId),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(Post, PostId, VideoId, ContentActor),
-        ReactionToPost(MemberId, PostId, ReactionId),
+        PostDeleted(Post, PostId, ContentActor),
+        ReactionToPost(MemberId, VideoId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, ModeratorSet),
     }
