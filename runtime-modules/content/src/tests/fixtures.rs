@@ -358,28 +358,21 @@ pub fn create_default_curator_channel_with_video() {
     ));
 }
 
-pub fn create_default_member_channel_with_video_and_posts() {
+pub fn create_default_member_channel_with_video_and_post() {
     create_default_member_channel_with_video();
+    CreatePostFixture::default().call_and_assert(Ok(()));
+}
 
-    // create post with id One::one()
-    assert_ok!(Content::create_post(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        PostCreationParameters::<Test> {
-            post_type: PostType::<Test>::VideoPost,
-            video_reference: One::one(),
-        }
-    ));
-
-    // create a reply to it
-    assert_ok!(Content::create_post(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        PostCreationParameters::<Test> {
-            post_type: PostType::<Test>::Comment(One::one()),
-            video_reference: One::one(),
-        }
-    ));
+pub fn create_default_curator_channel_with_video_and_post() {
+    create_default_curator_channel_with_video();
+    let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    CreatePostFixture::default()
+        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_actor(ContentActor::Curator(
+            default_curator_group_id,
+            DEFAULT_CURATOR_ID,
+        ))
+        .call_and_assert(Ok(()));
 }
 
 pub fn increase_balance_helper(account: AccountId, amount: BalanceOf<Test>) {

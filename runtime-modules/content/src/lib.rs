@@ -703,7 +703,7 @@ decl_storage! {
         pub PostById get(fn post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
             hasher(blake2_128_concat) T::PostId => Post<T>;
 
-        pub NextPostId get(fn next_post_id): T::PostId;
+        pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
             T::VideoId => T::PostId;

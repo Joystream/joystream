@@ -332,6 +332,7 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    next_post_id: u64,
 }
 
 impl Default for ExtBuilder {
@@ -346,6 +347,7 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            next_post_id: 1,
         }
     }
 }
@@ -366,6 +368,7 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            next_post_id: self.next_post_id,
         }
         .assimilate_storage(&mut t)
         .unwrap();

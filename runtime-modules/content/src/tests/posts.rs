@@ -112,6 +112,22 @@ pub fn unsuccessful_post_creation_with_invalid_video_id() {
     })
 }
 
+#[test]
+pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        CreatePostFixture::default()
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::zero()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+    })
+}
+
 //use sp_runtime::traits::Hash;
 
 // pub const UNKNOWN_VIDEO_ID: u64 = 7777;
