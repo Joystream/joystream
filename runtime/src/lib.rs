@@ -675,7 +675,7 @@ parameter_types! {
 
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
-    pub const DataObjectDeletionPrize: Balance = 1; //TODO: Change during Olympia release
+    pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
