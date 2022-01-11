@@ -42,4 +42,5 @@
   service:
     name: joystream-node
     state: started
+    enabled: yes
   become: yes

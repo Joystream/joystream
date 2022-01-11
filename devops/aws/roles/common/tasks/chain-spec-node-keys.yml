@@ -3,7 +3,7 @@
 
 - name: Debug to test variable
   debug:
-    msg: 'Data path: {{ data_path }}, Chain Spec path: {{ chain_spec_path }}'
+    msg: 'Remote Data path: {{ remote_data_path }}, Local Data path: {{ data_path }}, Chain Spec path: {{ chain_spec_path }}'
   run_once: true
 
 - name: Copying initial members file to the server
@@ -24,7 +24,7 @@
   shell: >
     {{ admin_code_dir }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
     --chain-spec-path {{ chain_spec_path }}
-    --endowed 1 --keystore-path {{ data_path }}
+    --endowed 1 --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ admin_code_dir }}/initial-balances.json{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ admin_code_dir }}/initial-members.json{% endif %}
@@ -50,7 +50,7 @@
 - name: Save output of chain spec to local file
   copy:
     content: '{{ chain_spec_output.stdout | regex_replace("\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]", "") }}'
-    dest: '{{ data_path }}/chain_spec_output.txt'
+    dest: '{{ remote_data_path }}/chain_spec_output.txt'
   delegate_to: '{{ local_or_admin }}'
   run_once: true
 
@@ -75,7 +75,7 @@
 
 - name: Copying chain spec files to localhost
   synchronize:
-    src: '/home/ubuntu/{{ data_path }}/'
+    src: '/home/ubuntu/{{ remote_data_path }}/'
     dest: '{{ data_path }}'
     mode: pull
   run_once: true
@@ -92,5 +92,5 @@
 
 - name: Copying raw chain spec file to all servers
   copy:
-    src: '{{ raw_chain_spec_path }}'
+    src: '{{ local_raw_chain_spec_path }}'
     dest: '{{ remote_chain_spec_path }}'
