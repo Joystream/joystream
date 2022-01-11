@@ -7,7 +7,7 @@ export interface ICreatedVideoData {
   videoId: number
   assetContentIds: string[]
 }
-Buffer
+
 /**
   Adapter for calling CLI commands from integration tests.
 */
