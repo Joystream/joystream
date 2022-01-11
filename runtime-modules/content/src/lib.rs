@@ -1601,9 +1601,14 @@ decl_module! {
             match post.post_type {
                 PostType::<T>::Comment(parent_id) => {
                     PostById::<T>::remove(&video_id, &post_id);
-                    <PostById<T>>::mutate(&video_id, &parent_id, |x| {
-                        x.replies_count = x.replies_count.saturating_sub(One::one())
-                    });
+                    if let Ok(mut parent_post) = Self::ensure_post_exists(
+                        video_id.clone(),
+                        parent_id.clone(),
+                    ){
+                        parent_post.replies_count =
+                            parent_post.replies_count.saturating_sub(T::PostId::one());
+                        PostById::<T>::insert(&video_id, &parent_id, parent_post);
+                    }
                 }
                 PostType::<T>::VideoPost => PostById::<T>::remove_prefix(&video_id),
             }
