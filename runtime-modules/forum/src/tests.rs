@@ -343,7 +343,7 @@ fn update_category_archival_status_lock_works() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -374,7 +374,7 @@ fn update_category_archival_status_lock_works() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
@@ -404,13 +404,267 @@ fn update_category_archival_status_lock_works() {
         );
 
         // can't update thread
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origin.clone(),
             forum_lead,
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        );
+    });
+}
+
+#[test]
+// test if category updator is forum lead
+fn update_category_description_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_description_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                good_category_description_new(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update category description
+fn update_category_description_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            good_category_description(),
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent category
+fn update_category_description_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            good_category_description_new(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            2,
+            good_category_description_new(),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can update category description
+fn update_category_description_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_description_new(),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_description_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_description_new(),
+            Ok(()),
+        );
+    });
+}
+
+#[test]
+// test if category updator is forum lead
+fn update_category_title_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_title_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                good_category_title_new(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update category title
+fn update_category_title_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            good_category_title(),
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent category
+fn update_category_title_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            good_category_title_new(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            2,
+            good_category_title_new(),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can update category title
+fn update_category_title_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_title_new(),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_title_new(),
+            Ok(()),
         );
     });
 }
@@ -484,7 +738,7 @@ fn delete_category_non_empty_threads() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -632,7 +886,7 @@ fn create_thread_origin() {
                 forum_user_ids[index],
                 forum_user_ids[index],
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 results[index],
@@ -665,7 +919,7 @@ fn create_thread_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -676,7 +930,7 @@ fn create_thread_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -709,7 +963,7 @@ fn create_thread_poll_timestamp() {
             balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
             change_current_time(1);
-            let poll = generate_poll_timestamp_cases(index, expiration_diff);
+            let poll = generate_poll_input_timestamp_cases(index, expiration_diff);
             change_current_time(index as u64 * expiration_diff + 1);
 
             let category_id = create_category_mock(
@@ -725,7 +979,7 @@ fn create_thread_poll_timestamp() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 Some(poll),
                 results[index],
@@ -736,7 +990,7 @@ fn create_thread_poll_timestamp() {
 
 #[test]
 // test if author can edit thread's title
-fn edit_thread_title() {
+fn edit_thread_metadata() {
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
 
@@ -767,29 +1021,29 @@ fn edit_thread_title() {
             forum_users[0],
             forum_users[0],
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
         );
 
         // check author can edit text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[0].clone(),
             forum_users[0],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Ok(()),
         );
 
         // check non-author is forbidden from editing text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[1].clone(),
             forum_users[1],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
         );
     });
@@ -798,274 +1052,6 @@ fn edit_thread_title() {
 /*
  ** update_category
  */
-#[test]
-// test if category updator is forum lead
-fn update_thread_archival_status_origin() {
-    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
-
-    for index in 0..origins.len() {
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        let initial_balance = 10_000_000;
-        with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-            let category_id = create_category_mock(
-                origin,
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origins[0].clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            update_thread_archival_status_mock(
-                origins[index].clone(),
-                PrivilegedActor::Lead,
-                category_id,
-                thread_id,
-                true,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test case for new setting actually not update thread status
-fn update_thread_archival_status_no_change() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-        update_thread_archival_status_mock(
-            origin,
-            PrivilegedActor::Lead,
-            category_id,
-            thread_id,
-            false,
-            Err(Error::<Runtime>::ThreadNotBeingUpdated.into()),
-        );
-    });
-}
-
-#[test]
-// test case for editing nonexistent thread
-fn update_thread_archival_status_thread_exists() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-        update_thread_archival_status_mock(
-            origin.clone(),
-            PrivilegedActor::Lead,
-            category_id,
-            thread_id,
-            true,
-            Ok(()),
-        );
-        update_thread_archival_status_mock(
-            origin.clone(),
-            PrivilegedActor::Lead,
-            category_id,
-            thread_id + 1,
-            true,
-            Err(Error::<Runtime>::ThreadDoesNotExist.into()),
-        );
-    });
-}
-
-#[test]
-// test if moderator can archive thread
-fn update_thread_archival_status_moderator() {
-    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
-    let origins = [FORUM_MODERATOR_ORIGIN];
-
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-
-        // unprivileged moderator will fail to update category
-        update_thread_archival_status_mock(
-            origins[0].clone(),
-            PrivilegedActor::Moderator(moderators[0]),
-            category_id,
-            thread_id,
-            true,
-            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
-        );
-
-        // give permision to moderate category itself
-        update_category_membership_of_moderator_mock(
-            origin.clone(),
-            moderators[0],
-            category_id,
-            true,
-            Ok(()),
-        );
-
-        // moderator associated with category will succeed
-        update_thread_archival_status_mock(
-            origins[0].clone(),
-            PrivilegedActor::Moderator(moderators[0]),
-            category_id,
-            thread_id,
-            true,
-            Ok(()),
-        );
-    });
-}
-
-#[test]
-// test if moderator can archive thread
-fn update_thread_archival_status_lock_works() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-
-        let post_id = create_post_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            thread_id,
-            good_post_text(),
-            true,
-            Ok(()),
-        );
-
-        update_thread_archival_status_mock(
-            origin.clone(),
-            PrivilegedActor::Lead,
-            category_id,
-            thread_id,
-            true,
-            Ok(()),
-        );
-
-        // can't add more posts to thread inside category
-        create_post_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            thread_id,
-            good_post_text(),
-            true,
-            Err(Error::<Runtime>::ThreadImmutable.into()),
-        );
-
-        // can't update post
-        edit_post_text_mock(
-            origin.clone(),
-            forum_lead,
-            category_id,
-            thread_id,
-            post_id,
-            good_post_new_text(),
-            Err(Error::<Runtime>::ThreadImmutable.into()),
-        );
-
-        // can't update thread
-        edit_thread_title_mock(
-            origin.clone(),
-            forum_lead,
-            category_id,
-            thread_id,
-            good_thread_new_title(),
-            Err(Error::<Runtime>::ThreadImmutable.into()),
-        );
-    });
-}
 
 #[test]
 // test if thread creator can delete thread
@@ -1100,9 +1086,9 @@ fn delete_thread() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(10)),
+            Some(generate_poll_input(10)),
             Ok(()),
         );
 
@@ -1270,7 +1256,7 @@ fn move_thread_moderator_permissions() {
             forum_lead,
             forum_lead,
             category_id_1,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1389,7 +1375,7 @@ fn move_thread_invalid_move() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1446,9 +1432,9 @@ fn vote_on_poll_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
-                Some(generate_poll(expiration_diff)),
+                Some(generate_poll_input(expiration_diff)),
                 Ok(()),
             );
 
@@ -1485,9 +1471,9 @@ fn vote_on_poll_fails_on_double_voting() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
 
@@ -1532,7 +1518,7 @@ fn vote_on_poll_exists() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1570,9 +1556,9 @@ fn vote_on_poll_expired() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
         change_current_time(expiration_diff + 1);
@@ -1620,7 +1606,7 @@ fn moderate_thread_origin_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1672,7 +1658,7 @@ fn add_post_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -1720,7 +1706,7 @@ fn add_post_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1796,7 +1782,7 @@ fn edit_post_text() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1865,7 +1851,7 @@ fn edit_non_editable_post_text() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1924,7 +1910,7 @@ fn react_post() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -1992,7 +1978,7 @@ fn moderate_post_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -2057,7 +2043,7 @@ fn delete_post_creator() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2211,7 +2197,7 @@ fn delete_post_not_creator() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2349,7 +2335,7 @@ fn set_stickied_threads_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2367,7 +2353,7 @@ fn set_stickied_threads_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2420,7 +2406,7 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2457,7 +2443,7 @@ fn set_stickied_threads_wrong_moderator() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2500,7 +2486,7 @@ fn set_stickied_threads_thread_not_exists() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2543,7 +2529,7 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 forum_user_id,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
             ),

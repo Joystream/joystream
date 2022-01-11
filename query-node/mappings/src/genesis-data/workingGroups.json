@@ -1,0 +1,26 @@
+[
+  {
+    "name": "storageWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "membershipWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "contentDirectoryWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "forumWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "operationsWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "gatewayWorkingGroup",
+    "budget": 0
+  }
+]

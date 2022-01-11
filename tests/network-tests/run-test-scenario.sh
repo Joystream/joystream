@@ -6,8 +6,8 @@ cd $SCRIPT_PATH
 
 # pass the scenario name without .ts extension
 SCENARIO=$1
-# fallback if scenario if not specified
-SCENARIO=${SCENARIO:=olympia}
+# fallback to full.ts scenario if not specified
+SCENARIO=${SCENARIO:=full}
 
 # Execute the tests
-time DEBUG=* yarn workspace network-tests node-ts-strict src/scenarios/${SCENARIO}.ts
+time DEBUG=integration-tests* yarn workspace network-tests node-ts-strict src/scenarios/${SCENARIO}.ts

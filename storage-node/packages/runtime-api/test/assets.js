@@ -31,7 +31,7 @@ describe('Assets', () => {
 
   it('returns DataObjects for a content ID', async () => {
     const obj = await api.assets.getDataObject('foo')
-    expect(obj.isNone).to.be.true
+    expect(obj).to.be.null
   })
 
   it('can check the liaison for a DataObject', async () => {

@@ -26,7 +26,7 @@ pub trait LockComparator<Balance> {
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<AccountId, Balance, MemberId> {
+pub trait StakingHandler<AccountId, Balance, MemberId, LockIdentifier> {
     /// Locks the specified balance on the account using specific lock identifier.
     /// It locks for all withdraw reasons.
     fn lock(account_id: &AccountId, amount: Balance);
@@ -54,6 +54,9 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
     /// is 'already locked funds' + 'usable funds'.
     fn is_enough_balance_for_stake(account_id: &AccountId, amount: Balance) -> bool;
 
+    /// Returns lock identifier
+    fn lock_id() -> LockIdentifier;
+
     /// Returns the current stake on the account.
     fn current_stake(account_id: &AccountId) -> Balance;
 }
@@ -62,7 +65,7 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
 pub struct StakingManager<
     T: frame_system::Trait
         + pallet_balances::Trait
-        + common::membership::Trait
+        + common::membership::MembershipTypes
         + LockComparator<<T as pallet_balances::Trait>::Balance>,
     LockId: Get<LockIdentifier>,
 > {
@@ -73,14 +76,15 @@ pub struct StakingManager<
 impl<
         T: frame_system::Trait
             + pallet_balances::Trait
-            + common::membership::Trait
+            + common::membership::MembershipTypes
             + LockComparator<<T as pallet_balances::Trait>::Balance>,
         LockId: Get<LockIdentifier>,
     >
     StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::membership::Trait>::MemberId,
+        <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     > for StakingManager<T, LockId>
 {
     fn lock(
@@ -172,6 +176,10 @@ impl<
         amount: <T as pallet_balances::Trait>::Balance,
     ) -> bool {
         <pallet_balances::Module<T>>::usable_balance(account_id) >= amount
+    }
+
+    fn lock_id() -> LockIdentifier {
+        LockId::get()
     }
 
     fn current_stake(

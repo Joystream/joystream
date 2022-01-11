@@ -10,18 +10,19 @@ members = [
 	"runtime-modules/membership",
 	"runtime-modules/memo",
 	"runtime-modules/referendum",
-	"runtime-modules/service-discovery",
 	"runtime-modules/storage",
 	"runtime-modules/working-group",
-	"runtime-modules/content-directory",
+	"runtime-modules/content",
 	"runtime-modules/constitution",
 	"runtime-modules/staking-handler",
 	"runtime-modules/bounty",
-    "runtime-modules/blog",
-    "runtime-modules/utility",
+	"runtime-modules/blog",
+	"runtime-modules/utility",
 	"node",
-	"utils/chain-spec-builder/"
-#    "analyses/bench" # doesn't work with the "all features" release build
+	"utils/chain-spec-builder/",
+]
+exclude = [
+    "analyses/bench"
 ]
 
 [profile.release]

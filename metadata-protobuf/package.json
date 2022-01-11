@@ -1,0 +1,55 @@
+{
+  "name": "@joystream/metadata-protobuf",
+  "version": "1.0.0",
+  "description": "Joystream Metadata Protobuf Library ",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": "./lib/index.js",
+    "./utils": "./lib/utils.js",
+    "./licenses": "./lib/licenses.js",
+    "./consts": "./lib/consts.js"
+  },
+  "typesVersions": {
+    "*": {
+      "lib/index.d.ts": ["lib/index.d.ts"],
+      "*": [ "lib/*" ]
+    }
+  },
+  "repository": "https://github.com/joystream/joystream",
+  "author": "Joystream Contributors",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "yarn compile && tsc",
+    "compile": "yarn ts-node ./scripts/compile.ts",
+    "generate-doc": "./generate-md-doc.sh",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
+    "lint": "eslint ./src --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "format": "prettier ./ --write"
+  },
+  "files": [
+    "lib/**/*",
+    "doc/**",
+    "proto/**",
+    "compiled/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "google-protobuf": "^3.14.0",
+    "long": "^4.0.0",
+    "@types/long": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^8.2.0",
+    "chai": "^4.2.0",
+    "eslint": "^7.6.0",
+    "mocha": "^8.2.1",
+    "prettier": "2.0.2",
+    "ts-node": "^8.8.1",
+    "typescript": "^4.3.5",
+    "protobufjs": "^6.11.2"
+  }
+}

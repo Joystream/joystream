@@ -1,8 +1,6 @@
 use super::mock::*;
 use crate::*;
 
-use frame_support::traits::Currency;
-
 pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {

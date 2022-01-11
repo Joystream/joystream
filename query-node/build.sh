@@ -11,19 +11,22 @@ set +a
 
 yarn clean
 
-# We generate the code for each service separately to be able to specify
-# separate database names.
+# Install hydra codegen in separate dir to avoid dependency clashes
+cd ./codegen
+yarn
+cd ..
 
-# Build indexer customizing DB name
-DB_NAME=${INDEXER_DB_NAME} yarn codegen:indexer
+# Generate types and server code
+TYPEGEN_WS_URI="${TYPEGEN_WS_URI:-ws://localhost:9944}" yarn typegen:configure
+yarn typegen
+yarn codegen:noinstall
+yarn format
 
-# Build graphql-server customizing DB name
-DB_NAME=${PROCESSOR_DB_NAME} yarn codegen:server
-
-# We run yarn again to ensure processor and indexer dependencies are installed
+# We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
 
-ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
+yarn workspace query-node codegen
+yarn workspace query-node build:prod
 
-yarn tsc --build tsconfig.json
+yarn workspace query-node-mappings build

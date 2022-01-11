@@ -244,7 +244,8 @@ fn council_candidacy_release_candidate_stake() {
     });
 }
 
-// Test that only valid members can candidate.
+// Test that the announcement period is reset in case that not enough candidates
+// to fill the council has announced their candidacy.
 #[test]
 fn council_announcement_reset_on_insufficient_candidates() {
     let config = default_genesis_config();
@@ -274,6 +275,56 @@ fn council_announcement_reset_on_insufficient_candidates() {
         };
 
         Mocks::simulate_council_cycle(params.clone());
+
+        // forward to election-voting period
+        MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
+
+        // check announcements were reset
+        Mocks::check_announcing_period(
+            params.cycle_start_block_number + council_settings.announcing_stage_duration,
+            CouncilStageAnnouncing {
+                candidates_count: 0,
+            },
+        );
+    });
+}
+
+// Test that the announcement period is reset in case that not enough candidates
+// to fill the council has announced and not withdrawn their candidacy.
+#[test]
+fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdrawal() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count)
+            .map(|i| {
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+            })
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: council_settings.clone(),
+            cycle_start_block_number: 0,
+            expected_initial_council_members: vec![],
+            expected_final_council_members: vec![], // not needed in this scenario
+            candidates_announcing: candidates.clone(),
+            expected_candidates: vec![], // not needed in this scenario
+            voters: vec![],              // not needed in this scenario
+
+            // escape before voting
+            interrupt_point: Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
+        };
+
+        Mocks::simulate_council_cycle(params.clone());
+
+        Mocks::withdraw_candidacy(
+            candidates[0].origin.clone(),
+            candidates[0].account_id.clone(),
+            Ok(()),
+        );
 
         // forward to election-voting period
         MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);

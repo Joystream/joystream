@@ -2,21 +2,25 @@ mod fixtures;
 mod hiring_workflow;
 mod mock;
 
-pub use mock::{build_test_externalities, Test};
+pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
     SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
-    UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, UpdateWorkerStorageFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
-use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Trait, Worker};
+use crate::{
+    default_storage_size_constraint, DefaultInstance, Error, OpeningType, RawEvent,
+    RewardPaymentType, StakePolicy, Trait, Worker,
+};
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
@@ -592,6 +596,8 @@ fn leave_worker_role_succeeds() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStartedLeaving(worker_id, None));
+
         let worker = TestWorkingGroup::worker_by_id(worker_id);
         run_to_block(1 + worker.job_unstaking_period);
 
@@ -608,9 +614,11 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let worker_id = HireRegularWorkerFixture::default()
             .with_reward_per_block(Some(reward_per_block))
             .hire();
-        let block_number = 4;
 
-        run_to_block(block_number);
+        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        let missed_reward_block_number = reward_period * 2;
+
+        run_to_block(missed_reward_block_number);
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
@@ -620,12 +628,67 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
-        run_to_block(block_number + worker.job_unstaking_period);
+        let leaving_block = missed_reward_block_number + worker.job_unstaking_period;
+        run_to_block(leaving_block);
 
+        let missed_reward = missed_reward_block_number * reward_per_block;
+        EventFixture::contains_crate_event(RawEvent::NewMissedRewardLevelReached(
+            worker_id,
+            Some(missed_reward),
+        ));
+        EventFixture::contains_crate_event(RawEvent::RewardPaid(
+            worker_id,
+            account_id,
+            missed_reward,
+            RewardPaymentType::MissedReward,
+        ));
+
+        // Didn't get the last reward period: leaving earlier than rewarding.
+        let reward_block_count = leaving_block - reward_period;
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
+            reward_block_count * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
         );
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds_with_correct_unstaking_period() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 10;
+        run_to_block(starting_block);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        // Assert initial worker existence
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        let default_unstaking_period =
+            TestWorkingGroup::worker_by_id(worker_id).job_unstaking_period;
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        // Assert worker existence after leave_role
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        run_to_block(starting_block + default_unstaking_period - 1);
+
+        // Assert worker existence one block before the end of the unstaking period.
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        run_to_block(starting_block + default_unstaking_period);
+
+        // Assert worker removal after the unstaking period.
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
     });
 }
 
@@ -1866,6 +1929,14 @@ fn rewards_payments_are_successful() {
             Balances::usable_balance(&account_id),
             block_number * reward_per_block
         );
+
+        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        EventFixture::assert_last_crate_event(RawEvent::RewardPaid(
+            worker_id,
+            account_id,
+            reward_per_block * reward_period,
+            RewardPaymentType::RegularReward,
+        ));
     });
 }
 
@@ -2434,5 +2505,109 @@ fn is_worker_account_id_works_correctly() {
             TestWorkingGroup::is_worker_account_id(&account_id, &worker_id),
             true
         );
+    });
+}
+
+#[test]
+fn update_worker_storage_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let storage_field = vec![0u8].repeat(10);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStorageUpdated(
+            worker_id,
+            storage_field,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(10);
+
+        let leader_account_id = 1;
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        )
+        .with_origin(RawOrigin::Signed(leader_account_id));
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        let worker_storage = TestWorkingGroup::worker_storage(worker_id);
+
+        assert_eq!(storage_field, worker_storage);
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let invalid_account_id = 44;
+        let storage_field = vec![0u8].repeat(10);
+
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field)
+                .with_origin(RawOrigin::Signed(invalid_account_id));
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(10);
+        HireRegularWorkerFixture::default().hire();
+
+        let invalid_worker_id = 111;
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            invalid_worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_too_long_text() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(default_storage_size_constraint() as usize + 1);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerStorageValueTooLong.into(),
+        ));
     });
 }

@@ -29,6 +29,11 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+// TODO after Olympia-master (Sumer) merge:
+// - change module comment
+// - benchmark new extrinsics
+// - fix `ensure_worker_role_storage_text_is_valid` incorrect cast
+
 pub mod benchmarking;
 
 mod checks;
@@ -37,7 +42,7 @@ mod errors;
 mod tests;
 mod types;
 
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
@@ -50,11 +55,9 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
-
-pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
@@ -92,7 +95,7 @@ pub trait WeightInfo {
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::membership::Trait
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -101,12 +104,17 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxWorkerNumberLimit: Get<u32>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
-    /// Validates member id and origin combination
+    /// Validates member id and origin combination.
     type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
@@ -118,7 +126,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Minimum stake required for applying into an opening
+    /// Minimum stake required for applying into an opening.
     type MinimumApplicationStake: Get<Self::Balance>;
 
     /// Stake needed to create an opening
@@ -181,11 +189,11 @@ decl_event!(
         /// - Rationale.
         WorkerExited(WorkerId),
 
-        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Emits when worker started leaving their role.
         /// Params:
         /// - Worker id.
         /// - Rationale.
-        WorkerLeft(WorkerId, Option<Vec<u8>>),
+        WorkerStartedLeaving(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
@@ -256,10 +264,30 @@ decl_event!(
 
         /// Emits on budget from the working group being spent
         /// Params:
-        /// - Reciever Account Id.
+        /// - Receiver Account Id.
         /// - Balance spent.
         /// - Rationale.
         BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
+
+        /// Emits on paying the reward.
+        /// Params:
+        /// - Id of the worker.
+        /// - Receiver Account Id.
+        /// - Reward
+        /// - Payment type (missed reward or regular one)
+        RewardPaid(WorkerId, AccountId, Balance, RewardPaymentType),
+
+        /// Emits on reaching new missed reward.
+        /// Params:
+        /// - Worker ID.
+        /// - Missed reward (optional). None means 'no missed reward'.
+        NewMissedRewardLevelReached(WorkerId, Option<Balance>),
+
+        /// Emits on updating the worker storage role.
+        /// Params:
+        /// - Id of the worker.
+        /// - Raw storage field.
+        WorkerStorageUpdated(WorkerId, Vec<u8>),
     }
 );
 
@@ -297,6 +325,13 @@ decl_storage! {
 
         /// Status text hash.
         pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
+
+        /// Maps identifier to corresponding worker storage.
+        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
+
+        /// Worker storage size upper bound.
+        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
     }
 }
 
@@ -309,8 +344,25 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T, I>;
 
-        /// Exports const -  max simultaneous active worker number.
+        /// Exports const
+
+        /// Max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
+
+        /// Defines min unstaking period in the group.
+        const MinUnstakingPeriodLimit: T::BlockNumber = T::MinUnstakingPeriodLimit::get();
+
+        /// Minimum stake required for applying into an opening.
+        const MinimumApplicationStake: T::Balance = T::MinimumApplicationStake::get();
+
+        /// Stake needed to create an opening.
+        const LeaderOpeningStake: T::Balance = T::LeaderOpeningStake::get();
+
+        /// Defines the period every worker gets paid in blocks.
+        const RewardPeriod: u32 = T::RewardPeriod::get();
+
+        /// Staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// # <weight>
         ///
@@ -653,6 +705,9 @@ decl_module! {
             WorkerById::<T, I>::mutate(worker_id, |worker| {
                 worker.started_leaving_at = Some(Self::current_block())
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStartedLeaving(worker_id, rationale));
         }
 
         /// Terminate the active worker by the lead.
@@ -1087,6 +1142,31 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
+
+        /// Update the associated role storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_storage(
+            origin,
+            worker_id: WorkerId<T>,
+            storage: Vec<u8>
+        ) {
+
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            checks::ensure_worker_signed::<T,I>(origin, &worker_id)?;
+
+            // Ensure valid text.
+            checks::ensure_worker_role_storage_text_is_valid::<T,I>(&storage)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Complete the role storage update
+            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
+        }
     }
 }
 
@@ -1300,7 +1380,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Check whether the budget is not zero.
             if actual_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
+                Self::pay_reward(
+                    worker_id,
+                    &worker.reward_account_id,
+                    actual_reward,
+                    RewardPaymentType::RegularReward,
+                );
             }
 
             // Check whether the budget is insufficient.
@@ -1323,6 +1408,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
     }
 
+    // Helper-function joining the reward payment with the event.
+    fn pay_reward(
+        worker_id: &WorkerId<T>,
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+        reward_payment_type: RewardPaymentType,
+    ) {
+        Self::pay_from_budget(account_id, amount);
+        Self::deposit_event(RawEvent::RewardPaid(
+            *worker_id,
+            account_id.clone(),
+            amount,
+            reward_payment_type,
+        ));
+    }
+
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
     fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
@@ -1331,7 +1432,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Checks if the budget allows any payment.
             if could_be_paid_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+                Self::pay_reward(
+                    worker_id,
+                    &worker.reward_account_id,
+                    could_be_paid_reward,
+                    RewardPaymentType::MissedReward,
+                );
 
                 let new_missed_reward = if insufficient_amount > Zero::zero() {
                     Some(insufficient_amount)
@@ -1339,12 +1445,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                // Update worker missed reward.
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = new_missed_reward;
-                });
+                Self::update_worker_missed_reward(worker_id, new_missed_reward);
             }
         }
+    }
+
+    // Update worker missed reward.
+    fn update_worker_missed_reward(
+        worker_id: &WorkerId<T>,
+        new_missed_reward: Option<BalanceOf<T>>,
+    ) {
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = new_missed_reward;
+        });
+
+        Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
+            *worker_id,
+            new_missed_reward,
+        ));
     }
 
     // Saves missed reward for a worker.
@@ -1354,10 +1472,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        // Update worker missed reward.
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = Some(new_missed_reward);
-        });
+        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment
@@ -1376,7 +1491,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
+                    if started_leaving_at + worker.job_unstaking_period <= Self::current_block() {
                         return Some((worker_id, worker).into());
                     }
                 }
@@ -1446,6 +1561,10 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
     }
+
+    fn worker_exists(worker_id: &T::ActorId) -> bool {
+        checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
+    }
 }
 
 impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
@@ -1458,4 +1577,9 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
     }
+}
+
+// Creates default storage size constraint.
+pub(crate) fn default_storage_size_constraint() -> u16 {
+    2048
 }

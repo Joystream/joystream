@@ -1,4 +1,4 @@
-import { bool, u32, u64, Option, Vec, Null } from '@polkadot/types'
+import { bool, u32, u64, Option, Vec, Null, Bytes, BTreeMap, u128 } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces'
 import { Hash, ThreadId, PostId, JoyStructDecorated, JoyEnum } from './common'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -35,15 +35,17 @@ export class Post extends JoyStructDecorated({
   thread_id: ThreadId,
   text_hash: Hash,
   author_id: ForumUserId,
+  cleanup_pay_off: u128,
+  last_edited: u32,
 }) {}
 
 export class Thread extends JoyStructDecorated({
-  title_hash: Hash,
+  metadata_hash: Hash,
   category_id: CategoryId,
   author_id: ForumUserId,
-  archived: bool,
   poll: Option.with(Poll),
-  num_direct_posts: u32,
+  cleanup_pay_off: u128,
+  number_of_posts: u64,
 }) {}
 
 export class Category extends JoyStructDecorated({
@@ -62,6 +64,20 @@ export class PrivilegedActor extends JoyEnum({
   Moderator: ModeratorId,
 }) {}
 
+export class PollInput extends JoyStructDecorated({
+  description: Bytes,
+  end_time: u64,
+  poll_alternatives: Vec.with(Bytes),
+}) {}
+
+export class ExtendedPostId extends JoyStructDecorated({
+  category_id: CategoryId,
+  thread_id: ThreadId,
+  post_id: PostId,
+}) {}
+
+export class PostsToDeleteMap extends BTreeMap.with(ExtendedPostId, bool) {}
+
 export const forumTypes: RegistryTypes = {
   ForumUserId,
   ModeratorId,
@@ -73,6 +89,10 @@ export const forumTypes: RegistryTypes = {
   PollAlternative,
   Poll,
   PrivilegedActor,
+  PollInput,
+  // runtime alias
+  ThreadOf: Thread,
+  ExtendedPostId,
 }
 
 export default forumTypes

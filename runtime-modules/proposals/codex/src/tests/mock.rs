@@ -1,4 +1,6 @@
 #![cfg(test)]
+// Internal substrate warning.
+#![allow(non_fmt_panic)]
 
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{
@@ -11,7 +13,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult, ModuleId, Perbill,
 };
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
@@ -72,7 +74,7 @@ impl_outer_dispatch! {
     }
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -162,7 +164,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -171,7 +173,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
     }
 
@@ -181,9 +183,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
     }
 }
 
@@ -311,6 +317,9 @@ parameter_types! {
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
     pub const MaxWhiteListSize: u32 = 20;
+    pub const PostLifeTime: u64 = 10;
+    pub const PostDeposit: u64 = 100;
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
 }
 
 pub struct MockProposalsDiscussionWeight;
@@ -323,6 +332,9 @@ impl proposals_discussion::Trait for Test {
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = MockProposalsDiscussionWeight;
+    type PostLifeTime = PostLifeTime;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
 }
 
 impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {
@@ -330,7 +342,11 @@ impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {
         0
     }
 
-    fn update_post() -> Weight {
+    fn update_post(_: u32) -> Weight {
+        0
+    }
+
+    fn delete_post() -> Weight {
         0
     }
 
@@ -891,10 +907,10 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
     type SystemWeightInfo = ();
 }
 

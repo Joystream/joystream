@@ -17,6 +17,7 @@ use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::{ModuleId, SaturatedConversion};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
@@ -51,6 +52,19 @@ pub type ThreadOf<T> = Thread<
     BalanceOf<T>,
 >;
 
+/// Type alias for `ExtendedPostIdObject`
+pub type ExtendedPostId<T> =
+    ExtendedPostIdObject<<T as Trait>::CategoryId, <T as Trait>::ThreadId, <T as Trait>::PostId>;
+
+/// Extended post id representation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
+    pub category_id: CategoryId,
+    pub thread_id: ThreadId,
+    pub post_id: PostId,
+}
+
 type Balances<T> = balances::Module<T>;
 
 /// pallet_forum WeightInfo.
@@ -61,18 +75,20 @@ pub trait WeightInfo {
     fn update_category_membership_of_moderator_old() -> Weight;
     fn update_category_archival_status_lead(i: u32) -> Weight;
     fn update_category_archival_status_moderator(i: u32) -> Weight;
+    fn update_category_title_lead(i: u32, j: u32) -> Weight;
+    fn update_category_title_moderator(i: u32, j: u32) -> Weight;
+    fn update_category_description_lead(i: u32, j: u32) -> Weight;
+    fn update_category_description_moderator(i: u32, j: u32) -> Weight;
     fn delete_category_lead(i: u32) -> Weight;
     fn delete_category_moderator(i: u32) -> Weight;
     fn create_thread(j: u32, k: u32, i: u32) -> Weight;
-    fn edit_thread_title(i: u32, j: u32) -> Weight;
-    fn update_thread_archival_status_lead(i: u32) -> Weight;
-    fn update_thread_archival_status_moderator(i: u32) -> Weight;
+    fn edit_thread_metadata(i: u32, j: u32) -> Weight;
     fn delete_thread(i: u32) -> Weight;
     fn move_thread_to_category_lead(i: u32) -> Weight;
     fn move_thread_to_category_moderator(i: u32) -> Weight;
     fn vote_on_poll(i: u32, j: u32) -> Weight;
     fn moderate_thread_lead(i: u32, k: u32) -> Weight;
-    fn moderate_thread_moderator(i: u32, j: u32, k: u32) -> Weight;
+    fn moderate_thread_moderator(i: u32, k: u32) -> Weight;
     fn add_post(i: u32, j: u32) -> Weight;
     fn react_post(i: u32) -> Weight;
     fn edit_post_text(i: u32, j: u32) -> Weight;
@@ -84,7 +100,10 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait + balances::Trait
+    frame_system::Trait
+    + pallet_timestamp::Trait
+    + common::membership::MembershipTypes
+    + balances::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -168,7 +187,7 @@ pub trait Trait:
 }
 
 /// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
-/// MaxSubcategories, MaxThreadsInCategory, and MaxPostsInThread should be reasonably small because when the category is deleted
+/// MaxSubcategories, and MaxCategories should be reasonably small because when the category is deleted
 /// all of it's subcategories with their threads and posts will be iterated over and deleted.
 pub trait StorageLimits {
     /// Maximum direct subcategories in a category
@@ -184,7 +203,7 @@ pub trait StorageLimits {
     type MaxPollAlternativesNumber: Get<u64>;
 }
 
-/// Represents all poll alternatives and vote count for each one
+/// Represents all poll alternative text hashes and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative<Hash> {
@@ -195,6 +214,20 @@ pub struct PollAlternative<Hash> {
     pub vote_count: u32,
 }
 
+/// Represents a poll input
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct PollInput<Timestamp> {
+    /// description
+    pub description: Vec<u8>,
+
+    /// timestamp of poll end
+    pub end_time: Timestamp,
+
+    /// Alternative polls description
+    pub poll_alternatives: Vec<Vec<u8>>,
+}
+
 /// Represents a poll
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -202,7 +235,7 @@ pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
 
-    /// pallet_timestamp of poll end
+    /// timestamp of poll end
     pub end_time: Timestamp,
 
     /// Alternative description and count
@@ -211,7 +244,7 @@ pub struct Poll<Timestamp, Hash> {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -233,17 +266,11 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
-    /// Title hash
-    pub title_hash: Hash,
-
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
     /// Author of post.
     pub author_id: ForumUserId,
-
-    /// Whether thread is archived.
-    pub archived: bool,
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
@@ -339,9 +366,6 @@ decl_error! {
 
         /// Thread not being updated.
         ThreadNotBeingUpdated,
-
-        /// Thread is immutable, i.e. archived.
-        ThreadImmutable,
 
         /// Not enough balance to create thread
         InsufficientBalanceForThreadCreation,
@@ -477,23 +501,34 @@ decl_event!(
         ModeratorId = ModeratorId<T>,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
+        <T as frame_system::Trait>::Hash,
         ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
-        Poll = Poll<<T as pallet_timestamp::Trait>::Moment, <T as frame_system::Trait>::Hash>,
+        ExtendedPostId = ExtendedPostId<T>,
+        PollInput = PollInput<<T as pallet_timestamp::Trait>::Moment>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
 
-        /// A category with given id was updated.
+        /// An arhical status of category with given id was updated.
         /// The second argument reflects the new archival status of the category.
-        CategoryUpdated(CategoryId, bool, PrivilegedActor),
+        CategoryArchivalStatusUpdated(CategoryId, bool, PrivilegedActor),
+
+        /// A title of category with given id was updated.
+        /// The second argument reflects the new title hash of the category.
+        CategoryTitleUpdated(CategoryId, Hash, PrivilegedActor),
+
+        /// A discription of category with given id was updated.
+        /// The second argument reflects the new description hash of the category.
+        CategoryDescriptionUpdated(CategoryId, Hash, PrivilegedActor),
 
         /// A category was deleted
         CategoryDeleted(CategoryId, PrivilegedActor),
 
         /// A thread with given id was created.
-        ThreadCreated(ThreadId, ForumUserId, CategoryId, Vec<u8>, Vec<u8>, Option<Poll>),
+        /// A third argument reflects the initial post id of the thread.
+        ThreadCreated(CategoryId, ThreadId, PostId, ForumUserId, Vec<u8>, Vec<u8>, Option<PollInput>),
 
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId, Vec<u8>, PrivilegedActor, CategoryId),
@@ -502,8 +537,8 @@ decl_event!(
         /// The second argument reflects the new archival status of the thread.
         ThreadUpdated(ThreadId, bool, PrivilegedActor, CategoryId),
 
-        /// A thread with given id was moderated.
-        ThreadTitleUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
+        /// A thread metadata given id was updated.
+        ThreadMetadataUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
 
         /// A thread was deleted.
         ThreadDeleted(ThreadId, ForumUserId, CategoryId, bool),
@@ -518,7 +553,7 @@ decl_event!(
         PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with givne id was deleted.
-        PostDeleted(Vec<u8>, ForumUserId, Vec<(CategoryId, ThreadId, PostId, bool)>),
+        PostDeleted(Vec<u8>, ForumUserId, BTreeMap<ExtendedPostId, bool>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -545,6 +580,14 @@ decl_module! {
         type Error = Error<T>;
 
         fn deposit_event() = default;
+
+        /// Exports const
+
+        /// Deposit needed to create a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
+
+        /// Deposit needed to create a thread
+        const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
 
         /// Enable a moderator can moderate a category and its sub categories.
         ///
@@ -585,6 +628,7 @@ decl_module! {
 
             Ok(())
         }
+
 
         /// Add a new category.
         ///
@@ -695,7 +739,105 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::CategoryUpdated(category_id, new_archival_status, actor)
+                RawEvent::CategoryArchivalStatusUpdated(category_id, new_archival_status, actor)
+            );
+
+            Ok(())
+        }
+
+        /// Update category title
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + V)` where:
+        /// - `W` is the category depth
+        /// - `V` is the length of the category title.
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoForum::<T>::update_category_title_lead(
+            T::MaxCategoryDepth::get() as u32,
+            title.len().saturated_into(),
+        ).max(WeightInfoForum::<T>::update_category_title_moderator(
+            T::MaxCategoryDepth::get() as u32,
+            title.len().saturated_into(),
+        ))]
+        fn update_category_title(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, title: Vec<u8>) -> DispatchResult {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let account_id = ensure_signed(origin)?;
+
+            // Ensure actor can update category
+            let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+
+            let title_hash = T::calculate_hash(title.as_slice());
+
+            // No change, invalid transaction
+            if title_hash == category.title_hash {
+                return Err(Error::<T>::CategoryNotBeingUpdated.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Mutate category, and set possible new change parameters
+            <CategoryById<T>>::mutate(category_id, |c| c.title_hash = title_hash);
+
+            // Generate event
+            Self::deposit_event(
+                RawEvent::CategoryTitleUpdated(category_id, title_hash, actor)
+            );
+
+            Ok(())
+        }
+
+        /// Update category description
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the category depth
+        /// - `V` is the length of the category description.
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoForum::<T>::update_category_description_lead(
+            T::MaxCategoryDepth::get() as u32,
+            description.len().saturated_into(),
+        ).max(WeightInfoForum::<T>::update_category_description_moderator(
+            T::MaxCategoryDepth::get() as u32,
+            description.len().saturated_into(),
+        ))]
+        fn update_category_description(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, description: Vec<u8>) -> DispatchResult {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let account_id = ensure_signed(origin)?;
+
+            // Ensure actor can update category
+            let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+
+            let description_hash = T::calculate_hash(description.as_slice());
+
+            // No change, invalid transaction
+            if description_hash == category.description_hash {
+                return Err(Error::<T>::CategoryNotBeingUpdated.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Mutate category, and set possible new change parameters
+            <CategoryById<T>>::mutate(category_id, |c| c.description_hash = description_hash);
+
+            // Generate event
+            Self::deposit_event(
+                RawEvent::CategoryDescriptionUpdated(category_id, description_hash, actor)
             );
 
             Ok(())
@@ -757,7 +899,7 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
-            title.len().saturated_into(),
+            metadata.len().saturated_into(),
             text.len().saturated_into(),
             T::MaxCategoryDepth::get() as u32,
         )]
@@ -765,9 +907,9 @@ decl_module! {
             origin,
             forum_user_id: ForumUserId<T>,
             category_id: T::CategoryId,
-            title: Vec<u8>,
+            metadata: Vec<u8>,
             text: Vec<u8>,
-            poll: Option<Poll<T::Moment, T::Hash>>,
+            poll_input: Option<PollInput<T::Moment>>,
         ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -777,12 +919,12 @@ decl_module! {
             Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
 
             // Ensure poll is valid
-            if let Some(ref data) = poll {
+            if let Some(ref data) = poll_input {
                 // Check all poll alternatives
                 Self::ensure_poll_alternatives_length_is_valid(&data.poll_alternatives)?;
 
                 // Check poll self information
-                Self::ensure_poll_is_valid(data)?;
+                Self::ensure_poll_input_is_valid(data)?;
             }
 
             //
@@ -800,13 +942,14 @@ decl_module! {
                 &account_id
             )?;
 
+            // Hash poll description and poll alternatives description
+            let poll = poll_input.clone().map(Self::from_poll_input);
+
             // Build a new thread
             let new_thread = Thread {
                 category_id,
-                title_hash: T::calculate_hash(&title),
                 author_id: forum_user_id,
-                archived: false,
-                poll: poll.clone(),
+                poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
                 number_of_posts: 0,
             };
@@ -817,7 +960,7 @@ decl_module! {
             });
 
             // Add inital post to thread
-            let _ = Self::add_new_post(
+            let initial_post_id = Self::add_new_post(
                 new_thread_id,
                 category_id,
                 &text,
@@ -834,105 +977,61 @@ decl_module! {
             // Generate event
             Self::deposit_event(
                 RawEvent::ThreadCreated(
-                    new_thread_id,
-                    forum_user_id,
                     category_id,
-                    title,
+                    new_thread_id,
+                    initial_post_id,
+                    forum_user_id,
+                    metadata,
                     text,
-                    poll,
+                    poll_input,
                 )
             );
 
             Ok(())
         }
 
-        /// Edit thread title
+        /// Edit thread metadata
         ///
         /// <weight>
         ///
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread title.
+        /// - `V` is the length of the thread metadata.
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::edit_thread_title(
+        #[weight = WeightInfoForum::<T>::edit_thread_metadata(
             T::MaxCategoryDepth::get() as u32,
-            new_title.len().saturated_into(),
+            new_metadata.len().saturated_into(),
         )]
-        fn edit_thread_title(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_title: Vec<u8>) -> DispatchResult {
+        fn edit_thread_metadata(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            new_metadata: Vec<u8>
+        ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let thread = Self::ensure_can_edit_thread_title(account_id, &category_id, &thread_id, &forum_user_id)?;
+            Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            // Update thread title
-            let title_hash = T::calculate_hash(&new_title);
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
 
             // Store the event
             Self::deposit_event(
-                RawEvent::ThreadTitleUpdated(
+                RawEvent::ThreadMetadataUpdated(
                     thread_id,
                     forum_user_id,
                     category_id,
-                    new_title,
+                    new_metadata,
                 )
             );
-
-            Ok(())
-        }
-
-        /// Update thread archival status
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the category depth
-        /// - DB:
-        ///    - O(W)
-        /// # </weight>
-        #[weight = WeightInfoForum::<T>::update_thread_archival_status_lead(
-            T::MaxCategoryDepth::get() as u32,
-        ).max(WeightInfoForum::<T>::update_thread_archival_status_moderator(
-            T::MaxCategoryDepth::get() as u32,
-        ))]
-        fn update_thread_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_archival_status: bool) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            let account_id = ensure_signed(origin)?;
-
-            // Ensure actor can update category
-            let (_, thread) = Self::ensure_can_update_thread_archival_status(account_id, &actor, &category_id, &thread_id)?;
-
-            // No change, invalid transaction
-            if new_archival_status == thread.archived {
-                return Err(Error::<T>::ThreadNotBeingUpdated.into());
-            }
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Mutate thread, and set possible new change parameters
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.archived = new_archival_status);
-
-            // Generate event
-            Self::deposit_event(RawEvent::ThreadUpdated(
-                    thread_id,
-                    new_archival_status,
-                    actor,
-                    category_id
-                ));
 
             Ok(())
         }
@@ -1121,7 +1220,6 @@ decl_module! {
         ).max(
             WeightInfoForum::<T>::moderate_thread_moderator(
                 T::MaxCategoryDepth::get() as u32,
-                0,
                 rationale.len().saturated_into(),
             )
         )]
@@ -1386,7 +1484,7 @@ decl_module! {
         fn delete_posts(
             origin,
             forum_user_id: ForumUserId<T>,
-            posts: Vec<(T::CategoryId, T::ThreadId, T::PostId, bool)>,
+            posts: BTreeMap<ExtendedPostId<T>, bool>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
@@ -1396,7 +1494,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             let mut deleting_posts = Vec::new();
-            for (category_id, thread_id, post_id, hide) in &posts {
+            for (ExtendedPostIdObject {category_id, thread_id, post_id}, hide) in &posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
@@ -1475,6 +1573,22 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    /// Hash poll description and poll alternatives descriptions, coverting `PollInput` into `Poll`
+    fn from_poll_input(poll_input: PollInput<T::Moment>) -> Poll<T::Moment, T::Hash> {
+        Poll {
+            description_hash: T::calculate_hash(poll_input.description.as_slice()),
+            poll_alternatives: poll_input
+                .poll_alternatives
+                .into_iter()
+                .map(|poll_alternative| PollAlternative {
+                    alternative_text_hash: T::calculate_hash(poll_alternative.as_slice()),
+                    vote_count: 0,
+                })
+                .collect(),
+            end_time: poll_input.end_time,
+        }
+    }
+
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
@@ -1508,6 +1622,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Add new posts & increase thread counter
     pub fn add_new_post(
         thread_id: T::ThreadId,
         category_id: T::CategoryId,
@@ -1565,7 +1680,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll is valid
-    fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> Result<(), Error<T>> {
+    fn ensure_poll_input_is_valid(poll: &PollInput<T::Moment>) -> Result<(), Error<T>> {
         // Poll end time must larger than now
         if poll.end_time < <pallet_timestamp::Module<T>>::now() {
             return Err(Error::<T>::PollTimeSetting);
@@ -1575,9 +1690,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll alternative size is valid
-    fn ensure_poll_alternatives_length_is_valid(
-        alternatives: &[PollAlternative<T::Hash>],
-    ) -> Result<(), Error<T>> {
+    fn ensure_poll_alternatives_length_is_valid<K>(alternatives: &[K]) -> Result<(), Error<T>> {
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
             alternatives.len() as u64,
         )?;
@@ -1692,29 +1805,8 @@ impl<T: Trait> Module<T> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
-        if thread.archived {
-            return Err(Error::<T>::ThreadImmutable);
-        }
-
         // and corresponding category is mutable
         let category = Self::ensure_category_is_mutable(category_id)?;
-
-        Ok((category, thread))
-    }
-
-    fn ensure_can_update_thread_archival_status(
-        account_id: T::AccountId,
-        actor: &PrivilegedActor<T>,
-        category_id: &T::CategoryId,
-        thread_id: &T::ThreadId,
-    ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
-        // Check actor's role
-        Self::ensure_actor_role(&account_id, actor)?;
-
-        let (category, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
-
-        // Ensure actor can delete category
-        Self::ensure_can_moderate_category_path(actor, category_id)?;
 
         Ok((category, thread))
     }
@@ -1730,7 +1822,7 @@ impl<T: Trait> Module<T> {
         Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
-    fn ensure_can_edit_thread_title(
+    fn ensure_can_edit_thread_metadata(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,

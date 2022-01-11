@@ -1,0 +1,78 @@
+"The decision of the storage provider when it acts as liaison"
+enum LiaisonJudgement {
+  "Content awaits for a judgment"
+  PENDING
+
+  "Content accepted"
+  ACCEPTED
+}
+
+"Manages content ids, type and storage provider decision about it"
+type DataObject @entity {
+  "Content owner"
+  owner: DataObjectOwner!
+
+  "Content added at"
+  createdInBlock: Int!
+
+  "Content type id"
+  typeId: Int!
+
+  "Content size in bytes"
+  size: BigInt!
+
+  "Storage provider id of the liaison"
+  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
+  "Storage provider as liaison judgment"
+  liaisonJudgement: LiaisonJudgement!
+
+  "IPFS content id"
+  ipfsContentId: String!
+
+  "Joystream runtime content"
+  joystreamContentId: String!
+}
+
+"Owner type for storage object"
+union DataObjectOwner =
+    DataObjectOwnerMember
+  | DataObjectOwnerChannel
+  | DataObjectOwnerDao
+  | DataObjectOwnerCouncil
+  | DataObjectOwnerWorkingGroup
+
+"Asset owned by a member"
+type DataObjectOwnerMember @variant {
+  "Related member"
+  member: Membership!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a channel"
+type DataObjectOwnerChannel @variant {
+  "Related channel"
+  channel: Channel!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a DAO"
+type DataObjectOwnerDao @variant {
+  "DAO identifier"
+  dao: Int!
+}
+
+"Asset owned by the Council"
+type DataObjectOwnerCouncil @variant {
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a WorkingGroup"
+type DataObjectOwnerWorkingGroup @variant {
+  "Working group"
+  workingGroup: WorkingGroup!
+}

@@ -257,6 +257,8 @@ macro_rules! init_proposal_parameter_optional_field {
     };
 }
 
+// Creates an error inside the macro when fixed.
+#[allow(clippy::field_reassign_with_default)]
 // Extracts proposal parameters from the parsed JSON object.
 fn extract_proposal_parameters(
     json_object: &JsonValue,

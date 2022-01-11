@@ -1,0 +1,126 @@
+type AvatarObject @variant {
+  "The avatar data object"
+  avatarObject: DataObject!
+}
+
+type AvatarUri @variant {
+  "The avatar URL"
+  avatarUri: String!
+}
+
+union Avatar = AvatarObject | AvatarUri
+
+type MemberMetadata @entity {
+  "Member's name"
+  name: String
+
+  "Avatar data object"
+  avatar: Avatar
+
+  "Short text chosen by member to share information about themselves"
+  about: String
+}
+
+type MembershipEntryPaid @variant {
+  "The event the membership was bought in"
+  # Must be optional because of member.entry <=> membershipBoughtEvent.newMember cross relationship
+  membershipBoughtEvent: MembershipBoughtEvent
+}
+
+type MembershipEntryInvited @variant {
+  "The event the member was invited in"
+  # Must be optional because of member.entry <=> memberInvitedEvent.newMember cross relationship
+  memberInvitedEvent: MemberInvitedEvent
+}
+
+type MembershipEntryGenesis @variant {
+  phantom: Int
+}
+
+union MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
+
+"Stored information about a registered user"
+type Membership @entity {
+  "MemberId: runtime identifier for a user"
+  id: ID!
+
+  "The unique handle chosen by member"
+  handle: String! @unique @fulltext(query: "membersByHandle")
+
+  "Member's metadata"
+  metadata: MemberMetadata!
+
+  "Member's controller account id"
+  controllerAccount: String!
+
+  "Member's root account id"
+  rootAccount: String!
+
+  "How the member was registered"
+  entry: MembershipEntryMethod!
+
+  "Whether member has been verified by membership working group."
+  isVerified: Boolean!
+
+  "Staking accounts bounded to membership."
+  boundAccounts: [String!]
+
+  "Current count of invites left to send."
+  inviteCount: Int!
+
+  "All members invited by this member."
+  invitees: [Membership!] @derivedFrom(field: "invitedBy")
+
+  "A member that invited this member (if any)"
+  invitedBy: Membership
+
+  "All members referred by this member"
+  referredMembers: [Membership!] @derivedFrom(field: "referredBy")
+
+  "A member that referred this member (if any)"
+  referredBy: Membership
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
+
+  "Whether member is elected in the current council."
+  isCouncilMember: Boolean!
+
+  "Member's working group roles (current and past)"
+  roles: [Worker!] @derivedFrom(field: "membership")
+
+  # Required for ProposalDiscussionWhitelist->members Many-to-Many relationship
+  "List of proposal thread whitelists the member is part of"
+  whitelistedIn: [ProposalDiscussionWhitelist!] @derivedFrom(field: "members")
+
+  "Content channels the member owns"
+  channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  # Council & Referendum relations
+
+  #"Council reward payment made received by the member."
+  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+
+  "Candidacies announced by this member."
+  councilCandidacies: [Candidate!] @derivedFrom(field: "member")
+
+  "Elected councils' memberships of the member."
+  councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+}
+
+type MembershipSystemSnapshot @entity {
+  "The snapshot block number"
+  snapshotBlock: Int!
+
+  "Initial invitation count of a new member."
+  defaultInviteCount: Int!
+
+  "Current price to buy a membership."
+  membershipPrice: BigInt!
+
+  "Percentage of tokens diverted to invitor."
+  referralCut: Int!
+
+  "The initial, locked, balance credited to controller account of invitee."
+  invitedInitialBalance: BigInt!
+}

@@ -4,7 +4,7 @@ import { AccountId } from '@polkadot/types/interfaces';
 // Keyring / identicon / address
 // -----------------------------------
 
-import createItem from '@polkadot/ui-keyring/options/item';
+import { createOptionItem } from '@polkadot/ui-keyring/options/item';
 import { findNameByAddress } from '@polkadot/joy-utils/functions/misc';
 
 // Hash
@@ -23,7 +23,7 @@ export type HashedVote = {
 const createAddressOption = (address: string) => {
   const name = findNameByAddress(address);
 
-  return createItem(address, name);
+  return createOptionItem(address, name);
 };
 
 export const accountIdsToOptions = (applicants: Array<AccountId>) => {

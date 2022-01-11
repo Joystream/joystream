@@ -7,7 +7,9 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
+use super::mock::{
+    Balances, LockId, System, Test, TestEvent, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
+};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
@@ -43,6 +45,35 @@ impl EventFixture {
         };
 
         assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+
+    pub fn contains_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
+    ) {
+        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+
+        Self::contains_global_event(converted_event)
+    }
+
+    fn contains_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert!(System::events().iter().any(|ev| *ev == expected_event));
     }
 }
 
@@ -1175,6 +1206,40 @@ impl SpendFromBudgetFixture {
         } else {
             assert_eq!(old_budget, new_budget);
             assert_eq!(old_balance, new_balance);
+        }
+    }
+}
+
+pub struct UpdateWorkerStorageFixture {
+    worker_id: u64,
+    storage_field: Vec<u8>,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerStorageFixture {
+    pub fn default_with_storage_field(worker_id: u64, storage_field: Vec<u8>) -> Self {
+        Self {
+            worker_id,
+            storage_field,
+            origin: RawOrigin::Signed(DEFAULT_WORKER_ACCOUNT_ID),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingGroup::update_role_storage(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.storage_field.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let storage = TestWorkingGroup::worker_storage(self.worker_id);
+
+            assert_eq!(storage, self.storage_field);
         }
     }
 }

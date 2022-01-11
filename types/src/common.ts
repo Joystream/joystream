@@ -1,65 +1,20 @@
-import {
-  GenericAccountId,
-  Struct,
-  Option,
-  Text,
-  bool,
-  u16,
-  u32,
-  u64,
-  Null,
-  U8aFixed,
-  BTreeSet,
-  UInt,
-  Compact,
-} from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
-import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
-import { u8aConcat, u8aToHex } from '@polkadot/util'
+import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
+import { GenericAccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
-// Adds sorting during BTreeSet toU8a encoding (required by the runtime)
-// Currently only supports values that extend UInt
-// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
-export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
-  toArray(): V[]
-}
-
-export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
-  return class extends BTreeSet.with(valType) {
-    public toArray(): V[] {
-      return Array.from(this)
-    }
-
-    public toU8a(isBare?: boolean): Uint8Array {
-      const encoded = new Array<Uint8Array>()
-
-      if (!isBare) {
-        encoded.push(Compact.encodeU8a(this.size))
-      }
-
-      const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
-
-      sorted.forEach((v: V) => {
-        encoded.push(v.toU8a(isBare))
-      })
-
-      return u8aConcat(...encoded)
-    }
-
-    public toHex(): string {
-      return u8aToHex(this.toU8a())
-    }
-  }
-}
-
 export class ActorId extends u64 {}
 export class MemberId extends u64 {}
+export class Url extends Text {}
+
+export class ChannelId extends u64 {}
+export class DAOId extends u64 {}
 
 // Indentical type names for Forum and Proposal Discussions modules
 // Ensure they are both configured in runtime to have same type
@@ -128,11 +83,18 @@ export const WorkingGroupDef = {
   Storage: Null,
   Content: Null,
   Membership: Null,
+  Operations: Null,
+  Gateway: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
 export class MemoText extends Text {}
+
+export class BalanceKind extends JoyEnum({
+  Positive: Null,
+  Negative: Null,
+}) {}
 
 // @polkadot/types overrides required since migration to Substrate 2.0,
 // see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
@@ -149,9 +111,13 @@ export const commonTypes: RegistryTypes = {
   InputValidationLengthConstraint,
   WorkingGroup,
   MemoText,
+  BalanceKind,
   // Customize Address type for joystream chain
   Address,
   LookupSource,
+  ChannelId,
+  DAOId,
+  Url,
 }
 
 export default commonTypes

@@ -32,8 +32,8 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = await ApiPromise.create({ provider, types })
-      await api.isReady
+      api = new ApiPromise({ provider, types })
+      await api.isReadyOrError
       break
     } catch (err) {
       // failed to connect to node

@@ -6,3 +6,5 @@ export interface AmountValidateState {
   error: string | null;
   warning: string | null;
 }
+
+export type DestinationType = 'Staked' | 'Stash' | 'Controller' | 'Account';

@@ -51,7 +51,7 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReason, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
@@ -97,7 +97,10 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::membership::Trait
+    frame_system::Trait
+    + balances::Trait
+    + pallet_timestamp::Trait
+    + common::membership::MembershipTypes
 {
     /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -120,6 +123,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier,
     >;
 
     /// Staking handler used for staking candidate.
@@ -127,6 +131,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier,
     >;
 
     /// Weight information for extrinsics in this pallet.
@@ -324,7 +329,7 @@ decl_storage! {
                     &member.controller_account,
                     handle_hash,
                     Zero::zero(),
-                ).expect("Importing Member Failed");
+                );
 
                 // ensure imported member id matches assigned id
                 assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
@@ -335,17 +340,17 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::membership::Trait>::MemberId,
+      <T as common::membership::MembershipTypes>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
       BuyMembershipParameters = BuyMembershipParameters<
           <T as frame_system::Trait>::AccountId,
-          <T as common::membership::Trait>::MemberId,
+          <T as common::membership::MembershipTypes>::MemberId,
         >,
-      <T as common::membership::Trait>::ActorId,
+      <T as common::membership::MembershipTypes>::ActorId,
       InviteMembershipParameters = InviteMembershipParameters<
           <T as frame_system::Trait>::AccountId,
-          <T as common::membership::Trait>::MemberId,
+          <T as common::membership::MembershipTypes>::MemberId,
         >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
@@ -385,6 +390,15 @@ decl_module! {
         /// Exports const - default balance for the invited member.
         const DefaultInitialInvitationBalance: BalanceOf<T> =
             T::DefaultInitialInvitationBalance::get();
+
+        /// Exports const - Stake needed to candidate as staking account.
+        const CandidateStake: BalanceOf<T> = T::CandidateStake::get();
+
+        /// Exports const - invited member lock id.
+        const InvitedMemberLockId: LockIdentifier = T::InvitedMemberStakingHandler::lock_id();
+
+        /// Exports const - staking candidate lock id.
+        const StakingCandidateLockId: LockIdentifier = T::StakingCandidateStakingHandler::lock_id();
 
         /// Non-members can buy membership.
         ///
@@ -434,7 +448,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Self::initial_invitation_count(),
-            )?;
+            );
 
             // Collect membership fee (just burn it).
             let _ = balances::Module::<T>::slash(&who, fee);
@@ -503,13 +517,9 @@ decl_module! {
                 });
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
-
-                Self::deposit_event(RawEvent::MemberProfileUpdated(
-                        member_id,
-                        handle,
-                        metadata,
-                    ));
             }
+
+            Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
         }
 
         /// Updates member root or controller accounts. No effect if both new accounts are empty.
@@ -725,7 +735,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Zero::zero(),
-            )?;
+            );
 
             // Save the updated profile.
             <MembershipById<T>>::mutate(&member_id, |membership| {
@@ -1069,7 +1079,7 @@ impl<T: Trait> Module<T> {
         controller_account: &T::AccountId,
         handle_hash: Vec<u8>,
         allowed_invites: u32,
-    ) -> Result<T::MemberId, Error<T>> {
+    ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
@@ -1084,7 +1094,8 @@ impl<T: Trait> Module<T> {
         <MemberIdByHandleHash<T>>::insert(handle_hash, new_member_id);
 
         <NextMemberId<T>>::put(new_member_id + One::one());
-        Ok(new_member_id)
+
+        new_member_id
     }
 
     // Ensure origin corresponds to the controller account of the member.

@@ -1,11 +1,11 @@
 import { map, switchMap } from 'rxjs/operators';
 
-import ApiPromise from '@polkadot/api/promise';
+import { ApiPromise } from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces';
 import { Option, Vec } from '@polkadot/types';
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
-import keyringOption from '@polkadot/ui-keyring/options';
+import { keyring } from '@polkadot/ui-keyring';
 
 import { APIQueryCache } from '@polkadot/joy-utils/transport/APIQueryCache';
 import { Subscribable } from '@polkadot/joy-utils/react/helpers';
@@ -49,15 +49,10 @@ type StakePair<T = Balance> = {
   role: T;
 }
 
-type GroupLeadWithMemberId = {
-  lead: Worker;
-  memberId: MemberId;
-  workerId: WorkerId;
-}
-
 const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup'
+  [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Operations]: 'operationsWorkingGroup'
 } as const;
 
 export class Transport extends BaseTransport implements ITransport {
@@ -142,6 +137,8 @@ export class Transport extends BaseTransport implements ITransport {
 
     const rewardRelationship = await this.workerRewardRelationship(worker);
 
+    const storage = await this.queryCachedByGroup(group).workerStorage(id);
+
     return ({
       roleAccount,
       group,
@@ -150,7 +147,8 @@ export class Transport extends BaseTransport implements ITransport {
       profile,
       title: workerRoleNameByGroup[group],
       stake: stakeValue,
-      rewardRelationship
+      rewardRelationship,
+      storage: this.api.createType('Text', storage).toString()
     });
   }
 
@@ -177,55 +175,15 @@ export class Transport extends BaseTransport implements ITransport {
     return false;
   }
 
-  protected async groupLead (group: WorkingGroups): Promise <GroupLeadWithMemberId | null> {
-    const optLeadId = (await this.queryCachedByGroup(group).currentLead()) as Option<WorkerId>;
-
-    if (!optLeadId.isSome) {
-      return null;
-    }
-
-    const leadWorkerId = optLeadId.unwrap();
-    const leadWorker = await this.queryCachedByGroup(group).workerById(leadWorkerId) as Worker;
-
-    if (leadWorker.isEmpty) {
-      return null;
-    }
-
-    return {
-      lead: leadWorker,
-      memberId: leadWorker.member_id,
-      workerId: leadWorkerId
-    };
-  }
-
   async groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {
-    const currentLead = await this.groupLead(group);
+    const optLeadId = await this.queryCachedByGroup(group).currentLead() as Option<WorkerId>;
 
-    if (currentLead !== null) {
-      const profile = await this.cacheApi.query.members.membershipById(currentLead.memberId) as Membership;
-
-      if (profile.handle.isEmpty) {
-        throw new Error(`${group} lead profile not found!`);
-      }
-
-      const rewardRelationshipId = currentLead.lead.reward_relationship;
-      const rewardRelationship = rewardRelationshipId.isSome
-        ? await this.rewardRelationshipById(rewardRelationshipId.unwrap())
-        : undefined;
-      const stake = currentLead.lead.role_stake_profile.isSome
-        ? await this.workerStake(currentLead.lead.role_stake_profile.unwrap())
-        : undefined;
+    if (optLeadId.isSome) {
+      const leadId = optLeadId.unwrap();
+      const leadWorker = await this.queryCachedByGroup(group).workerById(leadId) as Worker;
 
       return {
-        lead: {
-          memberId: currentLead.memberId,
-          workerId: currentLead.workerId,
-          roleAccount: currentLead.lead.role_account_id,
-          profile,
-          title: _.startCase(group) + ' Lead',
-          stake,
-          rewardRelationship
-        },
+        lead: { ...await this.groupMember(group, leadId, leadWorker), title: _.startCase(group) + ' Lead' },
         loaded: true
       };
     } else {
@@ -243,7 +201,7 @@ export class Transport extends BaseTransport implements ITransport {
     const workers = (await this.entriesByIds<WorkerId, Worker>(
       this.queryByGroup(group).workerById
     ))
-      .filter(([id, worker]) => worker.is_active && (!leadStatus.lead?.workerId || !id.eq(leadStatus.lead.workerId)));
+      .filter(([id, worker]) => worker.is_active && (typeof leadStatus.lead?.workerId === 'undefined' || !id.eq(leadStatus.lead.workerId)));
 
     return {
       leadStatus,
@@ -393,7 +351,7 @@ export class Transport extends BaseTransport implements ITransport {
   }
 
   accounts (): Subscribable<keyPairDetails[]> {
-    return keyringOption.optionsSubject.pipe(
+    return keyring.keyringOption.optionsSubject.pipe(
       map((accounts) => {
         return accounts.all
           .filter((x) => x.value)
@@ -540,7 +498,7 @@ export class Transport extends BaseTransport implements ITransport {
 
           return {
             workerId: id,
-            name: (groupLead?.workerId && groupLead.workerId.eq(id))
+            name: ((groupLead?.workerId !== undefined) && groupLead.workerId === id.toNumber())
               ? _.startCase(group) + ' Lead'
               : workerRoleNameByGroup[group],
             reward: earnedValue,

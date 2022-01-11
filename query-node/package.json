@@ -1,42 +1,50 @@
 {
-	"name": "query-node-root",
-	"version": "1.0.0",
-	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
-	"scripts": {
-		"build": "./build.sh",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"clean": "rm -rf ./generated",
-		"processor:start": "./processor-start.sh",
-		"indexer:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:indexer --env ../../../.env)",
-		"server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
-		"server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
-		"configure": "(cd ./generated/graphql-server && yarn config:dev)",
-		"db:up": "(cd ../ && docker-compose up -d db)",
-		"db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
-		"db:migrate": "./db-migrate.sh",
-		"db:schema:migrate": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
-		"db:indexer:migrate": "(cd ./generated/indexer && yarn db:migrate)",
-		"codegen:indexer": "yarn hydra-cli codegen --no-install --no-graphql && cp indexer-tsconfig.json generated/indexer/tsconfig.json",
-		"codegen:server": "yarn hydra-cli codegen --no-install --no-indexer",
-		"cd-classes": "ts-node scripts/get-class-id-and-name.ts",
-		"integration-tests": "./run-tests.sh"
-	},
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"@dzlzv/hydra-cli": "^0.0.24"
-	},
-	"dependencies": {
-		"@dzlzv/hydra-indexer-lib": "^0.0.18-alpha.2",
-		"@joystream/types": "^0.15.0",
-		"@types/bn.js": "^4.11.6",
-		"@types/debug": "^4.1.5",
-		"bn.js": "^5.1.2",
-		"debug": "^4.2.0",
-		"dotenvi": "^0.9.1",
-		"tslib": "^2.0.0"
-	},
-	"volta": {
+  "name": "query-node-root",
+  "version": "0.1.0",
+  "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
+  "scripts": {
+    "build": "./build.sh",
+    "start": "./start.sh",
+    "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
+    "lint": "yarn workspace query-node-mappings lint",
+    "clean": "rm -rf ./generated",
+    "clean:query-node": "rm -rf ./generated/graphql-server",
+    "processor:start": "DEBUG=${DEBUG} hydra-processor run -e ../.env",
+    "query-node:start:dev": "yarn workspace query-node start:dev",
+    "query-node:start:prod": "yarn workspace query-node start:prod",
+    "query-node:configure": "yarn workspace query-node config:dev",
+    "db:up": "yarn docker:db:up",
+    "db:create": "yarn workspace query-node db:create",
+    "db:drop": "yarn workspace query-node db:drop",
+    "db:prepare": "yarn workspace query-node db:create && yarn workspace query-node db:sync",
+    "db:schema:migrate": "yarn workspace query-node db:migrate",
+    "db:processor:migrate": "hydra-processor migrate --env ../.env",
+    "db:migrate": "yarn db:schema:migrate && yarn db:processor:migrate",
+    "db:bootstrap": "yarn db:create && yarn db:prepare && yarn db:migrate",
+    "bootstrap": "yarn codegen && yarn db:drop && yarn db:bootstrap",
+    "hydra-cli": "./codegen/node_modules/.bin/hydra-cli",
+    "hydra-typegen": "./codegen/node_modules/.bin/hydra-typegen",
+    "codegen": "yarn hydra-cli codegen --schema ../../schemas/",
+    "codegen:noinstall": "yarn codegen --no-install",
+    "typegen:configure": "TYPEGEN_WS_URI=${TYPEGEN_WS_URI:-ws://localhost:9944} yarn envsub manifest.yml typegen.yml",
+    "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen typegen.yml --debug",
+    "mappings:build": "yarn workspace query-node-mappings build",
+    "docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
+    "docker:db:up": "(cd ../ && docker-compose up -d db)",
+    "docker:db:migrate": "docker run --env-file .env --env DB_HOST=db --env TYPEORM_HOST=db --network container:${PWD##*/}_db_1 hydra-kit:latest yarn db:migrate",
+    "docker:up": "docker-compose up -d",
+    "format": "prettier ./ --write"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tslib": "^2.0.0",
+    "@types/bn.js": "^4.11.6",
+    "bn.js": "^5.1.2",
+    "@joystream/hydra-processor": "3.1.0-alpha.13",
+    "envsub": "4.0.7"
+  },
+  "volta": {
 		"extends": "../package.json"
 	}
 }

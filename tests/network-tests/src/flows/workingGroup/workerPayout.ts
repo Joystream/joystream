@@ -15,7 +15,7 @@ import { ProposalId } from '@joystream/types/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
@@ -28,7 +28,7 @@ export default {
 }
 
 async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
-  const debug = Debugger(`flow:workerPayout:${group}`)
+  const debug = extendDebug(`flow:workerPayout:${group}`)
   debug('Started')
   await lock(Resource.Proposals)
 

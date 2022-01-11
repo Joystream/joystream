@@ -49,11 +49,11 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_balances::Trait for Test {
@@ -66,7 +66,7 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }

@@ -1,0 +1,9 @@
+{
+  "handle": "Storage node channel",
+  "description": "Storage node channel",
+  "language": { "existing": { "code": "EN" } },
+  "coverPhotoUrl": "",
+  "avatarPhotoUrl": "",
+  "isPublic": true,
+  "isCensored": false
+}

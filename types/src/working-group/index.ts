@@ -1,7 +1,7 @@
-import { BTreeMap, Option, Text } from '@polkadot/types'
+import { Bytes, BTreeMap, Option, Text, BTreeSet } from '@polkadot/types'
 import { Null, u32, u64, u128 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { AccountId, ActorId, MemberId, JoyEnum, JoyStructDecorated, JoyBTreeSet } from '../common'
+import { ActorId, MemberId, JoyEnum, JoyStructDecorated, AccountId } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class ApplicationId extends u64 {}
@@ -9,7 +9,7 @@ export class OpeningId extends u64 {}
 export class WorkerId extends ActorId {}
 export class StorageProviderId extends WorkerId {}
 
-export class ApplicationIdSet extends JoyBTreeSet(ApplicationId) {}
+export class ApplicationIdSet extends BTreeSet.with(ApplicationId) {}
 export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
 export type IApplication = {
@@ -17,7 +17,8 @@ export type IApplication = {
   reward_account_id: AccountId
   staking_account_id: AccountId
   member_id: MemberId
-  description_hash: Text
+  description_hash: Bytes
+  opening_id: OpeningId
 }
 
 export class Application
@@ -26,7 +27,8 @@ export class Application
     reward_account_id: AccountId,
     staking_account_id: AccountId,
     member_id: MemberId,
-    description_hash: Text,
+    description_hash: Bytes,
+    opening_id: OpeningId,
   })
   implements IApplication {}
 
@@ -45,7 +47,7 @@ export class ApplicationInfo
 export type IWorker = {
   member_id: MemberId
   role_account_id: AccountId
-  staking_account_id: Option<AccountId>
+  staking_account_id: AccountId
   reward_account_id: AccountId
   started_leaving_at: Option<BlockNumber>
   job_unstaking_period: BlockNumber
@@ -58,7 +60,7 @@ export class Worker
   extends JoyStructDecorated({
     member_id: MemberId,
     role_account_id: AccountId,
-    staking_account_id: Option.with(AccountId),
+    staking_account_id: AccountId,
     reward_account_id: AccountId,
     started_leaving_at: Option.with(u32),
     job_unstaking_period: u32,
@@ -113,8 +115,8 @@ export type IApplyOnOpeningParameters = {
   opening_id: OpeningId
   role_account_id: AccountId
   reward_account_id: AccountId
-  description: Text
-  stake_parameters: Option<StakeParameters>
+  description: Bytes
+  stake_parameters: StakeParameters
 }
 
 export class ApplyOnOpeningParameters
@@ -123,8 +125,8 @@ export class ApplyOnOpeningParameters
     opening_id: OpeningId,
     role_account_id: AccountId,
     reward_account_id: AccountId,
-    description: Text,
-    stake_parameters: Option.with(StakeParameters),
+    description: Bytes,
+    stake_parameters: StakeParameters,
   })
   implements IApplyOnOpeningParameters {}
 
@@ -152,20 +154,28 @@ export class OpeningType extends JoyEnum(OpeningTypeDef) {}
 export type IOpening = {
   opening_type: OpeningType
   created: BlockNumber
-  description_hash: Text
-  stake_policy: Option<StakePolicy>
+  description_hash: Bytes
+  stake_policy: StakePolicy
   reward_per_block: Option<Balance>
+  creation_stake: Balance
 }
 
 export class Opening
   extends JoyStructDecorated({
     opening_type: OpeningType,
     created: u32,
-    description_hash: Text,
-    stake_policy: Option.with(StakePolicy),
+    description_hash: Bytes,
+    stake_policy: StakePolicy,
     reward_per_block: Option.with(u128),
+    creation_stake: u128,
   })
   implements IOpening {}
+
+// Reward payment type enum.
+export class RewardPaymentType extends JoyEnum({
+  MissedReward: Null,
+  RegularReward: Null,
+}) {}
 
 export const workingGroupTypes: RegistryTypes = {
   ApplicationId,
@@ -184,6 +194,7 @@ export const workingGroupTypes: RegistryTypes = {
   OpeningType,
   ApplyOnOpeningParameters,
   Penalty,
+  RewardPaymentType,
 }
 
 export default workingGroupTypes

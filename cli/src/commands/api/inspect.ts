@@ -1,13 +1,12 @@
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import { displayNameValueTable } from '../../helpers/display'
-import { ApiPromise } from '@polkadot/api'
 import { Codec } from '@polkadot/types/types'
-import { ConstantCodec } from '@polkadot/metadata/Decorated/consts/types'
 import ExitCodes from '../../ExitCodes'
 import chalk from 'chalk'
-import { NameValueObj, ApiMethodArg } from '../../Types'
+import { NameValueObj, ApiMethodArg, UnaugmentedApiPromise } from '../../Types'
 import ApiCommandBase from '../../base/ApiCommandBase'
+import { AugmentedConst } from '@polkadot/api/types'
 
 // Command flags type
 type ApiInspectFlags = {
@@ -78,21 +77,21 @@ export default class ApiInspect extends ApiCommandBase {
 
   getMethodMeta(apiType: ApiType, apiModule: string, apiMethod: string) {
     if (apiType === 'query') {
-      return this.getOriginalApi().query[apiModule][apiMethod].creator.meta
+      return this.getUnaugmentedApi().query[apiModule][apiMethod].creator.meta
     } else {
       // Currently the only other optoin is api.consts
-      const method: ConstantCodec = this.getOriginalApi().consts[apiModule][apiMethod] as ConstantCodec
+      const method = (this.getUnaugmentedApi().consts[apiModule][apiMethod] as unknown) as AugmentedConst<'promise'>
       return method.meta
     }
   }
 
   getMethodDescription(apiType: ApiType, apiModule: string, apiMethod: string): string {
-    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).documentation.join(' ')
+    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).docs.join(' ')
     return description || 'No description available.'
   }
 
   getQueryMethodParamsTypes(apiModule: string, apiMethod: string): string[] {
-    const method = this.getOriginalApi().query[apiModule][apiMethod]
+    const method = this.getUnaugmentedApi().query[apiModule][apiMethod]
     const { type } = method.creator.meta
     if (type.isDoubleMap) {
       return [type.asDoubleMap.key1.toString(), type.asDoubleMap.key2.toString()]
@@ -105,7 +104,7 @@ export default class ApiInspect extends ApiCommandBase {
 
   getMethodReturnType(apiType: ApiType, apiModule: string, apiMethod: string): string {
     if (apiType === 'query') {
-      const method = this.getOriginalApi().query[apiModule][apiMethod]
+      const method = this.getUnaugmentedApi().query[apiModule][apiMethod]
       const {
         meta: { type, modifier },
       } = method.creator
@@ -126,7 +125,7 @@ export default class ApiInspect extends ApiCommandBase {
   // Validate the flags - throws an error if flags.type, flags.module or flags.method is invalid / does not exist in the api.
   // Returns type, module and method which validity we can be sure about (notice they may still be "undefined" if weren't provided).
   validateFlags(
-    api: ApiPromise,
+    api: UnaugmentedApiPromise,
     flags: ApiInspectFlags
   ): { apiType: ApiType | undefined; apiModule: string | undefined; apiMethod: string | undefined } {
     let apiType: ApiType | undefined
@@ -155,7 +154,7 @@ export default class ApiInspect extends ApiCommandBase {
   async requestParamsValues(paramTypes: string[]): Promise<ApiMethodArg[]> {
     const result: ApiMethodArg[] = []
     for (const [key, paramType] of Object.entries(paramTypes)) {
-      this.log(chalk.bold.white(`Parameter no. ${parseInt(key) + 1} (${paramType}):`))
+      this.log(chalk.bold.magentaBright(`Parameter no. ${parseInt(key) + 1} (${paramType}):`))
       const paramValue = await this.promptForParam(paramType)
       result.push(paramValue)
     }
@@ -164,7 +163,7 @@ export default class ApiInspect extends ApiCommandBase {
   }
 
   async run() {
-    const api: ApiPromise = this.getOriginalApi()
+    const api: UnaugmentedApiPromise = this.getUnaugmentedApi()
     const flags: ApiInspectFlags = this.parse(ApiInspect).flags as ApiInspectFlags
     const availableTypes: readonly string[] = TYPES_AVAILABLE
     const { apiType, apiModule, apiMethod } = this.validateFlags(api, flags)
@@ -192,7 +191,7 @@ export default class ApiInspect extends ApiCommandBase {
     }
     // Describing a method
     else if (apiType && apiModule && apiMethod) {
-      this.log(chalk.bold.white(`${apiType}.${apiModule}.${apiMethod}`))
+      this.log(chalk.bold.magentaBright(`${apiType}.${apiModule}.${apiMethod}`))
       const description: string = this.getMethodDescription(apiType, apiModule, apiMethod)
       this.log(`\n${description}\n`)
       const typesRows: NameValueObj[] = []
@@ -215,17 +214,17 @@ export default class ApiInspect extends ApiCommandBase {
     }
     // Displaying all available modules
     else if (apiType) {
-      this.log(chalk.bold.white('Available modules:'))
+      this.log(chalk.bold.magentaBright('Available modules:'))
       this.log(
         Object.keys(api[apiType])
-          .map((key) => chalk.white(key))
+          .map((key) => chalk.magentaBright(key))
           .join('\n')
       )
     }
     // Displaying all available types
     else {
-      this.log(chalk.bold.white('Available types:'))
-      this.log(availableTypes.map((type) => chalk.white(type)).join('\n'))
+      this.log(chalk.bold.magentaBright('Available types:'))
+      this.log(availableTypes.map((type) => chalk.magentaBright(type)).join('\n'))
     }
   }
 }

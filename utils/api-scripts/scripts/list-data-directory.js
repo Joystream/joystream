@@ -1,27 +1,31 @@
 /* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
-// yarn script listDataDirectory
+// yarn workspace api-scripts script list-data-directory
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
 // requires nicaea release+
 
 const script = async ({ api }) => {
-  const ids = await api.query.dataDirectory.knownContentIds()
+  const entries = await api.query.dataDirectory.dataByContentId.entries()
 
-  await Promise.all(
-    ids.map(async (id) => {
-      let obj = await api.query.dataDirectory.dataObjectByContentId(id)
-      if (obj.isNone) {
-        return
-      }
-      obj = obj.unwrap()
+  console.error(`Data Directory contains ${entries.length} objects`)
+
+  const acceptedEntries = entries.filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
+
+  acceptedEntries.forEach(
+    ([
+      {
+        args: [id],
+      },
+      obj,
+    ]) => {
       console.log(`contentId: ${api.createType('ContentId', id).encode()}, ipfs: ${obj.ipfs_content_id}`)
-    })
+    }
   )
 
-  console.error(`Data Directory contains ${ids.length} objects`)
+  console.error(`Data Directory contains ${acceptedEntries.length} Accepted objects`)
 }
 
 if (typeof module === 'undefined') {

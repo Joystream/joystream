@@ -1,7 +1,6 @@
 //! # Data object storage registry module
 //! Data object storage registry module for the Joystream platform allows to set relationships
-//! between the content and the storage providers. All extrinsics require storage working group
-//! registration.
+//! between the content and the storage providers. All extrinsics require storage working group registration.
 //!
 //! ## Comments
 //!
@@ -10,13 +9,18 @@
 //!
 //! ## Supported extrinsics
 //!
-//! - [add_relationship](./struct.Module.html#method.add_relationship) - Add storage
-//! provider-to-content relationship.
-//! - [set_relationship_ready](./struct.Module.html#method.set_relationship_ready)- Activates
-//! storage provider-to-content relationship.
-//! - [unset_relationship_ready](./struct.Module.html#method.unset_relationship_ready) - Deactivates
-//! storage provider-to-content relationship.
+//! - [add_relationship](./struct.Module.html#method.add_relationship) - Add storage provider-to-content relationship.
+//! - [set_relationship_ready](./struct.Module.html#method.set_relationship_ready)- Activates storage provider-to-content relationship.
+//! - [unset_relationship_ready](./struct.Module.html#method.unset_relationship_ready) - Deactivates storage provider-to-content relationship.
 //!
+
+// Clippy linter requirement.
+// Disable it because of the substrate lib design. Example:
+// pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+#![allow(clippy::redundant_closure_call)]
+
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
@@ -28,7 +32,10 @@ use sp_std::vec::Vec;
 use common::working_group::WorkingGroupAuthenticator;
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::StorageProviderId;
+use crate::*;
+
+// Working group type alias.
+type WorkingGroup<T> = <T as data_object_type_registry::Trait>::WorkingGroup;
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
@@ -72,7 +79,7 @@ decl_error! {
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     /// Content id.
-    pub content_id: <T as data_directory::Trait>::ContentId,
+    pub content_id: <T as common::StorageOwnership>::ContentId,
 
     /// Storge provider id.
     pub storage_provider_id: StorageProviderId<T>,
@@ -86,28 +93,25 @@ decl_storage! {
 
         /// Defines first relationship id.
         pub FirstRelationshipId get(fn first_relationship_id) config(first_relationship_id):
-            T::DataObjectStorageRelationshipId =
-                T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
+            T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         /// Defines next relationship id.
-        pub NextRelationshipId get(fn next_relationship_id) build(|config: &GenesisConfig<T>|
-            config.first_relationship_id): T::DataObjectStorageRelationshipId
-                = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
+        pub NextRelationshipId get(fn next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         /// Mapping of Data object types
         pub Relationships get(fn relationships): map hasher(blake2_128_concat)
             T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
 
         /// Keeps a list of storage relationships per content id.
-        pub RelationshipsByContentId get(fn relationships_by_content_id):
-            map hasher(blake2_128_concat) T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
+        pub RelationshipsByContentId get(fn relationships_by_content_id): map hasher(blake2_128_concat)
+            T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
     }
 }
 
 decl_event! {
     /// _Data object storage registry_ events
     pub enum Event<T> where
-        <T as data_directory::Trait>::ContentId,
+        <T as common::StorageOwnership>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         StorageProviderId = StorageProviderId<T>
     {
@@ -116,19 +120,14 @@ decl_event! {
         /// - Id of the relationship.
         /// - Id of the content.
         /// - Id of the storage provider.
-        DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId,
-            StorageProviderId),
+        DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, StorageProviderId),
 
         /// Emits on adding of the data object storage relationship.
         /// Params:
+        /// - Id of the storage provider.
         /// - Id of the relationship.
         /// - Current state of the relationship (True=Active).
-        /// - Id of the storage provider
-        DataObjectStorageRelationshipReadyUpdated(
-            DataObjectStorageRelationshipId,
-            bool,
-            StorageProviderId
-        ),
+        DataObjectStorageRelationshipReadyUpdated(StorageProviderId, DataObjectStorageRelationshipId, bool),
     }
 }
 
@@ -144,13 +143,9 @@ decl_module! {
         /// Add storage provider-to-content relationship. The storage provider should be registered
         /// in the storage working group.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_relationship(
-            origin,
-            storage_provider_id: StorageProviderId<T>,
-            cid: T::ContentId
-        ) {
+        pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
-            T::WorkingGroup::ensure_worker_origin(origin, &storage_provider_id)?;
+            WorkingGroup::<T>::ensure_worker_origin(origin, &storage_provider_id)?;
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), Error::<T>::CidNotFound);
@@ -184,9 +179,8 @@ decl_module! {
             );
         }
 
-        /// Activates storage provider-to-content relationship. The storage provider should be
-        /// registered in the storage working group. A storage provider may flip their own ready
-        /// state, but nobody else.
+        /// Activates storage provider-to-content relationship. The storage provider should be registered
+        /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_relationship_ready(
             origin,
@@ -196,9 +190,8 @@ decl_module! {
             Self::toggle_dosr_ready(origin, storage_provider_id, id, true)?;
         }
 
-        /// Deactivates storage provider-to-content relationship. The storage provider should be
-        /// registered in the storage working group. A storage provider may flip their own r
-        /// eady state, but nobody else.
+        /// Deactivates storage provider-to-content relationship. The storage provider should be registered
+        /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_relationship_ready(
             origin,
@@ -217,7 +210,7 @@ impl<T: Trait> Module<T> {
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
     ) -> DispatchResult {
-        T::WorkingGroup::ensure_worker_origin(origin, &storage_provider_id)?;
+        WorkingGroup::<T>::ensure_worker_origin(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr =
@@ -234,9 +227,9 @@ impl<T: Trait> Module<T> {
         // Update DOSR and fire event.
         <Relationships<T>>::insert(id, dosr);
         Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(
+            storage_provider_id,
             id,
             ready,
-            storage_provider_id,
         ));
 
         Ok(())

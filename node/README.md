@@ -26,7 +26,7 @@ cd joystream/
 Compile the node and runtime:
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
 ```
 
 This produces the binary in `./target/release/joystream-node`
@@ -49,7 +49,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-./target/release/joystream-node --chain testnets/joy-testnet-4.json
+./target/release/joystream-node --chain testnets/joy-testnet-5.json
 ```
 
 ### Tests and code quality
@@ -57,7 +57,7 @@ Use the `--chain` argument, and specify the path to the genesis `chain.json` fil
 Running unit tests:
 
 ```bash
-cargo test --release --all
+cargo +nightly-2021-02-20 test --release --all
 ```
 
 Running full suite of checks, tests, formatting and linting:
@@ -79,11 +79,11 @@ If you are building a tagged release from `master` branch and want to install th
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo install joystream-node --path node/ --locked
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 install joystream-node --path node/ --locked
 ```
 
 Now you can run and connect to the testnet:
 
 ```bash
-joystream-node --chain testnets/joy-testnet-4.json
+joystream-node --chain testnets/joy-testnet-5.json
 ```

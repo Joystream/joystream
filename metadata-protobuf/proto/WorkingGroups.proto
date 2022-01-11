@@ -1,0 +1,58 @@
+syntax = "proto2";
+
+message OpeningMetadata {
+  optional string short_description = 1; // Short description of the opening
+  optional string description = 2; // Full description of the opening
+  optional uint32 hiring_limit = 3; // Expected number of hired applicants
+  optional uint32 expected_ending_timestamp = 4; // Expected time when the opening will close (Unix timestamp)
+  optional string application_details = 5; // Md-formatted text explaining the application process
+  message ApplicationFormQuestion {
+    optional string question = 1; // The question itself (ie. "What is your name?"")
+    enum InputType {
+      TEXTAREA = 0;
+      TEXT = 1;
+    }
+    optional InputType type = 2; // Suggested type of the UI answer input
+  }
+  repeated ApplicationFormQuestion application_form_questions = 6; // List of questions that should be answered during application
+}
+
+message UpcomingOpeningMetadata {
+  optional uint32 expected_start = 1; // Expected opening start (timestamp)
+  optional uint64 reward_per_block = 2; // Expected reward per block
+  optional uint64 min_application_stake = 3; // Expected min. application stake
+  optional OpeningMetadata metadata = 4; // Opening metadata
+}
+
+message ApplicationMetadata {
+  repeated string answers = 1; // List of answers to opening application form questions
+}
+
+// set_status_text extrinsic messages:
+
+message WorkingGroupMetadata {
+  optional string description = 1; // Group description text (md-formatted)
+  optional string about = 2; // Group about text (md-formatted)
+  optional string status = 3; // Current group status (expected to be 1-3 words)
+  optional string status_message = 4; // Short status message associated with the status
+}
+
+message SetGroupMetadata {
+  optional WorkingGroupMetadata new_metadata = 1; // New working group metadata to set (can be a partial update)
+}
+
+message AddUpcomingOpening {
+  optional UpcomingOpeningMetadata metadata = 1; // Upcoming opening metadata
+}
+
+message RemoveUpcomingOpening {
+  optional string id = 1; // Upcoming opening query-node id
+}
+
+message WorkingGroupMetadataAction {
+  oneof action {
+    SetGroupMetadata set_group_metadata = 1;
+    AddUpcomingOpening add_upcoming_opening = 2;
+    RemoveUpcomingOpening remove_upcoming_opening = 3;
+  }
+}

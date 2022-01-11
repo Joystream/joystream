@@ -22,7 +22,7 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
 pub const SLOT_DURATION: Moment = 6000;
-pub const BONDING_DURATION: u32 = 24;
+pub const BONDING_DURATION: u32 = 24 * 7;
 
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
@@ -113,6 +113,8 @@ parameter_types! {
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
     pub const StakingCandidateLockId: LockIdentifier = [11; 8];
     pub const BountyLockId: LockIdentifier = [12; 8];
+    pub const OperationsWorkingGroupLockId: LockIdentifier = [13; 8];
+    pub const GatewayWorkingGroupLockId: LockIdentifier = [14; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -133,6 +135,8 @@ lazy_static! {
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            GatewayWorkingGroupLockId::get(),
+            OperationsWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (StakingCandidateLockId::get(), [
@@ -145,6 +149,8 @@ lazy_static! {
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            GatewayWorkingGroupLockId::get(),
+            OperationsWorkingGroupLockId::get(),
             InvitedMemberLockId::get(),
         ].to_vec()),
         (VotingLockId::get(), [
@@ -157,6 +163,8 @@ lazy_static! {
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            GatewayWorkingGroupLockId::get(),
+            OperationsWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (CandidacyLockId::get(), [
@@ -194,6 +202,16 @@ lazy_static! {
             StakingCandidateLockId::get(),
         ].to_vec()),
         (MembershipWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (GatewayWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (OperationsWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
