@@ -1601,6 +1601,7 @@ decl_module! {
             match post.post_type {
                 PostType::<T>::Comment(parent_id) => {
                     PostById::<T>::remove(&video_id, &post_id);
+                    // parent post might have been already deleted
                     if let Ok(mut parent_post) = Self::ensure_post_exists(
                         video_id.clone(),
                         parent_id.clone(),
