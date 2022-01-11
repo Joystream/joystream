@@ -224,6 +224,7 @@ impl DeletePostFixture {
         let balance_pre = Balances::usable_balance(&self.sender);
         let initial_bloat_bond = Content::compute_initial_bloat_bond();
         let post = Content::post_by_id(&self.video_id, &self.post_id);
+        let thread_size = PostById::<Test>::iter_prefix(&self.video_id).count();
         let replies_count_pre = match &post.post_type {
             PostType::<Test>::Comment(parent_id) => {
                 Content::ensure_post_exists(&self.params.video_reference, parent_id)
@@ -273,7 +274,35 @@ impl DeletePostFixture {
                     MetaEvent::content(RawEvent::PostDeleted(post, self.post_id, self.actor))
                 );
             }
-            Err(_err) => (),
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                if let DispatchError::Module {
+                    message: Some(error_msg),
+                    ..
+                } = err
+                {
+                    match error_msg {
+                        "PostDoesntExist" => (),
+                        _ => {
+                            assert_eq!(Content::post_by_id(&self.video_id, &self.post_id), post);
+                            match &post.post_type {
+                                PostType::<Test>::Comment(parent_id) => {
+                                    let replies_count_post = Content::ensure_post_exists(
+                                        &self.params.video_reference,
+                                        parent_id,
+                                    )
+                                    .unwrap_or(PostId::zero());
+                                    assert_eq!(replies_count_pre, replies_count_post);
+                                }
+                                PostType::<Test>::VideoPost => assert_eq!(
+                                    PostById::<Test>::iter_prefix(&self.video_id).count(),
+                                    thread_size,
+                                ),
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
