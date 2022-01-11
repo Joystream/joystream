@@ -135,3 +135,27 @@ pub fn create_default_member_channel_with_video() {
         }
     ));
 }
+
+pub fn create_default_member_channel_with_video_and_posts() {
+    create_default_member_channel_with_video();
+
+    // create post with id One::one()
+    assert_ok!(Content::create_post(
+        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        ContentActor::Member(DEFAULT_MEMBER_ID),
+        PostCreationParameters::<Test> {
+            post_type: PostType::<Test>::VideoPost,
+            video_reference: One::one(),
+        }
+    ));
+
+    // create a reply to it
+    assert_ok!(Content::create_post(
+        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        ContentActor::Member(DEFAULT_MEMBER_ID),
+        PostCreationParameters {
+            post_type: PostType::<Test>::Comment(One::one()),
+            video_reference: One::one(),
+        }
+    ));
+}
