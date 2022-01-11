@@ -32,6 +32,7 @@ export class CliApi {
       env: {
         ...env,
         PATH: process.env.PATH,
+        APPDATA: path.join(__dirname, '/__CliApi_appdata/')
       },
     })
     console.log('cli - output:', output)
@@ -68,6 +69,14 @@ export class CliApi {
   */
   private containsNoStorageWarning(text: string): boolean {
     return !!text.match(/^\s*\S\s*Warning: No storage provider is currently available!/)
+  }
+
+  async setApiUri(uri = 'ws://localhost:9944') {
+    const { stderr } = this.runCommand(['api:setUri', uri])
+
+    if (stderr) {
+      throw new Error(`Unexpected CLI failure on setting API URI: "${stderr}"`)
+    }
   }
 
   /**

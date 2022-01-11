@@ -11,6 +11,7 @@ import {
 import { FixtureRunner } from '../../Fixture'
 import { OpeningId } from '@joystream/types/hiring'
 import { Api, WorkingGroups } from '../../Api'
+
 import BN from 'bn.js'
 import { WorkerId } from '@joystream/types/working-group'
 
