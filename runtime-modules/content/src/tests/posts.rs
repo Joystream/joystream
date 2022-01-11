@@ -606,6 +606,21 @@ pub fn unsuccessful_post_deletion_with_invalid_witness() {
     })
 }
 
+pub fn unsuccessful_post_deletion_with_no_witness() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_params(PostDeletionParameters::<Test> {
+                witness: None,
+                rationale: None,
+            })
+            .call_and_assert(Err(Error::<Test>::WitnessNotProvided.into()))
+    })
+}
+
 #[test]
 pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
     with_default_mock_builder(|| {
@@ -651,6 +666,21 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
         DeletePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
+            .with_post_id(PostId::from(2u64))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_comment_update_with_invalid_moderator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_sender(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MODERATOR_ID))
             .with_post_id(PostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })

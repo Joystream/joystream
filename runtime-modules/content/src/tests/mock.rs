@@ -198,7 +198,7 @@ impl ContentActorAuthenticator for Test {
                     == ensure_signed(Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)).unwrap()
             }
 
-            MODERATOR_MEMBER_ID => {
+            DEFAULT_MODERATOR_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID)).unwrap()
             }
             _ => false,

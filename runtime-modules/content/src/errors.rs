@@ -76,12 +76,6 @@ decl_error! {
         /// moderators limit reached
         ModeratorsLimitReached,
 
-        /// moderator does not exist
-        ModeratorDoesNotExist,
-
-        /// cannot comment to non existing video post
-        CannotCommentToNonExistingVideoPost,
-
         /// cannot edit video post
         CannotEditVideoPost,
 
