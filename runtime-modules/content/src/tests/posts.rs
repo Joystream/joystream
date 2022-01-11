@@ -704,3 +704,45 @@ pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
             .call_and_assert(Err(Error::<Test>::RationaleNotProvidedByModerator.into()))
     })
 }
+
+#[test]
+pub fn successful_post_deletion_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        DeletePostFixture::default()
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::one(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_post_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_comment();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::one(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}

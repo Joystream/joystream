@@ -1,6 +1,7 @@
 use super::curators;
 use super::mock::*;
 use crate::*;
+use core::cmp::min;
 use frame_support::assert_ok;
 use sp_runtime::DispatchError;
 
@@ -235,7 +236,6 @@ impl DeletePostFixture {
             }
             PostType::<Test>::VideoPost => PostId::zero(),
         };
-        let video_pre = Content::video_by_id(&self.video_id);
 
         let actual_result = Content::delete_post(
             origin,
@@ -246,13 +246,19 @@ impl DeletePostFixture {
         );
 
         let balance_post = Balances::<Test>::usable_balance(&self.sender);
-        let video_post = Content::video_by_id(&self.video_id);
 
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
             Ok(()) => {
-                assert_eq!(balance_pre.saturating_sub(balance_post), initial_bloat_bond);
+                if post.author == self.actor.clone() {
+                    let cap = BalanceOf::<Test>::from(BloatBondCap::get());
+                    assert!(
+                        balance_post.saturating_sub(balance_pre) >= min(initial_bloat_bond, cap)
+                    )
+                } else {
+                    assert_eq!(balance_post, balance_pre)
+                };
                 assert!(!PostById::<Test>::contains_key(
                     &self.video_id,
                     &self.post_id

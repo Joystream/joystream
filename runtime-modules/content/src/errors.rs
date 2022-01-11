@@ -88,7 +88,10 @@ decl_error! {
         /// rationale not provided
         RationaleNotProvidedByModerator,
 
-        /// insufficient balance
+        /// Insufficient balance
         InsufficientBalance,
+
+        /// Insufficient treasury balance
+        InsufficientTreasuryBalance,
     }
 }

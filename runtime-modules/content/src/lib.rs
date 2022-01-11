@@ -1577,7 +1577,7 @@ decl_module! {
                         post.replies_count,
                     )?;
                     ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor, &channel)?;
-                    CleanupActor::ChannelOwner
+                    CleanupActor::PostAuthor
                 },
                 PostType::<T>::Comment(_) => {
                     let cleanup_actor = ensure_actor_authorized_to_remove_comment::<T>(
@@ -1595,6 +1595,11 @@ decl_module! {
                     cleanup_actor
                 }
             };
+
+            ensure!(
+                ContentTreasury::<T>::usable_balance() >= post.bloat_bond,
+                Error::<T>::InsufficientTreasuryBalance,
+            );
 
             //
             // == MUTATION_SAFE ==
@@ -1784,17 +1789,19 @@ impl<T: Trait> Module<T> {
         cleanup_actor: CleanupActor,
         bloat_bond: <T as balances::Trait>::Balance,
     ) -> DispatchResult {
+        println!("cleanup actor:\t{:?}", cleanup_actor);
         match cleanup_actor {
             CleanupActor::PostAuthor => {
                 let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
 
-                // if cap is exceeded, refund cap and burn the difference
+                println!("bloat_bond:\t{:?}", bloat_bond);
+                println!("cap:\t{:?}", cap);
                 if bloat_bond > cap {
                     let diff = bloat_bond.saturating_sub(cap);
-                    ContentTreasury::<T>::withdraw(&sender, cap)?;
+                    ContentTreasury::<T>::withdraw(sender, cap)?;
                     let _ = balances::Module::<T>::burn(diff);
                 } else {
-                    ContentTreasury::<T>::withdraw(&sender, bloat_bond)?;
+                    ContentTreasury::<T>::withdraw(sender, bloat_bond)?;
                 }
             }
             _ => {

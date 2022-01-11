@@ -359,7 +359,7 @@ pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
     let actor_is_moderator = ensure_actor_is_moderator::<T>(actor, &channel.moderator_set)
         .map(|_| CleanupActor::Moderator);
 
-    actor_is_owner.or(actor_is_author).or(actor_is_moderator)
+    actor_is_author.or(actor_is_owner).or(actor_is_moderator)
 }
 
 // Enure actor can create post: same rules as if he is trying to update channel
