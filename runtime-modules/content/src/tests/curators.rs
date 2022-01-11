@@ -7,15 +7,17 @@ use frame_support::{assert_err, assert_ok};
 pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
     let curator_group_id = Content::next_curator_group_id();
     // create new group and add curator id to it
-    assert_ok!(Content::create_curator_group(Origin::signed(LEAD_ORIGIN)));
+    assert_ok!(Content::create_curator_group(Origin::signed(
+        LEAD_ACCOUNT_ID
+    )));
     assert_ok!(Content::add_curator_to_group(
-        Origin::signed(LEAD_ORIGIN),
+        Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
         curator_id
     ));
     // make group active
     assert_ok!(Content::set_curator_group_status(
-        Origin::signed(LEAD_ORIGIN),
+        Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
         true
     ));
@@ -29,7 +31,9 @@ fn curator_group_management() {
         run_to_block(1);
 
         let curator_group_id = Content::next_curator_group_id();
-        assert_ok!(Content::create_curator_group(Origin::signed(LEAD_ORIGIN)));
+        assert_ok!(Content::create_curator_group(Origin::signed(
+            LEAD_ACCOUNT_ID
+        )));
 
         assert_eq!(
             System::events().last().unwrap().event,
@@ -44,7 +48,7 @@ fn curator_group_management() {
 
         // Activate group
         assert_ok!(Content::set_curator_group_status(
-            Origin::signed(LEAD_ORIGIN),
+            Origin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
             true
         ));
@@ -60,7 +64,7 @@ fn curator_group_management() {
         // Cannot add non curators into group
         assert_err!(
             Content::add_curator_to_group(
-                Origin::signed(LEAD_ORIGIN),
+                Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 MEMBERS_COUNT + 1 // not a curator
             ),
@@ -69,26 +73,26 @@ fn curator_group_management() {
 
         // Add curator to group
         assert_ok!(Content::add_curator_to_group(
-            Origin::signed(LEAD_ORIGIN),
+            Origin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
-            FIRST_CURATOR_ID
+            DEFAULT_CURATOR_ID
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorAdded(curator_group_id, FIRST_CURATOR_ID))
+            MetaEvent::content(RawEvent::CuratorAdded(curator_group_id, DEFAULT_CURATOR_ID))
         );
 
         // Ensure curator is in group
         let group = Content::curator_group_by_id(curator_group_id);
-        assert!(group.has_curator(&FIRST_CURATOR_ID));
+        assert!(group.has_curator(&DEFAULT_CURATOR_ID));
 
         // Cannot add same curator again
         assert_err!(
             Content::add_curator_to_group(
-                Origin::signed(LEAD_ORIGIN),
+                Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
-                FIRST_CURATOR_ID
+                DEFAULT_CURATOR_ID
             ),
             Error::<Test>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
@@ -96,7 +100,7 @@ fn curator_group_management() {
         // Cannot remove curator if not in group
         assert_err!(
             Content::remove_curator_from_group(
-                Origin::signed(LEAD_ORIGIN),
+                Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 MEMBERS_COUNT + 1 // not a curator
             ),
@@ -105,25 +109,28 @@ fn curator_group_management() {
 
         // Remove curator from group
         assert_ok!(Content::remove_curator_from_group(
-            Origin::signed(LEAD_ORIGIN),
+            Origin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
-            FIRST_CURATOR_ID
+            DEFAULT_CURATOR_ID
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorRemoved(curator_group_id, FIRST_CURATOR_ID))
+            MetaEvent::content(RawEvent::CuratorRemoved(
+                curator_group_id,
+                DEFAULT_CURATOR_ID
+            ))
         );
 
         let group = Content::curator_group_by_id(curator_group_id);
-        assert!(!group.has_curator(&FIRST_CURATOR_ID));
+        assert!(!group.has_curator(&DEFAULT_CURATOR_ID));
 
         // Already removed cannot remove again
         assert_err!(
             Content::remove_curator_from_group(
-                Origin::signed(LEAD_ORIGIN),
+                Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
-                FIRST_CURATOR_ID
+                DEFAULT_CURATOR_ID
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
         );

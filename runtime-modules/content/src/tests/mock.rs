@@ -25,6 +25,9 @@ pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 /// Origins
 
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
+pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
+pub const LEAD_ACCOUNT_ID: u64 = 103;
+pub const DEFAULT_MODERATOR_ACCOUNT_ID: u64 = 104;
 
 pub const LEAD_ORIGIN: u64 = 1;
 
@@ -42,6 +45,8 @@ pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
+pub const DEFAULT_CURATOR_ID: u64 = 202;
+pub const DEFAULT_MODERATOR_ID: u64 = 204;
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
@@ -149,30 +154,66 @@ impl ContentActorAuthenticator for Test {
     type CuratorId = u64;
     type CuratorGroupId = u64;
 
+    fn validate_member_id(member_id: &Self::MemberId) -> bool {
+        match *member_id {
+            DEFAULT_MEMBER_ID => true,
+            UNAUTHORIZED_MEMBER_ID => true,
+            MODERATOR_MEMBER_ID => true,
+            UNAUTHORIZED_MODERATOR_MEMBER_ID => true,
+            _ => false,
+        }
+    }
+
     fn is_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
+        *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
-        let second_curator_account_id =
-            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
+        match *curator_id {
+            DEFAULT_CURATOR_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID)).unwrap()
+            }
+
+            UNAUTHORIZED_CURATOR_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID)).unwrap()
+            }
+
+            _ => false,
+        }
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        Self::is_valid_member_id(member_id) && unknown_member_account_id != *account_id
-    }
+        match *member_id {
+            DEFAULT_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
+            }
 
-    fn is_valid_member_id(member_id: &Self::MemberId) -> bool {
-        *member_id < MEMBERS_COUNT
+            UNAUTHORIZED_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
+            UNAUTHORIZED_MODERATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID))
+                        .unwrap()
+            }
+
+            MODERATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+            _ => false,
+        }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
+        match *curator_id {
+            DEFAULT_CURATOR_ID => true,
+            UNAUTHORIZED_CURATOR_ID => true,
+            _ => false,
+        }
     }
 }
 
