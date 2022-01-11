@@ -2,7 +2,6 @@ use super::curators;
 use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
-use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
 
 // type aliases
@@ -12,12 +11,11 @@ type PostId = <Test as Trait>::PostId;
 type MemberId = <Test as MembershipTypes>::MemberId;
 type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
-type ContentActor = ContentActor<CuratorgGroupId, CuratorId, MemberId>;
 
 // fixtures
 pub struct CreatePostFixture {
     sender: AccountId,
-    actor: ContentActor,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: PostCreationParameters<Test>,
 }
 
@@ -37,7 +35,7 @@ impl CreatePostFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_actor(self, actor: ContentActor) -> Self {
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
 
@@ -82,7 +80,10 @@ impl CreatePostFixture {
                         assert_eq!(Some(post_id), video_post.video_post_id);
                     }
                     PostType::<Test>::Comment(parent_id) => {
-                        assert_eq!(replies_post, replies_pre.saturating_add(One::one()));
+                        assert_eq!(
+                            replies_count_post,
+                            replies_count_pre.saturating_add(One::one())
+                        );
                     }
                 }
 
@@ -108,7 +109,7 @@ impl CreatePostFixture {
                         assert_eq!(video_pre, video_post);
                     }
                     PostType::<Test>::Comment(parent_id) => {
-                        assert_eq!(replies_post, replies_pre);
+                        assert_eq!(replies_count_post, replies_count_pre);
                     }
                 }
             }
@@ -120,7 +121,7 @@ pub struct EditPostTextFixture {
     sender: AccountId,
     video_id: VideoId,
     post_id: PostId,
-    actor: ContentActor,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     new_text: Vec<u8>,
 }
 
@@ -147,7 +148,7 @@ impl EditPostTextFixture {
         Self { post_id, ..self }
     }
 
-    pub fn with_actor(self, actor: ContentActor) -> Self {
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
 
@@ -181,7 +182,7 @@ pub struct DeletePostFixture {
     sender: AccountId,
     post_id: PostId,
     video_id: VideoId,
-    actor: ContentActor,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: PostDeletionParameters<Test>,
 }
 
@@ -211,7 +212,7 @@ impl DeletePostFixture {
         Self { post_id, ..self }
     }
 
-    pub fn with_actor(self, actor: ContentActor) -> Self {
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
 

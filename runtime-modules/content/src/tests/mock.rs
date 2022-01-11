@@ -214,7 +214,7 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const MaxModerators: u64 = 5;
     pub const CleanupMargin: u32 = 3;
-    pub const PricePerByte: usize = 2;
+    pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
 }
@@ -268,21 +268,12 @@ impl Trait for Test {
     /// cleanup margin
     type CleanupMargin = CleanupMargin;
 
-    /// module id
-    type VideoCommentsModuleId = VideoCommentsModuleId;
-
     /// bloat bond cap
     type BloatBondCap = BloatBondCap;
-
-    //  hashing
-    fn hash_of<E: Encode>(e: &E) -> Self::Hash {
-        Self::Hashing::hash(&e.encode())
-    }
 }
 
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
-pub type Balances = balances::Module<Test>;
 
 // #[derive (Default)]
 pub struct ExtBuilder {

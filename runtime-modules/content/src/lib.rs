@@ -43,7 +43,6 @@ pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership,
 
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
-pub type HashOutput<T> = <T as Hash>::Output;
 
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
@@ -140,7 +139,6 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + balances::Trait
-    + Hash
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -663,7 +661,7 @@ pub struct PostDeletionParametersRecord<HashOutput> {
     rationale: Option<Vec<u8>>,
 }
 
-pub type PostDeletionParameters<T> = PostDeletionParametersRecord<HashOutput<T>>;
+pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1822,12 +1820,12 @@ impl<T: Trait> Module<T> {
 
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
-        witness: Option<HashOutput<T>>,
+        witness: Option<<T as frame_system::Trait>::Hash>,
         replies_count: T::PostId,
     ) -> DispatchResult {
         let wit_hash = witness.ok_or(Error::<T>::WitnessNotProvided)?;
         ensure!(
-            <T as Hash>::hash_of(&replies_count) == wit_hash,
+            <T as frame_system::Trait>::Hashing::hash_of(&replies_count) == wit_hash,
             Error::<T>::WitnessVerificationFailed,
         );
         Ok(())
