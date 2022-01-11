@@ -34,16 +34,6 @@ pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
 pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 114;
 
-pub const LEAD_ORIGIN: u64 = 1;
-
-pub const FIRST_CURATOR_ORIGIN: u64 = 2;
-pub const SECOND_CURATOR_ORIGIN: u64 = 3;
-
-pub const FIRST_MEMBER_ORIGIN: u64 = 4;
-pub const SECOND_MEMBER_ORIGIN: u64 = 5;
-pub const THIRD_MEMBER_ORIGIN: u64 = 6;
-pub const UNKNOWN_ORIGIN: u64 = 7777;
-
 pub const INITIAL_BALANCE: u64 = 1000;
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
@@ -56,16 +46,6 @@ pub const DEFAULT_MODERATOR_ID: u64 = 204;
 pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
 pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 214;
-
-pub const FIRST_CURATOR_ID: CuratorId = 1;
-pub const SECOND_CURATOR_ID: CuratorId = 2;
-
-pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
-pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
-
-pub const FIRST_MEMBER_ID: MemberId = 1;
-pub const SECOND_MEMBER_ID: MemberId = 2;
-pub const THIRD_MEMBER_ID: MemberId = 3;
 
 impl_outer_origin! {
     pub enum Origin for Test {}

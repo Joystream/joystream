@@ -80,7 +80,7 @@ impl CreatePostFixture {
                     PostType::<Test>::VideoPost => {
                         assert_eq!(Some(post_id), video_post.video_post_id);
                     }
-                    PostType::<Test>::Comment(parent_id) => {
+                    PostType::<Test>::Comment(_) => {
                         assert_eq!(
                             replies_count_post,
                             replies_count_pre.saturating_add(One::one())
@@ -205,10 +205,6 @@ impl DeletePostFixture {
 
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
-    }
-
-    pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
     }
 
     pub fn with_post_id(self, post_id: PostId) -> Self {

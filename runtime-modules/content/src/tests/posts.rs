@@ -606,6 +606,7 @@ pub fn unsuccessful_post_deletion_with_invalid_witness() {
     })
 }
 
+#[test]
 pub fn unsuccessful_post_deletion_with_no_witness() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -781,6 +782,103 @@ pub fn successful_comment_deletion_by_curator_onwer() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_comment_deletion_by_member_author() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_post();
+
+        CreatePostFixture::default()
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::one()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Ok(()));
+
+        DeletePostFixture::default()
+            .with_post_id(PostId::from(2u64))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_comment_deletion_by_curator_author() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        CreatePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::one()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Ok(()));
+
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_post_id(PostId::from(2u64))
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .with_params(PostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &PostId::zero(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn successful_comment_deletion_by_lead_author() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_post();
+
+        CreatePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::Comment(PostId::one()),
+                video_reference: VideoId::one(),
+            })
+            .call_and_assert(Ok(()));
+
+        DeletePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_post_id(PostId::from(2u64))
+            .with_actor(ContentActor::Lead)
             .with_params(PostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
                     &PostId::zero(),
