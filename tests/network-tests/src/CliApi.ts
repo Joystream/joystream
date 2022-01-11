@@ -32,7 +32,7 @@ export class CliApi {
       env: {
         ...env,
         PATH: process.env.PATH,
-        APPDATA: path.join(__dirname, '/__CliApi_appdata/')
+        APPDATA: path.join(__dirname, '/__CliApi_appdata/'),
       },
     })
     console.log('cli - output:', output)

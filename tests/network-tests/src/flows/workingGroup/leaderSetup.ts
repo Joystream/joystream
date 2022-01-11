@@ -53,7 +53,6 @@ async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, cli: CliApi, group:
   assert.notEqual(hiredLead, undefined, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
 
-
   // setup (ensure) CLI connection to node
 
   await cli.setApiUri()
