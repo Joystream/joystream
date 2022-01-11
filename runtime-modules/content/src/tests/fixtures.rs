@@ -375,6 +375,32 @@ pub fn create_default_curator_channel_with_video_and_post() {
         .call_and_assert(Ok(()));
 }
 
+pub fn create_default_member_channel_with_video_and_comment() {
+    create_default_member_channel_with_video_and_post();
+    CreatePostFixture::default()
+        .with_params(PostCreationParameters::<Test> {
+            post_type: PostType::<Test>::Comment(PostId::one()),
+            video_reference: VideoId::one(),
+        })
+        .call_and_assert(Ok(()));
+}
+
+pub fn create_default_curator_channel_with_video_and_comment() {
+    create_default_curator_channel_with_video_and_post();
+    let default_curator_group_id = Content::next_curator_group_id() - 1;
+    CreatePostFixture::default()
+        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_actor(ContentActor::Curator(
+            default_curator_group_id,
+            DEFAULT_CURATOR_ID,
+        ))
+        .with_params(PostCreationParameters::<Test> {
+            post_type: PostType::<Test>::Comment(PostId::one()),
+            video_reference: VideoId::one(),
+        })
+        .call_and_assert(Ok(()));
+}
+
 pub fn increase_balance_helper(account: AccountId, amount: BalanceOf<Test>) {
     let _ = Balances::<Test>::deposit_creating(&account, amount);
 }
