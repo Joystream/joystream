@@ -5,9 +5,9 @@ use frame_support::assert_ok;
 use sp_runtime::DispatchError;
 
 // type aliases
-type AccountId = <Test as frame_system::Trait>::AccountId;
-type VideoId = <Test as Trait>::VideoId;
-type PostId = <Test as Trait>::PostId;
+pub type AccountId = <Test as frame_system::Trait>::AccountId;
+pub type VideoId = <Test as Trait>::VideoId;
+pub type PostId = <Test as Trait>::PostId;
 type MemberId = <Test as MembershipTypes>::MemberId;
 type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;

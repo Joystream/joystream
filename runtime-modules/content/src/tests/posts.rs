@@ -98,6 +98,20 @@ pub fn unsuccessful_post_creation_with_lead() {
     })
 }
 
+#[test]
+pub fn unsuccessful_post_creation_with_invalid_video_id() {
+    with_default_mock_builder(|| {
+        create_default_member_channel_with_video();
+
+        CreatePostFixture::default()
+            .with_params(PostCreationParameters::<Test> {
+                post_type: PostType::<Test>::VideoPost,
+                video_reference: VideoId::zero(),
+            })
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()))
+    })
+}
+
 //use sp_runtime::traits::Hash;
 
 // pub const UNKNOWN_VIDEO_ID: u64 = 7777;
