@@ -202,9 +202,11 @@ export class AssetsManager {
     let lastError: Error | undefined
     for (const endpoint of endpoints) {
       try {
+        this.logger.debug(`Trying to fetch asset ${contentId} from ${endpoint}...`)
         const tmpAssetPath = await this.fetchAsset(endpoint, contentId, expectedSize)
         return tmpAssetPath
       } catch (e) {
+        this.logger.debug(`Fetching ${contentId} from ${endpoint} failed: ${(e as Error).message}`)
         lastError = e as Error
         continue
       }
