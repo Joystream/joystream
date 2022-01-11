@@ -4,6 +4,7 @@ use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 
+// create post tests
 #[test]
 pub fn unsuccessful_post_creation_with_member_auth_failed() {
     with_default_mock_builder(|| {
@@ -220,5 +221,52 @@ pub fn successful_comment_creation_by_lead() {
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()))
+    })
+}
+
+// edit post text tests
+#[test]
+pub fn unsuccessful_post_update_with_member_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_update_with_curator_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_comment();
+
+        let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_update_with_lead_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_channel_with_video_and_comment();
+
+        EditPostTextFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_post_id(PostId::from(2u64))
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
     })
 }
