@@ -3,6 +3,7 @@ import { QueryNodeApi } from './sumer-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { VideosMigration } from './VideosMigration'
 import { ChannelMigration } from './ChannelsMigration'
+import { AssetsManager } from './AssetsManager'
 
 export type ContentMigrationConfig = {
   queryNodeUri: string
@@ -52,11 +53,16 @@ export class ContentMigration {
     const { api, queryNodeApi, config } = this
     await this.api.isReadyOrError
     const forcedChannelOwner = await this.getForcedChannelOwner()
+    const assetsManager = await AssetsManager.create({
+      api,
+      config,
+    })
     const { idsMap: channelsMap, videoIds } = await new ChannelMigration({
       api,
       queryNodeApi,
       config,
       forcedChannelOwner,
+      assetsManager,
     }).run()
     await new VideosMigration({
       api,
@@ -65,6 +71,7 @@ export class ContentMigration {
       channelsMap,
       videoIds,
       forcedChannelOwner,
+      assetsManager,
     }).run()
   }
 }
