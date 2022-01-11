@@ -18,7 +18,7 @@ function cleanup() {
     docker-compose down -v
 }
 
-#trap cleanup EXIT
+trap cleanup EXIT
 
 # Bring up db
 docker-compose up -d db
