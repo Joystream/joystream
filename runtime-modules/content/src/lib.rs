@@ -656,12 +656,14 @@ pub type PostCreationParameters<T> =
 /// Information on the post being deleted
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostDeletionParameters<Hash> {
+pub struct PostDeletionParametersRecord<Hash> {
     /// optional witnesses in case of video post deletion
     witness: Option<Hash>,
     /// rationale in case actor is moderator
     rationale: Option<Vec<u8>>,
 }
+
+pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system>::Hash>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1559,7 +1561,7 @@ decl_module! {
             post_id: T::PostId,
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: PostDeletionParameters<<T as frame_system::Trait>::Hash>,
+            params: PostDeletionParameters<T>,
         ) {
             let sender = ensure_signed(origin.clone())?;
             let post = Self::ensure_post_exists(video_id, post_id)?;

@@ -176,6 +176,29 @@ impl EditPostTextFixture {
     }
 }
 
+pub struct DeletePostFixture {
+    sender: AccountId,
+    post_id: PostId,
+    video_id: VideoId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    params: PostDeletionParameters<Hash>,
+}
+
+impl DeletePostFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            post_id: PostId::one(),
+            video_id: VideoId::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            params: PostDeletionParameters::<Test> {
+                witness: Test::hash_of(PostId::zero()),
+                rationale: Some(b"rationale".to_vec()),
+            },
+        }
+    }
+}
+
 // helpers
 pub fn create_default_member_channel_with_video() {
     assert_ok!(Content::create_channel(
