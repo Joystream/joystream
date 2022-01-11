@@ -28,7 +28,12 @@ export class CliApi {
     env: Record<string, string> = {}
   ): { error: boolean; stdout: string; stderr: string } {
     // use sync spawn if that works without issues
-    const output = spawnSync('yarn', ['joystream-cli', ...parameters], { env })
+    const output = spawnSync('yarn', ['joystream-cli', ...parameters], {
+      env: {
+        ...env,
+        PATH: process.env.PATH,
+      },
+    })
     console.log('cli - output:', output)
     console.log('cli - stdout:', output.stdout.toString())
     console.log('cli - stderr:', output.stderr.toString())
