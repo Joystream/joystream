@@ -111,6 +111,26 @@ impl CreatePostFixture {
     }
 }
 
+pub struct EditPostTextFixture {
+    sender: AccountId,
+    video_id: VideoId,
+    post_id: PostId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    new_text: Vec<u8>,
+}
+
+impl EditPostTextFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            video_id: One::one(),
+            post_id: One::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            new_text: b"sample text".to_vec(),
+        }
+    }
+}
+
 // helpers
 pub fn create_default_member_channel_with_video() {
     assert_ok!(Content::create_channel(
