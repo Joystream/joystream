@@ -250,6 +250,7 @@ impl StorageSystem<Test> for MockStorageSystem {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mcontent"); // module content
     pub const MaxModerators: u64 = 5;
     pub const CleanupMargin: u32 = 3;
     pub const CleanupCost: u32 = 1;
@@ -312,6 +313,9 @@ impl Trait for Test {
 
     /// cleanup cost
     type CleanupCost = CleanupCost;
+
+    /// module id
+    type ModuleId = ContentModuleId;
 }
 
 pub type System = frame_system::Module<Test>;
