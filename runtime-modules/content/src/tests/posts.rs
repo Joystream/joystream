@@ -270,3 +270,29 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
     })
 }
+
+#[test]
+pub fn unsuccessful_post_update_with_invalid_post_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        EditPostTextFixture::default()
+            .with_post_id(PostId::zero())
+            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_post_update_with_invalid_video_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_channel_with_video_and_comment();
+
+        EditPostTextFixture::default()
+            .with_video_id(PostId::zero())
+            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+    })
+}
