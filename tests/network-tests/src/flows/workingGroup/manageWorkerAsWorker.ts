@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import {
   AddWorkerOpeningFixture,
@@ -17,10 +18,10 @@ import { extendDebug } from '../../Debugger'
 
 export default {
   storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsWorker(api, env, WorkingGroups.StorageWorkingGroup)
+    return manageWorkerAsWorker(api, env, WorkingGroups.Storage)
   },
   content: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageWorkerAsWorker(api, env, WorkingGroups.ContentWorkingGroup)
+    return manageWorkerAsWorker(api, env, WorkingGroups.Content)
   },
 }
 
@@ -41,7 +42,7 @@ async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: Wor
   const lead = await api.getGroupLead(group)
   assert(lead)
 
-  const newMembers = api.createKeyPairs(1).map((key) => key.address)
+  const newMembers = api.createKeyPairs(1).map(({ key }) => key.address)
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members

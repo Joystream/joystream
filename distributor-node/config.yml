@@ -2,29 +2,39 @@ id: test-node
 endpoints:
   queryNode: http://localhost:8081/graphql
   joystreamNodeWs: ws://localhost:9944
-  # elasticSearch: http://localhost:9200
 directories:
   assets: ./local/data
   cacheState: ./local/cache
-  logs: ./local/logs
-log:
-  file: debug
-  console: verbose
-  # elastic: info
+logs:
+  file:
+    level: debug
+    path: ./local/logs
+    maxFiles: 30 # 30 days or 30 * 50 MB
+    maxSize: 50485760 # 50 MB
+  console:
+    level: verbose
+  # elastic:
+  #   level: info
+  #   endpoint: http://localhost:9200
 limits:
   storage: 100G
   maxConcurrentStorageNodeDownloads: 100
   maxConcurrentOutboundConnections: 300
-  outboundRequestsTimeout: 5000
+  outboundRequestsTimeoutMs: 5000
+  pendingDownloadTimeoutSec: 3600
+  maxCachedItemSize: 1G
 intervals:
   saveCacheState: 60
   checkStorageNodeResponseTimes: 60
   cacheCleanup: 60
-port: 3334
+publicApi:
+  port: 3334
+operatorApi:
+  port: 3335
+  hmacSecret: this-is-not-so-secret
 keys:
   - suri: //Alice
   # - mnemonic: "escape naive annual throw tragic achieve grunt verify cram note harvest problem"
   #   type: ed25519
   # - keyfile: "/path/to/keyfile.json"
-buckets: 'all'
 workerId: 0

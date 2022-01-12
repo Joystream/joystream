@@ -20,7 +20,7 @@ import mimeTypes from 'mime-types'
 import { Assets } from '../schemas/typings/Assets.schema'
 import chalk from 'chalk'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
-import { createHash } from 'blake3'
+import { createHash } from 'blake3-wasm'
 import * as multihash from 'multihashes'
 import { u8aToHex, formatBalance } from '@polkadot/util'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -38,6 +38,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   private fileSizeCache: Map<string, number> = new Map<string, number>()
   private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
+    noTTYOutput: true,
     format: `{barTitle} | {bar} | {value}/{total} KB processed`,
   }
 
@@ -63,8 +64,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     let processedKB = 0
     const fileSizeKB = Math.ceil(fileSize / 1024)
     const progress = multiBar
-      ? multiBar.create(fileSizeKB, processedKB, { barTitle })
+      ? (multiBar.create(fileSizeKB, processedKB, { barTitle }) as SingleBar | undefined)
       : new SingleBar(this.progressBarOptions)
+
+    if (!progress) {
+      throw new Error('Provided multibar does not support noTTY mode!')
+    }
 
     progress.start(fileSizeKB, processedKB, { barTitle })
     return {
@@ -188,24 +193,30 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     })
   }
 
-  async resolveAndValidateAssets(paths: string[], basePath: string): Promise<ResolvedAsset[]> {
-    // Resolve assets
-    if (basePath) {
-      paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
-    }
-    // Validate assets
-    await Promise.all(paths.map((p) => this.validateFile(p)))
-
-    // Return data
-    return await Promise.all(
-      paths.map(async (path) => {
-        const parameters = await this.generateDataObjectParameters(path)
-        return {
-          path,
-          parameters,
-        }
+  async resolveAndValidateAssets<T extends Record<string, string | null | undefined>>(
+    paths: T,
+    basePath: string
+  ): Promise<[ResolvedAsset[], { [K in keyof T]?: number }]> {
+    const assetIndices: { [K in keyof T]?: number } = {}
+    const resolvedAssets: ResolvedAsset[] = []
+    for (let [assetKey, assetPath] of Object.entries(paths)) {
+      const assetType = assetKey as keyof T
+      if (!assetPath) {
+        assetIndices[assetType] = undefined
+        continue
+      }
+      if (basePath) {
+        assetPath = path.resolve(path.dirname(basePath), assetPath)
+      }
+      await this.validateFile(assetPath)
+      const parameters = await this.generateDataObjectParameters(assetPath)
+      assetIndices[assetType] = resolvedAssets.length
+      resolvedAssets.push({
+        path: assetPath,
+        parameters,
       })
-    )
+    }
+    return [resolvedAssets, assetIndices]
   }
 
   async getStorageNodeUploadToken(
@@ -249,7 +260,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       this.error('No active storage node found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
     }
     this.log(`Chosen storage node endpoint: ${storageNodeInfo.apiEndpoint}`)
-    const token = await this.getStorageNodeUploadToken(storageNodeInfo, account, memberId, objectId, bagId)
     const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
       filePath,
       `Uploading ${filePath}`,
@@ -274,7 +284,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
         headers: {
-          'x-api-key': token,
           'content-type': 'multipart/form-data',
           ...formData.getHeaders(),
         },
@@ -331,23 +340,24 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     multiBar.stop()
   }
 
-  public assetsIndexes(originalPaths: (string | undefined)[], filteredPaths: string[]): (number | undefined)[] {
-    let lastIndex = -1
-    return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
-  }
-
   async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
+    const { dataObjectDeletionPrize } = this.getOriginalApi().consts.storage
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
           return a.add(b.parameters.getField('size'))
         }, new BN(0))
         .toNumber()
-      const totalFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
+      const totalStorageFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
+      const totalDeletionPrize = dataObjectDeletionPrize.muln(resolvedAssets.length)
       await this.requireConfirmation(
-        `Total fee of ${chalk.cyan(formatBalance(totalFee))} ` +
-          `will have to be paid in order to store the provided assets. Are you sure you want to continue?`
+        `Some additional costs will be associated with this operation:\n` +
+          `Total data storage fee: ${chalk.cyan(formatBalance(totalStorageFee))}\n` +
+          `Total deletion prize: ${chalk.cyan(
+            formatBalance(totalDeletionPrize)
+          )} (recoverable on data object(s) removal)\n` +
+          `Are you sure you want to continue?`
       )
       return createTypeFromConstructor(StorageAssets, {
         expected_data_size_fee: feePerMB,

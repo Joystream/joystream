@@ -13,10 +13,9 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
-    const account = await this.getRequiredSelectedAccount()
+  async run(): Promise<void> {
     // Worker-only gate
-    const worker = await this.getRequiredWorker()
+    const worker = await this.getRequiredWorkerContext()
 
     if (!worker.stake) {
       this.error('Cannot increase stake. No associated role stake profile found!', { exit: ExitCodes.InvalidInput })
@@ -28,9 +27,12 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
       createParamOptions('amount', undefined, positiveInt())
     )) as Balance
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'increaseStake', [worker.workerId, balance])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(worker.roleAccount),
+      apiModuleByGroup[this.group],
+      'increaseStake',
+      [worker.workerId, balance]
+    )
 
     this.log(
       chalk.green(

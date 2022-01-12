@@ -6,13 +6,9 @@
  */
 
 /**
- * List of distribution bucket ids
+ * Set of bucket ids distributed by the node. If not specified, all buckets currently assigned to worker specified in `config.workerId` will be distributed. Expected bucket id format is: {familyId}:{bucketIndex}
  */
-export type BucketIds = [number, ...number[]]
-/**
- * Distribute all buckets assigned to worker specified in `workerId`
- */
-export type AllBuckets = 'all'
+export type DistributedBucketsIds = string[]
 
 /**
  * Configuration schema for distirubtor CLI and node
@@ -34,10 +30,6 @@ export interface DistributorNodeConfiguration {
      * Joystream node websocket api uri (for example: ws://localhost:9944)
      */
     joystreamNodeWs: string
-    /**
-     * Elasticsearch uri used for submitting the distributor node logs (if enabled via `log.elastic`)
-     */
-    elasticSearch?: string
   }
   /**
    * Specifies paths where node's data will be stored
@@ -51,27 +43,14 @@ export interface DistributorNodeConfiguration {
      * Path to a directory where information about the current cache state will be stored (LRU-SP cache data, stored assets mime types etc.)
      */
     cacheState: string
-    /**
-     * Path to a directory where logs will be stored if logging to a file was enabled (via `log.file`).
-     */
-    logs?: string
   }
   /**
-   * Specifies minimum log levels by supported log outputs
+   * Specifies the logging configuration
    */
-  log?: {
-    /**
-     * Minimum level of logs written to a file specified in `directories.logs`
-     */
-    file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
-    /**
-     * Minimum level of logs outputted to a console
-     */
-    console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
-    /**
-     * Minimum level of logs sent to elasticsearch endpoint specified in `endpoints.elasticSearch`
-     */
-    elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
+  logs?: {
+    file?: FileLoggingOptions
+    console?: ConsoleLoggingOptions
+    elastic?: ElasticsearchLoggingOptions
   }
   /**
    * Specifies node limits w.r.t. storage, outbound connections etc.
@@ -86,13 +65,25 @@ export interface DistributorNodeConfiguration {
      */
     maxConcurrentStorageNodeDownloads: number
     /**
-     * Maximum number of total simultaneous outbound connections to storage node(s)
+     * Maximum number of total simultaneous outbound connections to storage node(s) (excluding proxy connections)
      */
     maxConcurrentOutboundConnections: number
     /**
      * Timeout for all outbound storage node http requests in miliseconds
      */
-    outboundRequestsTimeout: number
+    outboundRequestsTimeoutMs: number
+    /**
+     * Timeout for pending storage node downloads in seconds
+     */
+    pendingDownloadTimeoutSec: number
+    /**
+     * Maximum size of a data object allowed to be cached by the node
+     */
+    maxCachedItemSize?: string
+    /**
+     * TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node.
+     */
+    dataObjectSourceByObjectIdTTL?: number
   }
   /**
    * Specifies how often periodic tasks (for example cache cleanup) are executed by the node.
@@ -112,21 +103,78 @@ export interface DistributorNodeConfiguration {
     cacheCleanup: number
   }
   /**
-   * Distributor node http server port
+   * Public api configuration
    */
-  port: number
+  publicApi: {
+    /**
+     * Distributor node public api port
+     */
+    port: number
+  }
+  /**
+   * Operator api configuration
+   */
+  operatorApi?: {
+    /**
+     * Distributor node operator api port
+     */
+    port: number
+    /**
+     * HMAC (HS256) secret key used for JWT authorization
+     */
+    hmacSecret: string
+  }
   /**
    * Specifies the keys available within distributor node CLI.
    */
-  keys: [SubstrateUri | MnemonicPhrase | JSONBackupFile, ...(SubstrateUri | MnemonicPhrase | JSONBackupFile)[]]
-  /**
-   * Specifies the buckets distributed by the node
-   */
-  buckets: BucketIds | AllBuckets
+  keys?: (SubstrateUri | MnemonicPhrase | JSONBackupFile)[]
+  buckets?: DistributedBucketsIds
   /**
    * ID of the node operator (distribution working group worker)
    */
-  workerId: number
+  workerId?: number
+}
+export interface FileLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+  /**
+   * Path where the logs will be stored (absolute or relative to config file)
+   */
+  path: string
+  /**
+   * Maximum number of log files to store. Recommended to be at least 7 when frequency is set to `daily` and at least 24 * 7 when frequency is set to `hourly`
+   */
+  maxFiles?: number
+  /**
+   * Maximum size of a single log file in bytes
+   */
+  maxSize?: number
+  /**
+   * The frequency of creating new log files (regardless of maxSize)
+   */
+  frequency?: 'yearly' | 'monthly' | 'daily' | 'hourly'
+  /**
+   * Whether to archive old logs
+   */
+  archive?: boolean
+}
+export interface ConsoleLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+}
+export interface ElasticsearchLoggingOptions {
+  /**
+   * Minimum level of logs sent to this output
+   */
+  level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+  /**
+   * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
+   */
+  endpoint: string
 }
 /**
  * Keypair's substrate uri (for example: //Alice)

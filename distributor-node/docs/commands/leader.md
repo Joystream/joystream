@@ -22,19 +22,14 @@ Commands for performing Distribution Working Group leader on-chain duties (like 
 Cancel pending distribution bucket operator invitation.
 
 ```
-Cancel pending distribution bucket operator invitation.
-  Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:cancel-invitation
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -w, --workerId=workerId      (required) ID of the invited operator (distribution group worker)
 
@@ -51,8 +46,6 @@ _See code: [src/commands/leader/cancel-invitation.ts](https://github.com/Joystre
 Create new distribution bucket. Requires distribution working group leader permissions.
 
 ```
-Create new distribution bucket. Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:create-bucket
 
@@ -74,8 +67,6 @@ _See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/j
 Create new distribution bucket family. Requires distribution working group leader permissions.
 
 ```
-Create new distribution bucket family. Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:create-bucket-family
 
@@ -93,18 +84,14 @@ _See code: [src/commands/leader/create-bucket-family.ts](https://github.com/Joys
 Delete distribution bucket. The bucket must have no operators. Requires distribution working group leader permissions.
 
 ```
-Delete distribution bucket. The bucket must have no operators. Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:delete-bucket
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
@@ -116,8 +103,6 @@ _See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/j
 Delete distribution bucket family. Requires distribution working group leader permissions.
 
 ```
-Delete distribution bucket family. Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:delete-bucket-family
 
@@ -137,20 +122,14 @@ _See code: [src/commands/leader/delete-bucket-family.ts](https://github.com/Joys
 Invite distribution bucket operator (distribution group worker).
 
 ```
-Invite distribution bucket operator (distribution group worker).
-  The specified bucket must not have any operator currently.
-  Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:invite-bucket-operator
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -w, --workerId=workerId      (required) ID of the distribution group worker to invite as bucket operator
 
@@ -168,19 +147,14 @@ _See code: [src/commands/leader/invite-bucket-operator.ts](https://github.com/Jo
 Remove distribution bucket operator (distribution group worker).
 
 ```
-Remove distribution bucket operator (distribution group worker).
-  Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:remove-bucket-operator
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -w, --workerId=workerId      (required) ID of the operator (distribution working group worker) to remove from the
                                bucket
@@ -198,9 +172,6 @@ _See code: [src/commands/leader/remove-bucket-operator.ts](https://github.com/Jo
 Set/update distribution bucket family metadata.
 
 ```
-Set/update distribution bucket family metadata.
-  Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:set-bucket-family-metadata
 
@@ -225,8 +196,6 @@ _See code: [src/commands/leader/set-bucket-family-metadata.ts](https://github.co
 Set max. distribution buckets per bag limit. Requires distribution working group leader permissions.
 
 ```
-Set max. distribution buckets per bag limit. Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:set-buckets-per-bag-limit
 
@@ -246,14 +215,12 @@ _See code: [src/commands/leader/set-buckets-per-bag-limit.ts](https://github.com
 Add/remove distribution buckets from a bag.
 
 ```
-Add/remove distribution buckets from a bag.
-
 USAGE
   $ joystream-distributor leader:update-bag
 
 OPTIONS
   -a, --add=add
-      [default: ] ID of a bucket to add to bag
+      [default: ] Index(es) (within the family) of bucket(s) to add to the bag
 
   -b, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
@@ -275,13 +242,13 @@ OPTIONS
       (required) ID of the distribution bucket family
 
   -r, --remove=remove
-      [default: ] ID of a bucket to remove from bag
+      [default: ] Index(es) (within the family) of bucket(s) to remove from the bag
 
   -y, --yes
       Answer "yes" to any prompt, skipping any manual confirmations
 
 EXAMPLE
-  $ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 -a 2 -a 3 -r 4 -r 5
+  $ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 2 3 -r 4 5
 ```
 
 _See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag.ts)_
@@ -291,20 +258,16 @@ _See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joys
 Update distribution bucket mode ("distributing" flag). Requires distribution working group leader permissions.
 
 ```
-Update distribution bucket mode ("distributing" flag). Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:update-bucket-mode
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
 
   -d, --mode=(on|off)          (required) Whether the bucket should be "on" (distributing) or "off" (not distributing)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
@@ -316,19 +279,15 @@ _See code: [src/commands/leader/update-bucket-mode.ts](https://github.com/Joystr
 Update distribution bucket status ("acceptingNewBags" flag). Requires distribution working group leader permissions.
 
 ```
-Update distribution bucket status ("acceptingNewBags" flag). Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:update-bucket-status
 
 OPTIONS
-  -B, --bucketId=bucketId       (required) Distribution bucket id
+  -B, --bucketId=bucketId       (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
   -a, --acceptingBags=(yes|no)  (required) Whether the bucket should accept new bags
 
   -c, --configPath=configPath   [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                 directory)
-
-  -f, --familyId=familyId       (required) Distribution bucket family id
 
   -y, --yes                     Answer "yes" to any prompt, skipping any manual confirmations
 ```
@@ -340,9 +299,6 @@ _See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joys
 Update dynamic bag creation policy (number of buckets by family that should store given dynamic bag type).
 
 ```
-Update dynamic bag creation policy (number of buckets by family that should store given dynamic bag type).
-    Requires distribution working group leader permissions.
-
 USAGE
   $ joystream-distributor leader:update-dynamic-bag-policy
 
@@ -350,7 +306,7 @@ OPTIONS
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
 
-  -p, --policy=policy          Key-value pair of {familyId}:{numberOfBuckets}
+  -p, --policy=policy          [default: ] Key-value pair of {familyId}:{numberOfBuckets}
 
   -t, --type=(Member|Channel)  (required) Dynamic bag type
 
@@ -360,7 +316,7 @@ DESCRIPTION
   Requires distribution working group leader permissions.
 
 EXAMPLE
-  $ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 -p 2:10 -p 3:5
+  $ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 2:10 3:5
 ```
 
 _See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-dynamic-bag-policy.ts)_

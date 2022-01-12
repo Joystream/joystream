@@ -4,129 +4,82 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-# Location that will be mounted as the /data volume in containers
-# This is how we access the initial members and balances files from
-# the containers and where generated chainspec files will be located.
-DATA_PATH=${DATA_PATH:=~/tmp}
+# The joystream/node docker image tag which contains WASM runtime to upgrade chain with
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=latest}
+# The joystream/node docker image tag to start the chain with
+RUNTIME_TAG=${RUNTIME_TAG:=sumer}
+# Post migration assertions by means of typescript scenarios required
+POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS:=$true}
+# source common function used for node setup
+source ./node-utils.sh
 
-# Initial account balance for Alice
-# Alice is the source of funds for all new accounts that are created in the tests.
-ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
+#######################################
+# use fork-off to generate a chainspec file with the current s
+# Globals:
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function fork_off_init() {
+    # chain-spec-raw already existing
 
-# The docker image tag to use for joystream/node as the starting chain
-# that will be upgraded to the latest runtime.
-RUNTIME=${RUNTIME:=latest}
-TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
+    if ! [[ -f ${DATA_PATH}/storage.json ]]; then
+        curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
+            "Content-type: application/json" -d \
+            '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
+            > ${DATA_PATH}/storage.json
+    fi
 
-AUTO_CONFIRM=true
+    if ! [[ -f ${DATA_PATH}/schema.json ]]; then
+        cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
+    fi
 
-mkdir -p ${DATA_PATH}
+    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
 
-echo "{
-  \"balances\":[
-    [\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\", ${ALICE_INITIAL_BALANCE}]
-  ]
-}" > ${DATA_PATH}/initial-balances.json
-
-# Make Alice a member
-echo '
-  [{
-    "member_id":0,
-    "root_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "controller_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "handle":"alice",
-    "avatar_uri":"https://alice.com/avatar.png",
-    "about":"Alice",
-    "registered_at_time":0
-  }]
-' > ${DATA_PATH}/initial-members.json
-
-# Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
-  new \
-  --authority-seeds Alice \
-  --sudo-account  5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
-  --deployment dev \
-  --chain-spec-path /data/chain-spec.json \
-  --initial-balances-path /data/initial-balances.json \
-  --initial-members-path /data/initial-members.json
-
-# Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
-  --raw --disable-default-bootnode \
-  --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
-
-NETWORK_ARG=
-if [ "$ATTACH_TO_NETWORK" != "" ]; then
-  NETWORK_ARG="--network ${ATTACH_TO_NETWORK}"
-fi
-
-# Start a chain with generated chain spec
-# Add "-l ws=trace,ws::handler=info" to get websocket trace logs
-CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 ${NETWORK_ARG} --name joystream-node joystream/node:${RUNTIME} \
-  --validator --alice --unsafe-ws-external --rpc-cors=all -l runtime \
-  --chain /data/chain-spec-raw.json`
-
-function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-    rm tests/network-tests/assets/TestChannel__rejectedContent.json
-    rm tests/network-tests/assets/TestVideo__rejectedContent.json
-    
+    # RPC endpoint for live RUNTIME testnet 
+    WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" \
+        yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
-function pre_migration_hook() {
-sleep 5 # needed otherwise docker image won't be ready yet
-joystream-cli account:choose --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY # Alice
-echo "creating 1 channel"
-joystream-cli content:createChannel --input=./assets/TestChannel.json --context=Member || true
-echo "adding 1 video to the above channel"
-joystream-cli content:createVideo -c 1 --input=./assets/TestVideo.json || true
+function export_chainspec_file_to_disk() {
+    echo "**** Initializing node database by exporting state ****"
+    # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time 
+    docker-compose -f ../../docker-compose.yml run \
+		   -v ${DATA_PATH}:/spec joystream-node export-state \
+		   --chain /spec/chain-spec-raw.json \
+		   --base-path /data --pruning archive > ${DATA_PATH}/exported-state.json
 }
 
-function post_migration_hook() {
-echo "*** verify existence of the 5 new groups ***"
-yarn joystream-cli working-groups:overview --group=operationsAlpha
-yarn joystream-cli working-groups:overview --group=operationsBeta
-yarn joystream-cli working-groups:overview --group=operationsGamma
-yarn joystream-cli working-groups:overview --group=curators
-yarn joystream-cli working-groups:overview --group=distributors
+# entrypoint
+function main {
+    CONTAINER_ID=""
 
-echo "*** verify previously created channel and video are cleared ***"
-yarn joystream-cli content:videos 1
-yarn joystream-cli content:channel 1
-}    
+    echo "**** CREATING EMPTY CHAINSPEC ****"
+    create_initial_config
+    create_chainspec_file
+    convert_chainspec
+    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-trap cleanup EXIT
+    # use forkoff to update chainspec with the live state + update runtime code
+    fork_off_init
 
-if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
-  echo "Not Performing a runtime upgrade."
-else
-    # pre migration hook
-    pre_migration_hook
+    export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
+
+    # export chain-spec BEFORE starting the node
+    export_chainspec_file_to_disk
     
-  # Copy new runtime wasm file from target joystream/node image
-  echo "Extracting wasm blob from target joystream/node image."
-  id=`docker create joystream/node:${TARGET_RUNTIME}`
-  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
-  docker rm $id
+    echo "***** STARTING NODE WITH FORKED STATE *****"
+    CONTAINER_ID=$(start_node)
 
-  # Display runtime version before runtime upgrade
-  yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
+    if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
+        sleep 120
+        # verify assertion using typsecript
+        echo "***** POST MIGRATION TYPESCRIPT *****"
+        yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
+    fi
+}
 
-  echo "Performing runtime upgrade."
-  yarn workspace api-scripts tsnode-strict \
-    src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
-
-  echo "Runtime upgraded."
-
-  echo "Performing migration tests"
-  # post migration hook
-  post_migration_hook
-  echo "Done with migrations tests"
-fi
-
-# Display runtime version
-yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
+# main entrypoint
+main || :
+cleanup

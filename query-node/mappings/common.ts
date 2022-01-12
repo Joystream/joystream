@@ -205,7 +205,7 @@ type EntityClass<T extends BaseModel> = {
   name: string
 }
 
-type RelationsArr<T extends BaseModel> = Exclude<
+export type RelationsArr<T extends BaseModel> = Exclude<
   keyof T & string,
   { [K in keyof T]: T[K] extends BaseModel | undefined ? '' : T[K] extends BaseModel[] | undefined ? '' : K }[keyof T]
 >[]

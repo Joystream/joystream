@@ -20,13 +20,10 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(CreateChannelCategoryCommand).flags
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
-    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
+    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input, ChannelCategoryInputSchema)
     const meta = asValidatedMetadata(ChannelCategoryMetadata, channelCategoryInput)
@@ -39,10 +36,12 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannelCategory', [
-      actor,
-      channelCategoryCreationParameters,
-    ])
+    const result = await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(address),
+      'content',
+      'createChannelCategory',
+      [actor, channelCategoryCreationParameters]
+    )
 
     if (result) {
       const event = this.findEvent(result, 'content', 'ChannelCategoryCreated')

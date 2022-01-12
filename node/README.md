@@ -26,7 +26,7 @@ cd joystream/
 Compile the node and runtime:
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2021-03-24 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
 ```
 
 This produces the binary in `./target/release/joystream-node`
@@ -57,7 +57,7 @@ Use the `--chain` argument, and specify the path to the genesis `chain.json` fil
 Running unit tests:
 
 ```bash
-cargo test --release --all
+cargo +nightly-2021-02-20 test --release --all
 ```
 
 Running full suite of checks, tests, formatting and linting:
@@ -79,7 +79,7 @@ If you are building a tagged release from `master` branch and want to install th
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2021-03-24 cargo install joystream-node --path node/ --locked
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 install joystream-node --path node/ --locked
 ```
 
 Now you can run and connect to the testnet:

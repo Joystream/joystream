@@ -5,6 +5,7 @@
   file:
     state: absent
     path: "{{ remote_code_path }}"
+  become: yes
 
 - name: Git checkout
   git:

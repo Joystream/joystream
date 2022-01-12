@@ -19,6 +19,10 @@
   "author": "Joystream Contributors",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "build": "yarn compile && rm -rf lib && tsc",
     "compile": "yarn ts-node ./scripts/compile.ts",
@@ -27,7 +31,7 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "prepublish": "yarn build"
+    "prepack": "npm run build && npm run checks"
   },
   "files": [
     "lib/**/*",

@@ -2,6 +2,7 @@ import { flags } from '@oclif/command'
 import { DynamicBagTypeKey } from '@joystream/types/storage'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase from '../../command-base/default'
+import { createType } from '@joystream/types'
 
 export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
   static description = `Update dynamic bag creation policy (number of buckets by family that should store given dynamic bag type).
@@ -26,26 +27,26 @@ export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
       char: 'p',
       description: 'Key-value pair of {familyId}:{numberOfBuckets}',
       multiple: true,
+      default: [],
     }),
     ...DefaultCommandBase.flags,
   }
 
-  static examples = [`$ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 -p 2:10 -p 3:5`]
+  static examples = [`$ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 2:10 3:5`]
 
   async run(): Promise<void> {
     const { type, policy } = this.parse(LeaderUpdateDynamicBagPolicy).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Updating dynamic bag policy (${type})...`)
+    this.log(`Updating dynamic bag policy...`, {
+      type,
+      policy: policy.map(([familyId, numberOfBuckets]) => ({ familyId, numberOfBuckets })),
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateFamiliesInDynamicBagCreationPolicy(
         type,
-        // FIXME: https://github.com/polkadot-js/api/pull/3789
-        this.api.createType(
-          'DynamicBagCreationPolicyDistributorFamiliesMap',
-          new Map((policy || []).sort(([keyA], [keyB]) => keyA - keyB))
-        )
+        createType('DynamicBagCreationPolicyDistributorFamiliesMap', new Map(policy))
       )
     )
     this.log('Dynamic bag creation policy succesfully updated!')

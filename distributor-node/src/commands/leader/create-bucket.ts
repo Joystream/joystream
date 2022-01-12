@@ -24,7 +24,10 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
     const { familyId, acceptingBags } = this.parse(LeaderCreateBucket).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log('Creating new distribution bucket...')
+    this.log('Creating new distribution bucket...', {
+      familyId,
+      acceptingBags,
+    })
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.createDistributionBucket(familyId, acceptingBags === 'yes')
@@ -33,6 +36,6 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
 
     this.log('Bucket succesfully created!')
     const bucketId = event.data[2]
-    this.output(bucketId.toString())
+    this.output(bucketId.distribution_bucket_index.toString())
   }
 }

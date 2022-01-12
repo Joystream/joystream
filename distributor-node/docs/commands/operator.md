@@ -11,19 +11,14 @@ Commands for performing node operator (Distribution Working Group worker) on-cha
 Accept pending distribution bucket operator invitation.
 
 ```
-Accept pending distribution bucket operator invitation.
-  Requires the invited distribution group worker role key.
-
 USAGE
   $ joystream-distributor operator:accept-invitation
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -w, --workerId=workerId      (required) ID of the invited operator (distribution group worker)
 
@@ -40,21 +35,16 @@ _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joyst
 Set/update distribution bucket operator metadata.
 
 ```
-Set/update distribution bucket operator metadata.
-  Requires active distribution bucket operator worker role key.
-
 USAGE
   $ joystream-distributor operator:set-metadata
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket id
+  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                directory)
 
   -e, --endpoint=endpoint      Root distribution node endpoint
-
-  -f, --familyId=familyId      (required) Distribution bucket family id
 
   -i, --input=input            Path to JSON metadata file
 

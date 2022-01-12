@@ -1,75 +1,4 @@
 {
-    "ChannelContentType": "Null",
-    "ChannelCurationStatus": "Null",
-    "ChannelPublicationStatus": "Null",
-    "CurationActor": "Null",
-    "Curator": "Null",
-    "CuratorApplication": "Null",
-    "CuratorApplicationId": "Null",
-    "CuratorApplicationIdSet": "Null",
-    "CuratorApplicationIdToCuratorIdMap": "Null",
-    "CuratorOpening": "Null",
-    "CuratorOpeningId": "Null",
-    "Lead": "Null",
-    "LeadId": "Null",
-    "OptionalText": "Null",
-    "Principal": "Null",
-    "PrincipalId": "Null",
-    "WorkingGroupUnstaker": "Null",
-    "Credential": "Null",
-    "CredentialSet": "Null",
-    "Nonce": "Null",
-    "EntityId": "Null",
-    "ClassId": "Null",
-    "VecMaxLength": "Null",
-    "TextMaxLength": "Null",
-    "HashedTextMaxLength": "Null",
-    "PropertyId": "Null",
-    "SchemaId": "Null",
-    "SameController": "Null",
-    "ClassPermissions": "Null",
-    "PropertyTypeSingle": "Null",
-    "PropertyTypeVector": "Null",
-    "PropertyType": "Null",
-    "PropertyLockingPolicy": "Null",
-    "Property": "Null",
-    "Schema": "Null",
-    "Class": "Null",
-    "ClassOf": "Null",
-    "EntityController": "Null",
-    "EntityPermissions": "Null",
-    "StoredValue": "Null",
-    "VecStoredValue": "Null",
-    "VecStoredPropertyValue": "Null",
-    "StoredPropertyValue": "Null",
-    "InboundReferenceCounter": "Null",
-    "Entity": "Null",
-    "EntityOf": "Null",
-    "EntityCreationVoucher": "Null",
-    "Actor": "Null",
-    "EntityReferenceCounterSideEffect": "Null",
-    "ReferenceCounterSideEffects": "Null",
-    "SideEffects": "Null",
-    "SideEffect": "Null",
-    "Status": "Null",
-    "InputValue": "Null",
-    "VecInputValue": "Null",
-    "InputPropertyValue": "Null",
-    "ParameterizedEntity": "Null",
-    "ParametrizedPropertyValue": "Null",
-    "ParametrizedClassPropertyValue": "Null",
-    "CreateEntityOperation": "Null",
-    "UpdatePropertyValuesOperation": "Null",
-    "AddSchemaSupportToEntityOperation": "Null",
-    "OperationType": "Null",
-    "InputEntityValuesMap": "Null",
-    "ClassPermissionsType": "Null",
-    "ClassPropertyValue": "Null",
-    "Operation": "Null",
-    "ReferenceConstraint": "Null",
-    "FailedAt": "Null",
-    "IPNSIdentity": "Null",
-    "ServiceProviderRecord": "Null",
     "ContentId": "Null",
     "ContentParameters": "Null",
     "DataObjectStorageRelationship": "Null",
@@ -540,8 +469,7 @@
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
         "accepting_new_bags": "bool",
-        "voucher": "Voucher",
-        "metadata": "Bytes"
+        "voucher": "Voucher"
     },
     "StaticBagId": {
         "_enum": {
@@ -591,7 +519,7 @@
         "_enum": {
             "Missing": "Null",
             "InvitedStorageWorker": "WorkerId",
-            "StorageWorker": "WorkerId"
+            "StorageWorker": "(WorkerId,GenericAccountId)"
         }
     },
     "DataObject": {
@@ -600,7 +528,11 @@
         "size": "u64",
         "ipfsContentId": "Bytes"
     },
-    "DistributionBucketId": "u64",
+    "DistributionBucketId": {
+        "distribution_bucket_family_id": "DistributionBucketFamilyId",
+        "distribution_bucket_index": "DistributionBucketIndex"
+    },
+    "DistributionBucketIndex": "u64",
     "DistributionBucketFamilyId": "u64",
     "DistributionBucket": {
         "accepting_new_bags": "bool",
@@ -610,10 +542,10 @@
         "assigned_bags": "u64"
     },
     "DistributionBucketFamily": {
-        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
+        "next_distribution_bucket_index": "DistributionBucketIndex"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
-    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ProposalId": "u32",
     "ProposalStatus": {
@@ -625,15 +557,15 @@
     "ProposalOf": {
         "parameters": "ProposalParameters",
         "proposerId": "MemberId",
-        "title": "Text",
-        "description": "Text",
+        "title": "Bytes",
+        "description": "Bytes",
         "createdAt": "u32",
         "status": "ProposalStatus",
         "votingResults": "VotingResults"
     },
     "ProposalDetails": {
         "_enum": {
-            "Text": "Text",
+            "Text": "Bytes",
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
@@ -654,7 +586,7 @@
     },
     "ProposalDetailsOf": {
         "_enum": {
-            "Text": "Text",
+            "Text": "Bytes",
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
@@ -752,7 +684,7 @@
         }
     },
     "ExecutionFailed": {
-        "error": "Text"
+        "error": "Bytes"
     },
     "Approved": {
         "_enum": {
@@ -772,7 +704,8 @@
         "_enum": {
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
-            "Lead": "Null"
+            "Lead": "Null",
+            "Collaborator": "MemberId"
         }
     },
     "StorageAssets": {
@@ -784,7 +717,7 @@
         "num_videos": "u64",
         "is_censored": "bool",
         "reward_account": "Option<GenericAccountId>",
-        "deletion_prize_source_account_id": "GenericAccountId"
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -803,13 +736,15 @@
     "ChannelCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "reward_account": "Option<Option<GenericAccountId>>",
-        "assets_to_remove": "BTreeSet<DataObjectId>"
+        "assets_to_remove": "BTreeSet<DataObjectId>",
+        "collaborators": "Option<BTreeSet<MemberId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {

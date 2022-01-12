@@ -9,8 +9,6 @@ Developer utility commands
 ## `joystream-distributor dev:batchUpload`
 
 ```
-undefined
-
 USAGE
   $ joystream-distributor dev:batchUpload
 
@@ -23,6 +21,8 @@ OPTIONS
   -c, --configPath=configPath      [default: ./config.yml] Path to config JSON/YAML file (relative to current working
                                    directory)
 
+  -e, --endpoint=endpoint          (required)
+
   -y, --yes                        Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
@@ -33,8 +33,6 @@ _See code: [src/commands/dev/batchUpload.ts](https://github.com/Joystream/joystr
 Initialize development environment. Sets Alice as distributor working group leader.
 
 ```
-Initialize development environment. Sets Alice as distributor working group leader.
-
 USAGE
   $ joystream-distributor dev:init
 

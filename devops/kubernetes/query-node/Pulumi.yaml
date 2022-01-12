@@ -25,3 +25,12 @@ template:
     appsImage:
       description: The joystream image to use for running GraphQL servers
       default: joystream/apps:latest
+    dbPassword:
+      description: database password for indexer and processor databases  
+      required: true
+    blockHeight:
+      descroption: Block height to start indexing at
+      default: 0
+    joystreamWsEndpoint:
+      description: Joystream-node websocket endpoint used by indexer
+      required: true

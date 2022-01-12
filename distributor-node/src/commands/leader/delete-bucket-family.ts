@@ -18,7 +18,7 @@ export default class LeaderDeleteBucketFamily extends AccountsCommandBase {
     const { familyId } = this.parse(LeaderDeleteBucketFamily).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Deleting distribution bucket family (${familyId})...`)
+    this.log(`Deleting distribution bucket family...`, { familyId })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.deleteDistributionBucketFamily(familyId)
