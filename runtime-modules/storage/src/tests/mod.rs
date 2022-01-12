@@ -9,8 +9,8 @@ use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::iter::{repeat, FromIterator};
-use std::convert::TryInto;
 
 use common::working_group::WorkingGroup;
 
