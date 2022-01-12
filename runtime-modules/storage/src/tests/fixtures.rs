@@ -1290,15 +1290,8 @@ impl CreateDynamicBagWithObjectsFixture {
             }
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if let DispatchError::Module {
-                    message: Some(error_msg),
-                    ..
-                } = err
-                {
-                    match error_msg {
-                        "DynamicBagExists" => (),
-                        _ => assert!(!crate::Bags::<Test>::contains_key(&bag_id)),
-                    }
+                if into_str(err) != "DynamicBagExists" {
+                    assert!(!crate::Bags::<Test>::contains_key(&bag_id))
                 }
             }
         }
@@ -2158,4 +2151,9 @@ impl CreateStorageBucketFixture {
         }
         bucket_ids
     }
+}
+
+// wrapper to silence compiler error
+fn into_str(err: DispatchError) -> &'static str {
+    err.into()
 }
