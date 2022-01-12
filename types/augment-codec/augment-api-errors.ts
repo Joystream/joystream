@@ -123,10 +123,6 @@ declare module '@polkadot/api/types/errors' {
        **/
       CannotSubmitWorkToClosedContractBounty: AugmentedError<ApiType>;
       /**
-       * Cherry less then minimum allowed.
-       **/
-      CherryLessThenMinimumAllowed: AugmentedError<ApiType>;
-      /**
        * Cannot create a 'closed assurance contract' bounty with empty member list.
        **/
       ClosedContractMemberListIsEmpty: AugmentedError<ApiType>;
@@ -159,6 +155,10 @@ declare module '@polkadot/api/types/errors' {
        * Funding period is not expired for the bounty.
        **/
       FundingPeriodNotExpired: AugmentedError<ApiType>;
+      /**
+       * Cherry less then minimum allowed.
+       **/
+      CherryLessThenMinimumAllowed: AugmentedError<ApiType>;
       /**
        * Insufficient balance for a bounty cherry.
        **/
@@ -271,10 +271,6 @@ declare module '@polkadot/api/types/errors' {
        **/
       CategoryDoesNotExist: AugmentedError<ApiType>;
       /**
-       * Channel does not exist
-       **/
-      ChannelDoesNotExist: AugmentedError<ApiType>;
-      /**
        * Curator authentication failed
        **/
       CuratorAuthFailed: AugmentedError<ApiType>;
@@ -306,6 +302,10 @@ declare module '@polkadot/api/types/errors' {
        * Feature Not Implemented
        **/
       FeatureNotImplemented: AugmentedError<ApiType>;
+      /**
+       * Channel does not exist
+       **/
+      ChannelDoesNotExist: AugmentedError<ApiType>;
       /**
        * Lead authentication failed
        **/
@@ -969,13 +969,13 @@ declare module '@polkadot/api/types/errors' {
     };
     grandpa: {
       /**
-       * Attempt to signal GRANDPA change with one already pending.
-       **/
-      ChangePending: AugmentedError<ApiType>;
-      /**
        * A given equivocation report is valid but already previously reported.
        **/
       DuplicateOffenceReport: AugmentedError<ApiType>;
+      /**
+       * Attempt to signal GRANDPA change with one already pending.
+       **/
+      ChangePending: AugmentedError<ApiType>;
       /**
        * An equivocation proof provided as part of an equivocation report is invalid.
        **/

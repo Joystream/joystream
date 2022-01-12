@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+message BountyMetadata {
+  optional string title = 1; // Bounty title
+  optional string description = 2; // Bounty description
+  optional uint64 discussionThread = 3; // Id of the forum thread used to discuss the bounty
+  optional string banner_image_uri = 4; // Image uri of the bounty's banner
+}
+
+message BountyWorkData {
+  optional string title = 1; // Title of the work
+  optional string description = 2; // Description which contains the work itself as a URL, a BLOB, or just text
+}

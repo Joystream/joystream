@@ -168,17 +168,17 @@ declare module '@polkadot/api/types/storage' {
       constitution: AugmentedQuery<ApiType, () => Observable<ConstitutionInfo>, []>;
     };
     content: {
-      channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>, [ChannelId]>;
-      channelCategoryById: AugmentedQuery<ApiType, (arg: ChannelCategoryId | AnyNumber | Uint8Array) => Observable<ChannelCategory>, [ChannelCategoryId]>;
-      channelOwnershipTransferRequestById: AugmentedQuery<ApiType, (arg: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => Observable<ChannelOwnershipTransferRequest>, [ChannelOwnershipTransferRequestId]>;
       /**
        * Map, representing  CuratorGroupId -> CuratorGroup relation
        **/
       curatorGroupById: AugmentedQuery<ApiType, (arg: CuratorGroupId | AnyNumber | Uint8Array) => Observable<CuratorGroup>, [CuratorGroupId]>;
+      channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>, [ChannelId]>;
+      channelCategoryById: AugmentedQuery<ApiType, (arg: ChannelCategoryId | AnyNumber | Uint8Array) => Observable<ChannelCategory>, [ChannelCategoryId]>;
+      channelOwnershipTransferRequestById: AugmentedQuery<ApiType, (arg: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => Observable<ChannelOwnershipTransferRequest>, [ChannelOwnershipTransferRequestId]>;
+      nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<CuratorGroupId>, []>;
       nextChannelCategoryId: AugmentedQuery<ApiType, () => Observable<ChannelCategoryId>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<ChannelId>, []>;
       nextChannelOwnershipTransferRequestId: AugmentedQuery<ApiType, () => Observable<ChannelOwnershipTransferRequestId>, []>;
-      nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<CuratorGroupId>, []>;
       nextPersonId: AugmentedQuery<ApiType, () => Observable<PersonId>, []>;
       nextPlaylistId: AugmentedQuery<ApiType, () => Observable<PlaylistId>, []>;
       nextSeriesId: AugmentedQuery<ApiType, () => Observable<SeriesId>, []>;

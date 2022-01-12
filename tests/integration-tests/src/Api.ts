@@ -536,7 +536,7 @@ export class Api {
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
     announcementPeriodNr: number | null = null,
-    blocksReserve = 3,
+    blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
     await Utils.until(

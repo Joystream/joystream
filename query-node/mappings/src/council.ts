@@ -1,4 +1,4 @@
-import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
 import { FindConditions, SelectQueryBuilder } from 'typeorm'
@@ -48,6 +48,7 @@ import {
   ElectedCouncil,
   CastVote,
   CandidacyNoteMetadata,
+  CandidacyStatus,
 
   // Misc
   Membership,
@@ -170,7 +171,7 @@ async function getAccountCastVote(
 
   if (!castVote) {
     throw new Error(
-      `No vote cast by the given account in the curent election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
+      `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
     )
   }
 
@@ -221,12 +222,16 @@ async function updateCouncilStage(
 async function startNextElectionRound(
   store: DatabaseManager,
   electedCouncil: ElectedCouncil,
-  blockNumber: number,
+  event: SubstrateEvent,
   electionProblem?: ElectionProblem
 ): Promise<ElectionRound> {
   // finish last election round
   const lastElectionRound = await getCurrentElectionRound(store)
   lastElectionRound.isFinished = true
+  lastElectionRound.endedAtBlock = event.blockNumber
+  lastElectionRound.endedAtTime = new Date(event.blockTimestamp)
+  lastElectionRound.endedAtNetwork = CURRENT_NETWORK
+
   lastElectionRound.nextElectedCouncil = electedCouncil
 
   // save last election
@@ -248,7 +253,7 @@ async function startNextElectionRound(
 
   const stage = new CouncilStageAnnouncing()
   stage.candidatesCount = new BN(0)
-  await updateCouncilStage(store, stage, blockNumber, electionProblem)
+  await updateCouncilStage(store, stage, event.blockNumber, electionProblem)
 
   return electionRound
 }
@@ -257,14 +262,11 @@ async function startNextElectionRound(
   Converts successful council candidate records to council member records.
 */
 async function convertCandidatesToCouncilMembers(
-  store: DatabaseManager,
-  candidates: Candidate[],
+  candidates: Array<Candidate & { memberId: string }>,
   blockNumber: number
 ): Promise<CouncilMember[]> {
-  const councilMembers = await candidates.reduce(async (councilMembersPromise, candidate) => {
-    const councilMembers = await councilMembersPromise
-
-    const member = new Membership({ id: candidate.member.id.toString() })
+  return candidates.map((candidate) => {
+    const member = new Membership({ id: candidate.memberId })
 
     const councilMember = new CouncilMember({
       // id: candidate.id // TODO: are ids needed?
@@ -279,10 +281,27 @@ async function convertCandidatesToCouncilMembers(
       accumulatedReward: new BN(0),
     })
 
-    return [...councilMembers, councilMember]
-  }, Promise.resolve([] as CouncilMember[]))
+    return councilMember
+  })
+}
 
-  return councilMembers
+/**
+  Mark the candidacies as aborted when there is not enough candidates or elected councilor
+ */
+async function abortCandidacies(store: DatabaseManager) {
+  const electionRound = await getCurrentElectionRound(store)
+  const candidates = await store.getMany(Candidate, {
+    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+  })
+
+  await Promise.all(
+    candidates.map((candidate) => {
+      if (candidate.status === CandidacyStatus.ACTIVE) {
+        candidate.status = CandidacyStatus.FAILED
+      }
+      return store.save<Candidate>(candidate)
+    })
+  )
 }
 
 /// /////////////// Council events /////////////////////////////////////////////
@@ -306,11 +325,11 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber)
+  await startNextElectionRound(store, electedCouncil, event)
 }
 
 /*
-  The event is emitted when a candidacy announcment period has ended, but not enough members announced.
+  The event is emitted when a candidacy announcement period has ended, but not enough members announced.
 */
 export async function council_NotEnoughCandidates({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
@@ -323,11 +342,13 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
 
   await store.save<NotEnoughCandidatesEvent>(notEnoughCandidatesEvent)
 
+  await abortCandidacies(store)
+
   // specific event processing
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NOT_ENOUGH_CANDIDATES)
+  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
 /*
@@ -376,7 +397,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
 
   const electionRound = await getCurrentElectionRound(store)
 
-  // prepare note metadata record (empty until explicitily set via different extrinsic)
+  // prepare note metadata record (empty until explicitly set via different extrinsic)
   const noteMetadata = new CandidacyNoteMetadata({
     bulletPoints: [],
   })
@@ -387,14 +408,13 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
     stakingAccountId: stakingAccount.toString(),
     rewardAccountId: rewardAccount.toString(),
     member,
-
+    status: CandidacyStatus.ACTIVE,
     electionRound,
     stake: balance,
     stakeLocked: true,
-    candidacyWithdrawn: false,
     votePower: new BN(0),
     noteMetadata,
-    votesRecieved: [],
+    votesReceived: [],
   })
   await store.save<Candidate>(candidate)
 
@@ -422,7 +442,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // specific event processing
 
-  // mark old council as resinged
+  // mark old council as resigned
   const oldElectedCouncil = await getCurrentElectedCouncil(store)
   oldElectedCouncil.isResigned = true
   oldElectedCouncil.endedAtBlock = event.blockNumber
@@ -432,16 +452,29 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
 
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
+  const candidates = (await store.getMany(Candidate, {
+    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+  })) as Array<Candidate & { memberId: string }>
 
-  // TODO: uncomment when following query will be working (after some QN patches make it to Olympia)
-  // const electedCandidates = await store.getMany(Candidate, { where: { electionRoundId: electionRound.id, member: { id_in: electedMemberIds } } })
-  const electedCandidates = (
-    await store.getMany(Candidate, { where: { electionRoundId: electionRound.id }, relations: ['member'] })
-  ).filter((item: Candidate) => electedMemberIds.find((tmpId) => tmpId === item.member.id.toString()))
+  const electedCandidates = candidates.filter((candidate) => electedMemberIds.includes(candidate.memberId))
+
+  // Set elected candidates status
+  electedCandidates.forEach((candidate) => {
+    candidate.status = CandidacyStatus.ELECTED
+  })
+  // Store candidates new statuses
+  await Promise.all(
+    candidates.map((candidate) => {
+      if (candidate.status === CandidacyStatus.ACTIVE) {
+        candidate.status = CandidacyStatus.FAILED
+      }
+      return store.save<Candidate>(candidate)
+    })
+  )
 
   // create new council record
   const electedCouncil = new ElectedCouncil({
-    councilMembers: await convertCandidatesToCouncilMembers(store, electedCandidates, event.blockNumber),
+    councilMembers: await convertCandidatesToCouncilMembers(electedCandidates, event.blockNumber),
     updates: [],
     electedAtBlock: event.blockNumber,
     electedAtTime: new Date(event.blockTimestamp),
@@ -511,11 +544,13 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
 
   await store.save<NewCouncilNotElectedEvent>(newCouncilNotElectedEvent)
 
+  await abortCandidacies(store)
+
   // specific event processing
 
   // restart elections
   const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event.blockNumber, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
+  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
 }
 
 /*
@@ -560,7 +595,7 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
   // specific event processing
 
   // mark candidacy as withdrawn
-  candidate.candidacyWithdrawn = true
+  candidate.status = CandidacyStatus.WITHDRAWN
   await store.save<Candidate>(candidate)
 }
 
@@ -572,7 +607,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
 
   const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
 
-  // load candidate recored
+  // load candidate recorded
   const electionRound = await getCurrentElectionRound(store)
   const candidate = await getCandidate(store, memberId.toString(), electionRound, ['noteMetadata'])
 
@@ -739,7 +774,7 @@ export async function council_CouncilorRewardUpdated({ event, store }: EventCont
 }
 
 /*
-  The event is emitted when funds are transfered from the council budget to an account.
+  The event is emitted when funds are transferred from the council budget to an account.
 */
 export async function council_RequestFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing

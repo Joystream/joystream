@@ -202,6 +202,11 @@ declare module '@polkadot/api/types/events' {
       ConstutionAmended: AugmentedEvent<ApiType, [Bytes, Bytes]>;
     };
     content: {
+      CuratorAdded: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
+      CuratorGroupCreated: AugmentedEvent<ApiType, [CuratorGroupId]>;
+      CuratorGroupStatusSet: AugmentedEvent<ApiType, [CuratorGroupId, bool]>;
+      CuratorRemoved: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
+      FeaturedVideosSet: AugmentedEvent<ApiType, [ContentActor, Vec<VideoId>]>;
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [ContentActor, ChannelId, Vec<ContentId>]>;
       ChannelCategoryCreated: AugmentedEvent<ApiType, [ChannelCategoryId, ChannelCategory, ChannelCategoryCreationParameters]>;
       ChannelCategoryDeleted: AugmentedEvent<ApiType, [ContentActor, ChannelCategoryId]>;
@@ -212,11 +217,6 @@ declare module '@polkadot/api/types/events' {
       ChannelOwnershipTransferRequested: AugmentedEvent<ApiType, [ContentActor, ChannelOwnershipTransferRequestId, ChannelOwnershipTransferRequest]>;
       ChannelOwnershipTransferRequestWithdrawn: AugmentedEvent<ApiType, [ContentActor, ChannelOwnershipTransferRequestId]>;
       ChannelUpdated: AugmentedEvent<ApiType, [ContentActor, ChannelId, Channel, ChannelUpdateParameters]>;
-      CuratorAdded: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
-      CuratorGroupCreated: AugmentedEvent<ApiType, [CuratorGroupId]>;
-      CuratorGroupStatusSet: AugmentedEvent<ApiType, [CuratorGroupId, bool]>;
-      CuratorRemoved: AugmentedEvent<ApiType, [CuratorGroupId, CuratorId]>;
-      FeaturedVideosSet: AugmentedEvent<ApiType, [ContentActor, Vec<VideoId>]>;
       PersonCreated: AugmentedEvent<ApiType, [ContentActor, PersonId, Vec<NewAsset>, PersonCreationParameters]>;
       PersonDeleted: AugmentedEvent<ApiType, [ContentActor, PersonId]>;
       PersonUpdated: AugmentedEvent<ApiType, [ContentActor, PersonId, Vec<NewAsset>, PersonUpdateParameters]>;
@@ -1434,7 +1434,7 @@ declare module '@polkadot/api/types/events' {
       /**
        * Emits on post creation.
        **/
-      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes]>;
+      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes, bool]>;
       /**
        * Emits on post deleted
        **/
