@@ -440,17 +440,10 @@ impl UpdateChannelFixture {
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                if let DispatchError::Module {
-                    message: Some(error_msg),
-                    ..
-                } = err
-                {
-                    match error_msg {
-                        "DataObjectDoesntExist" => (),
-                        _ => assert!(self.params.assets_to_remove.iter().all(|id| {
-                            storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                        })),
-                    }
+                if into_str(err) != "DataObjectDoesntExist" {
+                    assert!(self.params.assets_to_remove.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }))
                 }
             }
         }
@@ -586,17 +579,10 @@ impl UpdateVideoFixture {
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                if let DispatchError::Module {
-                    message: Some(error_msg),
-                    ..
-                } = err
-                {
-                    match error_msg {
-                        "DataObjectDoesntExist" => (),
-                        _ => assert!(self.params.assets_to_remove.iter().all(|id| {
-                            storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                        })),
-                    }
+                if into_str(err) != "DataObjectDoesntExist" {
+                    assert!(self.params.assets_to_remove.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
                 }
             }
         }
@@ -687,24 +673,12 @@ impl DeleteChannelFixture {
 
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if let DispatchError::Module {
-                    message: Some(error_msg),
-                    ..
-                } = err
-                {
-                    match error_msg {
-                        "ChannelDoesNotExist" => (),
-                        _ => {
-                            assert!(ChannelById::<Test>::contains_key(&self.channel_id));
-                            assert!(channel_objects_ids.iter().all(|id| {
-                                storage::DataObjectsById::<Test>::contains_key(
-                                    &bag_id_for_channel,
-                                    id,
-                                )
-                            }));
-                            assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-                        }
-                    }
+                if into_str(err) != "ChannelDoesNotExist" {
+                    assert!(ChannelById::<Test>::contains_key(&self.channel_id));
+                    assert!(channel_objects_ids.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
+                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
                 }
             }
         }
@@ -789,30 +763,24 @@ impl DeleteVideoFixture {
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
 
-                if let DispatchError::Module {
-                    message: Some(error_msg),
-                    ..
-                } = err
-                {
-                    match error_msg {
-                        "DataObjectDoesntExist" => {
-                            let video_post = <VideoById<Test>>::get(&self.video_id);
-                            assert_eq!(video_pre, video_post);
-                            assert!(VideoById::<Test>::contains_key(&self.video_id));
-                        }
-                        "VideoDoesNotExist" => {
-                            assert!(self.assets_to_remove.iter().all(|id| {
-                                storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                            }));
-                        }
-                        _ => {
-                            let video_post = <VideoById<Test>>::get(&self.video_id);
-                            assert_eq!(video_pre, video_post);
-                            assert!(VideoById::<Test>::contains_key(&self.video_id));
-                            assert!(self.assets_to_remove.iter().all(|id| {
-                                storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                            }));
-                        }
+                match into_str(err) {
+                    "DataObjectDoesntExist" => {
+                        let video_post = <VideoById<Test>>::get(&self.video_id);
+                        assert_eq!(video_pre, video_post);
+                        assert!(VideoById::<Test>::contains_key(&self.video_id));
+                    }
+                    "VideoDoesNotExist" => {
+                        assert!(self.assets_to_remove.iter().all(|id| {
+                            storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                        }));
+                    }
+                    _ => {
+                        let video_post = <VideoById<Test>>::get(&self.video_id);
+                        assert_eq!(video_pre, video_post);
+                        assert!(VideoById::<Test>::contains_key(&self.video_id));
+                        assert!(self.assets_to_remove.iter().all(|id| {
+                            storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                        }));
                     }
                 }
             }
@@ -925,4 +893,9 @@ pub fn create_default_curator_owned_channel_with_video() {
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
         .call_and_assert(Ok(()));
+}
+
+// wrapper to silence compiler error
+fn into_str(err: DispatchError) -> &'static str {
+    err.into()
 }
