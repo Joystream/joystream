@@ -97,7 +97,7 @@
       debug:
         msg:
           - 'The services should now be accesible at:'
-          - 'Pioneer: https://{{ nip_domain }}/pioneer/'
+          - 'Pioneer: https://{{ nip_domain }}/'
           - 'WebSocket RPC: wss://{{ nip_domain }}/ws-rpc'
           - 'HTTP RPC: https://{{ nip_domain }}/http-rpc'
           - 'Colossus: https://{{ nip_domain }}/colossus-1'
