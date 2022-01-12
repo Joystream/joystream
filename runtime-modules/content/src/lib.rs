@@ -1791,13 +1791,10 @@ impl<T: Trait> Module<T> {
         cleanup_actor: CleanupActor,
         bloat_bond: <T as balances::Trait>::Balance,
     ) -> DispatchResult {
-        println!("cleanup actor:\t{:?}", cleanup_actor);
         match cleanup_actor {
             CleanupActor::PostAuthor => {
                 let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
 
-                println!("bloat_bond:\t{:?}", bloat_bond);
-                println!("cap:\t{:?}", cap);
                 if bloat_bond > cap {
                     let diff = bloat_bond.saturating_sub(cap);
                     ContentTreasury::<T>::withdraw(sender, cap)?;
