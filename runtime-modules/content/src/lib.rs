@@ -226,15 +226,6 @@ pub enum ChannelOwner<MemberId, CuratorGroupId> {
     CuratorGroup(CuratorGroupId),
 }
 
-// simplification type
-pub(crate) type ActorToChannelOwnerResult<T> = Result<
-    ChannelOwner<
-        <T as common::MembershipTypes>::MemberId,
-        <T as ContentActorAuthenticator>::CuratorGroupId,
-    >,
-    Error<T>,
->;
-
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
 impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
