@@ -15,34 +15,38 @@ use crate::ContentActorAuthenticator;
 use crate::Trait;
 use common::currency::GovernanceCurrency;
 
+/// Module Aliases
+pub type System = frame_system::Module<Test>;
+pub type Content = Module<Test>;
+pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+pub type Balances = balances::Module<Test>;
+
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 
-/// Accounts
+/// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
 pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
 pub const LEAD_ACCOUNT_ID: u64 = 103;
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 104;
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 105;
-pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 106;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 107;
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 108;
-
-// Members range from MemberId 1 to 10
-pub const MEMBERS_COUNT: MemberId = 10;
+pub const DEFAULT_MODERATOR_ACCOUNT_ID: u64 = 105;
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 111;
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
+pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: MemberId = 201;
 pub const DEFAULT_CURATOR_ID: CuratorId = 202;
 pub const COLLABORATOR_MEMBER_ID: u64 = 204;
-pub const UNAUTHORIZED_MEMBER_ID: u64 = 205;
-pub const UNAUTHORIZED_CURATOR_ID: u64 = 206;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 207;
-
-// initial balancer for an account
-pub const INITIAL_BALANCE: u64 = 1000;
+pub const DEFAULT_MODERATOR_ID: u64 = 205;
+pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
+pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
+pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -210,6 +214,14 @@ impl ContentActorAuthenticator for Test {
                 *account_id
                     == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
             }
+            UNAUTHORIZED_MODERATOR_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)).unwrap()
+            }
+
+            DEFAULT_MODERATOR_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID)).unwrap()
+            }
             _ => false,
         }
     }
@@ -358,6 +370,13 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
+    pub const MaxModerators: u64 = 5;
+    pub const CleanupMargin: u32 = 3;
+    pub const CleanupCost: u32 = 1;
+    pub const PricePerByte: u32 = 2;
+    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const BloatBondCap: u32 = 1000;
 }
 
 impl Trait for Test {
@@ -393,10 +412,35 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
+
+    // Type that handles asset uploads to storage frame_system
+    type StorageSystem = MockStorageSystem;
+
+    /// PostId Type
+    type PostId = u64;
+
+    /// Post Reaction Type
+    type ReactionId = u64;
+
+    /// moderators limit
+    type MaxModerators = MaxModerators;
+
+    /// price per byte
+    type PricePerByte = PricePerByte;
+
+    /// cleanup margin
+    type CleanupMargin = CleanupMargin;
+
+    /// bloat bond cap
+    type BloatBondCap = BloatBondCap;
+
+    /// cleanup cost
+    type CleanupCost = CleanupCost;
+
+    /// module id
+    type ModuleId = ContentModuleId;
 }
 
-pub type System = frame_system::Module<Test>;
-pub type Content = Module<Test>;
 // #[derive (Default)]
 pub struct ExtBuilder {
     next_channel_category_id: u64,
@@ -408,6 +452,7 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    next_post_id: u64,
 }
 
 impl Default for ExtBuilder {
@@ -422,6 +467,7 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            next_post_id: 1,
         }
     }
 }
@@ -442,6 +488,7 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            next_post_id: self.next_post_id,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -463,125 +510,3 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
-
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-
-pub type Balances = balances::Module<Test>;
-
-// pub fn delete_channel_mock(
-//     sender: u64,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     channel_id: ChannelId,
-//     objects_num: u64,
-//     result: DispatchResult,
-// ) {
-//     assert_eq!(
-//         Content::delete_channel(
-//             Origin::signed(sender),
-//             actor.clone(),
-//             channel_id.clone(),
-//             objects_num,
-//         ),
-//         result.clone(),
-//     );
-
-//     if result.is_ok() {
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ChannelDeleted(actor.clone(), channel_id))
-//         )
-//     }
-// }
-
-// pub fn create_video_mock(
-//     sender: u64,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     channel_id: ChannelId,
-//     params: VideoCreationParameters<Test>,
-//     result: DispatchResult,
-// ) {
-//     let video_id = Content::next_video_id();
-//     let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
-
-//     assert_eq!(
-//         Content::create_video(
-//             Origin::signed(sender),
-//             actor.clone(),
-//             channel_id.clone(),
-//             params.clone()
-//         ),
-//         result.clone(),
-//     );
-
-//     if result.is_ok() {
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::VideoCreated(
-//                 actor.clone(),
-//                 channel_id,
-//                 video_id,
-//                 params.clone(),
-//             ))
-//         );
-//         assert_eq!(
-//             num_videos_pre + 1,
-//             Content::channel_by_id(channel_id).num_videos,
-//         );
-//     }
-// }
-// pub fn update_video_mock(
-//     sender: u64,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     video_id: <Test as Trait>::VideoId,
-//     params: VideoUpdateParameters<Test>,
-//     result: DispatchResult,
-// ) {
-//     // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
-//     // let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
-
-//     assert_eq!(
-//         Content::update_video(
-//             Origin::signed(sender),
-//             actor.clone(),
-//             video_id.clone(),
-//             params.clone(),
-//         ),
-//         result.clone(),
-//     );
-
-//     if result.is_ok() {
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::VideoUpdated(
-//                 actor.clone(),
-//                 video_id,
-//                 params.clone(),
-//             ))
-//         );
-//     }
-// }
-
-// pub fn delete_video_mock(
-//     sender: u64,
-//     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     video_id: <Test as Trait>::VideoId,
-//     assets_to_remove: BTreeSet<DataObjectId<Test>>,
-//     result: DispatchResult,
-// ) {
-//     assert_eq!(
-//         Content::delete_video(
-//             Origin::signed(sender),
-//             actor.clone(),
-//             video_id.clone(),
-//             assets_to_remove.clone(),
-//         ),
-//         result.clone(),
-//     );
-
-//     if result.is_ok() {
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::VideoDeleted(actor.clone(), video_id))
-//         );
-//     }
-// }

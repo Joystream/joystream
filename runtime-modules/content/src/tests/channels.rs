@@ -98,6 +98,7 @@ fn channel_censoring() {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
+                moderator_set: BTreeSet::new(),
             }
         ));
 

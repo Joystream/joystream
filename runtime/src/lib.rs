@@ -65,6 +65,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, Membershi
 use governance::{council, election};
 
 // Node dependencies
+pub use codec::Encode;
 pub use common;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
@@ -429,6 +430,12 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
+    pub const MaxModerators: u64 = 5;    // TODO: update
+    pub const CleanupMargin: u32 = 3;    // TODO: update
+    pub const CleanupCost: u32 = 1; // TODO: update
+    pub const PricePerByte: u32 = 2; // TODO: update
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
+    pub const BloatBondCap: u32 = 1000;  // TODO: update
 }
 
 impl content::Trait for Runtime {
@@ -443,6 +450,15 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type StorageSystem = data_directory::Module<Self>;
+    type PostId = PostId;
+    type ReactionId = ReactionId;
+    type MaxModerators = MaxModerators;
+    type PricePerByte = PricePerByte;
+    type BloatBondCap = BloatBondCap;
+    type CleanupMargin = CleanupMargin;
+    type CleanupCost = CleanupCost;
+    type ModuleId = ContentModuleId;
 }
 
 impl hiring::Trait for Runtime {

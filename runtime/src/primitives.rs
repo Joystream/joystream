@@ -67,6 +67,9 @@ pub type SeriesId = u64;
 /// Content Directory Channel transfer request identifier.
 pub type ChannelOwnershipTransferRequestId = u64;
 
+/// Content Directory Reaction Identifier
+pub type ReactionId = u64;
+
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and

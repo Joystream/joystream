@@ -82,8 +82,34 @@ decl_error! {
         /// Bag Size specified is not valid
         InvalidBagSizeSpecified,
 
+        /// Post does not exists
+        PostDoesNotExist,
 
-        /// Actor not channel owner
-        ActorNotChannelOwner,
+        /// Partecipant is not a member
+        ReplyDoesNotExist,
+
+        /// comments disabled
+        CommentsDisabled,
+
+        /// moderators limit reached
+        ModeratorsLimitReached,
+
+        /// cannot edit video post
+        CannotEditVideoPost,
+
+        /// failed witness verification
+        WitnessVerificationFailed,
+
+        /// witness not provided
+        WitnessNotProvided,
+
+        /// rationale not provided
+        RationaleNotProvidedByModerator,
+
+        /// Insufficient balance
+        InsufficientBalance,
+
+        /// Insufficient treasury balance
+        InsufficientTreasuryBalance,
     }
 }
