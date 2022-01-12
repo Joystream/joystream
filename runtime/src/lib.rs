@@ -434,10 +434,10 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
     pub const MaxModerators: u64 = 5;    // TODO: update
     pub const CleanupMargin: u32 = 3;    // TODO: update
-    pub const PricePerByte: usize = 2;   // TODO: update
-    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const CleanupCost: u32 = 1; // TODO: update
+    pub const PricePerByte: u32 = 2; // TODO: update
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
-
 }
 
 impl content::Trait for Runtime {
@@ -458,11 +458,8 @@ impl content::Trait for Runtime {
     type PricePerByte = PricePerByte;
     type BloatBondCap = BloatBondCap;
     type CleanupMargin = CleanupMargin;
-    type VideoCommentsModuleId = VideoCommentsModuleId;
-
-    fn hash_of<E: Encode>(e: &E) -> Self::Hash {
-        Self::Hashing::hash(&e.encode())
-    }
+    type CleanupCost = CleanupCost;
+    type ModuleId = ContentModuleId;
 }
 
 impl hiring::Trait for Runtime {
