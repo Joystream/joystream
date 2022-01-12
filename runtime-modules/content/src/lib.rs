@@ -1640,6 +1640,7 @@ decl_module! {
             post_id: T::PostId,
             reaction_id: T::ReactionId,
         ) {
+            // post existence verification purposely avoided
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&member_id, &sender)?;
 
@@ -1657,6 +1658,7 @@ decl_module! {
             video_id: T::VideoId,
             reaction_id: T::ReactionId,
         ) {
+            // video existence verification purposely avoided
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&member_id, &sender)?;
 
