@@ -38,7 +38,10 @@ export class RetryFailedUploadsCommand extends Command {
       await api.isReadyOrError
       const assetsManager = await AssetsManager.create({
         api,
-        config: opts,
+        config: {
+          ...opts,
+          migrationStatePath: path.dirname(opts.failedUploadsPath),
+        },
       })
       assetsManager.loadQueue(opts.failedUploadsPath)
       await assetsManager.processQueuedUploads()
