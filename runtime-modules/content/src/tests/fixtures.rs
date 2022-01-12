@@ -214,59 +214,57 @@ impl CreateVideoFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        match actual_result {
-            Ok(()) => {
-                assert_ok!(Content::ensure_video_exists(&video_id));
+        if actual_result.is_ok() {
+            assert_ok!(Content::ensure_video_exists(&video_id));
 
-                assert_eq!(
-                    Content::next_video_id(),
-                    video_id.saturating_add(One::one())
-                );
+            assert_eq!(
+                Content::next_video_id(),
+                video_id.saturating_add(One::one())
+            );
 
-                assert_eq!(
-                    System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::VideoCreated(
-                        self.actor,
-                        self.channel_id,
-                        video_id,
-                        self.params.clone(),
-                    ))
-                );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoCreated(
+                    self.actor,
+                    self.channel_id,
+                    video_id,
+                    self.params.clone(),
+                ))
+            );
 
-                if let Some(assets) = self.params.assets.as_ref() {
-                    // balance accounting is correct
-                    let bag_deletion_prize = BalanceOf::<Test>::zero();
-                    let objects_deletion_prize = assets.object_creation_list.iter().fold(
-                        BalanceOf::<Test>::zero(),
-                        |acc, _| {
+            if let Some(assets) = self.params.assets.as_ref() {
+                // balance accounting is correct
+                let bag_deletion_prize = BalanceOf::<Test>::zero();
+                let objects_deletion_prize =
+                    assets
+                        .object_creation_list
+                        .iter()
+                        .fold(BalanceOf::<Test>::zero(), |acc, _| {
                             acc.saturating_add(
                                 <Test as storage::Trait>::DataObjectDeletionPrize::get(),
                             )
-                        },
-                    );
+                        });
 
-                    assert_eq!(
-                        balance_pre.saturating_sub(balance_post),
-                        bag_deletion_prize.saturating_add(objects_deletion_prize),
-                    );
+                assert_eq!(
+                    balance_pre.saturating_sub(balance_post),
+                    bag_deletion_prize.saturating_add(objects_deletion_prize),
+                );
 
-                    assert!((beg_obj_id..end_obj_id).all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                }
+                assert!((beg_obj_id..end_obj_id).all(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                }));
             }
-            Err(_) => {
-                assert!(!VideoById::<Test>::contains_key(&video_id));
+        } else {
+            assert!(!VideoById::<Test>::contains_key(&video_id));
 
-                assert_eq!(Content::next_video_id(), video_id);
+            assert_eq!(Content::next_video_id(), video_id);
 
-                if self.params.assets.is_some() {
-                    assert_eq!(balance_pre, balance_post,);
+            if self.params.assets.is_some() {
+                assert_eq!(balance_pre, balance_post,);
 
-                    assert!(!(beg_obj_id..end_obj_id).any(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                }
+                assert!(!(beg_obj_id..end_obj_id).any(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                }));
             }
         }
     }
