@@ -59,6 +59,7 @@ parameter_types! {
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
     pub const MinCherryLimit: u64 = 10;
+    pub const MinOracleCherryLimit: u64 = 10;
     pub const MinFundingLimit: u64 = 50;
     pub const MinWorkEntrantStake: u64 = 10;
 }
@@ -102,6 +103,7 @@ impl Trait for Test {
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
     type MinCherryLimit = MinCherryLimit;
+    type MinOracleCherryLimit = MinOracleCherryLimit;
     type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
 }

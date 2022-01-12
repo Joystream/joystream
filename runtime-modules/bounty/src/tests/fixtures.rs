@@ -101,6 +101,7 @@ impl EventFixture {
 }
 
 pub const DEFAULT_BOUNTY_CHERRY: u64 = 10;
+pub const DEFAULT_BOUNTY_ORACLE_CHERRY: u64 = 10;
 pub const DEFAULT_BOUNTY_ENTRANT_STAKE: u64 = 10;
 pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
 pub const DEFAULT_BOUNTY_MIN_AMOUNT: u64 = 1;
@@ -114,6 +115,7 @@ pub struct CreateBountyFixture {
     work_period: u64,
     judging_period: u64,
     cherry: u64,
+    oracle_cherry: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
     contract_type: AssuranceContractType<u64>,
@@ -132,6 +134,7 @@ impl CreateBountyFixture {
             work_period: 1,
             judging_period: 1,
             cherry: DEFAULT_BOUNTY_CHERRY,
+            oracle_cherry: DEFAULT_BOUNTY_ORACLE_CHERRY,
             expected_milestone: None,
             entrant_stake: DEFAULT_BOUNTY_ENTRANT_STAKE,
             contract_type: AssuranceContractType::Open,
@@ -224,6 +227,13 @@ impl CreateBountyFixture {
         Self { cherry, ..self }
     }
 
+    pub fn with_oracle_cherry(self, oracle_cherry: u64) -> Self {
+        Self {
+            oracle_cherry,
+            ..self
+        }
+    }
+
     pub fn with_entrant_stake(self, entrant_stake: u64) -> Self {
         Self {
             entrant_stake,
@@ -247,6 +257,7 @@ impl CreateBountyFixture {
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
             cherry: self.cherry,
+            oracle_cherry: self.oracle_cherry,
             entrant_stake: self.entrant_stake,
             contract_type: self.contract_type.clone(),
             oracle: self.oracle.clone(),

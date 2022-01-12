@@ -144,6 +144,9 @@ pub trait Trait:
     /// Defines min cherry for a bounty.
     type MinCherryLimit: Get<BalanceOf<Self>>;
 
+    /// Defines min oracle cherry for a bounty.
+    type MinOracleCherryLimit: Get<BalanceOf<Self>>;
+
     /// Defines min funding amount for a bounty.
     type MinFundingLimit: Get<BalanceOf<Self>>;
 
@@ -220,10 +223,16 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     pub creator: BountyActor<MemberId>,
 
     /// An amount of funding provided by the creator which will be split among all other
-    /// contributors should the bounty not be successful. If successful, cherry is returned to
+    /// contributors should the bounty be successful. If not successful, cherry is returned to
     /// the creator. When council is creating bounty, this comes out of their budget, when a member
     /// does it, it comes from an account.
     pub cherry: Balance,
+
+    /// An amount of funding provided by the creator which will be attributed to the
+    /// oracle should the oracle submit a judgement. even if this judgement is negative, this cherry should be attributed to
+    /// the oracle. When council is creating bounty, this comes out of their budget, when a member
+    /// does it, it comes from an account.
+    pub oracle_cherry: Balance,
 
     /// Amount of stake required to enter bounty as entrant.
     pub entrant_stake: Balance,
@@ -532,6 +541,17 @@ decl_event! {
         /// - bounty creator
         BountyCreatorCherryWithdrawal(BountyId, BountyActor<MemberId>),
 
+        /// A bounty creator has withdrawn the oracle cherry (member or council).
+        /// Params:
+        /// - bounty ID
+        /// - bounty creator
+        BountyCreatorOracleCherryWithdrawal(BountyId, BountyActor<MemberId>),
+
+        /// A Oracle has withdrawn the oracle cherry (member or council).
+        /// Params:
+        /// - bounty ID
+        /// - bounty creator
+        BountyOracleCherryWithdrawal(BountyId, BountyActor<MemberId>),
         /// A bounty was removed.
         /// Params:
         /// - bounty ID
@@ -648,6 +668,9 @@ decl_error! {
         /// Cherry less then minimum allowed.
         CherryLessThenMinimumAllowed,
 
+        /// Oracle Cherry less then minimum allowed.
+        OracleCherryLessThenMinimumAllowed,
+
         /// Funding amount less then minimum allowed.
         FundingLessThenMinimumAllowed,
 
@@ -704,14 +727,14 @@ decl_module! {
         /// Exports const - min cherry value limit for a bounty.
         const MinCherryLimit: BalanceOf<T> = T::MinCherryLimit::get();
 
+        /// Exports const - min oracle cherry value limit for a bounty.
+        const MinOracleCherryLimit: BalanceOf<T> = T::MinOracleCherryLimit::get();
+
         /// Exports const - min funding amount limit for a bounty.
         const MinFundingLimit: BalanceOf<T> = T::MinFundingLimit::get();
 
         /// Exports const - min work entrant stake for a bounty.
         const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
-
-        /// Exports const - bounty lock id.
-        const BountyLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -732,7 +755,7 @@ decl_module! {
 
             Self::ensure_create_bounty_parameters_valid(&params)?;
 
-            bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
+            bounty_creator_manager.validate_balance_sufficiency(params.cherry + params.oracle_cherry)?;
 
             //
             // == MUTATION SAFE ==
@@ -741,7 +764,7 @@ decl_module! {
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
-            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry)?;
+            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry + params.oracle_cherry)?;
 
             let created_bounty_milestone = BountyMilestone::Created {
                 created_at: Self::current_block(),
@@ -792,6 +815,7 @@ decl_module! {
             //
 
             Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
+            Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?;
 
             Self::remove_bounty(&bounty_id);
 
@@ -825,7 +849,7 @@ decl_module! {
             //
 
             Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
-
+            Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?;
             Self::remove_bounty(&bounty_id);
 
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
@@ -951,7 +975,10 @@ decl_module! {
 
             Self::deposit_event(RawEvent::BountyFundingWithdrawal(bounty_id, funder));
 
+
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
+                //Only when all funds are withdrawn, should the oracle cherry reeturn to the creator.
+                Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?;
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1179,6 +1206,17 @@ decl_module! {
                 }
             }
 
+
+            //Transferers oracle cherry to the oracle
+            bounty_oracle_manager
+                .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_cherry)?;
+
+            Self::deposit_event(RawEvent::BountyOracleCherryWithdrawal(
+                bounty_id,
+                bounty.creation_params.oracle,
+            ));
+
+
             // Fire a judgment event.
             Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
         }
@@ -1301,6 +1339,11 @@ impl<T: Trait> Module<T> {
         }
 
         ensure!(
+            params.oracle_cherry >= T::MinOracleCherryLimit::get(),
+            Error::<T>::OracleCherryLessThenMinimumAllowed
+        );
+
+        ensure!(
             params.cherry >= T::MinCherryLimit::get(),
             Error::<T>::CherryLessThenMinimumAllowed
         );
@@ -1387,7 +1430,7 @@ impl<T: Trait> Module<T> {
         funding_share * bounty.creation_params.cherry
     }
 
-    // Remove bounty and all related info from the storage.
+    /// Remove bounty and all related info from the storage.
     fn remove_bounty(bounty_id: &T::BountyId) {
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
@@ -1717,6 +1760,26 @@ impl<T: Trait> Module<T> {
             .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.cherry)?;
 
         Self::deposit_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            bounty.creation_params.creator.clone(),
+        ));
+
+        Ok(())
+    }
+
+    /// Transfers oracle cherry back to the bounty creator and fires an event.
+    fn return_bounty_oracle_cherry_to_creator(
+        bounty_id: T::BountyId,
+        bounty: &Bounty<T>,
+    ) -> DispatchResult {
+        let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
+            bounty.creation_params.creator.clone(),
+        )?;
+
+        bounty_creator_manager
+            .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_cherry)?;
+
+        Self::deposit_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
             bounty_id,
             bounty.creation_params.creator.clone(),
         ));
