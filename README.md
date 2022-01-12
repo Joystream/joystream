@@ -25,8 +25,8 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm package dependencies, build packages and docker images
-yarn build
+# Install npm package dependencies, build npm packages
+yarn build:packages
 
 # start a local development network
 yarn start

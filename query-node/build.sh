@@ -17,7 +17,6 @@ yarn
 cd ..
 
 # Generate types and server code
-TYPEGEN_WS_URI="${TYPEGEN_WS_URI:-ws://localhost:9944}" yarn typegen:configure
 yarn typegen
 yarn codegen:noinstall
 yarn format
@@ -25,6 +24,9 @@ yarn format
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
+
+# Add missing typeorm binary symlink
+ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
 
 yarn workspace query-node codegen
 yarn workspace query-node build:prod

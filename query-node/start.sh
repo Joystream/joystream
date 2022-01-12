@@ -8,7 +8,7 @@ set -a
 . ../.env
 set +a
 
-# Start the joystream-node first to allow fetching Olympia metadata during build (typegen)
+# Start the joystream-node first
 docker-compose up -d joystream-node
 
 # Only run codegen if no generated files found
@@ -16,15 +16,20 @@ docker-compose up -d joystream-node
 
 # Bring up db
 docker-compose up -d db
+# Wait for the db to be up
+until docker-compose logs db | grep "server started"; do
+  echo "Waiting for the db to be ready..."
+  sleep 1
+done
 
 # Make sure we use dev config for db migrations (prevents "Cannot create database..." and some other errors)
 yarn workspace query-node config:dev
 
-# Migrate the databases
+# Prepare & migrate the databases
 yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
-docker-compose up -d graphql-server-mnt
+docker-compose up -d graphql-server
 
 # Starting up processor will bring up all services it depends on
-docker-compose up -d processor-mnt
+docker-compose up -d processor
