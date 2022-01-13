@@ -444,7 +444,7 @@ impl UpdateChannelFixture {
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                if into_str(err) != "DataObjectDoesntExist" {
+                if err != storage::Error::<Test>::DataObjectDoesntExist.into() {
                     assert!(self.params.assets_to_remove.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }))
@@ -584,7 +584,7 @@ impl UpdateVideoFixture {
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                if into_str(err) != "DataObjectDoesntExist" {
+                if err != storage::Error::<Test>::DataObjectDoesntExist {
                     assert!(self.params.assets_to_remove.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }));
@@ -680,7 +680,7 @@ impl DeleteChannelFixture {
 
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if into_str(err) != "ChannelDoesNotExist" {
+                if err != Error::<Test>::ChannelDoesNotExist {
                     assert!(ChannelById::<Test>::contains_key(&self.channel_id));
                     assert!(channel_objects_ids.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
@@ -948,7 +948,7 @@ impl DeletePostFixture {
             }
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if into_str(err) != "PostDoesntExist" {
+                if err != Error::<Test>::PostDoesntExist {
                     assert_eq!(Content::post_by_id(&self.video_id, &self.post_id), post);
                     match &post.post_type {
                         PostType::<Test>::Comment(parent_id) => {
@@ -1050,25 +1050,21 @@ impl DeleteVideoFixture {
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
 
-                match into_str(err) {
-                    "DataObjectDoesntExist" => {
-                        let video_post = <VideoById<Test>>::get(&self.video_id);
-                        assert_eq!(video_pre, video_post);
-                        assert!(VideoById::<Test>::contains_key(&self.video_id));
-                    }
-                    "VideoDoesNotExist" => {
-                        assert!(self.assets_to_remove.iter().all(|id| {
-                            storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                        }));
-                    }
-                    _ => {
-                        let video_post = <VideoById<Test>>::get(&self.video_id);
-                        assert_eq!(video_pre, video_post);
-                        assert!(VideoById::<Test>::contains_key(&self.video_id));
-                        assert!(self.assets_to_remove.iter().all(|id| {
-                            storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                        }));
-                    }
+                if err != storage::Error::<Test>::DataObjectDoesntExist {
+                    let video_post = <VideoById<Test>>::get(&self.video_id);
+                    assert_eq!(video_pre, video_post);
+                    assert!(VideoById::<Test>::contains_key(&self.video_id));
+                } else if err != Error::<Test>::VideoDoesNotExist {
+                    assert!(self.assets_to_remove.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                    }));
+                } else {
+                    let video_post = <VideoById<Test>>::get(&self.video_id);
+                    assert_eq!(video_pre, video_post);
+                    assert!(VideoById::<Test>::contains_key(&self.video_id));
+                    assert!(self.assets_to_remove.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                    }));
                 }
             }
         }
