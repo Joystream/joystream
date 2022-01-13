@@ -109,11 +109,23 @@ export abstract class BaseMigration {
   private async loadSudoKey() {
     const { sudoUri } = this.config
     const keyring = new Keyring({ type: 'sr25519' })
-    this.sudo = keyring.createFromUri(sudoUri)
-    const sudoKey = await this.api.query.sudo.key()
-    if (sudoKey.toString() !== this.sudo.address) {
-      throw new Error(`Invalid sudo key! Expected: ${sudoKey.toString()}, Got: ${this.sudo.address}`)
+    const key = keyring.createFromUri(sudoUri)
+    if (!key) {
+      throw new Error(`Invalid key!`)
     }
+    const sudoKey = await this.api.query.sudo.key()
+    console.debug(`Sudo key: ${sudoKey.toString()}`)
+    this.isSudo = sudoKey.toString() === key.address
+    if (this.isSudo) {
+      this.sudo = key
+      return
+    }
+    const [id] = await this.api.query.members.memberIdsByControllerAccountId(key.address)
+    if (!id) {
+      throw new Error(`No Membership found for key: ${key.address.toString()}`)
+    }
+    this.member = { id, controllerAccount: key }
+    console.debug(`Using key: ${key.address} (member ${this.member.id})`)
   }
 
   protected async executeBatchMigration<T extends { id: string }>(

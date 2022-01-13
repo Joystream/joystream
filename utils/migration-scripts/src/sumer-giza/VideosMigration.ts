@@ -122,10 +122,8 @@ export class VideosMigration extends AssetsMigration {
     }
 
     let { ownerMember } = channel
-    if (this.forcedChannelOwner) {
-      ownerMember = this.forcedChannelOwner
-    }
-
+    if (!this.isSudo) ownerMember = this.member
+    else if (this.forcedChannelOwner) ownerMember = this.forcedChannelOwner
     return { ...video, channel: { ...channel, ownerMember } }
   }
 
@@ -192,12 +190,10 @@ export class VideosMigration extends AssetsMigration {
       }
     )
     const feesToCover = this.assetsManager.calcDataObjectsFee(assetsParams)
+    const tx = api.tx.content.createVideo({ Member: ownerMember.id }, channelId, videoCreationParams)
     return [
       api.tx.balances.transferKeepAlive(ownerMember.controllerAccount, feesToCover),
-      api.tx.sudo.sudoAs(
-        ownerMember.controllerAccount,
-        api.tx.content.createVideo({ Member: ownerMember.id }, channelId, videoCreationParams)
-      ),
+      this.isSudo ? api.tx.sudo.sudoAs(this.sudo, tx) : tx,
     ]
   }
 }

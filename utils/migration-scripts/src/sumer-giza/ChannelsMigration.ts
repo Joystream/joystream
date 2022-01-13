@@ -43,6 +43,7 @@ export class ChannelMigration extends AssetsMigration {
   }
 
   private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment) {
+    if (this.member) return this.member
     if (!ownerMember) {
       throw new Error(`Chanel ownerMember missing: ${id}. Only member-owned channels are supported!`)
     }
@@ -167,12 +168,10 @@ export class ChannelMigration extends AssetsMigration {
       }
     )
     const feesToCover = this.assetsManager.calcDataObjectsFee(assetsParams)
+    const tx = api.tx.content.createChannel({ Member: ownerMember.id }, channelCreationParams)
     return [
       api.tx.balances.transferKeepAlive(ownerMember.controllerAccount, feesToCover),
-      api.tx.sudo.sudoAs(
-        ownerMember.controllerAccount,
-        api.tx.content.createChannel({ Member: ownerMember.id }, channelCreationParams)
-      ),
+      this.isSudo ? api.tx.sudo.sudoAs(ownerMember.controllerAccount, tx) : tx,
     ]
   }
 }
