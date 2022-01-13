@@ -103,8 +103,20 @@ type Bounty @entity {
   "The event the bounty was created in"
   createdInEvent: BountyCreatedEvent! @derivedFrom(field: "bounty")
 
-  "Event emitted if a bounty reached its maximum funding amount"
+  "Event emitted if the bounty is canceled"
+  canceledEvent: BountyCanceledEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the bounty is vetoed"
+  vetoedEvent: BountyVetoedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the bounty reached its maximum funding amount"
   maxFundingReachedEvent: BountyMaxFundingReachedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted when the bounty is removed (i.e terminated)"
+  removedInEvent: BountyRemovedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the oracle judged the bounty work entries"
+  judgement: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
 }
 
 "Initial status during creation in Working Period."
@@ -184,8 +196,17 @@ type BountyEntry @entity {
   "The event the work entry was created in"
   announcedInEvent: WorkEntryAnnouncedEvent! @derivedFrom(field: "entry")
 
+  "Event emitted if the entry is withdrawn"
+  withdrawnInEvent: WorkEntryWithdrawnEvent @derivedFrom(field: "entry")
+
+  "Event emitted if the entry is withdrawn"
+  slashedInEvent: WorkEntrySlashedEvent @derivedFrom(field: "entry")
+
   "All of the submitted work events"
   works: [WorkSubmittedEvent] @derivedFrom(field: "entry")
+
+  "Event emitted if the entrant cashed out stake and/or share of bounty reward"
+  cashedOutInEvent: WorkEntrantFundsWithdrawnEvent @derivedFrom(field: "entry")
 }
 
 type BountyContribution @entity {
@@ -200,4 +221,14 @@ type BountyContribution @entity {
 
   "Amount of the contribution"
   amount: BigInt!
+
+  # Events
+  "The event the contribution was created in"
+  createdInEvent: BountyFundedEvent! @derivedFrom(field: "contribution")
+
+  "Event emitted if the bounty reached its maximum funding amount"
+  maxFundingReachedEvent: BountyMaxFundingReachedEvent @derivedFrom(field: "contribution")
+
+  "Event emitted if the contribution is withdrawn"
+  withdrawnInEvent: BountyFundingWithdrawalEvent @derivedFrom(field: "contribution")
 }

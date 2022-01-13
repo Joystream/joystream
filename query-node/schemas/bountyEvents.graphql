@@ -22,7 +22,154 @@ type BountyCreatedEvent implements Event @entity {
   bounty: Bounty!
 }
 
+type BountyCanceledEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
+}
+
+type BountyVetoedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
+}
+
+type BountyFundedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty contribution"
+  contribution: BountyContribution!
+}
+
 type BountyMaxFundingReachedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
+
+  "Related bounty contribution"
+  contribution: BountyContribution!
+}
+
+type BountyFundingWithdrawalEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty contribution"
+  contribution: BountyContribution!
+}
+
+type BountyCreatorCherryWithdrawalEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
+}
+
+type BountyRemovedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -47,6 +194,54 @@ type BountyMaxFundingReachedEvent implements Event @entity {
 }
 
 type WorkEntryAnnouncedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related work entry"
+  entry: BountyEntry!
+}
+
+type WorkEntryWithdrawnEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related work entry"
+  entry: BountyEntry!
+}
+
+type WorkEntrySlashedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -98,4 +293,52 @@ type WorkSubmittedEvent implements Event @entity {
 
   "Description which contains the work itself as a URL, a BLOB, or just text"
   description: String!
+}
+
+type OracleJudgmentSubmittedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related bounty"
+  bounty: Bounty!
+}
+
+type WorkEntrantFundsWithdrawnEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related work entry"
+  entry: BountyEntry!
 }
