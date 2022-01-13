@@ -1,6 +1,6 @@
-import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
-import { AssuranceContractType, BountyActor, BountyId, FundingType } from '@joystream/types/augment'
+import { AssuranceContractType, BountyActor, FundingType } from '@joystream/types/augment'
 import {
   Bounty,
   BountyContractClosed,
@@ -14,6 +14,7 @@ import {
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
 import { deserializeMetadata, genericEventFields } from './common'
+import { scheduleAtBlock } from './scheduler'
 
 /**
  * Commons helpers
@@ -23,6 +24,82 @@ function bountyActorToMembership(actor: BountyActor): Membership | undefined {
   if (actor.isMember) {
     return new Membership({ id: String(actor.asMember) })
   }
+}
+
+function isBountyFundingLimited(
+  fundingType: BountyFundingPerpetual | BountyFundingLimited
+): fundingType is BountyFundingLimited {
+  return fundingType.isTypeOf === BountyFundingLimited.name
+}
+
+function fundingPeriodEnd(bounty: Bounty): number {
+  return (
+    bounty.maxFundingReachedEvent?.inBlock ??
+    bounty.createdInEvent.inBlock + (bounty.fundingType as BountyFundingLimited).fundingPeriod
+  )
+}
+
+/**
+ * Schedule Periods changes
+ */
+
+export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty) {
+  const { fundingType } = bounty
+  if (bounty.stage !== BountyStage.Funding || !isBountyFundingLimited(fundingType)) return
+
+  const fundingPeriodEnd = bounty.createdInEvent.inBlock + fundingType.fundingPeriod
+  scheduleAtBlock(fundingPeriodEnd, () => {
+    if (bounty.stage === BountyStage.Funding) {
+      const isFunded = bounty.totalFunding >= fundingType.minFundingAmount
+      endFundingPeriod(store, bounty, isFunded)
+    }
+  })
+}
+
+export function bountyScheduleWorkSubmissionEnd(store: DatabaseManager, bounty: Bounty) {
+  if (bounty.stage !== BountyStage.WorkSubmission) return
+
+  const workingPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod
+  scheduleAtBlock(workingPeriodEnd, () => {
+    if (bounty.stage === BountyStage.WorkSubmission) {
+      endWorkingPeriod(store, bounty)
+    }
+  })
+}
+
+export function bountyScheduleJudgementEnd(store: DatabaseManager, bounty: Bounty) {
+  if (bounty.stage !== BountyStage.Judgment) return
+
+  const judgementPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod + bounty.judgingPeriod
+  scheduleAtBlock(judgementPeriodEnd, () => {
+    if (bounty.stage === BountyStage.Funding) {
+      bounty.updatedAt = new Date()
+      bounty.stage = BountyStage.Failed
+      store.save<Bounty>(bounty)
+    }
+  })
+}
+
+function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = true) {
+  bounty.updatedAt = new Date()
+  if (isFunded) {
+    bounty.stage = BountyStage.WorkSubmission
+    bountyScheduleWorkSubmissionEnd(store, bounty)
+  } else {
+    bounty.stage = BountyStage[bounty.contributions?.length ? 'Failed' : 'Expired']
+  }
+  return store.save<Bounty>(bounty)
+}
+
+function endWorkingPeriod(store: DatabaseManager, bounty: Bounty) {
+  bounty.updatedAt = new Date()
+  if (bounty.entries?.length) {
+    bounty.stage = BountyStage.Judgment
+    bountyScheduleJudgementEnd(store, bounty)
+  } else {
+    bounty.stage = BountyStage.Failed
+  }
+  return store.save<Bounty>(bounty)
 }
 
 /**
@@ -58,6 +135,8 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   })
 
   await store.save<Bounty>(bounty)
+
+  bountyScheduleFundingEnd(store, bounty)
 
   const createdInEvent = new BountyCreatedEvent({ ...genericEventFields(event), bounty })
   await store.save<BountyCreatedEvent>(createdInEvent)
