@@ -5,14 +5,7 @@ export default class LeaderUpdateBucketMode extends AccountsCommandBase {
   static description = `Update distribution bucket mode ("distributing" flag). Requires distribution working group leader permissions.`
 
   static flags = {
-    bucketId: flags.integer({
-      char: 'B',
-      description: 'Distribution bucket id',
-      required: true,
-    }),
-    familyId: flags.integer({
-      char: 'f',
-      description: 'Distribution bucket family id',
+    bucketId: flags.bucketId({
       required: true,
     }),
     mode: flags.enum<'on' | 'off'>({
@@ -25,13 +18,13 @@ export default class LeaderUpdateBucketMode extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { bucketId, familyId, mode } = this.parse(LeaderUpdateBucketMode).flags
+    const { bucketId, mode } = this.parse(LeaderUpdateBucketMode).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Updating distribution bucket mode (${bucketId}, distributing: ${mode})...`)
+    this.log(`Updating distribution bucket mode...`, { bucketId: bucketId.toHuman(), mode })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
-      this.api.tx.storage.updateDistributionBucketMode(familyId, bucketId, mode === 'on')
+      this.api.tx.storage.updateDistributionBucketMode(bucketId, mode === 'on')
     )
     this.log('Bucket mode succesfully updated!')
   }

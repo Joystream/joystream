@@ -1,3 +1,5 @@
+import { createType } from '@joystream/types'
+import { DistributionBucketIndexSet } from '@joystream/types/storage'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
 
@@ -14,39 +16,35 @@ export default class LeaderUpdateBag extends AccountsCommandBase {
       description: 'ID of the distribution bucket family',
       required: true,
     }),
-    add: flags.integerArr({
+    add: flags.integer({
       char: 'a',
-      description: 'ID of a bucket to add to bag',
+      description: 'Index(es) (within the family) of bucket(s) to add to the bag',
       default: [],
       multiple: true,
     }),
-    remove: flags.integerArr({
+    remove: flags.integer({
       char: 'r',
-      description: 'ID of a bucket to remove from bag',
+      description: 'Index(es) (within the family) of bucket(s) to remove from the bag',
       default: [],
       multiple: true,
     }),
     ...DefaultCommandBase.flags,
   }
 
-  static examples = [`$ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 -a 2 -a 3 -r 4 -r 5`]
+  static examples = [`$ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 2 3 -r 4 5`]
 
   async run(): Promise<void> {
     const { bagId, familyId, add, remove } = this.parse(LeaderUpdateBag).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(
-      `Updating distribution buckets for bag ${bagId} (adding: ${add.join(',' || 'NONE')}, removing: ${
-        remove.join(',') || 'NONE'
-      })...`
-    )
+    this.log(`Updating distribution buckets for bag...`, { bagId: bagId.toHuman(), familyId, add, remove })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateDistributionBucketsForBag(
         bagId,
         familyId,
-        this.api.createType('DistributionBucketIdSet', add),
-        this.api.createType('DistributionBucketIdSet', remove)
+        createType<DistributionBucketIndexSet, 'DistributionBucketIndexSet'>('DistributionBucketIndexSet', add),
+        createType<DistributionBucketIndexSet, 'DistributionBucketIndexSet'>('DistributionBucketIndexSet', remove)
       )
     )
     this.log('Bag succesfully updated!')

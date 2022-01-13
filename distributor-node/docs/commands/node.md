@@ -18,7 +18,9 @@ USAGE
   $ joystream-distributor node:set-buckets
 
 OPTIONS
-  -B, --bucketIds=bucketIds    Set of bucket ids to distribute
+  -B, --bucketIds=bucketIds    Set of bucket ids to distribute. Each bucket id should be in {familyId}:{bucketIndex}
+                               format. Multiple ids can be provided, separated by space.
+
   -a, --all                    Distribute all buckets belonging to configured worker
 
   -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
@@ -29,6 +31,10 @@ OPTIONS
   -u, --url=url                (required) Distributor node operator api base url (ie. http://localhost:3335)
 
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
+
+EXAMPLES
+  $ joystream-distributor node:set-buckets --bucketIds 1:1 1:2 1:3 2:1 2:2
+  $ joystream-distributor node:set-buckets --all
 ```
 
 _See code: [src/commands/node/set-buckets.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/node/set-buckets.ts)_

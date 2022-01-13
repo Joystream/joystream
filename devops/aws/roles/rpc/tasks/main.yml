@@ -19,6 +19,7 @@
   service:
     name: joystream-node
     state: started
+    enabled: yes
   become: yes
 
 - name: Set websocket and http endpoint variables

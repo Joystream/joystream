@@ -4,7 +4,7 @@ import { LoggingService } from '../logging'
 import _ from 'lodash'
 import fs from 'fs'
 import NodeCache from 'node-cache'
-import { PendingDownload } from '../networking/PendingDownload'
+import { PendingDownload, PendingDownloadStatusType } from '../networking/PendingDownload'
 
 // LRU-SP cache parameters
 // Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
@@ -160,10 +160,18 @@ export class StateCacheService {
     return this.memoryState.pendingDownloadsByObjectId.get(objectId)
   }
 
-  public dropPendingDownload(objectId: string): void {
+  public dropPendingDownload(
+    objectId: string,
+    status: PendingDownloadStatusType.Failed | PendingDownloadStatusType.Completed = PendingDownloadStatusType.Failed
+  ): void {
     const pendingDownload = this.memoryState.pendingDownloadsByObjectId.get(objectId)
     if (pendingDownload) {
-      pendingDownload.cleanup()
+      this.logger.debug(`Finalizing pending download`, {
+        objectId,
+        previousStatus: pendingDownload.getStatus(),
+        finalStatus: status,
+      })
+      pendingDownload.setStatus({ type: status })
       this.memoryState.pendingDownloadsByObjectId.delete(objectId)
     }
   }

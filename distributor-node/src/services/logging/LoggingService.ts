@@ -81,6 +81,7 @@ export class LoggingService {
         index: 'distributor-node',
         level: config.logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+        retryLimit: 10,
         flushInterval: 5000,
         source: config.id,
         clientOpts: {

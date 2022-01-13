@@ -31,7 +31,6 @@ export class FileContinousReadStream extends Readable {
   }
 
   private finish() {
-    fs.closeSync(this.fd)
     this.finished = true
   }
 
@@ -83,5 +82,6 @@ export class FileContinousReadStream extends Readable {
     if (this.interval) {
       clearInterval(this.interval)
     }
+    fs.closeSync(this.fd)
   }
 }

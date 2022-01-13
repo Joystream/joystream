@@ -267,7 +267,7 @@ type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord, MemberId: Ord>
 {
-    /// Asset collection for the channel, referenced by metadata    
+    /// Asset collection for the channel, referenced by metadata
     assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,

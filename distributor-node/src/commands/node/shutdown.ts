@@ -10,8 +10,4 @@ export default class NodeShutdownCommand extends NodeCommandBase {
   protected reqUrl(): string {
     return '/api/v1/shutdown'
   }
-
-  protected reqBody(): Record<string, unknown> {
-    return {}
-  }
 }

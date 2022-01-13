@@ -10,8 +10,4 @@ export default class NodeStartPublicApiCommand extends NodeCommandBase {
   protected reqUrl(): string {
     return '/api/v1/start-api'
   }
-
-  protected reqBody(): Record<string, unknown> {
-    return {}
-  }
 }

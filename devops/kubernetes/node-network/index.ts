@@ -60,50 +60,9 @@ const nodeImage = config.get('nodeImage') || 'joystream/node:latest'
 const encryptKey = config.get('encryptionKey') || '1234'
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
-let pvcClaimName: pulumi.Output<any>
 
-if (isMinikube) {
-  const pvc = new k8s.core.v1.PersistentVolumeClaim(
-    `${name}-pvc`,
-    {
-      metadata: {
-        labels: appLabels,
-        namespace: namespaceName,
-        name: `${name}-pvc`,
-      },
-      spec: {
-        accessModes: ['ReadWriteMany'],
-        resources: {
-          requests: {
-            storage: `1Gi`,
-          },
-        },
-      },
-    },
-    resourceOptions
-  )
-
-  const pv = new k8s.core.v1.PersistentVolume(`${name}-pv`, {
-    metadata: {
-      labels: { ...appLabels, type: 'local' },
-      namespace: namespaceName,
-      name: `${name}-pv`,
-    },
-    spec: {
-      accessModes: ['ReadWriteMany'],
-      capacity: {
-        storage: `1Gi`,
-      },
-      hostPath: {
-        path: '/mnt/data/',
-      },
-    },
-  })
-  pvcClaimName = pvc.metadata.apply((m) => m.name)
-} else {
-  const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
-  pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
-}
+const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
+const pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
 
 const jsonModifyConfig = new configMapFromFile(
   'json-modify-config',
