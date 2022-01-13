@@ -21,6 +21,7 @@ fn channel_censoring() {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
+                moderators: BTreeSet::new(),
             }
         ));
 
@@ -159,17 +160,6 @@ fn unsuccessful_channel_creation_with_lead_context() {
         CreateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_creation_with_collaborator_context() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
     })
 }
@@ -441,7 +431,7 @@ fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin()
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }

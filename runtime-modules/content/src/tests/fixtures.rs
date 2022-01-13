@@ -4,6 +4,7 @@ use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
+use sp_std::cmp::min;
 
 // constants used
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 40;
@@ -38,6 +39,7 @@ impl CreateChannelFixture {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
+                moderator_set: BTreeSet::new(),
             },
         }
     }
@@ -722,7 +724,8 @@ impl CreatePostFixture {
         Self { params, ..self }
     }
 
-    pub fn call_and_assert(expected_result: DispatchResult) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
         let initial_bloat_bond = Content::compute_initial_bloat_bond();
         let post_id = Content::next_post_id();
         let balance_pre = Balances::<Test>::usable_balance(&self.sender);
@@ -989,10 +992,6 @@ impl DeleteVideoFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
@@ -1072,12 +1071,12 @@ impl DeleteVideoFixture {
 }
 
 // helper functions
-pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
-    let _ = Balances::deposit_creating(&account_id, balance);
+pub fn increase_account_balance_helper(account_id: u64, balance: u32) {
+    let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }
 
 pub fn slash_account_balance_helper(account_id: u64) {
-    let _ = Balances::slash(&account_id, Balances::total_balance(&account_id));
+    let _ = Balances::<Test>::slash(&account_id, Balances::<Test>::total_balance(&account_id));
 }
 
 pub fn create_data_object_candidates_helper(
@@ -1183,13 +1182,13 @@ fn into_str(err: DispatchError) -> &'static str {
     err.into()
 }
 
-pub fn create_default_member_channel_with_video_and_post() {
-    create_default_member_channel_with_video();
+pub fn create_default_member_owned_channel_with_video_and_post() {
+    create_default_member_owned_channel_with_video();
     CreatePostFixture::default().call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_channel_with_video_and_post() {
-    create_default_curator_channel_with_video();
+pub fn create_default_curator_owned_channel_with_video_and_post() {
+    create_default_curator_owned_channel_with_video();
     let default_curator_group_id = Content::next_curator_group_id() - 1;
     CreatePostFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -1200,7 +1199,7 @@ pub fn create_default_curator_channel_with_video_and_post() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_channel_with_video_and_comment() {
+pub fn create_default_member_owned_channel_with_video_and_comment() {
     create_default_member_owned_channel_with_video_and_post();
     CreatePostFixture::default()
         .with_params(PostCreationParameters::<Test> {
@@ -1210,7 +1209,7 @@ pub fn create_default_member_channel_with_video_and_comment() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_channel_with_video_and_comment() {
+pub fn create_default_curator_owned_channel_with_video_and_comment() {
     create_default_curator_owned_channel_with_video_and_post();
     let default_curator_group_id = Content::next_curator_group_id() - 1;
     CreatePostFixture::default()

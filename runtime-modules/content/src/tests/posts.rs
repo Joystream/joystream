@@ -8,8 +8,8 @@ use crate::*;
 #[test]
 pub fn unsuccessful_post_creation_with_member_auth_failed() {
     with_default_mock_builder(|| {
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -20,8 +20,8 @@ pub fn unsuccessful_post_creation_with_member_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_curator_auth_failed() {
     with_default_mock_builder(|| {
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreatePostFixture::default()
@@ -37,8 +37,8 @@ pub fn unsuccessful_post_creation_with_curator_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_lead_auth_failed() {
     with_default_mock_builder(|| {
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
@@ -50,7 +50,7 @@ pub fn unsuccessful_post_creation_with_lead_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_insufficient_balance() {
     with_default_mock_builder(|| {
-        create_default_member_channel_with_video();
+        create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default().call_and_assert(Err(Error::<Test>::InsufficientBalance.into()))
     })
@@ -59,8 +59,8 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
 #[test]
 pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -72,8 +72,8 @@ pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
 #[test]
 pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
-        increase_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video();
+        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         CreatePostFixture::default()
@@ -89,8 +89,8 @@ pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
 #[test]
 pub fn unsuccessful_post_creation_with_lead() {
     with_default_mock_builder(|| {
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video();
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -102,7 +102,7 @@ pub fn unsuccessful_post_creation_with_lead() {
 #[test]
 pub fn unsuccessful_post_creation_with_invalid_video_id() {
     with_default_mock_builder(|| {
-        create_default_member_channel_with_video();
+        create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default()
             .with_params(PostCreationParameters::<Test> {
@@ -117,8 +117,8 @@ pub fn unsuccessful_post_creation_with_invalid_video_id() {
 pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
             .with_params(PostCreationParameters::<Test> {
@@ -133,8 +133,8 @@ pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
 pub fn successful_post_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default().call_and_assert(Ok(()))
     })
@@ -144,8 +144,8 @@ pub fn successful_post_creation_by_member() {
 pub fn successful_post_creation_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
         let default_curator_group_id = Content::next_curator_group_id() - 1;
 
         CreatePostFixture::default()
@@ -162,11 +162,11 @@ pub fn successful_post_creation_by_curator() {
 pub fn successful_comment_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_curator_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post();
 
         println!("POST CREATED");
         CreatePostFixture::default()
@@ -182,11 +182,11 @@ pub fn successful_comment_creation_by_member() {
 pub fn successful_comment_creation_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_member_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post();
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreatePostFixture::default()
@@ -207,11 +207,11 @@ pub fn successful_comment_creation_by_curator() {
 pub fn successful_comment_creation_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_member_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -229,8 +229,8 @@ pub fn successful_comment_creation_by_lead() {
 pub fn unsuccessful_post_update_with_member_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -242,8 +242,8 @@ pub fn unsuccessful_post_update_with_member_auth_failed() {
 pub fn unsuccessful_post_update_with_curator_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         EditPostTextFixture::default()
@@ -260,10 +260,10 @@ pub fn unsuccessful_post_update_with_curator_auth_failed() {
 pub fn unsuccessful_post_update_with_lead_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
@@ -285,8 +285,8 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
 pub fn unsuccessful_post_update_with_invalid_post_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_post_id(PostId::zero())
@@ -298,8 +298,8 @@ pub fn unsuccessful_post_update_with_invalid_post_id() {
 pub fn unsuccessful_post_update_with_invalid_video_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_video_id(PostId::zero())
@@ -311,9 +311,9 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
 pub fn unsuccessful_post_update_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -326,8 +326,8 @@ pub fn unsuccessful_post_update_by_member_not_channel_owner() {
 pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -344,9 +344,9 @@ pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
 pub fn unsuccessful_comment_update_by_member_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -360,9 +360,9 @@ pub fn unsuccessful_comment_update_by_member_not_author() {
 pub fn unsuccessful_comment_update_by_curator_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -380,9 +380,9 @@ pub fn unsuccessful_comment_update_by_curator_not_author() {
 pub fn unsuccessful_comment_update_by_lead_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -396,8 +396,8 @@ pub fn unsuccessful_comment_update_by_lead_not_author() {
 pub fn successful_comment_update_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
             .with_post_id(PostId::from(2u64))
@@ -409,8 +409,8 @@ pub fn successful_comment_update_by_member() {
 pub fn successful_comment_update_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         EditPostTextFixture::default()
@@ -428,10 +428,10 @@ pub fn successful_comment_update_by_curator() {
 pub fn successful_comment_update_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
@@ -453,8 +453,8 @@ pub fn successful_comment_update_by_lead() {
 pub fn successful_post_update_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default().call_and_assert(Ok(()))
     })
@@ -464,8 +464,8 @@ pub fn successful_post_update_by_member() {
 pub fn successful_post_update_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         EditPostTextFixture::default()
@@ -483,8 +483,8 @@ pub fn successful_post_update_by_curator() {
 pub fn unsuccessful_post_deletion_with_member_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -496,8 +496,8 @@ pub fn unsuccessful_post_deletion_with_member_auth_failed() {
 pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -514,10 +514,10 @@ pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
 pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
@@ -539,8 +539,8 @@ pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
 pub fn unsuccessful_post_deletion_with_invalid_post_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
             .with_post_id(PostId::zero())
@@ -552,8 +552,8 @@ pub fn unsuccessful_post_deletion_with_invalid_post_id() {
 pub fn unsuccessful_post_deletion_with_invalid_video_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
             .with_post_id(PostId::zero())
@@ -565,9 +565,9 @@ pub fn unsuccessful_post_deletion_with_invalid_video_id() {
 pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -580,8 +580,8 @@ pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
 pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -598,8 +598,8 @@ pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
 pub fn unsuccessful_post_deletion_with_invalid_witness() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .call_and_assert(Err(Error::<Test>::WitnessVerificationFailed.into()))
@@ -610,8 +610,8 @@ pub fn unsuccessful_post_deletion_with_invalid_witness() {
 pub fn unsuccessful_post_deletion_with_no_witness() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_params(PostDeletionParameters::<Test> {
@@ -626,8 +626,8 @@ pub fn unsuccessful_post_deletion_with_no_witness() {
 pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -641,8 +641,8 @@ pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
 pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         DeletePostFixture::default()
@@ -660,9 +660,9 @@ pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
 pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -676,8 +676,8 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
 pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)
@@ -691,8 +691,8 @@ pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
 pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
@@ -710,8 +710,8 @@ pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
 pub fn successful_post_deletion_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_params(PostDeletionParameters::<Test> {
@@ -728,8 +728,8 @@ pub fn successful_post_deletion_by_member() {
 pub fn successful_post_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -752,8 +752,8 @@ pub fn successful_post_deletion_by_curator() {
 pub fn successful_comment_deletion_by_member_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_post_id(PostId::from(2u64))
@@ -771,8 +771,8 @@ pub fn successful_comment_deletion_by_member_owner() {
 pub fn successful_comment_deletion_by_curator_onwer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_comment();
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -796,9 +796,9 @@ pub fn successful_comment_deletion_by_curator_onwer() {
 pub fn successful_comment_deletion_by_member_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
             .with_params(PostCreationParameters::<Test> {
@@ -823,9 +823,9 @@ pub fn successful_comment_deletion_by_member_author() {
 pub fn successful_comment_deletion_by_curator_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
@@ -862,9 +862,9 @@ pub fn successful_comment_deletion_by_curator_author() {
 pub fn successful_comment_deletion_by_lead_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_post();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -893,8 +893,8 @@ pub fn successful_comment_deletion_by_lead_author() {
 pub fn successful_comment_deletion_by_moderator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        increase_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_channel_with_video_and_comment();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)

@@ -19,7 +19,7 @@ use common::currency::GovernanceCurrency;
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-pub type Balances = balances::Module<Test>;
+//pub type Balances = balances::Module<Test>;
 
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
@@ -47,6 +47,10 @@ pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
 pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
+
+/// Misc
+pub const INITIAL_BALANCE: u32 = 1000;
+pub const MEMBERS_COUNT: u64 = 10;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -412,9 +416,6 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
-
-    // Type that handles asset uploads to storage frame_system
-    type StorageSystem = MockStorageSystem;
 
     /// PostId Type
     type PostId = u64;
