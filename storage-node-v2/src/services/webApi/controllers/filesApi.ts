@@ -29,7 +29,11 @@ const fsPromises = fs.promises
 /**
  * A public endpoint: serves files by data object ID.
  */
-export async function getFile(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
+export async function getFile(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
+): Promise<void> {
   try {
     const dataObjectId = getDataObjectId(req)
     const uploadsDir = res.locals.uploadsDir
@@ -48,12 +52,12 @@ export async function getFile(req: express.Request, res: express.Response<unknow
     })
 
     stream.on('error', (err) => {
-      sendResponseWithError(res, err, 'files')
+      sendResponseWithError(res, next, err, 'files')
     })
 
     stream.pipe(res)
   } catch (err) {
-    sendResponseWithError(res, err, 'files')
+    sendResponseWithError(res, next, err, 'files')
   }
 }
 
@@ -81,7 +85,11 @@ export async function getFileHeaders(req: express.Request, res: express.Response
 /**
  * A public endpoint: receives file.
  */
-export async function uploadFile(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
+export async function uploadFile(
+  req: express.Request,
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
+): Promise<void> {
   const uploadRequest: RequestData = req.body
 
   // saved filename to delete on verification or extrinsic errors
@@ -134,7 +142,7 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
   } catch (err) {
     await cleanupFileOnError(cleanupFileName, err.toString())
 
-    sendResponseWithError(res, err, 'upload')
+    sendResponseWithError(res, next, err, 'upload')
   }
 }
 
@@ -143,7 +151,8 @@ export async function uploadFile(req: express.Request, res: express.Response<unk
  */
 export async function authTokenForUploading(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
 ): Promise<void> {
   try {
     const account = res.locals.storageProviderAccount
@@ -163,7 +172,7 @@ export async function authTokenForUploading(
       token: signedToken,
     })
   } catch (err) {
-    sendResponseWithError(res, err, 'authtoken')
+    sendResponseWithError(res, next, err, 'authtoken')
   }
 }
 

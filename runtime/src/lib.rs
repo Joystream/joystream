@@ -674,7 +674,6 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxDistributionBucketNumberPerFamily: u64 = 500;
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const DataObjectDeletionPrize: Balance = 1; //TODO: Change during Olympia release
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
@@ -694,7 +693,7 @@ impl storage::Trait for Runtime {
     type Event = Event;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
-    type DistributionBucketId = DistributionBucketId;
+    type DistributionBucketIndex = DistributionBucketIndex;
     type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
@@ -709,7 +708,6 @@ impl storage::Trait for Runtime {
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type DistributionBucketOperatorId = DistributionBucketOperatorId;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =

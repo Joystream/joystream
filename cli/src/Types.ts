@@ -11,7 +11,7 @@ import { Opening, StakingPolicy, ApplicationStage } from '@joystream/types/hirin
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
-import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
+import { JSONSchema4 } from 'json-schema'
 import {
   IChannelCategoryMetadata,
   IChannelMetadata,
@@ -232,6 +232,7 @@ export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avat
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
+  collaborators?: number[]
 }
 
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
@@ -241,6 +242,14 @@ export type VideoCategoryInputParameters = IVideoCategoryMetadata
 type AnyNonObject = string | number | boolean | any[] | Long
 
 // JSONSchema utility types
+
+// Based on: https://stackoverflow.com/questions/51465182/how-to-remove-index-signature-using-mapped-types
+type RemoveIndex<T> = {
+  [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K]
+}
+
+type AnyJSONSchema = RemoveIndex<JSONSchema4>
+
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
@@ -253,19 +262,15 @@ export type JSONTypeName<T> = T extends string
   ? 'number' | ['number', 'null']
   : 'object' | ['object', 'null']
 
-export type PropertySchema<P> = Omit<
-  JSONSchema7Definition & {
-    type: JSONTypeName<P>
-    properties: P extends AnyNonObject ? never : JsonSchemaProperties<P>
-  },
-  P extends AnyNonObject ? 'properties' : ''
->
+export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
+  type: JSONTypeName<P>
+} & (P extends AnyNonObject ? { properties?: never } : { properties: JsonSchemaProperties<P> })
 
 export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
 }
 
-export type JsonSchema<T> = JSONSchema7 & {
+export type JsonSchema<T> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: 'object'
   properties: JsonSchemaProperties<T>
 }

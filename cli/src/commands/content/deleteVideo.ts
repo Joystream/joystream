@@ -22,6 +22,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       default: false,
       description: 'Force-remove all associated video data objects',
     }),
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
   async getDataObjectsInfo(videoId: number): Promise<[string, BN][]> {
@@ -39,14 +40,12 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
 
   async run(): Promise<void> {
     const {
-      flags: { videoId, force },
+      flags: { videoId, force, context },
     } = this.parse(DeleteVideoCommand)
     // Context
-    const account = await this.getRequiredSelectedAccount()
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
     if (dataObjectsInfo.length) {
@@ -59,7 +58,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       this.log(
         `Data objects deletion prize of ${chalk.cyanBright(
           formatBalance(deletionPrize)
-        )} will be transferred to ${chalk.magentaBright(channel.deletion_prize_source_account_id.toString())}`
+        )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 
@@ -69,7 +68,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       }?`
     )
 
-    await this.sendAndFollowNamedTx(account, 'content', 'deleteVideo', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
       actor,
       videoId,
       createType(

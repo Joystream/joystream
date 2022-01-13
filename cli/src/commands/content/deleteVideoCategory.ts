@@ -14,7 +14,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args
@@ -22,12 +22,12 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     const videoCategoryIds = await this.getApi().videoCategoryIds()
 
     if (videoCategoryIds.some((id) => id.toString() === videoCategoryId)) {
-      const currentAccount = await this.getRequiredSelectedAccount()
-      await this.requestAccountDecoding(currentAccount)
+      const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
-      const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
-
-      await this.sendAndFollowNamedTx(currentAccount, 'content', 'deleteVideoCategory', [actor, videoCategoryId])
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoCategory', [
+        actor,
+        videoCategoryId,
+      ])
     } else {
       this.error('Video category under given id does not exist...')
     }

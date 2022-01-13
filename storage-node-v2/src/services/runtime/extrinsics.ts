@@ -61,10 +61,11 @@ export async function acceptStorageBucketInvitation(
   api: ApiPromise,
   account: KeyringPair,
   workerId: number,
-  storageBucketId: number
+  storageBucketId: number,
+  transactorAccountId: string
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const tx = api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId)
+    const tx = api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, transactorAccountId)
 
     return sendAndFollowNamedTx(api, account, tx)
   })

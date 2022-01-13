@@ -21,7 +21,7 @@ ${CLI} leader:update-dynamic-bag-policy -n 10 -t Member --dev
 
 # Create and configure a bucket.
 BUCKET_ID=`${CLI} leader:create-bucket -i=0 --dev` # bucketId = 0
-${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev
+${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev -t=5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
 ${CLI} leader:set-bucket-limits -i=${BUCKET_ID} -o=100 -s=10000000 --dev
 ${CLI} leader:update-bucket-status -i=${BUCKET_ID} --set on --dev
 ${CLI} leader:update-bag -a=${BUCKET_ID} -i static:council --dev 

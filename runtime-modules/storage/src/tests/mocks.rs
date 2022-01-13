@@ -50,8 +50,7 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const MaxDistributionBucketNumberPerFamily: u64 = 10;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 6;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
@@ -75,12 +74,19 @@ pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
+pub const INITIAL_BALANCE: u64 = 10_000;
+pub const BAG_DELETION_PRIZE_VALUE: u64 = 100;
+pub const VOUCHER_SIZE_LIMIT: u64 = 100;
+pub const VOUCHER_OBJECTS_LIMIT: u64 = 20;
+pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
+pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
+pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 10;
 
 impl crate::Trait for Test {
     type Event = TestEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
-    type DistributionBucketId = u64;
+    type DistributionBucketIndex = u64;
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
@@ -96,7 +102,6 @@ impl crate::Trait for Test {
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;

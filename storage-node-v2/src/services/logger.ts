@@ -84,12 +84,12 @@ export default proxy
 
 /**
  * Creates Express-Winston logger handler.
- *
+ * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint (optional).
  * @returns  Express-Winston logger handler
  *
  */
-export function httpLogger(elasticSearchEndpoint?: string): Handler {
+export function httpLogger(logSource: string, elasticSearchEndpoint?: string): Handler {
   // ElasticSearch server date format.
   const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
 
@@ -100,7 +100,7 @@ export function httpLogger(elasticSearchEndpoint?: string): Handler {
   ]
 
   if (elasticSearchEndpoint) {
-    const esTransport = createElasticTransport(elasticSearchEndpoint)
+    const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
     transports.push(esTransport)
   }
 
@@ -147,11 +147,12 @@ export function createStdConsoleLogger(): winston.Logger {
 }
 /**
  * Creates Winston logger with Elastic search.
- *
+ * @param logSource - source tag for log entries.
+ * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns Winston logger
  *
  */
-function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
+function createElasticLogger(logSource: string, elasticSearchEndpoint: string): winston.Logger {
   const loggerOptions = createDefaultLoggerOptions()
 
   // Transports
@@ -160,7 +161,7 @@ function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
     transports = Array.isArray(loggerOptions.transports) ? loggerOptions.transports : [loggerOptions.transports]
   }
 
-  const esTransport = createElasticTransport(elasticSearchEndpoint)
+  const esTransport = createElasticTransport(logSource, elasticSearchEndpoint)
   transports.push(esTransport)
 
   // Logger
@@ -179,19 +180,21 @@ function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
 /**
  * Updates the default system logger with elastic search capabilities.
  *
+ * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  */
-export function initElasticLogger(elasticSearchEndpoint: string): void {
-  InnerLogger = createElasticLogger(elasticSearchEndpoint)
+export function initElasticLogger(logSource: string, elasticSearchEndpoint: string): void {
+  InnerLogger = createElasticLogger(logSource, elasticSearchEndpoint)
 }
 
 /**
  * Creates winston logger transport for the elastic search engine.
  *
+ * @param logSource - source tag for log entries.
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns elastic search winston transport
  */
-function createElasticTransport(elasticSearchEndpoint: string): winston.transport {
+function createElasticTransport(logSource: string, elasticSearchEndpoint: string): winston.transport {
   const possibleLevels = ['warn', 'error', 'debug', 'info']
 
   let elasticLogLevel = process.env.ELASTIC_LOG_LEVEL ?? ''
@@ -206,6 +209,7 @@ function createElasticTransport(elasticSearchEndpoint: string): winston.transpor
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
     index: 'storage-node',
     format: ecsformat(),
+    source: logSource,
   }
   return new ElasticsearchTransport(esTransportOpts)
 }

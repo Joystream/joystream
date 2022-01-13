@@ -161,11 +161,9 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     return [openingJson, hrtJson]
   }
 
-  async run() {
-    const account = await this.getRequiredSelectedAccount()
+  async run(): Promise<void> {
     // lead-only gate
-    const lead = await this.getRequiredLead()
-    await this.requestAccountDecoding(account) // Prompt for password
+    const lead = await this.getRequiredLeadContext()
 
     const {
       flags: { input, output, edit, dryRun },
@@ -218,7 +216,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       this.log(chalk.magentaBright('Sending the extrinsic...'))
       try {
         await this.sendAndFollowTx(
-          account,
+          await this.getDecodedPair(lead.roleAccount),
           this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
         )
         this.log(chalk.green('Opening successfully created!'))
