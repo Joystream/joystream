@@ -54,6 +54,7 @@ export class ContentMigration {
     const forcedChannelOwner = await this.getForcedChannelOwner()
     const assetsManager = await AssetsManager.create({
       api,
+      queryNodeApi,
       config,
     })
     const { idsMap: channelsMap, videoIds } = await new ChannelMigration({
