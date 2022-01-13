@@ -141,9 +141,9 @@ pub trait Trait:
     frame_system::Trait
     + ContentActorAuthenticator
     + Clone
-    + StorageOwnership
     + MembershipTypes
     + balances::Trait
+    + storage::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -442,7 +442,7 @@ pub struct VideoRecord<ChannelId, SeriesId, PostId> {
 }
 
 pub type Video<T> =
-    VideoRecord<<T as StorageOwnership>::ChannelId, <T as Trait>::SeriesId, <T as Trait>::PostId>;
+    VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId, <T as Trait>::PostId>;
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -1362,7 +1362,9 @@ decl_module! {
             }
 
             // bloat bond logic: channel owner is refunded
-            Self::video_deletion_cleanup_logic(&sender, video_id)?;
+            video.video_post_id.as_ref().map(
+                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
+            ).transpose()?;
 
             //
             // == MUTATION SAFE ==
@@ -1795,7 +1797,7 @@ decl_module! {
         ) {
             // post existence verification purposely avoided
             let sender = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&member_id, &sender)?;
+            ensure_member_auth_success::<T>(&sender, &member_id)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1813,7 +1815,7 @@ decl_module! {
         ) {
             // video existence verification purposely avoided
             let sender = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&member_id, &sender)?;
+            ensure_member_auth_success::<T>(&sender, &member_id)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1830,11 +1832,12 @@ decl_module! {
             channel_id: T::ChannelId
         ) {
             // ensure (origin, actor) is channel owner
+            let sender = ensure_signed(origin)?;
             let owner = Self::ensure_channel_exists(&channel_id)?.owner;
-            ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+
+            ensure_actor_authorized_to_update_mod_set::<T>(
+                &sender,
                 &actor,
-                // The channel owner will be..
                 &owner,
             )?;
 
@@ -1915,18 +1918,6 @@ impl<T: Trait> Module<T> {
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
-    fn pick_content_parameters_from_assets(
-        assets: &[NewAsset<ContentParameters<T>>],
-    ) -> Vec<ContentParameters<T>> {
-        assets
-            .iter()
-            .filter_map(|asset| match asset {
-                NewAsset::Upload(content_parameters) => Some(content_parameters.clone()),
-                _ => None,
-            })
-            .collect()
-    }
-
     fn ensure_post_exists(video_id: T::VideoId, post_id: T::PostId) -> Result<Post<T>, Error<T>> {
         ensure!(
             PostById::<T>::contains_key(video_id, post_id),
@@ -1969,16 +1960,13 @@ impl<T: Trait> Module<T> {
         BagIdType::from(dyn_bag)
     }
 
-    fn not_implemented() -> DispatchResult {
-        Err(Error::<T>::FeatureNotImplemented.into())
-    }
-
-    fn video_deletion_cleanup_logic(sender: &T::AccountId, video_id: T::VideoId) -> DispatchResult {
-        if <VideoPostIdByVideoId<T>>::contains_key(video_id) {
-            let post_id = <VideoPostIdByVideoId<T>>::get(video_id);
-            let bloat_bond = <PostById<T>>::get(video_id, post_id).bloat_bond;
-            Self::refund(&sender, CleanupActor::PostAuthor, bloat_bond)?;
-        }
+    fn video_deletion_refund_logic(
+        sender: &T::AccountId,
+        video_id: &T::VideoId,
+        video_post_id: &T::PostId,
+    ) -> DispatchResult {
+        let bloat_bond = <PostById<T>>::get(video_id, video_post_id).bloat_bond;
+        Self::refund(&sender, CleanupActor::PostAuthor, bloat_bond)?;
         Ok(())
     }
 
