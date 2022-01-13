@@ -179,9 +179,6 @@ type BountyEntry @entity {
   "Member which submitted the work entry"
   worker: Membership!
 
-  "Stake used to announce the work entry."
-  stake: BigInt!
-
   "Staking account with the work entry stake"
   stakingAccount: String
 
