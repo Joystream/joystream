@@ -47,6 +47,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
     '--endpoint',
     'http://localhost:3333',
   ])
+  await cli.run('leader:update-data-fee', ['-f', '0'])
 
   debug('Done')
 }
