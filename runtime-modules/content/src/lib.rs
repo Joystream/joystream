@@ -798,7 +798,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
-            let channel = Self::ensure_channel_validity(&channel_id)?;
+            let mut channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,

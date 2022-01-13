@@ -885,7 +885,7 @@ fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
-                    size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
+                    size: <Test as storage::Trait>::MaxDataObjectSize::get() + 1,
                     ipfs_content_id: vec![1u8],
                 }],
             })
@@ -901,8 +901,8 @@ fn unsuccessful_video_update_with_invalid_object_ids() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
-        let invalid_objects_ids = ((2 * DATA_OBJECTS_NUMBER as u64)
-            ..(3 * DATA_OBJECTS_NUMBER as u64 - 1))
+        let invalid_objects_ids = (1..DATA_OBJECTS_NUMBER)
+            .map(|i| Storage::<Test>::next_data_object_id() + i)
             .collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
@@ -1129,8 +1129,8 @@ fn unsuccessful_video_deletion_with_invalid_object_ids() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
-        let invalid_objects_ids = ((2 * DATA_OBJECTS_NUMBER as u64)
-            ..(3 * DATA_OBJECTS_NUMBER as u64 - 1))
+        let invalid_objects_ids = (1..DATA_OBJECTS_NUMBER)
+            .map(|i| Storage::<Test>::next_data_object_id() + i)
             .collect::<BTreeSet<_>>();
 
         DeleteVideoFixture::default()
