@@ -7,18 +7,18 @@ import { bountyScheduleWorkSubmissionEnd, bountyScheduleFundingEnd, bountySchedu
 let isSchedulerRunning = false
 let toBeScheduled: [number, () => void][] = []
 
-export async function launchScheduler({ store }: StoreContext) {
+export async function launchScheduler({ store }: StoreContext): Promise<void> {
   if (!isSchedulerRunning) {
     runScheduler()
     await scheduleMissedMappings(store)
   }
 }
 
-export function scheduleAtBlock(blockNumber: number, job: () => void) {
+export function scheduleAtBlock(blockNumber: number, job: () => void): void {
   toBeScheduled.push([blockNumber, job])
 }
 
-function runScheduler() {
+function runScheduler(): void {
   isSchedulerRunning = true
   const scheduleRecord: { [n: number]: (() => void)[] } = {}
 
@@ -41,7 +41,7 @@ function runScheduler() {
   })
 }
 
-async function scheduleMissedMappings(store: DatabaseManager) {
+async function scheduleMissedMappings(store: DatabaseManager): Promise<void> {
   // Reschedule mappings lost while the processor was off
 
   // Bounty stage updates

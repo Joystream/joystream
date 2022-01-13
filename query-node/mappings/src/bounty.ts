@@ -43,7 +43,7 @@ function fundingPeriodEnd(bounty: Bounty): number {
  * Schedule Periods changes
  */
 
-export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty) {
+export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty): void {
   const { fundingType } = bounty
   if (bounty.stage !== BountyStage.Funding || !isBountyFundingLimited(fundingType)) return
 
@@ -56,7 +56,7 @@ export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty)
   })
 }
 
-export function bountyScheduleWorkSubmissionEnd(store: DatabaseManager, bounty: Bounty) {
+export function bountyScheduleWorkSubmissionEnd(store: DatabaseManager, bounty: Bounty): void {
   if (bounty.stage !== BountyStage.WorkSubmission) return
 
   const workingPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod
@@ -67,7 +67,7 @@ export function bountyScheduleWorkSubmissionEnd(store: DatabaseManager, bounty: 
   })
 }
 
-export function bountyScheduleJudgementEnd(store: DatabaseManager, bounty: Bounty) {
+export function bountyScheduleJudgementEnd(store: DatabaseManager, bounty: Bounty): void {
   if (bounty.stage !== BountyStage.Judgment) return
 
   const judgementPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod + bounty.judgingPeriod
@@ -80,7 +80,7 @@ export function bountyScheduleJudgementEnd(store: DatabaseManager, bounty: Bount
   })
 }
 
-function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = true) {
+function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = true): Promise<void> {
   bounty.updatedAt = new Date()
   if (isFunded) {
     bounty.stage = BountyStage.WorkSubmission
@@ -91,7 +91,7 @@ function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = tru
   return store.save<Bounty>(bounty)
 }
 
-function endWorkingPeriod(store: DatabaseManager, bounty: Bounty) {
+function endWorkingPeriod(store: DatabaseManager, bounty: Bounty): Promise<void> {
   bounty.updatedAt = new Date()
   if (bounty.entries?.length) {
     bounty.stage = BountyStage.Judgment
