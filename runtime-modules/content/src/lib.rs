@@ -697,7 +697,7 @@ decl_module! {
         ) {
             // ensure migration is done
             ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
-            
+
             // channel creator account
             let sender = ensure_signed(origin)?;
 
