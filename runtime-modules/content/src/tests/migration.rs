@@ -120,19 +120,18 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
 #[test]
 fn migration_test() {
     with_default_mock_builder(|| {
-        const START_MIGRATION_AT_BLOCK: u64 = 1;
         run_to_block(START_MIGRATION_AT_BLOCK);
 
         // setup scenario
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_initial_storage_buckets_helper();
-        let (blocks_channels, blocks_videos) =
-            create_default_member_owned_channels_with_videos(NUMBER_OF_CHANNELS_VIDEOS);
+        let (blocks_channels, blocks_videos) = create_default_member_owned_channels_with_videos();
 
         // block at which all migrations should be completed
         let last_migration_block = std::cmp::max(blocks_channels, blocks_videos);
 
         // ensure we have setup scenario to properly test migration over multiple blocks
+        println!("last migration block:\t{:?}", last_migration_block);
         assert!(last_migration_block > START_MIGRATION_AT_BLOCK);
 
         // triggering migration

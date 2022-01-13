@@ -451,7 +451,13 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            // balance necessary to create channel + video with specified no. of assets
+            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
+        );
+
         create_default_member_owned_channel();
 
         CreateVideoFixture::default()
@@ -853,7 +859,13 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            // balance necessary to create channel with video + video with specified no. of assets
+            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER * 2,
+        );
+
         create_default_member_owned_channel_with_video();
 
         UpdateVideoFixture::default()
