@@ -1,6 +1,6 @@
 name: kubernetes-cluster
 runtime: nodejs
-description: A Pulumi program to create a Kubernetes cluster on local or a cloud environment
+description: A Pulumi program to create a Kubernetes cluster on a cloud environment
 template:
   config:
     aws:profile:
@@ -8,7 +8,7 @@ template:
     aws:region:
       default: us-east-1
     platform:
-      description: Platform on which you want to deploy the Kubernetes cluster e.g. minikube, aws
+      description: Platform on which you want to deploy the Kubernetes cluster e.g. aws
     instanceType:
       description: Instance type to be deployed
       default: t2.medium
