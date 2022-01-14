@@ -21,7 +21,7 @@ fn channel_censoring() {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
-                moderators: BTreeSet::new(),
+                moderator_set: BTreeSet::new(),
             }
         ));
 
@@ -476,7 +476,7 @@ fn successful_channel_update_with_assets_uploaded_by_collaborator() {
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -496,7 +496,7 @@ fn successful_channel_update_with_assets_removed_by_collaborator() {
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             // data objects ids start at index 1
             .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
             .call_and_assert(Ok(()));
@@ -680,9 +680,7 @@ fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_collaborator
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(
-                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
-            ))
+            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -702,9 +700,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_collaborator(
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(
-                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
-            ))
+            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
             // data objects ids start at index 1
             .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
@@ -926,7 +922,7 @@ fn unsuccessful_channel_update_with_collaborators_set_updated_by_collaborator() 
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_collaborators(BTreeSet::new())
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
@@ -1071,7 +1067,7 @@ fn unsuccessful_channel_update_with_reward_account_updated_by_collaborator() {
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_reward_account(Some(None))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
@@ -1347,7 +1343,7 @@ fn unsuccessful_channel_deletion_by_collaborator() {
 
         DeleteChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }

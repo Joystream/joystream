@@ -219,7 +219,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
         ContentActor::Curator(..) => {
             ensure!(
                 !ensure_channel_is_owned_by_curators::<T>(owner).is_ok(),
-                Error::<T>::ActorNotAuthorized,
+                Error::<T>::CannotCensoreCuratorGroupOwnedChannels,
             );
             Ok(())
         }

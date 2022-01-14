@@ -3,24 +3,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use sp_runtime::DispatchError;
 use sp_std::cmp::min;
-
-// constants used
-pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 40;
-pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = 400;
-pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = 10;
-pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 = 100;
-pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
-pub const DATA_OBJECTS_NUMBER: u8 = 2;
-
-// type aliases
-pub type AccountId = <Test as frame_system::Trait>::AccountId;
-pub type VideoId = <Test as Trait>::VideoId;
-pub type PostId = <Test as Trait>::PostId;
-type MemberId = <Test as MembershipTypes>::MemberId;
-type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
-type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 
 // fixtures
 pub struct CreateChannelFixture {
@@ -72,6 +55,16 @@ impl CreateChannelFixture {
         }
     }
 
+    pub fn with_moderators(self, moderator_set: BTreeSet<MemberId>) -> Self {
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                moderator_set: moderator_set,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn with_reward_account(self, reward_account: AccountId) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
@@ -84,7 +77,7 @@ impl CreateChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let channel_id = Content::next_channel_id();
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -94,7 +87,7 @@ impl CreateChannelFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
 
         if actual_result.is_ok() {
             // ensure channel is on chain
@@ -110,7 +103,7 @@ impl CreateChannelFixture {
             assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
 
             // event correctly deposited
-            let owner = Content::actor_to_channel_owner(&self.actor).unwrap();
+            let owner = actor_to_channel_owner::<Test>(&self.actor).unwrap();
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelCreated(
@@ -121,6 +114,7 @@ impl CreateChannelFixture {
                         is_censored: false,
                         reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
+                        moderator_set: self.params.moderator_set.clone(),
                         num_videos: Zero::zero(),
                     },
                     self.params.clone(),
@@ -174,6 +168,7 @@ impl CreateVideoFixture {
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
+                enable_comments: true,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
@@ -203,7 +198,7 @@ impl CreateVideoFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let channel_bag_id = Content::bag_id_for_channel(&self.channel_id);
         let video_id = Content::next_video_id();
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -215,7 +210,7 @@ impl CreateVideoFixture {
             self.params.clone(),
         );
 
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
 
         assert_eq!(actual_result, expected_result);
@@ -353,7 +348,7 @@ impl UpdateChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
@@ -395,7 +390,7 @@ impl UpdateChannelFixture {
 
         let channel_post = Content::channel_by_id(&self.channel_id);
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
 
         assert_eq!(actual_result, expected_result);
 
@@ -421,6 +416,7 @@ impl UpdateChannelFixture {
                                 .clone()
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
+                            moderator_set: channel_pre.moderator_set,
                         },
                         self.params.clone(),
                     ))
@@ -472,6 +468,7 @@ impl UpdateVideoFixture {
             params: VideoUpdateParameters::<Test> {
                 assets_to_upload: None,
                 assets_to_remove: BTreeSet::new(),
+                enable_comments: None,
                 new_meta: None,
             },
         }
@@ -510,7 +507,7 @@ impl UpdateVideoFixture {
     }
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let video_pre = Content::video_by_id(&self.video_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -550,7 +547,7 @@ impl UpdateVideoFixture {
         );
 
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
         let video_post = Content::video_by_id(&self.video_id);
 
         assert_eq!(actual_result, expected_result);
@@ -634,7 +631,7 @@ impl DeleteChannelFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
         let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
             .deletion_prize
@@ -657,7 +654,7 @@ impl DeleteChannelFixture {
             self.num_objects_to_delete,
         );
 
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
@@ -822,6 +819,10 @@ impl EditPostTextFixture {
         Self { post_id, ..self }
     }
 
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
@@ -914,6 +915,8 @@ impl DeletePostFixture {
             self.params.clone(),
         );
 
+        assert_eq!(actual_result, expected_result);
+
         let balance_post = Balances::<Test>::usable_balance(&self.sender);
         match actual_result {
             Ok(()) => {
@@ -951,7 +954,7 @@ impl DeletePostFixture {
             }
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::PostDoesntExist {
+                if err != Error::<Test>::PostDoesNotExist.into() {
                     assert_eq!(Content::post_by_id(&self.video_id, &self.post_id), post);
                     match &post.post_type {
                         PostType::<Test>::Comment(parent_id) => {
@@ -1009,7 +1012,7 @@ impl DeleteVideoFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let video_pre = <VideoById<Test>>::get(&self.video_id);
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
         let deletion_prize =
@@ -1027,7 +1030,7 @@ impl DeleteVideoFixture {
             self.assets_to_remove.clone(),
         );
 
-        let balance_post = Balances::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
 
         assert_eq!(actual_result, expected_result);
 
@@ -1071,7 +1074,7 @@ impl DeleteVideoFixture {
 }
 
 // helper functions
-pub fn increase_account_balance_helper(account_id: u64, balance: u32) {
+pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }
 
@@ -1132,6 +1135,7 @@ pub fn create_default_member_owned_channel() {
         })
         .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
 }
 
@@ -1146,6 +1150,7 @@ pub fn create_default_curator_owned_channel() {
         })
         .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
 }
 

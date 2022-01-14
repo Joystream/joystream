@@ -7,6 +7,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
     let params = VideoCreationParametersRecord {
         assets: None,
         meta: None,
+        enable_comments: true,
     };
 
     // attempt to create valid channel if result is ok, otherwise id does not matter
@@ -32,6 +33,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
                 meta: Some(vec![]),
                 reward_account: None,
                 collaborators: BTreeSet::new(),
+                moderator_set: BTreeSet::new(),
             },
         ),
         result
@@ -70,6 +72,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
                 assets_to_upload: None,
                 new_meta: Some(vec![]),
                 assets_to_remove: BTreeSet::new(),
+                enable_comments: None,
             },
         ),
         result
@@ -88,8 +91,8 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
 
     assert_eq!(
         Content::update_video_censorship_status(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Origin::signed(LEAD_ACCOUNT_ID),
+            ContentActor::Lead,
             video_id.clone(),
             false,
             b"test".to_vec()

@@ -1656,7 +1656,7 @@ decl_module! {
             let sender = ensure_signed(origin.clone())?;
 
             // ensure channel is valid
-            let video = Self::ensure_video_exists(&params.video_reference)?;
+            let video = Self::ensure_video_validity(&params.video_reference)?;
             let owner = ChannelById::<T>::get(video.in_channel).owner;
 
             match params.post_type {
@@ -1864,7 +1864,7 @@ decl_module! {
         ) {
             // ensure (origin, actor) is channel owner
             let sender = ensure_signed(origin)?;
-            let owner = Self::ensure_channel_exists(&channel_id)?.owner;
+            let owner = Self::ensure_channel_validity(&channel_id)?.owner;
 
             ensure_actor_authorized_to_update_mod_set::<T>(
                 &sender,

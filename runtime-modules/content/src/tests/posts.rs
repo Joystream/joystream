@@ -8,6 +8,9 @@ use crate::*;
 #[test]
 pub fn unsuccessful_post_creation_with_member_auth_failed() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
@@ -20,7 +23,10 @@ pub fn unsuccessful_post_creation_with_member_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_curator_auth_failed() {
     with_default_mock_builder(|| {
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
@@ -37,6 +43,10 @@ pub fn unsuccessful_post_creation_with_curator_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_lead_auth_failed() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
 
@@ -50,7 +60,12 @@ pub fn unsuccessful_post_creation_with_lead_auth_failed() {
 #[test]
 pub fn unsuccessful_post_creation_with_insufficient_balance() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
+        slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
 
         CreatePostFixture::default().call_and_assert(Err(Error::<Test>::InsufficientBalance.into()))
     })
@@ -59,6 +74,9 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
 #[test]
 pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
@@ -72,9 +90,13 @@ pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
 #[test]
 pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
-        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
 
+        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
@@ -89,7 +111,11 @@ pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
 #[test]
 pub fn unsuccessful_post_creation_with_lead() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
 
         CreatePostFixture::default()
@@ -102,6 +128,10 @@ pub fn unsuccessful_post_creation_with_lead() {
 #[test]
 pub fn unsuccessful_post_creation_with_invalid_video_id() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default()
@@ -117,6 +147,7 @@ pub fn unsuccessful_post_creation_with_invalid_video_id() {
 pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
 
@@ -133,6 +164,8 @@ pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
 pub fn successful_post_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
@@ -144,6 +177,8 @@ pub fn successful_post_creation_by_member() {
 pub fn successful_post_creation_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
         let default_curator_group_id = Content::next_curator_group_id() - 1;
@@ -162,6 +197,8 @@ pub fn successful_post_creation_by_curator() {
 pub fn successful_comment_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
@@ -182,6 +219,8 @@ pub fn successful_comment_creation_by_member() {
 pub fn successful_comment_creation_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
@@ -207,6 +246,8 @@ pub fn successful_comment_creation_by_curator() {
 pub fn successful_comment_creation_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
 
@@ -229,6 +270,8 @@ pub fn successful_comment_creation_by_lead() {
 pub fn unsuccessful_post_update_with_member_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -242,6 +285,8 @@ pub fn unsuccessful_post_update_with_member_auth_failed() {
 pub fn unsuccessful_post_update_with_curator_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -260,6 +305,8 @@ pub fn unsuccessful_post_update_with_curator_auth_failed() {
 pub fn unsuccessful_post_update_with_lead_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
 
@@ -285,6 +332,8 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
 pub fn unsuccessful_post_update_with_invalid_post_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -298,6 +347,8 @@ pub fn unsuccessful_post_update_with_invalid_post_id() {
 pub fn unsuccessful_post_update_with_invalid_video_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -311,6 +362,8 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
 pub fn unsuccessful_post_update_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
@@ -326,6 +379,8 @@ pub fn unsuccessful_post_update_by_member_not_channel_owner() {
 pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -344,6 +399,8 @@ pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
 pub fn unsuccessful_comment_update_by_member_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
@@ -360,6 +417,8 @@ pub fn unsuccessful_comment_update_by_member_not_author() {
 pub fn unsuccessful_comment_update_by_curator_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
@@ -380,6 +439,8 @@ pub fn unsuccessful_comment_update_by_curator_not_author() {
 pub fn unsuccessful_comment_update_by_lead_not_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
@@ -396,6 +457,8 @@ pub fn unsuccessful_comment_update_by_lead_not_author() {
 pub fn successful_comment_update_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -409,6 +472,8 @@ pub fn successful_comment_update_by_member() {
 pub fn successful_comment_update_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -428,6 +493,8 @@ pub fn successful_comment_update_by_curator() {
 pub fn successful_comment_update_by_lead() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
 
@@ -453,6 +520,8 @@ pub fn successful_comment_update_by_lead() {
 pub fn successful_post_update_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -464,6 +533,8 @@ pub fn successful_post_update_by_member() {
 pub fn successful_post_update_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -483,6 +554,8 @@ pub fn successful_post_update_by_curator() {
 pub fn unsuccessful_post_deletion_with_member_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
 
@@ -496,6 +569,8 @@ pub fn unsuccessful_post_deletion_with_member_auth_failed() {
 pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
 
@@ -514,6 +589,8 @@ pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
 pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
 
@@ -539,6 +616,8 @@ pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
 pub fn unsuccessful_post_deletion_with_invalid_post_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
 
@@ -552,6 +631,8 @@ pub fn unsuccessful_post_deletion_with_invalid_post_id() {
 pub fn unsuccessful_post_deletion_with_invalid_video_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
 
@@ -565,6 +646,8 @@ pub fn unsuccessful_post_deletion_with_invalid_video_id() {
 pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
@@ -580,6 +663,8 @@ pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
 pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
 
@@ -598,6 +683,8 @@ pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
 pub fn unsuccessful_post_deletion_with_invalid_witness() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -610,6 +697,8 @@ pub fn unsuccessful_post_deletion_with_invalid_witness() {
 pub fn unsuccessful_post_deletion_with_no_witness() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -626,6 +715,8 @@ pub fn unsuccessful_post_deletion_with_no_witness() {
 pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -641,6 +732,8 @@ pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
 pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -660,6 +753,8 @@ pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
 pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
@@ -676,6 +771,8 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
 pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -691,6 +788,8 @@ pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
 pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -710,6 +809,8 @@ pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
 pub fn successful_post_deletion_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -728,6 +829,8 @@ pub fn successful_post_deletion_by_member() {
 pub fn successful_post_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -752,6 +855,8 @@ pub fn successful_post_deletion_by_curator() {
 pub fn successful_comment_deletion_by_member_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
@@ -771,6 +876,8 @@ pub fn successful_comment_deletion_by_member_owner() {
 pub fn successful_comment_deletion_by_curator_onwer() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_comment();
 
@@ -796,6 +903,8 @@ pub fn successful_comment_deletion_by_curator_onwer() {
 pub fn successful_comment_deletion_by_member_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video_and_post();
@@ -823,6 +932,8 @@ pub fn successful_comment_deletion_by_member_author() {
 pub fn successful_comment_deletion_by_curator_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
@@ -862,6 +973,8 @@ pub fn successful_comment_deletion_by_curator_author() {
 pub fn successful_comment_deletion_by_lead_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_post();
@@ -893,6 +1006,8 @@ pub fn successful_comment_deletion_by_lead_author() {
 pub fn successful_comment_deletion_by_moderator() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 

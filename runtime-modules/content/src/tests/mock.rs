@@ -21,6 +21,9 @@ pub type Content = Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 //pub type Balances = balances::Module<Test>;
 
+pub type AccountId = <Test as frame_system::Trait>::AccountId;
+pub type VideoId = <Test as Trait>::VideoId;
+pub type PostId = <Test as Trait>::PostId;
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
@@ -552,6 +555,3 @@ pub fn run_to_block(n: u64) {
         <Content as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
-
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-pub type Balances = balances::Module<Test>;
