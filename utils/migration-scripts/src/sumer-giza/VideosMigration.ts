@@ -37,7 +37,7 @@ export class VideosMigration extends AssetsMigration {
     this.channelsMap = params.channelsMap
     this.videoIds = params.videoIds
     this.forcedChannelOwner = params.forcedChannelOwner
-    this.logger = createLogger(this.name)
+    this.logger = createLogger(this.name, this.config.logLevel)
   }
 
   private getNewChannelId(oldChannelId: number): number {
@@ -85,12 +85,12 @@ export class VideosMigration extends AssetsMigration {
       const alreadyMigratedVideosNum = videoIds.length - idsToMigrate.length
       this.logger.info(
         (idsToMigrate.length ? `${alreadyMigratedVideosNum}/${videoIds.length}` : 'All') +
-          ' videos already migrated, skippping...'
+          ' videos already migrated.'
       )
     }
     while (idsToMigrate.length) {
       const idsBatch = idsToMigrate.splice(0, videoBatchSize)
-      this.logger.info(`Fetching a batch of ${idsBatch.length} videos...`)
+      this.logger.info(`Fetching ${idsBatch.length} video(s)`)
       const videosBatch = (await this.queryNodeApi.getVideosByIds(idsBatch)).sort(
         (a, b) => parseInt(a.id) - parseInt(b.id)
       )

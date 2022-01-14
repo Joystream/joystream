@@ -28,6 +28,11 @@ export class RetryFailedUploadsCommand extends Command {
       description: 'Path to failed uploads file',
       required: true,
     }),
+    logLevel: flags.string({
+      char: 'l',
+      description: 'Set log level: [error|warn|info|debug] [default: info]',
+      default: process.env.DEBUG ? 'debug' : 'info',
+    }),
   }
 
   async run(): Promise<void> {

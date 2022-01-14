@@ -39,7 +39,7 @@ export class ChannelMigration extends AssetsMigration {
     super(params)
     this.config = params.config
     this.forcedChannelOwner = params.forcedChannelOwner
-    this.logger = createLogger(this.name)
+    this.logger = createLogger(this.name, this.config.logLevel)
   }
 
   private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment): AccoundId | number {
@@ -90,7 +90,7 @@ export class ChannelMigration extends AssetsMigration {
     const ids = channelIds.sort((a, b) => a - b)
     while (ids.length) {
       const idsBatch = ids.splice(0, channelBatchSize)
-      this.logger.info(`Fetching a batch of ${idsBatch.length} channels...`)
+      this.logger.info(`Fetching ${idsBatch.length} channel(s)`)
       const channelsBatch = (await this.queryNodeApi.getChannelsByIds(idsBatch)).sort(
         (a, b) => parseInt(a.id) - parseInt(b.id)
       )

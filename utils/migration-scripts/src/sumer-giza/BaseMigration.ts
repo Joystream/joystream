@@ -84,23 +84,23 @@ export abstract class BaseMigration {
 
   protected onExit(exitCode: number | null, signal: string | null): void | false {
     nodeCleanup.uninstall() // don't call cleanup handler again
-    this.logger.info('Exitting...')
+    this.logger.debug('Exiting...')
+    const save = (kill: boolean = false) => {
+      this.saveMigrationState(true)
+      this.logger.debug('Done.')
+      if (kill) process.kill(process.pid, signal)
+    }
     if (signal && this.pendingMigrationIteration) {
-      this.logger.info('Waiting for currently pending migration iteration to finalize...')
-      this.pendingMigrationIteration.then(() => {
-        this.saveMigrationState(true)
-        this.logger.info('Done.')
-        process.kill(process.pid, signal)
-      })
+      this.logger.info('Waiting for currently pending migration iteration to finalize.')
+      this.pendingMigrationIteration.then(() => save(true))
       return false
     } else {
-      this.saveMigrationState(true)
-      this.logger.info('Done.')
+      save()
     }
   }
 
-  protected saveMigrationState(isExitting: boolean): void {
-    this.logger.info(`Saving ${isExitting ? 'final' : 'intermediate'} migration state...`)
+  protected saveMigrationState(isExiting: boolean): void {
+    this.logger.debug(`Saving ${isExiting ? 'final' : 'intermediate'} migration state.`)
     const stateFilePath = this.getMigrationStateFilePath()
     const migrationState = this.getMigrationStateJson()
     fs.writeFileSync(stateFilePath, JSON.stringify(migrationState, undefined, 2))

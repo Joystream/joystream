@@ -8,9 +8,9 @@ const colors = {
 }
 winston.addColors(colors)
 
-export function createLogger(label: string): Logger {
+export function createLogger(label: string, level: string = 'debug'): Logger {
   return winston.createLogger({
-    level: process.env.DEBUG ? 'debug' : 'info',
+    level,
     transports: [new winston.transports.Console()],
     defaultMeta: { label },
     format: winston.format.combine(
