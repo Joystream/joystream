@@ -11,6 +11,7 @@ import {
   BountyFundedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
+  BountyMaxFundingReachedEvent,
   BountyStage,
   BountyVetoedEvent,
   ForumThread,
@@ -232,4 +233,19 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   const fundedEvent = new BountyFundedEvent({ ...genericEventFields(event), contribution })
 
   await store.save<BountyFundedEvent>(fundedEvent)
+}
+
+// Store BountyMaxFundingReached event and update the bounty stage
+export async function bounty_BountyMaxFundingReached({ event, store }: EventContext & StoreContext): Promise<void> {
+  const maxFundingReachedEvent = new BountyEvents.BountyMaxFundingReachedEvent(event)
+  const [bountyId] = maxFundingReachedEvent.params
+
+  // Record the event
+  const bounty = new Bounty({ id: String(bountyId) })
+  const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })
+
+  await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
+
+  // Update the bounty stage
+  endFundingPeriod(store, bounty)
 }
