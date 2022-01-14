@@ -37,9 +37,6 @@ decl_error! {
         /// Member authentication failed
         MemberAuthFailed,
 
-        /// Member id not valid
-        CollaboratorIsNotValidMember,
-
         /// Curator authentication failed
         CuratorAuthFailed,
 
@@ -114,5 +111,8 @@ decl_error! {
 
         /// Insufficient treasury balance
         InsufficientTreasuryBalance,
+
+        /// Invalid member id  specified
+        InvalidMemberProvided,
     }
 }

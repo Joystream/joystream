@@ -367,7 +367,7 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::CollaboratorIsNotValidMember.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }
 
@@ -1179,7 +1179,7 @@ fn unsuccessful_channel_update_with_invalid_collaborators_set() {
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::CollaboratorIsNotValidMember.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }
 

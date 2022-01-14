@@ -1026,12 +1026,115 @@ pub fn successful_comment_deletion_by_moderator() {
 }
 
 #[test]
-pub fn successful_comment_deletion_by_moderator() {
+pub fn unsuccessful_moderators_update_by_unauthorized_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_by_unauthorized_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        UpdateModeratorSetFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                unauthorized_curator_group_id,
+                UNAUTHORIZED_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_with_member_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_with_curator_auth_failed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        UpdateModeratorSetFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_with_invalid_members_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_moderators(vec![DEFAULT_MODERATOR_ID + 1].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
+    })
+}
+
+#[test]
+pub fn successful_moderators_update_by_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_channel_id(ChannelId::zero())
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
     })
 }

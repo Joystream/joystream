@@ -2135,11 +2135,10 @@ impl<T: Trait> Module<T> {
         let res = members
             .iter()
             .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
-        ensure!(res, Error::<T>::CollaboratorIsNotValidMember);
+        ensure!(res, Error::<T>::InvalidMemberProvided);
         Ok(())
     }
 }
-
 // Giza:
 // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
 impl<T: Trait> Module<T> {

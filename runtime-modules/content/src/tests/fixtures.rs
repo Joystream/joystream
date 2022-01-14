@@ -1122,7 +1122,7 @@ impl UpdateModeratorSetFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let channel_post = ChannelById::get(&self.channel_id);
+        let channel_post = ChannelById::<Test>::get(&self.channel_id);
 
         if actual_result.is_ok() {
             assert_eq!(
