@@ -1313,73 +1313,73 @@ decl_module! {
             origin,
             new_commitment: <T as frame_system::Trait>::Hash,
         ) {
-        ensure_root(origin)?;
+            ensure_root(origin)?;
             let old_commitment = <Commitment<T>>::get();
             if old_commitment == new_commitment { return Ok(()) }
             <Commitment<T>>::put(new_commitment);
             Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
 
-    #[weight = 10_000_000]
-    pub fn claim_channel_reward(
+        #[weight = 10_000_000]
+        pub fn claim_channel_reward(
             origin,
             proof: PullPaymentProof<T>,
-        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) {
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        ) {
+            let elem = &proof.leaf;
+            let channel = Self::ensure_channel_exists(&elem.channel_id)?;
 
-        let elem = &proof.leaf;
-        let channel = Self::ensure_channel_exists(&elem.channel_id)?;
+            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
-        ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
+            let cashout = elem
+                .amount_due
+                .checked_sub(&channel.cumulative_reward)
+                .ok_or("uinteger underflow")?;
 
-        let cashout = elem
-            .amount_due
-            .checked_sub(&channel.cumulative_reward)
-            .ok_or("uinteger underflow")?;
+            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
+            ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
+            ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
 
-        ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
-        ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
-        ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
+            // value is transferred to the reward account if Some
+            let reward_acc = channel.reward_account.clone().ok_or("No reward account found")?;
 
-        // value is transferred to the reward account if Some
-        let reward_acc = channel.reward_account.clone().ok_or("No reward account found")?;
+            // new reward computation
+            let new_reward = channel
+                .cumulative_reward
+                .checked_add(&elem.amount_due)
+                .ok_or("balance value overflow")?;
 
-        // new reward computation
-        let new_reward = channel
-            .cumulative_reward
-            .checked_add(&elem.amount_due)
-            .ok_or("balance value overflow")?;
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //
-        // == MUTATION SAFE ==
-        //
+            // update
+            let mut channel = channel;
+            channel.cumulative_reward = new_reward;
 
-        // update
-        let mut channel = channel;
-        channel.cumulative_reward = new_reward;
+            Self::transfer_reward(cashout, &reward_acc);
+            ChannelById::<T>::take(elem.channel_id);
+            ChannelById::<T>::insert(elem.channel_id, channel);
 
-        Self::transfer_reward(cashout, &reward_acc);
-        ChannelById::<T>::take(elem.channel_id);
-        ChannelById::<T>::insert(elem.channel_id, channel);
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
+        }
 
-        // deposit event
-        Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
+        #[weight = 10_000_000]
+        pub fn update_max_reward_allowed(origin, amount: minting::BalanceOf<T>) {
+            // Root origin which describes a call that comes from within the runtime itself
+            ensure_root(origin)?;
+            <MaxRewardAllowed<T>>::put(amount);
+            Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
+        }
+
+        #[weight = 10_000_000]
+        pub fn update_min_cashout_allowed(origin, amount: minting::BalanceOf<T>) {
+            ensure_root(origin)?;
+            <MinCashoutAllowed<T>>::put(amount);
+            Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
+        }
     }
-
-    #[weight = 10_000_000]
-    pub fn update_max_reward_allowed(origin, amount: minting::BalanceOf<T>) {
-        ensure_root(origin)?; // Root origin which describes a call that comes from within the runtime itself
-        <MaxRewardAllowed<T>>::put(amount);
-    Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
-    }
-
-    #[weight = 10_000_000]
-    pub fn update_min_cashout_allowed(origin, amount: minting::BalanceOf<T>) {
-        ensure_root(origin)?;
-        <MinCashoutAllowed<T>>::put(amount);
-    Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
-    }
-}
 }
 
 impl<T: Trait> Module<T> {
