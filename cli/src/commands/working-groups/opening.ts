@@ -16,7 +16,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsOpening)
 
     const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId))

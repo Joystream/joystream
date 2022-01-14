@@ -178,13 +178,13 @@ export default class Api {
     return memberDetails
   }
 
-  protected async membershipById(memberId: MemberId): Promise<MemberDetails | null> {
+  async memberDetailsById(memberId: MemberId | number): Promise<MemberDetails | null> {
     const membership = await this._api.query.members.membershipById(memberId)
-    return membership.isEmpty ? null : await this.memberDetails(memberId, membership)
+    return membership.isEmpty ? null : await this.memberDetails(createType('MemberId', memberId), membership)
   }
 
-  protected async expectedMembershipById(memberId: MemberId): Promise<MemberDetails> {
-    const member = await this.membershipById(memberId)
+  async expectedMemberDetailsById(memberId: MemberId | number): Promise<MemberDetails> {
+    const member = await this.memberDetailsById(memberId)
     if (!member) {
       throw new CLIError(`Expected member was not found by id: ${memberId.toString()}`)
     }
@@ -233,11 +233,7 @@ export default class Api {
     const stakingAccount = worker.staking_account_id
     const memberId = worker.member_id
 
-    const profile = await this.membershipById(memberId)
-
-    if (!profile) {
-      throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`)
-    }
+    const profile = await this.expectedMemberDetailsById(memberId)
 
     const stake = await this.fetchStake(worker.staking_account_id, group)
 
@@ -321,7 +317,7 @@ export default class Api {
   ): Promise<ApplicationDetails> {
     return {
       applicationId,
-      member: await this.expectedMembershipById(application.member_id),
+      member: await this.expectedMemberDetailsById(application.member_id),
       roleAccout: application.role_account_id,
       rewardAccount: application.reward_account_id,
       stakingAccount: application.staking_account_id,

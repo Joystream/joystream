@@ -11,6 +11,10 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { videoId } = this.parse(VideoCommand).args
     const aVideo = await this.getApi().videoById(videoId)

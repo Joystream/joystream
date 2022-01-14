@@ -1,73 +1,14 @@
 import ExitCodes from '../ExitCodes'
-import AccountsCommandBase from './AccountsCommandBase'
 import { flags } from '@oclif/command'
-import { WorkingGroups, AvailableGroups, GroupMember, OpeningDetails, ApplicationDetails } from '../Types'
-import _ from 'lodash'
+import { AvailableGroups, GroupMember, OpeningDetails, ApplicationDetails } from '../Types'
 import chalk from 'chalk'
 import { memberHandle } from '../helpers/display'
+import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
 /**
- * Abstract base class for commands that need to use gates based on user's roles
+ * Abstract base class for commands related to all working groups
  */
-export abstract class RolesCommandBase extends AccountsCommandBase {
-  group!: WorkingGroups
-
-  async init(): Promise<void> {
-    await super.init()
-    this.group = this.getPreservedState().defaultWorkingGroup
-  }
-
-  // Use when lead access is required in given command
-  async getRequiredLeadContext(): Promise<GroupMember> {
-    const lead = await this.getApi().groupLead(this.group)
-
-    if (!lead || !this.isKeyAvailable(lead.roleAccount)) {
-      this.error(`${_.startCase(this.group)} Group Lead access required for this command!`, {
-        exit: ExitCodes.AccessDenied,
-      })
-    }
-
-    return lead
-  }
-
-  // Use when worker access is required in given command
-  async getRequiredWorkerContext(expectedKeyType: 'Role' | 'MemberController' = 'Role'): Promise<GroupMember> {
-    const groupMembers = await this.getApi().groupMembers(this.group)
-    const availableGroupMemberContexts = groupMembers.filter((m) =>
-      expectedKeyType === 'Role'
-        ? this.isKeyAvailable(m.roleAccount.toString())
-        : this.isKeyAvailable(m.profile.membership.controller_account.toString())
-    )
-
-    if (!availableGroupMemberContexts.length) {
-      this.error(`No ${_.startCase(this.group)} Group Worker ${_.startCase(expectedKeyType)} key available!`, {
-        exit: ExitCodes.AccessDenied,
-      })
-    } else if (availableGroupMemberContexts.length === 1) {
-      return availableGroupMemberContexts[0]
-    } else {
-      return await this.promptForWorker(availableGroupMemberContexts)
-    }
-  }
-
-  async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
-    const chosenWorkerIndex = await this.simplePrompt({
-      message: `Choose the intended ${_.startCase(this.group)} Group Worker context:`,
-      type: 'list',
-      choices: groupMembers.map((groupMember, index) => ({
-        name: `Worker ID ${groupMember.workerId.toString()}`,
-        value: index,
-      })),
-    })
-
-    return groupMembers[chosenWorkerIndex]
-  }
-}
-
-/**
- * Abstract base class for commands directly related to working groups
- */
-export default abstract class WorkingGroupsCommandBase extends RolesCommandBase {
+export default abstract class WorkingGroupsCommandBase extends WorkingGroupCommandBase {
   static flags = {
     group: flags.enum({
       char: 'g',
@@ -77,6 +18,7 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
       required: false,
       options: [...AvailableGroups],
     }),
+    ...WorkingGroupCommandBase.flags,
   }
 
   async promptForApplicationsToAccept(opening: OpeningDetails): Promise<number[]> {

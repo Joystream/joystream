@@ -14,7 +14,11 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
     },
   ]
 
-  async run() {
+  static flags = {
+    ...WorkingGroupsCommandBase.flags,
+  }
+
+  async run(): Promise<void> {
     const { openingId } = this.parse(WorkingGroupsApply).args
     const memberContext = await this.getRequiredMemberContext()
 

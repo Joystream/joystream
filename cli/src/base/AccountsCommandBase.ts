@@ -6,9 +6,9 @@ import { CLIError } from '@oclif/errors'
 import ApiCommandBase from './ApiCommandBase'
 import { Keyring } from '@polkadot/api'
 import { formatBalance } from '@polkadot/util'
-import { MemberDetails, NamedKeyringPair } from '../Types'
+import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
-import { memberHandle, toFixedLength } from '../helpers/display'
+import { toFixedLength } from '../helpers/display'
 import { MemberId, AccountId } from '@joystream/types/common'
 import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
@@ -35,7 +35,6 @@ export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
-  private selectedMember: MemberDetails | undefined
   private _keyring: KeyringInstance | undefined
 
   private get keyring(): KeyringInstance {
@@ -319,52 +318,6 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     } else {
       return this.promptForCustomAddress()
     }
-  }
-
-  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<MemberDetails> {
-    if (
-      useSelected &&
-      this.selectedMember &&
-      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.id)))
-    ) {
-      return this.selectedMember
-    }
-
-    const membersDetails = allowedIds
-      ? await this.getApi().membersDetailsByIds(allowedIds)
-      : await this.getApi().allMembersDetails()
-    const availableMemberships = await Promise.all(
-      membersDetails.filter((m) => this.isKeyAvailable(m.membership.controller_account.toString()))
-    )
-
-    if (!availableMemberships.length) {
-      this.error(
-        `No ${allowedIds ? 'allowed ' : ''}member controller key available!` +
-          (allowedIds ? ` Allowed members: ${allowedIds.join(', ')}.` : ''),
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
-    } else if (availableMemberships.length === 1) {
-      this.selectedMember = availableMemberships[0]
-    } else {
-      this.selectedMember = await this.promptForMember(availableMemberships, 'Choose member context')
-    }
-
-    return this.selectedMember
-  }
-
-  async promptForMember(availableMemberships: MemberDetails[], message = 'Choose a member'): Promise<MemberDetails> {
-    const memberIndex = await this.simplePrompt({
-      type: 'list',
-      message,
-      choices: availableMemberships.map((m, i) => ({
-        name: `id: ${m.id}, handle: ${memberHandle(m)}`,
-        value: i,
-      })),
-    })
-
-    return availableMemberships[memberIndex]
   }
 
   async promptForStakingAccount(stakeValue: BN, memberId: MemberId, member: Membership): Promise<string> {

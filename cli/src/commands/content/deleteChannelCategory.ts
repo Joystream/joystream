@@ -4,6 +4,7 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
   static description = 'Delete channel category.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [

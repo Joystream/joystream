@@ -13,6 +13,10 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { channelId } = this.parse(VideosCommand).args
 

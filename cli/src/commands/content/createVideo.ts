@@ -4,7 +4,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { VideoCreationParameters } from '@joystream/types/content'
+import { VideoCreationParameters, VideoId } from '@joystream/types/content'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
@@ -24,6 +24,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
       description: 'ID of the Channel',
     }),
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    ...UploadCommandBase.flags,
   }
 
   setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
@@ -89,10 +90,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
       videoCreationParameters,
     ])
 
-    const videoCreatedEvent = this.findEvent(result, 'content', 'VideoCreated')
-    this.log(
-      chalk.green(`Video with id ${chalk.cyanBright(videoCreatedEvent?.data[2].toString())} successfully created!`)
-    )
+    const videoId: VideoId = this.getEvent(result, 'content', 'VideoCreated').data[2]
+    this.log(chalk.green(`Video with id ${chalk.cyanBright(videoId.toString())} successfully created!`))
 
     const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
     if (dataObjectsUploadedEvent) {
