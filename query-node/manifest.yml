@@ -859,6 +859,10 @@ mappings:
     # Bounty
     - event: bounty.BountyCreated
       handler: bounty_BountyCreated
+    - event: bounty.BountyCanceled
+      handler: bounty_BountyCanceled
+    - event: bounty.BountyVetoed
+      handler: bounty_BountyVetoed
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

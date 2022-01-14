@@ -3,12 +3,14 @@ import { BountyMetadata } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, FundingType } from '@joystream/types/augment'
 import {
   Bounty,
+  BountyCanceledEvent,
   BountyContractClosed,
   BountyContractOpen,
   BountyCreatedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
   BountyStage,
+  BountyVetoedEvent,
   ForumThread,
   Membership,
 } from 'query-node/dist/model'
@@ -106,6 +108,7 @@ function endWorkingPeriod(store: DatabaseManager, bounty: Bounty): Promise<void>
  * Event handlers
  */
 
+// Store new bounties and their creation event
 export async function bounty_BountyCreated({ event, store }: EventContext & StoreContext): Promise<void> {
   const createdEvent = new BountyEvents.BountyCreatedEvent(event)
   const [bountyId, bountyParams, metadataBytes] = createdEvent.params
@@ -171,3 +174,25 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     }
   }
 }
+
+// Store bounty canceled events
+export async function bounty_BountyCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
+  const bountyCanceledEvent = new BountyEvents.BountyCanceledEvent(event)
+  const [bountyId] = bountyCanceledEvent.params
+
+  const bounty = new Bounty({ id: String(bountyId) })
+  const canceledEvent = new BountyCanceledEvent({ ...genericEventFields(event), bounty })
+
+  await store.save<BountyCanceledEvent>(canceledEvent)
+}
+
+// Store bounty vetoed events
+export async function bounty_BountyVetoed({ event, store }: EventContext & StoreContext): Promise<void> {
+  const bountyVetoedEvent = new BountyEvents.BountyVetoedEvent(event)
+  const [bountyId] = bountyVetoedEvent.params
+  const bounty = new Bounty({ id: String(bountyId) })
+  const vetoedEvent = new BountyVetoedEvent({ ...genericEventFields(event), bounty })
+
+  await store.save<BountyVetoedEvent>(vetoedEvent)
+}
+
