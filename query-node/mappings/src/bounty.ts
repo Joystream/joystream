@@ -1,12 +1,14 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
-import { AssuranceContractType, BountyActor, FundingType } from '@joystream/types/augment'
+import { AssuranceContractType, BountyActor, BountyId, FundingType } from '@joystream/types/augment'
 import {
   Bounty,
   BountyCanceledEvent,
   BountyContractClosed,
   BountyContractOpen,
+  BountyContribution,
   BountyCreatedEvent,
+  BountyFundedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
   BountyStage,
@@ -19,8 +21,16 @@ import { deserializeMetadata, genericEventFields } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
- * Commons helpers
+ * Common helpers
  */
+
+async function getBounty(store: DatabaseManager, bountyId: BountyId): Promise<Bounty> {
+  const bounty = await store.get(Bounty, { where: { id: bountyId } })
+  if (!bounty) {
+    throw new Error(`Bounty not found by id: ${bountyId}`)
+  }
+  return bounty
+}
 
 function bountyActorToMembership(actor: BountyActor): Membership | undefined {
   if (actor.isMember) {
@@ -196,3 +206,30 @@ export async function bounty_BountyVetoed({ event, store }: EventContext & Store
   await store.save<BountyVetoedEvent>(vetoedEvent)
 }
 
+// Store new contributions and their BountyFunded events
+export async function bounty_BountyFunded({ event, store }: EventContext & StoreContext): Promise<void> {
+  const bountyFundedEvent = new BountyEvents.BountyFundedEvent(event)
+  const [bountyId, contributorActor, amount] = bountyFundedEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  const bounty = await getBounty(store, bountyId)
+
+  bounty.updatedAt = eventTime
+  bounty.totalFunding = bounty.totalFunding.add(amount)
+
+  await store.save<Bounty>(bounty)
+
+  const contribution = new BountyContribution({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    bounty,
+    contributor: bountyActorToMembership(contributorActor),
+    amount,
+  })
+
+  await store.save<BountyContribution>(contribution)
+
+  const fundedEvent = new BountyFundedEvent({ ...genericEventFields(event), contribution })
+
+  await store.save<BountyFundedEvent>(fundedEvent)
+}
