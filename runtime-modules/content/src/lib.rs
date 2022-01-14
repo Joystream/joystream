@@ -25,7 +25,7 @@ use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, CheckedAdd, CheckedSub, One, Zero};
+use sp_arithmetic::traits::{BaseArithmetic, CheckedAdd, CheckedSub, One, SaturatingSub, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -535,11 +535,9 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-    /// threshold for rewards
-    pub MaxRewardAllowed get(fn max_reward_allowed) config(): minting::BalanceOf<T>;
+        pub MaxRewardAllowed get(fn max_reward_allowed) config(): minting::BalanceOf<T>;
 
-    // min cashout allowed for a channel
-    pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
+         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
 
     }
 }
@@ -1313,9 +1311,14 @@ decl_module! {
             origin,
             new_commitment: <T as frame_system::Trait>::Hash,
         ) {
-            ensure_root(origin)?;
-            let old_commitment = <Commitment<T>>::get();
-            if old_commitment == new_commitment { return Ok(()) }
+            // ensure_root(origin)?;
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_commitment(sender);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             <Commitment<T>>::put(new_commitment);
             Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
@@ -1333,8 +1336,7 @@ decl_module! {
 
             let cashout = elem
                 .amount_due
-                .checked_sub(&channel.cumulative_reward)
-                .ok_or("uinteger underflow")?;
+                .saturating_sub(&channel.cumulative_reward);
 
             ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");

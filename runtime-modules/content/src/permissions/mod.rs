@@ -1,5 +1,4 @@
 mod curator_group;
-
 pub use curator_group::*;
 
 pub use crate::errors::*;
@@ -289,6 +288,10 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
     }
+}
+
+pub fn ensure_authorized_to_update_commitment(sender: &T::AccountId) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
 }
 
 // pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
