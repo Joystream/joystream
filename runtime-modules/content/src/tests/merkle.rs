@@ -187,7 +187,7 @@ fn setup_channels_scenario(
         .iter()
         .map(|&(c_id, amnt)| PullPayment::<Test> {
             channel_id: ChannelId::from(c_id),
-            amount_due: minting::BalanceOf::<Test>::from(amnt),
+            amount_earned: minting::BalanceOf::<Test>::from(amnt),
             reason: TestHashing::hash(&c_id.encode()),
         })
         .collect::<Vec<PullPayment<Test>>>();
@@ -209,7 +209,7 @@ fn setup_candidate_proof(
     // construct test pull payment
     let reward_element = PullPayment::<Test> {
         channel_id: ChannelId::from(test_params.0),
-        amount_due: BalanceOf::<Test>::from(test_params.1),
+        amount_earned: BalanceOf::<Test>::from(test_params.1),
         reason: TestHashing::hash(&test_params.0.encode()),
     };
 

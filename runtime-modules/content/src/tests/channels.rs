@@ -99,7 +99,7 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    cumulative_reward: 0,
+                    prior_cumulative_cashout: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -180,7 +180,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    cumulative_reward: 0,
+                    prior_cumulative_cashout: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -215,7 +215,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    cumulative_reward: 0,
+                    prior_cumulative_cashout: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -249,7 +249,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    cumulative_reward: 0,
+                    prior_cumulative_cashout: 0,
                 },
                 ChannelUpdateParameters {
                     assets: None,

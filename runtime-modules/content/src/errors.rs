@@ -65,6 +65,20 @@ decl_error! {
         CannotCensoreCuratorGroupOwnedChannels,
 
         /// Actor is not A Member
-        ActorNotAMember
+        ActorNotAMember,
+
+        /// Payment Proof verification failed
+        PaymentProofVerificationFailed,
+
+        /// Total reward too high
+        TotalRewardLimitExceeded,
+
+        /// Cashout amount too small
+        InsufficientCashoutAmount,
+
+        /// Reward account is none
+        RewardAccountNotFoundInChannel,
+
+
     }
 }

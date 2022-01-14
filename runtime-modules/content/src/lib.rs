@@ -25,7 +25,7 @@ use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, CheckedAdd, CheckedSub, One, SaturatingSub, Zero};
+use sp_arithmetic::traits::{BaseArithmetic, One, Saturating, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -218,7 +218,7 @@ pub struct ChannelRecord<
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// Cumulative cashout
-    cumulative_reward: Balance,
+    prior_cumulative_cashout: Balance,
 }
 
 // Channel alias type for simplification.
@@ -479,10 +479,10 @@ pub struct Person<MemberId> {
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
-pub struct PullPaymentElement<ChannelId, Balance, HashType> {
+pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     channel_id: ChannelId,
-    amount_due: Balance,
-    reason: HashType,
+    amount_earned: Balance,
+    reason: Hash,
 }
 
 pub type PullPayment<T> = PullPaymentElement<
@@ -719,7 +719,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                cumulative_reward: minting::BalanceOf::<T>::default(),
+                prior_cumulative_cashout: minting::BalanceOf::<T>::default(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1311,7 +1311,6 @@ decl_module! {
             origin,
             new_commitment: <T as frame_system::Trait>::Hash,
         ) {
-            // ensure_root(origin)?;
             let sender = ensure_signed(origin)?;
             ensure_authorized_to_update_commitment(sender);
 
@@ -1335,36 +1334,28 @@ decl_module! {
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = elem
-                .amount_due
-                .saturating_sub(&channel.cumulative_reward);
+                .amount_earned
+                .saturating_sub(channel.prior_cumulative_cashout);
 
-            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
-            ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
-            ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
+            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_earned, Error::<T>::TotalRewardLimitExceeded);
+            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::InsufficientCashoutAmount);
 
-            // value is transferred to the reward account if Some
-            let reward_acc = channel.reward_account.clone().ok_or("No reward account found")?;
+            proof.verify(<Commitment<T>>::get())?;
 
-            // new reward computation
-            let new_reward = channel
-                .cumulative_reward
-                .checked_add(&elem.amount_due)
-                .ok_or("balance value overflow")?;
+            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
 
             //
             // == MUTATION SAFE ==
             //
 
-            // update
-            let mut channel = channel;
-            channel.cumulative_reward = new_reward;
+            Self::transfer_reward(cashout, &channel.reward_account.unwrap());
+            ChannelById::<T>::mutate(
+                &elem.channel_id,
+                |channel| channel.prior_cumulative_cashout =
+                    channel.prior_cumulative_cashout.saturating_add(elem.amount_earned)
+            );
 
-            Self::transfer_reward(cashout, &reward_acc);
-            ChannelById::<T>::take(elem.channel_id);
-            ChannelById::<T>::insert(elem.channel_id, channel);
-
-            // deposit event
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_earned, elem.channel_id));
         }
 
         #[weight = 10_000_000]
