@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { BagId } from '@joystream/types/storage'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
@@ -42,7 +42,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
 
   async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
     const dataObjects = await this.getApi().dataObjectsInBag(
-      createTypeFromConstructor(BagId, { Dynamic: { Channel: channelId } })
+      createType<BagId, 'BagId'>('BagId', { Dynamic: { Channel: channelId } })
     )
 
     if (dataObjects.length) {
