@@ -567,6 +567,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return result.findRecord(section, method)?.event as EventType | undefined
   }
 
+  public getEvent<
+    S extends keyof AugmentedEvents<'promise'> & string,
+    M extends keyof AugmentedEvents<'promise'>[S] & string,
+    EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+  >(result: SubmittableResult, section: S, method: M): EventType {
+    const event = this.findEvent<S, M, EventType>(result, section, method)
+    if (!event) {
+      throw new Error(`Event ${section}.${method} not found in tx result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return event
+  }
+
   async buildAndSendExtrinsic<
     Module extends keyof AugmentedSubmittables<'promise'>,
     Method extends keyof AugmentedSubmittables<'promise'>[Module] & string

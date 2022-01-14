@@ -104,9 +104,6 @@
       "@oclif/plugin-warn-if-update-available"
     ],
     "topics": {
-      "council": {
-        "description": "Council-related information and activities like voting, becoming part of the council etc."
-      },
       "account": {
         "description": "Accounts management - create, import or switch currently used account"
       },
@@ -118,6 +115,9 @@
       },
       "content": {
         "description": "Interactions with content directory module - managing vidoes, channels, assets, categories and curator groups"
+      },
+      "membership": {
+        "description": "Membership management - buy a new membership, update membership, manage membership keys"
       }
     }
   },
