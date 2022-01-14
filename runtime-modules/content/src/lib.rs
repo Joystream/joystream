@@ -913,7 +913,7 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             // ensure collaborator member ids are valid
-            Self::validate_collaborator_set(&params.collaborators)?;
+            Self::validate_member_set(&params.collaborators)?;
 
             let upload_params = params.assets.as_ref().map(|assets| {
                 Self::construct_upload_parameters(
@@ -1017,7 +1017,7 @@ decl_module! {
             if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
                 // ensure collaborator member ids are valid
-                Self::validate_collaborator_set(new_collabs)?;
+                Self::validate_member_set(new_collabs)?;
 
                 channel.collaborators = new_collabs.clone();
             }
@@ -1872,6 +1872,8 @@ decl_module! {
                 &owner,
             )?;
 
+            Self::validate_member_set(&new_moderator_set)?;
+
             //
             // == MUTATION_SAFE ==
             //
@@ -2128,9 +2130,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn validate_collaborator_set(collaborators: &BTreeSet<T::MemberId>) -> DispatchResult {
+    fn validate_member_set(members: &BTreeSet<T::MemberId>) -> DispatchResult {
         // check if all members are valid
-        let res = collaborators
+        let res = members
             .iter()
             .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
         ensure!(res, Error::<T>::CollaboratorIsNotValidMember);

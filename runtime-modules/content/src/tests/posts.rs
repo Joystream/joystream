@@ -1024,3 +1024,14 @@ pub fn successful_comment_deletion_by_moderator() {
             .call_and_assert(Ok(()))
     })
 }
+
+#[test]
+pub fn successful_comment_deletion_by_moderator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+    })
+}

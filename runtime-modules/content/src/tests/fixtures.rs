@@ -1073,6 +1073,72 @@ impl DeleteVideoFixture {
     }
 }
 
+pub struct UpdateModeratorSetFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    new_moderator_set: BTreeSet<MemberId>,
+    channel_id: ChannelId,
+}
+
+impl UpdateModeratorSetFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            new_moderator_set: BTreeSet::new(),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_moderators(self, new_moderator_set: BTreeSet<MemberId>) -> Self {
+        Self {
+            new_moderator_set,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+
+        let actual_result = Content::update_moderator_set(
+            origin,
+            self.actor.clone(),
+            self.new_moderator_set.clone(),
+            self.channel_id.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let channel_post = ChannelById::get(&self.channel_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ModeratorSetUpdated(
+                    self.channel_id,
+                    self.new_moderator_set.clone(),
+                ))
+            );
+            assert_eq!(channel_post.moderator_set, self.new_moderator_set);
+        } else {
+            assert_eq!(channel_pre, channel_post);
+        }
+    }
+}
+
 // helper functions
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
