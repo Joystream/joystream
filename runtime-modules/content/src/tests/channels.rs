@@ -267,7 +267,7 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_no_bucket_available() {
+fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
@@ -286,7 +286,18 @@ fn unsuccessful_channel_creation_with_no_bucket_available() {
             .call_and_assert(Err(
                 storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
             ));
+    })
+}
 
+#[test]
+fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
+        );
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -1249,7 +1260,13 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            // balance necessary to create channel + video with specified no. of assets
+            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
+        );
+
         create_default_member_owned_channel();
 
         UpdateChannelFixture::default()

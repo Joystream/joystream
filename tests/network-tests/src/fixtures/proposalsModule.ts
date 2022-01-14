@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { ProposalId } from '@joystream/types/proposals'
@@ -551,7 +552,7 @@ export class SpendingProposalFixture extends BaseFixture {
 
     await this.api.sudoSetCouncilMintCapacity(this.mintCapacity)
 
-    const fundingRecipient = this.api.createKeyPairs(1)[0].address
+    const fundingRecipient = this.api.createKeyPairs(1)[0].key.address
 
     // Proposal creation
     const result = await this.api.proposeSpending(

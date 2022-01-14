@@ -98,7 +98,7 @@ impl CreateChannelFixture {
 
         if actual_result.is_ok() {
             // ensure channel is on chain
-            assert_ok!(Content::ensure_channel_exists(&channel_id));
+            assert!(ChannelById::<Test>::contains_key(&channel_id));
 
             // channel counter increased
             assert_eq!(
@@ -221,7 +221,7 @@ impl CreateVideoFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_ok!(Content::ensure_video_exists(&video_id));
+            assert!(VideoById::<Test>::contains_key(&video_id));
 
             assert_eq!(
                 Content::next_video_id(),
@@ -586,7 +586,7 @@ impl UpdateVideoFixture {
                 assert_eq!(balance_pre, balance_post);
                 assert_eq!(beg_obj_id, end_obj_id);
 
-                if err != storage::Error::<Test>::DataObjectDoesntExist {
+                if err != storage::Error::<Test>::DataObjectDoesntExist.into() {
                     assert!(self.params.assets_to_remove.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }));
@@ -682,7 +682,7 @@ impl DeleteChannelFixture {
 
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::ChannelDoesNotExist {
+                if err != Error::<Test>::ChannelDoesNotExist.into() {
                     assert!(ChannelById::<Test>::contains_key(&self.channel_id));
                     assert!(channel_objects_ids.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
@@ -1049,11 +1049,11 @@ impl DeleteVideoFixture {
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
 
-                if err != storage::Error::<Test>::DataObjectDoesntExist {
+                if err == storage::Error::<Test>::DataObjectDoesntExist.into() {
                     let video_post = <VideoById<Test>>::get(&self.video_id);
                     assert_eq!(video_pre, video_post);
                     assert!(VideoById::<Test>::contains_key(&self.video_id));
-                } else if err != Error::<Test>::VideoDoesNotExist {
+                } else if err == Error::<Test>::VideoDoesNotExist.into() {
                     assert!(self.assets_to_remove.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
                     }));
@@ -1081,15 +1081,15 @@ pub fn slash_account_balance_helper(account_id: u64) {
 
 pub fn create_data_object_candidates_helper(
     starting_ipfs_index: u8,
-    number: u8,
+    number: u64,
 ) -> Vec<DataObjectCreationParameters> {
-    let range = starting_ipfs_index..(starting_ipfs_index + number);
+    let range = (starting_ipfs_index as u64)..((starting_ipfs_index as u64) + number);
 
     range
         .into_iter()
-        .map(|idx| DataObjectCreationParameters {
-            size: 10 * idx as u64,
-            ipfs_content_id: vec![idx],
+        .map(|_| DataObjectCreationParameters {
+            size: DEFAULT_OBJECT_SIZE,
+            ipfs_content_id: vec![1u8],
         })
         .collect()
 }
@@ -1151,6 +1151,7 @@ pub fn create_default_curator_owned_channel() {
 
 pub fn create_default_member_owned_channel_with_video() {
     create_default_member_owned_channel();
+
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -1177,9 +1178,40 @@ pub fn create_default_curator_owned_channel_with_video() {
         .call_and_assert(Ok(()));
 }
 
-// wrapper to silence compiler error
-fn into_str(err: DispatchError) -> &'static str {
-    err.into()
+pub fn create_default_member_owned_channels_with_videos() -> (u64, u64) {
+    for _ in 0..OUTSTANDING_CHANNELS {
+        create_default_member_owned_channel();
+    }
+
+    for i in 0..OUTSTANDING_VIDEOS {
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_id(i % OUTSTANDING_CHANNELS + 1)
+            .call_and_assert(Ok(()));
+    }
+
+    // assert that the specified channels have been created
+    assert_eq!(VideoById::<Test>::iter().count() as u64, OUTSTANDING_VIDEOS);
+    assert_eq!(
+        ChannelById::<Test>::iter().count() as u64,
+        OUTSTANDING_CHANNELS
+    );
+
+    let channels_migrations_per_block = <Test as Trait>::ChannelsMigrationsEachBlock::get();
+    let videos_migrations_per_block = <Test as Trait>::VideosMigrationsEachBlock::get();
+
+    // return the number of blocks required for migration
+    let divide_with_ceiling =
+        |x: u64, y: u64| (x / y) + ((x.checked_rem(y).unwrap_or_default() > 0u64) as u64);
+    (
+        divide_with_ceiling(OUTSTANDING_CHANNELS, channels_migrations_per_block),
+        divide_with_ceiling(OUTSTANDING_VIDEOS, videos_migrations_per_block),
+    )
 }
 
 pub fn create_default_member_owned_channel_with_video_and_post() {

@@ -84,7 +84,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 9,
-    spec_version: 9,
+    spec_version: 13,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -341,8 +341,8 @@ impl pallet_session::historical::Trait for Runtime {
 pallet_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_050_000,
-        max_inflation: 0_750_000,
-        ideal_stake: 0_300_000,
+        max_inflation: 0_150_000,
+        ideal_stake: 0_250_000,
         falloff: 0_050_000,
         max_piece_count: 100,
         test_precision: 0_005_000,
@@ -436,6 +436,8 @@ parameter_types! {
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
+    pub const VideosMigrationsEachBlock: u64 = 100;
+    pub const ChannelsMigrationsEachBlock: u64 = 25;
 }
 
 impl content::Trait for Runtime {
@@ -459,6 +461,8 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
+    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
+    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 impl hiring::Trait for Runtime {
@@ -687,7 +691,7 @@ parameter_types! {
 
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
-    pub const DataObjectDeletionPrize: Balance = 1; //TODO: Change during Olympia release
+    pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value

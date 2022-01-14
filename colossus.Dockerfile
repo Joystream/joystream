@@ -7,10 +7,10 @@ RUN yarn --frozen-lockfile
 
 RUN yarn workspace @joystream/types build
 RUN yarn workspace @joystream/metadata-protobuf build
-RUN yarn workspace storage-node-v2 build
+RUN yarn workspace storage-node build
 
 # Use these volumes to persist uploading data and to pass the keyfile.
-VOLUME ["/data", "/keystore"]
+VOLUME ["/data", "/keystore", "/logs"]
 
 # Required variables
 ENV WS_PROVIDER_ENDPOINT_URI=ws://not-set
@@ -31,5 +31,11 @@ ENV ACCOUNT_URI=
 # Colossus node port
 EXPOSE ${COLOSSUS_PORT}
 
-WORKDIR /joystream/storage-node-v2
-ENTRYPOINT yarn storage-node server --queryNodeEndpoint ${QUERY_NODE_ENDPOINT} --port ${COLOSSUS_PORT} --uploads /data --worker ${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} --keyFile=${ACCOUNT_KEYFILE} --elasticSearchEndpoint=${ELASTIC_SEARCH_ENDPOINT}
+WORKDIR /joystream/storage-node
+ENTRYPOINT yarn storage-node server --queryNodeEndpoint ${QUERY_NODE_ENDPOINT} \
+    --port ${COLOSSUS_PORT} --uploads /data  \
+    --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} \
+    --elasticSearchEndpoint=${ELASTIC_SEARCH_ENDPOINT} \
+    --accountUri=${ACCOUNT_URI} \
+    --worker ${WORKER_ID} \
+    --logFilePath=/logs

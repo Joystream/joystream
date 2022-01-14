@@ -85,6 +85,9 @@ decl_error! {
         /// Post does not exists
         PostDoesNotExist,
 
+        /// Migration not done yet
+        MigrationNotFinished,
+
         /// Partecipant is not a member
         ReplyDoesNotExist,
 
