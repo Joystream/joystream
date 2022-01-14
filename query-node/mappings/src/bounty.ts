@@ -11,6 +11,7 @@ import {
   BountyFundedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
+  BountyFundingWithdrawalEvent,
   BountyMaxFundingReachedEvent,
   BountyStage,
   BountyVetoedEvent,
@@ -31,6 +32,15 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId): Promise<Bo
     throw new Error(`Bounty not found by id: ${bountyId}`)
   }
   return bounty
+}
+
+async function getContribution(store: DatabaseManager, bountyId: BountyId, contributor?: string): Promise<BountyContribution> {
+  const contribution = await store.get(BountyContribution, { where: { bountyId, contributor } })
+  if (!contribution) {
+    const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
+    throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
+  }
+  return contribution
 }
 
 function bountyActorToMembership(actor: BountyActor): Membership | undefined {
@@ -248,4 +258,25 @@ export async function bounty_BountyMaxFundingReached({ event, store }: EventCont
 
   // Update the bounty stage
   endFundingPeriod(store, bounty)
+}
+
+export async function bounty_BountyFundingWithdrawal({ event, store }: EventContext & StoreContext): Promise<void> {
+  const fundingWithdrawalEvent = new BountyEvents.BountyFundingWithdrawalEvent(event)
+  const [bountyId, contributorActor] = fundingWithdrawalEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  const contributor = bountyActorToMembership(contributorActor)
+  const contribution = await getContribution(store, bountyId, contributor?.id)
+
+  // Update the bounty totalFunding
+  const bounty = await getBounty(store, bountyId)
+  bounty.updatedAt = eventTime
+  bounty.totalFunding = bounty.totalFunding.sub(contribution.amount)
+
+  await store.save<Bounty>(bounty)
+
+  // Record the event
+  const withdrawalInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
+
+  await store.save<BountyFundingWithdrawalEvent>(withdrawalInEvent)
 }
