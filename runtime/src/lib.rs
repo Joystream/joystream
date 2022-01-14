@@ -452,7 +452,6 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type StorageSystem = data_directory::Module<Self>;
     type PostId = PostId;
     type ReactionId = ReactionId;
     type MaxModerators = MaxModerators;
