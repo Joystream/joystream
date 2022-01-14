@@ -29,7 +29,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
       context = await this.promptForChannelCreationContext()
     }
     const [actor, address] = await this.getContentActor(context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)

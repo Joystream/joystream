@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { displayCollapsedRow, displayHeader } from '../../helpers/display'
+import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
 
 export default class ChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Show Channel details by id.'
@@ -29,8 +29,8 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
 
       displayHeader(`Collaborators`)
       const collaboratorIds = Array.from(channel.collaborators)
-      const collaborators = await this.getApi().getMembers(collaboratorIds)
-      this.log(collaborators.map((c, i) => `${collaboratorIds[i].toString()} (${c.handle.toString()})`).join(', '))
+      const collaborators = await this.getApi().membersDetailsByIds(collaboratorIds)
+      this.log(collaborators.map((c) => `${c.id} (${memberHandle(c)})`).join(', '))
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)
     }

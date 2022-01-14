@@ -81,7 +81,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         return this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      const [id, membership] = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
+      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
       return [
         createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
         membership.controller_account.toString(),
@@ -90,7 +90,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   }
 
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
-    const [id, membership] = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
+    const { id, membership } = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
     return [
       createType<ContentActor, 'ContentActor'>('ContentActor', { Collaborator: id }),
       membership.controller_account.toString(),
@@ -280,7 +280,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
   ): Promise<[ContentActor, string]> {
     if (context === 'Member') {
-      const [id, membership] = await this.getRequiredMemberContext()
+      const { id, membership } = await this.getRequiredMemberContext()
       return [
         createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
         membership.controller_account.toString(),

@@ -84,8 +84,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         apiUri = await this.promptForApiUri()
       }
 
+      // Query node api
       let queryNodeUri: string | null | undefined = this.getPreservedState().queryNodeUri
-
       if (this.requiresQueryNode && !queryNodeUri) {
         this.warn('Query node endpoint uri is required in order to run this command!')
         queryNodeUri = await this.promptForQueryNodeUri(true)
@@ -93,9 +93,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
         queryNodeUri = await this.promptForQueryNodeUri()
       }
+      this.queryNodeApi = queryNodeUri
+        ? new QueryNodeApi(queryNodeUri, (err) => {
+            this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+          })
+        : null
 
+      // Substrate api
       const { metadataCache } = this.getPreservedState()
-      this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri)
+      this.api = await Api.create(apiUri, metadataCache, this.queryNodeApi || undefined)
 
       const { genesisHash, runtimeVersion } = this.getOriginalApi()
       const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
@@ -104,12 +110,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
         await this.setPreservedState({ metadataCache })
       }
-
-      this.queryNodeApi = queryNodeUri
-        ? new QueryNodeApi(queryNodeUri, (err) => {
-            this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
-          })
-        : null
     }
   }
 

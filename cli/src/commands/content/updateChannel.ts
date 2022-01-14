@@ -82,7 +82,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     // Context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)

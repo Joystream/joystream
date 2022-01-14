@@ -69,7 +69,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
