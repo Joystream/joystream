@@ -1,34 +1,16 @@
 import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
-import { CaddyServiceDeployment, getProvider, isPlatformMinikube } from 'pulumi-common'
+import { CaddyServiceDeployment, getProvider } from 'pulumi-common'
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
-import { readFileSync } from 'fs'
 
 export = async () => {
   const config = new pulumi.Config()
 
-  const kubeconfigFile = config.get('kubeconfigFile')
-  const clusterStackRefInput = config.get('clusterStackRef')
-  let provider: k8s.Provider = new k8s.Provider('local', {})
-  let isMinikube: boolean = false
-
-  if (!kubeconfigFile && !clusterStackRefInput) {
-    throw new Error('Need to provide either a kubeconfig file or a stack reference')
-  }
-
-  if (kubeconfigFile) {
-    const kubeconfig = readFileSync(kubeconfigFile).toString()
-    provider = new k8s.Provider('cloud', { kubeconfig })
-    isMinikube = false
-  } else if (clusterStackRefInput) {
-    // Get's the Cluster provider and platform based on clusterStackRef platform config
-    const clusterStackRef = new pulumi.StackReference(clusterStackRefInput)
-    provider = await getProvider(clusterStackRef)
-    isMinikube = await isPlatformMinikube(clusterStackRef)
-  }
+  const provider: k8s.Provider = (await getProvider(config)).provider
+  const useLocalProvider: boolean = (await getProvider(config)).isLocalProvider
 
   const resourceOptions = { provider: provider }
 
@@ -50,48 +32,8 @@ export = async () => {
   const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
   let pvcClaimName: pulumi.Output<any>
 
-  if (isMinikube) {
-    const pvc = new k8s.core.v1.PersistentVolumeClaim(
-      `${name}-pvc`,
-      {
-        metadata: {
-          labels: appLabels,
-          namespace: namespaceName,
-          name: `${name}-pvc`,
-        },
-        spec: {
-          accessModes: ['ReadWriteMany'],
-          resources: {
-            requests: {
-              storage: `1Gi`,
-            },
-          },
-        },
-      },
-      resourceOptions
-    )
-
-    const pv = new k8s.core.v1.PersistentVolume(`${name}-pv`, {
-      metadata: {
-        labels: { ...appLabels, type: 'local' },
-        namespace: namespaceName,
-        name: `${name}-pv`,
-      },
-      spec: {
-        accessModes: ['ReadWriteMany'],
-        capacity: {
-          storage: `1Gi`,
-        },
-        hostPath: {
-          path: '/mnt/data/',
-        },
-      },
-    })
-    pvcClaimName = pvc.metadata.apply((m) => m.name)
-  } else {
-    const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
-    pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
-  }
+  const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
+  pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
 
   const jsonModifyConfig = new configMapFromFile(
     'json-modify-config',
@@ -290,7 +232,7 @@ export = async () => {
         name: 'node-network',
       },
       spec: {
-        type: isMinikube ? 'NodePort' : 'ClusterIP',
+        type: useLocalProvider ? 'NodePort' : 'ClusterIP',
         ports: [
           { name: 'port-1', port: 9944 },
           { name: 'port-2', port: 9933 },
@@ -318,10 +260,10 @@ export = async () => {
   let endpoint1
   let endpoint2
 
-  if (!isMinikube) {
+  if (!useLocalProvider) {
     const caddy = new CaddyServiceDeployment(
       'caddy-proxy',
-      { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
+      { lbReady, namespaceName: namespaceName, isMinikube: useLocalProvider, caddyEndpoints },
       resourceOptions
     )
 

@@ -1,6 +1,6 @@
 # Kubernetes Cluster
 
-This stack deploys a Kubernetes cluster on either minikube or AWS EKS depending on user configuration
+This stack deploys a Kubernetes cluster on AWS EKS depending on user configuration
 
 ## Deploying the App
 
@@ -42,12 +42,6 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
     --plaintext platform=aws --plaintext instanceType=t2.medium \
     --plaintext numberOfAvailabilityZones=2 --plaintext clusterName=eksctl-joystream
-   ```
-
-   If deploying on minikube:
-
-   ```bash
-   $ pulumi config set-all --plaintext platform=minikube
    ```
 
 1. Stand up the cluster:

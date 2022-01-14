@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@pulumi/kubernetes": "^3.0.0",
-    "@pulumi/pulumi": "^3.0.0"
+    "@pulumi/pulumi": "^3.0.0",
+    "js-yaml": "^4.1.0"
   }
 }

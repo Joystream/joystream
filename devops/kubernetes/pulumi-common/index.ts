@@ -1,2 +1,2 @@
 export { CaddyServiceDeployment } from './caddy'
-export { getProvider, isPlatformMinikube } from './provider'
+export { getProvider } from './provider'

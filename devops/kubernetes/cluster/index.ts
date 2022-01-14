@@ -15,9 +15,7 @@ export let kubeconfig: pulumi.Output<any>
 export let provider: k8s.Provider
 export let platform = config.require('platform')
 
-if (platform === 'minikube') {
-  provider = new k8s.Provider('local', {})
-} else if (platform === 'aws') {
+if (platform === 'aws') {
   // Create a VPC for our cluster.
   const vpc = new awsx.ec2.Vpc(`${clusterName}-vpc`, { numberOfAvailabilityZones, numberOfNatGateways: 1 })
 
