@@ -42,8 +42,9 @@ export class ChannelMigration extends AssetsMigration {
     this.logger = createLogger(this.name)
   }
 
-  private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment) {
-    if (this.member) return this.member
+  private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment): AccoundId | number {
+    if (!this.isSudo) return this.member
+
     if (!ownerMember) {
       throw new Error(`Chanel ownerMember missing: ${id}. Only member-owned channels are supported!`)
     }
@@ -57,7 +58,7 @@ export class ChannelMigration extends AssetsMigration {
 
   protected async migrateBatch(tx: SubmittableExtrinsic<'promise'>, channels: ChannelFieldsFragment[]): Promise<void> {
     const { api } = this
-    const result = await api.sendExtrinsic(this.sudo, tx)
+    const result = await api.sendExtrinsic(this.key, tx)
     const channelCreatedEvents = api.findEvents(result, 'content', 'ChannelCreated')
     const newChannelIds: ChannelId[] = channelCreatedEvents.map((e) => e.data[1])
     if (channelCreatedEvents.length !== channels.length) {

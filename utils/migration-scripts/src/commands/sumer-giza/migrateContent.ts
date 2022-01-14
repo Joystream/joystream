@@ -13,8 +13,8 @@ export class MigrateContentCommand extends Command {
       description: 'WS provider endpoint uri (Giza)',
       default: 'ws://localhost:9944',
     }),
-    sudoUri: flags.string({
-      description: 'Sudo key Substrate uri',
+    senderUri: flags.string({
+      description: '(Sudo) key Substrate uri. If not sudo, membership is required.',
       default: '//Alice',
     }),
     channelIds: flags.integer({

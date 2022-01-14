@@ -50,7 +50,7 @@ export class VideosMigration extends AssetsMigration {
 
   protected async migrateBatch(tx: SubmittableExtrinsic<'promise'>, videos: VideoFieldsFragment[]): Promise<void> {
     const { api } = this
-    const result = await api.sendExtrinsic(this.sudo, tx)
+    const result = await api.sendExtrinsic(this.key, tx)
     const videoCreatedEvents = api.findEvents(result, 'content', 'VideoCreated')
     const newVideoIds: VideoId[] = videoCreatedEvents.map((e) => e.data[2])
     if (videoCreatedEvents.length !== videos.length) {

@@ -22,7 +22,7 @@ export type MigrationStateJson = {
 
 export type BaseMigrationConfig = {
   migrationStatePath: string
-  sudoUri: string
+  senderUri: string
 }
 
 export type BaseMigrationParams = {
@@ -59,7 +59,7 @@ export abstract class BaseMigration {
   public async init(): Promise<void> {
     this.loadMigrationState()
     nodeCleanup(this.onExit.bind(this))
-    await this.loadSudoKey()
+    await this.loadKey()
   }
 
   public abstract run(): Promise<MigrationResult>
@@ -106,26 +106,21 @@ export abstract class BaseMigration {
     fs.writeFileSync(stateFilePath, JSON.stringify(migrationState, undefined, 2))
   }
 
-  private async loadSudoKey() {
-    const { sudoUri } = this.config
-    const keyring = new Keyring({ type: 'sr25519' })
-    const key = keyring.createFromUri(sudoUri)
-    if (!key) {
-      throw new Error(`Invalid key!`)
-    }
+  private async loadKey() {
+    const { senderUri } = this.config
     const sudoKey = await this.api.query.sudo.key()
-    console.debug(`Sudo key: ${sudoKey.toString()}`)
-    this.isSudo = sudoKey.toString() === key.address
-    if (this.isSudo) {
-      this.sudo = key
-      return
-    }
-    const [id] = await this.api.query.members.memberIdsByControllerAccountId(key.address)
+    const keyring = new Keyring({ type: 'sr25519' })
+    this.key = keyring.createFromUri(senderUri)
+    this.isSudo = sudoKey.toString() === this.key.address
+    this.logger.debug(`Sudo key: ${sudoKey.toString()}`)
+    if (this.isSudo) return
+
+    const [id] = await this.api.query.members.memberIdsByControllerAccountId(this.key.address)
     if (!id) {
-      throw new Error(`No Membership found for key: ${key.address.toString()}`)
+      throw new Error(`No Membership found for key: ${this.key.address.toString()}`)
     }
-    this.member = { id, controllerAccount: key }
-    console.debug(`Using key: ${key.address} (member ${this.member.id})`)
+    this.member = { id: id.toNumber(), controllerAccount: this.key.address }
+    this.logger.debug(`Using key: ${this.key.address} (member ${this.member.id})`)
   }
 
   protected async executeBatchMigration<T extends { id: string }>(
@@ -147,6 +142,7 @@ export abstract class BaseMigration {
    * - Ordering of the entities in the `batch` array matches the ordering of the batched calls through which they are migrated
    * - Last call for each entity is always sudo.sudoAs
    * - There is only one sudo.sudoAs call per entity
+   * TODO correct above: sudoAs is only used if senderUri is sudo.
    *
    * Entity migration is considered failed if sudo.sudoAs call failed or was not executed at all, regardless of
    * the result of any of the previous calls associated with that entity migration.
