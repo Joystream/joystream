@@ -34,6 +34,9 @@ type Worker @entity {
   "The group that the worker belongs to"
   group: WorkingGroup!
 
+  "The id the group that the worker belongs to"
+  groupId: ID!
+
   "Worker membership"
   membership: Membership!
 
