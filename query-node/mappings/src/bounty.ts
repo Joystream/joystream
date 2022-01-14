@@ -8,6 +8,7 @@ import {
   BountyContractOpen,
   BountyContribution,
   BountyCreatedEvent,
+  BountyCreatorCherryWithdrawalEvent,
   BountyFundedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
@@ -279,4 +280,25 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   const withdrawalInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
 
   await store.save<BountyFundingWithdrawalEvent>(withdrawalInEvent)
+}
+
+export async function bounty_BountyCreatorCherryWithdrawal({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const cherryWithdrawalEvent = new BountyEvents.BountyCreatorCherryWithdrawalEvent(event)
+  const [bountyId] = cherryWithdrawalEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  // Update the bounty totalFunding
+  const bounty = await getBounty(store, bountyId)
+  bounty.updatedAt = eventTime
+  bounty.totalFunding = bounty.totalFunding.sub(bounty.cherry)
+
+  await store.save<Bounty>(bounty)
+
+  // Record the event
+  const withdrawalInEvent = new BountyCreatorCherryWithdrawalEvent({ ...genericEventFields(event), bounty })
+
+  await store.save<BountyCreatorCherryWithdrawalEvent>(withdrawalInEvent)
 }
