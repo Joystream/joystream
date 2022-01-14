@@ -35,7 +35,11 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId): Promise<Bo
   return bounty
 }
 
-async function getContribution(store: DatabaseManager, bountyId: BountyId, contributor?: string): Promise<BountyContribution> {
+async function getContribution(
+  store: DatabaseManager,
+  bountyId: BountyId,
+  contributor?: string
+): Promise<BountyContribution> {
   const contribution = await store.get(BountyContribution, { where: { bountyId, contributor } })
   if (!contribution) {
     const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
