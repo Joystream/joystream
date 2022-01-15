@@ -24,9 +24,11 @@
 mod tests;
 use core::marker::PhantomData;
 mod errors;
+mod lemma;
 mod permissions;
 
 pub use errors::*;
+pub use lemma::*;
 pub use permissions::*;
 
 use core::{cmp::max, mem::size_of};
@@ -46,7 +48,8 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     ensure, Parameter,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
+
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -297,6 +300,8 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId> {
     collaborators: BTreeSet<MemberId>,
     /// moderator set
     moderator_set: BTreeSet<MemberId>,
+    /// Cumulative cashout
+    prior_cumulative_cashout: Balance,
 }
 
 // Channel alias type for simplification.
@@ -330,6 +335,9 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
+
+// hash value type used for payment validation
+pub type HashValue<T> = <T as frame_system::Trait>::Hash;
 
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -693,6 +701,22 @@ pub struct PostDeletionParametersRecord<HashOutput> {
 }
 
 pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
+/// Payment claim by a channel
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
+pub struct PullPaymentElement<ChannelId, Balance, Hash> {
+    channel_id: ChannelId,
+    amount_earned: Balance,
+    reason: Hash,
+}
+
+pub type PullPayment<T> = PullPaymentElement<
+    <T as StorageOwnership>::ChannelId,
+    minting::BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
+pub type PullPaymentProof<T> = MerkleProof<<T as frame_system::Trait>::Hashing, PullPayment<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -744,6 +768,12 @@ decl_storage! {
 
         /// Migration config for videos:
         pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
+
+        pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
+
+        pub MaxRewardAllowed get(fn max_reward_allowed) config(): minting::BalanceOf<T>;
+
+         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
 
     }
 }
@@ -980,6 +1010,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderator_set: params.moderator_set.clone(),
+                prior_cumulative_cashout: minting::BalanceOf::<T>::default(),
             };
 
             // add channel to onchain state
@@ -1891,6 +1922,67 @@ decl_module! {
             Self::perform_channel_migration();
 
             10_000_000 // TODO: adjust Weight
+        pub fn update_commitment(
+            origin,
+            new_commitment: <T as frame_system::Trait>::Hash,
+        ) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_commitment(sender);
+
+
+            <Commitment<T>>::put(new_commitment);
+            Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
+        }
+
+        #[weight = 10_000_000]
+        pub fn claim_channel_reward(
+            origin,
+            proof: PullPaymentProof<T>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        ) {
+            let elem = &proof.leaf;
+            let channel = Self::ensure_channel_exists(&elem.channel_id)?;
+
+            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
+
+            let cashout = elem
+                .amount_earned
+                .saturating_sub(channel.prior_cumulative_cashout);
+
+            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_earned, Error::<T>::TotalRewardLimitExceeded);
+            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::InsufficientCashoutAmount);
+
+            proof.verify(<Commitment<T>>::get())?;
+
+            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::transfer_reward(cashout, &channel.reward_account.unwrap());
+            ChannelById::<T>::mutate(
+                &elem.channel_id,
+                |channel| channel.prior_cumulative_cashout =
+                    channel.prior_cumulative_cashout.saturating_add(elem.amount_earned)
+            );
+
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_earned, elem.channel_id));
+        }
+
+        #[weight = 10_000_000]
+        pub fn update_max_reward_allowed(origin, amount: minting::BalanceOf<T>) {
+            // Root origin which describes a call that comes from within the runtime itself
+            ensure_root(origin)?;
+            <MaxRewardAllowed<T>>::put(amount);
+            Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
+        }
+
+        #[weight = 10_000_000]
+        pub fn update_min_cashout_allowed(origin, amount: minting::BalanceOf<T>) {
+            ensure_root(origin)?;
+            <MinCashoutAllowed<T>>::put(amount);
+            Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
         }
     }
 }
@@ -2103,6 +2195,18 @@ impl<T: Trait> Module<T> {
         max(storage_price, cleanup_cost)
     }
 
+    fn transfer_reward(
+        _amount: minting::BalanceOf<T>,
+        _address: &<T as frame_system::Trait>::AccountId,
+    ) {
+        // TODO: implement the minting of the reward
+    }
+
+    fn not_implemented() -> DispatchResult {
+        Err(Error::<T>::FeatureNotImplemented.into())
+    }
+} // impl<T: Trait> Module
+
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
         witness: Option<<T as frame_system::Trait>::Hash>,
@@ -2182,6 +2286,7 @@ decl_event!(
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
+        HashValue = <T as frame_system::Trait>::Hash,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2291,5 +2396,11 @@ decl_event!(
         ReactionToPost(MemberId, VideoId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, ModeratorSet),
+
+        // Rewards
+        CommitmentUpdated(HashValue),
+        ChannelRewardUpdated(Balance, ChannelId),
+        MaxRewardUpdated(Balance),
+        MinCashoutUpdated(Balance),
     }
 );

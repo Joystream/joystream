@@ -58,7 +58,7 @@ decl_error! {
         /// Video does not exist
         VideoDoesNotExist,
 
-        /// Video in season can`t be removed (because order is important)
+        /// Vfdeo in season can`t be removed (because order is important)
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
@@ -114,5 +114,22 @@ decl_error! {
 
         /// Invalid member id  specified
         InvalidMemberProvided,
+
+        /// Actor is not A Member
+        ActorNotAMember,
+
+        /// Payment Proof verification failed
+        PaymentProofVerificationFailed,
+
+        /// Total reward too high
+        TotalRewardLimitExceeded,
+
+        /// Cashout amount too small
+        InsufficientCashoutAmount,
+
+        /// Reward account is none
+        RewardAccountNotFoundInChannel,
+
+
     }
 }

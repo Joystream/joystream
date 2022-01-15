@@ -10,6 +10,32 @@ pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
+/// CONTENTACTOR ENUM DEFINITION
+
+/// Enum, representing all possible `Actor`s
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
+pub enum ContentActor<
+    CuratorGroupId: Default + Clone + Copy,
+    CuratorId: Default + Clone + Copy,
+    MemberId: Default + Clone + Copy,
+> {
+    Curator(CuratorGroupId, CuratorId),
+    Member(MemberId),
+    Lead,
+}
+
+impl<
+        CuratorGroupId: Default + Clone + Copy,
+        CuratorId: Default + Clone + Copy,
+        MemberId: Default + Clone + Copy,
+    > Default for ContentActor<CuratorGroupId, CuratorId, MemberId>
+{
+    fn default() -> Self {
+        Self::Lead
+    }
+}
+
 /// Model of authentication manager.
 pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
     /// Curator identifier
@@ -62,7 +88,9 @@ pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Dispat
     Ok(())
 }
 
-/// Ensure curator authorization performed succesfully
+/// AUTHENTICATION PRIMITIVES
+
+// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
@@ -74,7 +102,7 @@ pub fn ensure_curator_auth_success<T: Trait>(
     Ok(())
 }
 
-/// Ensure member authorization performed succesfully
+// Ensure member authorization performed succesfully
 pub fn ensure_member_auth_success<T: Trait>(
     account_id: &T::AccountId,
     member_id: &T::MemberId,
@@ -86,11 +114,27 @@ pub fn ensure_member_auth_success<T: Trait>(
     Ok(())
 }
 
-/// Ensure lead authorization performed succesfully
+// Ensure lead authorization performed succesfully
 pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> DispatchResult {
     ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
     Ok(())
 }
+
+// authenticate actor
+pub fn ensure_actor_auth_success<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    match actor {
+        ContentActor::Lead => ensure_lead_auth_success::<T>(sender),
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
+        }
+        ContentActor::Member(member_id) => ensure_member_auth_success::<T>(sender, member_id),
+    }
+}
+
+/// CHANNEL CORE FIELDS MANAGEMENT PERMISSIONS
 
 /// Ensure actor is authorized to create a channel
 pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
@@ -153,6 +197,9 @@ pub fn ensure_actor_can_manage_reward_account<T: Trait>(
     }
 }
 
+/// CHANNEL ASSET MANAGEMENT PERMISSIONS
+
+// Ensure channel is owned by curators
 pub fn ensure_channel_is_owned_by_curators<T: Trait>(
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
@@ -162,7 +209,7 @@ pub fn ensure_channel_is_owned_by_curators<T: Trait>(
     Err(Error::<T>::ActorNotAuthorized.into())
 }
 
-/// Ensure actor is authorized to manage channel assets, video also qualify as assets
+// Ensure actor is authorized to manage channel assets & videos
 pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -182,6 +229,7 @@ pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
     }
 }
 
+// ensure member id is in the channel collaborator set
 pub fn ensure_member_is_collaborator<T: Trait>(
     member_id: &T::MemberId,
     channel: &Channel<T>,
@@ -193,7 +241,7 @@ pub fn ensure_member_is_collaborator<T: Trait>(
     Ok(())
 }
 
-// Enure actor can update channels and videos in the channel
+// Ensure actor can update channels and videos in the channel
 pub fn ensure_actor_is_channel_owner<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -203,7 +251,9 @@ pub fn ensure_actor_is_channel_owner<T: Trait>(
     Ok(())
 }
 
-// Enure actor can update or delete channels and videos
+/// SET FEATURED VIDEOS & CATEGORIES MANAGEMENT PERMISSION
+
+// Ensure actor can update or delete channels and videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -217,7 +267,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     }
 }
 
-/// Ensure actor can censor
+// Ensure actor can censor
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -240,7 +290,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
     }
 }
 
-/// Ensure actor can manage categories
+// Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -254,23 +304,9 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     Ok(())
 }
 
-// authenticate actor
-pub fn ensure_actor_auth_success<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    match actor {
-        ContentActor::Lead => ensure_lead_auth_success::<T>(sender),
-        ContentActor::Curator(curator_group_id, curator_id) => {
-            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
-        }
-        ContentActor::Member(member_id) => ensure_member_auth_success::<T>(sender, member_id),
-    }
-}
-
 // POST RELATED PERMISSIONS
 
-// Enure actor can add a comment
+// Ensure actor can add a comment
 pub fn ensure_actor_authorized_to_add_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -288,7 +324,7 @@ pub fn ensure_actor_authorized_to_add_video_post<T: Trait>(
     ensure_actor_is_channel_owner::<T>(actor, owner)
 }
 
-// Enure actor can edit a video post description
+// Ensure actor can edit a video post description
 pub fn ensure_actor_authorized_to_edit_video_post<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -298,7 +334,7 @@ pub fn ensure_actor_authorized_to_edit_video_post<T: Trait>(
     ensure_actor_is_channel_owner::<T>(actor, owner)
 }
 
-// Enure actor can edit a post comment text
+// Ensure actor can edit a post comment text
 pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -308,7 +344,7 @@ pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
     ensure_actor_is_comment_author::<T>(actor, &post.author)
 }
 
-// Enure actor can create post: same rules as if he is trying to update channel
+// Ensure actor can create post: same rules as if he is trying to update channel
 pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -326,7 +362,7 @@ pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
     actor_is_author.or(actor_is_owner).or(actor_is_moderator)
 }
 
-// Enure actor can create post: same rules as if he is trying to update channel
+// Ensure actor can create post: same rules as if he is trying to update channel
 pub fn ensure_actor_authorized_to_remove_video_post<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -351,7 +387,7 @@ pub fn ensure_actor_is_moderator<T: Trait>(
         Err(Error::<T>::ActorNotAuthorized.into())
     }
 }
-// Enure actor is comment author
+// Ensure actor is comment author
 pub fn ensure_actor_is_comment_author<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -373,26 +409,20 @@ pub fn actor_to_channel_owner<T: Trait>(
     }
 }
 
-/// Enum, representing all possible `Actor`s
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
-pub enum ContentActor<
-    CuratorGroupId: Default + Clone + Copy,
-    CuratorId: Default + Clone + Copy,
-    MemberId: Default + Clone + Copy,
-> {
-    Curator(CuratorGroupId, CuratorId),
-    Member(MemberId),
-    Lead,
+/// PAYOUTS-RELATED PERMISSIONS
+
+// authorize actor and claim payment
+pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    ensure_actor_is_channel_owner(actor, owner)
 }
 
-impl<
-        CuratorGroupId: Default + Clone + Copy,
-        CuratorId: Default + Clone + Copy,
-        MemberId: Default + Clone + Copy,
-    > Default for ContentActor<CuratorGroupId, CuratorId, MemberId>
-{
-    fn default() -> Self {
-        Self::Lead
-    }
+// authorized account can update payouts vector commitment
+pub fn ensure_authorized_to_update_commitment(sender: &T::AccountId) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
 }

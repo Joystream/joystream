@@ -283,6 +283,14 @@ parameter_types! {
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
 }
+// required for minting::BalanceOf<Test>
+impl minting::Trait for Test {
+    // Currency has been already defined
+    type Currency = balances::Module<Self>;
+    type MintId = u64;
+}
+
+pub struct MockStorageSystem {}
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
@@ -488,9 +496,12 @@ pub struct ExtBuilder {
     next_post_id: u64,
     video_migration: VideoMigrationConfig<Test>,
     channel_migration: ChannelMigrationConfig<Test>,
+    max_reward_allowed: minting::BalanceOf<Test>,
+    min_cashout_allowed: minting::BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
+    // init test scenario for ExtBuilder
     fn default() -> Self {
         Self {
             next_channel_category_id: 1,
@@ -511,6 +522,8 @@ impl Default for ExtBuilder {
                 current_id: 1,
                 final_id: 1,
             },
+            max_reward_allowed: BalanceOf::<Test>::from(1_000u32),
+            min_cashout_allowed: BalanceOf::<Test>::from(1u32),
         }
     }
 }
@@ -521,6 +534,7 @@ impl ExtBuilder {
             .build_storage::<Test>()
             .unwrap();
 
+        // the same as t.top().extend(GenesisConfig::<Test> etc...)
         GenesisConfig::<Test> {
             next_channel_category_id: self.next_channel_category_id,
             next_channel_id: self.next_channel_id,
@@ -534,6 +548,8 @@ impl ExtBuilder {
             next_post_id: self.next_post_id,
             video_migration: self.video_migration,
             channel_migration: self.channel_migration,
+            max_reward_allowed: self.max_reward_allowed,
+            min_cashout_allowed: self.min_cashout_allowed,
         }
         .assimilate_storage(&mut t)
         .unwrap();
