@@ -1112,7 +1112,7 @@ pub fn unsuccessful_moderators_update_with_invalid_members_id() {
 }
 
 #[test]
-pub fn successful_moderators_update_by_owner() {
+pub fn successful_moderators_update_by_member_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1121,6 +1121,26 @@ pub fn successful_moderators_update_by_owner() {
         create_default_member_owned_channel();
 
         UpdateModeratorSetFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+pub fn successful_moderators_update_by_curator_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        UpdateModeratorSetFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Ok(()));
     })
 }
 
@@ -1136,5 +1156,37 @@ pub fn unsuccessful_moderators_update_with_invalid_channel_id() {
         UpdateModeratorSetFixture::default()
             .with_channel_id(ChannelId::zero())
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_by_lead_with_member_owned_channel() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()))
+    })
+}
+
+#[test]
+pub fn successful_moderators_update_by_lead_with_curator_owned_channel() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel();
+
+        UpdateModeratorSetFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()))
     })
 }

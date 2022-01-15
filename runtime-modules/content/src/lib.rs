@@ -1866,7 +1866,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let owner = Self::ensure_channel_validity(&channel_id)?.owner;
 
-            ensure_actor_authorized_to_update_mod_set::<T>(
+            ensure_actor_can_manage_moderators::<T>(
                 &sender,
                 &actor,
                 &owner,
