@@ -1171,7 +1171,7 @@ pub fn unsuccessful_moderators_update_by_lead_with_member_owned_channel() {
         UpdateModeratorSetFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
 

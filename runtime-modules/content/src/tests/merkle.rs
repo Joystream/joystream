@@ -115,8 +115,9 @@ fn helper_build_merkle_path<E: Encode + Clone>(
 fn update_maximum_reward_allowed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        let new_amount = minting::BalanceOf::<Test>::from(2_000u32);
-        let _res = Content::update_max_reward_allowed(Origin::root(), new_amount);
+        let new_amount = BalanceOf::<Test>::from(2_000u32);
+        let origin = Origin::signed(LEAD_ACCOUNT_ID);
+        let _res = Content::update_max_reward_allowed(origin, new_amount);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::MaxRewardUpdated(new_amount))
@@ -128,8 +129,9 @@ fn update_maximum_reward_allowed() {
 fn update_minimum_cashout_allowed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        let new_amount = minting::BalanceOf::<Test>::from(10u32);
-        let _res = Content::update_min_cashout_allowed(Origin::root(), new_amount);
+        let new_amount = BalanceOf::<Test>::from(10u32);
+        let origin = Origin::signed(LEAD_ACCOUNT_ID);
+        let _res = Content::update_min_cashout_allowed(origin, new_amount);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::MinCashoutUpdated(new_amount))
@@ -140,11 +142,10 @@ fn update_minimum_cashout_allowed() {
 #[test]
 fn update_commitment_value() {
     with_default_mock_builder(|| {
-        let mut commit = TestHashing::hash(&1.encode());
-        let mut _res = Content::update_commitment(Origin::root(), commit);
         run_to_block(1);
-        commit = TestHashing::hash(&2.encode());
-        _res = Content::update_commitment(Origin::root(), commit);
+        let origin = Origin::signed(LEAD_ACCOUNT_ID);
+        let commit = TestHashing::hash(&2.encode());
+        let _res = Content::update_commitment(origin, commit);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::CommitmentUpdated(commit))
@@ -156,7 +157,8 @@ fn update_commitment_value() {
 fn update_commitment_with_same_value() {
     with_default_mock_builder(|| {
         let mut commit = TestHashing::hash(&1.encode());
-        let mut _res = Content::update_commitment(Origin::root(), commit);
+        let origin = Origin::signed(LEAD_ACCOUNT_ID);
+        let mut _res = Content::update_commitment(origin, commit);
         run_to_block(1);
         commit = TestHashing::hash(&1.encode());
         _res = Content::update_commitment(Origin::root(), commit);
@@ -166,19 +168,21 @@ fn update_commitment_with_same_value() {
 
 fn setup_channels_scenario(
     num_channels: u64,
-    payments_params: &Vec<(u64, minting::BalanceOf<Test>)>,
+    payments_params: &Vec<(u64, BalanceOf<Test>)>,
 ) -> (Vec<PullPayment<Test>>, Vec<TestHash>) {
     // create payment elements collection
     // create channels
 
     for _i in 0..num_channels {
         let _ = Content::create_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParameters {
-                assets: vec![],
-                meta: vec![],
-                reward_account: Some(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            ChannelCreationParameters::<Test> {
+                assets: None,
+                meta: None,
+                reward_account: Some(DEFAULT_MEMBER_ACCOUNT_ID),
+                collaborators: BTreeSet::new(),
+                moderator_set: BTreeSet::new(),
             },
         );
     }
@@ -187,7 +191,7 @@ fn setup_channels_scenario(
         .iter()
         .map(|&(c_id, amnt)| PullPayment::<Test> {
             channel_id: ChannelId::from(c_id),
-            amount_earned: minting::BalanceOf::<Test>::from(amnt),
+            amount_earned: BalanceOf::<Test>::from(amnt),
             reason: TestHashing::hash(&c_id.encode()),
         })
         .collect::<Vec<PullPayment<Test>>>();
@@ -197,7 +201,8 @@ fn setup_channels_scenario(
     let merkle_root = hash_tree.last().copied().unwrap();
 
     // set the commitment
-    let mut _res = Content::update_commitment(Origin::root(), merkle_root);
+    let origin = Origin::signed(LEAD_ACCOUNT_ID);
+    let mut _res = Content::update_commitment(origin, merkle_root);
     (pull_payments_collection, hash_tree)
 }
 
@@ -247,10 +252,11 @@ fn channel_reward_update_test() {
 
         // attempt should succeed
         let _res = Content::claim_channel_reward(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             candidate_proof,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
+
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelRewardUpdated(
@@ -286,9 +292,9 @@ fn non_existing_channel_reward_update_test() {
 
         // attempt should NOT succeed
         let _res = Content::claim_channel_reward(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             candidate_proof,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
 
         assert_ne!(

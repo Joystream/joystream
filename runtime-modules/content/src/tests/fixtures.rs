@@ -109,13 +109,14 @@ impl CreateChannelFixture {
                 MetaEvent::content(RawEvent::ChannelCreated(
                     self.actor.clone(),
                     channel_id,
-                    ChannelRecord {
+                    Channel::<Test> {
                         owner: owner,
                         is_censored: false,
                         reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
                         moderator_set: self.params.moderator_set.clone(),
                         num_videos: Zero::zero(),
+                        prior_cumulative_cashout: Zero::zero(),
                     },
                     self.params.clone(),
                 ))
@@ -417,6 +418,7 @@ impl UpdateChannelFixture {
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
                             moderator_set: channel_pre.moderator_set,
+                            prior_cumulative_cashout: BalanceOf::<Test>::zero(),
                         },
                         self.params.clone(),
                     ))

@@ -280,17 +280,9 @@ parameter_types! {
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
 }
-// required for minting::BalanceOf<Test>
-impl minting::Trait for Test {
-    // Currency has been already defined
-    type Currency = balances::Module<Self>;
-    type MintId = u64;
-}
-
-pub struct MockStorageSystem {}
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
@@ -496,8 +488,8 @@ pub struct ExtBuilder {
     next_post_id: u64,
     video_migration: VideoMigrationConfig<Test>,
     channel_migration: ChannelMigrationConfig<Test>,
-    max_reward_allowed: minting::BalanceOf<Test>,
-    min_cashout_allowed: minting::BalanceOf<Test>,
+    max_reward_allowed: BalanceOf<Test>,
+    min_cashout_allowed: BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
