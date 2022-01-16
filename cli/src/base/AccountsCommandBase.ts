@@ -25,6 +25,8 @@ export const KEYRING_OPTIONS: KeyringOptions = {
   type: DEFAULT_ACCOUNT_TYPE,
 }
 
+export type ISelectedMember = [MemberId, Membership]
+
 /**
  * Abstract base class for account-related commands.
  *
@@ -33,7 +35,7 @@ export const KEYRING_OPTIONS: KeyringOptions = {
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
-  private selectedMember: [MemberId, Membership] | undefined
+  private selectedMember: ISelectedMember | undefined
   private _keyring: KeyringInstance | undefined
 
   private get keyring(): KeyringInstance {
@@ -319,7 +321,13 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<[MemberId, Membership]> {
+  async setSelectedMember(selectedMember: ISelectedMember): Promise<void> {
+    this.selectedMember = selectedMember
+
+    await this.setPreservedState({selectedMemberId: selectedMember[0].toString()})
+  }
+
+  async getRequiredMemberContext(allowedIds?: MemberId[], useSelected = true): Promise<ISelectedMember> {
     if (
       useSelected &&
       this.selectedMember &&
@@ -328,12 +336,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       return this.selectedMember
     }
 
-    const membersEntries = allowedIds
-      ? await this.getApi().memberEntriesByIds(allowedIds)
-      : await this.getApi().allMemberEntries()
-    const availableMemberships = await Promise.all(
-      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
-    )
+    const availableMemberships = await this.getKnownMembers(allowedIds)
 
     if (!availableMemberships.length) {
       this.error(
@@ -352,10 +355,21 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return this.selectedMember
   }
 
+  async getKnownMembers(allowedIds?: MemberId[]): Promise<ISelectedMember[]> {
+    const membersEntries = allowedIds
+      ? await this.getApi().memberEntriesByIds(allowedIds)
+      : await this.getApi().allMemberEntries()
+    const availableMemberships = await Promise.all(
+      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
+    )
+
+    return availableMemberships
+  }
+
   async promptForMember(
-    availableMemberships: [MemberId, Membership][],
+    availableMemberships: ISelectedMember[],
     message = 'Choose a member'
-  ): Promise<[MemberId, Membership]> {
+  ): Promise<ISelectedMember> {
     const memberIndex = await this.simplePrompt({
       type: 'list',
       message,
@@ -376,5 +390,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       throw this.createDataDirInitError()
     }
     await this.initKeyring()
+
+    const availableMemberships = await this.getKnownMembers()
+    const memberId = this.getPreservedState().selectedMemberId
+    this.selectedMember = availableMemberships.find(item => item[0].toString() == memberId) || undefined
   }
 }

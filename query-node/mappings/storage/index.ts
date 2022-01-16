@@ -18,9 +18,11 @@ import {
   StorageDataObject,
   StorageSystemParameters,
   GeoCoordinates,
+  Video,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, inconsistentState } from '../common'
+import { getVideoActiveStatus, updateVideoActiveCounters, IVideoActiveStatus, videoRelationsForCounters } from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -42,6 +44,7 @@ import {
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
 } from './utils'
+import { In } from 'typeorm'
 
 // STORAGE BUCKETS
 
@@ -227,13 +230,63 @@ export async function storage_DataObjectsUploaded({ event, store }: EventContext
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, , bagId, dataObjectIds] = new Storage.PendingDataObjectsAcceptedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds)
+  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, ['videoThumbnail', 'videoMedia'])
+
+  // get ids of videos that are in relation with accepted data objects
+  const notUniqueVideoIds = dataObjects
+    .map(item => [item.videoMedia?.id.toString(), item.videoThumbnail?.id.toString()])
+    .flat()
+    .filter(item => item)
+  const videoIds = [...new Set(notUniqueVideoIds)]
+
+  // load videos
+  const videosPre = await store.getMany(Video, {
+    where: { id: In(videoIds) },
+    relations: videoRelationsForCounters,
+  })
+
+  // remember if videos are fully active before data objects update
+  const initialActiveStates = videosPre
+    .map(video => getVideoActiveStatus(video))
+    .filter(item => item)
+
+  // accept storage data objects
   await Promise.all(
-    dataObjects.map(async (dataObject) => {
+    dataObjects.map(async (dataObject, index) => {
       dataObject.isAccepted = true
       await store.save<StorageDataObject>(dataObject)
     })
   )
+
+  /*
+    This approach of reloading videos one by one is not optimal, but it is straightforward algorithm.
+
+    This reduces otherwise complex situation caused by `store.get*` functions not return objects
+    shared by mutliple entities (at least now). Because of that when updating for example
+    `dataObject.videoThumnail.channel.activeVideoCounter` on dataObject A, this change is not
+    reflected on `dataObject.videoMedia.channel.activeVideoCounter` on dataObject B.
+
+    We can upgrade this algorithm in the future if this event mapping proves to have serious
+    performance issues. In that case, a unit test for this mapping will be required.
+  */
+  // load relevant videos one by one and update related active-video-counters
+  await initialActiveStates.reduce(async (accPromise, initialActiveState) => {
+    await accPromise
+
+    // load refreshed version of videos and related entities (channel, channel category, category)
+
+    const video = await store.get(Video, {
+      where: { id: initialActiveState.video.id.toString() },
+      relations: videoRelationsForCounters,
+    }) as Video
+
+    await updateVideoActiveCounters(
+      store,
+      initialActiveState,
+      getVideoActiveStatus(video)
+    )
+
+  }, Promise.resolve())
 }
 
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -250,8 +303,32 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds)
-  await Promise.all(dataObjects.map((o) => removeDataObject(store, o)))
+  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
+    'videoThumbnail',
+    ...videoRelationsForCounters.map(item => `videoThumbnail.${item}`),
+    'videoMedia',
+    ...videoRelationsForCounters.map(item => `videoMedia.${item}`),
+  ])
+
+  await Promise.all(
+    dataObjects.map(async (dataObject) => {
+      // remember if video is fully active before update
+      const initialVideoActiveStatusThumbnail = dataObject.videoThumbnail
+        ? getVideoActiveStatus(dataObject.videoThumbnail)
+        : null
+      const initialVideoActiveStatusMedia = dataObject.videoMedia ? getVideoActiveStatus(dataObject.videoMedia) : null
+
+      await removeDataObject(store, dataObject)
+
+      // update video active counters
+      if (initialVideoActiveStatusThumbnail) {
+        await updateVideoActiveCounters(store, initialVideoActiveStatusThumbnail, undefined)
+      }
+      if (initialVideoActiveStatusMedia) {
+        await updateVideoActiveCounters(store, initialVideoActiveStatusMedia, undefined)
+      }
+    })
+  )
 }
 
 // DISTRIBUTION FAMILY

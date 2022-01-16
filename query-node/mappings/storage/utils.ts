@@ -38,13 +38,15 @@ import { Balance } from '@polkadot/types/interfaces'
 export async function getDataObjectsInBag(
   store: DatabaseManager,
   bagId: BagId,
-  dataObjectIds: BTreeSet<DataObjectId>
+  dataObjectIds: BTreeSet<DataObjectId>,
+  relations: string[] = []
 ): Promise<StorageDataObject[]> {
   const dataObjects = await store.getMany(StorageDataObject, {
     where: {
       id: In(Array.from(dataObjectIds).map((id) => id.toString())),
       storageBag: { id: getBagId(bagId) },
     },
+    relations,
   })
   if (dataObjects.length !== Array.from(dataObjectIds).length) {
     throw new Error(

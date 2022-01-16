@@ -89,9 +89,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       if (this.requiresQueryNode && !queryNodeUri) {
         this.warn('Query node endpoint uri is required in order to run this command!')
         queryNodeUri = await this.promptForQueryNodeUri(true)
-      } else if (queryNodeUri === undefined) {
-        this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
-        queryNodeUri = await this.promptForQueryNodeUri()
       }
 
       const { metadataCache } = this.getPreservedState()

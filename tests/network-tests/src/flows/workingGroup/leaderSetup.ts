@@ -8,10 +8,11 @@ import { assert } from 'chai'
 // import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
 import { extendDebug } from '../../Debugger'
+import { CliApi } from '../../CliApi'
 
 export default function (group: WorkingGroups, canSkip = false) {
-  return async function ({ api, env }: FlowProps): Promise<void> {
-    return leaderSetup(api, env, group, canSkip)
+  return async function ({ api, env, cli }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, cli, group, canSkip)
   }
 }
 
@@ -19,6 +20,7 @@ export default function (group: WorkingGroups, canSkip = false) {
 async function leaderSetup(
   api: Api,
   env: NodeJS.ProcessEnv,
+  cli: CliApi,
   group: WorkingGroups,
   skipIfAlreadySet = false
 ): Promise<void> {
@@ -60,6 +62,15 @@ async function leaderSetup(
   const hiredLead = await api.getGroupLead(group)
   assert.notEqual(hiredLead, undefined, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
+
+  // setup (ensure) CLI connection to node and query node
+
+  await cli.setApiUri()
+
+  await cli.setQueryNodeUri()
+
+  debug(`Importing leader's account to CLI`)
+  await cli.importAccount(leadKeyPair)
 
   debug('Done')
 

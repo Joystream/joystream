@@ -213,6 +213,12 @@ type StorageDataObject @entity {
 
   "If the object is no longer used as an asset - the time at which it was unset (if known)"
   unsetAt: DateTime
+
+  "Video that has this data object associated as thumbnail photo."
+  videoThumbnail: Video @derivedFrom(field: "thumbnailPhoto")
+
+  "Video that has this data object associated as media."
+  videoMedia: Video @derivedFrom(field: "media")
 }
 
 type DistributionBucketFamilyGeographicArea @entity {
