@@ -22,7 +22,7 @@ ${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COL
 BUCKET_ID=`${CLI} leader:create-bucket -i=${COLOSSUS_1_WORKER_ID} -a -n=10000 -s=1000000000000  --accountUri ${COLOSSUS_1_WORKER_URI}`
 ${CLI} operator:accept-invitation -w=${COLOSSUS_1_WORKER_ID} -i=${BUCKET_ID} -t=${TRANSACTOR_KEY} --accountUri ${COLOSSUS_1_WORKER_URI}
 ${CLI} leader:update-dynamic-bag-policy -n 1 -t Channel --accountUri ${COLOSSUS_1_WORKER_URI}
-${CLI} leader:update-data-fee -f 10 --accountUri ${COLOSSUS_1_WORKER_URI} # Optionally - set some data fee per megabyte
+${CLI} leader:update-data-fee -f 0 --accountUri ${COLOSSUS_1_WORKER_URI} # Optionally - set some data fee per megabyte
 
 # The node uri should be an accessible endpoint from within a container as well as the host machine.
 # In production it would most likely be the reverse proxy endpoint. If not specified we
