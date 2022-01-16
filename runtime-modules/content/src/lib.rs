@@ -27,11 +27,12 @@ mod errors;
 mod lemma;
 mod permissions;
 
+use sp_std::cmp::max;
+use sp_std::mem::size_of;
+
 pub use errors::*;
 pub use lemma::*;
 pub use permissions::*;
-
-use core::{cmp::max, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -48,14 +49,12 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     ensure, Parameter,
 };
-use frame_system::{ensure_root, ensure_signed};
+use frame_system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{
-    AccountIdConversion, Hash, MaybeSerializeDeserialize, Member, Saturating,
-};
+use sp_arithmetic::traits::{BaseArithmetic, One, Saturating, Zero};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
@@ -287,7 +286,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId> {
+pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -309,6 +308,7 @@ pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
+    BalanceOf<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -420,7 +420,7 @@ pub struct StorageAssetsRecord<Balance> {
     pub expected_data_size_fee: Balance,
 }
 
-type StorageAssets<T> = StorageAssetsRecord<<T as balances::Trait>::Balance>;
+type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -458,8 +458,6 @@ type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, Da
 pub struct VideoRecord<ChannelId, SeriesId, PostId> {
     pub in_channel: ChannelId,
 
-    // keep track of which season the video is in if it is an 'episode'
-    // - prevent removing a video if it is in a season (because order is important)
     pub in_series: Option<SeriesId>,
 
     /// Whether the curators have censored the video or not.
@@ -474,6 +472,7 @@ pub struct VideoRecord<ChannelId, SeriesId, PostId> {
 
 pub type Video<T> =
     VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId, <T as Trait>::PostId>;
+
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -636,7 +635,7 @@ pub type Post<T> = PostRecord<
         <T as ContentActorAuthenticator>::CuratorId,
         <T as MembershipTypes>::MemberId,
     >,
-    <T as balances::Trait>::Balance,
+    BalanceOf<T>,
     <T as Trait>::PostId,
     PostType<T>,
     <T as Trait>::VideoId,
@@ -701,6 +700,7 @@ pub struct PostDeletionParametersRecord<HashOutput> {
 }
 
 pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
+
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
@@ -711,8 +711,8 @@ pub struct PullPaymentElement<ChannelId, Balance, Hash> {
 }
 
 pub type PullPayment<T> = PullPaymentElement<
-    <T as StorageOwnership>::ChannelId,
-    minting::BalanceOf<T>,
+    <T as storage::Trait>::ChannelId,
+    BalanceOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
 
@@ -722,17 +722,21 @@ decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
-        pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
+        pub ChannelCategoryById get(fn channel_category_by_id):
+        map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
-        pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
+        pub VideoCategoryById get(fn video_category_by_id):
+        map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
         pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId>;
 
-        pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
+        pub SeriesById get(fn series_by_id):
+        map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
 
-        pub PersonById get(fn person_by_id): map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
+        pub PersonById get(fn person_by_id):
+        map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
 
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
@@ -748,32 +752,31 @@ decl_storage! {
 
         pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
 
-        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config(): T::ChannelOwnershipTransferRequestId;
+        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config():
+        T::ChannelOwnershipTransferRequestId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
-        /// Map, representing  CuratorGroupId -> CuratorGroup relation
-        pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+        pub CuratorGroupById get(fn curator_group_by_id):
+        map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         pub PostById get(fn post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
-            hasher(blake2_128_concat) T::PostId => Post<T>;
+        hasher(blake2_128_concat) T::PostId => Post<T>;
 
         pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
             T::VideoId => T::PostId;
 
-        /// Migration config for channels
         pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
 
-        /// Migration config for videos:
         pub VideoMigration get(fn video_migration) config(): VideoMigrationConfig<T>;
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-        pub MaxRewardAllowed get(fn max_reward_allowed) config(): minting::BalanceOf<T>;
+        pub MaxRewardAllowed get(fn max_reward_allowed) config(): BalanceOf<T>;
 
-         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
+        pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
 
     }
 }
@@ -799,7 +802,7 @@ decl_module! {
             origin,
         ) {
 
-        let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
@@ -828,7 +831,7 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-        let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
@@ -858,7 +861,7 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-        let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
@@ -896,7 +899,7 @@ decl_module! {
         ) {
 
             // Ensure given origin is lead
-        let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
@@ -984,8 +987,8 @@ decl_module! {
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         Some(deletion_prize),
                         params,
-                )?;
-                // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
+                    )?;
+                    // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
                 } else {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
@@ -994,7 +997,7 @@ decl_module! {
                 }
             }
 
-             // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
+            // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
             if let Some(params) = upload_params.clone() {
                 Storage::<T>::upload_data_objects(params)?;
             }
@@ -1010,7 +1013,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderator_set: params.moderator_set.clone(),
-                prior_cumulative_cashout: minting::BalanceOf::<T>::default(),
+                prior_cumulative_cashout: BalanceOf::<T>::default(),
             };
 
             // add channel to onchain state
@@ -1302,7 +1305,7 @@ decl_module! {
                     &channel_id,
                     &sender
                 );
-                 Storage::<T>::upload_data_objects(params)?;
+                Storage::<T>::upload_data_objects(params)?;
             }
 
             // create the video struct
@@ -1398,7 +1401,7 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-           let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin.clone())?;
 
             // check that video exists
             let video = Self::ensure_video_validity(&video_id)?;
@@ -1643,7 +1646,7 @@ decl_module! {
                     video_id,
                     is_censored,
                     rationale
-            ));
+                ));
 
             Ok(())
         }
@@ -1846,7 +1849,7 @@ decl_module! {
                     post,
                     post_id,
                     actor,
-            ));
+                ));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1899,8 +1902,8 @@ decl_module! {
 
             ensure_actor_can_manage_moderators::<T>(
                 &sender,
-                &actor,
                 &owner,
+                &actor,
             )?;
 
             Self::validate_member_set(&new_moderator_set)?;
@@ -1916,32 +1919,34 @@ decl_module! {
                     channel_id,
                     new_moderator_set
                 ));
-            }
+        }
+
         fn on_initialize(_n: T::BlockNumber) -> frame_support::weights::Weight {
             Self::perform_video_migration();
             Self::perform_channel_migration();
-
             10_000_000 // TODO: adjust Weight
+        }
+
+        #[weight = 10_000_000] // TODO: adjust Weight
         pub fn update_commitment(
             origin,
             new_commitment: <T as frame_system::Trait>::Hash,
         ) {
             let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_commitment(sender);
-
+            ensure_authorized_to_update_commitment::<T>(&sender)?;
 
             <Commitment<T>>::put(new_commitment);
             Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
 
-        #[weight = 10_000_000]
+        #[weight = 10_000_000] // TODO: adjust Weight
         pub fn claim_channel_reward(
             origin,
             proof: PullPaymentProof<T>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        ) {
+        ) -> DispatchResult {
             let elem = &proof.leaf;
-            let channel = Self::ensure_channel_exists(&elem.channel_id)?;
+            let channel = Self::ensure_channel_validity(&elem.channel_id)?;
 
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
@@ -1952,7 +1957,7 @@ decl_module! {
             ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_earned, Error::<T>::TotalRewardLimitExceeded);
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::InsufficientCashoutAmount);
 
-            proof.verify(<Commitment<T>>::get())?;
+            ensure!(proof.verify(<Commitment<T>>::get()), Error::<T>::PaymentProofVerificationFailed);
 
             ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
 
@@ -1968,19 +1973,22 @@ decl_module! {
             );
 
             Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_earned, elem.channel_id));
+
+            Ok(())
         }
 
-        #[weight = 10_000_000]
-        pub fn update_max_reward_allowed(origin, amount: minting::BalanceOf<T>) {
-            // Root origin which describes a call that comes from within the runtime itself
-            ensure_root(origin)?;
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_max_reward::<T>(&sender)?;
             <MaxRewardAllowed<T>>::put(amount);
             Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
         }
 
-        #[weight = 10_000_000]
-        pub fn update_min_cashout_allowed(origin, amount: minting::BalanceOf<T>) {
-            ensure_root(origin)?;
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_min_cashout::<T>(&sender)?;
             <MinCashoutAllowed<T>>::put(amount);
             Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
         }
@@ -2195,17 +2203,9 @@ impl<T: Trait> Module<T> {
         max(storage_price, cleanup_cost)
     }
 
-    fn transfer_reward(
-        _amount: minting::BalanceOf<T>,
-        _address: &<T as frame_system::Trait>::AccountId,
-    ) {
+    fn transfer_reward(_amount: BalanceOf<T>, _address: &<T as frame_system::Trait>::AccountId) {
         // TODO: implement the minting of the reward
     }
-
-    fn not_implemented() -> DispatchResult {
-        Err(Error::<T>::FeatureNotImplemented.into())
-    }
-} // impl<T: Trait> Module
 
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
@@ -2242,10 +2242,8 @@ impl<T: Trait> Module<T> {
         ensure!(res, Error::<T>::InvalidMemberProvided);
         Ok(())
     }
-}
-// Giza:
-// Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
-impl<T: Trait> Module<T> {
+
+    // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
     pub fn on_runtime_upgrade() {
         // setting final index triggers migration
         <VideoMigration<T>>::mutate(|config| config.final_id = <NextVideoId<T>>::get());
@@ -2287,6 +2285,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         HashValue = <T as frame_system::Trait>::Hash,
+        Balance = BalanceOf<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),

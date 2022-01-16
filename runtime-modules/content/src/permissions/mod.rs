@@ -415,14 +415,22 @@ pub fn actor_to_channel_owner<T: Trait>(
 pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
     ensure_actor_auth_success::<T>(&sender, actor)?;
-    ensure_actor_is_channel_owner(actor, owner)
+    ensure_actor_is_channel_owner::<T>(actor, owner)
 }
 
 // authorized account can update payouts vector commitment
-pub fn ensure_authorized_to_update_commitment(sender: &T::AccountId) -> DispatchResult {
+pub fn ensure_authorized_to_update_commitment<T: Trait>(sender: &T::AccountId) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
+
+pub fn ensure_authorized_to_update_max_reward<T: Trait>(sender: &T::AccountId) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
+
+pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
