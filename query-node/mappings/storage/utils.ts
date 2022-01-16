@@ -19,7 +19,6 @@ import {
 import BN from 'bn.js'
 import { bytesToString, inconsistentState, getById, RelationsArr } from '../common'
 import { In } from 'typeorm'
-import { unsetAssetRelations } from '../content/utils'
 
 import { BTreeSet } from '@polkadot/types'
 import _ from 'lodash'
@@ -244,11 +243,6 @@ export async function getMostRecentlyCreatedDataObjects(
     })
   }
   return objects.sort((a, b) => new BN(a.id).cmp(new BN(b.id)))
-}
-
-export async function removeDataObject(store: DatabaseManager, object: StorageDataObject): Promise<void> {
-  // `unsetAssetRelations` actually removes data object
-  await unsetAssetRelations(store, object)
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {

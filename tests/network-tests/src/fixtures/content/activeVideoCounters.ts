@@ -141,25 +141,24 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     const videosData = await this.createVideos(videoCount, channelIds[0], videoCategoryIds[0])
 
     // add `storageGroupWorker` to storage group, storage bucket and accept all storage content
-    const {workerId: storageGroupWorkerId, storageBucketId} = await this.prepareAssetStorage(storageLeader, storageGroupWorker)
-
-    this.debug('Adding storage bag to bucket')
-    await this.api.updateStorageBucketsForBag(
-      storageLeader.role_account_id.toString(),
-      channelIds[0].toString(),
-      [storageBucketId],
+    const { workerId: storageGroupWorkerId, storageBucketId } = await this.prepareAssetStorage(
+      storageLeader,
+      storageGroupWorker
     )
 
+    this.debug('Adding storage bag to bucket')
+    await this.api.updateStorageBucketsForBag(storageLeader.role_account_id.toString(), channelIds[0].toString(), [
+      storageBucketId,
+    ])
+
     this.debug('Accepting content to storage bag')
-    //const bagId = `dynamic:channel:${channelIds[0]}`
     const allAssetIds = videosData.map((item) => item.assetContentIds).flat()
     await this.api.acceptPendingDataObjects(
       storageGroupWorker.keyringPair.address,
       storageGroupWorkerId,
       storageBucketId,
-      //bagId,
       channelIds[0].toString(),
-      allAssetIds,
+      allAssetIds
     )
 
     // check channel and categories con are counted as active
@@ -233,7 +232,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     await this.api.updateStorageBucketsVoucherMaxLimits(
       storageLeader.role_account_id.toString(),
       bucketSettings.sizeLimit,
-      bucketSettings.objectsLimit,
+      bucketSettings.objectsLimit
     )
 
     this.debug('Adding worker to content directory group')
@@ -249,19 +248,15 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
       storageLeader.role_account_id.toString(),
       bucketSettings.sizeLimit,
       bucketSettings.objectsLimit,
-      workerId,
+      workerId
     )
 
     const storageBucketId = this.api.findStorageBucketCreated(createBucketResult.events) as DataObjectId
 
     this.debug('Accepting storage bucket invitation')
-    await this.api.acceptStorageBucketInvitation(
-      storageGroupWorker.keyringPair.address,
-      workerId,
-      storageBucketId,
-    )
+    await this.api.acceptStorageBucketInvitation(storageGroupWorker.keyringPair.address, workerId, storageBucketId)
 
-    return {workerId, storageBucketId}
+    return { workerId, storageBucketId }
   }
 
   /**

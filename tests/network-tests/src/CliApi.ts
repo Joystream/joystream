@@ -108,7 +108,7 @@ export class CliApi {
     const { stderr } = this.runCommand([
       'account:import',
       '--name',
-      keyringPair.meta.name as string || uuid().substring(0, 8),
+      (keyringPair.meta.name as string) || uuid().substring(0, 8),
       '--password',
       password,
       '--backupFilePath',
@@ -120,18 +120,6 @@ export class CliApi {
     }
   }
 
-/*
-  /**
-    Selects an account that will be used by CLI for further commands.
-  * /
-  async chooseAccount(accountAddress: string) {
-    const { stderr } = this.runCommand(['account:choose', '--address', accountAddress])
-
-    if (stderr) {
-      throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
-    }
-  }
-*/
   async chooseMemberAccount(accountAddress: string) {
     const { stderr } = this.runCommand(['account:chooseMember', '--address', accountAddress])
 

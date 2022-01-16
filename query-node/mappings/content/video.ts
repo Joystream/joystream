@@ -5,7 +5,13 @@ import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { processVideoMetadata, getVideoActiveStatus, updateVideoActiveCounters, videoRelationsForCountersBare, videoRelationsForCounters } from './utils'
+import {
+  processVideoMetadata,
+  getVideoActiveStatus,
+  updateVideoActiveCounters,
+  videoRelationsForCountersBare,
+  videoRelationsForCounters,
+} from './utils'
 import { Channel, ChannelCategory, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'

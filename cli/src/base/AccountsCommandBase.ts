@@ -324,7 +324,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   async setSelectedMember(selectedMember: ISelectedMember): Promise<void> {
     this.selectedMember = selectedMember
 
-    await this.setPreservedState({selectedMemberId: selectedMember[0].toString()})
+    await this.setPreservedState({ selectedMemberId: selectedMember[0].toString() })
   }
 
   async getRequiredMemberContext(allowedIds?: MemberId[], useSelected = true): Promise<ISelectedMember> {
@@ -393,6 +393,6 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     const availableMemberships = await this.getKnownMembers()
     const memberId = this.getPreservedState().selectedMemberId
-    this.selectedMember = availableMemberships.find(item => item[0].toString() == memberId) || undefined
+    this.selectedMember = availableMemberships.find((item) => item[0].toString() === memberId) || undefined
   }
 }

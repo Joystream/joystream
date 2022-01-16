@@ -22,7 +22,13 @@ import {
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, inconsistentState } from '../common'
-import { getVideoActiveStatus, updateVideoActiveCounters, IVideoActiveStatus, videoRelationsForCounters } from '../content/utils'
+import {
+  getVideoActiveStatus,
+  updateVideoActiveCounters,
+  IVideoActiveStatus,
+  videoRelationsForCounters,
+  unsetAssetRelations,
+} from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -31,7 +37,6 @@ import {
 import {
   createDataObjects,
   getStorageSystem,
-  removeDataObject,
   getStorageBucketWithOperatorMetadata,
   getBag,
   getDynamicBagId,
@@ -234,9 +239,9 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 
   // get ids of videos that are in relation with accepted data objects
   const notUniqueVideoIds = dataObjects
-    .map(item => [item.videoMedia?.id.toString(), item.videoThumbnail?.id.toString()])
+    .map((item) => [item.videoMedia?.id.toString(), item.videoThumbnail?.id.toString()])
     .flat()
-    .filter(item => item)
+    .filter((item) => item)
   const videoIds = [...new Set(notUniqueVideoIds)]
 
   // load videos
@@ -246,9 +251,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
   })
 
   // remember if videos are fully active before data objects update
-  const initialActiveStates = videosPre
-    .map(video => getVideoActiveStatus(video))
-    .filter(item => item)
+  const initialActiveStates = videosPre.map((video) => getVideoActiveStatus(video)).filter((item) => item)
 
   // accept storage data objects
   await Promise.all(
@@ -275,17 +278,12 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 
     // load refreshed version of videos and related entities (channel, channel category, category)
 
-    const video = await store.get(Video, {
+    const video = (await store.get(Video, {
       where: { id: initialActiveState.video.id.toString() },
       relations: videoRelationsForCounters,
-    }) as Video
+    })) as Video
 
-    await updateVideoActiveCounters(
-      store,
-      initialActiveState,
-      getVideoActiveStatus(video)
-    )
-
+    await updateVideoActiveCounters(store, initialActiveState, getVideoActiveStatus(video))
   }, Promise.resolve())
 }
 
@@ -305,9 +303,9 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
   const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
     'videoThumbnail',
-    ...videoRelationsForCounters.map(item => `videoThumbnail.${item}`),
+    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
     'videoMedia',
-    ...videoRelationsForCounters.map(item => `videoMedia.${item}`),
+    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
   ])
 
   await Promise.all(
@@ -318,7 +316,7 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
         : null
       const initialVideoActiveStatusMedia = dataObject.videoMedia ? getVideoActiveStatus(dataObject.videoMedia) : null
 
-      await removeDataObject(store, dataObject)
+      await unsetAssetRelations(store, dataObject)
 
       // update video active counters
       if (initialVideoActiveStatusThumbnail) {

@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
+import { Bytes, BTreeSet, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { decodeAddress } from '@polkadot/keyring'
@@ -41,7 +41,6 @@ import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
 import { v4 as uuid } from 'uuid'
-import { BTreeSet } from '@polkadot/types'
 
 type AnyMetadata = {
   serializeBinary(): Uint8Array
@@ -1163,18 +1162,7 @@ export class Api {
       this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module)
     )
   }
-/* TODO: rework for Giza
-  public async acceptContent(
-    workerAccount: string,
-    workerId: number,
-    contentId: ContentId
-  ): Promise<ISubmittableResult> {
-    // not sure why is this needed to convert contentId, but it's essential
-    const decodedContentId = decodeAddress(contentId)
 
-    return this.sender.signAndSend(this.api.tx.content.acceptContent(workerId, decodedContentId), workerAccount)
-  }
-*/
   public async proposeCreateWorkingGroupLeaderOpening(leaderOpening: {
     account: string
     title: string
@@ -1958,19 +1946,15 @@ export class Api {
     accountFrom: string, // group leader
     sizeLimit: number,
     objectsLimit: number,
-    workerId?: WorkerId,
+    workerId?: WorkerId
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
       this.api.tx.storage.createStorageBucket(workerId || null, true, sizeLimit, objectsLimit),
-      accountFrom,
+      accountFrom
     )
   }
 
-  async acceptStorageBucketInvitation(
-    accountFrom: string,
-    workerId: WorkerId,
-    storageBucketId: StorageBucketId,
-  ) {
+  async acceptStorageBucketInvitation(accountFrom: string, workerId: WorkerId, storageBucketId: StorageBucketId) {
     return this.sender.signAndSend(
       this.api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, accountFrom),
       accountFrom
@@ -1982,13 +1966,17 @@ export class Api {
     channelId: string,
     addStorageBuckets: StorageBucketId[]
   ) {
-    const bagId = {Dynamic: {Channel: channelId}}
-    const encodedStorageBucketIds = new BTreeSet<StorageBucketId>(this.api.registry, "StorageBucketId", addStorageBuckets.map(item => item.toString()))
-    const noBucketsToRemove = new BTreeSet<StorageBucketId>(this.api.registry, "StorageBucketId", [])
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedStorageBucketIds = new BTreeSet<StorageBucketId>(
+      this.api.registry,
+      'StorageBucketId',
+      addStorageBuckets.map((item) => item.toString())
+    )
+    const noBucketsToRemove = new BTreeSet<StorageBucketId>(this.api.registry, 'StorageBucketId', [])
 
     return this.sender.signAndSend(
       this.api.tx.storage.updateStorageBucketsForBag(bagId, encodedStorageBucketIds, noBucketsToRemove),
-      accountFrom,
+      accountFrom
     )
   }
 
@@ -1996,10 +1984,7 @@ export class Api {
     accountFrom: string, // group leader
     limit: number
   ) {
-    return this.sender.signAndSend(
-      this.api.tx.storage.updateStorageBucketsPerBagLimit(limit),
-      accountFrom,
-    )
+    return this.sender.signAndSend(this.api.tx.storage.updateStorageBucketsPerBagLimit(limit), accountFrom)
   }
 
   async updateStorageBucketsVoucherMaxLimits(
@@ -2009,7 +1994,7 @@ export class Api {
   ) {
     return this.sender.signAndSend(
       this.api.tx.storage.updateStorageBucketsVoucherMaxLimits(sizeLimit, objectLimit),
-      accountFrom,
+      accountFrom
     )
   }
 
@@ -2018,14 +2003,14 @@ export class Api {
     workerId: WorkerId,
     storageBucketId: StorageBucketId,
     channelId: string,
-    dataObjectIds: string[],
+    dataObjectIds: string[]
   ): Promise<ISubmittableResult> {
-    const bagId = {Dynamic: {Channel: channelId}}
-    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, "DataObjectId", dataObjectIds)
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
 
     return this.sender.signAndSend(
       this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
-      accountFrom,
+      accountFrom
     )
   }
 }

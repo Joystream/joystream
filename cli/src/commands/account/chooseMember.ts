@@ -27,15 +27,12 @@ export default class AccountChoose extends AccountsCommandBase {
 
   async selectKnownMember(address: string): Promise<ISelectedMember> {
     const knownMembersData = await this.getKnownMembers()
-    const memberData = knownMembersData.find(([memberId, member]) => member.controller_account.toString() == address)
+    const memberData = knownMembersData.find(([, member]) => member.controller_account.toString() === address)
 
     if (!memberData) {
-      this.error(
-        `Selected account address not found among known members!`,
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
+      this.error(`Selected account address not found among known members!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
     return memberData

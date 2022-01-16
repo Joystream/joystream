@@ -13,7 +13,17 @@ export class JobManager extends EventEmitter {
   private readonly _query: QueryNodeApi
   private readonly _cli: CliApi
 
-  constructor({ apiFactory, env, query, cli }: { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi, cli: CliApi }) {
+  constructor({
+    apiFactory,
+    env,
+    query,
+    cli,
+  }: {
+    apiFactory: ApiFactory
+    env: NodeJS.ProcessEnv
+    query: QueryNodeApi
+    cli: CliApi
+  }) {
     super()
     this._apiFactory = apiFactory
     this._env = env

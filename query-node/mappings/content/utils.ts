@@ -63,17 +63,9 @@ const ASSET_TYPES = {
 } as const
 
 // all relations that need to be loaded for updating active video counters when deleting content
-export const videoRelationsForCountersBare = [
-  'channel',
-  'channel.category',
-  'category'
-]
+export const videoRelationsForCountersBare = ['channel', 'channel.category', 'category']
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = [
-  ...videoRelationsForCountersBare,
-  'thumbnailPhoto',
-  'media'
-]
+export const videoRelationsForCounters = [...videoRelationsForCountersBare, 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -558,8 +550,8 @@ export interface IVideoActiveStatus {
 
 export function getVideoActiveStatus(video: Video): IVideoActiveStatus {
   const productionEnv = () => {
-    const isFullyActive = !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto?.isAccepted
-    !!video.media?.isAccepted
+    const isFullyActive =
+      !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto?.isAccepted && !!video.media?.isAccepted
 
     return isFullyActive
   }

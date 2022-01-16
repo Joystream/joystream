@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid'
 export function getMemberDefaults(index: number) {
   return {
     // member needs unique name due to CLI requirement for that
-    name: 'TestingActiveVideoCounters-' + uuid().substring(0, 8), 
+    name: 'TestingActiveVideoCounters-' + uuid().substring(0, 8),
   }
 }
 

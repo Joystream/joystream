@@ -7,13 +7,13 @@ import {
   convertContentActorToChannelOwner,
   processChannelMetadata,
   updateChannelCategoryVideoActiveCounter,
+  unsetAssetRelations,
 } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
-import { removeDataObject } from '../storage/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -120,7 +120,7 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
-  await Promise.all(assets.map((a) => removeDataObject(store, a)))
+  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
