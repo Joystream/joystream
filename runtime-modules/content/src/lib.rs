@@ -1,3 +1,19 @@
+// Extrinsics list
+// - create channel
+// - update channel
+// - delete channel
+// - create video
+// - update video
+// - delete video
+// - update channel chensorship status
+// - update video chensorship status
+// - create channel category
+// - update channel category
+// - delete channel category
+// - create video category
+// - update video category
+// - delete video category
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
@@ -679,10 +695,11 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<T>,
         ) {
+            // ensure migration is done
+            ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
+
             // channel creator account
             let sender = ensure_signed(origin)?;
-            // ensure migration is done
-             ensure!(Self::is_migration_done(), Error::<T>::MigrationNotFinished);
 
             ensure_actor_authorized_to_create_channel::<T>(
                 &sender,
@@ -1118,7 +1135,6 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
-
             let sender = ensure_signed(origin.clone())?;
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_validity(&video_id)?;
@@ -1180,7 +1196,6 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-
            let sender = ensure_signed(origin.clone())?;
 
             // check that video exists

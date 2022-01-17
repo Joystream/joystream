@@ -2,8 +2,10 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_runtime::{traits::Zero, DispatchError};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use std::convert::TryInto;
 
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
@@ -11,7 +13,9 @@ use super::mocks::{
 };
 
 use crate::tests::mocks::{
-    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
@@ -102,6 +106,9 @@ impl EventFixture {
 
 const DEFAULT_ACCOUNT_ID: u64 = 1;
 const DEFAULT_WORKER_ID: u64 = 1;
+pub const DEFAULT_DATA_OBJECTS_NUMBER: u64 = DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT / 2;
+pub const DEFAULT_DATA_OBJECTS_SIZE: u64 =
+    DEFAULT_STORAGE_BUCKET_SIZE_LIMIT / DEFAULT_DATA_OBJECTS_NUMBER - 1;
 
 pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
@@ -342,7 +349,7 @@ pub fn create_data_object_candidates(
     range
         .into_iter()
         .map(|idx| DataObjectCreationParameters {
-            size: 10 * idx as u64,
+            size: DEFAULT_DATA_OBJECTS_SIZE,
             ipfs_content_id: vec![idx],
         })
         .collect()
@@ -1151,6 +1158,7 @@ impl CreateDynamicBagFixture {
 }
 
 pub struct CreateDynamicBagWithObjectsFixture {
+    sender: u64,
     bag_id: DynamicBagId<Test>,
     deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
     upload_parameters: UploadParameters<Test>,
@@ -1158,10 +1166,68 @@ pub struct CreateDynamicBagWithObjectsFixture {
 
 impl CreateDynamicBagWithObjectsFixture {
     pub fn default() -> Self {
+        let bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let sender_acc = DEFAULT_MEMBER_ACCOUNT_ID;
         Self {
-            bag_id: Default::default(),
-            deletion_prize: Default::default(),
-            upload_parameters: Default::default(),
+            sender: sender_acc.clone(),
+            bag_id: bag_id.clone(),
+            deletion_prize: None,
+            upload_parameters: UploadParameters::<Test> {
+                bag_id: bag_id.into(),
+                expected_data_size_fee: crate::Module::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates(
+                    1,
+                    DEFAULT_DATA_OBJECTS_NUMBER.try_into().unwrap(),
+                ),
+                deletion_prize_source_account_id: sender_acc,
+            },
+        }
+    }
+
+    pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                expected_data_size_fee,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_params_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                bag_id,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_objects(self, object_creation_list: Vec<DataObjectCreationParameters>) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                object_creation_list,
+                ..self.upload_parameters
+            },
+            ..self
+        }
+    }
+
+    pub fn with_upload_parameters(self, upload_parameters: UploadParameters<Test>) -> Self {
+        Self {
+            upload_parameters,
+            ..self
+        }
+    }
+
+    pub fn with_objects_prize_source_account(self, deletion_prize_source_account_id: u64) -> Self {
+        Self {
+            upload_parameters: UploadParameters::<Test> {
+                deletion_prize_source_account_id,
+                ..self.upload_parameters
+            },
+            ..self
         }
     }
 
@@ -1179,25 +1245,55 @@ impl CreateDynamicBagWithObjectsFixture {
         }
     }
 
-    pub fn with_objects(self, upload_parameters: UploadParameters<Test>) -> Self {
-        Self {
-            upload_parameters,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.sender);
+        let bag_id: BagId<Test> = self.bag_id.clone().into();
+        let total_size_required = self
+            .upload_parameters
+            .object_creation_list
+            .iter()
+            .fold(0, |acc, it| acc + it.size);
+
         let actual_result = Storage::create_dynamic_bag_with_objects_constraints(
             self.bag_id.clone(),
             self.deletion_prize.clone(),
             self.upload_parameters.clone(),
         );
 
+        let balance_post = Balances::usable_balance(self.sender);
+
         assert_eq!(actual_result, expected_result);
 
-        if actual_result.is_ok() {
-            let bag_id: BagId<Test> = self.bag_id.clone().into();
-            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+        match actual_result {
+            Ok(()) => {
+                assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+
+                let bag = crate::Bags::<Test>::get(&bag_id);
+                assert_eq!(
+                    balance_pre.saturating_sub(balance_post),
+                    self.deletion_prize
+                        .as_ref()
+                        .map_or_else(|| Zero::zero(), |dprize| dprize.prize)
+                );
+
+                let total_objects_required =
+                    self.upload_parameters.object_creation_list.len() as u64;
+
+                assert!(bag.stored_by.iter().all(|id| {
+                    let bucket = crate::StorageBucketById::<Test>::get(id);
+                    let enough_size =
+                        bucket.voucher.size_limit >= total_size_required + bucket.voucher.size_used;
+                    let enough_objects = bucket.voucher.objects_limit
+                        >= total_objects_required + bucket.voucher.objects_used;
+                    enough_size && enough_objects && bucket.accepting_new_bags
+                }));
+            }
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                if into_str(err) != "DynamicBagExists" {
+                    assert!(!crate::Bags::<Test>::contains_key(&bag_id))
+                }
+            }
         }
     }
 }
@@ -2043,4 +2139,21 @@ impl SetDistributionBucketFamilyMetadataFixture {
 
         assert_eq!(actual_result, expected_result);
     }
+}
+
+// helper methods
+impl CreateStorageBucketFixture {
+    pub fn create_several(&self, bucket_number: u64) -> BTreeSet<u64> {
+        let mut bucket_ids = BTreeSet::new();
+        for _ in 0..bucket_number {
+            let bucket_id = self.call_and_assert(Ok(())).unwrap();
+            bucket_ids.insert(bucket_id);
+        }
+        bucket_ids
+    }
+}
+
+// wrapper to silence compiler error
+fn into_str(err: DispatchError) -> &'static str {
+    err.into()
 }
