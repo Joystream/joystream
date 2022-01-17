@@ -107,7 +107,7 @@ decl_error! {
         RationaleNotProvidedByModerator,
 
         /// Insufficient balance
-        InsufficientBalance,
+        UnsufficientBalance,
 
         /// Insufficient treasury balance
         InsufficientTreasuryBalance,
@@ -125,7 +125,7 @@ decl_error! {
         TotalRewardLimitExceeded,
 
         /// Cashout amount too small
-        InsufficientCashoutAmount,
+        UnsufficientCashoutAmount,
 
         /// Reward account is none
         RewardAccountNotFoundInChannel,

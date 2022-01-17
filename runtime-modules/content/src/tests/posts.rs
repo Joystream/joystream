@@ -67,7 +67,7 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
         create_default_member_owned_channel_with_video();
         slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
 
-        CreatePostFixture::default().call_and_assert(Err(Error::<Test>::InsufficientBalance.into()))
+        CreatePostFixture::default().call_and_assert(Err(Error::<Test>::UnsufficientBalance.into()))
     })
 }
 

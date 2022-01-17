@@ -298,7 +298,7 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// moderator set
     moderator_set: BTreeSet<MemberId>,
     /// Cumulative cashout
-    prior_cumulative_cashout: Balance,
+    cumulative_payout_earned: Balance,
 }
 
 // Channel alias type for simplification.
@@ -729,7 +729,7 @@ pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_sy
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     channel_id: ChannelId,
-    amount_earned: Balance,
+    cumulative_payout_claimed: Balance,
     reason: Hash,
 }
 
@@ -1034,7 +1034,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderator_set: params.moderator_set.clone(),
-                prior_cumulative_cashout: BalanceOf::<T>::default(),
+                cumulative_payout_earned: BalanceOf::<T>::default(),
             };
 
             // add channel to onchain state
@@ -1740,7 +1740,7 @@ decl_module! {
 
             ensure!(
                 Balances::<T>::usable_balance(&sender) >= initial_bloat_bond,
-                Error::<T>::InsufficientBalance,
+                Error::<T>::UnsufficientBalance,
             );
             //
             // == MUTATION SAFE ==
@@ -1973,11 +1973,14 @@ decl_module! {
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = item
-                .amount_earned
-                .saturating_sub(channel.prior_cumulative_cashout);
+                .cumulative_payout_claimed
+                .saturating_sub(channel.cumulative_payout_earned);
 
-            ensure!(<MaxRewardAllowed<T>>::get() > item.amount_earned, Error::<T>::TotalRewardLimitExceeded);
-            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::InsufficientCashoutAmount);
+            ensure!(
+                <MaxRewardAllowed<T>>::get() > item.cumulative_payout_claimed,
+                Error::<T>::TotalRewardLimitExceeded
+            );
+            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
             Self::verify_proof(&proof, &item)?;
 
             //
@@ -1987,11 +1990,11 @@ decl_module! {
             Self::transfer_reward(cashout, &channel.reward_account.unwrap());
             ChannelById::<T>::mutate(
                 &item.channel_id,
-                |channel| channel.prior_cumulative_cashout =
-                    channel.prior_cumulative_cashout.saturating_add(item.amount_earned)
+                |channel| channel.cumulative_payout_earned =
+                    channel.cumulative_payout_earned.saturating_add(item.cumulative_payout_claimed)
             );
 
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.amount_earned, item.channel_id));
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.cumulative_payout_claimed, item.channel_id));
 
             Ok(())
         }

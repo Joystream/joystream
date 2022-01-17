@@ -117,7 +117,7 @@ impl CreateChannelFixture {
                         collaborators: self.params.collaborators.clone(),
                         moderator_set: self.params.moderator_set.clone(),
                         num_videos: Zero::zero(),
-                        prior_cumulative_cashout: Zero::zero(),
+                        cumulative_payout_earned: Zero::zero(),
                     },
                     self.params.clone(),
                 ))
@@ -419,7 +419,7 @@ impl UpdateChannelFixture {
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
                             moderator_set: channel_pre.moderator_set,
-                            prior_cumulative_cashout: BalanceOf::<Test>::zero(),
+                            cumulative_payout_earned: BalanceOf::<Test>::zero(),
                         },
                         self.params.clone(),
                     ))
@@ -1266,10 +1266,10 @@ impl ClaimChannelRewardFixture {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            payments: create_some_pull_payments(),
+            payments: create_some_pull_payments_helper(),
             item: PullPayment::<Test> {
                 channel_id: ChannelId::one(),
-                amount_earned: BalanceOf::<Test>::one(),
+                cumulative_payout_claimed: BalanceOf::<Test>::one(),
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
         }
@@ -1283,6 +1283,10 @@ impl ClaimChannelRewardFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_payments(self, payments: Vec<PullPayment<Test>>) -> Self {
+        Self { payments, ..self }
+    }
+
     pub fn with_item(self, item: PullPayment<Test>) -> Self {
         Self { item, ..self }
     }
@@ -1290,7 +1294,7 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let _balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let cashout_pre = Content::channel_by_id(self.item.channel_id).prior_cumulative_cashout;
+        let cashout = Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 
         let actual_result = Content::claim_channel_reward(
             origin,
@@ -1298,23 +1302,20 @@ impl ClaimChannelRewardFixture {
             build_merkle_path_helper(&self.payments, 1),
             self.item.clone(),
         );
-        let cashout_post = Content::channel_by_id(self.item.channel_id).prior_cumulative_cashout;
         let _balance_post = Balances::<Test>::usable_balance(self.sender);
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(cashout_post, cashout_pre.saturating_add(item.amount_earned));
+            assert_eq!(cashout, self.item.cumulative_payout_claimed);
 
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
-                    self.item.amount_earned,
+                    self.item.cumulative_payout_claimed,
                     self.item.channel_id
                 ))
             );
-        } else {
-            assert_eq!(cashout_post, cashout_pre);
         }
     }
 }
@@ -1548,17 +1549,13 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     return path;
 }
 
-fn generate_merkle_root_helper<E: Encode>(
-    collection: &[E],
-) -> Result<Vec<HashOutput>, &'static str> {
+fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
     // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
     // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    if collection.len() == 0 {
-        return Err("empty vector");
-    }
+    assert!(!collection.is_empty());
     let mut out = Vec::new();
     for e in collection.iter() {
         out.push(Hashing::hash(&e.encode()));
@@ -1583,22 +1580,19 @@ fn generate_merkle_root_helper<E: Encode>(
                 &[out[last_len - 1], out[last_len - 1]].encode(),
             ));
         }
-        let new_len: usize = out
-            .len()
-            .checked_sub(last_len)
-            .ok_or("unsigned underflow")?;
+        let new_len: usize = out.len() - last_len;
         rem = new_len % 2;
         max_len = new_len >> 1;
         start = last_len;
     }
-    Ok(out)
+    out
 }
 
 fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     idx: usize,
 ) -> Vec<ProofElement<Test>> {
-    let merkle_tree = generate_merkle_root_helper(collection)?;
+    let merkle_tree = generate_merkle_root_helper(collection);
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), idx + 1);
     index_path
@@ -1614,10 +1608,12 @@ fn build_merkle_path_helper<E: Encode + Clone>(
 fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
     let mut payments = Vec::new();
     for i in 0..PAYMENTS_NUMBER {
-        payment.push(PullPayment::<Test> {
+        payments.push(PullPayment::<Test> {
             channel_id: ChannelId::from(i % 5),
-            amount_earned: BalanceOf::<Test>::from(i),
+            cumulative_payout_claimed: BalanceOf::<Test>::from(i),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }
+
+    payments
 }
