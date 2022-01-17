@@ -21,10 +21,9 @@ pub type Content = Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 /// Type aliases
-type Hash = <Test as frame_system::Trait>::Hash;
-type Hashing = <Test as frame_system::Trait>::Hashing;
-type LemmaItemTest = LemmaItem<TestHash>;
-type TestProof<Value> = MerkleProof<TestHashing, Value>;
+pub type Hashing = <Test as frame_system::Trait>::Hashing;
+pub type LemmaItemTest = LemmaItem<HashValue<Test>>;
+pub type Proof<Value> = MerkleProof<Hashing, Value>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type VideoId = <Test as Trait>::VideoId;
 pub type PostId = <Test as Trait>::PostId;
@@ -32,12 +31,6 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
-
-#[derive(Debug)]
-struct IndexItem {
-    index: usize,
-    side: Side,
-}
 
 /// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;

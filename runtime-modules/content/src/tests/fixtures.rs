@@ -3,7 +3,6 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use sp_runtime::traits::Hash;
 use sp_std::cmp::min;
 
 // fixtures
@@ -872,9 +871,7 @@ impl DeletePostFixture {
             video_id: VideoId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: PostDeletionParameters::<Test> {
-                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
-                )),
+                witness: Some(Hashing::hash_of(&PostId::zero())),
                 rationale: Some(b"rationale".to_vec()),
             },
         }
@@ -1148,22 +1145,18 @@ pub struct UpdateMaximumRewardFixture {
 }
 
 impl UpdateMaximumRewardFixture {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             sender: LEAD_ACCOUNT_ID,
             new_amount: BalanceOf::<Test>::zero(),
         }
     }
 
-    fn with_sender(self, sender: AccountId) -> Self {
+    pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
 
-    fn with_amount(self, new_amount: BalanceOf<Test>) -> Self {
-        Self { new_amount, ..self }
-    }
-
-    fn call_and_assert(&self, expected_result: DispatchResult) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let max_reward_pre = Content::max_reward_allowed();
 
@@ -1190,28 +1183,24 @@ pub struct UpdateMinCashoutFixture {
 }
 
 impl UpdateMinCashoutFixture {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             sender: LEAD_ACCOUNT_ID,
             new_amount: BalanceOf::<Test>::zero(),
         }
     }
 
-    fn with_sender(self, sender: AccountId) -> Self {
+    pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
 
-    fn with_amount(self, new_amount: BalanceOf<Test>) -> Self {
-        Self { new_amount, ..self }
-    }
-
-    fn call_and_assert(&self, expected_result: DispatchResult) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let min_cashout_pre = Content::min_cashout_allowed();
 
         let actual_result = Content::update_min_cashout_allowed(origin, self.new_amount.clone());
 
-        let max_reward_post = Content::min_cashout_allowed();
+        let min_cashout_post = Content::min_cashout_allowed();
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
@@ -1228,33 +1217,26 @@ impl UpdateMinCashoutFixture {
 
 pub struct UpdateCommitmentValueFixture {
     sender: AccountId,
-    new_commitment: Hash,
+    new_commitment: HashValue<Test>,
 }
 
 impl UpdateCommitmentValueFixture {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             sender: LEAD_ACCOUNT_ID,
-            new_commitment: Hashing::hash_of(&Zero::zero()),
+            new_commitment: Hashing::hash_of(&PullPayment::<Test>::default()),
         }
     }
 
-    fn with_sender(self, sender: AccountId) -> Self {
+    pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
 
-    fn with_commit(self, new_commitment: Hash) -> Self {
-        Self {
-            new_commitment,
-            ..self
-        }
-    }
-
-    fn call_and_assert(&self, expected_result: DispatchResult) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let commitment_pre = Content::commitment();
 
-        let actual_result = Content::update_commitment(origin, self.new_amount.clone());
+        let actual_result = Content::update_commitment(origin, self.new_commitment.clone());
 
         let commitment_post = Content::commitment();
 
@@ -1460,6 +1442,12 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
         .call_and_assert(Ok(()));
 }
 
+#[derive(Debug)]
+struct IndexItem {
+    index: usize,
+    side: Side,
+}
+
 fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     // used as a helper function to generate the correct sequence of indexes used to
     // construct the merkle path necessary for membership proof
@@ -1493,7 +1481,9 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     }
     return path;
 }
-fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Result<Vec<TestHash>, &'static str> {
+fn generate_merkle_root_helper<E: Encode>(
+    collection: &[E],
+) -> Result<Vec<HashValue<Test>>, &'static str> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -1540,7 +1530,7 @@ fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Result<Vec<TestHa
 fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     idx: usize,
-    merkle_tree: &[TestHash],
+    merkle_tree: &[HashValue<Test>],
 ) -> Vec<LemmaItemTest> {
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), idx + 1);
