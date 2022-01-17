@@ -20,6 +20,9 @@ export default {
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
     return workingGroupMintCapactiy(api, env, WorkingGroups.Content, lock)
   },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workingGroupMintCapactiy(api, env, WorkingGroups.Distribution, lock)
+  },
 }
 
 async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {

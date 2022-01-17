@@ -9,7 +9,12 @@
     "node-ts-strict": "node -r ts-node/register --unhandled-rejections=strict",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
-    "format": "prettier ./ --write "
+    "format": "prettier ./ --write ",
+    "generate:api:storage-node": "yarn openapi-generator-cli generate -i ../../storage-node/src/api-spec/openapi.yaml -g typescript-axios -o ./src/apis/storageNode",
+    "generate:api:distributor-node": "yarn openapi-generator-cli generate -i ../../distributor-node/src/api-spec/public.yml -g typescript-axios -o ./src/apis/distributorNode",
+    "generate:api:all": "yarn generate:api:storage-node && yarn generate:api:distributor-node && yarn format",
+    "generate:types:graphql": "graphql-codegen",
+    "generate:all": "yarn generate:types:graphql && yarn generate:api:all"
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
@@ -23,7 +28,11 @@
     "bn.js": "^4.11.8",
     "dotenv": "^8.2.0",
     "fs": "^0.0.1-security",
-    "uuid": "^7.0.3"
+    "uuid": "^7.0.3",
+    "axios": "^0.21.1",
+    "bmp-js": "^0.1.0",
+    "@types/bmp-js": "^0.1.0",
+    "node-cleanup": "^2.1.2"
   },
   "devDependencies": {
     "@polkadot/ts": "^0.4.8",
@@ -32,7 +41,13 @@
     "chai": "^4.2.0",
     "prettier": "^2.2.1",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^4.4.3",
+    "@openapitools/openapi-generator-cli": "^2.3.6",
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
   },
   "volta": {
     "extends": "../../package.json"
