@@ -1,7 +1,7 @@
 import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
-import { CaddyServiceDeployment, getProvider } from 'pulumi-common'
+import { CaddyServiceDeployment, getProvider, ProviderType } from 'pulumi-common'
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
@@ -9,8 +9,9 @@ import { NFSServiceDeployment } from './nfsVolume'
 export = async () => {
   const config = new pulumi.Config()
 
-  const provider: k8s.Provider = (await getProvider(config)).provider
-  const useLocalProvider: boolean = (await getProvider(config)).isLocalProvider
+  const customProviderType: ProviderType = await getProvider(config)
+  const provider: k8s.Provider = customProviderType.provider
+  const useLocalProvider: boolean = customProviderType.isLocalProvider
 
   const resourceOptions = { provider: provider }
 

@@ -40,7 +40,7 @@ export async function getProvider(config: pulumi.Config): Promise<ProviderType> 
   }
 }
 
-interface ProviderType {
+export interface ProviderType {
   provider: k8s.Provider
   isLocalProvider: boolean
 }

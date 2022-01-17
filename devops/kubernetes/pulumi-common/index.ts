@@ -1,2 +1,2 @@
 export { CaddyServiceDeployment } from './caddy'
-export { getProvider } from './provider'
+export { getProvider, ProviderType } from './provider'
