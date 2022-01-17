@@ -10,6 +10,7 @@ import {
   BountyCreatedEvent,
   BountyCreatorCherryWithdrawalEvent,
   BountyEntry,
+  BountyEntryStatusCashedOut,
   BountyEntryStatusRejected,
   BountyEntryStatusWithdrawn,
   BountyEntryStatusWorking,
@@ -23,6 +24,7 @@ import {
   BountyVetoedEvent,
   ForumThread,
   Membership,
+  WorkEntrantFundsWithdrawnEvent,
   WorkEntryAnnouncedEvent,
   WorkEntrySlashedEvent,
   WorkEntryWithdrawnEvent,
@@ -433,4 +435,24 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   // Record the event
   const submittedInEvent = new WorkSubmittedEvent({ ...genericEventFields(event), entry })
   await store.save<WorkEntrySlashedEvent>(submittedInEvent)
+}
+
+// Change cashed out entries status to CashedOut
+export async function bounty_WorkEntrantFundsWithdrawn({ event, store }: EventContext & StoreContext): Promise<void> {
+  const entrantFundsWithdrawnEvent = new BountyEvents.WorkEntrantFundsWithdrawnEvent(event)
+
+  // Update the entry status
+  const entry = await updateEntry(store, entrantFundsWithdrawnEvent, (entry) => {
+    const status = new BountyEntryStatusCashedOut()
+    if ('reward' in entry.status) {
+      status.reward = entry.status.reward
+    }
+    return { status: new BountyEntryStatusCashedOut() }
+  })
+
+  await store.save<BountyEntry>(entry)
+
+  // Record the event
+  const cashOutEvent = new WorkEntrantFundsWithdrawnEvent({ ...genericEventFields(event), entry })
+  await store.save<WorkEntrantFundsWithdrawnEvent>(cashOutEvent)
 }

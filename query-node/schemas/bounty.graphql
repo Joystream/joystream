@@ -154,9 +154,7 @@ type BountyEntryStatusRejected @variant {
 
 "Worker cashed out stake and/or share of bounty reward."
 type BountyEntryStatusCashedOut @variant {
-  # no properties
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
+  reward: BigInt
 }
 
 "All valid work entry statuses"
