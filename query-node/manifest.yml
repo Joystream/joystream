@@ -877,6 +877,8 @@ mappings:
       handler: bounty_WorkEntryAnnounced
     - event: bounty.WorkEntryWithdrawn
       handler: bounty_WorkEntryWithdrawn
+    - event: bounty.WorkEntrySlashed
+      handler: bounty_WorkEntrySlashed
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

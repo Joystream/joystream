@@ -10,6 +10,7 @@ import {
   BountyCreatedEvent,
   BountyCreatorCherryWithdrawalEvent,
   BountyEntry,
+  BountyEntryStatusRejected,
   BountyEntryStatusWithdrawn,
   BountyEntryStatusWorking,
   BountyFundedEvent,
@@ -23,6 +24,7 @@ import {
   ForumThread,
   Membership,
   WorkEntryAnnouncedEvent,
+  WorkEntrySlashedEvent,
   WorkEntryWithdrawnEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
@@ -386,3 +388,20 @@ export async function bounty_WorkEntryWithdrawn({ event, store }: EventContext &
   await store.save<WorkEntryWithdrawnEvent>(withdrawnInEvent)
 }
 
+export async function bounty_WorkEntrySlashed({ event, store }: EventContext & StoreContext): Promise<void> {
+  const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
+  const [, entryId] = entrySlashedEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  // Update the entry status
+  const entry = await getEntry(store, entryId)
+  entry.updatedAt = eventTime
+  entry.status = new BountyEntryStatusRejected()
+
+  await store.save<BountyEntry>(entry)
+
+  // Record the event
+  const slashedInEvent = new WorkEntrySlashedEvent({ ...genericEventFields(event), entry })
+
+  await store.save<WorkEntrySlashedEvent>(slashedInEvent)
+}
