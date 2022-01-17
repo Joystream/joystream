@@ -1,6 +1,6 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
-import { AssuranceContractType, BountyActor, BountyId, FundingType } from '@joystream/types/augment'
+import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
 import {
   Bounty,
   BountyCanceledEvent,
@@ -10,6 +10,7 @@ import {
   BountyCreatedEvent,
   BountyCreatorCherryWithdrawalEvent,
   BountyEntry,
+  BountyEntryStatusWithdrawn,
   BountyEntryStatusWorking,
   BountyFundedEvent,
   BountyFundingLimited,
@@ -22,6 +23,7 @@ import {
   ForumThread,
   Membership,
   WorkEntryAnnouncedEvent,
+  WorkEntryWithdrawnEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
 import { deserializeMetadata, genericEventFields } from './common'
@@ -50,6 +52,14 @@ async function getContribution(
     throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
   }
   return contribution
+}
+
+async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
+  const entry = await store.get(BountyEntry, { where: { id: entryId } })
+  if (!entry) {
+    throw new Error(`Entry not found by id: ${entryId}`)
+  }
+  return entry
 }
 
 function bountyActorToMembership(actor: BountyActor): Membership | undefined {
@@ -357,3 +367,22 @@ export async function bounty_WorkEntryAnnounced({ event, store }: EventContext &
 
   await store.save<WorkEntryAnnouncedEvent>(announcedEvent)
 }
+
+export async function bounty_WorkEntryWithdrawn({ event, store }: EventContext & StoreContext): Promise<void> {
+  const entryWithdrawnEvent = new BountyEvents.WorkEntryWithdrawnEvent(event)
+  const [, entryId] = entryWithdrawnEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  // Update the entry status
+  const entry = await getEntry(store, entryId)
+  entry.updatedAt = eventTime
+  entry.status = new BountyEntryStatusWithdrawn()
+
+  await store.save<BountyEntry>(entry)
+
+  // Record the event
+  const withdrawnInEvent = new WorkEntryWithdrawnEvent({ ...genericEventFields(event), entry })
+
+  await store.save<WorkEntryWithdrawnEvent>(withdrawnInEvent)
+}
+
