@@ -130,6 +130,5 @@ decl_error! {
         /// Reward account is none
         RewardAccountNotFoundInChannel,
 
-
     }
 }

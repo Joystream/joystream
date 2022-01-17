@@ -3832,6 +3832,7 @@ dependencies = [
  "pallet-randomness-collective-flip",
  "pallet-storage",
  "pallet-timestamp",
+ "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",

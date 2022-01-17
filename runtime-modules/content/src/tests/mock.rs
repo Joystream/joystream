@@ -185,6 +185,11 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+impl minting::Trait for Test {
+    type Currency = balances::Module<Self>;
+    type MintId = u64;
+}
+
 parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
 }
@@ -474,6 +479,7 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
+
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
 
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;

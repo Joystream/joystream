@@ -16,6 +16,7 @@ common = { package = 'pallet-common', default-features = false, path = '../commo
 storage = { package = 'pallet-storage', default-features = false, path = '../storage'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting' }    
 
 
 [dev-dependencies]
@@ -39,4 +40,5 @@ std = [
 	'storage/std',
 	'balances/std',
 	'membership/std',
+	'minting/std',    
 ]

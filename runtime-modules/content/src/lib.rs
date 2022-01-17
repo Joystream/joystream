@@ -58,8 +58,9 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 pub type Balances<T> = balances::Module<T>;
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 type Storage<T> = storage::Module<T>;
+type Minting<T> = minting::Module<T>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -146,6 +147,7 @@ pub trait Trait:
     + MembershipTypes
     + balances::Trait
     + storage::Trait
+    + minting::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -1976,8 +1978,6 @@ decl_module! {
                 .cumulative_payout_claimed
                 .saturating_sub(channel.cumulative_payout_earned);
 
-            println!("cumulative_payout_claimed:\t{:?}", item.cumulative_payout_claimed);
-            println!("cumulative_payout_earned:\t{:?}", channel.cumulative_payout_earned);
             ensure!(
                 <MaxRewardAllowed<T>>::get() > item.cumulative_payout_claimed,
                 Error::<T>::TotalRewardLimitExceeded
@@ -1989,7 +1989,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::transfer_reward(cashout, &channel.reward_account.unwrap());
+            Self::transfer_reward(cashout as u32, &channel.reward_account.unwrap());
             ChannelById::<T>::mutate(
                 &item.channel_id,
                 |channel| channel.cumulative_payout_earned =
@@ -2227,8 +2227,14 @@ impl<T: Trait> Module<T> {
         max(storage_price, cleanup_cost)
     }
 
-    fn transfer_reward(_amount: BalanceOf<T>, _address: &<T as frame_system::Trait>::AccountId) {
-        // TODO: implement the minting of the reward
+    fn transfer_reward(
+        reward: u32,
+        address: &<T as frame_system::Trait>::AccountId,
+    ) -> DispatchResult {
+        let mint_id = Minting::<T>::add_mint(reward.into(), None).unwrap();
+        Minting::<T>::transfer_tokens(mint_id, reward.into(), address).unwrap();
+        Minting::<T>::remove_mint(mint_id);
+        Ok(())
     }
 
     // If we are trying to delete a video post we need witness verification
