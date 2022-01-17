@@ -14,6 +14,7 @@ import {
   BountyFundingPerpetual,
   BountyFundingWithdrawalEvent,
   BountyMaxFundingReachedEvent,
+  BountyRemovedEvent,
   BountyStage,
   BountyVetoedEvent,
   ForumThread,
@@ -281,9 +282,9 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   await store.save<Bounty>(bounty)
 
   // Record the event
-  const withdrawalInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
+  const withdrawnInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
 
-  await store.save<BountyFundingWithdrawalEvent>(withdrawalInEvent)
+  await store.save<BountyFundingWithdrawalEvent>(withdrawnInEvent)
 }
 
 export async function bounty_BountyCreatorCherryWithdrawal({
@@ -302,7 +303,27 @@ export async function bounty_BountyCreatorCherryWithdrawal({
   await store.save<Bounty>(bounty)
 
   // Record the event
-  const withdrawalInEvent = new BountyCreatorCherryWithdrawalEvent({ ...genericEventFields(event), bounty })
+  const withdrawnInEvent = new BountyCreatorCherryWithdrawalEvent({ ...genericEventFields(event), bounty })
 
-  await store.save<BountyCreatorCherryWithdrawalEvent>(withdrawalInEvent)
+  await store.save<BountyCreatorCherryWithdrawalEvent>(withdrawnInEvent)
+}
+
+export async function bounty_BountyRemoved({ event, store }: EventContext & StoreContext): Promise<void> {
+  const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
+  const [bountyId] = bountyRemovedEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  const bounty = await getBounty(store, bountyId)
+
+  // Terminate the bounty
+  bounty.updatedAt = eventTime
+  bounty.deletedAt = eventTime
+  bounty.stage = BountyStage.Terminated
+
+  await store.save<Bounty>(bounty)
+
+  // Record the event
+  const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
+
+  await store.save<BountyRemovedEvent>(removedInEvent)
 }
