@@ -9,6 +9,8 @@ import {
   BountyContribution,
   BountyCreatedEvent,
   BountyCreatorCherryWithdrawalEvent,
+  BountyEntry,
+  BountyEntryStatusWorking,
   BountyFundedEvent,
   BountyFundingLimited,
   BountyFundingPerpetual,
@@ -19,6 +21,7 @@ import {
   BountyVetoedEvent,
   ForumThread,
   Membership,
+  WorkEntryAnnouncedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
 import { deserializeMetadata, genericEventFields } from './common'
@@ -326,4 +329,31 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
 
   await store.save<BountyRemovedEvent>(removedInEvent)
+}
+
+export async function bounty_WorkEntryAnnounced({ event, store }: EventContext & StoreContext): Promise<void> {
+  const entryAnnouncedEvent = new BountyEvents.WorkEntryAnnouncedEvent(event)
+  const [bountyId, entryId, memberId, accountId] = entryAnnouncedEvent.params
+  const eventTime = new Date(event.blockTimestamp)
+
+  const bounty = new Bounty({ id: String(bountyId) })
+
+  // Create the entry
+  const entry = new BountyEntry({
+    id: String(entryId),
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    bounty,
+    worker: new Membership({ id: String(memberId) }),
+    stakingAccount: String(accountId),
+    workSubmitted: false,
+    status: new BountyEntryStatusWorking(),
+  })
+
+  await store.save<BountyEntry>(entry)
+
+  // Record the event
+  const announcedEvent = new WorkEntryAnnouncedEvent({ ...genericEventFields(event), entry })
+
+  await store.save<WorkEntryAnnouncedEvent>(announcedEvent)
 }
