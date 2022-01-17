@@ -1,4 +1,4 @@
-import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
 import {
@@ -62,6 +62,40 @@ async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<Bount
   if (!entry) {
     throw new Error(`Entry not found by id: ${entryId}`)
   }
+  return entry
+}
+
+interface BountyEvent {
+  ctx: SubstrateEvent
+  params: [BountyId, ...any]
+}
+async function updateBounty(store: DatabaseManager, event: BountyEvent, changes: (bounty: Bounty) => Partial<Bounty>) {
+  const [bountyId] = event.params
+  const bounty = await getBounty(store, bountyId)
+  bounty.updatedAt = new Date(event.ctx.blockTimestamp)
+  Object.assign(bounty, changes(bounty))
+
+  await store.save<BountyEntry>(bounty)
+
+  return bounty
+}
+
+interface EntryEvent {
+  ctx: SubstrateEvent
+  params: [any, EntryId, ...any]
+}
+async function updateEntry(
+  store: DatabaseManager,
+  event: EntryEvent,
+  changes: (bounty: BountyEntry) => Partial<BountyEntry>
+) {
+  const [, entryId] = event.params
+  const entry = await getEntry(store, entryId)
+  entry.updatedAt = new Date(event.ctx.blockTimestamp)
+  Object.assign(entry, changes(entry))
+
+  await store.save<BountyEntry>(entry)
+
   return entry
 }
 
@@ -159,6 +193,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
 
   const metadata = deserializeMetadata(BountyMetadata, metadataBytes)
 
+  // Create the bounty
   const bounty = new Bounty({
     id: String(bountyId),
     createdAt: eventTime,
@@ -179,11 +214,11 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     totalFunding: bountyParams.cherry,
     discussionThread: asForumThread(metadata?.discussionThread ?? undefined),
   })
-
   await store.save<Bounty>(bounty)
 
   bountyScheduleFundingEnd(store, bounty)
 
+  // Record the event
   const createdInEvent = new BountyCreatedEvent({ ...genericEventFields(event), bounty })
   await store.save<BountyCreatedEvent>(createdInEvent)
 
@@ -218,7 +253,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   }
 }
 
-// Store bounty canceled events
+// Store bounties canceled events
 export async function bounty_BountyCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyCanceledEvent = new BountyEvents.BountyCanceledEvent(event)
   const [bountyId] = bountyCanceledEvent.params
@@ -229,7 +264,7 @@ export async function bounty_BountyCanceled({ event, store }: EventContext & Sto
   await store.save<BountyCanceledEvent>(canceledEvent)
 }
 
-// Store bounty vetoed events
+// Store bounties vetoed events
 export async function bounty_BountyVetoed({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyVetoedEvent = new BountyEvents.BountyVetoedEvent(event)
   const [bountyId] = bountyVetoedEvent.params
@@ -239,19 +274,18 @@ export async function bounty_BountyVetoed({ event, store }: EventContext & Store
   await store.save<BountyVetoedEvent>(vetoedEvent)
 }
 
-// Store new contributions and their BountyFunded events
+// Store new contributions and add their amount to their bounty totalFunding
 export async function bounty_BountyFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyFundedEvent = new BountyEvents.BountyFundedEvent(event)
-  const [bountyId, contributorActor, amount] = bountyFundedEvent.params
+  const [, contributorActor, amount] = bountyFundedEvent.params
   const eventTime = new Date(event.blockTimestamp)
 
-  const bounty = await getBounty(store, bountyId)
+  // Update the bounty totalFunding
+  const bounty = await updateBounty(store, bountyFundedEvent, (bounty) => ({
+    totalFunding: bounty.totalFunding.add(amount),
+  }))
 
-  bounty.updatedAt = eventTime
-  bounty.totalFunding = bounty.totalFunding.add(amount)
-
-  await store.save<Bounty>(bounty)
-
+  // Create the contribution
   const contribution = new BountyContribution({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -259,168 +293,144 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
     contributor: bountyActorToMembership(contributorActor),
     amount,
   })
-
   await store.save<BountyContribution>(contribution)
 
+  // Record the event
   const fundedEvent = new BountyFundedEvent({ ...genericEventFields(event), contribution })
-
   await store.save<BountyFundedEvent>(fundedEvent)
 }
 
-// Store BountyMaxFundingReached event and update the bounty stage
+// Start bounties working stage
 export async function bounty_BountyMaxFundingReached({ event, store }: EventContext & StoreContext): Promise<void> {
   const maxFundingReachedEvent = new BountyEvents.BountyMaxFundingReachedEvent(event)
   const [bountyId] = maxFundingReachedEvent.params
 
-  // Record the event
-  const bounty = new Bounty({ id: String(bountyId) })
-  const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })
-
-  await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
-
   // Update the bounty stage
-  endFundingPeriod(store, bounty)
+  const bounty = await getBounty(store, bountyId)
+  await endFundingPeriod(store, bounty)
+
+  // Record the event
+  const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })
+  await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
 }
 
+// Store BountyFundingWithdrawal events (also update the contribution deleteAt time)
 export async function bounty_BountyFundingWithdrawal({ event, store }: EventContext & StoreContext): Promise<void> {
   const fundingWithdrawalEvent = new BountyEvents.BountyFundingWithdrawalEvent(event)
   const [bountyId, contributorActor] = fundingWithdrawalEvent.params
   const eventTime = new Date(event.blockTimestamp)
 
+  // Update the contribution
   const contributor = bountyActorToMembership(contributorActor)
   const contribution = await getContribution(store, bountyId, contributor?.id)
+  contribution.updatedAt = eventTime
+  contribution.deletedAt = eventTime
+  await store.save<BountyContribution>(contribution)
 
   // Update the bounty totalFunding
-  const bounty = await getBounty(store, bountyId)
-  bounty.updatedAt = eventTime
-  bounty.totalFunding = bounty.totalFunding.sub(contribution.amount)
-
-  await store.save<Bounty>(bounty)
+  await updateBounty(store, fundingWithdrawalEvent, (bounty) => ({
+    totalFunding: bounty.totalFunding.sub(contribution.amount),
+  }))
 
   // Record the event
   const withdrawnInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
-
   await store.save<BountyFundingWithdrawalEvent>(withdrawnInEvent)
 }
 
+// Remove the cherries amount from their bounty totalFunding
 export async function bounty_BountyCreatorCherryWithdrawal({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
   const cherryWithdrawalEvent = new BountyEvents.BountyCreatorCherryWithdrawalEvent(event)
-  const [bountyId] = cherryWithdrawalEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty totalFunding
-  const bounty = await getBounty(store, bountyId)
-  bounty.updatedAt = eventTime
-  bounty.totalFunding = bounty.totalFunding.sub(bounty.cherry)
-
-  await store.save<Bounty>(bounty)
+  const bounty = await updateBounty(store, cherryWithdrawalEvent, (bounty) => ({
+    totalFunding: bounty.totalFunding.sub(bounty.cherry),
+  }))
 
   // Record the event
   const withdrawnInEvent = new BountyCreatorCherryWithdrawalEvent({ ...genericEventFields(event), bounty })
-
   await store.save<BountyCreatorCherryWithdrawalEvent>(withdrawnInEvent)
 }
 
+// Terminate removed bounties
 export async function bounty_BountyRemoved({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
-  const [bountyId] = bountyRemovedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
-
-  const bounty = await getBounty(store, bountyId)
 
   // Terminate the bounty
-  bounty.updatedAt = eventTime
-  bounty.deletedAt = eventTime
-  bounty.stage = BountyStage.Terminated
-
-  await store.save<Bounty>(bounty)
+  const bounty = await updateBounty(store, bountyRemovedEvent, (bounty) => ({
+    deletedAt: bounty.updatedAt,
+    stage: BountyStage.Terminated,
+  }))
 
   // Record the event
   const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
-
   await store.save<BountyRemovedEvent>(removedInEvent)
 }
 
+// Store new entries
 export async function bounty_WorkEntryAnnounced({ event, store }: EventContext & StoreContext): Promise<void> {
   const entryAnnouncedEvent = new BountyEvents.WorkEntryAnnouncedEvent(event)
   const [bountyId, entryId, memberId, accountId] = entryAnnouncedEvent.params
   const eventTime = new Date(event.blockTimestamp)
-
-  const bounty = new Bounty({ id: String(bountyId) })
 
   // Create the entry
   const entry = new BountyEntry({
     id: String(entryId),
     createdAt: eventTime,
     updatedAt: eventTime,
-    bounty,
+    bounty: new Bounty({ id: String(bountyId) }),
     worker: new Membership({ id: String(memberId) }),
     stakingAccount: String(accountId),
     workSubmitted: false,
     status: new BountyEntryStatusWorking(),
   })
-
   await store.save<BountyEntry>(entry)
 
   // Record the event
   const announcedEvent = new WorkEntryAnnouncedEvent({ ...genericEventFields(event), entry })
-
   await store.save<WorkEntryAnnouncedEvent>(announcedEvent)
 }
 
+// Change withdrawn entries status to withdrawn
 export async function bounty_WorkEntryWithdrawn({ event, store }: EventContext & StoreContext): Promise<void> {
   const entryWithdrawnEvent = new BountyEvents.WorkEntryWithdrawnEvent(event)
-  const [, entryId] = entryWithdrawnEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Update the entry status
-  const entry = await getEntry(store, entryId)
-  entry.updatedAt = eventTime
-  entry.status = new BountyEntryStatusWithdrawn()
-
-  await store.save<BountyEntry>(entry)
+  const entry = await updateEntry(store, entryWithdrawnEvent, () => ({
+    status: new BountyEntryStatusWithdrawn(),
+  }))
 
   // Record the event
   const withdrawnInEvent = new WorkEntryWithdrawnEvent({ ...genericEventFields(event), entry })
-
   await store.save<WorkEntryWithdrawnEvent>(withdrawnInEvent)
 }
 
+// Store WorkEntrySlashed events
 export async function bounty_WorkEntrySlashed({ event, store }: EventContext & StoreContext): Promise<void> {
   const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
-  const [, entryId] = entrySlashedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Update the entry status
-  const entry = await getEntry(store, entryId)
-  entry.updatedAt = eventTime
-  entry.status = new BountyEntryStatusRejected()
-
-  await store.save<BountyEntry>(entry)
+  const entry = await updateEntry(store, entrySlashedEvent, () => ({
+    status: new BountyEntryStatusRejected(),
+  }))
 
   // Record the event
   const slashedInEvent = new WorkEntrySlashedEvent({ ...genericEventFields(event), entry })
-
   await store.save<WorkEntrySlashedEvent>(slashedInEvent)
 }
 
+// Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
-  const [, entryId] = entrySlashedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
-  // Update the entry
-  const entry = await getEntry(store, entryId)
-  entry.updatedAt = eventTime
-  entry.workSubmitted = true
-
-  await store.save<BountyEntry>(entry)
+  // Update the entry status
+  const entry = await updateEntry(store, entrySlashedEvent, () => ({
+    workSubmitted: true,
+  }))
 
   // Record the event
   const submittedInEvent = new WorkSubmittedEvent({ ...genericEventFields(event), entry })
-
   await store.save<WorkEntrySlashedEvent>(submittedInEvent)
 }
