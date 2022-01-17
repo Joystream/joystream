@@ -24,14 +24,12 @@
 mod tests;
 use core::marker::PhantomData;
 mod errors;
-mod lemma;
 mod permissions;
 
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
 
 pub use errors::*;
-pub use lemma::*;
 pub use permissions::*;
 
 use codec::Codec;
@@ -335,9 +333,6 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
-
-// hash value type used for payment validation
-pub type HashValue<T> = <T as frame_system::Trait>::Hash;
 
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -660,6 +655,34 @@ impl<ParentPostId> Default for PostTypeRecord<ParentPostId> {
 
 pub type PostType<T> = PostTypeRecord<<T as Trait>::PostId>;
 
+/// Side used to construct hash values during merkle proof verification
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Side {
+    Left,
+    Right,
+}
+
+impl Default for Side {
+    fn default() -> Self {
+        Side::Right
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Element used in for channel payout
+pub struct ProofElementRecord<Hash, Side> {
+    // Node hash
+    hash: Hash,
+
+    // side in which *self* must be adjoined during proof verification
+    side: Side,
+}
+
+// alias for the proof element
+pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Trait>::Hash, Side>;
+
 /// An enum in order to differenciate between post author and moderator / owner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -715,8 +738,6 @@ pub type PullPayment<T> = PullPaymentElement<
     BalanceOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
-
-pub type PullPaymentProof<T> = MerkleProof<<T as frame_system::Trait>::Hashing, PullPayment<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1942,24 +1963,22 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust Weight
         pub fn claim_channel_reward(
             origin,
-            proof: PullPaymentProof<T>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            proof: Vec<ProofElement<T>>,
+            item: PullPayment<T>,
         ) -> DispatchResult {
-            let elem = &proof.leaf;
-            let channel = Self::ensure_channel_validity(&elem.channel_id)?;
+            let channel = Self::ensure_channel_validity(&item.channel_id)?;
 
+            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
-            let cashout = elem
+            let cashout = item
                 .amount_earned
                 .saturating_sub(channel.prior_cumulative_cashout);
 
-            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_earned, Error::<T>::TotalRewardLimitExceeded);
+            ensure!(<MaxRewardAllowed<T>>::get() > item.amount_earned, Error::<T>::TotalRewardLimitExceeded);
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::InsufficientCashoutAmount);
-
-            ensure!(proof.verify(<Commitment<T>>::get()), Error::<T>::PaymentProofVerificationFailed);
-
-            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
+            Self::verify_proof(&proof, &item)?;
 
             //
             // == MUTATION SAFE ==
@@ -1967,12 +1986,12 @@ decl_module! {
 
             Self::transfer_reward(cashout, &channel.reward_account.unwrap());
             ChannelById::<T>::mutate(
-                &elem.channel_id,
+                &item.channel_id,
                 |channel| channel.prior_cumulative_cashout =
-                    channel.prior_cumulative_cashout.saturating_add(elem.amount_earned)
+                    channel.prior_cumulative_cashout.saturating_add(item.amount_earned)
             );
 
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_earned, elem.channel_id));
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.amount_earned, item.channel_id));
 
             Ok(())
         }
@@ -2243,6 +2262,22 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
+        let candidate_root = proof.iter().fold(
+            <T as frame_system::Trait>::Hashing::hash_of(item),
+            |hash_v, el| match el.side {
+                Side::Right => <T as frame_system::Trait>::Hashing::hash_of(&[hash_v, el.hash]),
+                Side::Left => <T as frame_system::Trait>::Hashing::hash_of(&[el.hash, hash_v]),
+            },
+        );
+        ensure!(
+            candidate_root == Commitment::<T>::get(),
+            Error::<T>::PaymentProofVerificationFailed
+        );
+
+        Ok(())
+    }
+
     // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
     pub fn on_runtime_upgrade() {
         // setting final index triggers migration
@@ -2284,7 +2319,7 @@ decl_event!(
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
-        HashValue = <T as frame_system::Trait>::Hash,
+        Hash = <T as frame_system::Trait>::Hash,
         Balance = BalanceOf<T>,
     {
         // Curators
@@ -2397,7 +2432,7 @@ decl_event!(
         ModeratorSetUpdated(ChannelId, ModeratorSet),
 
         // Rewards
-        CommitmentUpdated(HashValue),
+        CommitmentUpdated(Hash),
         ChannelRewardUpdated(Balance, ChannelId),
         MaxRewardUpdated(Balance),
         MinCashoutUpdated(Balance),

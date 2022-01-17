@@ -4,6 +4,7 @@ use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_std::cmp::min;
+use sp_std::iter::{IntoIterator, Iterator};
 
 // fixtures
 pub struct CreateChannelFixture {
@@ -1217,7 +1218,7 @@ impl UpdateMinCashoutFixture {
 
 pub struct UpdateCommitmentValueFixture {
     sender: AccountId,
-    new_commitment: HashValue<Test>,
+    new_commitment: <Test as frame_system::Trait>::Hash,
 }
 
 impl UpdateCommitmentValueFixture {
@@ -1251,6 +1252,13 @@ impl UpdateCommitmentValueFixture {
             assert_eq!(commitment_post, commitment_pre);
         }
     }
+}
+
+pub struct ClaimChannelReward {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    proof: Vec<ProofElement<Test>>,
+    itme: PullPayment<Test>,
 }
 
 // helper functions
@@ -1481,9 +1489,10 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     }
     return path;
 }
+
 fn generate_merkle_root_helper<E: Encode>(
     collection: &[E],
-) -> Result<Vec<HashValue<Test>>, &'static str> {
+) -> Result<Vec<HashOutput>, &'static str> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -1530,13 +1539,13 @@ fn generate_merkle_root_helper<E: Encode>(
 fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     idx: usize,
-    merkle_tree: &[HashValue<Test>],
-) -> Vec<LemmaItemTest> {
+    merkle_tree: &[<Test as frame_system::Trait>::Hash],
+) -> Vec<ProofElement<Test>> {
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), idx + 1);
     index_path
         .iter()
-        .map(|idx_item| LemmaItemTest {
+        .map(|idx_item| ProofElement::<Test> {
             hash: merkle_tree[idx_item.index - 1],
             side: idx_item.side,
         })

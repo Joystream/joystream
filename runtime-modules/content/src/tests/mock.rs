@@ -21,9 +21,8 @@ pub type Content = Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 /// Type aliases
+pub type HashOutput = <Test as frame_system::Trait>::Hash;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
-pub type LemmaItemTest = LemmaItem<HashValue<Test>>;
-pub type Proof<Value> = MerkleProof<Hashing, Value>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type VideoId = <Test as Trait>::VideoId;
 pub type PostId = <Test as Trait>::PostId;
