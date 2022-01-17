@@ -3,6 +3,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use sp_runtime::traits::Hash;
 use sp_std::cmp::min;
 
 // fixtures
@@ -1141,6 +1142,135 @@ impl UpdateModeratorSetFixture {
     }
 }
 
+pub struct UpdateMaximumRewardFixture {
+    sender: AccountId,
+    new_amount: BalanceOf<Test>,
+}
+
+impl UpdateMaximumRewardFixture {
+    fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            new_amount: BalanceOf::<Test>::zero(),
+        }
+    }
+
+    fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    fn with_amount(self, new_amount: BalanceOf<Test>) -> Self {
+        Self { new_amount, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let max_reward_pre = Content::max_reward_allowed();
+
+        let actual_result = Content::update_max_reward_allowed(origin, self.new_amount.clone());
+
+        let max_reward_post = Content::max_reward_allowed();
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::MaxRewardUpdated(self.new_amount.clone()))
+            );
+            assert_eq!(max_reward_post, self.new_amount);
+        } else {
+            assert_eq!(max_reward_post, max_reward_pre);
+        }
+    }
+}
+
+pub struct UpdateMinCashoutFixture {
+    sender: AccountId,
+    new_amount: BalanceOf<Test>,
+}
+
+impl UpdateMinCashoutFixture {
+    fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            new_amount: BalanceOf::<Test>::zero(),
+        }
+    }
+
+    fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    fn with_amount(self, new_amount: BalanceOf<Test>) -> Self {
+        Self { new_amount, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let min_cashout_pre = Content::min_cashout_allowed();
+
+        let actual_result = Content::update_min_cashout_allowed(origin, self.new_amount.clone());
+
+        let max_reward_post = Content::min_cashout_allowed();
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::MinCashoutUpdated(self.new_amount.clone()))
+            );
+            assert_eq!(min_cashout_post, self.new_amount);
+        } else {
+            assert_eq!(min_cashout_post, min_cashout_pre);
+        }
+    }
+}
+
+pub struct UpdateCommitmentValueFixture {
+    sender: AccountId,
+    new_commitment: Hash,
+}
+
+impl UpdateCommitmentValueFixture {
+    fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            new_commitment: Hashing::hash_of(&Zero::zero()),
+        }
+    }
+
+    fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    fn with_commit(self, new_commitment: Hash) -> Self {
+        Self {
+            new_commitment,
+            ..self
+        }
+    }
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let commitment_pre = Content::commitment();
+
+        let actual_result = Content::update_commitment(origin, self.new_amount.clone());
+
+        let commitment_post = Content::commitment();
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CommitmentUpdated(self.new_commitment))
+            );
+            assert_eq!(commitment_post, self.new_commitment);
+        } else {
+            assert_eq!(commitment_post, commitment_pre);
+        }
+    }
+}
+
 // helper functions
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
@@ -1328,4 +1458,97 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
             video_reference: VideoId::one(),
         })
         .call_and_assert(Ok(()));
+}
+
+fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
+    // used as a helper function to generate the correct sequence of indexes used to
+    // construct the merkle path necessary for membership proof
+    let mut idx = index;
+    assert!(idx > 0); // index starting at 1
+    let floor_2 = |x: usize| (x >> 1) + (x % 2);
+    let mut path = Vec::new();
+    let mut prev_len: usize = 0;
+    let mut el = len;
+    while el != 1 {
+        if idx % 2 == 1 && idx == el {
+            path.push(IndexItem {
+                index: prev_len + idx,
+                side: Side::Left,
+            });
+        } else {
+            match idx % 2 {
+                1 => path.push(IndexItem {
+                    index: prev_len + idx + 1,
+                    side: Side::Right,
+                }),
+                _ => path.push(IndexItem {
+                    index: prev_len + idx - 1,
+                    side: Side::Left,
+                }),
+            };
+        }
+        prev_len += el;
+        idx = floor_2(idx);
+        el = floor_2(el);
+    }
+    return path;
+}
+fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Result<Vec<TestHash>, &'static str> {
+    // generates merkle root from the ordered sequence collection.
+    // The resulting vector is structured as follows: elements in range
+    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
+    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
+    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
+    if collection.len() == 0 {
+        return Err("empty vector");
+    }
+    let mut out = Vec::new();
+    for e in collection.iter() {
+        out.push(Hashing::hash(&e.encode()));
+    }
+
+    let mut start: usize = 0;
+    let mut last_len = out.len();
+    //let mut new_len = out.len();
+    let mut max_len = last_len >> 1;
+    let mut rem = last_len % 2;
+
+    // range [last..(maxlen >> 1) + (maxlen % 2)]
+    while max_len != 0 {
+        last_len = out.len();
+        for i in 0..max_len {
+            out.push(Hashing::hash(
+                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
+            ));
+        }
+        if rem == 1 {
+            out.push(Hashing::hash(
+                &[out[last_len - 1], out[last_len - 1]].encode(),
+            ));
+        }
+        let new_len: usize = out
+            .len()
+            .checked_sub(last_len)
+            .ok_or("unsigned underflow")?;
+        rem = new_len % 2;
+        max_len = new_len >> 1;
+        start = last_len;
+    }
+    Ok(out)
+}
+
+fn build_merkle_path_helper<E: Encode + Clone>(
+    collection: &[E],
+    idx: usize,
+    merkle_tree: &[TestHash],
+) -> Vec<LemmaItemTest> {
+    // builds the actual merkle path with the hashes needed for the proof
+    let index_path = index_path_helper(collection.len(), idx + 1);
+    index_path
+        .iter()
+        .map(|idx_item| LemmaItemTest {
+            hash: merkle_tree[idx_item.index - 1],
+            side: idx_item.side,
+        })
+        .collect()
 }
