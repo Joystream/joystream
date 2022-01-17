@@ -1254,11 +1254,69 @@ impl UpdateCommitmentValueFixture {
     }
 }
 
-pub struct ClaimChannelReward {
+pub struct ClaimChannelRewardFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    proof: Vec<ProofElement<Test>>,
-    itme: PullPayment<Test>,
+    payments: Vec<PullPayment<Test>>,
+    item: PullPayment<Test>,
+}
+
+impl ClaimChannelRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            payments: create_some_pull_payments(),
+            item: PullPayment::<Test> {
+                channel_id: ChannelId::one(),
+                amount_earned: BalanceOf::<Test>::one(),
+                reason: Hashing::hash_of(&b"reason".to_vec()),
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_item(self, item: PullPayment<Test>) -> Self {
+        Self { item, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let _balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let cashout_pre = Content::channel_by_id(self.item.channel_id).prior_cumulative_cashout;
+
+        let actual_result = Content::claim_channel_reward(
+            origin,
+            self.actor.clone(),
+            build_merkle_path_helper(&self.payments, 1),
+            self.item.clone(),
+        );
+        let cashout_post = Content::channel_by_id(self.item.channel_id).prior_cumulative_cashout;
+        let _balance_post = Balances::<Test>::usable_balance(self.sender);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(cashout_post, cashout_pre.saturating_add(item.amount_earned));
+
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelRewardUpdated(
+                    self.item.amount_earned,
+                    self.item.channel_id
+                ))
+            );
+        } else {
+            assert_eq!(cashout_post, cashout_pre);
+        }
+    }
 }
 
 // helper functions
@@ -1539,8 +1597,8 @@ fn generate_merkle_root_helper<E: Encode>(
 fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     idx: usize,
-    merkle_tree: &[<Test as frame_system::Trait>::Hash],
 ) -> Vec<ProofElement<Test>> {
+    let merkle_tree = generate_merkle_root_helper(collection)?;
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), idx + 1);
     index_path
@@ -1550,4 +1608,16 @@ fn build_merkle_path_helper<E: Encode + Clone>(
             side: idx_item.side,
         })
         .collect()
+}
+
+// generate some payments claims
+fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+    let mut payments = Vec::new();
+    for i in 0..PAYMENTS_NUMBER {
+        payment.push(PullPayment::<Test> {
+            channel_id: ChannelId::from(i % 5),
+            amount_earned: BalanceOf::<Test>::from(i),
+            reason: Hashing::hash_of(&b"reason".to_vec()),
+        });
+    }
 }

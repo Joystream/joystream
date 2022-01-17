@@ -80,6 +80,7 @@ pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
 
 pub const START_MIGRATION_AT_BLOCK: u64 = 1;
 pub const MEMBERS_COUNT: u64 = 10;
+pub const PAYMENTS_NUMBER: u64 = 10;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
