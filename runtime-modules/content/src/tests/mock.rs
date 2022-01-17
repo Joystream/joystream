@@ -2,7 +2,7 @@
 
 use crate::*;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -20,39 +20,29 @@ pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 
-/// Origins
-
-pub const LEAD_ORIGIN: u64 = 1;
-
-pub const FIRST_CURATOR_ORIGIN: u64 = 2;
-pub const SECOND_CURATOR_ORIGIN: u64 = 3;
-
-pub const FIRST_MEMBER_ORIGIN: u64 = 4;
-pub const SECOND_MEMBER_ORIGIN: u64 = 5;
-pub const UNKNOWN_ORIGIN: u64 = 7777;
-pub const UNKNOWN_MEMBER_ID: u64 = 7777;
+/// Accounts
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
+pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
+pub const LEAD_ACCOUNT_ID: u64 = 103;
+pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 104;
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 105;
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 106;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 107;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 108;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
+pub const DEFAULT_MEMBER_ID: MemberId = 201;
+pub const DEFAULT_CURATOR_ID: CuratorId = 202;
+pub const COLLABORATOR_MEMBER_ID: u64 = 204;
+pub const UNAUTHORIZED_MEMBER_ID: u64 = 205;
+pub const UNAUTHORIZED_CURATOR_ID: u64 = 206;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 207;
 
-pub const FIRST_CURATOR_ID: CuratorId = 1;
-pub const SECOND_CURATOR_ID: CuratorId = 2;
-
-pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
-// pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
-
-pub const FIRST_MEMBER_ID: MemberId = 1;
-pub const SECOND_MEMBER_ID: MemberId = 2;
-
-// members that act as collaborators
-pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 8;
-pub const COLLABORATOR_MEMBER_ID: MemberId = 9;
-
-/// Constants
 // initial balancer for an account
-pub const INITIAL_BALANCE: u32 = 1_000_000;
+pub const INITIAL_BALANCE: u64 = 1000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -171,29 +161,65 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        *member_id < MEMBERS_COUNT
+        match *member_id {
+            DEFAULT_MEMBER_ID => true,
+            UNAUTHORIZED_MEMBER_ID => true,
+            COLLABORATOR_MEMBER_ID => true,
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => true,
+            _ => false,
+        }
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
+        *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
-        let second_curator_account_id =
-            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
+        match *curator_id {
+            DEFAULT_CURATOR_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID)).unwrap()
+            }
+
+            UNAUTHORIZED_CURATOR_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID)).unwrap()
+            }
+
+            _ => false,
+        }
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
+        match *member_id {
+            DEFAULT_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
+            UNAUTHORIZED_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID))
+                        .unwrap()
+            }
+
+            COLLABORATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+            _ => false,
+        }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
+        match *curator_id {
+            DEFAULT_CURATOR_ID => true,
+            UNAUTHORIZED_CURATOR_ID => true,
+            _ => false,
+        }
     }
 }
 
@@ -314,9 +340,6 @@ impl storage::Trait for Test {
         }
     }
 }
-
-pub const DEFAULT_MEMBER_ID: u64 = 100;
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
@@ -443,280 +466,4 @@ pub fn run_to_block(n: u64) {
 
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
-pub fn create_channel_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: ChannelCreationParameters<Test>,
-    result: DispatchResult,
-) {
-    let channel_id = Content::next_channel_id();
-
-    assert_eq!(
-        Content::create_channel(Origin::signed(sender), actor.clone(), params.clone()),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        let owner = Content::actor_to_channel_owner(&actor).unwrap();
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCreated(
-                actor.clone(),
-                channel_id,
-                ChannelRecord {
-                    owner: owner,
-                    is_censored: false,
-                    reward_account: params.reward_account.clone(),
-
-                    collaborators: params.collaborators.clone(),
-                    num_videos: 0,
-                },
-                params,
-            ))
-        );
-    }
-}
-
-pub fn update_channel_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    params: ChannelUpdateParameters<Test>,
-    result: DispatchResult,
-) {
-    let channel_pre = ChannelById::<Test>::get(channel_id.clone());
-
-    assert_eq!(
-        Content::update_channel(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            params.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUpdated(
-                actor.clone(),
-                channel_id,
-                ChannelRecord {
-                    owner: channel_pre.owner.clone(),
-                    is_censored: channel_pre.is_censored,
-                    reward_account: params
-                        .reward_account
-                        .map_or_else(|| channel_pre.reward_account.clone(), |account| account),
-                    collaborators: params
-                        .collaborators
-                        .clone()
-                        .unwrap_or(channel_pre.collaborators),
-                    num_videos: channel_pre.num_videos,
-                },
-                params,
-            ))
-        );
-    }
-}
-
-pub fn delete_channel_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    objects_num: u64,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        Content::delete_channel(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            objects_num,
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelDeleted(actor.clone(), channel_id))
-        )
-    }
-}
-
-pub fn create_video_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    channel_id: ChannelId,
-    params: VideoCreationParameters<Test>,
-    result: DispatchResult,
-) {
-    let video_id = Content::next_video_id();
-    let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
-
-    assert_eq!(
-        Content::create_video(
-            Origin::signed(sender),
-            actor.clone(),
-            channel_id.clone(),
-            params.clone()
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoCreated(
-                actor.clone(),
-                channel_id,
-                video_id,
-                params.clone(),
-            ))
-        );
-        assert_eq!(
-            num_videos_pre + 1,
-            Content::channel_by_id(channel_id).num_videos,
-        );
-    }
-}
-pub fn update_video_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    video_id: <Test as Trait>::VideoId,
-    params: VideoUpdateParameters<Test>,
-    result: DispatchResult,
-) {
-    // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
-    // let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
-
-    assert_eq!(
-        Content::update_video(
-            Origin::signed(sender),
-            actor.clone(),
-            video_id.clone(),
-            params.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoUpdated(
-                actor.clone(),
-                video_id,
-                params.clone(),
-            ))
-        );
-    }
-}
-
-pub fn delete_video_mock(
-    sender: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    video_id: <Test as Trait>::VideoId,
-    assets_to_remove: BTreeSet<DataObjectId<Test>>,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        Content::delete_video(
-            Origin::signed(sender),
-            actor.clone(),
-            video_id.clone(),
-            assets_to_remove.clone(),
-        ),
-        result.clone(),
-    );
-
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoDeleted(actor.clone(), video_id))
-        );
-    }
-}
-
-// helper functions
-pub fn helper_generate_storage_assets(sizes: Vec<u64>) -> StorageAssets<Test> {
-    StorageAssetsRecord {
-        object_creation_list: sizes
-            .into_iter()
-            .map(|s| DataObjectCreationParameters {
-                size: s,
-                ipfs_content_id: s.encode(),
-            })
-            .collect::<Vec<_>>(),
-        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-    }
-}
-
-pub fn helper_init_accounts(accounts: Vec<u64>) {
-    // give channel owner funds to permit collaborators to update assets
-    for acc in accounts.iter() {
-        let _ = balances::Module::<Test>::deposit_creating(
-            acc,
-            <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
-        );
-    }
-}
-
-pub fn create_initial_storage_buckets() {
-    // first set limits
-    assert_eq!(
-        Storage::<Test>::update_storage_buckets_voucher_max_limits(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            400,
-            40
-        ),
-        Ok(())
-    );
-
-    // create bucket(s)
-    assert_eq!(
-        Storage::<Test>::create_storage_bucket(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            None,
-            true,
-            100,
-            10,
-        ),
-        Ok(())
-    );
-}
-
-pub fn create_channel_with_bag() {
-    // 3 assets added at creation
-    let assets = StorageAssetsRecord {
-        object_creation_list: vec![
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"first".to_vec(),
-            },
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"second".to_vec(),
-            },
-            DataObjectCreationParameters {
-                size: 3,
-                ipfs_content_id: b"third".to_vec(),
-            },
-        ],
-        expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-    };
-
-    // create channel
-    create_channel_mock(
-        FIRST_MEMBER_ORIGIN,
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParametersRecord {
-            assets: Some(assets),
-            meta: None,
-            reward_account: None,
-            collaborators: BTreeSet::new(),
-        },
-        Ok(()),
-    );
-}
+pub type Balances = balances::Module<Test>;

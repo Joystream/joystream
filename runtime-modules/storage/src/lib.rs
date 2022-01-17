@@ -1467,6 +1467,9 @@ decl_error! {
         /// Different Accounts for dynamic bag deletion prize and upload fees
         AccountsNotCoherent,
 
+        /// Different Accounts for dynamic bag id and parameters bag id
+        BagsNotCoherent,
+
         /// Invalid transactor account ID for this bucket.
         InvalidTransactorAccount,
     }
@@ -2842,21 +2845,22 @@ impl<T: Trait> Module<T> {
     ) -> Result<Option<BagUpdate<BalanceOf<T>>>, DispatchError> {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
         ensure!(
-            !<Bags<T>>::contains_key(bag_id),
+            !<Bags<T>>::contains_key(bag_id.clone()),
             Error::<T>::DynamicBagExists
         );
 
-        // call can upload data explicitly
         let bag_change = upload_params
             .as_ref()
             .map(|params| {
-                // ensure coherent account ids for prize
+                // ensure coherent account ids & bag ids
                 if let Some(deletion_prize) = deletion_prize {
                     ensure!(
                         params.deletion_prize_source_account_id == deletion_prize.account_id,
                         Error::<T>::AccountsNotCoherent,
                     );
                 }
+                ensure!(bag_id == params.bag_id, Error::<T>::BagsNotCoherent);
+
                 Self::validate_bag_change(params)
             })
             .transpose()?;
@@ -2869,12 +2873,17 @@ impl<T: Trait> Module<T> {
                 Self::compute_upload_fees(bag_change)
             }));
 
-        Self::ensure_sufficient_balance_for_upload(
-            deletion_prize
-                .as_ref()
-                .map(|deletion_prize| deletion_prize.account_id.clone()),
-            total_upload_fee,
-        )?;
+        // either bag_prize account or objects_prize account used (provided they are the same)
+        let designated_account = deletion_prize
+            .as_ref()
+            .map(|dp| dp.account_id.clone())
+            .or_else(|| {
+                upload_params
+                    .as_ref()
+                    .map(|p| p.deletion_prize_source_account_id.clone())
+            });
+
+        Self::ensure_sufficient_balance_for_upload(designated_account, total_upload_fee)?;
 
         Ok(bag_change)
     }

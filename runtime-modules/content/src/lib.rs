@@ -1,3 +1,19 @@
+// Extrinsics list
+// - create channel
+// - update channel
+// - delete channel
+// - create video
+// - update video
+// - delete video
+// - update channel chensorship status
+// - update video chensorship status
+// - create channel category
+// - update channel category
+// - delete channel category
+// - create video category
+// - update video category
+// - delete video category
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
