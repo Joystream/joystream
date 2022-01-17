@@ -221,9 +221,6 @@ type BountyContribution @entity {
   "The event the contribution was created in"
   createdInEvent: BountyFundedEvent! @derivedFrom(field: "contribution")
 
-  "Event emitted if the bounty reached its maximum funding amount"
-  maxFundingReachedEvent: BountyMaxFundingReachedEvent @derivedFrom(field: "contribution")
-
   "Event emitted if the contribution is withdrawn"
   withdrawnInEvent: BountyFundingWithdrawalEvent @derivedFrom(field: "contribution")
 }

@@ -116,9 +116,6 @@ type BountyMaxFundingReachedEvent implements Event @entity {
 
   "Related bounty"
   bounty: Bounty!
-
-  "Related bounty contribution"
-  contribution: BountyContribution!
 }
 
 type BountyFundingWithdrawalEvent implements Event @entity {
