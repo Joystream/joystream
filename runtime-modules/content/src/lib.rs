@@ -1034,7 +1034,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderator_set: params.moderator_set.clone(),
-                cumulative_payout_earned: BalanceOf::<T>::default(),
+                cumulative_payout_earned: BalanceOf::<T>::zero(),
             };
 
             // add channel to onchain state
@@ -1976,6 +1976,8 @@ decl_module! {
                 .cumulative_payout_claimed
                 .saturating_sub(channel.cumulative_payout_earned);
 
+            println!("cumulative_payout_claimed:\t{:?}", item.cumulative_payout_claimed);
+            println!("cumulative_payout_earned:\t{:?}", channel.cumulative_payout_earned);
             ensure!(
                 <MaxRewardAllowed<T>>::get() > item.cumulative_payout_claimed,
                 Error::<T>::TotalRewardLimitExceeded

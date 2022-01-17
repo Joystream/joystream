@@ -1218,7 +1218,7 @@ impl UpdateMinCashoutFixture {
 
 pub struct UpdateCommitmentValueFixture {
     sender: AccountId,
-    new_commitment: <Test as frame_system::Trait>::Hash,
+    new_commitment: HashOutput,
 }
 
 impl UpdateCommitmentValueFixture {
@@ -1231,6 +1231,13 @@ impl UpdateCommitmentValueFixture {
 
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
+    }
+
+    pub fn with_commit(self, new_commitment: HashOutput) -> Self {
+        Self {
+            new_commitment,
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1269,7 +1276,7 @@ impl ClaimChannelRewardFixture {
             payments: create_some_pull_payments_helper(),
             item: PullPayment::<Test> {
                 channel_id: ChannelId::one(),
-                cumulative_payout_claimed: BalanceOf::<Test>::one(),
+                cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
         }
@@ -1294,7 +1301,6 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let _balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let cashout = Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 
         let actual_result = Content::claim_channel_reward(
             origin,
@@ -1303,11 +1309,15 @@ impl ClaimChannelRewardFixture {
             self.item.clone(),
         );
         let _balance_post = Balances::<Test>::usable_balance(self.sender);
-
+        let cumulative_payout_earned =
+            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(cashout, self.item.cumulative_payout_claimed);
+            assert_eq!(
+                cumulative_payout_earned,
+                self.item.cumulative_payout_claimed
+            );
 
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -1605,15 +1615,21 @@ fn build_merkle_path_helper<E: Encode + Clone>(
 }
 
 // generate some payments claims
-fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
     let mut payments = Vec::new();
     for i in 0..PAYMENTS_NUMBER {
         payments.push(PullPayment::<Test> {
-            channel_id: ChannelId::from(i % 5),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(i),
+            channel_id: ChannelId::from(i % 2),
+            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_EARNED),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }
-
     payments
+}
+
+pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
+    let commit = generate_merkle_root_helper(payments).pop().unwrap();
+    UpdateCommitmentValueFixture::default()
+        .with_commit(commit)
+        .call_and_assert(Ok(()));
 }

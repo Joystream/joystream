@@ -102,7 +102,6 @@ fn unsuccessful_reward_claim_by_lead() {
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video();
 
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
         ClaimChannelRewardFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
@@ -188,143 +187,83 @@ fn unsuccessful_reward_claim_with_reward_limit_exceeded() {
     })
 }
 
-// fn setup_channels_scenario(
-//     num_channels: u64,
-//     payments_params: &Vec<(u64, BalanceOf<Test>)>,
-// ) -> (Vec<PullPayment<Test>>, Vec<TestHash>) {
-//     // create payment elements collection
-//     // create channels
+#[test]
+fn unsuccessful_reward_claim_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//     for _i in 0..num_channels {
-//         let _ = Content::create_channel(
-//             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//             ChannelCreationParameters::<Test> {
-//                 assets: None,
-//                 meta: None,
-//                 reward_account: Some(DEFAULT_MEMBER_ACCOUNT_ID),
-//                 collaborators: BTreeSet::new(),
-//                 moderator_set: BTreeSet::new(),
-//             },
-//         );
-//     }
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
-//     let pull_payments_collection: Vec<PullPayment<Test>> = payments_params
-//         .iter()
-//         .map(|&(c_id, amnt)| PullPayment::<Test> {
-//             channel_id: ChannelId::from(c_id),
-//             amount_earned: BalanceOf::<Test>::from(amnt),
-//             reason: TestHashing::hash(&c_id.encode()),
-//         })
-//         .collect::<Vec<PullPayment<Test>>>();
+        let item = PullPayment::<Test> {
+            channel_id: ChannelId::zero(),
+            cumulative_payout_claimed: BalanceOf::<Test>::one(),
+            reason: Hashing::hash_of(&b"reason".to_vec()),
+        };
+        ClaimChannelRewardFixture::default()
+            .with_payments(vec![item.clone()])
+            .with_item(item)
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
+    })
+}
 
-//     // generate hash tree and get its root
-//     let hash_tree = generate_merkle_root(&pull_payments_collection).unwrap();
-//     let merkle_root = hash_tree.last().copied().unwrap();
+#[test]
+fn unsuccessful_reward_claim_with_invalid_claim() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//     // set the commitment
-//     let origin = Origin::signed(LEAD_ACCOUNT_ID);
-//     let mut _res = Content::update_commitment(origin, merkle_root);
-//     (pull_payments_collection, hash_tree)
-// }
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
-// fn setup_candidate_proof(
-//     pull_payments_collection: &Vec<PullPayment<Test>>,
-//     hash_tree: &Vec<TestHash>,
-//     test_params: &(u64, u64, usize),
-// ) -> TestProof<PullPayment<Test>> {
-//     // construct test pull payment
-//     let reward_element = PullPayment::<Test> {
-//         channel_id: ChannelId::from(test_params.0),
-//         amount_earned: BalanceOf::<Test>::from(test_params.1),
-//         reason: TestHashing::hash(&test_params.0.encode()),
-//     };
+        let item = PullPayment::<Test> {
+            channel_id: ChannelId::one(),
+            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            reason: Hashing::hash_of(&b"reason".to_vec()),
+        };
+        ClaimChannelRewardFixture::default()
+            .with_item(item)
+            .call_and_assert(Err(Error::<Test>::PaymentProofVerificationFailed.into()))
+    })
+}
 
-//     // proof setup
-//     let proof_path = helper_build_merkle_path(pull_payments_collection, test_params.2, hash_tree);
-//     let proof = TestProof {
-//         leaf: reward_element,
-//         path: proof_path,
-//     };
-//     proof
-// }
+#[test]
+fn successful_reward_claim_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-// #[test]
-// fn channel_reward_update_test() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1); // in order to produce events
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
 
-//         // setup test scenario: 2 channels and 3 (valid) pull payment requests
-//         let num_channels = 2u64;
-//         let payments_params = vec![
-//             (0u64, BalanceOf::<Test>::from(1u64)),
-//             (1u64, BalanceOf::<Test>::from(1u64)),
-//             (1u64, BalanceOf::<Test>::from(2u64)),
-//         ];
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments)
+            .call_and_assert(Ok(()))
+    })
+}
 
-//         let scenario_out = setup_channels_scenario(num_channels, &payments_params);
-//         let pull_payments_collection = &scenario_out.0;
-//         let hash_tree = &scenario_out.1;
+#[test]
+fn successful_reward_claim_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         // suppose now channel 1 is trying to collect a payment of 2 JOYs
-//         // last element is the index in the payments_params vector
-//         let test_params = (1u64, 2u64, 2usize);
-//         let candidate_proof =
-//             setup_candidate_proof(&pull_payments_collection, &hash_tree, &test_params);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
 
-//         // attempt should succeed
-//         let _res = Content::claim_channel_reward(
-//             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-//             candidate_proof,
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//         );
-
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ChannelRewardUpdated(
-//                 BalanceOf::<Test>::from(test_params.1),
-//                 ChannelId::from(test_params.0),
-//             ))
-//         );
-//     })
-// }
-
-// #[test]
-// fn non_existing_channel_reward_update_test() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1); // in order to produce events
-
-//         // setup test scenario: 2 channels and 3 (valid) pull payment requests
-//         let num_channels = 2u64;
-//         let payments_params = vec![
-//             (0u64, BalanceOf::<Test>::from(1u64)),
-//             (1u64, BalanceOf::<Test>::from(1u64)),
-//             (5u64, BalanceOf::<Test>::from(2u64)),
-//         ];
-
-//         let scenario_out = setup_channels_scenario(num_channels, &payments_params);
-//         let pull_payments_collection = &scenario_out.0;
-//         let hash_tree = &scenario_out.1;
-
-//         // suppose now channel 1 is trying to collect a payment of 2 JOYs
-//         // last element is the index in the payments_params vector
-//         let test_params = (5u64, 2u64, 2usize);
-//         let candidate_proof =
-//             setup_candidate_proof(&pull_payments_collection, &hash_tree, &test_params);
-
-//         // attempt should NOT succeed
-//         let _res = Content::claim_channel_reward(
-//             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-//             candidate_proof,
-//             ContentActor::Member(DEFAULT_MEMBER_ID),
-//         );
-
-//         assert_ne!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ChannelRewardUpdated(
-//                 BalanceOf::<Test>::from(test_params.1),
-//                 ChannelId::from(test_params.0),
-//             ))
-//         );
-//     })
-// }
+        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        ClaimChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_payments(payments)
+            .with_actor(ContentActor::Curator(
+                default_curator_group_id,
+                DEFAULT_CURATOR_ID,
+            ))
+            .call_and_assert(Ok(()))
+    })
+}
