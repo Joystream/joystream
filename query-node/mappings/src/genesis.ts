@@ -1,7 +1,14 @@
 import { StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import { MembershipSystemSnapshot, WorkingGroup, ElectedCouncil, ElectionRound } from 'query-node/dist/model'
-import { membershipSystem, workingGroups } from './genesis-data'
+import {
+  MembershipSystemSnapshot,
+  WorkingGroup,
+  ElectedCouncil,
+  ElectionRound,
+  Membership,
+  MemberMetadata,
+} from 'query-node/dist/model'
+import { membershipSystem, workingGroups, members } from './genesis-data'
 import { CURRENT_NETWORK } from './common'
 
 export async function loadGenesisData({ store }: StoreContext): Promise<void> {
@@ -10,6 +17,8 @@ export async function loadGenesisData({ store }: StoreContext): Promise<void> {
   await initWorkingGroups(store)
 
   await initFirstElectionRound(store)
+
+  await initMembers(store)
 
   // TODO: members, workers
 }
@@ -37,6 +46,27 @@ async function initWorkingGroups(store: DatabaseManager) {
           id: group.name,
           name: group.name,
           budget: new BN(group.budget),
+        })
+      )
+    )
+  )
+}
+
+async function initMembers(store: DatabaseManager) {
+  await Promise.all(
+    members.map(async (member) =>
+      store.save<Membership>(
+        new Membership({
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+          handle: member.handle,
+          metadata: new MemberMetadata({
+            about: member.about,
+            avatar: { avatarUri: member.avatar_uri, isTypeOf: 'AvatarUri' },
+          }),
+
+          rootAccount: member.root_account,
+          controllerAccount: member.controller_account,
         })
       )
     )
