@@ -302,7 +302,7 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// collaborator set
     collaborators: BTreeSet<MemberId>,
     /// moderator set
-    moderator_set: BTreeSet<MemberId>,
+    moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     cumulative_payout_earned: Balance,
 }
@@ -353,7 +353,7 @@ pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: O
     /// initial collaborator set
     collaborators: BTreeSet<MemberId>,
     /// initial moderator set
-    moderator_set: BTreeSet<MemberId>,
+    moderators: BTreeSet<MemberId>,
 }
 
 type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
@@ -972,7 +972,8 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // ensure collaborator member ids are valid
+            // ensure collaborator & moderator member ids are valid
+            Self::validate_member_set(&params.moderators)?;
             Self::validate_member_set(&params.collaborators)?;
 
             let upload_params = params.assets.as_ref().map(|assets| {
@@ -1039,7 +1040,7 @@ decl_module! {
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
-                moderator_set: params.moderator_set.clone(),
+                moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
             };
 
@@ -1920,7 +1921,7 @@ decl_module! {
         fn update_moderator_set(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_moderator_set: BTreeSet<T::MemberId>,
+            new_moderators: BTreeSet<T::MemberId>,
             channel_id: T::ChannelId
         ) {
             // ensure (origin, actor) is channel owner
@@ -1933,18 +1934,18 @@ decl_module! {
                 &actor,
             )?;
 
-            Self::validate_member_set(&new_moderator_set)?;
+            Self::validate_member_set(&new_moderators)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            <ChannelById<T>>::mutate(channel_id, |x| x.moderator_set = new_moderator_set.clone());
+            <ChannelById<T>>::mutate(channel_id, |x| x.moderators = new_moderators.clone());
 
             Self::deposit_event(
                 RawEvent::ModeratorSetUpdated(
                     channel_id,
-                    new_moderator_set
+                    new_moderators
                 ));
         }
 

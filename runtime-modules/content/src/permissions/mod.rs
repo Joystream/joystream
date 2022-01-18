@@ -356,8 +356,8 @@ pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
         .map(|_| CleanupActor::ChannelOwner);
     let actor_is_author =
         ensure_actor_is_comment_author::<T>(actor, &post.author).map(|_| CleanupActor::PostAuthor);
-    let actor_is_moderator = ensure_actor_is_moderator::<T>(actor, &channel.moderator_set)
-        .map(|_| CleanupActor::Moderator);
+    let actor_is_moderator =
+        ensure_actor_is_moderator::<T>(actor, &channel.moderators).map(|_| CleanupActor::Moderator);
 
     actor_is_author.or(actor_is_owner).or(actor_is_moderator)
 }

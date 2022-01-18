@@ -209,6 +209,7 @@ impl ContentActorAuthenticator for Test {
             DEFAULT_MEMBER_ID => true,
             UNAUTHORIZED_MEMBER_ID => true,
             COLLABORATOR_MEMBER_ID => true,
+            DEFAULT_MODERATOR_ID => true,
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => true,
             _ => false,
         }

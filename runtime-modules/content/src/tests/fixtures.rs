@@ -23,7 +23,7 @@ impl CreateChannelFixture {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
-                moderator_set: BTreeSet::new(),
+                moderators: BTreeSet::new(),
             },
         }
     }
@@ -56,10 +56,10 @@ impl CreateChannelFixture {
         }
     }
 
-    pub fn with_moderators(self, moderator_set: BTreeSet<MemberId>) -> Self {
+    pub fn with_moderators(self, moderators: BTreeSet<MemberId>) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                moderator_set: moderator_set,
+                moderators,
                 ..self.params
             },
             ..self
@@ -115,7 +115,7 @@ impl CreateChannelFixture {
                         is_censored: false,
                         reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
-                        moderator_set: self.params.moderator_set.clone(),
+                        moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
                     },
@@ -418,7 +418,7 @@ impl UpdateChannelFixture {
                                 .clone()
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
-                            moderator_set: channel_pre.moderator_set,
+                            moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
                         },
                         self.params.clone(),
@@ -1077,7 +1077,7 @@ impl DeleteVideoFixture {
 pub struct UpdateModeratorSetFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    new_moderator_set: BTreeSet<MemberId>,
+    new_moderators: BTreeSet<MemberId>,
     channel_id: ChannelId,
 }
 
@@ -1086,7 +1086,7 @@ impl UpdateModeratorSetFixture {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            new_moderator_set: BTreeSet::new(),
+            new_moderators: BTreeSet::new(),
             channel_id: ChannelId::one(),
         }
     }
@@ -1099,9 +1099,9 @@ impl UpdateModeratorSetFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_moderators(self, new_moderator_set: BTreeSet<MemberId>) -> Self {
+    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
         Self {
-            new_moderator_set,
+            new_moderators,
             ..self
         }
     }
@@ -1117,7 +1117,7 @@ impl UpdateModeratorSetFixture {
         let actual_result = Content::update_moderator_set(
             origin,
             self.actor.clone(),
-            self.new_moderator_set.clone(),
+            self.new_moderators.clone(),
             self.channel_id.clone(),
         );
 
@@ -1130,10 +1130,10 @@ impl UpdateModeratorSetFixture {
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ModeratorSetUpdated(
                     self.channel_id,
-                    self.new_moderator_set.clone(),
+                    self.new_moderators.clone(),
                 ))
             );
-            assert_eq!(channel_post.moderator_set, self.new_moderator_set);
+            assert_eq!(channel_post.moderators, self.new_moderators);
         } else {
             assert_eq!(channel_pre, channel_post);
         }

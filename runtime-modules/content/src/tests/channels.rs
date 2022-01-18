@@ -21,7 +21,7 @@ fn channel_censoring() {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
-                moderator_set: BTreeSet::new(),
+                moderators: BTreeSet::new(),
             }
         ));
 
@@ -99,7 +99,7 @@ fn channel_censoring() {
                 meta: None,
                 reward_account: None,
                 collaborators: BTreeSet::new(),
-                moderator_set: BTreeSet::new(),
+                moderators: BTreeSet::new(),
             }
         ));
 
@@ -1491,5 +1491,17 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
             // default member owned channel has DATA_OBJECTS_NUMBER > 0 assets
             .with_num_objects_to_delete(0u64)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_invalid_moderator_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }

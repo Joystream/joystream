@@ -33,7 +33,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
                 meta: Some(vec![]),
                 reward_account: None,
                 collaborators: BTreeSet::new(),
-                moderator_set: BTreeSet::new(),
+                moderators: BTreeSet::new(),
             },
         ),
         result
