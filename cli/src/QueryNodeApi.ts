@@ -21,9 +21,9 @@ import {
   GetDataObjectsByVideoId,
   GetDataObjectsByVideoIdQuery,
   GetDataObjectsByVideoIdQueryVariables,
-  GetDataObjectsChannelId,
-  GetDataObjectsChannelIdQuery,
-  GetDataObjectsChannelIdQueryVariables,
+  GetDataObjectsByChannelId,
+  GetDataObjectsByChannelIdQuery,
+  GetDataObjectsByChannelIdQueryVariables,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -89,8 +89,8 @@ export default class QueryNodeApi {
   }
 
   async dataObjectsByChannelId(channelId: string): Promise<DataObjectInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetDataObjectsChannelIdQuery, GetDataObjectsChannelIdQueryVariables>(
-      GetDataObjectsChannelId,
+    return this.multipleEntitiesQuery<GetDataObjectsByChannelIdQuery, GetDataObjectsByChannelIdQueryVariables>(
+      GetDataObjectsByChannelId,
       { channelId },
       'storageDataObjects'
     )

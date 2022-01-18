@@ -495,7 +495,7 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
 
         // Make an attempt to cancel open auction bid if actor is not a last bidder
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(THIRD_MEMBER_ORIGIN),
             THIRD_MEMBER_ID,
             video_id,
         );

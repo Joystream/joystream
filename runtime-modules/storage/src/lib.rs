@@ -97,6 +97,10 @@
 //! - delete_dynamic_bag
 //! - can_create_dynamic_bag
 //! - create_dynamic_bag
+//! - can_create_dynamic_bag_with_objects_constraints
+//! - create_dynamic_bag_with_objects_constraints
+//! - can_delete_dynamic_bag_with_objects
+
 //!
 //! ### Pallet constants
 //! - DataObjectDeletionPrize
@@ -118,7 +122,6 @@
 #![allow(clippy::unused_unit)]
 // needed for step iteration over DataObjectId range
 #![feature(step_trait)]
-
 #[cfg(test)]
 mod tests;
 
@@ -134,7 +137,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, Parameter,
 };
-use frame_system::ensure_root;
+use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -200,6 +203,9 @@ pub trait DataObjectStorage<T: Trait> {
     /// Validates `delete_dynamic_bag` parameters and conditions.
     fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
 
+    /// Validates `delete_dynamic_bag` without checking for num objects == 0
+    fn can_delete_dynamic_bag_with_objects(bag_id: &DynamicBagId<T>) -> DispatchResult;
+
     /// Creates dynamic bag. BagId should provide the caller.
     fn create_dynamic_bag(
         bag_id: DynamicBagId<T>,
@@ -210,6 +216,20 @@ pub trait DataObjectStorage<T: Trait> {
     fn can_create_dynamic_bag(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+    ) -> DispatchResult;
+
+    /// Same as create_dynamic_bag but with caller provided objects/data
+    fn create_dynamic_bag_with_objects_constraints(
+        bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult;
+
+    /// Same as can_create_dynamic_bag but with caller provided objects/data
+    fn can_create_dynamic_bag_with_objects_constraints(
+        bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
     ) -> DispatchResult;
 
     /// Checks if a bag does exists and returns it. Static Always exists
@@ -465,6 +485,12 @@ pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+/// Type alias for the storage & distribution bucket ids pair
+pub type BucketPair<T> = (
+    BTreeSet<<T as Trait>::StorageBucketId>,
+    BTreeSet<DistributionBucketId<T>>,
+);
 
 /// The fundamental concept in the system, which represents single static binary object in the
 /// system. The main goal of the system is to retain an index of all such objects, including who
@@ -765,7 +791,7 @@ impl VoucherUpdate {
 /// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum StorageBucketOperatorStatus<WorkerId> {
+pub enum StorageBucketOperatorStatus<WorkerId, AccountId> {
     /// No connection.
     Missing,
 
@@ -773,22 +799,25 @@ pub enum StorageBucketOperatorStatus<WorkerId> {
     InvitedStorageWorker(WorkerId),
 
     /// Storage operator accepted the invitation.
-    StorageWorker(WorkerId),
+    StorageWorker(WorkerId, AccountId),
 }
 
-impl<WorkerId> Default for StorageBucketOperatorStatus<WorkerId> {
+impl<WorkerId, AccountId> Default for StorageBucketOperatorStatus<WorkerId, AccountId> {
     fn default() -> Self {
         Self::Missing
     }
 }
 
+/// Type alias for the StorageBucketRecord.
+pub type StorageBucket<T> = StorageBucketRecord<WorkerId<T>, <T as frame_system::Trait>::AccountId>;
+
 /// A commitment to hold some set of bags for long term storage. A bucket may have a bucket
 /// operator, which is a single worker in the storage working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StorageBucket<WorkerId> {
+pub struct StorageBucketRecord<WorkerId, AccountId> {
     /// Current storage operator status.
-    pub operator_status: StorageBucketOperatorStatus<WorkerId>,
+    pub operator_status: StorageBucketOperatorStatus<WorkerId, AccountId>,
 
     /// Defines whether the bucket accepts new bags.
     pub accepting_new_bags: bool,
@@ -924,7 +953,7 @@ decl_storage! {
 
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
-            T::StorageBucketId => StorageBucket<WorkerId<T>>;
+            T::StorageBucketId => StorageBucket<T>;
 
         /// Blacklisted data object hashes.
         pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) Cid => ();
@@ -1006,7 +1035,8 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         /// - invited worker ID
-        StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
+        /// - transactor account ID
+        StorageBucketInvitationAccepted(StorageBucketId, WorkerId, AccountId),
 
         /// Emits on updating storage buckets for bag.
         /// Params
@@ -1435,6 +1465,15 @@ decl_error! {
 
         /// Max data object size exceeded.
         MaxDataObjectSizeExceeded,
+
+        /// Different Accounts for dynamic bag deletion prize and upload fees
+        AccountsNotCoherent,
+
+        /// Different Accounts for dynamic bag id and parameters bag id
+        BagsNotCoherent,
+
+        /// Invalid transactor account ID for this bucket.
+        InvalidTransactorAccount,
     }
 }
 
@@ -1673,7 +1712,7 @@ decl_module! {
                 .map(StorageBucketOperatorStatus::InvitedStorageWorker)
                 .unwrap_or(StorageBucketOperatorStatus::Missing);
 
-            let storage_bucket = StorageBucket {
+            let storage_bucket = StorageBucket::<T> {
                 operator_status,
                 accepting_new_bags,
                 voucher,
@@ -1890,11 +1929,14 @@ decl_module! {
         // ===== Storage Operator actions =====
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
+        /// It accepts an additional account ID (transactor) for accepting data objects to prevent
+        /// transaction nonce collisions.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_storage_bucket_invitation(
             origin,
             worker_id: WorkerId<T>,
-            storage_bucket_id: T::StorageBucketId
+            storage_bucket_id: T::StorageBucketId,
+            transactor_account_id: T::AccountId,
         ) {
             T::ensure_storage_worker_origin(origin, worker_id)?;
 
@@ -1907,11 +1949,19 @@ decl_module! {
             //
 
             <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
-                bucket.operator_status = StorageBucketOperatorStatus::StorageWorker(worker_id);
+                bucket.operator_status =
+                    StorageBucketOperatorStatus::StorageWorker(
+                        worker_id,
+                        transactor_account_id.clone()
+                );
             });
 
             Self::deposit_event(
-                RawEvent::StorageBucketInvitationAccepted(storage_bucket_id, worker_id)
+                RawEvent::StorageBucketInvitationAccepted(
+                    storage_bucket_id,
+                    worker_id,
+                    transactor_account_id
+                )
             );
         }
 
@@ -1947,11 +1997,11 @@ decl_module! {
             bag_id: BagId<T>,
             data_objects: BTreeSet<T::DataObjectId>,
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            let transactor_account_id = ensure_signed(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
-            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+            Self::ensure_bucket_transactor_access(&bucket, worker_id, transactor_account_id)?;
 
             Self::ensure_bag_exists(&bag_id)?;
 
@@ -2248,9 +2298,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            DynamicBagCreationPolicies::<T>::mutate(dynamic_bag_type, |creation_policy| {
-                creation_policy.families = families.clone();
-            });
+            // We initialize the default storage bucket number here if no policy exists.
+            let mut new_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+            new_policy.families = families.clone();
+
+            DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, new_policy);
 
             Self::deposit_event(
                 RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
@@ -2478,46 +2530,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
         let bag_change = Self::validate_upload_data_objects_parameters(&params)?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        let data = Self::create_data_objects(params.object_creation_list.clone());
-
-        <StorageTreasury<T>>::deposit(
-            &params.deletion_prize_source_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        Self::slash_data_size_fee(
-            &params.deletion_prize_source_account_id,
-            bag_change.voucher_update.objects_total_size,
-        );
-
-        // Save next object id.
-        <NextDataObjectId<T>>::put(data.next_data_object_id);
-
-        // Insert new objects.
-        for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
-        }
-
-        Self::change_storage_bucket_vouchers_for_bag(
-            &params.bag_id,
-            &bag,
-            &bag_change.voucher_update,
-            OperationType::Increase,
-        );
-
-        Self::deposit_event(RawEvent::DataObjectsUploaded(
-            data.data_objects_map.keys().cloned().collect(),
-            params,
-            T::DataObjectDeletionPrize::get(),
-        ));
-
+        Self::upload_data_objects_inner(&params, &bag_change, &bag)?;
         Ok(())
     }
 
@@ -2614,15 +2628,20 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
-    fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult {
-        Self::validate_delete_dynamic_bag_params(bag_id).map(|_| ())
+    fn can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
+        Self::validate_delete_dynamic_bag_params(dynamic_bag_id, false).map(|_| ())
+    }
+
+    fn can_delete_dynamic_bag_with_objects(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
+        Self::validate_delete_dynamic_bag_params(dynamic_bag_id, true).map(|_| ())
     }
 
     fn delete_dynamic_bag(
         deletion_prize_account_id: T::AccountId,
         dynamic_bag_id: DynamicBagId<T>,
     ) -> DispatchResult {
-        let deletion_prize = Self::validate_delete_dynamic_bag_params(&dynamic_bag_id)?;
+        // make deletion always be performed on an empty bag
+        let deletion_prize = Self::validate_delete_dynamic_bag_params(&dynamic_bag_id, false)?;
 
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
@@ -2648,39 +2667,49 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize)?;
+        // validate params and get storage & distribution buckets
+        let bag_change =
+            Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize, &None)?;
+
+        let (storage_bucket_ids, distribution_bucket_ids) =
+            Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change)?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        if let Some(deletion_prize) = deletion_prize.clone() {
-            <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
-        }
+        Self::create_dynamic_bag_inner(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &storage_bucket_ids,
+            &distribution_bucket_ids,
+        )?;
+        Ok(())
+    }
 
-        let bag_type: DynamicBagType = dynamic_bag_id.clone().into();
+    fn create_dynamic_bag_with_objects_constraints(
+        dynamic_bag_id: DynamicBagId<T>,
+        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        params: UploadParameters<T>,
+    ) -> DispatchResult {
+        let bag_change = Self::validate_create_dynamic_bag_params(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &Some(params),
+        )?;
 
-        let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_type);
-        let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
+        let (storage_bucket_ids, distribution_bucket_ids) =
+            Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change)?;
 
-        let bag = Bag::<T> {
-            stored_by: storage_buckets.clone(),
-            deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
-            distributed_by: distribution_buckets.clone(),
-            ..Default::default()
-        };
-
-        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
-        <Bags<T>>::insert(&bag_id, bag);
-
-        Self::deposit_event(RawEvent::DynamicBagCreated(
-            dynamic_bag_id,
-            deletion_prize,
-            storage_buckets,
-            distribution_buckets,
-        ));
-
+        //
+        // == MUTATION SAFE ==
+        //
+        Self::create_dynamic_bag_inner(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &storage_bucket_ids,
+            &distribution_bucket_ids,
+        )?;
         Ok(())
     }
 
@@ -2688,7 +2717,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize)
+        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, &None).map(|_| ())
+    }
+
+    fn can_create_dynamic_bag_with_objects_constraints(
+        dynamic_bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        params: &UploadParameters<T>,
+    ) -> DispatchResult {
+        let bag_change = Self::validate_create_dynamic_bag_params(
+            dynamic_bag_id,
+            deletion_prize,
+            &Some(params.clone()),
+        )?;
+
+        Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change).map(|_| ())
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
@@ -2703,6 +2746,87 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // dynamic bag creation logic
+    fn create_dynamic_bag_inner(
+        dynamic_bag_id: &DynamicBagId<T>,
+        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
+    ) -> DispatchResult {
+        //
+        // = MUTATION SAFE =
+        //
+
+        if let Some(deletion_prize) = deletion_prize.clone() {
+            <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
+        }
+
+        let bag = Bag::<T> {
+            stored_by: storage_buckets.clone(),
+            deletion_prize: deletion_prize.clone().map(|dp| dp.prize),
+            distributed_by: distribution_buckets.clone(),
+            ..Default::default()
+        };
+
+        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
+
+        <Bags<T>>::insert(&bag_id, bag);
+
+        Self::deposit_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id.clone(),
+            deletion_prize.clone(),
+            storage_buckets.clone(),
+            distribution_buckets.clone(),
+        ));
+
+        Ok(())
+    }
+
+    fn upload_data_objects_inner(
+        params: &UploadParameters<T>,
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        bag: &Bag<T>,
+    ) -> DispatchResult {
+        let data = Self::create_data_objects(params.object_creation_list.clone());
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        <StorageTreasury<T>>::deposit(
+            &params.deletion_prize_source_account_id,
+            bag_change.total_deletion_prize,
+        )?;
+
+        Self::slash_data_size_fee(
+            &params.deletion_prize_source_account_id,
+            bag_change.voucher_update.objects_total_size,
+        );
+
+        // Save next object id.
+        <NextDataObjectId<T>>::put(data.next_data_object_id);
+
+        // Insert new objects.
+        for (data_object_id, data_object) in data.data_objects_map.iter() {
+            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
+        }
+
+        Self::change_storage_bucket_vouchers_for_bag(
+            &params.bag_id,
+            &bag,
+            &bag_change.voucher_update,
+            OperationType::Increase,
+        );
+
+        Self::deposit_event(RawEvent::DataObjectsUploaded(
+            data.data_objects_map.keys().cloned().collect(),
+            params.clone(),
+            T::DataObjectDeletionPrize::get(),
+        ));
+
+        Ok(())
+    }
+
     // Increment distribution family number in the storage.
     fn increment_distribution_family_number() {
         DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() + 1);
@@ -2719,43 +2843,101 @@ impl<T: Trait> Module<T> {
     fn validate_create_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-    ) -> DispatchResult {
+        upload_params: &Option<UploadParameters<T>>,
+    ) -> Result<Option<BagUpdate<BalanceOf<T>>>, DispatchError> {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
         ensure!(
-            !<Bags<T>>::contains_key(bag_id),
+            !<Bags<T>>::contains_key(bag_id.clone()),
             Error::<T>::DynamicBagExists
         );
 
-        if let Some(deletion_prize) = deletion_prize {
-            ensure!(
-                Balances::<T>::usable_balance(&deletion_prize.account_id) >= deletion_prize.prize,
-                Error::<T>::InsufficientBalance
-            );
-        }
+        let bag_change = upload_params
+            .as_ref()
+            .map(|params| {
+                // ensure coherent account ids & bag ids
+                if let Some(deletion_prize) = deletion_prize {
+                    ensure!(
+                        params.deletion_prize_source_account_id == deletion_prize.account_id,
+                        Error::<T>::AccountsNotCoherent,
+                    );
+                }
+                ensure!(bag_id == params.bag_id, Error::<T>::BagsNotCoherent);
 
+                Self::validate_bag_change(params)
+            })
+            .transpose()?;
+
+        // check that fees are sufficient
+        let total_upload_fee = deletion_prize
+            .as_ref()
+            .map_or(Zero::zero(), |del_prize| del_prize.prize)
+            .saturating_add(bag_change.as_ref().map_or(Zero::zero(), |bag_change| {
+                Self::compute_upload_fees(bag_change)
+            }));
+
+        // either bag_prize account or objects_prize account used (provided they are the same)
+        let designated_account = deletion_prize
+            .as_ref()
+            .map(|dp| dp.account_id.clone())
+            .or_else(|| {
+                upload_params
+                    .as_ref()
+                    .map(|p| p.deletion_prize_source_account_id.clone())
+            });
+
+        Self::ensure_sufficient_balance_for_upload(designated_account, total_upload_fee)?;
+
+        Ok(bag_change)
+    }
+
+    fn ensure_sufficient_balance_for_upload(
+        deletion_prize_source_account_id: Option<T::AccountId>,
+        required_balance: BalanceOf<T>,
+    ) -> DispatchResult {
+        let usable_balance = deletion_prize_source_account_id.map_or(Zero::zero(), |account_id| {
+            Balances::<T>::usable_balance(account_id)
+        });
+
+        ensure!(
+            usable_balance >= required_balance,
+            Error::<T>::InsufficientBalance
+        );
         Ok(())
     }
 
     // Validates dynamic bag deletion params and conditions. Returns bag's deletion prize.
     fn validate_delete_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,
+        with_objects: bool,
     ) -> Result<Option<BalanceOf<T>>, DispatchError> {
         Self::ensure_dynamic_bag_exists(dynamic_bag_id)?;
 
         let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
 
-        ensure!(
-            dynamic_bag.objects_number == 0,
-            Error::<T>::CannotDeleteNonEmptyDynamicBag
-        );
-
-        if let Some(deletion_prize) = dynamic_bag.deletion_prize {
+        // deletion prize = bag.deletion_prize + total_objects fees if any
+        let deletion_prize = if !with_objects {
             ensure!(
-                <StorageTreasury<T>>::usable_balance() >= deletion_prize,
-                Error::<T>::InsufficientTreasuryBalance
+                dynamic_bag.objects_number == 0,
+                Error::<T>::CannotDeleteNonEmptyDynamicBag
             );
-        }
+            dynamic_bag.deletion_prize.unwrap_or_else(Zero::zero)
+        } else {
+            let bag_id: BagId<T> = dynamic_bag_id.clone().into();
+            let objects_del_prize = <DataObjectsById<T>>::iter_prefix(bag_id)
+                .fold(BalanceOf::<T>::zero(), |acc, (_, data_object)| {
+                    acc.saturating_add(data_object.deletion_prize)
+                });
+
+            dynamic_bag
+                .deletion_prize
+                .unwrap_or_else(Zero::zero)
+                .saturating_add(objects_del_prize)
+        };
+
+        ensure!(
+            <StorageTreasury<T>>::usable_balance() >= deletion_prize,
+            Error::<T>::InsufficientTreasuryBalance
+        );
 
         Ok(dynamic_bag.deletion_prize)
     }
@@ -2764,7 +2946,7 @@ impl<T: Trait> Module<T> {
     // Returns the StorageBucket object or error.
     fn ensure_storage_bucket_exists(
         storage_bucket_id: &T::StorageBucketId,
-    ) -> Result<StorageBucket<WorkerId<T>>, Error<T>> {
+    ) -> Result<StorageBucket<T>, Error<T>> {
         ensure!(
             <StorageBucketById<T>>::contains_key(storage_bucket_id),
             Error::<T>::StorageBucketDoesntExist
@@ -2776,14 +2958,14 @@ impl<T: Trait> Module<T> {
     // Ensures the correct invitation for the storage bucket and storage provider. Storage provider
     // must be invited.
     fn ensure_bucket_storage_provider_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => {
                 Err(Error::<T>::NoStorageBucketInvitation.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(invited_worker_id) => {
@@ -2800,9 +2982,9 @@ impl<T: Trait> Module<T> {
     // Ensures the correct invitation for the storage bucket and storage provider for removal.
     // Must be invited storage provider.
     fn ensure_bucket_storage_provider_invitation_status_for_removal(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
     ) -> DispatchResult {
-        if let StorageBucketOperatorStatus::StorageWorker(_) = bucket.operator_status {
+        if let StorageBucketOperatorStatus::StorageWorker(..) = bucket.operator_status {
             Ok(())
         } else {
             Err(Error::<T>::StorageProviderMustBeSet.into())
@@ -2810,14 +2992,12 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensures the correct invitation for the storage bucket and storage provider. Must be pending.
-    fn ensure_bucket_pending_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
-    ) -> DispatchResult {
+    fn ensure_bucket_pending_invitation_status(bucket: &StorageBucket<T>) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => {
                 Err(Error::<T>::NoStorageBucketInvitation.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => Ok(()),
@@ -2825,12 +3005,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensures the missing invitation for the storage bucket and storage provider.
-    fn ensure_bucket_missing_invitation_status(
-        bucket: &StorageBucket<WorkerId<T>>,
-    ) -> DispatchResult {
+    fn ensure_bucket_missing_invitation_status(bucket: &StorageBucket<T>) -> DispatchResult {
         match bucket.operator_status {
             StorageBucketOperatorStatus::Missing => Ok(()),
-            StorageBucketOperatorStatus::StorageWorker(_) => {
+            StorageBucketOperatorStatus::StorageWorker(..) => {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
@@ -2841,7 +3019,7 @@ impl<T: Trait> Module<T> {
 
     // Ensures correct storage provider for the storage bucket.
     fn ensure_bucket_invitation_accepted(
-        bucket: &StorageBucket<WorkerId<T>>,
+        bucket: &StorageBucket<T>,
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
         match bucket.operator_status {
@@ -2851,10 +3029,42 @@ impl<T: Trait> Module<T> {
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
                 Err(Error::<T>::InvalidStorageProvider.into())
             }
-            StorageBucketOperatorStatus::StorageWorker(invited_worker_id) => {
+            StorageBucketOperatorStatus::StorageWorker(invited_worker_id, _) => {
                 ensure!(
                     worker_id == invited_worker_id,
                     Error::<T>::InvalidStorageProvider
+                );
+
+                Ok(())
+            }
+        }
+    }
+
+    // Ensures correct storage provider transactor account for the storage bucket.
+    fn ensure_bucket_transactor_access(
+        bucket: &StorageBucket<T>,
+        worker_id: WorkerId<T>,
+        transactor_account_id: T::AccountId,
+    ) -> DispatchResult {
+        match bucket.operator_status.clone() {
+            StorageBucketOperatorStatus::Missing => {
+                Err(Error::<T>::StorageProviderMustBeSet.into())
+            }
+            StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
+                Err(Error::<T>::InvalidStorageProvider.into())
+            }
+            StorageBucketOperatorStatus::StorageWorker(
+                invited_worker_id,
+                bucket_transactor_account_id,
+            ) => {
+                ensure!(
+                    worker_id == invited_worker_id,
+                    Error::<T>::InvalidStorageProvider
+                );
+
+                ensure!(
+                    transactor_account_id == bucket_transactor_account_id,
+                    Error::<T>::InvalidTransactorAccount
                 );
 
                 Ok(())
@@ -3107,6 +3317,37 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Validates upload parameters and conditions (like global uploading block).
+    // Returns voucher update parameters for the storage buckets.
+    fn validate_upload_data_objects_parameters(
+        params: &UploadParameters<T>,
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        let bag_change = Self::validate_bag_change(params)?;
+        Self::ensure_sufficient_balance_for_upload(
+            Some(params.deletion_prize_source_account_id.clone()),
+            Self::compute_upload_fees(&bag_change),
+        )?;
+        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
+        Ok(bag_change)
+    }
+
+    // construct bag change after validating the inputs
+    fn validate_bag_change(
+        params: &UploadParameters<T>,
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        Self::check_global_uploading_block()?;
+
+        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+
+        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
+
+        ensure!(
+            params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
+            Error::<T>::DataSizeFeeChanged
+        );
+        Ok(bag_change)
+    }
+
     // Validates `delete_data_objects` parameters.
     // Returns voucher update for an affected bag.
     fn validate_delete_data_objects_params(
@@ -3143,39 +3384,33 @@ impl<T: Trait> Module<T> {
         Ok(bag_change)
     }
 
-    // Validates upload parameters and conditions (like global uploading block).
-    // Returns voucher update parameters for the storage buckets.
-    fn validate_upload_data_objects_parameters(
-        params: &UploadParameters<T>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        // Check global uploading block.
+    fn ensure_upload_bag_validity(
+        bag_id: &BagId<T>,
+        voucher_update: &VoucherUpdate,
+    ) -> DispatchResult {
+        let bag = Self::ensure_bag_exists(bag_id)?;
+        // Check buckets.
+        Self::check_bag_for_buckets_overflow(&bag, voucher_update)?;
+        Ok(())
+    }
+
+    fn compute_upload_fees(bag_change: &BagUpdate<BalanceOf<T>>) -> BalanceOf<T> {
+        let size_fee =
+            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
+
+        bag_change.total_deletion_prize.saturating_add(size_fee)
+    }
+
+    // Check global uploading block.
+    fn check_global_uploading_block() -> DispatchResult {
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+        Ok(())
+    }
 
-        // Check object creation list validity.
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        // Check data objects' max size.
-        ensure!(
-            params
-                .object_creation_list
-                .iter()
-                .all(|obj| obj.size <= T::MaxDataObjectSize::get()),
-            Error::<T>::MaxDataObjectSizeExceeded
-        );
-
-        let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
-        // Check data size fee change.
-        ensure!(
-            params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
-            Error::<T>::DataSizeFeeChanged
-        );
-
-        let bag_change = params
-            .object_creation_list
+    fn construct_bag_change(
+        object_creation_list: &[DataObjectCreationParameters],
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        let bag_change = object_creation_list
             .iter()
             .try_fold::<_, _, Result<_, DispatchError>>(
                 BagUpdate::default(),
@@ -3202,19 +3437,27 @@ impl<T: Trait> Module<T> {
                 },
             )?;
 
-        let size_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
-        let usable_balance =
-            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
-
-        // Check account balance to satisfy deletion prize and storage fee.
-        let total_fee = bag_change.total_deletion_prize + size_fee;
-        ensure!(usable_balance >= total_fee, Error::<T>::InsufficientBalance);
-
-        // Check buckets.
-        Self::check_bag_for_buckets_overflow(&bag, &bag_change.voucher_update)?;
-
         Ok(bag_change)
+    }
+
+    // objects creation list validity
+    fn ensure_objects_creation_list_validity(
+        object_creation_list: &[DataObjectCreationParameters],
+    ) -> DispatchResult {
+        // Check object creation list is not empty
+        ensure!(
+            !object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
+        // Check data objects' max size.
+        ensure!(
+            object_creation_list
+                .iter()
+                .all(|obj| obj.size <= T::MaxDataObjectSize::get()),
+            Error::<T>::MaxDataObjectSizeExceeded
+        );
+        Ok(())
     }
 
     // Iterates through buckets in the bag. Verifies voucher parameters to fit the new limits:
@@ -3278,11 +3521,36 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // helper pick buckets for bag
+    fn pick_buckets_for_bag(
+        dynamic_bag_id: DynamicBagId<T>,
+        bag_change: &Option<BagUpdate<BalanceOf<T>>>,
+    ) -> Result<BucketPair<T>, DispatchError> {
+        let bag_type: DynamicBagType = dynamic_bag_id.into();
+
+        let storage_bucket_ids = Self::pick_storage_buckets_for_dynamic_bag(
+            bag_type,
+            bag_change.map(|bag_change| bag_change.voucher_update),
+        );
+
+        let distribution_bucket_ids = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
+
+        if bag_change.is_some() {
+            ensure!(
+                !storage_bucket_ids.is_empty(),
+                Error::<T>::StorageBucketIdCollectionsAreEmpty
+            );
+        }
+
+        Ok((storage_bucket_ids, distribution_bucket_ids))
+    }
+
     // Selects storage bucket ID sets to assign to the dynamic bag.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
+        voucher_update: Option<VoucherUpdate>,
     ) -> BTreeSet<T::StorageBucketId> {
-        StorageBucketPicker::<T>::pick_storage_buckets(bag_type)
+        StorageBucketPicker::<T>::pick_storage_buckets(bag_type, voucher_update)
     }
 
     // Selects distributed bucket ID sets to assign to the dynamic bag.

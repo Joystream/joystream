@@ -17,7 +17,7 @@ export enum LogLevel {
 
 export class Sender {
   private readonly api: ApiPromise
-  private static readonly asyncLock: AsyncLock = new AsyncLock({ maxPending: 2048 })
+  static readonly asyncLock: AsyncLock = new AsyncLock({ maxPending: 2048 })
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
   private logs: LogLevel = LogLevel.None
@@ -114,7 +114,7 @@ export class Sender {
     // Instead use a single lock for all calls, to force all transactions to be submitted in same order
     // of call to signAndSend. Otherwise it raises chance of race conditions.
     // It happens in rare cases and has lead some tests to fail occasionally in the past
-    await Sender.asyncLock.acquire('tx-queue', async () => {
+    await Sender.asyncLock.acquire(['tx-queue', `nonce-${account.toString()}`], async () => {
       const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()

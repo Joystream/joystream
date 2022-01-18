@@ -6,14 +6,7 @@ export default class LeaderCancelInvitation extends AccountsCommandBase {
   Requires distribution working group leader permissions.`
 
   static flags = {
-    bucketId: flags.integer({
-      char: 'B',
-      description: 'Distribution bucket id',
-      required: true,
-    }),
-    familyId: flags.integer({
-      char: 'f',
-      description: 'Distribution bucket family id',
+    bucketId: flags.bucketId({
       required: true,
     }),
     workerId: flags.integer({
@@ -25,13 +18,16 @@ export default class LeaderCancelInvitation extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { bucketId, familyId, workerId } = this.parse(LeaderCancelInvitation).flags
+    const { bucketId, workerId } = this.parse(LeaderCancelInvitation).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    this.log(`Canceling distribution bucket operator invitation (bucket: ${bucketId}, worker: ${workerId})...`)
+    this.log(`Canceling distribution bucket operator invitation...`, {
+      bucketId: bucketId.toHuman(),
+      workerId: workerId,
+    })
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
-      this.api.tx.storage.cancelDistributionBucketOperatorInvite(familyId, bucketId, workerId)
+      this.api.tx.storage.cancelDistributionBucketOperatorInvite(bucketId, workerId)
     )
     this.log('Invitation succesfully canceled!')
   }

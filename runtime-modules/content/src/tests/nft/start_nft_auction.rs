@@ -175,7 +175,7 @@ fn start_nft_auction_not_authorized() {
 
         // Make an attempt to start nft auction if actor is not authorized
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             auction_params.clone(),

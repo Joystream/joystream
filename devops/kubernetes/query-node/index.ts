@@ -2,13 +2,11 @@ import * as awsx from '@pulumi/awsx'
 import * as eks from '@pulumi/eks'
 import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
-import { configMapFromFile } from './configMap'
+import { ConfigMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
 import { IndexerServiceDeployment } from './indexerDeployment'
 import { ProcessorServiceDeployment } from './processorDeployment'
 import { CaddyServiceDeployment } from 'pulumi-common'
-
-require('dotenv').config()
 
 const config = new pulumi.Config()
 const awsConfig = new pulumi.Config('aws')
@@ -19,12 +17,11 @@ const skipProcessor = config.getBoolean('skipProcessor')
 const useLocalRepo = config.getBoolean('useLocalRepo')
 
 export let kubeconfig: pulumi.Output<any>
-export let joystreamAppsImage: pulumi.Output<string>
+export let joystreamAppsImage: pulumi.Output<string> = pulumi.interpolate`${appsImage}`
 let provider: k8s.Provider
 
 if (skipProcessor && externalIndexerUrl) {
-  pulumi.log.error('Need to deploy atleast one component, Indexer or Processor')
-  throw new Error(`Please check the config settings for skipProcessor and externalIndexerUrl`)
+  pulumi.log.info('No Indexer or Processor will be deployed only the cluster')
 }
 
 if (isMinikube) {
@@ -59,15 +56,19 @@ if (isMinikube) {
   // Export the cluster's kubeconfig.
   kubeconfig = cluster.kubeconfig
 
-  // Create a repository
-  const repo = new awsx.ecr.Repository('joystream/apps')
+  // Only deploy ECR and push image if we need to deploy processor from
+  // local image build.
+  if (!skipProcessor && useLocalRepo) {
+    // Create a repository
+    const repo = new awsx.ecr.Repository('joystream/apps')
 
-  // Build an image from an existing local/docker hub image and push to ECR
-  joystreamAppsImage = repo.buildAndPushImage({
-    context: './docker_dummy',
-    dockerfile: './docker_dummy/Dockerfile',
-    args: { SOURCE_IMAGE: appsImage! },
-  })
+    // Build an image from an existing local/docker hub image and push to ECR
+    joystreamAppsImage = repo.buildAndPushImage({
+      context: './docker_dummy',
+      dockerfile: './docker_dummy/Dockerfile',
+      args: { SOURCE_IMAGE: appsImage },
+    })
+  }
 }
 
 const resourceOptions = { provider: provider }
@@ -80,7 +81,7 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-const defsConfig = new configMapFromFile(
+const defsConfig = new ConfigMapFromFile(
   'defs-config',
   {
     filePath: '../../../types/augment/all/defs.json',
@@ -109,11 +110,14 @@ const caddyEndpoints = [
   `/indexer* {
     uri strip_prefix /indexer
     reverse_proxy indexer:4000
-}`,
+  }`,
   `/server* {
     uri strip_prefix /server
     reverse_proxy graphql-server:8081
-}`,
+  }`,
+  `/@apollographql/* {
+    reverse_proxy graphql-server:8081
+  }`,
 ]
 
 const lbReady = config.get('isLoadBalancerReady') === 'true'

@@ -1141,7 +1141,7 @@ export interface StorageBucketOperatorStatus extends Enum {
   readonly isInvitedStorageWorker: boolean;
   readonly asInvitedStorageWorker: WorkerId;
   readonly isStorageWorker: boolean;
-  readonly asStorageWorker: WorkerId;
+  readonly asStorageWorker: ITuple<[WorkerId, GenericAccountId]>;
 }
 
 /** @name StorageBucketsPerBagValueConstraint */

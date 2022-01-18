@@ -146,7 +146,7 @@ fn issue_nft_actor_not_authorized() {
 
         // Make an attempt to issue nft if actor is not authorized
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             None,

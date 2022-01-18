@@ -1,21 +1,20 @@
-import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
+import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
-import { Codec, ISubmittableResult } from '@polkadot/types/types'
+import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
   Application,
-  ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
   OpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@joystream/types/stake'
@@ -32,15 +31,34 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 // import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
-import { VideoId } from '@joystream/types/content'
+import { VideoId, VideoCategoryId } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
 
-type AnyMetadata = {
-  serializeBinary(): Uint8Array
+const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
+  'distributionWorkingGroup': 'Distribution',
+  'storageWorkingGroup': 'Storage',
+  'contentWorkingGroup': 'Content',
+  'gatewayWorkingGroup': 'Gateway',
+  'operationsWorkingGroupAlpha': 'OperationsAlpha',
+  'operationsWorkingGroupBeta': 'OperationsBeta',
+  'operationsWorkingGroupGamma': 'OperationsGamma',
+}
+
+type EventSection = keyof ApiPromise['events'] & string
+type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+
+export type KeyGenInfo = {
+  start: number
+  final: number
+  custom: string[]
 }
 
 export class ApiFactory {
@@ -48,9 +66,14 @@ export class ApiFactory {
   private readonly keyring: Keyring
   // number used as part of key derivation path
   private keyId = 0
+  // stores names of the created custom keys
+  private customKeys: string[] = []
   // mapping from account address to key id.
   // To be able to re-derive keypair externally when mini-secret is known.
   readonly addressesToKeyId: Map<string, number> = new Map()
+  // mapping from account address to suri.
+  // To be able to get the suri of a known key for the purpose of, for example, interacting with the CLIs
+  readonly addressesToSuri: Map<string, string>
   // mini secret used in SURI key derivation path
   private readonly miniSecret: string
 
@@ -95,6 +118,7 @@ export class ApiFactory {
     this.keyring.addFromUri(sudoAccountUri)
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
+    this.addressesToSuri = new Map()
     this.keyId = 0
   }
 
@@ -106,29 +130,51 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const key = this.createCustomKeyPair(`${id}`)
+      const key = this.createKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
     return keys
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    const uri = `${this.miniSecret}//testing//${customPath}`
-    return this.keyring.addFromUri(uri)
+  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+    if (isCustom) {
+      this.customKeys.push(suriPath)
+    }
+    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const pair = this.keyring.addFromUri(uri)
+    this.addressesToSuri.set(pair.address, uri)
+    return pair
   }
 
-  public keyGenInfo(): { start: number; final: number } {
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    return this.createKeyPair(customPath, true)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
     const start = 0
     const final = this.keyId
     return {
       start,
       final,
+      custom: this.customKeys,
     }
   }
 
   public getAllGeneratedAccounts(): { [k: string]: number } {
     return Object.fromEntries(this.addressesToKeyId)
+  }
+
+  public getKeypair(address: AccountId | string): KeyringPair {
+    return this.keyring.getPair(address)
+  }
+
+  public getSuri(address: AccountId | string): string {
+    const suri = this.addressesToSuri.get(address.toString())
+    if (!suri) {
+      throw new Error(`Suri for address ${address} not available!`)
+    }
+    return suri
   }
 }
 
@@ -146,9 +192,42 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
-  // expose only direct ability to query chain
-  get query() {
+  public get query(): ApiPromise['query'] {
     return this.api.query
+  }
+
+  public get consts(): ApiPromise['consts'] {
+    return this.api.consts
+  }
+
+  public get tx(): ApiPromise['tx'] {
+    return this.api.tx
+  }
+
+  public signAndSend(tx: SubmittableExtrinsic<'promise'>, account: string | AccountId): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(tx, account)
+  }
+
+  public signAndSendMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    account: string | AccountId
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx) => this.sender.signAndSend(tx, account)))
+  }
+
+  public signAndSendManyByMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    accounts: string[] | AccountId[]
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx, i) => this.sender.signAndSend(tx, accounts[i])))
+  }
+
+  public getKeypair(address: string | AccountId): KeyringPair {
+    return this.factory.getKeypair(address)
+  }
+
+  public getSuri(address: string | AccountId): string {
+    return this.factory.getSuri(address)
   }
 
   public enableDebugTxLogs(): void {
@@ -167,7 +246,7 @@ export class Api {
     return this.factory.createCustomKeyPair(path)
   }
 
-  public keyGenInfo(): { start: number; final: number } {
+  public keyGenInfo(): KeyGenInfo {
     return this.factory.keyGenInfo()
   }
 
@@ -177,24 +256,7 @@ export class Api {
 
   // Well known WorkingGroup enum defined in runtime
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
-    switch (workingGroup) {
-      case WorkingGroups.Storage:
-        return 'Storage'
-      case WorkingGroups.Content:
-        return 'Content'
-      case WorkingGroups.Gateway:
-        return 'Gateway'
-      case WorkingGroups.OperationsAlpha:
-        return 'OperationsAlpha'
-      case WorkingGroups.OperationsBeta:
-        return 'OperationsBeta'
-      case WorkingGroups.OperationsGamma:
-        return 'OperationsGamma'
-      case WorkingGroups.Distribution:
-        return 'Distribution'
-      default:
-        throw new Error(`Invalid working group string representation: ${workingGroup}`)
-    }
+    return workingGroupNameByGroup[workingGroup]
   }
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
@@ -832,79 +894,52 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
-  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
-    return events.find((record) => record.event.section === section && record.event.method === method)
-  }
-
-  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public findEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> | undefined {
+    if (Array.isArray(result)) {
+      return result.find(({ event }) => event.section === section && event.method === method)?.event as
+        | EventType<S, M>
+        | undefined
     }
+    return result.findRecord(section, method)?.event as EventType<S, M> | undefined
   }
 
-  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
-    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
-    if (record) {
-      return record.event.data[1] as ProposalId
+  public getEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> {
+    const event = this.findEvent(result, section, method)
+    if (!event) {
+      throw new Error(
+        `Cannot find expected ${section}.${method} event in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}`
+      )
     }
+    return event
   }
 
-  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
-    if (record) {
-      return record.event.data[0] as OpeningId
+  public findEvents<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M,
+    expectedCount?: number
+  ): EventType<S, M>[] {
+    const events = Array.isArray(result)
+      ? result.filter(({ event }) => event.section === section && event.method === method).map(({ event }) => event)
+      : result.filterRecords(section, method).map((r) => r.event)
+    if (expectedCount && events.length !== expectedCount) {
+      throw new Error(
+        `Unexpected count of ${section}.${method} events in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
+      )
     }
-  }
-
-  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
-    if (record) {
-      return (record.event.data as unknown) as WorkerId
-    }
-  }
-
-  public findBeganApplicationReviewEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
-  }
-
-  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
-  }
-
-  public findWorkerRewardAmountUpdatedEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups,
-    workerId: WorkerId
-  ): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
-    if (record) {
-      const id = (record.event.data[0] as unknown) as WorkerId
-      if (id.eq(workerId)) {
-        return workerId
-      }
-    }
-  }
-
-  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
-  }
-
-  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
-  }
-
-  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
-    if (record) {
-      return (record.event.data[1] as unknown) as BN
-    }
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
@@ -937,26 +972,6 @@ export class Api {
     })
 
     return invertedPromise
-  }
-
-  public findOpeningFilledEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationIdToWorkerIdMap | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
-    if (record) {
-      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
-    }
-  }
-
-  public findApplicationReviewBeganEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
@@ -1733,13 +1748,11 @@ export class Api {
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
+    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
 
-    return entries
-      .filter(([idKey]) => {
-        return workerIds.includes(idKey.args[0] as WorkerId)
-      })
-      .map(([, worker]) => worker.role_account_id.toString())
+    return workers.map((worker) => {
+      return worker.role_account_id.toString()
+    })
   }
 
   public async getStake(id: StakeId): Promise<Stake> {
@@ -1790,6 +1803,18 @@ export class Api {
     return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
   }
 
+  public async getNumberOfOutstandingVideos(): Promise<number> {
+    return (await this.api.query.content.videoById.entries<VideoId>()).length
+  }
+
+  public async getNumberOfOutstandingChannels(): Promise<number> {
+    return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
+    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
+  }
+
   // Create a mock channel, throws on failure
   async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
@@ -1810,13 +1835,8 @@ export class Api {
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
 
-    const record = this.findEventRecord(result.events, 'content', 'ChannelCreated')
-    if (record) {
-      return record.event.data[1] as ChannelId
-    }
-
-    // TODO: get error from 'result'
-    throw new Error('Failed to create channel')
+    const event = this.getEvent(result.events, 'content', 'ChannelCreated')
+    return event.data[1]
   }
 
   // Create a mock video, throws on failure
@@ -1835,13 +1855,8 @@ export class Api {
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
 
-    const record = this.findEventRecord(result.events, 'content', 'VideoCreated')
-    if (record) {
-      return record.event.data[2] as VideoId
-    }
-
-    // TODO: get error from 'result'
-    throw new Error('Failed to create video')
+    const event = this.getEvent(result.events, 'content', 'VideoCreated')
+    return event.data[2]
   }
 
   async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {

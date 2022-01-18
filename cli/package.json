@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -11,7 +11,7 @@
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
     "@joystream/metadata-protobuf": "^1.0.0",
-    "@joystream/types": "^0.17.0",
+    "@joystream/types": "^0.17.1",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
@@ -143,6 +143,6 @@
   "types": "lib/index.d.ts",
   "volta": {
     "node": "14.16.1",
-    "yarn": "1.22.4"
+    "yarn": "1.22.15"
   }
 }

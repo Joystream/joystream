@@ -166,7 +166,7 @@ fn offer_nft_not_authorized() {
 
         // Make an attempt to offer nft if actor is not authorized
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(SECOND_MEMBER_ID),
             SECOND_MEMBER_ID,

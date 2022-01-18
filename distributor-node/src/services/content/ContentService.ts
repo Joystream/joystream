@@ -9,6 +9,7 @@ import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
 import { ContentHash } from '../crypto/ContentHash'
 import readChunk from 'read-chunk'
+import { PendingDownloadStatusType } from '../networking/PendingDownload'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
@@ -245,7 +246,7 @@ export class ContentService {
         hash.update(chunk)
 
         if (bytesReceived > expectedSize) {
-          dataStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
+          fileStream.destroy(new Error('Unexpected content size: Too much data received from source!'))
         }
       }
 
@@ -282,7 +283,7 @@ export class ContentService {
 
         const mimeType = await this.detectMimeType(objectId)
         this.logger.info('New content accepted', { ...logMetadata })
-        this.stateCache.dropPendingDownload(objectId)
+        this.stateCache.dropPendingDownload(objectId, PendingDownloadStatusType.Completed)
         this.stateCache.newContent(objectId, expectedSize)
         this.stateCache.setContentMimeType(objectId, mimeType)
       })

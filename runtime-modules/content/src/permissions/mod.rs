@@ -116,9 +116,6 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     match actor {
-        // Lead should use their member or curator role to create or update channel assets.
-        ContentActor::Lead => Err(Error::<T>::ActorNotAuthorized.into()),
-
         ContentActor::Curator(curator_group_id, curator_id) => {
             // Authorize curator, performing all checks to ensure curator can act
             CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
@@ -264,13 +261,16 @@ pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
             Ok(())
         }
         ContentActor::Member(member_id) => {
-            // ensure valid member
+            // ensure member account and origin correspondence
             ensure_member_auth_success::<T>(sender, member_id)?;
             // ensure member is channel owner
             ensure_member_is_channel_owner::<T>(&channel.owner, member_id)?;
             Ok(())
         }
         ContentActor::Collaborator(member_id) => {
+            // ensure member account and origin correspondence
+            ensure_member_auth_success::<T>(sender, member_id)?;
+            // ensure valid collaborator
             ensure!(
                 channel.collaborators.contains(member_id),
                 Error::<T>::ActorNotAuthorized

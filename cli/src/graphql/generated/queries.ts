@@ -30,11 +30,11 @@ export type GetDataObjectsByBagIdQueryVariables = Types.Exact<{
 
 export type GetDataObjectsByBagIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
-export type GetDataObjectsChannelIdQueryVariables = Types.Exact<{
+export type GetDataObjectsByChannelIdQueryVariables = Types.Exact<{
   channelId?: Types.Maybe<Types.Scalars['ID']>
 }>
 
-export type GetDataObjectsChannelIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
+export type GetDataObjectsByChannelIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
 export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
   videoId?: Types.Maybe<Types.Scalars['ID']>
@@ -102,8 +102,8 @@ export const GetDataObjectsByBagId = gql`
   }
   ${DataObjectInfo}
 `
-export const GetDataObjectsChannelId = gql`
-  query getDataObjectsChannelId($channelId: ID) {
+export const GetDataObjectsByChannelId = gql`
+  query getDataObjectsByChannelId($channelId: ID) {
     storageDataObjects(where: { type_json: { channelId_eq: $channelId } }) {
       ...DataObjectInfo
     }

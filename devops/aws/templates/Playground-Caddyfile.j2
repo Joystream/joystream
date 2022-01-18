@@ -8,11 +8,6 @@
     reverse_proxy localhost:9933
 }
 
-{{ nip_domain }}/pioneer* {
-    uri strip_prefix /pioneer
-    reverse_proxy localhost:3000
-}
-
 {{ nip_domain }}/colossus-1* {
     uri strip_prefix /colossus-1
     reverse_proxy localhost:3333
@@ -46,4 +41,9 @@
 {{ nip_domain }}/member-faucet* {
     uri strip_prefix /member-faucet
     reverse_proxy localhost:3002
+}
+
+# Pioneer
+{{ nip_domain }}/* {
+    reverse_proxy localhost:3000
 }
