@@ -6,6 +6,9 @@ use frame_support::traits::Currency;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
+// Index which indentifies the item in the commitment set we want the proof for
+pub const DEFAULT_PROOF_INDEX: usize = 1;
+
 // fixtures
 pub struct CreateChannelFixture {
     sender: AccountId,
@@ -1310,12 +1313,14 @@ impl ClaimChannelRewardFixture {
         let payout_earned_pre =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 
-        let actual_result = Content::claim_channel_reward(
-            origin,
-            self.actor.clone(),
-            build_merkle_path_helper(&self.payments, 1),
-            self.item.clone(),
-        );
+        let proof = if self.payments.is_empty() {
+            vec![]
+        } else {
+            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+        };
+
+        let actual_result =
+            Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
         let balance_post = Balances::<Test>::usable_balance(self.sender);
         let payout_earned_post =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;

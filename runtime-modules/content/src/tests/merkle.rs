@@ -229,6 +229,27 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
 }
 
 #[test]
+fn unsuccessful_reward_claim_with_empty_proof() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let item = PullPayment::<Test> {
+            channel_id: ChannelId::one(),
+            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            reason: Hashing::hash_of(&b"reason".to_vec()),
+        };
+        ClaimChannelRewardFixture::default()
+            .with_item(item)
+            .with_payments(vec![])
+            .call_and_assert(Err(Error::<Test>::PaymentProofVerificationFailed.into()))
+    })
+}
+
+#[test]
 fn successful_reward_claim_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
