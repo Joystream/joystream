@@ -60,7 +60,6 @@ use sp_std::vec::Vec;
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 type Storage<T> = storage::Module<T>;
-type Minting<T> = minting::Module<T>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -1989,7 +1988,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::transfer_reward(cashout as u32, &channel.reward_account.unwrap());
+            Self::transfer_reward(cashout, &channel.reward_account.unwrap());
             ChannelById::<T>::mutate(
                 &item.channel_id,
                 |channel| channel.cumulative_payout_earned =
@@ -2227,15 +2226,7 @@ impl<T: Trait> Module<T> {
         max(storage_price, cleanup_cost)
     }
 
-    fn transfer_reward(
-        reward: u32,
-        address: &<T as frame_system::Trait>::AccountId,
-    ) -> DispatchResult {
-        let mint_id = Minting::<T>::add_mint(reward.into(), None).unwrap();
-        Minting::<T>::transfer_tokens(mint_id, reward.into(), address).unwrap();
-        Minting::<T>::remove_mint(mint_id);
-        Ok(())
-    }
+    fn transfer_reward(_reward: BalanceOf<T>, _address: &<T as frame_system::Trait>::AccountId) {}
 
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(

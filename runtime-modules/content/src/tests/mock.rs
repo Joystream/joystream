@@ -55,7 +55,6 @@ pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 
 // Storage module & migration parameters
 // # objects in a channel == # objects in a video is assumed, changing this will make tests fail
-// TODO: set separate amount of objects per channel / video in Olympia release tests
 
 pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
