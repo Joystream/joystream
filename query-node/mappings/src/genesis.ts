@@ -5,11 +5,12 @@ import {
   WorkingGroup,
   ElectedCouncil,
   ElectionRound,
-  Membership,
-  MemberMetadata,
+  MembershipEntryGenesis,
 } from 'query-node/dist/model'
 import { membershipSystem, workingGroups, members } from './genesis-data'
 import { CURRENT_NETWORK } from './common'
+import { createNewMember } from './membership'
+import { MembershipMetadata } from '@joystream/metadata-protobuf'
 
 export async function loadGenesisData({ store }: StoreContext): Promise<void> {
   await initMembershipSystem(store)
@@ -53,24 +54,22 @@ async function initWorkingGroups(store: DatabaseManager) {
 }
 
 async function initMembers(store: DatabaseManager) {
-  await Promise.all(
-    members.map(async (member) =>
-      store.save<Membership>(
-        new Membership({
-          createdAt: new Date(0),
-          updatedAt: new Date(0),
-          handle: member.handle,
-          metadata: new MemberMetadata({
-            about: member.about,
-            avatar: { avatarUri: member.avatar_uri, isTypeOf: 'AvatarUri' },
-          }),
-
-          rootAccount: member.root_account,
-          controllerAccount: member.controller_account,
-        })
-      )
+  for (const member of members) {
+    await createNewMember(
+      store,
+      new Date(0),
+      member.member_id.toString(),
+      new MembershipEntryGenesis(),
+      member.root_account,
+      member.controller_account,
+      member.handle,
+      0,
+      new MembershipMetadata({
+        about: member.about,
+        avatarUri: member.avatar_uri,
+      })
     )
-  )
+  }
 }
 
 async function initFirstElectionRound(store: DatabaseManager) {
