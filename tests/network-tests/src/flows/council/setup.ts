@@ -23,8 +23,8 @@ export default async function councilSetup({ api, env, lock }: FlowProps): Promi
   debug('Electing new council')
 
   const numberOfApplicants = (await api.getCouncilSize()).toNumber() * 2
-  const applicants = api.createKeyPairs(numberOfApplicants).map((key) => key.address)
-  const voters = api.createKeyPairs(5).map((key) => key.address)
+  const applicants = api.createKeyPairs(numberOfApplicants).map(({ key }) => key.address)
+  const voters = api.createKeyPairs(5).map(({ key }) => key.address)
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const K: number = +env.COUNCIL_ELECTION_K!

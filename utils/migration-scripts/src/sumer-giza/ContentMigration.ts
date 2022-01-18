@@ -18,6 +18,7 @@ export type ContentMigrationConfig = {
   uploadSpBucketId: number
   uploadSpEndpoint: string
   migrationStatePath: string
+  excludeVideoIds: number[]
 }
 
 export class ContentMigration {

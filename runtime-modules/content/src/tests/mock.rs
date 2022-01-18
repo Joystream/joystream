@@ -41,8 +41,32 @@ pub const UNAUTHORIZED_MEMBER_ID: u64 = 205;
 pub const UNAUTHORIZED_CURATOR_ID: u64 = 206;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 207;
 
-// initial balancer for an account
-pub const INITIAL_BALANCE: u64 = 1000;
+// Storage module & migration parameters
+// # objects in a channel == # objects in a video is assumed, changing this will make tests fail
+// TODO: set separate amount of objects per channel / video in Olympia release tests
+
+pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
+pub const DEFAULT_OBJECT_SIZE: u64 = 5;
+pub const DATA_OBJECTS_NUMBER: u64 = 10;
+pub const VIDEO_MIGRATIONS_PER_BLOCK: u64 = 2;
+pub const CHANNEL_MIGRATIONS_PER_BLOCK: u64 = 1;
+pub const MIGRATION_BLOCKS: u64 = 4;
+
+pub const OUTSTANDING_VIDEOS: u64 = MIGRATION_BLOCKS * VIDEO_MIGRATIONS_PER_BLOCK;
+pub const OUTSTANDING_CHANNELS: u64 = MIGRATION_BLOCKS * CHANNEL_MIGRATIONS_PER_BLOCK;
+pub const TOTAL_OBJECTS_NUMBER: u64 =
+    DATA_OBJECTS_NUMBER * (OUTSTANDING_VIDEOS + OUTSTANDING_CHANNELS);
+pub const TOTAL_BALANCE_REQUIRED: u64 = TOTAL_OBJECTS_NUMBER * DATA_OBJECT_DELETION_PRIZE;
+
+pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = TOTAL_OBJECTS_NUMBER;
+pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 =
+    DEFAULT_OBJECT_SIZE * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
+pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
+pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
+pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
+pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
+
+pub const START_MIGRATION_AT_BLOCK: u64 = 1;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -226,7 +250,7 @@ impl ContentActorAuthenticator for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const DataObjectDeletionPrize: u64 = 10;
+    pub const DataObjectDeletionPrize: u64 = DATA_OBJECT_DELETION_PRIZE;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
@@ -238,7 +262,7 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
-    pub const MaxDataObjectSize: u64 = 400;
+    pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -358,6 +382,8 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const VideosMigrationsEachBlock: u64 = VIDEO_MIGRATIONS_PER_BLOCK;
+    pub const ChannelsMigrationsEachBlock: u64 = CHANNEL_MIGRATIONS_PER_BLOCK;
 }
 
 impl Trait for Test {
@@ -393,6 +419,10 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
+
+    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
+
+    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -408,6 +438,8 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    video_migration: VideoMigrationConfig<Test>,
+    channel_migration: ChannelMigrationConfig<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -422,6 +454,14 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            video_migration: MigrationConfigRecord {
+                current_id: 1,
+                final_id: 1,
+            },
+            channel_migration: MigrationConfigRecord {
+                current_id: 1,
+                final_id: 1,
+            },
         }
     }
 }
@@ -442,6 +482,8 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            video_migration: self.video_migration,
+            channel_migration: self.channel_migration,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -458,9 +500,9 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
     while System::block_number() < n {
-        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <Content as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
-        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 

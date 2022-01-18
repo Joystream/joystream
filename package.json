@@ -4,9 +4,8 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "./build-npm-packages.sh && ./build-docker-images.sh",
-    "build:packages": "./build-npm-packages.sh",
-    "build:docker": "./build-docker-images.sh",
+    "build:node:docker": "./build-node-docker.sh",
+    "build:packages": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
@@ -66,10 +65,10 @@
   },
   "engines": {
     "node": ">=14.0.0",
-    "yarn": "^1.22.0"
+    "yarn": "^1.22.15"
   },
   "volta": {
     "node": "14.18.0",
-    "yarn": "1.22.4"
+    "yarn": "1.22.15"
   }
 }

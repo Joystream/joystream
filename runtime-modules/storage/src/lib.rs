@@ -300,7 +300,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     /// Distribution bucket operator ID type (relationship between distribution bucket and
     /// distribution operator).

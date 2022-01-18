@@ -57,6 +57,12 @@ export class MigrateContentCommand extends Command {
       description: 'Path to migration results directory',
       default: path.join(__dirname, '../../../results/sumer-giza'),
     }),
+    excludeVideoIds: flags.integer({
+      multiple: true,
+      description: 'Video ids to exclude from migration',
+      required: false,
+      default: [],
+    }),
   }
 
   async run(): Promise<void> {
