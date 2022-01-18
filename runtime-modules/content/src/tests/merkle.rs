@@ -327,3 +327,25 @@ fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
             .call_and_assert(Err(Error::<Test>::PaymentProofVerificationFailed.into()))
     })
 }
+
+#[test]
+fn unsuccessful_reward_claim_with_successive_request() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Ok(()));
+
+        // cashout is 0 now
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments)
+            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()))
+    })
+}

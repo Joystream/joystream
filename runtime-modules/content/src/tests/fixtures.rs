@@ -1321,19 +1321,17 @@ impl ClaimChannelRewardFixture {
 
         let actual_result =
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
+
         let balance_post = Balances::<Test>::usable_balance(self.sender);
         let payout_earned_post =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(
-                balance_post.saturating_sub(balance_pre),
-                payout_earned_post.saturating_sub(payout_earned_pre)
-            );
-
+            let cashout = payout_earned_post.saturating_sub(payout_earned_pre);
+            assert_eq!(balance_post.saturating_sub(balance_pre), cashout);
             assert_eq!(payout_earned_post, self.item.cumulative_payout_claimed);
-
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
