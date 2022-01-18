@@ -375,6 +375,8 @@ pub fn testnet_genesis(
                     current_id: 1,
                     final_id: 1,
                 },
+                max_reward_allowed: 1000,
+                min_cashout_allowed: 1,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
