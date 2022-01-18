@@ -1,7 +1,7 @@
 import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
-import { CaddyServiceDeployment, getProvider, ProviderType } from 'pulumi-common'
+import { CaddyServiceDeployment, getProvider, ProviderType, NginxServiceDeployment } from 'pulumi-common'
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
 import { NFSServiceDeployment } from './nfsVolume'
@@ -29,6 +29,7 @@ export = async () => {
   const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
   const nodeImage = config.get('nodeImage') || 'joystream/node:latest'
   const encryptKey = config.get('encryptionKey') || '1234'
+  const certificateARN = config.get('acmCertificateARN')
 
   const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
   let pvcClaimName: pulumi.Output<any>
@@ -247,29 +248,48 @@ export = async () => {
   // Export the Service name and public LoadBalancer Endpoint
   const serviceName = service.metadata.name
 
-  const lbReady = config.get('isLoadBalancerReady') === 'true'
-
-  const caddyEndpoints = [
-    `/ws-rpc {
-  reverse_proxy node-network:9944
-}`,
-    `/http-rpc {
-  reverse_proxy node-network:9933
-}`,
-  ]
-
   let endpoint1
   let endpoint2
 
-  if (!useLocalProvider) {
-    const caddy = new CaddyServiceDeployment(
-      'caddy-proxy',
-      { lbReady, namespaceName: namespaceName, isMinikube: useLocalProvider, caddyEndpoints },
+  if (certificateARN) {
+    const nginxConfig = `location /ws-rpc {
+      proxy_pass http://node-network:9944;
+    }
+    location /http-rpc {
+      proxy_pass http://node-network:9933;
+    }`
+    const nginx = new NginxServiceDeployment(
+      'nginx',
+      {
+        namespaceName: namespaceName,
+        acmCertificateARN: certificateARN,
+        nginxConfig,
+      },
       resourceOptions
     )
+    endpoint1 = nginx.hostname
+  } else {
+    const lbReady = config.get('isLoadBalancerReady') === 'true'
 
-    endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
-    endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+    const caddyEndpoints = [
+      `/ws-rpc {
+  reverse_proxy node-network:9944
+}`,
+      `/http-rpc {
+  reverse_proxy node-network:9933
+}`,
+    ]
+
+    if (!useLocalProvider) {
+      const caddy = new CaddyServiceDeployment(
+        'caddy-proxy',
+        { lbReady, namespaceName: namespaceName, isMinikube: useLocalProvider, caddyEndpoints },
+        resourceOptions
+      )
+
+      endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+      endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+    }
   }
 
   return {

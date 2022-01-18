@@ -42,6 +42,12 @@ After cloning this repo, from this working directory, run these commands:
     --plaintext nodeImage=joystream/node:latest --plaintext encryptionKey=password
    ```
 
+   If you want to use a custom domain for the Load Balancer, set the `acmCertificateARN` config
+
+   ```bash
+   $ pulumi config set acmCertificateARN 'arn:aws:acm:us-east-1:882345074216:certificate/4ad63435-7145-413b-af70-3a19ed66ea4a'
+   ```
+
    Set the `clusterStackRef` config variable based on the name of the stack used to deploy the cluster.
 
    If you are logged in to the Pulumi CLI use the below format:

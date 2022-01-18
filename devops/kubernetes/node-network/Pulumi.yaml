@@ -22,3 +22,5 @@ template:
       description: Pulumi stack name used to deploy Kubernetes cluster
     kubeconfigFile:
       description: Relative or absolute path to the Kubeconfig file of an already deployed K8 cluster
+    acmCertificateARN:
+      description: ARN of the Certificate registered in AWS ACM Certificate Manager
