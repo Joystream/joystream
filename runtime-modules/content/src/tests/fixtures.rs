@@ -1300,7 +1300,9 @@ impl ClaimChannelRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let _balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let payout_earned_pre =
+            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 
         let actual_result = Content::claim_channel_reward(
             origin,
@@ -1308,16 +1310,18 @@ impl ClaimChannelRewardFixture {
             build_merkle_path_helper(&self.payments, 1),
             self.item.clone(),
         );
-        let _balance_post = Balances::<Test>::usable_balance(self.sender);
-        let cumulative_payout_earned =
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let payout_earned_post =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
             assert_eq!(
-                cumulative_payout_earned,
-                self.item.cumulative_payout_claimed
+                balance_post.saturating_sub(balance_pre),
+                payout_earned_post.saturating_sub(payout_earned_pre)
             );
+
+            assert_eq!(payout_earned_post, self.item.cumulative_payout_claimed);
 
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -1326,6 +1330,9 @@ impl ClaimChannelRewardFixture {
                     self.item.channel_id
                 ))
             );
+        } else {
+            assert_eq!(balance_post, balance_pre);
+            assert_eq!(payout_earned_post, payout_earned_pre);
         }
     }
 }

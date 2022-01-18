@@ -120,6 +120,11 @@ pub trait ModuleAccount<T: balances::Trait> {
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
     }
+
+    /// Mints the reward into the destination account provided
+    fn transfer_reward(dest_account_id: &T::AccountId, amount: BalanceOf<T>) {
+        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(dest_account_id, amount);
+    }
 }
 
 /// Implementation of the ModuleAccountHandler.
@@ -1988,7 +1993,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::transfer_reward(cashout, &channel.reward_account.unwrap());
+            ContentTreasury::<T>::transfer_reward( &channel.reward_account.unwrap(), cashout);
             ChannelById::<T>::mutate(
                 &item.channel_id,
                 |channel| channel.cumulative_payout_earned =
@@ -2225,8 +2230,6 @@ impl<T: Trait> Module<T> {
 
         max(storage_price, cleanup_cost)
     }
-
-    fn transfer_reward(_reward: BalanceOf<T>, _address: &<T as frame_system::Trait>::AccountId) {}
 
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
