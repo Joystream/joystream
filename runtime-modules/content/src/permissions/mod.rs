@@ -338,7 +338,7 @@ pub fn ensure_actor_authorized_to_edit_video_post<T: Trait>(
 pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    post: &Post<T>,
+    post: &VideoPost<T>,
 ) -> DispatchResult {
     ensure_actor_auth_success::<T>(sender, actor)?;
     ensure_actor_is_comment_author::<T>(actor, &post.author)
@@ -349,13 +349,13 @@ pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
-    post: &Post<T>,
+    post: &VideoPost<T>,
 ) -> Result<CleanupActor, DispatchError> {
     ensure_actor_auth_success::<T>(sender, actor)?;
     let actor_is_owner = ensure_actor_is_channel_owner::<T>(actor, &channel.owner)
         .map(|_| CleanupActor::ChannelOwner);
-    let actor_is_author =
-        ensure_actor_is_comment_author::<T>(actor, &post.author).map(|_| CleanupActor::PostAuthor);
+    let actor_is_author = ensure_actor_is_comment_author::<T>(actor, &post.author)
+        .map(|_| CleanupActor::VideoPostAuthor);
     let actor_is_moderator =
         ensure_actor_is_moderator::<T>(actor, &channel.moderators).map(|_| CleanupActor::Moderator);
 

@@ -79,8 +79,8 @@ decl_error! {
         /// Bag Size specified is not valid
         InvalidBagSizeSpecified,
 
-        /// Post does not exists
-        PostDoesNotExist,
+        /// VideoPost does not exists
+        VideoPostDoesNotExist,
 
         /// Migration not done yet
         MigrationNotFinished,
@@ -95,7 +95,7 @@ decl_error! {
         ModeratorsLimitReached,
 
         /// cannot edit video post
-        CannotEditVideoPost,
+        CannotEditDescription,
 
         /// failed witness verification
         WitnessVerificationFailed,

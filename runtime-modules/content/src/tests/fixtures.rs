@@ -697,7 +697,7 @@ impl DeleteChannelFixture {
 pub struct CreatePostFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: PostCreationParameters<Test>,
+    params: VideoPostCreationParameters<Test>,
 }
 
 impl CreatePostFixture {
@@ -705,8 +705,8 @@ impl CreatePostFixture {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            params: PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::VideoPost,
+            params: VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Description,
                 video_reference: VideoId::one(),
             },
         }
@@ -720,21 +720,21 @@ impl CreatePostFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_params(self, params: PostCreationParameters<Test>) -> Self {
+    pub fn with_params(self, params: VideoPostCreationParameters<Test>) -> Self {
         Self { params, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let initial_bloat_bond = Content::compute_initial_bloat_bond();
-        let post_id = Content::next_post_id();
+        let post_id = Content::next_video_post_id();
         let balance_pre = Balances::<Test>::usable_balance(&self.sender);
         let replies_count_pre = match &self.params.post_type {
-            PostType::<Test>::Comment(parent_id) => {
+            VideoPostType::<Test>::Comment(parent_id) => {
                 Content::ensure_post_exists(self.params.video_reference, parent_id.clone())
-                    .map_or(PostId::zero(), |p| p.replies_count)
+                    .map_or(VideoPostId::zero(), |p| p.replies_count)
             }
-            PostType::<Test>::VideoPost => PostId::zero(),
+            VideoPostType::<Test>::Description => VideoPostId::zero(),
         };
         let video_pre = Content::video_by_id(&self.params.video_reference);
 
@@ -742,11 +742,11 @@ impl CreatePostFixture {
 
         let balance_post = Balances::<Test>::usable_balance(&self.sender);
         let replies_count_post = match &self.params.post_type {
-            PostType::<Test>::Comment(parent_id) => {
+            VideoPostType::<Test>::Comment(parent_id) => {
                 Content::ensure_post_exists(self.params.video_reference, *parent_id)
-                    .map_or(PostId::zero(), |p| p.replies_count)
+                    .map_or(VideoPostId::zero(), |p| p.replies_count)
             }
-            PostType::<Test>::VideoPost => PostId::zero(),
+            VideoPostType::<Test>::Description => VideoPostId::zero(),
         };
         let video_post = Content::video_by_id(&self.params.video_reference);
 
@@ -754,12 +754,15 @@ impl CreatePostFixture {
 
         if actual_result.is_ok() {
             assert_eq!(balance_pre, initial_bloat_bond.saturating_add(balance_post));
-            assert_eq!(post_id.saturating_add(One::one()), Content::next_post_id());
+            assert_eq!(
+                post_id.saturating_add(One::one()),
+                Content::next_video_post_id()
+            );
             match &self.params.post_type {
-                PostType::<Test>::VideoPost => {
+                VideoPostType::<Test>::Description => {
                     assert_eq!(Some(post_id), video_post.video_post_id);
                 }
-                PostType::<Test>::Comment(_) => {
+                VideoPostType::<Test>::Comment(_) => {
                     assert_eq!(
                         replies_count_post,
                         replies_count_pre.saturating_add(One::one())
@@ -769,11 +772,11 @@ impl CreatePostFixture {
 
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::PostCreated(
-                    Post::<Test> {
+                MetaEvent::content(RawEvent::VideoPostCreated(
+                    VideoPost::<Test> {
                         author: self.actor.clone(),
                         bloat_bond: initial_bloat_bond,
-                        replies_count: PostId::zero(),
+                        replies_count: VideoPostId::zero(),
                         video_reference: self.params.video_reference,
                         post_type: self.params.post_type.clone(),
                     },
@@ -782,12 +785,12 @@ impl CreatePostFixture {
             );
         } else {
             assert_eq!(balance_pre, balance_post);
-            assert_eq!(post_id, Content::next_post_id());
+            assert_eq!(post_id, Content::next_video_post_id());
             match &self.params.post_type {
-                PostType::<Test>::VideoPost => {
+                VideoPostType::<Test>::Description => {
                     assert_eq!(video_pre, video_post);
                 }
-                PostType::<Test>::Comment(_) => {
+                VideoPostType::<Test>::Comment(_) => {
                     assert_eq!(replies_count_post, replies_count_pre);
                 }
             }
@@ -798,7 +801,7 @@ impl CreatePostFixture {
 pub struct EditPostTextFixture {
     sender: AccountId,
     video_id: VideoId,
-    post_id: PostId,
+    post_id: VideoPostId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     new_text: Vec<u8>,
 }
@@ -808,7 +811,7 @@ impl EditPostTextFixture {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             video_id: VideoId::one(),
-            post_id: PostId::one(),
+            post_id: VideoPostId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             new_text: b"sample text".to_vec(),
         }
@@ -818,7 +821,7 @@ impl EditPostTextFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_post_id(self, post_id: PostId) -> Self {
+    pub fn with_post_id(self, post_id: VideoPostId) -> Self {
         Self { post_id, ..self }
     }
 
@@ -845,7 +848,7 @@ impl EditPostTextFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::PostTextUpdated(
+                MetaEvent::content(RawEvent::VideoPostTextUpdated(
                     self.actor,
                     self.new_text.clone(),
                     self.post_id,
@@ -858,21 +861,21 @@ impl EditPostTextFixture {
 
 pub struct DeletePostFixture {
     sender: AccountId,
-    post_id: PostId,
+    post_id: VideoPostId,
     video_id: VideoId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: PostDeletionParameters<Test>,
+    params: VideoPostDeletionParameters<Test>,
 }
 
 impl DeletePostFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            post_id: PostId::one(),
+            post_id: VideoPostId::one(),
             video_id: VideoId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            params: PostDeletionParameters::<Test> {
-                witness: Some(Hashing::hash_of(&PostId::zero())),
+            params: VideoPostDeletionParameters::<Test> {
+                witness: Some(Hashing::hash_of(&VideoPostId::zero())),
                 rationale: Some(b"rationale".to_vec()),
             },
         }
@@ -882,7 +885,7 @@ impl DeletePostFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_post_id(self, post_id: PostId) -> Self {
+    pub fn with_post_id(self, post_id: VideoPostId) -> Self {
         Self { post_id, ..self }
     }
 
@@ -890,7 +893,7 @@ impl DeletePostFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_params(self, params: PostDeletionParameters<Test>) -> Self {
+    pub fn with_params(self, params: VideoPostDeletionParameters<Test>) -> Self {
         Self { params, ..self }
     }
 
@@ -898,14 +901,14 @@ impl DeletePostFixture {
         let origin = Origin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(&self.sender);
         let initial_bloat_bond = Content::compute_initial_bloat_bond();
-        let post = Content::post_by_id(&self.video_id, &self.post_id);
-        let thread_size = PostById::<Test>::iter_prefix(&self.video_id).count();
+        let post = Content::video_post_by_id(&self.video_id, &self.post_id);
+        let thread_size = VideoPostById::<Test>::iter_prefix(&self.video_id).count();
         let replies_count_pre = match &post.post_type {
-            PostType::<Test>::Comment(parent_id) => {
+            VideoPostType::<Test>::Comment(parent_id) => {
                 Content::ensure_post_exists(self.video_id, *parent_id)
-                    .map_or(PostId::zero(), |p| p.replies_count)
+                    .map_or(VideoPostId::zero(), |p| p.replies_count)
             }
-            PostType::<Test>::VideoPost => PostId::zero(),
+            VideoPostType::<Test>::Description => VideoPostId::zero(),
         };
 
         let actual_result = Content::delete_post(
@@ -929,43 +932,46 @@ impl DeletePostFixture {
                 } else {
                     assert_eq!(balance_post, balance_pre)
                 };
-                assert!(!PostById::<Test>::contains_key(
+                assert!(!VideoPostById::<Test>::contains_key(
                     &self.video_id,
                     &self.post_id
                 ));
                 match &post.post_type {
-                    PostType::<Test>::VideoPost => assert_eq!(
-                        PostById::<Test>::iter_prefix(&self.video_id).count(),
+                    VideoPostType::<Test>::Description => assert_eq!(
+                        VideoPostById::<Test>::iter_prefix(&self.video_id).count(),
                         0usize,
                     ),
-                    PostType::<Test>::Comment(parent_id) => {
+                    VideoPostType::<Test>::Comment(parent_id) => {
                         let replies_count_post =
                             Content::ensure_post_exists(self.video_id, *parent_id)
-                                .map_or(PostId::zero(), |p| p.replies_count);
+                                .map_or(VideoPostId::zero(), |p| p.replies_count);
                         assert_eq!(
                             replies_count_pre,
-                            replies_count_post.saturating_add(PostId::one())
+                            replies_count_post.saturating_add(VideoPostId::one())
                         )
                     }
                 };
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::PostDeleted(post, self.post_id, self.actor))
+                    MetaEvent::content(RawEvent::VideoPostDeleted(post, self.post_id, self.actor))
                 );
             }
             Err(err) => {
                 assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::PostDoesNotExist.into() {
-                    assert_eq!(Content::post_by_id(&self.video_id, &self.post_id), post);
+                if err != Error::<Test>::VideoPostDoesNotExist.into() {
+                    assert_eq!(
+                        Content::video_post_by_id(&self.video_id, &self.post_id),
+                        post
+                    );
                     match &post.post_type {
-                        PostType::<Test>::Comment(parent_id) => {
+                        VideoPostType::<Test>::Comment(parent_id) => {
                             let replies_count_post =
                                 Content::ensure_post_exists(self.video_id, *parent_id)
-                                    .map_or(PostId::zero(), |p| p.replies_count);
+                                    .map_or(VideoPostId::zero(), |p| p.replies_count);
                             assert_eq!(replies_count_pre, replies_count_post);
                         }
-                        PostType::<Test>::VideoPost => assert_eq!(
-                            PostById::<Test>::iter_prefix(&self.video_id).count(),
+                        VideoPostType::<Test>::Description => assert_eq!(
+                            VideoPostById::<Test>::iter_prefix(&self.video_id).count(),
                             thread_size,
                         ),
                     }
@@ -1503,8 +1509,8 @@ pub fn create_default_curator_owned_channel_with_video_and_post() {
 pub fn create_default_member_owned_channel_with_video_and_comment() {
     create_default_member_owned_channel_with_video_and_post();
     CreatePostFixture::default()
-        .with_params(PostCreationParameters::<Test> {
-            post_type: PostType::<Test>::Comment(PostId::one()),
+        .with_params(VideoPostCreationParameters::<Test> {
+            post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
             video_reference: VideoId::one(),
         })
         .call_and_assert(Ok(()));
@@ -1519,8 +1525,8 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
             default_curator_group_id,
             DEFAULT_CURATOR_ID,
         ))
-        .with_params(PostCreationParameters::<Test> {
-            post_type: PostType::<Test>::Comment(PostId::one()),
+        .with_params(VideoPostCreationParameters::<Test> {
+            post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
             video_reference: VideoId::one(),
         })
         .call_and_assert(Ok(()));

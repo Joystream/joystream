@@ -135,8 +135,8 @@ pub fn unsuccessful_post_creation_with_invalid_video_id() {
         create_default_member_owned_channel_with_video();
 
         CreatePostFixture::default()
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::VideoPost,
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Description,
                 video_reference: VideoId::zero(),
             })
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()))
@@ -152,11 +152,11 @@ pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
         create_default_member_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::zero()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::zero()),
                 video_reference: VideoId::one(),
             })
-            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
     })
 }
 
@@ -207,8 +207,8 @@ pub fn successful_comment_creation_by_member() {
 
         println!("POST CREATED");
         CreatePostFixture::default()
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()))
@@ -234,8 +234,8 @@ pub fn successful_comment_creation_by_curator() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()))
@@ -257,8 +257,8 @@ pub fn successful_comment_creation_by_lead() {
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()))
@@ -314,8 +314,8 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
@@ -323,7 +323,7 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
     })
 }
@@ -338,8 +338,8 @@ pub fn unsuccessful_post_update_with_invalid_post_id() {
         create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
-            .with_post_id(PostId::zero())
-            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+            .with_post_id(VideoPostId::zero())
+            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
     })
 }
 
@@ -353,8 +353,8 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
         create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
-            .with_video_id(PostId::zero())
-            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+            .with_video_id(VideoPostId::zero())
+            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
     })
 }
 
@@ -407,7 +407,7 @@ pub fn unsuccessful_comment_update_by_member_not_author() {
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
@@ -430,7 +430,7 @@ pub fn unsuccessful_comment_update_by_curator_not_author() {
                 unauthorized_curator_group_id,
                 UNAUTHORIZED_CURATOR_ID,
             ))
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -448,7 +448,7 @@ pub fn unsuccessful_comment_update_by_lead_not_author() {
         EditPostTextFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -463,7 +463,7 @@ pub fn successful_comment_update_by_member() {
         create_default_member_owned_channel_with_video_and_comment();
 
         EditPostTextFixture::default()
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Ok(()))
     })
 }
@@ -484,7 +484,7 @@ pub fn successful_comment_update_by_curator() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Ok(()))
     })
 }
@@ -502,8 +502,8 @@ pub fn successful_comment_update_by_lead() {
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
@@ -511,7 +511,7 @@ pub fn successful_comment_update_by_lead() {
         EditPostTextFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Ok(()))
     })
 }
@@ -598,8 +598,8 @@ pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
@@ -607,7 +607,7 @@ pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
     })
 }
@@ -622,8 +622,8 @@ pub fn unsuccessful_post_deletion_with_invalid_post_id() {
         create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
-            .with_post_id(PostId::zero())
-            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+            .with_post_id(VideoPostId::zero())
+            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
     })
 }
 
@@ -637,8 +637,8 @@ pub fn unsuccessful_post_deletion_with_invalid_video_id() {
         create_default_member_owned_channel_with_video_and_post();
 
         DeletePostFixture::default()
-            .with_post_id(PostId::zero())
-            .call_and_assert(Err(Error::<Test>::PostDoesNotExist.into()))
+            .with_post_id(VideoPostId::zero())
+            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
     })
 }
 
@@ -703,7 +703,7 @@ pub fn unsuccessful_post_deletion_with_no_witness() {
         create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: None,
                 rationale: None,
             })
@@ -723,7 +723,7 @@ pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -744,7 +744,7 @@ pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
                 unauthorized_curator_group_id,
                 UNAUTHORIZED_CURATOR_ID,
             ))
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -762,7 +762,7 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
         DeletePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -779,7 +779,7 @@ pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Member(UNAUTHORIZED_MODERATOR_ID))
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
@@ -796,11 +796,11 @@ pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MODERATOR_ID))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: None,
                 rationale: None,
             })
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Err(Error::<Test>::RationaleNotProvidedByModerator.into()))
     })
 }
@@ -815,9 +815,9 @@ pub fn successful_post_deletion_by_member() {
         create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::one(),
+                    &VideoPostId::one(),
                 )),
                 rationale: None,
             })
@@ -841,9 +841,9 @@ pub fn successful_post_deletion_by_curator() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::one(),
+                    &VideoPostId::one(),
                 )),
                 rationale: None,
             })
@@ -861,10 +861,10 @@ pub fn successful_comment_deletion_by_member_owner() {
         create_default_member_owned_channel_with_video_and_comment();
 
         DeletePostFixture::default()
-            .with_post_id(PostId::from(2u64))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_post_id(VideoPostId::from(2u64))
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: None,
             })
@@ -884,14 +884,14 @@ pub fn successful_comment_deletion_by_curator_onwer() {
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .with_actor(ContentActor::Curator(
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: None,
             })
@@ -910,17 +910,17 @@ pub fn successful_comment_deletion_by_member_author() {
         create_default_curator_owned_channel_with_video_and_post();
 
         CreatePostFixture::default()
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
 
         DeletePostFixture::default()
-            .with_post_id(PostId::from(2u64))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_post_id(VideoPostId::from(2u64))
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: None,
             })
@@ -946,22 +946,22 @@ pub fn successful_comment_deletion_by_curator_author() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
 
         DeletePostFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .with_actor(ContentActor::Curator(
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: None,
             })
@@ -982,19 +982,19 @@ pub fn successful_comment_deletion_by_lead_author() {
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_params(PostCreationParameters::<Test> {
-                post_type: PostType::<Test>::Comment(PostId::one()),
+            .with_params(VideoPostCreationParameters::<Test> {
+                post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
                 video_reference: VideoId::one(),
             })
             .call_and_assert(Ok(()));
 
         DeletePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
-            .with_post_id(PostId::from(2u64))
+            .with_post_id(VideoPostId::from(2u64))
             .with_actor(ContentActor::Lead)
-            .with_params(PostDeletionParameters::<Test> {
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: None,
             })
@@ -1014,10 +1014,10 @@ pub fn successful_comment_deletion_by_moderator() {
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MODERATOR_ID))
-            .with_post_id(PostId::from(2u64))
-            .with_params(PostDeletionParameters::<Test> {
+            .with_post_id(VideoPostId::from(2u64))
+            .with_params(VideoPostDeletionParameters::<Test> {
                 witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
-                    &PostId::zero(),
+                    &VideoPostId::zero(),
                 )),
                 rationale: Some(b"rationale".to_vec()),
             })

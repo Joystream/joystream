@@ -70,6 +70,9 @@ pub type ChannelOwnershipTransferRequestId = u64;
 /// Content Directory Reaction Identifier
 pub type ReactionId = u64;
 
+/// Represent a Video Post in the content module
+pub type VideoPostId = u64;
+
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and

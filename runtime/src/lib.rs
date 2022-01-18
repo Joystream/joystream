@@ -452,7 +452,7 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type PostId = PostId;
+    type VideoPostId = VideoPostId;
     type ReactionId = ReactionId;
     type MaxModerators = MaxModerators;
     type PricePerByte = PricePerByte;

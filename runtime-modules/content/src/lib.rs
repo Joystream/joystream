@@ -186,10 +186,10 @@ pub trait Trait:
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
-    /// Type of PostId
-    type PostId: NumericIdentifier;
+    /// Type of VideoPostId
+    type VideoPostId: NumericIdentifier;
 
-    /// Type of PostId
+    /// Type of VideoPostId
     type ReactionId: NumericIdentifier;
 
     /// Max Number of moderators
@@ -456,7 +456,7 @@ type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, Da
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, SeriesId, PostId> {
+pub struct VideoRecord<ChannelId, SeriesId, VideoPostId> {
     pub in_channel: ChannelId,
 
     pub in_series: Option<SeriesId>,
@@ -468,11 +468,14 @@ pub struct VideoRecord<ChannelId, SeriesId, PostId> {
     pub enable_comments: bool,
 
     /// First post to a video works as a description
-    pub video_post_id: Option<PostId>,
+    pub video_post_id: Option<VideoPostId>,
 }
 
-pub type Video<T> =
-    VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId, <T as Trait>::PostId>;
+pub type Video<T> = VideoRecord<
+    <T as storage::Trait>::ChannelId,
+    <T as Trait>::SeriesId,
+    <T as Trait>::VideoPostId,
+>;
 
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -609,10 +612,10 @@ pub struct Person<MemberId> {
 }
 
 type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
-/// A Post associated to a video
+/// A VideoPost associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostRecord<ContentActor, Balance, PostId, PostType, VideoId> {
+pub struct VideoPostRecord<ContentActor, Balance, VideoPostId, VideoPostType, VideoId> {
     /// Author of post.
     pub author: ContentActor,
 
@@ -620,46 +623,46 @@ pub struct PostRecord<ContentActor, Balance, PostId, PostType, VideoId> {
     pub bloat_bond: Balance,
 
     /// Overall replies counter
-    pub replies_count: PostId,
+    pub replies_count: VideoPostId,
 
     /// video associated to the post (instead of the body hash as in the blog module)
-    pub post_type: PostType,
+    pub post_type: VideoPostType,
 
     /// video reference
     pub video_reference: VideoId,
 }
 
-/// alias for Post
-pub type Post<T> = PostRecord<
+/// alias for VideoPost
+pub type VideoPost<T> = VideoPostRecord<
     ContentActor<
         <T as ContentActorAuthenticator>::CuratorGroupId,
         <T as ContentActorAuthenticator>::CuratorId,
         <T as MembershipTypes>::MemberId,
     >,
     BalanceOf<T>,
-    <T as Trait>::PostId,
-    PostType<T>,
+    <T as Trait>::VideoPostId,
+    VideoPostType<T>,
     <T as Trait>::VideoId,
 >;
 
-/// Post type structured as linked list with the video post as beginning
+/// VideoPost type structured as linked list with the video post as beginning
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PostTypeRecord<ParentPostId> {
+pub enum VideoPostTypeRecord<ParentVideoPostId> {
     /// Equivalent to a video description
-    VideoPost,
+    Description,
 
     /// Comment to a post with specified id
-    Comment(ParentPostId),
+    Comment(ParentVideoPostId),
 }
 
-impl<ParentPostId> Default for PostTypeRecord<ParentPostId> {
+impl<ParentVideoPostId> Default for VideoPostTypeRecord<ParentVideoPostId> {
     fn default() -> Self {
-        PostTypeRecord::<ParentPostId>::VideoPost
+        VideoPostTypeRecord::<ParentVideoPostId>::Description
     }
 }
 
-pub type PostType<T> = PostTypeRecord<<T as Trait>::PostId>;
+pub type VideoPostType<T> = VideoPostTypeRecord<<T as Trait>::VideoPostId>;
 
 /// Side used to construct hash values during merkle proof verification
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -695,7 +698,7 @@ pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Trait>::Hash, 
 pub enum CleanupActor {
     ChannelOwner,
     Moderator,
-    PostAuthor,
+    VideoPostAuthor,
 }
 
 impl Default for CleanupActor {
@@ -707,28 +710,29 @@ impl Default for CleanupActor {
 /// Information on the post being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostCreationParametersRecord<PostType, VideoId> {
+pub struct VideoPostCreationParametersRecord<VideoPostType, VideoId> {
     /// content
-    post_type: PostType,
+    post_type: VideoPostType,
 
     /// video reference
     video_reference: VideoId,
 }
 
-pub type PostCreationParameters<T> =
-    PostCreationParametersRecord<PostType<T>, <T as Trait>::VideoId>;
+pub type VideoPostCreationParameters<T> =
+    VideoPostCreationParametersRecord<VideoPostType<T>, <T as Trait>::VideoId>;
 
 /// Information on the post being deleted
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostDeletionParametersRecord<HashOutput> {
+pub struct VideoPostDeletionParametersRecord<HashOutput> {
     /// optional witnesses in case of video post deletion
     witness: Option<HashOutput>,
     /// rationale in case actor is moderator
     rationale: Option<Vec<u8>>,
 }
 
-pub type PostDeletionParameters<T> = PostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
+pub type VideoPostDeletionParameters<T> =
+    VideoPostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
 
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -787,13 +791,10 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id):
         map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub PostById get(fn post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
-        hasher(blake2_128_concat) T::PostId => Post<T>;
+        pub VideoPostById get(fn video_post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
+        hasher(blake2_128_concat) T::VideoPostId => VideoPost<T>;
 
-        pub NextPostId get(fn next_post_id) config(): T::PostId;
-
-        pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
-            T::VideoId => T::PostId;
+        pub NextVideoPostId get(fn next_video_post_id) config(): T::VideoPostId;
 
         pub ChannelMigration get(fn channel_migration) config(): ChannelMigrationConfig<T>;
 
@@ -1475,7 +1476,7 @@ decl_module! {
             VideoById::<T>::remove(video_id);
 
             // Remove all comments related
-            <PostById<T>>::remove_prefix(video_id);
+            <VideoPostById<T>>::remove_prefix(video_id);
 
             // Update corresponding channel
             // Remove recently deleted video from the channel
@@ -1712,7 +1713,7 @@ decl_module! {
         pub fn create_post(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: PostCreationParameters<T>,
+            params: VideoPostCreationParameters<T>,
         ) -> DispatchResult {
 
             let sender = ensure_signed(origin.clone())?;
@@ -1722,12 +1723,12 @@ decl_module! {
             let owner = ChannelById::<T>::get(video.in_channel).owner;
 
             match params.post_type {
-                PostType::<T>::Comment(parent_id) => {
+                VideoPostType::<T>::Comment(parent_id) => {
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
                     Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
                     ensure_actor_authorized_to_add_comment::<T>(&sender, &actor)?
                 },
-                PostType::<T>::VideoPost => ensure_actor_authorized_to_add_video_post::<T>(
+                VideoPostType::<T>::Description => ensure_actor_authorized_to_add_video_post::<T>(
                     &sender,
                     &actor,
                     &owner
@@ -1735,12 +1736,12 @@ decl_module! {
             };
 
             let initial_bloat_bond = Self::compute_initial_bloat_bond();
-            let post_id = <NextPostId<T>>::get();
+            let post_id = <NextVideoPostId<T>>::get();
 
-            let post = Post::<T> {
+            let post = VideoPost::<T> {
                 author: actor,
                 bloat_bond: initial_bloat_bond,
-                replies_count: T::PostId::zero(),
+                replies_count: T::VideoPostId::zero(),
                 video_reference: params.video_reference.clone(),
                 post_type: params.post_type.clone(),
             };
@@ -1755,22 +1756,22 @@ decl_module! {
 
             <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
 
-            <NextPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
-            <PostById<T>>::insert(&params.video_reference, &post_id, post.clone());
+            <NextVideoPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
+            <VideoPostById<T>>::insert(&params.video_reference, &post_id, post.clone());
 
             // increment replies count in the parent post
             match params.post_type {
-                PostType::<T>::Comment(parent_id) => <PostById<T>>::mutate(
+                VideoPostType::<T>::Comment(parent_id) => <VideoPostById<T>>::mutate(
                     &params.video_reference,
                     parent_id,
                     |x| x.replies_count = x.replies_count.saturating_add(One::one())),
-                PostType::<T>::VideoPost => VideoById::<T>::mutate(
+                VideoPostType::<T>::Description => VideoById::<T>::mutate(
                     &params.video_reference,
                     |video| video.video_post_id = Some(post_id.clone())),
             };
 
             // deposit event
-            Self::deposit_event(RawEvent::PostCreated(post, post_id));
+            Self::deposit_event(RawEvent::VideoPostCreated(post, post_id));
 
             Ok(())
         }
@@ -1779,7 +1780,7 @@ decl_module! {
         pub fn edit_post_text(
             origin,
             video_id: T::VideoId,
-            post_id: T::PostId,
+            post_id: T::VideoPostId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_text: Vec<u8>,
         ) {
@@ -1789,12 +1790,12 @@ decl_module! {
             let channel = ChannelById::<T>::get(video.in_channel);
 
             match post.post_type {
-                PostType::<T>::VideoPost => ensure_actor_authorized_to_edit_video_post::<T>(
+                VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
                     &sender,
                     &actor,
                     &channel.owner
                 )?,
-                PostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(
+                VideoPostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(
                     &sender,
                     &actor,
                     &post
@@ -1802,16 +1803,16 @@ decl_module! {
             };
 
             // deposit event
-            Self::deposit_event(RawEvent::PostTextUpdated(actor, new_text, post_id, video_id));
+            Self::deposit_event(RawEvent::VideoPostTextUpdated(actor, new_text, post_id, video_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_post(
             origin,
-            post_id: T::PostId,
+            post_id: T::VideoPostId,
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: PostDeletionParameters<T>,
+            params: VideoPostDeletionParameters<T>,
         ) {
             let sender = ensure_signed(origin.clone())?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
@@ -1819,15 +1820,15 @@ decl_module! {
             let channel = ChannelById::<T>::get(video.in_channel);
 
             let cleanup_actor = match post.post_type {
-                PostType::<T>::VideoPost => {
+                VideoPostType::<T>::Description => {
                     Self::ensure_witness_verification(
                         params.witness,
                         post.replies_count,
                     )?;
                     ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor, &channel)?;
-                    CleanupActor::PostAuthor
+                    CleanupActor::VideoPostAuthor
                 },
-                PostType::<T>::Comment(_) => {
+                VideoPostType::<T>::Comment(_) => {
                     let cleanup_actor = ensure_actor_authorized_to_remove_comment::<T>(
                         &sender,
                         &actor,
@@ -1856,24 +1857,24 @@ decl_module! {
             Self::refund(&sender, cleanup_actor, post.bloat_bond.clone())?;
 
             match post.post_type {
-                PostType::<T>::Comment(parent_id) => {
-                    PostById::<T>::remove(&video_id, &post_id);
+                VideoPostType::<T>::Comment(parent_id) => {
+                    VideoPostById::<T>::remove(&video_id, &post_id);
                     // parent post might have been already deleted
                     if let Ok(mut parent_post) = Self::ensure_post_exists(
                         video_id.clone(),
                         parent_id.clone(),
                     ){
                         parent_post.replies_count =
-                            parent_post.replies_count.saturating_sub(T::PostId::one());
-                        PostById::<T>::insert(&video_id, &parent_id, parent_post);
+                            parent_post.replies_count.saturating_sub(T::VideoPostId::one());
+                        VideoPostById::<T>::insert(&video_id, &parent_id, parent_post);
                     }
                 }
-                PostType::<T>::VideoPost => PostById::<T>::remove_prefix(&video_id),
+                VideoPostType::<T>::Description => VideoPostById::<T>::remove_prefix(&video_id),
             }
 
             // deposit event
             Self::deposit_event(
-                RawEvent::PostDeleted(
+                RawEvent::VideoPostDeleted(
                     post,
                     post_id,
                     actor,
@@ -1885,7 +1886,7 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
-            post_id: T::PostId,
+            post_id: T::VideoPostId,
             reaction_id: T::ReactionId,
         ) {
             // post existence verification purposely avoided
@@ -1896,7 +1897,7 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            Self::deposit_event(RawEvent::ReactionToPost(member_id, video_id, post_id, reaction_id));
+            Self::deposit_event(RawEvent::ReactionToVideoPost(member_id, video_id, post_id, reaction_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2171,12 +2172,15 @@ impl<T: Trait> Module<T> {
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
-    fn ensure_post_exists(video_id: T::VideoId, post_id: T::PostId) -> Result<Post<T>, Error<T>> {
+    fn ensure_post_exists(
+        video_id: T::VideoId,
+        post_id: T::VideoPostId,
+    ) -> Result<VideoPost<T>, Error<T>> {
         ensure!(
-            PostById::<T>::contains_key(video_id, post_id),
-            Error::<T>::PostDoesNotExist
+            VideoPostById::<T>::contains_key(video_id, post_id),
+            Error::<T>::VideoPostDoesNotExist
         );
-        Ok(PostById::<T>::get(video_id, post_id))
+        Ok(VideoPostById::<T>::get(video_id, post_id))
     }
 
     fn not_implemented() -> DispatchResult {
@@ -2189,7 +2193,7 @@ impl<T: Trait> Module<T> {
         bloat_bond: <T as balances::Trait>::Balance,
     ) -> DispatchResult {
         match cleanup_actor {
-            CleanupActor::PostAuthor => {
+            CleanupActor::VideoPostAuthor => {
                 let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
 
                 if bloat_bond > cap {
@@ -2216,16 +2220,16 @@ impl<T: Trait> Module<T> {
     fn video_deletion_refund_logic(
         sender: &T::AccountId,
         video_id: &T::VideoId,
-        video_post_id: &T::PostId,
+        video_post_id: &T::VideoPostId,
     ) -> DispatchResult {
-        let bloat_bond = <PostById<T>>::get(video_id, video_post_id).bloat_bond;
-        Self::refund(&sender, CleanupActor::PostAuthor, bloat_bond)?;
+        let bloat_bond = <VideoPostById<T>>::get(video_id, video_post_id).bloat_bond;
+        Self::refund(&sender, CleanupActor::VideoPostAuthor, bloat_bond)?;
         Ok(())
     }
 
     fn compute_initial_bloat_bond() -> BalanceOf<T> {
         let storage_price =
-            T::PricePerByte::get().saturating_mul((size_of::<Post<T>>() as u32).into());
+            T::PricePerByte::get().saturating_mul((size_of::<VideoPost<T>>() as u32).into());
 
         let cleanup_cost = T::CleanupCost::get().saturating_add(T::CleanupMargin::get());
 
@@ -2235,7 +2239,7 @@ impl<T: Trait> Module<T> {
     // If we are trying to delete a video post we need witness verification
     fn ensure_witness_verification(
         witness: Option<<T as frame_system::Trait>::Hash>,
-        replies_count: T::PostId,
+        replies_count: T::VideoPostId,
     ) -> DispatchResult {
         let wit_hash = witness.ok_or(Error::<T>::WitnessNotProvided)?;
         ensure!(
@@ -2320,8 +2324,8 @@ decl_event!(
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
         StorageAssets = StorageAssets<T>,
-        Post = Post<T>,
-        PostId = <T as Trait>::PostId,
+        VideoPost = VideoPost<T>,
+        VideoPostId = <T as Trait>::VideoPostId,
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
@@ -2429,11 +2433,11 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
         ChannelDeleted(ContentActor, ChannelId),
 
-        // Posts & Replies
-        PostCreated(Post, PostId),
-        PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(Post, PostId, ContentActor),
-        ReactionToPost(MemberId, VideoId, PostId, ReactionId),
+        // VideoPosts & Replies
+        VideoPostCreated(VideoPost, VideoPostId),
+        VideoPostTextUpdated(ContentActor, Vec<u8>, VideoPostId, VideoId),
+        VideoPostDeleted(VideoPost, VideoPostId, ContentActor),
+        ReactionToVideoPost(MemberId, VideoId, VideoPostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, ModeratorSet),
 
