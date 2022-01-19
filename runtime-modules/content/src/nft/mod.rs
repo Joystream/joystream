@@ -29,7 +29,7 @@ impl<T: Trait> Module<T> {
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
-        bid: BalanceOf<T>,
+        bid: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
             T::Currency::can_reserve(participant, bid),
@@ -40,7 +40,7 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::BlockNumber, BalanceOf<T>, MemberId<T>>,
+        auction_params: &AuctionParams<T::BlockNumber, CurrencyOf<T>, MemberId<T>>,
     ) -> DispatchResult {
         match auction_params.auction_type {
             AuctionType::English(EnglishAuctionDetails {
@@ -111,7 +111,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure bid step bounds satisfied
-    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: BalanceOf<T>) -> DispatchResult {
+    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: CurrencyOf<T>) -> DispatchResult {
         ensure!(
             bid_step <= Self::max_bid_step(),
             Error::<T>::AuctionBidStepUpperBoundExceeded
@@ -191,7 +191,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure royalty bounds satisfied
     pub(crate) fn ensure_starting_price_bounds_satisfied(
-        starting_price: BalanceOf<T>,
+        starting_price: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
             starting_price >= Self::min_starting_price(),
@@ -207,7 +207,7 @@ impl<T: Trait> Module<T> {
     /// Ensure given participant have sufficient free balance
     pub(crate) fn ensure_sufficient_free_balance(
         participant_account_id: &T::AccountId,
-        balance: BalanceOf<T>,
+        balance: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
             T::Currency::can_slash(participant_account_id, balance),
@@ -237,7 +237,7 @@ impl<T: Trait> Module<T> {
             &nft.transactional_status
         {
             // Authorize participant under given member id
-            ensure_member_auth_success::<T>(&member_id, &participant_account_id)?;
+            ensure_member_auth_success::<T>(&participant_account_id, &member_id)?;
 
             if let Some(price) = price {
                 Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
@@ -313,7 +313,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_payment(
         in_channel: T::ChannelId,
         creator_royalty: Option<Royalty>,
-        amount: BalanceOf<T>,
+        amount: CurrencyOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
         // for auction related payments
@@ -362,7 +362,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, CurrencyOf<T>>,
         owner_account_id: Option<T::AccountId>,
     ) -> Nft<T> {
         let last_bid_amount = last_bid.amount;

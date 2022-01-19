@@ -70,6 +70,8 @@ decl_error! {
         /// Video censorship status did not change
         VideoCensorshipStatusDidNotChange,
 
+        /// Actor cannot Own channel
+        ActorCannotOwnChannel,
 
         // Auction Errors
         // ---------------------

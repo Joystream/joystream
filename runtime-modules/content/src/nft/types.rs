@@ -5,7 +5,7 @@ pub type Metadata = Vec<u8>;
 
 pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
 pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Owner royalty
 pub type Royalty = Perbill;

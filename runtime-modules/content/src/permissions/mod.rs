@@ -270,7 +270,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
         );
     } else {
         // Ensure curator group is the channel owner.
-        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
+        let channel_owner = Module::<T>::ensure_channel_validity(&in_channel)?.owner;
 
         match actor {
             ContentActor::Lead => {
