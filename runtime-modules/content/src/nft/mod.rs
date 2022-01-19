@@ -40,7 +40,7 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::BlockNumber, CurrencyOf<T>, MemberId<T>>,
+        auction_params: &AuctionParams<T::BlockNumber, CurrencyOf<T>, T::MemberId>,
     ) -> DispatchResult {
         match auction_params.auction_type {
             AuctionType::English(EnglishAuctionDetails {

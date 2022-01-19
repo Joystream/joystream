@@ -10,25 +10,16 @@ fn delete_video_nft_is_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-        let channel_id = create_member_channel();
 
         let video_id = Content::next_video_id();
-
-        // Create a video
-        assert_ok!(Content::create_video(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id,
-            VideoCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
-                meta: b"metablob".to_vec(),
-            }
-        ));
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -38,9 +29,10 @@ fn delete_video_nft_is_issued() {
         // Make an attempt to delete a video, which has an nft issued already.
         assert_err!(
             Content::delete_video(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                video_id
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                BTreeSet::new(),
             ),
             Error::<Test>::NFTAlreadyExists
         );
@@ -52,20 +44,12 @@ fn curators_can_censor_videos() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-        let channel_id = create_member_channel();
-
         let video_id = Content::next_video_id();
-        assert_ok!(Content::create_video(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            channel_id,
-            VideoCreationParametersRecord {
-                assets: None,
-                meta: None,
-                enable_comments: true,
-            }
-        ));
+        let channel_id = Content::next_channel_id();
 
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_initial_storage_buckets_helper();
+        create_default_member_owned_channel_with_video();
         let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         // Curator can censor videos

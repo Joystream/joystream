@@ -308,7 +308,7 @@ fn unsuccessful_reward_claim_with_no_reward_account_found() {
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
-            .call_and_assert(Err(Error::<Test>::RewardAccountNotFoundInChannel.into()));
+            .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
     })
 }
 

@@ -1413,7 +1413,7 @@ decl_module! {
         ) -> DispatchResult {
             let channel = Self::ensure_channel_validity(&item.channel_id)?;
 
-            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountNotFoundInChannel);
+            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountIsNotSet);
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = item
@@ -1458,7 +1458,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn issue_nft(
             origin,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             royalty: Option<Royalty>,
             metadata: Metadata,
@@ -1597,7 +1597,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
@@ -1630,7 +1630,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_buy_now(
             origin,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
@@ -1878,8 +1878,8 @@ decl_module! {
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-            to: MemberId<T>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            to: T::MemberId,
             price: Option<CurrencyOf<T>>,
         ) {
 
@@ -1914,7 +1914,7 @@ decl_module! {
         pub fn sling_nft_back(
             origin,
             video_id: T::VideoId,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
 
             // Ensure given video exists
@@ -1981,7 +1981,7 @@ decl_module! {
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
-            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             price: CurrencyOf<T>,
         ) {
 
@@ -2016,7 +2016,7 @@ decl_module! {
         pub fn buy_nft(
             origin,
             video_id: T::VideoId,
-            participant_id: MemberId<T>,
+            participant_id: T::MemberId,
         ) {
 
             // Authorize participant under given member id
@@ -2361,8 +2361,11 @@ decl_event!(
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         IsCensored = bool,
-        AuctionParams =
-            AuctionParams<<T as frame_system::Trait>::BlockNumber, CurrencyOf<T>, MemberId<T>>,
+        AuctionParams = AuctionParams<
+            <T as frame_system::Trait>::BlockNumber,
+            CurrencyOf<T>,
+            <T as common::MembershipTypes>::MemberId,
+        >,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,

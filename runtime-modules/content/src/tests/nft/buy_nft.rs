@@ -1,5 +1,9 @@
 #![cfg(test)]
 
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper, UpdateChannelFixture,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -11,59 +15,60 @@ fn buy_nft() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
+        let channel_id = NextChannelId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 1000u64;
-
         // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        let reward_account = ChannelById::<Test>::get(channel_id).reward_account.unwrap();
+        let balance_pre = balances::Module::<Test>::free_balance(reward_account);
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Runtime tested state before call
-
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
         // Buy nft
         assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         ));
 
         // Runtime tested state after call
+        let balance_post = balances::Module::<Test>::free_balance(reward_account);
 
         // Ensure buyer balance was succesfully slashed after nft had been bought
         assert_eq!(
-            balances::Module::<Test>::free_balance(SECOND_MEMBER_ORIGIN),
+            balances::Module::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
             0
         );
 
         // Ensure the price of nft - platform fee was succesfully deposited into seller account (channel reward account id in this case)
         assert_eq!(
-            balances::Module::<Test>::free_balance(REWARD_ACCOUNT_ID),
-            price - Content::platform_fee_percentage() * price
+            balance_post.saturating_sub(balance_pre),
+            DEFAULT_NFT_PRICE - Content::platform_fee_percentage() * DEFAULT_NFT_PRICE
         );
 
         // Ensure nft succesfully bought
@@ -76,10 +81,11 @@ fn buy_nft() {
             })
         ));
 
-        let nft_bought_event = get_test_event(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID));
-
         // Last event checked
-        assert_event(nft_bought_event, number_of_events_before_call + 3);
+        assert_event(
+            MetaEvent::content(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID)),
+            number_of_events_before_call + 1,
+        );
     })
 }
 
@@ -91,17 +97,12 @@ fn buy_nft_video_does_not_exist() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        let price = 1000u64;
-
         // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Make an attempt to buy nft which corresponding video does not exist yet
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         );
@@ -119,19 +120,17 @@ fn buy_nft_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
-
-        let price = 1000u64;
+        //        create_simple_channel_and_video(DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Make an attempt to buy nft which is not issued yet
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         );
@@ -149,20 +148,15 @@ fn buy_nft_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
-
-        let price = 1000u64;
-
-        // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -171,15 +165,18 @@ fn buy_nft_auth_failed() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Make an attempt to buy nft with wrong credentials
-        let buy_nft_result =
-            Content::buy_nft(Origin::signed(SECOND_MEMBER_ORIGIN), video_id, UNKNOWN_ID);
+        let buy_nft_result = Content::buy_nft(
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+        );
 
         // Failure checked
         assert_err!(buy_nft_result, Error::<Test>::MemberAuthFailed);
@@ -193,21 +190,15 @@ fn buy_nft_not_in_buy_now_state() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
-
-        let price = 1000u64;
-
-        // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -216,7 +207,7 @@ fn buy_nft_not_in_buy_now_state() {
 
         // Make an attempt to buy nft which is not in BuyNow state
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         );
@@ -233,32 +224,31 @@ fn buy_nft_insufficient_balance() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 1000u64;
-
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Make an attempt to buy nft with wrong credentials
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         );
@@ -276,64 +266,40 @@ fn buy_nft_reward_account_is_not_set() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
-        );
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
-        let channel_id = NextChannelId::<Test>::get();
-
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![]),
-                meta: vec![],
-                reward_account: None,
-            },
-            Ok(()),
-        );
-
-        let params = get_video_creation_parameters();
-
-        // Create simple video using member actor
-        create_video_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id,
-            params,
-            Ok(()),
-        );
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_reward_account(Some(None))
+            .call_and_assert(Ok(()));
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 1000u64;
-
         // deposit balance to second member
-        let _ = balances::Module::<Test>::deposit_creating(
-            &SECOND_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(price),
-        );
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Make an attempt to buy nft when reward account is not set
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
         );

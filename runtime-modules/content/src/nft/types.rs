@@ -3,10 +3,6 @@ use super::*;
 /// Metadata for NFT issuance
 pub type Metadata = Vec<u8>;
 
-pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
-pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
-pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
-
 /// Owner royalty
 pub type Royalty = Perbill;
 
@@ -438,14 +434,14 @@ impl<
 pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
     CurrencyOf<T>,
-    MemberId<T>,
+    <T as common::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
 >;
 
 /// OwnedNFT alias type for simplification.
 pub type Nft<T> = OwnedNFT<
     <T as frame_system::Trait>::BlockNumber,
-    MemberId<T>,
+    <T as common::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
     CurrencyOf<T>,
 >;

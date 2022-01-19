@@ -80,10 +80,10 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
 
     assert_eq!(
         Content::update_channel_censorship_status(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Origin::signed(LEAD_ACCOUNT_ID),
+            ContentActor::Lead,
             channel_id.clone(),
-            false,
+            true,
             b"test".to_vec()
         ),
         result
@@ -94,7 +94,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
             Origin::signed(LEAD_ACCOUNT_ID),
             ContentActor::Lead,
             video_id.clone(),
-            false,
+            true,
             b"test".to_vec()
         ),
         result

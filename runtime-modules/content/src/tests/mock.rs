@@ -14,7 +14,6 @@ use sp_runtime::{
 use crate::ContentActorAuthenticator;
 use crate::Trait;
 use common::currency::GovernanceCurrency;
-use frame_support::assert_ok;
 
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
@@ -29,12 +28,8 @@ pub type VideoId = <Test as Trait>::VideoId;
 pub type VideoPostId = <Test as Trait>::VideoPostId;
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
-pub type MemberId = <Test as membership::Trait>::MemberId;
-pub type ChannelId = <Test as StorageOwnership>::ChannelId;
-pub type VideoId = <Test as Trait>::VideoId;
-pub type VideoCategoryId = <Test as Trait>::VideoCategoryId;
-pub type ChannelCategoryId = <Test as Trait>::ChannelCategoryId;
-type ChannelOwnershipTransferRequestId = <Test as Trait>::ChannelOwnershipTransferRequestId;
+pub type MemberId = <Test as MembershipTypes>::MemberId;
+pub type ChannelId = <Test as storage::Trait>::ChannelId;
 
 /// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
@@ -47,16 +42,18 @@ pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
 pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
+pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
 
 /// Runtime Id's
-pub const DEFAULT_MEMBER_ID: MemberId = 201;
-pub const DEFAULT_CURATOR_ID: CuratorId = 202;
+pub const DEFAULT_MEMBER_ID: u64 = 201;
+pub const DEFAULT_CURATOR_ID: u64 = 202;
 pub const COLLABORATOR_MEMBER_ID: u64 = 204;
 pub const DEFAULT_MODERATOR_ID: u64 = 205;
 pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
 pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
+pub const SECOND_MEMBER_ID: u64 = 216;
 
 // Storage module & migration parameters
 // # objects in a channel == # objects in a video is assumed, changing this will make tests fail
@@ -88,6 +85,7 @@ pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
 pub const REWARD_ACCOUNT_ID: u64 = 25;
+pub const DEFAULT_NFT_PRICE: u64 = 1000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -160,6 +158,11 @@ impl common::StorageOwnership for Test {
     type DataObjectTypeId = u64;
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
@@ -208,6 +211,7 @@ impl ContentActorAuthenticator for Test {
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
         match *member_id {
             DEFAULT_MEMBER_ID => true,
+            SECOND_MEMBER_ID => true,
             UNAUTHORIZED_MEMBER_ID => true,
             COLLABORATOR_MEMBER_ID => true,
             DEFAULT_MODERATOR_ID => true,
@@ -239,6 +243,10 @@ impl ContentActorAuthenticator for Test {
         match *member_id {
             DEFAULT_MEMBER_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
+            SECOND_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(SECOND_MEMBER_ACCOUNT_ID)).unwrap()
             }
 
             UNAUTHORIZED_MEMBER_ID => {
@@ -624,37 +632,37 @@ pub fn run_to_block(n: u64) {
 
 // Events
 
-type RawEvent = crate::RawEvent<
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    MemberId,
-    CuratorGroupId,
-    CuratorId,
-    VideoId,
-    VideoCategoryId,
-    ChannelId,
-    ChannelCategoryId,
-    ChannelOwnershipTransferRequestId,
-    u64,
-    u64,
-    u64,
-    ChannelOwnershipTransferRequest<Test>,
-    Series<<Test as StorageOwnership>::ChannelId, VideoId>,
-    Channel<Test>,
-    <Test as storage::Trait>::DataObjectId,
-    bool,
-    AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
-    BalanceOf<Test>,
-    ChannelCreationParameters<Test>,
-    ChannelUpdateParameters<Test>,
-    VideoCreationParameters<Test>,
-    VideoUpdateParameters<Test>,
-    NewAssets<Test>,
-    bool,
->;
+// type RawEvent = crate::RawEvent<
+//     ContentActor<CuratorGroupId, CuratorId, MemberId>,
+//     MemberId,
+//     CuratorGroupId,
+//     CuratorId,
+//     VideoId,
+//     VideoCategoryId,
+//     ChannelId,
+//     ChannelCategoryId,
+//     ChannelOwnershipTransferRequestId,
+//     u64,
+//     u64,
+//     u64,
+//     ChannelOwnershipTransferRequest<Test>,
+//     Series<<Test as StorageOwnership>::ChannelId, VideoId>,
+//     Channel<Test>,
+//     <Test as storage::Trait>::DataObjectId,
+//     bool,
+//     AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
+//     BalanceOf<Test>,
+//     ChannelCreationParameters<Test>,
+//     ChannelUpdateParameters<Test>,
+//     VideoCreationParameters<Test>,
+//     VideoUpdateParameters<Test>,
+//     NewAssets<Test>,
+//     bool,
+// >;
 
-pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
-    MetaEvent::content(raw_event)
-}
+// pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
+//     MetaEvent::content(raw_event)
+// }
 
 pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
@@ -664,48 +672,48 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
     assert_eq!(System::events().iter().last().unwrap().event, tested_event);
 }
 
-pub fn create_member_channel() -> ChannelId {
-    let channel_id = Content::next_channel_id();
+// pub fn create_member_channel() -> ChannelId {
+//     let channel_id = Content::next_channel_id();
 
-    // Member can create the channel
-    assert_ok!(Content::create_channel(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
-            reward_account: None,
-        }
-    ));
+//     // Member can create the channel
+//     assert_ok!(Content::create_channel(
+//         Origin::signed(FIRST_MEMBER_ORIGIN),
+//         ContentActor::Member(FIRST_MEMBER_ID),
+//         ChannelCreationParametersRecord {
+//             assets: NewAssets::<Test>::Urls(vec![]),
+//             meta: vec![],
+//             reward_account: None,
+//         }
+//     ));
 
-    channel_id
-}
+//     channel_id
+// }
 
-pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
-    VideoCreationParametersRecord {
-        assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-            object_creation_list: vec![
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"first".to_vec(),
-                },
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"second".to_vec(),
-                },
-                DataObjectCreationParameters {
-                    size: 3,
-                    ipfs_content_id: b"third".to_vec(),
-                },
-            ],
-            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-        }),
-        meta: b"test".to_vec(),
-    }
-}
+// pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
+//     VideoCreationParametersRecord {
+//         assets: NewAssets::<Test>::Upload(CreationUploadParameters {
+//             object_creation_list: vec![
+//                 DataObjectCreationParameters {
+//                     size: 3,
+//                     ipfs_content_id: b"first".to_vec(),
+//                 },
+//                 DataObjectCreationParameters {
+//                     size: 3,
+//                     ipfs_content_id: b"second".to_vec(),
+//                 },
+//                 DataObjectCreationParameters {
+//                     size: 3,
+//                     ipfs_content_id: b"third".to_vec(),
+//                 },
+//             ],
+//             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+//         }),
+//         meta: b"test".to_vec(),
+//     }
+// }
 
 /// Get good params for open auction
-pub fn get_open_auction_params(
+pub fn _get_open_auction_params(
 ) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
     AuctionParams {
         starting_price: Content::min_starting_price(),
@@ -719,36 +727,34 @@ pub fn get_open_auction_params(
     }
 }
 
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+// pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
+//     // deposit initial balance
+//     let _ = balances::Module::<Test>::deposit_creating(
+//         &sender,
+//         <Test as balances::Trait>::Balance::from(30u32),
+//     );
 
-pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
-    // deposit initial balance
-    let _ = balances::Module::<Test>::deposit_creating(
-        &sender,
-        <Test as balances::Trait>::Balance::from(30u32),
-    );
+//     let channel_id = NextChannelId::<Test>::get();
 
-    let channel_id = NextChannelId::<Test>::get();
+//     create_channel_mock(
+//         sender,
+//         ContentActor::Member(member_id),
+//         ChannelCreationParametersRecord {
+//             assets: NewAssets::<Test>::Urls(vec![]),
+//             meta: vec![],
+//             reward_account: Some(REWARD_ACCOUNT_ID),
+//         },
+//         Ok(()),
+//     );
 
-    create_channel_mock(
-        sender,
-        ContentActor::Member(member_id),
-        ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
-            reward_account: Some(REWARD_ACCOUNT_ID),
-        },
-        Ok(()),
-    );
+//     let params = get_video_creation_parameters();
 
-    let params = get_video_creation_parameters();
-
-    // Create simple video using member actor
-    create_video_mock(
-        sender,
-        ContentActor::Member(member_id),
-        channel_id,
-        params,
-        Ok(()),
-    );
-}
+//     // Create simple video using member actor
+//     create_video_mock(
+//         sender,
+//         ContentActor::Member(member_id),
+//         channel_id,
+//         params,
+//         Ok(()),
+//     );
+// }
