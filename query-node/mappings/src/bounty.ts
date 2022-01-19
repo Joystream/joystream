@@ -67,14 +67,14 @@ async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<Bount
   return entry
 }
 
-interface BountyEvent {
-  ctx: SubstrateEvent
-  params: [BountyId, ...any]
-}
-async function updateBounty(store: DatabaseManager, event: BountyEvent, changes: (bounty: Bounty) => Partial<Bounty>) {
-  const [bountyId] = event.params
+async function updateBounty(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  bountyId: BountyId,
+  changes: (bounty: Bounty) => Partial<Bounty>
+) {
   const bounty = await getBounty(store, bountyId)
-  bounty.updatedAt = new Date(event.ctx.blockTimestamp)
+  bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
   await store.save<BountyEntry>(bounty)
@@ -82,18 +82,14 @@ async function updateBounty(store: DatabaseManager, event: BountyEvent, changes:
   return bounty
 }
 
-interface EntryEvent {
-  ctx: SubstrateEvent
-  params: [any, EntryId, ...any]
-}
 async function updateEntry(
   store: DatabaseManager,
-  event: EntryEvent,
+  event: SubstrateEvent,
+  entryId: EntryId,
   changes: (bounty: BountyEntry) => Partial<BountyEntry>
 ) {
-  const [, entryId] = event.params
   const entry = await getEntry(store, entryId)
-  entry.updatedAt = new Date(event.ctx.blockTimestamp)
+  entry.updatedAt = new Date(event.blockTimestamp)
   Object.assign(entry, changes(entry))
 
   await store.save<BountyEntry>(entry)
@@ -271,11 +267,11 @@ export async function bounty_BountyVetoed({ event, store }: EventContext & Store
 // Store new contributions and add their amount to their bounty totalFunding
 export async function bounty_BountyFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyFundedEvent = new BountyEvents.BountyFundedEvent(event)
-  const [, contributorActor, amount] = bountyFundedEvent.params
+  const [bountyId, contributorActor, amount] = bountyFundedEvent.params
   const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty totalFunding
-  const bounty = await updateBounty(store, bountyFundedEvent, (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyId, (bounty) => ({
     totalFunding: bounty.totalFunding.add(amount),
   }))
 
@@ -322,7 +318,7 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   await store.save<BountyContribution>(contribution)
 
   // Update the bounty totalFunding
-  await updateBounty(store, fundingWithdrawalEvent, (bounty) => ({
+  await updateBounty(store, event, bountyId, (bounty) => ({
     totalFunding: bounty.totalFunding.sub(contribution.amount),
   }))
 
@@ -339,7 +335,7 @@ export async function bounty_BountyCreatorCherryWithdrawal({
   const cherryWithdrawalEvent = new BountyEvents.BountyCreatorCherryWithdrawalEvent(event)
 
   // Update the bounty totalFunding
-  const bounty = await updateBounty(store, cherryWithdrawalEvent, (bounty) => ({
+  const bounty = await updateBounty(store, event, cherryWithdrawalEvent.params[0], (bounty) => ({
     totalFunding: bounty.totalFunding.sub(bounty.cherry),
   }))
 
@@ -353,7 +349,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, bountyRemovedEvent, (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], (bounty) => ({
     deletedAt: bounty.updatedAt,
     stage: BountyStage.Terminated,
   }))
@@ -392,7 +388,7 @@ export async function bounty_WorkEntryWithdrawn({ event, store }: EventContext &
   const entryWithdrawnEvent = new BountyEvents.WorkEntryWithdrawnEvent(event)
 
   // Update the entry status
-  const entry = await updateEntry(store, entryWithdrawnEvent, () => ({
+  const entry = await updateEntry(store, event, entryWithdrawnEvent.params[1], () => ({
     status: new BountyEntryStatusWithdrawn(),
   }))
 
@@ -406,7 +402,7 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
   const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
 
   // Update the entry status
-  const entry = await updateEntry(store, entrySlashedEvent, () => ({
+  const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
     status: new BountyEntryStatusRejected(),
   }))
 
@@ -420,7 +416,7 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
 
   // Update the entry status
-  const entry = await updateEntry(store, entrySlashedEvent, () => ({
+  const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
     workSubmitted: true,
   }))
 
@@ -434,7 +430,7 @@ export async function bounty_WorkEntrantFundsWithdrawn({ event, store }: EventCo
   const entrantFundsWithdrawnEvent = new BountyEvents.WorkEntrantFundsWithdrawnEvent(event)
 
   // Update the entry status
-  const entry = await updateEntry(store, entrantFundsWithdrawnEvent, (entry) => {
+  const entry = await updateEntry(store, event, entrantFundsWithdrawnEvent.params[1], (entry) => {
     const status = new BountyEntryStatusCashedOut()
     if ('reward' in entry.status) {
       status.reward = entry.status.reward
