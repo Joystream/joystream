@@ -52,6 +52,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
+    const { enableComments } = videoCreationParametersInput
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
@@ -74,10 +75,11 @@ export default class CreateVideoCommand extends UploadCommandBase {
       {
         assets,
         meta: metadataToBytes(VideoMetadata, meta),
+        enable_comments: enableComments,
       }
     )
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, enableComments }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

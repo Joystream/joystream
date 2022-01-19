@@ -74,6 +74,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     const meta = asValidatedMetadata(VideoMetadata, videoInput)
+    const { enableComments } = videoInput
 
     const { videoPath, thumbnailPhotoPath } = videoInput
     const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
@@ -93,10 +94,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assets_to_upload: assetsToUpload,
       new_meta: metadataToBytes(VideoMetadata, meta),
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
+      enable_comments: enableComments,
     }
 
     this.jsonPrettyPrint(
-      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), newMetadata: meta, assetsToRemove })
+      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), newMetadata: meta, assetsToRemove, enableComments })
     )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)

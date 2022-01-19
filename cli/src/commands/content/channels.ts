@@ -16,6 +16,7 @@ export default class ChannelsCommand extends ContentDirectoryCommandBase {
           'IsCensored': c.is_censored.toString(),
           'RewardAccount': c.reward_account ? shortAddress(c.reward_account.toString()) : 'NONE',
           'Collaborators': c.collaborators.size,
+          'Moderators': c.moderators.size,
         })),
         3
       )

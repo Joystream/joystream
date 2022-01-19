@@ -1,10 +1,10 @@
 import { getInputJson } from '../../helpers/InputOutput'
-import { ChannelInputParameters } from '../../Types'
+import { ChannelCreationInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { createType } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
-import { ChannelInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelCreationInputSchema } from '../../schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import chalk from 'chalk'
@@ -32,11 +32,16 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
-    const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
+    const channelInput = await getInputJson<ChannelCreationInputParameters>(input, ChannelCreationInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
+    const { collaborators, moderators, rewardAccount } = channelInput
 
-    if (channelInput.collaborators) {
-      await this.validateCollaborators(channelInput.collaborators)
+    if (collaborators) {
+      await this.validateMemberIdsSet(collaborators, 'collaborator')
+    }
+
+    if (moderators) {
+      await this.validateMemberIdsSet(moderators, 'moderator')
     }
 
     const { coverPhotoPath, avatarPhotoPath } = channelInput
@@ -54,12 +59,15 @@ export default class CreateChannelCommand extends UploadCommandBase {
       {
         assets,
         meta: metadataToBytes(ChannelMetadata, meta),
-        collaborators: channelInput.collaborators,
-        reward_account: channelInput.rewardAccount,
+        collaborators,
+        moderators,
+        reward_account: rewardAccount,
       }
     )
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
+    this.jsonPrettyPrint(
+      JSON.stringify({ assets: assets?.toJSON(), metadata: meta, collaborators, moderators, rewardAccount })
+    )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

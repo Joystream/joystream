@@ -92,9 +92,16 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
     const { id, membership } = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
     return [
-      createType<ContentActor, 'ContentActor'>('ContentActor', { Collaborator: id }),
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
       membership.controller_account.toString(),
     ]
+  }
+
+  isChannelOwner(channel: Channel, actor: ContentActor): boolean {
+    return channel.owner.isOfType('Curators')
+      ? (actor.isOfType('Curator') && actor.asType('Curator')[0].eq(channel.owner.asType('Curators'))) ||
+          actor.isOfType('Lead')
+      : actor.isOfType('Member') && actor.asType('Member').eq(channel.owner.asType('Member'))
   }
 
   async getChannelManagementActor(
@@ -299,10 +306,10 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     throw new Error(`Unrecognized context: ${context}`)
   }
 
-  async validateCollaborators(collaborators: number[] | MemberId[]): Promise<void> {
-    const collaboratorMembers = await this.getApi().getMembers(collaborators)
-    if (collaboratorMembers.length < collaborators.length || collaboratorMembers.some((m) => m.isEmpty)) {
-      this.error(`Invalid collaborator set! All collaborators must be existing members.`, {
+  async validateMemberIdsSet(ids: number[] | MemberId[], setName: 'collaborator' | 'moderator'): Promise<void> {
+    const members = await this.getApi().getMembers(ids)
+    if (members.length < ids.length || members.some((m) => m.isEmpty)) {
+      this.error(`Invalid ${setName} set! All ${setName} set members must be existing members!`, {
         exit: ExitCodes.InvalidInput,
       })
     }

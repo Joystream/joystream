@@ -167,14 +167,18 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
 export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
+  enableComments?: boolean
 }
 
-export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
+export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
   collaborators?: number[]
+  moderators?: number[]
 }
+
+export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
 
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
