@@ -3,11 +3,14 @@ import { spawnSync } from 'child_process'
 import * as fs from 'fs'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { v4 as uuid } from 'uuid'
+import { MemberId } from '@joystream/types/members'
 
 export interface ICreatedVideoData {
   videoId: number
   assetContentIds: string[]
 }
+
+const jsonEndodeIndent = 2
 
 /**
   Adapter for calling CLI commands from integration tests.
@@ -53,6 +56,12 @@ export class CliApi {
     } catch (e) {
       throw new Error(`Can't write to temporary file "${this.tmpFilePath}"`)
     }
+  }
+
+  private saveToTempFileEncode(content: unknown) {
+    const encodedContent = JSON.stringify(content, null, jsonEndodeIndent)
+
+    this.saveToTempFile(encodedContent)
   }
 
   /**
@@ -102,8 +111,7 @@ export class CliApi {
     Imports an account from Polkadot's keyring keypair to CLI.
   */
   async importAccount(keyringPair: KeyringPair, password = ''): Promise<void> {
-    const importableAccount = JSON.stringify(keyringPair.toJson(password))
-    this.saveToTempFile(importableAccount)
+    this.saveToTempFileEncode(keyringPair.toJson(password))
 
     const { stderr } = this.runCommand([
       'account:import',
@@ -120,8 +128,8 @@ export class CliApi {
     }
   }
 
-  async chooseMemberAccount(accountAddress: string) {
-    const { stderr } = this.runCommand(['account:chooseMember', '--address', accountAddress])
+  async chooseMemberAccount(memberId: MemberId) {
+    const { stderr } = this.runCommand(['account:chooseMember', '--memberId', memberId.toString()])
 
     if (stderr) {
       throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
@@ -132,7 +140,7 @@ export class CliApi {
     Creates a new channel.
   */
   async createChannel(channel: unknown): Promise<number> {
-    this.saveToTempFile(JSON.stringify(channel))
+    this.saveToTempFileEncode(channel)
 
     const { stdout, stderr } = this.runCommand(
       ['content:createChannel', '--input', this.tmpFilePath, '--context', 'Member'],
@@ -151,7 +159,7 @@ export class CliApi {
     Creates a new channel category.
   */
   async createChannelCategory(channelCategory: unknown): Promise<number> {
-    this.saveToTempFile(JSON.stringify(channelCategory))
+    this.saveToTempFileEncode(channelCategory)
 
     const { stdout, stderr } = this.runCommand(
       ['content:createChannelCategory', '--input', this.tmpFilePath, '--context', 'Lead'],
@@ -169,7 +177,7 @@ export class CliApi {
     Creates a new video.
   */
   async createVideo(channelId: number, video: unknown): Promise<ICreatedVideoData> {
-    this.saveToTempFile(JSON.stringify(video))
+    this.saveToTempFileEncode(video)
 
     const { stdout, stderr } = this.runCommand(
       ['content:createVideo', '--input', this.tmpFilePath, '--channelId', channelId.toString()],
@@ -194,7 +202,7 @@ export class CliApi {
     Creates a new video category.
   */
   async createVideoCategory(videoCategory: unknown): Promise<number> {
-    this.saveToTempFile(JSON.stringify(videoCategory))
+    this.saveToTempFileEncode(videoCategory)
 
     const { stdout, stderr } = this.runCommand(
       ['content:createVideoCategory', '--input', this.tmpFilePath, '--context', 'Lead'],
@@ -212,7 +220,7 @@ export class CliApi {
     Updates an existing video.
   */
   async updateVideo(videoId: number, video: unknown): Promise<void> {
-    this.saveToTempFile(JSON.stringify(video))
+    this.saveToTempFileEncode(video)
 
     const { stdout, stderr } = this.runCommand(
       ['content:updateVideo', '--input', this.tmpFilePath, videoId.toString()],
@@ -229,7 +237,7 @@ export class CliApi {
     Updates a channel.
   */
   async updateChannel(channelId: number, channel: unknown): Promise<void> {
-    this.saveToTempFile(JSON.stringify(channel))
+    this.saveToTempFileEncode(channel)
 
     const { stdout, stderr } = this.runCommand(
       ['content:updateChannel', '--input', this.tmpFilePath, channelId.toString()],

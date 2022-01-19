@@ -909,14 +909,6 @@ export class Api {
     }
   }
 
-  public findStorageBucketCreated(events: EventRecord[]): DataObjectId | undefined {
-    const record = this.findEventRecord(events, 'storage', 'StorageBucketCreated')
-
-    if (record) {
-      return (record.event.data[0] as unknown) as DataObjectId
-    }
-  }
-
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
   // The inverted promise wraps a promise which resolves when the Proposal with id specified
   // is executed.

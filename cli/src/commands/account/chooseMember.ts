@@ -3,38 +3,52 @@ import chalk from 'chalk'
 import { flags } from '@oclif/command'
 import ExitCodes from '../../ExitCodes'
 
-export default class AccountChoose extends AccountsCommandBase {
-  static description = 'Choose default account to use in the CLI'
+export default class AccountChooseMember extends AccountsCommandBase {
+  static description = 'Choose default member to use in the CLI'
   static flags = {
-    address: flags.string({
-      description: 'Select account by address (if available)',
-      char: 'a',
+    memberId: flags.string({
+      description: 'Select member (if available)',
+      char: 'm',
       required: false,
     }),
   }
 
   async run() {
-    const { address } = this.parse(AccountChoose).flags
+    const { memberId } = this.parse(AccountChooseMember).flags
 
-    const memberData = address
-      ? await this.selectKnownMember(address)
+    const memberData = memberId
+      ? await this.selectKnownMember(memberId)
       : await this.getRequiredMemberContext(undefined, false)
 
     await this.setSelectedMember(memberData)
 
-    this.log(chalk.greenBright(`\nAccount switched to ${chalk.magentaBright(address)} (MemberId: ${memberData[0]})!`))
+    this.log(
+      chalk.greenBright(
+        `\nMember to id ${chalk.magentaBright(
+          memberData[0]
+        )} (account: ${memberData[1].controller_account.toString()})!`
+      )
+    )
   }
 
-  async selectKnownMember(address: string): Promise<ISelectedMember> {
-    const knownMembersData = await this.getKnownMembers()
-    const memberData = knownMembersData.find(([, member]) => member.controller_account.toString() === address)
+  async selectKnownMember(memberIdString: string): Promise<ISelectedMember> {
+    const memberId = this.createType('MemberId', memberIdString)
+    const member = await this.getApi().membershipById(memberId)
 
-    if (!memberData) {
-      this.error(`Selected account address not found among known members!`, {
+    if (!member) {
+      this.error(`Selected member id not found among known members!`, {
         exit: ExitCodes.AccessDenied,
       })
     }
 
-    return memberData
+    const selectedMember = [memberId, member] as ISelectedMember
+
+    if (!this.isKeyAvailable(member.controller_account)) {
+      this.error(`Selected member's account is not imported to CLI!`, {
+        exit: ExitCodes.AccessDenied,
+      })
+    }
+
+    return selectedMember
   }
 }

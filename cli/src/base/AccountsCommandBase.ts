@@ -355,7 +355,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return this.selectedMember
   }
 
-  async getKnownMembers(allowedIds?: MemberId[]): Promise<ISelectedMember[]> {
+  private async getKnownMembers(allowedIds?: MemberId[]): Promise<ISelectedMember[]> {
     const membersEntries = allowedIds
       ? await this.getApi().memberEntriesByIds(allowedIds)
       : await this.getApi().allMemberEntries()
@@ -382,6 +382,20 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return availableMemberships[memberIndex]
   }
 
+  private async initSelectedMember(): Promise<void> {
+    const memberIdString = this.getPreservedState().selectedMemberId
+
+    const memberId = this.createType('MemberId', memberIdString)
+    const member = await this.getApi().membershipById(memberId)
+
+    // ensure selected member exists
+    if (!member) {
+      return
+    }
+
+    this.selectedMember = [memberId, member]
+  }
+
   async init(): Promise<void> {
     await super.init()
     try {
@@ -391,8 +405,6 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
     await this.initKeyring()
 
-    const availableMemberships = await this.getKnownMembers()
-    const memberId = this.getPreservedState().selectedMemberId
-    this.selectedMember = availableMemberships.find((item) => item[0].toString() === memberId) || undefined
+    await this.initSelectedMember()
   }
 }

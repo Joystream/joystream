@@ -118,7 +118,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
 
     this.debug(`Choosing content working group lead's account`)
     // this expects lead account to be already imported into CLI
-    await this.cli.chooseMemberAccount(contentLeader.role_account_id.toString())
+    await this.cli.chooseMemberAccount(contentLeader.member_id)
 
     this.debug('Creating channel categories')
     const channelCategoryIds = await this.createChannelCategories(channelCategoryCount)
@@ -130,7 +130,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
 
     this.debug(`Importing author's account`)
     await this.cli.importAccount(author.keyringPair)
-    await this.cli.chooseMemberAccount(author.keyringPair.address)
+    await this.cli.chooseMemberAccount(author.memberId)
 
     // create content entities
 
