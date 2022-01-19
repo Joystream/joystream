@@ -46,7 +46,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const [memberId] = await this.getRequiredMemberContext()
     const keypair = await this.getDecodedPair(address)
 
     // Get input from file

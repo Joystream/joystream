@@ -1,7 +1,8 @@
 import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
-import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
+import { Bytes, BTreeSet, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { decodeAddress } from '@polkadot/keyring'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
@@ -12,6 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
+import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
@@ -37,6 +39,7 @@ import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metad
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
+import { v4 as uuid } from 'uuid'
 
 const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   'distributionWorkingGroup': 'Distribution',
@@ -130,7 +133,7 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const key = this.createKeyPair(`${id}`)
+      const key = this.createCustomKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
@@ -141,7 +144,7 @@ export class ApiFactory {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const uri = `${this.miniSecret}//testing//${suriPath}/${uuid().substring(0, 8)}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
@@ -940,6 +943,14 @@ export class Api {
       )
     }
     return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+  }
+
+  public findStorageBucketCreated(events: EventRecord[]): DataObjectId | undefined {
+    const record = this.findEvent(events, 'storage', 'StorageBucketCreated')
+
+    if (record) {
+      return (record.data[0] as unknown) as DataObjectId
+    }
   }
 
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
@@ -1931,5 +1942,79 @@ export class Api {
   async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
     const setCouncilCall = this.api.tx.council.setCouncil(accounts)
     return this.makeSudoCall(setCouncilCall)
+  }
+
+  // Storage
+
+  async createStorageBucket(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectsLimit: number,
+    workerId?: WorkerId
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(
+      this.api.tx.storage.createStorageBucket(workerId || null, true, sizeLimit, objectsLimit),
+      accountFrom
+    )
+  }
+
+  async acceptStorageBucketInvitation(accountFrom: string, workerId: WorkerId, storageBucketId: StorageBucketId) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, accountFrom),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsForBag(
+    accountFrom: string, // group leader
+    channelId: string,
+    addStorageBuckets: StorageBucketId[]
+  ) {
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedStorageBucketIds = new BTreeSet<StorageBucketId>(
+      this.api.registry,
+      'StorageBucketId',
+      addStorageBuckets.map((item) => item.toString())
+    )
+    const noBucketsToRemove = new BTreeSet<StorageBucketId>(this.api.registry, 'StorageBucketId', [])
+
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsForBag(bagId, encodedStorageBucketIds, noBucketsToRemove),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsPerBagLimit(
+    accountFrom: string, // group leader
+    limit: number
+  ) {
+    return this.sender.signAndSend(this.api.tx.storage.updateStorageBucketsPerBagLimit(limit), accountFrom)
+  }
+
+  async updateStorageBucketsVoucherMaxLimits(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectLimit: number
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsVoucherMaxLimits(sizeLimit, objectLimit),
+      accountFrom
+    )
+  }
+
+  async acceptPendingDataObjects(
+    accountFrom: string,
+    workerId: WorkerId,
+    storageBucketId: StorageBucketId,
+    channelId: string,
+    dataObjectIds: string[]
+  ): Promise<ISubmittableResult> {
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
+
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
+      accountFrom
+    )
   }
 }
