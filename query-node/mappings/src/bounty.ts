@@ -107,17 +107,15 @@ function bountyActorToMembership(actor: BountyActor): Membership | undefined {
   }
 }
 
-function isBountyFundingLimited(
-  fundingType: BountyFundingPerpetual | BountyFundingLimited
-): fundingType is BountyFundingLimited {
-  return fundingType.isTypeOf === BountyFundingLimited.name
-}
-
 function fundingPeriodEnd(bounty: Bounty): number {
   return (
     bounty.maxFundingReachedEvent?.inBlock ??
     bounty.createdInEvent.inBlock + (bounty.fundingType as BountyFundingLimited).fundingPeriod
   )
+}
+
+function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | undefined {
+  if (value !== null && typeof value !== 'undefined') return fn(value)
 }
 
 /**
@@ -126,7 +124,7 @@ function fundingPeriodEnd(bounty: Bounty): number {
 
 export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty): void {
   const { fundingType } = bounty
-  if (bounty.stage !== BountyStage.Funding || !isBountyFundingLimited(fundingType)) return
+  if (bounty.stage !== BountyStage.Funding || !('fundingPeriod' in fundingType)) return
 
   const fundingPeriodEnd = bounty.createdInEvent.inBlock + fundingType.fundingPeriod
   scheduleAtBlock(fundingPeriodEnd, () => {
@@ -214,7 +212,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
 
     stage: BountyStage.Funding,
     totalFunding: bountyParams.cherry,
-    discussionThread: asForumThread(metadata?.discussionThread ?? undefined),
+    discussionThread: whenDef(metadata?.discussionThread, (id) => new ForumThread({ id })),
   })
   await store.save<Bounty>(bounty)
 
@@ -245,12 +243,6 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
       const closedContract = new BountyContractClosed()
       closedContract.whitelist = assuranceContract.asClosed.map((id) => new Membership({ id: String(id) }))
       return closedContract
-    }
-  }
-
-  function asForumThread(threadId: number | undefined) {
-    if (typeof threadId === 'number') {
-      return new ForumThread({ id: String(threadId) })
     }
   }
 }
@@ -447,7 +439,7 @@ export async function bounty_WorkEntrantFundsWithdrawn({ event, store }: EventCo
     if ('reward' in entry.status) {
       status.reward = entry.status.reward
     }
-    return { status: new BountyEntryStatusCashedOut() }
+    return { status }
   })
 
   await store.save<BountyEntry>(entry)
