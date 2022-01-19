@@ -280,7 +280,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
                     return Err(Error::<T>::ActorNotAuthorized.into());
                 }
             }
-            ContentActor::Curator(curator_group_id, curator_id) => {
+            ContentActor::Curator(curator_group_id, _) => {
                 // Ensure curator group is the channel owner.
                 ensure!(
                     channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),

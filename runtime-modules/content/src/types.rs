@@ -541,7 +541,7 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT>
+impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
     VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT>
 {
     /// Ensure nft is not issued
@@ -574,35 +574,6 @@ impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT>
         Ok(())
     }
 }
-
-pub type Balances<T> = balances::Module<T>;
-pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-pub type CurrencyOf<T> = Currency<<T as frame_system::Trait>::AccountId>::Balance;
-pub type Storage<T> = storage::Module<T>;
-
-/// Type, used in diffrent numeric constraints representations
-pub type MaxNumber = u32;
-
-/// A numeric identifier trait
-pub trait NumericIdentifier:
-    Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + Clone
-    + MaybeSerializeDeserialize
-    + Eq
-    + PartialEq
-    + Ord
-    + Zero
-    + From<u64>
-    + Into<u64>
-{
-}
-
-impl NumericIdentifier for u64 {}
 
 /// Operations with local pallet account.
 pub trait ModuleAccount<T: balances::Trait> {
@@ -661,3 +632,32 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
 
 /// Local module account handler.
 pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
+
+pub type Balances<T> = balances::Module<T>;
+pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
+pub type Storage<T> = storage::Module<T>;
+
+/// Type, used in diffrent numeric constraints representations
+pub type MaxNumber = u32;
+
+/// A numeric identifier trait
+pub trait NumericIdentifier:
+    Parameter
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + Clone
+    + MaybeSerializeDeserialize
+    + Eq
+    + PartialEq
+    + Ord
+    + Zero
+    + From<u64>
+    + Into<u64>
+{
+}
+
+impl NumericIdentifier for u64 {}

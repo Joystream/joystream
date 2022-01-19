@@ -437,7 +437,7 @@ impl<
 /// Auction alias type for simplification.
 pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
-    BalanceOf<T>,
+    CurrencyOf<T>,
     MemberId<T>,
     <T as frame_system::Trait>::AccountId,
 >;
@@ -447,7 +447,7 @@ pub type Nft<T> = OwnedNFT<
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     <T as frame_system::Trait>::AccountId,
-    BalanceOf<T>,
+    CurrencyOf<T>,
 >;
 
 /// Parameters, needed for auction start
