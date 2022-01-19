@@ -11,7 +11,9 @@ import {
   BountyCreatorCherryWithdrawalEvent,
   BountyEntry,
   BountyEntryStatusCashedOut,
+  BountyEntryStatusPassed,
   BountyEntryStatusRejected,
+  BountyEntryStatusWinner,
   BountyEntryStatusWithdrawn,
   BountyEntryStatusWorking,
   BountyFundedEvent,
@@ -24,6 +26,7 @@ import {
   BountyVetoedEvent,
   ForumThread,
   Membership,
+  OracleJudgmentSubmittedEvent,
   WorkEntrantFundsWithdrawnEvent,
   WorkEntryAnnouncedEvent,
   WorkEntrySlashedEvent,
@@ -400,13 +403,10 @@ export async function bounty_WorkEntryWithdrawn({ event, store }: EventContext &
 // Store WorkEntrySlashed events
 export async function bounty_WorkEntrySlashed({ event, store }: EventContext & StoreContext): Promise<void> {
   const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
-
-  // Update the entry status
-  const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
-    status: new BountyEntryStatusRejected(),
-  }))
+  const [, entryId] = entrySlashedEvent.params
 
   // Record the event
+  const entry = new BountyEntry({ id: String(entryId) })
   const slashedInEvent = new WorkEntrySlashedEvent({ ...genericEventFields(event), entry })
   await store.save<WorkEntrySlashedEvent>(slashedInEvent)
 }
@@ -423,6 +423,43 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   // Record the event
   const submittedInEvent = new WorkSubmittedEvent({ ...genericEventFields(event), entry })
   await store.save<WorkEntrySlashedEvent>(submittedInEvent)
+}
+
+// Start bounties withdrawal period and set entries status to either passed, winner, or rejected
+export async function bounty_OracleJudgmentSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
+  const judgmentSubmittedEvent = new BountyEvents.OracleJudgmentSubmittedEvent(event)
+  const [bountyId, , bountyJudgment] = judgmentSubmittedEvent.params
+
+  const entryJudgments = Array.from(bountyJudgment.entries())
+
+  // Update the bounty status
+  const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
+  const bounty = await updateBounty(store, event, bountyId, () => ({
+    stage: BountyStage[hasWinners ? 'Successful' : 'Failed'],
+  }))
+
+  // Update winner entries status
+  await Promise.all(
+    bounty.entries?.map((entry) => {
+      const judgement = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
+
+      if (!judgement) {
+        entry.status = new BountyEntryStatusPassed()
+      } else if (judgement?.isWinner) {
+        const status = new BountyEntryStatusWinner()
+        status.reward = judgement.asWinner.reward
+        entry.status = status
+      } else {
+        entry.status = new BountyEntryStatusRejected()
+      }
+
+      return store.save<BountyEntry>(entry)
+    }) ?? []
+  )
+
+  // Record the event
+  const judgmentEvent = new OracleJudgmentSubmittedEvent({ ...genericEventFields(event), bounty })
+  await store.save<OracleJudgmentSubmittedEvent>(judgmentEvent)
 }
 
 // Change cashed out entries status to CashedOut

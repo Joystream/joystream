@@ -881,6 +881,8 @@ mappings:
       handler: bounty_WorkEntrySlashed
     - event: bounty.WorkSubmitted
       handler: bounty_WorkSubmitted
+    - event: bounty.OracleJudgmentSubmitted
+      handler: bounty_OracleJudgmentSubmitted
     - event: bounty.WorkEntrantFundsWithdrawn
       handler: bounty_WorkEntrantFundsWithdrawn
   extrinsicHandlers:
