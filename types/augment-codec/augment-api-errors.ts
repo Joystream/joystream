@@ -3196,6 +3196,14 @@ declare module '@polkadot/api/types/errors' {
     };
     storage: {
       /**
+       * Different Accounts for dynamic bag deletion prize and upload fees
+       **/
+      AccountsNotCoherent: AugmentedError<ApiType>;
+      /**
+       * Different Accounts for dynamic bag id and parameters bag id
+       **/
+      BagsNotCoherent: AugmentedError<ApiType>;
+      /**
        * Blacklist size limit exceeded.
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
@@ -3307,6 +3315,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid storage provider for bucket.
        **/
       InvalidStorageProvider: AugmentedError<ApiType>;
+      /**
+       * Invalid transactor account ID for this bucket.
+       **/
+      InvalidTransactorAccount: AugmentedError<ApiType>;
       /**
        * Invalid operation with invites: storage provider was already invited.
        **/

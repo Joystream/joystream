@@ -230,7 +230,7 @@ export class TransactionalStatus extends JoyEnum({
   Idle: Null,
   InitiatedOfferToMember: Tuple.with([
     MemberId,
-    Option.with(u128) // Option<Balance>
+    Option.with(u128), // Option<Balance>
   ]),
   Auction: AuctionRecord,
   BuyNow: u128, // Balance

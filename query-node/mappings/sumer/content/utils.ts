@@ -5,7 +5,7 @@
 //       - convert manual changes done to `*model.ts` file into some patch or bash commands that can be executed
 //         every time query node codegen is run (that will overwrite said manual changes)
 //       - verify in integration tests that the records are trully created/updated/removed as expected
-
+/*
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { Bytes } from '@polkadot/types'
@@ -62,12 +62,12 @@ import { registry } from '@joystream/types'
 
 /*
   Asset either stored in storage or describing list of URLs.
-*/
+* /
 type AssetStorageOrUrls = DataObject | string[]
 
 /*
   Type guard differentiating asset stored in storage from asset describing a list of URLs.
-*/
+* /
 function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObject {
   if (Array.isArray(dataObject)) {
     return false
@@ -92,7 +92,7 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
   NoChange - don't change anything (used when invalid metadata are encountered)
   Unset - unset the value (used when the unset is requested in runtime)
   Change - set the new value
-*/
+* /
 export class PropertyChange<T> {
   static newUnset<T>(): PropertyChange<T> {
     return new PropertyChange<T>('unset')
@@ -108,7 +108,7 @@ export class PropertyChange<T> {
 
   /*
     Determines property change from the given object property.
-  */
+  * /
   static fromObjectProperty<T, Key extends string, ChangedObject extends { [key in Key]?: T }>(
     object: ChangedObject,
     key: Key
@@ -150,7 +150,7 @@ export class PropertyChange<T> {
 
   /*
     Integrates the value into the given dictionary.
-  */
+  * /
   public integrateInto(object: Object, key: string): void {
     if (this.isNoChange()) {
       return
@@ -178,7 +178,7 @@ export interface RawVideoMetadata {
 
 /*
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
-*/
+* /
 export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   type: T,
   parameters: IReadProtobufArguments
@@ -210,7 +210,7 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
 /*
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
   In addition it handles any assets associated with the metadata.
-*/
+* /
 
 export async function readProtobufWithAssets<T extends Channel | Video>(
   type: T,
@@ -416,7 +416,7 @@ export function convertContentActorToDataObjectOwner(
 
   logger.error('Not implemented ContentActor type', {contentActor: contentActor.toString()})
   throw new Error('Not-implemented ContentActor type used')
-  */
+  * /
 }
 
 function handlePublishedBeforeJoystream(
@@ -452,7 +452,7 @@ interface IConvertAssetParameters {
 
 /*
   Converts event asset into data object or list of URLs fit to be saved to db.
-*/
+* /
 async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetStorageOrUrls> {
   // is asset describing list of URLs?
   if (parameters.rawAsset.isUrls) {
@@ -485,7 +485,7 @@ interface IExtractAssetParameters {
 
 /*
   Selects asset from provided set of assets and prepares asset data fit to be saved to db.
-*/
+* /
 async function extractAsset(parameters: IExtractAssetParameters): Promise<PropertyChange<AssetStorageOrUrls>> {
   // is asset being unset?
   if (parameters.assetIndex === undefined) {
@@ -517,7 +517,7 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<Proper
   to describe asset state. This function introduces all redudant data needed to be saved to db.
 
   Changes `result` argument!
-*/
+* /
 function integrateAsset<T>(propertyName: string, result: Object, asset: PropertyChange<AssetStorageOrUrls>): void {
   // helpers - property names
   const nameUrl = propertyName + 'Urls'
@@ -675,7 +675,7 @@ async function prepareLicense(
 /*
   Checks if protobof contains license with some fields filled or is empty object (`{}` or `{someKey: undefined, ...}`).
   Empty object means deletion is requested.
-*/
+* /
 function isLicenseEmpty(licenseObject: LicenseMetadata.AsObject): boolean {
   const somePropertySet = Object.entries(licenseObject).reduce((acc, [key, value]) => {
     return acc || value !== undefined
@@ -771,3 +771,4 @@ function convertMetadataToObject<T extends Object>(metadata: jspb.Message): T {
 
   return result
 }
+*/

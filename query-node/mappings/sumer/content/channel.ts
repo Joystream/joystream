@@ -1,3 +1,4 @@
+/*
 import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
@@ -277,3 +278,4 @@ function handleChannelRewardAccountChange(
 
   channel.rewardAccount = undefined // plan deletion (will have effect when saved to db)
 }
+*/

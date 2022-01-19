@@ -1,3 +1,4 @@
+/*
 import BN from 'bn.js'
 import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
@@ -377,7 +378,7 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
 
   NOTE: type hack - `RawVideoMetadata` is accepted for `metadata` instead of `Partial<Video>`
         see `prepareVideoMetadata()` in `utils.ts` for more info
-*/
+* /
 async function integrateVideoMediaMetadata(
   db: DatabaseManager,
   existingRecord: Video | null,
@@ -496,3 +497,4 @@ function handleLicenseUpdate(originalLicense, newLicense): [License | undefined,
 
   return [originalLicense, null]
 }
+*/
