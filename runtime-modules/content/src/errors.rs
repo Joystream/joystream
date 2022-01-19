@@ -46,9 +46,6 @@ decl_error! {
         /// Operation cannot be perfomed with this Actor
         ActorNotAuthorized,
 
-        /// This content actor cannot own a channel
-        ActorCannotOwnChannel,
-
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
 
@@ -63,6 +60,142 @@ decl_error! {
 
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels,
+
+        /// Actor cannot authorize as lead for given extrinsic
+        ActorCannotBeLead,
+
+        /// Channel censorship status did not change
+        ChannelCensorshipStatusDidNotChange,
+
+        /// Video censorship status did not change
+        VideoCensorshipStatusDidNotChange,
+
+
+        // Auction Errors
+        // ---------------------
+
+        /// Auction for given video did not start
+        AuctionDidNotStart,
+
+        /// NFT for given video id already exists
+        NFTAlreadyExists,
+
+        /// NFT for given video id does not exist
+        NFTDoesNotExist,
+
+        /// Overflow or underflow error happened
+        OverflowOrUnderflowHappened,
+
+        /// Given origin does not own nft
+        DoesNotOwnNFT,
+
+        /// Royalty Upper Bound Exceeded
+        RoyaltyUpperBoundExceeded,
+
+        /// Royalty Lower Bound Exceeded
+        RoyaltyLowerBoundExceeded,
+
+        /// Auction duration upper bound exceeded
+        AuctionDurationUpperBoundExceeded,
+
+        /// Auction duration lower bound exceeded
+        AuctionDurationLowerBoundExceeded,
+
+        /// Auction extension period upper bound exceeded
+        ExtensionPeriodUpperBoundExceeded,
+
+        /// Auction extension period lower bound exceeded
+        ExtensionPeriodLowerBoundExceeded,
+
+        /// Bid lock duration upper bound exceeded
+        BidLockDurationUpperBoundExceeded,
+
+        /// Bid lock duration lower bound exceeded
+        BidLockDurationLowerBoundExceeded,
+
+        /// Starting price upper bound exceeded
+        StartingPriceUpperBoundExceeded,
+
+        /// Starting price lower bound exceeded
+        StartingPriceLowerBoundExceeded,
+
+        /// Auction bid step upper bound exceeded
+        AuctionBidStepUpperBoundExceeded,
+
+        /// Auction bid step lower bound exceeded
+        AuctionBidStepLowerBoundExceeded,
+
+        /// Insufficient balance
+        InsufficientBalance,
+
+        /// Minimal auction bid step constraint violated.
+        BidStepConstraintViolated,
+
+        /// Auction starting price constraint violated.
+        StartingPriceConstraintViolated,
+
+        /// Already active auction cannot be cancelled
+        ActionHasBidsAlready,
+
+        /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
+        NftIsNotIdle,
+
+        /// No pending offers for given NFT
+        PendingOfferDoesNotExist,
+
+        /// Creator royalty requires reward account to be set.
+        RewardAccountIsNotSet,
+
+        /// Actor is not a last bidder
+        ActorIsNotALastBidder,
+
+        /// Auction cannot be completed
+        AuctionCannotBeCompleted,
+
+        /// Auction does not have bids
+        LastBidDoesNotExist,
+
+        /// Auction starts at lower bound exceeded
+        StartsAtLowerBoundExceeded,
+
+        /// Auction starts at upper bound exceeded
+        StartsAtUpperBoundExceeded,
+
+        /// Nft is not in auction state
+        NotInAuctionState,
+
+        /// Member is not allowed to participate in auction
+        MemberIsNotAllowedToParticipate,
+
+        /// Member profile not found
+        MemberProfileNotFound,
+
+        /// Given video nft is not in buy now state
+        NFTNotInBuyNowState,
+
+        /// Auction type is not `Open`
+        IsNotOpenAuctionType,
+
+        /// Auction type is not `English`
+        IsNotEnglishAuctionType,
+
+        /// Bid lock duration is not expired
+        BidLockDurationIsNotExpired,
+
+        /// NFT auction is already expired
+        NFTAuctionIsAlreadyExpired,
+
+        /// Auction buy now is less then starting price
+        BuyNowIsLessThenStartingPrice,
+
+        /// Max auction whitelist length upper bound exceeded
+        MaxAuctionWhiteListLengthUpperBoundExceeded,
+
+        /// Auction whitelist has only one member
+        WhitelistHasOnlyOneMember,
+
+        /// Extension period is greater then auction duration
+        ExtensionPeriodIsGreaterThenAuctionDuration,
 
         /// No assets to be removed have been specified
         NoAssetsSpecified,

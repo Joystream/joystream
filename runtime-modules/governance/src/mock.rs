@@ -61,11 +61,13 @@ impl pallet_timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
+
 impl council::Trait for Test {
     type Event = ();
 
     type CouncilTermEnded = (Election,);
 }
+
 impl election::Trait for Test {
     type Event = ();
 
@@ -87,15 +89,18 @@ impl membership::Trait for Test {
     type PaidTermId = u32;
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
+
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
 }
+
 impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
 }
+
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }

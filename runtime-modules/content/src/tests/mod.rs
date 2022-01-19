@@ -6,5 +6,6 @@ mod fixtures;
 mod merkle;
 mod migration;
 mod mock;
+mod nft;
 mod posts;
 mod videos;

@@ -253,7 +253,53 @@ pub fn ensure_actor_is_channel_owner<T: Trait>(
 
 /// SET FEATURED VIDEOS & CATEGORIES MANAGEMENT PERMISSION
 
-// Ensure actor can update or delete channels and videos
+/// Ensure actor can manage nft
+pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    nft_owner: &NFTOwner<T::MemberId>,
+    in_channel: T::ChannelId,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+
+    if let NFTOwner::Member(member_id) = nft_owner {
+        ensure!(
+            *actor == ContentActor::Member(*member_id),
+            Error::<T>::ActorNotAuthorized
+        );
+    } else {
+        // Ensure curator group is the channel owner.
+        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
+
+        match actor {
+            ContentActor::Lead => {
+                if let ChannelOwner::CuratorGroup(_) = channel_owner {
+                    return Ok(());
+                } else {
+                    return Err(Error::<T>::ActorNotAuthorized.into());
+                }
+            }
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                // Ensure curator group is the channel owner.
+                ensure!(
+                    channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+            }
+            ContentActor::Member(member_id) => {
+                // Ensure the member is the channel owner.
+                ensure!(
+                    channel_owner == ChannelOwner::Member(*member_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+// Enure actor can update or delete channels and videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
