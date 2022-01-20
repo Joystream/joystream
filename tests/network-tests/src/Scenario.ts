@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory, Api } from './Api'
+import { ApiFactory, Api, KeyGenInfo } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -18,22 +18,29 @@ export type ScenarioProps = {
   job: (label: string, flows: Flow[] | Flow) => Job
 }
 
+const OUTPUT_FILE_PATH = 'output.json'
+
+type TestsOutput = {
+  accounts: { [k: string]: number }
+  keyIds: KeyGenInfo
+  miniSecret: string
+}
+
 function writeOutput(api: Api, miniSecret: string) {
-  const outputFilename = 'output.json'
-  console.error('Writing generated account to', outputFilename)
+  console.error('Writing generated account to', OUTPUT_FILE_PATH)
   // account to key ids
   const accounts = api.getAllGeneratedAccounts()
 
   // first and last key id used to generate keys in this scenario
   const keyIds = api.keyGenInfo()
 
-  const output = {
+  const output: TestsOutput = {
     accounts,
     keyIds,
     miniSecret,
   }
 
-  fs.writeFileSync(outputFilename, JSON.stringify(output, undefined, 2))
+  fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
 
 export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
@@ -54,11 +61,20 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const api = apiFactory.getApi('Key Generation')
 
-  // Generate all key ids before START_KEY_ID
-  const startKeyId = parseInt(env.START_KEY_ID || '0')
-  if (startKeyId) {
-    api.createKeyPairs(startKeyId)
+  // Generate all key ids based on REUSE_KEYS or START_KEY_ID (if provided)
+  const reuseKeys = Boolean(env.REUSE_KEYS)
+  let startKeyId: number
+  let customKeys: string[] = []
+  if (reuseKeys) {
+    const output = JSON.parse(fs.readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
+    startKeyId = output.keyIds.final
+    customKeys = output.keyIds.custom
+  } else {
+    startKeyId = parseInt(env.START_KEY_ID || '0')
   }
+
+  api.createKeyPairs(startKeyId)
+  customKeys.forEach((k) => api.createCustomKeyPair(k))
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 

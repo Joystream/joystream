@@ -261,13 +261,16 @@ pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
             Ok(())
         }
         ContentActor::Member(member_id) => {
-            // ensure valid member
+            // ensure member account and origin correspondence
             ensure_member_auth_success::<T>(sender, member_id)?;
             // ensure member is channel owner
             ensure_member_is_channel_owner::<T>(&channel.owner, member_id)?;
             Ok(())
         }
         ContentActor::Collaborator(member_id) => {
+            // ensure member account and origin correspondence
+            ensure_member_auth_success::<T>(sender, member_id)?;
+            // ensure valid collaborator
             ensure!(
                 channel.collaborators.contains(member_id),
                 Error::<T>::ActorNotAuthorized

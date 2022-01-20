@@ -23,6 +23,9 @@ export default {
   content: async function ({ api, env }: FlowProps): Promise<void> {
     return manageWorkerAsWorker(api, env, WorkingGroups.Content)
   },
+  distribution: async function ({ api, env }: FlowProps): Promise<void> {
+    return manageWorkerAsWorker(api, env, WorkingGroups.Distribution)
+  },
 }
 
 // Manage worker as worker

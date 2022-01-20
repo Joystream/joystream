@@ -1,6 +1,18 @@
-import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { BLOCKTIME } from './consts'
+import { gql, ApolloClient, ApolloQueryResult, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
 import { extendDebug, Debugger } from './Debugger'
+import {
+  StorageDataObjectFieldsFragment,
+  GetDataObjectsByIdsQuery,
+  GetDataObjectsByIdsQueryVariables,
+  GetDataObjectsByIds,
+  ChannelFieldsFragment,
+  GetChannelById,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
+} from './graphql/generated/queries'
+import { Maybe } from './graphql/generated/schema'
+import { OperationDefinitionNode } from 'graphql'
 import { Utils } from './utils'
 
 export class QueryNodeApi {
@@ -56,80 +68,57 @@ export class QueryNodeApi {
     }
   }
 
-  public async getChannelbyHandle(handle: string): Promise<ApolloQueryResult<any>> {
-    const GET_CHANNEL_BY_TITLE = gql`
-      query($handle: String!) {
-        channels(where: { handle_eq: $handle }) {
-          handle
-          description
-          coverPhotoUrl
-          avatarPhotoUrl
-          isPublic
-          isCurated
-          videos {
-            title
-            description
-            duration
-            thumbnailUrl
-            isExplicit
-            isPublic
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { handle } })
+  private debugQuery(query: DocumentNode, args: Record<string, unknown>): void {
+    const queryDef = query.definitions.find((d) => d.kind === 'OperationDefinition') as OperationDefinitionNode
+    this.queryDebug(`${queryDef.name!.value}(${JSON.stringify(args)})`)
   }
 
-  public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Channel {
-              handle
-              description
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
+  // Query entity by unique input
+  private async uniqueEntityQuery<
+    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<Required<QueryT>[keyof QueryT] | null> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
   }
 
-  public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Video {
-              title
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
+  // Query entities by "non-unique" input and return first result
+  private async firstEntityQuery<QueryT extends { [k: string]: unknown[] }, VariablesT extends Record<string, unknown>>(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<QueryT[keyof QueryT][number] | null> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
   }
 
-  public async performWhereQueryByVideoTitle(title: string): Promise<ApolloQueryResult<any>> {
-    const WHERE_QUERY_ON_VIDEO_TITLE = gql`
-      query($title: String!) {
-        videos(where: { title_eq: $title }) {
-          media {
-            location {
-              __typename
-              ... on JoystreamMediaLocation {
-                dataObjectId
-              }
-            }
-          }
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query: WHERE_QUERY_ON_VIDEO_TITLE, variables: { title } })
+  // Query multiple entities
+  private async multipleEntitiesQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT]> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+  }
+
+  public async channelById(id: string): Promise<Maybe<ChannelFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { id },
+      'channelByUniqueInput'
+    )
+  }
+
+  public async getDataObjectsByIds(ids: string[]): Promise<StorageDataObjectFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetDataObjectsByIdsQuery, GetDataObjectsByIdsQueryVariables>(
+      GetDataObjectsByIds,
+      { ids },
+      'storageDataObjects'
+    )
   }
 
   public async getChannels(): Promise<ApolloQueryResult<any>> {

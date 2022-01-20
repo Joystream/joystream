@@ -193,7 +193,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     this.debug('Checking video categories active video counters (2)')
     await this.assertCounterMatch('videoCategories', videoCategoryIds[1], oneMovedVideoCount)
 
-    /** Giza doesn't support changing channels - uncoment this on later releases where it's \\\
+    /** Giza doesn't support changing channels - uncoment this on later releases where it's supported
 
     // move one video to another channel
 
@@ -251,7 +251,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
       workerId
     )
 
-    const storageBucketId = this.api.findStorageBucketCreated(createBucketResult.events) as DataObjectId
+    const storageBucketId = this.api.getEvent(createBucketResult.events, 'storage', 'StorageBucketCreated').data[0]
 
     this.debug('Accepting storage bucket invitation')
     await this.api.acceptStorageBucketInvitation(storageGroupWorker.keyringPair.address, workerId, storageBucketId)
