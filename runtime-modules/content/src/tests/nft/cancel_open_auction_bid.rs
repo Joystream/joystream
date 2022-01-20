@@ -1,5 +1,8 @@
 #![cfg(test)]
-
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -12,12 +15,14 @@ fn cancel_open_auction_bid() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -37,8 +42,8 @@ fn cancel_open_auction_bid() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -46,11 +51,11 @@ fn cancel_open_auction_bid() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -66,7 +71,7 @@ fn cancel_open_auction_bid() {
 
         // Cancel auction bid
         assert_ok!(Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         ));
@@ -82,12 +87,9 @@ fn cancel_open_auction_bid() {
             }) if auction_without_bid.last_bid.is_none()
         ));
 
-        let cancel_open_auction_bid_event =
-            get_test_event(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id));
-
         // Last event checked
         assert_event(
-            cancel_open_auction_bid_event,
+            MetaEvent::content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
             number_of_events_before_call + 1,
         );
     })
@@ -101,12 +103,14 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -126,8 +130,8 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -135,11 +139,11 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -147,7 +151,7 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
 
         // Make an attempt to cancel open auction bid if lock duration did not expire
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -168,12 +172,14 @@ fn cancel_open_auction_bid_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -193,8 +199,8 @@ fn cancel_open_auction_bid_auth_failed() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -202,11 +208,11 @@ fn cancel_open_auction_bid_auth_failed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -217,8 +223,8 @@ fn cancel_open_auction_bid_auth_failed() {
 
         // Make an attempt to cancel open auction bid with wrong credentials
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            UNKNOWN_ID,
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -240,7 +246,7 @@ fn cancel_open_auction_bid_video_does_not_exist() {
 
         // Make an attempt to cancel open auction bid which corresponding video does not exist
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -261,11 +267,13 @@ fn cancel_open_auction_bid_nft_is_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to cancel open auction bid for nft which is not issued yet
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -286,12 +294,14 @@ fn cancel_open_auction_bid_not_in_auction_state() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -300,7 +310,7 @@ fn cancel_open_auction_bid_not_in_auction_state() {
 
         // Make an attempt to cancel open auction bid for nft which is not in auction state
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -321,12 +331,14 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -347,8 +359,8 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -356,11 +368,11 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -368,7 +380,7 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
 
         // Make an attempt to cancel open auction bid for nft which is not in open auction state
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -389,12 +401,14 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -414,8 +428,8 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -425,7 +439,7 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
 
         // Make an attempt to cancel open auction bid if it does not exist
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -446,12 +460,14 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -471,8 +487,8 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -480,11 +496,11 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -495,8 +511,8 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
 
         // Make an attempt to cancel open auction bid if actor is not a last bidder
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            THIRD_MEMBER_ID,
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MEMBER_ID,
             video_id,
         );
 
