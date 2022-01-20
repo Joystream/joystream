@@ -1,5 +1,8 @@
 #![cfg(test)]
-
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -12,26 +15,28 @@ fn cancel_buy_now() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 100;
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Runtime tested state before call
@@ -41,8 +46,8 @@ fn cancel_buy_now() {
 
         // Cancel buy now
         assert_ok!(Content::cancel_buy_now(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         ));
 
@@ -57,13 +62,14 @@ fn cancel_buy_now() {
             })
         ));
 
-        let buy_now_canceled_event = get_test_event(RawEvent::BuyNowCanceled(
-            video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-        ));
-
         // Last event checked
-        assert_event(buy_now_canceled_event, number_of_events_before_call + 1);
+        assert_event(
+            MetaEvent::content(RawEvent::BuyNowCanceled(
+                video_id,
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+            )),
+            number_of_events_before_call + 1,
+        );
     })
 }
 
@@ -77,8 +83,8 @@ fn cancel_buy_now_video_does_not_exist() {
 
         // Make an attempt to cancel buy now which corresponding video does not exist yet
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
 
@@ -95,12 +101,14 @@ fn cancel_buy_now_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to cancel buy now for nft which is not issued yet
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
 
@@ -117,32 +125,32 @@ fn cancel_buy_now_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 100;
-
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Make an attempt to cancel buy now with wrong credentials
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(UNKNOWN_ID),
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
 
@@ -159,31 +167,31 @@ fn cancel_buy_now_not_authorized() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
             None
         ));
 
-        let price = 100;
-
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            price,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Make an attempt to cancel buy now if actor is not authorized
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
         );
@@ -201,12 +209,14 @@ fn cancel_buy_now_not_in_auction_state() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -215,8 +225,8 @@ fn cancel_buy_now_not_in_auction_state() {
 
         // Make an attempt to cancel buy now if there is no pending one
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
 

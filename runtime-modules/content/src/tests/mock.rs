@@ -84,7 +84,6 @@ pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
-pub const REWARD_ACCOUNT_ID: u64 = 25;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
 
 impl_outer_origin! {
