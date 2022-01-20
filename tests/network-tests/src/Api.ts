@@ -38,6 +38,7 @@ import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metad
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
+import { v4 as uuid } from 'uuid'
 
 const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   'distributionWorkingGroup': 'Distribution',
@@ -142,7 +143,7 @@ export class ApiFactory {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const uri = `${this.miniSecret}//testing//${suriPath}//${uuid().substring(0, 8)}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
@@ -1960,16 +1961,12 @@ export class Api {
     channelId: string,
     addStorageBuckets: StorageBucketId[]
   ) {
-    const bagId = { Dynamic: { Channel: channelId } }
-    const encodedStorageBucketIds = new BTreeSet<StorageBucketId>(
-      this.api.registry,
-      'StorageBucketId',
-      addStorageBuckets.map((item) => item.toString())
-    )
-    const noBucketsToRemove = new BTreeSet<StorageBucketId>(this.api.registry, 'StorageBucketId', [])
-
     return this.sender.signAndSend(
-      this.api.tx.storage.updateStorageBucketsForBag(bagId, encodedStorageBucketIds, noBucketsToRemove),
+      this.api.tx.storage.updateStorageBucketsForBag(
+        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
+        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
+        this.api.createType('BTreeSet<StorageBucketId>', [])
+      ),
       accountFrom
     )
   }

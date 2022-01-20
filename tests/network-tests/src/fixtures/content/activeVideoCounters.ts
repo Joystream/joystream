@@ -28,14 +28,7 @@ interface IMember {
   memberId: MemberId
 }
 
-// QN connection paramaters
-const qnConnection = {
-  numberOfRepeats: 20, // QN can take some time to catch up with node - repeat until then
-  repeatDelay: 3000, // delay between failed QN requests
-}
-
 // settings
-const contentDirectoryWorkingGroupId = 1 // TODO: retrieve group id programmatically
 const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 /**
@@ -268,11 +261,9 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     entityId: number,
     expectedCount: number
   ) {
-    const qnConnectionNumberOfRepeats = 10
-
-    const getterName = `get${entityName[0].toUpperCase()}${entityName.slice(1)}`
+    const getterName = `get${entityName[0].toUpperCase()}${entityName.slice(1)}` as 'getChannels' | 'getChannelCategories' | 'getVideoCategories'
     await this.query.tryQueryWithTimeout(
-      () => (this.query as any)[getterName](),
+      () => this.query[getterName](),
       (tmpEntity) => {
         const entities = (tmpEntity as any).data[entityName]
         assert(entities.length > 0) // some entities were loaded
@@ -282,8 +273,6 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
         // all videos created in this fixture should be active and belong to first entity
         assert(entity.activeVideosCounter === expectedCount)
       },
-      qnConnection.repeatDelay,
-      qnConnection.numberOfRepeats
     )
   }
 

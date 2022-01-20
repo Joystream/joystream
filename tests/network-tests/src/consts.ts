@@ -1,2 +1,2 @@
 // Test chain blocktime
-export const BLOCKTIME = 1000
+export const BLOCKTIME = 6000

@@ -527,7 +527,7 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     await store.save<Video>(video)
 
     // update video active counters
-    await updateVideoActiveCounters(store, wasFullyActive as IVideoActiveStatus, undefined)
+    await updateVideoActiveCounters(store, wasFullyActive, undefined)
 
     // emit log event
     logger.info('Content has been disconnected from Video', {
