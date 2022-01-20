@@ -553,7 +553,7 @@ impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
     /// Ensure nft is issued
     pub fn ensure_nft_is_issued<T: Trait>(&self) -> Result<OwnedNFT, Error<T>> {
         if let Some(owned_nft) = &self.nft_status {
-            Ok(owned_nft.to_owned())
+            Ok(owned_nft.clone())
         } else {
             Err(Error::<T>::NFTDoesNotExist)
         }
