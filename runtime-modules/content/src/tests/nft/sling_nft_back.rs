@@ -1,5 +1,8 @@
 #![cfg(test)]
-
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -12,12 +15,14 @@ fn sling_nft_back() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -38,7 +43,7 @@ fn sling_nft_back() {
 
         // Sling nft back to the original artist
         assert_ok!(Content::sling_nft_back(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(SECOND_MEMBER_ID),
         ));
@@ -54,13 +59,14 @@ fn sling_nft_back() {
             })
         ));
 
-        let offer_started_event = get_test_event(RawEvent::NftSlingedBackToTheOriginalArtist(
-            video_id,
-            ContentActor::Member(SECOND_MEMBER_ID),
-        ));
-
         // Last event checked
-        assert_event(offer_started_event, number_of_events_before_call + 1);
+        assert_event(
+            MetaEvent::content(RawEvent::NftSlingedBackToTheOriginalArtist(
+                video_id,
+                ContentActor::Member(SECOND_MEMBER_ID),
+            )),
+            number_of_events_before_call + 1,
+        );
     })
 }
 
@@ -74,9 +80,9 @@ fn sling_nft_back_video_does_not_exist() {
 
         // Make an attempt to sling nft back which corresponding video does not exist
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
 
         // Failure checked
@@ -92,13 +98,15 @@ fn sling_nft_back_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to sling nft back which is not issued yet
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
 
         // Failure checked
@@ -114,12 +122,14 @@ fn sling_nft_back_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -128,9 +138,9 @@ fn sling_nft_back_auth_failed() {
 
         // Make an attempt to sling nft back with wrong credentials
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(UNKNOWN_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
 
         // Failure checked
@@ -146,12 +156,14 @@ fn sling_nft_back_not_authorized() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -160,9 +172,9 @@ fn sling_nft_back_not_authorized() {
 
         // Make an attempt to sling nft back if actor is not authorized
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(SECOND_MEMBER_ID),
+            ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
         );
 
         // Failure checked
@@ -178,12 +190,14 @@ fn sling_nft_back_transactional_status_is_not_idle() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -192,18 +206,18 @@ fn sling_nft_back_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
 
         // Make an attempt to sling nft back when it is already offered
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
         );
 
         // Failure checked
