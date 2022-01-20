@@ -537,15 +537,16 @@
         "work_period": "u32",
         "judging_period": "u32"
     },
-    "OracleJudgment_Winner": {
+    "OracleWorkEntryJudgment_Winner": {
         "reward": "u128"
     },
-    "OracleJudgment": {
+    "OracleWorkEntryJudgment": {
         "_enum": {
-            "Winner": "OracleJudgment_Winner",
+            "Winner": "OracleWorkEntryJudgment_Winner",
             "Rejected": "Null"
         }
     },
+    "OracleJudgment": "BTreeMap<EntryId,OracleWorkEntryJudgment>",
     "Entry": {
         "member_id": "MemberId",
         "staking_account_id": "AccountId",

@@ -42,13 +42,13 @@ declare module '@polkadot/api/types/consts' {
        **/
       closedContractSizeLimit: u32 & AugmentedConst<ApiType>;
       /**
-       * Exports const - min funding amount limit for a bounty.
-       **/
-      minFundingLimit: BalanceOf & AugmentedConst<ApiType>;
-      /**
        * Exports const - min cherry value limit for a bounty.
        **/
       minCherryLimit: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - min funding amount limit for a bounty.
+       **/
+      minFundingLimit: BalanceOf & AugmentedConst<ApiType>;
       /**
        * Exports const - min work entrant stake for a bounty.
        **/

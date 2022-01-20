@@ -139,6 +139,70 @@ export interface Category extends Struct {
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
 
+/** @name Channel */
+export interface Channel extends Struct {
+  readonly owner: ChannelOwner;
+  readonly videos: Vec<VideoId>;
+  readonly playlists: Vec<PlaylistId>;
+  readonly series: Vec<SeriesId>;
+  readonly is_censored: bool;
+  readonly reward_account: Option<AccountId>;
+}
+
+/** @name ChannelCategory */
+export interface ChannelCategory extends Struct {}
+
+/** @name ChannelCategoryCreationParameters */
+export interface ChannelCategoryCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
+/** @name ChannelCategoryId */
+export interface ChannelCategoryId extends u64 {}
+
+/** @name ChannelCategoryUpdateParameters */
+export interface ChannelCategoryUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
+}
+
+/** @name ChannelCreationParameters */
+export interface ChannelCreationParameters extends Struct {
+  readonly assets: Vec<NewAsset>;
+  readonly meta: Bytes;
+  readonly reward_account: Option<AccountId>;
+}
+
+/** @name ChannelId */
+export interface ChannelId extends u64 {}
+
+/** @name ChannelOwner */
+export interface ChannelOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+  readonly asCurators: CuratorGroupId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+}
+
+/** @name ChannelOwnershipTransferRequest */
+export interface ChannelOwnershipTransferRequest extends Struct {
+  readonly channel_id: ChannelId;
+  readonly new_owner: ChannelOwner;
+  readonly payment: u128;
+  readonly new_reward_account: Option<AccountId>;
+}
+
+/** @name ChannelOwnershipTransferRequestId */
+export interface ChannelOwnershipTransferRequestId extends u64 {}
+
+/** @name ChannelUpdateParameters */
+export interface ChannelUpdateParameters extends Struct {
+  readonly assets: Option<Vec<NewAsset>>;
+  readonly new_meta: Option<Bytes>;
+  readonly reward_account: Option<Option<AccountId>>;
+}
+
 /** @name ConstitutionInfo */
 export interface ConstitutionInfo extends Struct {
   readonly text_hash: Hash;
@@ -349,70 +413,6 @@ export interface GeneralProposalParameters extends Struct {
   readonly exact_execution_block: Option<u32>;
 }
 
-/** @name Channel */
-export interface Channel extends Struct {
-  readonly owner: ChannelOwner;
-  readonly videos: Vec<VideoId>;
-  readonly playlists: Vec<PlaylistId>;
-  readonly series: Vec<SeriesId>;
-  readonly is_censored: bool;
-  readonly reward_account: Option<AccountId>;
-}
-
-/** @name ChannelCategory */
-export interface ChannelCategory extends Struct {}
-
-/** @name ChannelCategoryCreationParameters */
-export interface ChannelCategoryCreationParameters extends Struct {
-  readonly meta: Bytes;
-}
-
-/** @name ChannelCategoryId */
-export interface ChannelCategoryId extends u64 {}
-
-/** @name ChannelCategoryUpdateParameters */
-export interface ChannelCategoryUpdateParameters extends Struct {
-  readonly new_meta: Bytes;
-}
-
-/** @name ChannelCreationParameters */
-export interface ChannelCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
-  readonly meta: Bytes;
-  readonly reward_account: Option<AccountId>;
-}
-
-/** @name ChannelId */
-export interface ChannelId extends u64 {}
-
-/** @name ChannelOwner */
-export interface ChannelOwner extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isCurators: boolean;
-  readonly asCurators: CuratorGroupId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
-}
-
-/** @name ChannelOwnershipTransferRequest */
-export interface ChannelOwnershipTransferRequest extends Struct {
-  readonly channel_id: ChannelId;
-  readonly new_owner: ChannelOwner;
-  readonly payment: u128;
-  readonly new_reward_account: Option<AccountId>;
-}
-
-/** @name ChannelOwnershipTransferRequestId */
-export interface ChannelOwnershipTransferRequestId extends u64 {}
-
-/** @name ChannelUpdateParameters */
-export interface ChannelUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
-  readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<AccountId>>;
-}
-
 /** @name InputValidationLengthConstraint */
 export interface InputValidationLengthConstraint extends Struct {
   readonly min: u16;
@@ -508,14 +508,17 @@ export interface OptionResult extends Struct {
 }
 
 /** @name OracleJudgment */
-export interface OracleJudgment extends Enum {
+export interface OracleJudgment extends BTreeMap<EntryId, OracleWorkEntryJudgment> {}
+
+/** @name OracleWorkEntryJudgment */
+export interface OracleWorkEntryJudgment extends Enum {
   readonly isWinner: boolean;
-  readonly asWinner: OracleJudgment_Winner;
+  readonly asWinner: OracleWorkEntryJudgment_Winner;
   readonly isRejected: boolean;
 }
 
-/** @name OracleJudgment_Winner */
-export interface OracleJudgment_Winner extends Struct {
+/** @name OracleWorkEntryJudgment_Winner */
+export interface OracleWorkEntryJudgment_Winner extends Struct {
   readonly reward: u128;
 }
 
