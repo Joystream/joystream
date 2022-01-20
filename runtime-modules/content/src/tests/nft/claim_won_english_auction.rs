@@ -1,5 +1,8 @@
 #![cfg(test)]
-
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -12,12 +15,14 @@ fn claim_won_english_auction() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -38,8 +43,8 @@ fn claim_won_english_auction() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -47,11 +52,11 @@ fn claim_won_english_auction() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -67,7 +72,7 @@ fn claim_won_english_auction() {
 
         // Claim won english auction
         assert_ok!(Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         ));
@@ -83,15 +88,13 @@ fn claim_won_english_auction() {
             })
         ));
 
-        let claim_won_english_auction_event = get_test_event(RawEvent::EnglishAuctionCompleted(
-            SECOND_MEMBER_ID,
-            video_id,
-        ));
-
         // Last event checked
         assert_event(
-            claim_won_english_auction_event,
-            number_of_events_before_call + 3,
+            MetaEvent::content(RawEvent::EnglishAuctionCompleted(
+                SECOND_MEMBER_ID,
+                video_id,
+            )),
+            number_of_events_before_call + 1,
         );
     })
 }
@@ -104,12 +107,14 @@ fn claim_won_english_auction_cannot_be_completed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -130,8 +135,8 @@ fn claim_won_english_auction_cannot_be_completed() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -139,11 +144,11 @@ fn claim_won_english_auction_cannot_be_completed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -151,7 +156,7 @@ fn claim_won_english_auction_cannot_be_completed() {
 
         // Make an attempt to claim won english auction if it did not expire yet
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -172,12 +177,14 @@ fn claim_won_english_auction_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -198,8 +205,8 @@ fn claim_won_english_auction_auth_failed() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -207,11 +214,11 @@ fn claim_won_english_auction_auth_failed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -222,8 +229,8 @@ fn claim_won_english_auction_auth_failed() {
 
         // Make an attempt to claim won english auction with wrong credentials
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            UNKNOWN_ID,
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -245,7 +252,7 @@ fn claim_won_english_auction_video_does_not_exist() {
 
         // Make an attempt to claim won english auction which corresponding video does not exist
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -266,11 +273,13 @@ fn claim_won_english_auction_nft_is_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to claim won english auction for nft which is not issued yet
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -291,12 +300,14 @@ fn claim_won_english_auction_not_in_auction_state() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -305,7 +316,7 @@ fn claim_won_english_auction_not_in_auction_state() {
 
         // Make an attempt to claim won english auction for nft which is not in auction state
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -326,12 +337,14 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -351,8 +364,8 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -360,11 +373,11 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ORIGIN, bid);
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -372,7 +385,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 
         // Make an attempt to claim won english auction for nft which is not in english auction state
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -393,12 +406,14 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -419,8 +434,8 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -430,7 +445,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
 
         // Make an attempt to claim won english auction if last bid does not exist
         let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
