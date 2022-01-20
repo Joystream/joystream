@@ -11,4 +11,4 @@ mod offer_nft;
 mod pick_open_auction_winner;
 mod sell_nft;
 mod sling_nft_back;
-// mod start_nft_auction;
+mod start_nft_auction;

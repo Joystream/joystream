@@ -1,5 +1,8 @@
 #![cfg(test)]
-
+use crate::tests::fixtures::{
+    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
+    increase_account_balance_helper,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -13,12 +16,14 @@ fn start_nft_auction() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -34,8 +39,8 @@ fn start_nft_auction() {
 
         // Start nft auction
         assert_ok!(Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         ));
@@ -57,14 +62,15 @@ fn start_nft_auction() {
             }) if auction == created_auction
         ));
 
-        let nft_auction_started_event = get_test_event(RawEvent::AuctionStarted(
-            ContentActor::Member(FIRST_MEMBER_ID),
-            video_id,
-            auction_params,
-        ));
-
         // Last event checked
-        assert_event(nft_auction_started_event, number_of_events_before_call + 1);
+        assert_event(
+            MetaEvent::content(RawEvent::AuctionStarted(
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                auction_params,
+            )),
+            number_of_events_before_call + 1,
+        );
     })
 }
 
@@ -80,8 +86,8 @@ fn start_nft_auction_video_does_not_exist() {
 
         // Make an attempt to start nft auction which corresponding video does not exist yet
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -99,14 +105,16 @@ fn start_nft_auction_not_issued() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction for nft which is not issued yet
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -124,12 +132,14 @@ fn start_nft_auction_auth_failed() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -140,8 +150,8 @@ fn start_nft_auction_auth_failed() {
 
         // Make an attempt to start nft auction with wrong credentials
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(UNKNOWN_ID),
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -159,12 +169,14 @@ fn start_nft_auction_not_authorized() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -175,8 +187,8 @@ fn start_nft_auction_not_authorized() {
 
         // Make an attempt to start nft auction if actor is not authorized
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(SECOND_MEMBER_ID),
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -194,12 +206,14 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -208,9 +222,9 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
@@ -219,8 +233,8 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         // Make an attempt to start nft auction if nft transaction status is not idle
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -238,12 +252,14 @@ fn start_nft_auction_invalid_params() {
 
         let video_id = NextVideoId::<Test>::get();
 
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             None,
             b"metablob".to_vec(),
@@ -263,8 +279,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -288,8 +304,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -313,8 +329,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -338,8 +354,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -364,8 +380,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -390,8 +406,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -417,8 +433,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -444,8 +460,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -471,8 +487,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -498,8 +514,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -525,8 +541,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -550,8 +566,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -579,8 +595,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -606,8 +622,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -631,8 +647,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
@@ -661,8 +677,8 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
         );
