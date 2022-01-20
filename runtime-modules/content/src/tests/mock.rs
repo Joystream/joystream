@@ -712,7 +712,7 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 // }
 
 /// Get good params for open auction
-pub fn _get_open_auction_params(
+pub fn get_open_auction_params(
 ) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
     AuctionParams {
         starting_price: Content::min_starting_price(),
