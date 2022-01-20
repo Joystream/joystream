@@ -54,7 +54,17 @@ async function initWorkingGroups(store: DatabaseManager) {
 }
 
 async function initMembers(store: DatabaseManager) {
-  for (const member of members) {
+  for (const obj of members) {
+    // Casting for empty members array by default
+    const member = obj as {
+      member_id: number
+      root_account: string
+      controller_account: string
+      handle: string
+      about: string
+      avatar_uri: string
+    }
+
     await createNewMember(
       store,
       new Date(0),
