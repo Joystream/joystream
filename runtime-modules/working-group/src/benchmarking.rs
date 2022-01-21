@@ -796,6 +796,19 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, current_budget, None).into());
     }
 
+    fund_working_group_budget {
+        let amount: BalanceOf<T> = 100u32.into();
+
+        let (account_id, member_id) = member_funded_account::<T, I>("member", 0);
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    verify {
+        assert_eq!(WorkingGroup::<T, I>::budget(), amount, "Budget not updated");
+        assert_last_event::<T, I>(
+            RawEvent::FundWorkingGroupBudget(member_id, amount, Vec::new()).into()
+        );
+    }
+
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     update_reward_amount {
@@ -1083,6 +1096,13 @@ mod tests {
     fn test_on_inintialize_leaving() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_on_initialize_leaving::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_fund_working_group_budget() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_fund_working_group_budget::<Test>());
         });
     }
 }

@@ -1193,14 +1193,14 @@ decl_module! {
             amount: BalanceOf<T>,
             rationale: Vec<u8>,
         ) {
-            let member_account_id =
+            let account_id =
                 T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
             let wg_budget = Self::budget();
 
             ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
             ensure!(
-                Balances::<T>::can_slash(&member_account_id, amount),
+                Balances::<T>::can_slash(&account_id, amount),
                 Error::<T, I>::InsufficientTokensForFunding
             );
 
@@ -1209,6 +1209,8 @@ decl_module! {
             //
 
             Self::set_working_group_budget(wg_budget.saturating_add(amount));
+
+            let _ = Balances::<T>::slash(&account_id, amount);
 
             Self::deposit_event(
                 RawEvent::FundWorkingGroupBudget(

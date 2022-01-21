@@ -2635,6 +2635,11 @@ fn fund_wg_budget_succeeded() {
             .with_rationale(rationale.clone())
             .call_and_assert(Ok(()));
 
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_budget - amount
+        );
+
         EventFixture::assert_last_crate_event(RawEvent::FundWorkingGroupBudget(
             member_id, amount, rationale,
         ));
