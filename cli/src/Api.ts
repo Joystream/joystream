@@ -34,6 +34,7 @@ import {
 import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 import QueryNodeApi from './QueryNodeApi'
 import { MembershipFieldsFragment } from './graphql/generated/queries'
+import { blake2AsHex } from '@polkadot/util-crypto'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -166,8 +167,8 @@ export default class Api {
 
     return entries.map(([memberId, membership]) => ({
       id: memberId,
-      name: memberQnDataById.get(memberId.toString())?.metadata.name,
       handle: memberQnDataById.get(memberId.toString())?.handle,
+      meta: memberQnDataById.get(memberId.toString())?.metadata,
       membership,
     }))
   }
@@ -452,7 +453,13 @@ export default class Api {
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {
-    const status = await this.getOriginalApi().query.members.stakingAccountIdMemberStatus(account)
+    const status = await this._api.query.members.stakingAccountIdMemberStatus(account)
     return status.isEmpty ? null : status
+  }
+
+  async isHandleTaken(handle: string): Promise<boolean> {
+    const handleHash = blake2AsHex(handle)
+    const existingMeber = await this._api.query.members.memberIdByHandleHash(handleHash)
+    return !existingMeber.isEmpty
   }
 }

@@ -17,6 +17,7 @@ import {
   IChannelCategoryMetadata,
 } from '@joystream/metadata-protobuf'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
+import { MembershipFieldsFragment } from './graphql/generated/queries'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -104,7 +105,7 @@ export type OpeningDetails = {
 // Extended membership information (including optional query node data)
 export type MemberDetails = {
   id: MemberId
-  name?: string | null
+  meta?: MembershipFieldsFragment['metadata']
   handle?: string
   membership: Membership
 }

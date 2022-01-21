@@ -3,8 +3,10 @@ import { flags } from '@oclif/command'
 import { IMembershipMetadata, MembershipMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
 import chalk from 'chalk'
+import { formatBalance } from '@polkadot/util'
+import ExitCodes from '../../ExitCodes'
 
-export default class MembershipBuy extends AccountsCommandBase {
+export default class MembershipBuyCommand extends AccountsCommandBase {
   static description = 'Buy / register a new membership on the Joystream platform.'
   static aliases = ['membership:create', 'membership:register']
   static flags = {
@@ -40,22 +42,33 @@ export default class MembershipBuy extends AccountsCommandBase {
 
   async run(): Promise<void> {
     const api = this.getOriginalApi()
-    let { handle, name, avatarUri, about, controllerKey, rootKey } = this.parse(MembershipBuy).flags
+    let { handle, name, avatarUri, about, controllerKey, rootKey, senderKey } = this.parse(MembershipBuyCommand).flags
+
+    if (await this.getApi().isHandleTaken(handle)) {
+      this.error(`Provided handle (${chalk.magentaBright(handle)}) is already taken!`, { exit: ExitCodes.InvalidInput })
+    }
+
     if (!controllerKey) {
       controllerKey = await this.promptForAnyAddress('Choose member controller key')
     }
     if (!rootKey) {
       rootKey = await this.promptForAnyAddress('Choose member root key')
     }
-    const senderKey = this.isKeyAvailable(controllerKey)
-      ? controllerKey
-      : await this.promptForAccount('Choose tx sender key')
+    senderKey =
+      senderKey ??
+      (this.isKeyAvailable(controllerKey) ? controllerKey : await this.promptForAccount('Choose tx sender key'))
 
     const metadata: IMembershipMetadata = {
       name,
       about,
       avatarUri,
     }
+    const membershipPrice = await api.query.members.membershipPrice()
+    this.warn(
+      `Buying membership will cost additional ${chalk.cyanBright(
+        formatBalance(membershipPrice)
+      )} on top of the regular transaction fee.`
+    )
     this.jsonPrettyPrint(JSON.stringify({ rootKey, controllerKey, senderKey, handle, metadata }))
     await this.requireConfirmation('Do you confirm the provided input?')
 
@@ -69,7 +82,8 @@ export default class MembershipBuy extends AccountsCommandBase {
       })
     )
 
-    const membeId = this.getEvent(result, 'members', 'MembershipBought').data[0]
-    this.log(chalk.green(`Membership with id ${chalk.cyanBright(membeId.toString())} successfully created!`))
+    const memberId = this.getEvent(result, 'members', 'MembershipBought').data[0]
+    this.log(chalk.green(`Membership with id ${chalk.cyanBright(memberId.toString())} successfully created!`))
+    this.output(memberId.toString())
   }
 }

@@ -18,7 +18,11 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
     }),
   }
 
-  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<MemberDetails> {
+  async getRequiredMemberContext(
+    useSelected = false,
+    allowedIds?: MemberId[],
+    accountType: 'controller' | 'root' = 'controller'
+  ): Promise<MemberDetails> {
     const flags = this.parse(this.constructor as typeof MembershipsCommandBase).flags
 
     if (
@@ -29,7 +33,10 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
       return this.selectedMember
     }
 
-    if (flags.useMemberId && (!allowedIds || allowedIds.some((id) => id.toNumber() === flags.useMemberId))) {
+    if (
+      flags.useMemberId !== undefined &&
+      (!allowedIds || allowedIds.some((id) => id.toNumber() === flags.useMemberId))
+    ) {
       this.selectedMember = await this.getApi().expectedMemberDetailsById(flags.useMemberId)
       return this.selectedMember
     }
@@ -38,12 +45,18 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
       ? await this.getApi().membersDetailsByIds(allowedIds)
       : await this.getApi().allMembersDetails()
     const availableMemberships = await Promise.all(
-      membersDetails.filter((m) => this.isKeyAvailable(m.membership.controller_account.toString()))
+      membersDetails.filter((m) =>
+        this.isKeyAvailable(
+          accountType === 'controller'
+            ? m.membership.controller_account.toString()
+            : m.membership.root_account.toString()
+        )
+      )
     )
 
     if (!availableMemberships.length) {
       this.error(
-        `No ${allowedIds ? 'allowed ' : ''}member controller key available!` +
+        `No ${allowedIds ? 'allowed ' : ''}member ${accountType} key available!` +
           (allowedIds ? ` Allowed members: ${allowedIds.join(', ')}.` : ''),
         {
           exit: ExitCodes.AccessDenied,
@@ -59,7 +72,7 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
   }
 
   async promptForMember(availableMemberships: MemberDetails[], message = 'Choose a member'): Promise<MemberDetails> {
-    const memberIndex = await this.simplePrompt({
+    const memberIndex = await this.simplePrompt<number>({
       type: 'list',
       message,
       choices: availableMemberships.map((m, i) => ({

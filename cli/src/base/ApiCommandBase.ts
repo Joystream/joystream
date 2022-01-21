@@ -503,6 +503,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async sendAndFollowTx(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+    this.log(
+      chalk.magentaBright(
+        `\nSending ${tx.method.section}.${tx.method.method} extrinsic from ${
+          account.meta.name ? account.meta.name : account.address
+        }...`
+      )
+    )
+    this.log('Tx params:', this.humanize(tx.args))
+
     // Calculate fee and ask for confirmation
     const fee = await this.getApi().estimateFee(account, tx)
 
@@ -549,12 +558,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: Method,
     params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : []
   ): Promise<SubmittableResult> {
-    this.log(
-      chalk.magentaBright(
-        `\nSending ${module}.${method} extrinsic from ${account.meta.name ? account.meta.name : account.address}...`
-      )
-    )
-    this.log('Tx params:', this.humanize(params))
+    // TODO: Replace all usages with "sendAndFollowTx"
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return this.sendAndFollowTx(account, tx)
   }
