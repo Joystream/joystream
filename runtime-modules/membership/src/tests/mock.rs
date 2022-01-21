@@ -228,6 +228,10 @@ impl working_group::WeightInfo for Weights {
     fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
+
+    fn fund_working_group_budget() -> Weight {
+        0
+    }
 }
 
 // impl WeightInfo for () {

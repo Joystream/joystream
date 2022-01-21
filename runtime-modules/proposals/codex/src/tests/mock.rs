@@ -469,6 +469,9 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn fund_working_group_budget() -> Weight {
+        0
+    }
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {

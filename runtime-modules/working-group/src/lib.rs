@@ -92,6 +92,7 @@ pub trait WeightInfo {
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
     fn leave_role(i: u32) -> Weight;
+    fn fund_working_group_budget() -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -1177,7 +1178,6 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
-        // TODO: Weight
         /// Fund working group by a member.
         /// <weight>
         ///
@@ -1186,7 +1186,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = 100000]
+        #[weight = WeightInfoWorkingGroup::<T, I>::fund_working_group_budget()]
         pub fn fund_working_group_budget(
             origin,
             member_id: MemberId<T>,
