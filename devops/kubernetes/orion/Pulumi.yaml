@@ -21,3 +21,6 @@ template:
     orionImage:
       description: The Orion image to use for running the orion node
       default: joystream/orion:latest
+    contentSecret:
+      description: Orion featured content secret
+      default: password123

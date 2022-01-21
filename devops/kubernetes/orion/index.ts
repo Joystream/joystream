@@ -13,6 +13,7 @@ const name = 'orion'
 const queryNodeHost = config.require('queryNodeEndpoint')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const orionImage = config.get('orionImage') || `joystream/orion:latest`
+const contentSecret = config.get('contentSecret') || `password123`
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
 
@@ -91,7 +92,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 },
                 {
                   name: 'ORION_FEATURED_CONTENT_SECRET',
-                  value: 'password123',
+                  value: contentSecret,
                 },
                 {
                   name: 'ORION_QUERY_NODE_URL',
