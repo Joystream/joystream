@@ -29,6 +29,7 @@ impl EventFixture {
             OpeningType,
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
+            u64,
             DefaultInstance,
         >,
     ) {
@@ -58,6 +59,7 @@ impl EventFixture {
             OpeningType,
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
+            u64,
             DefaultInstance,
         >,
     ) {
@@ -1240,6 +1242,63 @@ impl UpdateWorkerStorageFixture {
             let storage = TestWorkingGroup::worker_storage(self.worker_id);
 
             assert_eq!(storage, self.storage_field);
+        }
+    }
+}
+
+pub struct FundWorkingGroupBudgetFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    amount: u64,
+    rationale: Vec<u8>,
+}
+
+impl Default for FundWorkingGroupBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            member_id: 1,
+            amount: 100,
+            rationale: Vec::new(),
+        }
+    }
+}
+
+impl FundWorkingGroupBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingGroup::budget();
+
+        let actual_result = TestWorkingGroup::fund_working_group_budget(
+            self.origin.clone().into(),
+            self.member_id,
+            self.amount,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingGroup::budget();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget + self.amount);
+        } else {
+            assert_eq!(old_budget, new_budget);
         }
     }
 }

@@ -63,6 +63,7 @@ use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
+type Balances<T> = balances::Module<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
 
@@ -137,15 +138,16 @@ decl_event!(
     /// _Group_ events
     pub enum Event<T, I = DefaultInstance>
     where
-       OpeningId = OpeningId,
-       ApplicationId = ApplicationId,
-       ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
-       WorkerId = WorkerId<T>,
-       <T as frame_system::Trait>::AccountId,
-       Balance = BalanceOf<T>,
-       OpeningType = OpeningType,
-       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
-       ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
+        OpeningId = OpeningId,
+        ApplicationId = ApplicationId,
+        ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
+        WorkerId = WorkerId<T>,
+        <T as frame_system::Trait>::AccountId,
+        Balance = BalanceOf<T>,
+        OpeningType = OpeningType,
+        StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
+        MemberId = MemberId<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -288,6 +290,13 @@ decl_event!(
         /// - Id of the worker.
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
+
+        /// Update working group budget
+        /// Params:
+        /// - Member ID
+        /// - Amount of balance
+        /// - Rationale
+        FundWorkingGroupBudget(MemberId, Balance, Vec<u8>),
     }
 );
 
@@ -1166,6 +1175,48 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
+        }
+
+        // TODO: Weight
+        /// Fund working group by a member.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` Doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = 100000]
+        pub fn fund_working_group_budget(
+            origin,
+            member_id: MemberId<T>,
+            amount: BalanceOf<T>,
+            rationale: Vec<u8>,
+        ) {
+            let member_account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let wg_budget = Self::budget();
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
+            ensure!(
+                Balances::<T>::can_slash(&member_account_id, amount),
+                Error::<T, I>::InsufficientTokensForFunding
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::set_working_group_budget(wg_budget.saturating_add(amount));
+
+            Self::deposit_event(
+                RawEvent::FundWorkingGroupBudget(
+                    member_id,
+                    amount,
+                    rationale
+                )
+            );
         }
     }
 }
