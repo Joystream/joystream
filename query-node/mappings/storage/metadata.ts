@@ -21,6 +21,7 @@ import {
   GeographicalArea as GeographicalAreaProto,
 } from '@joystream/metadata-protobuf'
 import { isSet, isEmptyObject, isValidCountryCode, isValidSubdivisionCode } from '@joystream/metadata-protobuf/utils'
+import _ from 'lodash'
 
 const protobufContinentToGraphlContinent: { [key in GeographicalAreaProto.Continent]: Continent } = {
   [GeographicalAreaProto.Continent.AF]: Continent.AF,
@@ -150,43 +151,42 @@ export async function processDistributionBucketFamilyMetadata(
     await Promise.all(metadataEntity.areas?.map((a) => store.remove<DistributionBucketFamilyGeographicArea>(a)) || [])
     // Save new areas
     await Promise.all(
-      meta.areas
-        .filter((a) => !isEmptyObject(a))
-        .map(async (a) => {
-          const area = new DistributionBucketFamilyGeographicArea({
-            distributionBucketFamilyMetadata: metadataEntity,
-          })
-
-          if (a.continent) {
-            const continent = new GeographicalAreaContinent()
-            continent.code = protobufContinentToGraphlContinent[a.continent]
-            if (!continent.code) {
-              return invalidMetadata(`Unrecognized continent enum variant: ${a.continent}`)
-            }
-            area.id = `${metadataEntity.id}-C-${continent.code}`
-            area.area = continent
-          } else if (a.countryCode) {
-            if (!isValidCountryCode(a.countryCode)) {
-              return invalidMetadata(`Invalid country code: ${a.countryCode}`)
-            }
-            const country = new GeographicalAreaCountry()
-            country.code = a.countryCode
-            area.id = `${metadataEntity.id}-c-${country.code}`
-            area.area = country
-          } else if (a.subdivisionCode) {
-            if (!isValidSubdivisionCode(a.subdivisionCode)) {
-              return invalidMetadata(`Invalid subdivision code: ${a.subdivisionCode}`)
-            }
-            const subdivision = new GeographicalAreaSubdivistion()
-            subdivision.code = a.subdivisionCode
-            area.id = `${metadataEntity.id}-s-${subdivision.code}`
-            area.area = subdivision
-          } else {
-            return
-          }
-
-          await store.save<DistributionBucketFamilyGeographicArea>(area)
+      _.uniqWith(
+        meta.areas.filter((a) => !isEmptyObject(a)),
+        _.isEqual
+      ).map(async (a, i) => {
+        const area = new DistributionBucketFamilyGeographicArea({
+          id: `${metadataEntity.id}-${i}`,
+          distributionBucketFamilyMetadata: metadataEntity,
         })
+
+        if (a.continent) {
+          const continent = new GeographicalAreaContinent()
+          continent.code = protobufContinentToGraphlContinent[a.continent]
+          if (!continent.code) {
+            return invalidMetadata(`Unrecognized continent enum variant: ${a.continent}`)
+          }
+          area.area = continent
+        } else if (a.countryCode) {
+          if (!isValidCountryCode(a.countryCode)) {
+            return invalidMetadata(`Invalid country code: ${a.countryCode}`)
+          }
+          const country = new GeographicalAreaCountry()
+          country.code = a.countryCode
+          area.area = country
+        } else if (a.subdivisionCode) {
+          if (!isValidSubdivisionCode(a.subdivisionCode)) {
+            return invalidMetadata(`Invalid subdivision code: ${a.subdivisionCode}`)
+          }
+          const subdivision = new GeographicalAreaSubdivistion()
+          subdivision.code = a.subdivisionCode
+          area.area = subdivision
+        } else {
+          return
+        }
+
+        await store.save<DistributionBucketFamilyGeographicArea>(area)
+      })
     )
   }
 
