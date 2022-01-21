@@ -13,7 +13,7 @@ const name = 'orion'
 const queryNodeHost = config.require('queryNodeEndpoint')
 const lbReady = config.get('isLoadBalancerReady') === 'true'
 const orionImage = config.get('orionImage') || `joystream/orion:latest`
-const contentSecret = config.get('contentSecret') || `password123`
+const contentSecret = config.require('contentSecret')
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
 

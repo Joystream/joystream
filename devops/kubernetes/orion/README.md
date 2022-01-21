@@ -39,6 +39,7 @@ After cloning this repo, from this working directory, run these commands:
    ```bash
    $ pulumi config set-all --plaintext queryNodeEndpoint='http://host.minikube.internal:8081/graphql' \
     --plaintext isMinikube=true --plaintext orionImage='joystream/orion:latest' \
+    --plaintext contentSecret='password123' \
     --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user
    ```
 
@@ -48,7 +49,7 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi config set isMinikube false
    ```
 
-   You can also set the `storage` and `contentSecret` config parameters if required. Check `Pulumi.yaml` file for additional parameters.
+   You can also set the `storage` config parameter if required. Check `Pulumi.yaml` file for additional parameters.
 
 1. Stand up the EKS cluster:
 
