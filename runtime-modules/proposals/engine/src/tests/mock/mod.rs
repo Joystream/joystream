@@ -541,6 +541,9 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn fund_council_budget() -> Weight {
+        0
+    }
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {

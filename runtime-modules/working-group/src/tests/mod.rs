@@ -2640,7 +2640,7 @@ fn fund_wg_budget_succeeded() {
             initial_budget - amount
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::FundWorkingGroupBudget(
+        EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
             member_id, amount, rationale,
         ));
     });

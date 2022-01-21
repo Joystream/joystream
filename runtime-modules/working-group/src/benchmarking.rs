@@ -805,7 +805,7 @@ benchmarks_instance! {
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), amount, "Budget not updated");
         assert_last_event::<T, I>(
-            RawEvent::FundWorkingGroupBudget(member_id, amount, Vec::new()).into()
+            RawEvent::WorkingGroupBudgetFunded(member_id, amount, Vec::new()).into()
         );
     }
 

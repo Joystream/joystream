@@ -614,6 +614,9 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn fund_council_budget() -> Weight {
+        0
+    }
 }
 
 pub type ReferendumInstance = referendum::Instance0;

@@ -22,6 +22,7 @@
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
 //! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working group status.
 //! - [spend_from_budget](./struct.Module.html#method.spend_from_budget) - Spend tokens from the group budget.
+//! - [fund_working_group_budget](./struct.Module.html#method.fund_working_group_budget) - Fund the group budget by a member.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -292,12 +293,12 @@ decl_event!(
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
 
-        /// Update working group budget
+        /// Fund the working group budget.
         /// Params:
         /// - Member ID
         /// - Amount of balance
         /// - Rationale
-        FundWorkingGroupBudget(MemberId, Balance, Vec<u8>),
+        WorkingGroupBudgetFunded(MemberId, Balance, Vec<u8>),
     }
 );
 
@@ -1178,7 +1179,7 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
-        /// Fund working group by a member.
+        /// Fund working group budget by a member.
         /// <weight>
         ///
         /// ## Weight
@@ -1213,7 +1214,7 @@ decl_module! {
             let _ = Balances::<T>::slash(&account_id, amount);
 
             Self::deposit_event(
-                RawEvent::FundWorkingGroupBudget(
+                RawEvent::WorkingGroupBudgetFunded(
                     member_id,
                     amount,
                     rationale

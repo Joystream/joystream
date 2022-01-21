@@ -735,6 +735,19 @@ benchmarks! {
         );
         assert_last_event::<T>(RawEvent::BudgetRefillPlanned(One::one()).into());
     }
+
+    fund_council_budget {
+        let amount: Balance<T> = 100u32.into();
+
+        let (account_id, member_id) = member_funded_account::<T>(0);
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    verify {
+        assert_eq!(Council::<T>::budget(), amount, "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::CouncilBudgetFunded(member_id, amount, Vec::new()).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -823,6 +836,14 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(test_benchmark_funding_request::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_fund_council_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_fund_council_budget::<Runtime>());
         })
     }
 }

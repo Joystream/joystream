@@ -7,10 +7,13 @@ use super::{
 use crate::mock::*;
 use common::council::CouncilBudgetManager;
 use common::council::CouncilOriginValidator;
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
 use frame_support::StorageValue;
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
+
+use crate::Balances;
 
 type Mocks = InstanceMocks<Runtime>;
 type MockUtils = InstanceMockUtils<Runtime>;
@@ -1803,5 +1806,83 @@ fn test_council_budget_manager_works_correctlyl() {
             <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
             new_budget
         );
+    });
+}
+
+#[test]
+fn fund_council_budget_succeeded() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        run_to_block(1);
+
+        let account_id = 1;
+        let member_id = 1;
+        let amount = 100;
+        let initial_budget = 1000;
+        let rationale = b"text".to_vec();
+
+        let _ = Balances::<Runtime>::deposit_creating(&account_id, initial_budget);
+
+        <Council as CouncilBudgetManager<u64>>::set_budget(initial_budget);
+
+        FundCouncilBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .with_rationale(rationale.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&account_id),
+            initial_budget - amount
+        );
+
+        EventFixture::assert_last_crate_event(crate::RawEvent::CouncilBudgetFunded(
+            member_id, amount, rationale,
+        ));
+    });
+}
+
+#[test]
+fn fund_council_budget_failed_with_invalid_origin() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        FundCouncilBudgetFixture::default()
+            .with_origin(RawOrigin::None.into())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn fund_council_budget_fails_with_insufficient_balance() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let amount = 100;
+
+        FundCouncilBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Runtime>::InsufficientTokensForFunding.into()));
+    });
+}
+
+#[test]
+fn fund_council_budget_fails_with_zero_amount() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let member_id = 1;
+        let amount = 0;
+
+        FundCouncilBudgetFixture::default()
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Runtime>::ZeroTokensFunding.into()));
     });
 }
