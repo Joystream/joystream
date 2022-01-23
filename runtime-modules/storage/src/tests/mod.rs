@@ -2621,6 +2621,76 @@ fn delete_dynamic_bags_succeeded() {
 }
 
 #[test]
+fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let deletion_prize_value = 77;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let distribution_buckets_number = 10;
+        let family_policy_number1 = 2;
+        let family_policy_number2 = 3;
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        let (family1, _) =
+            create_distribution_bucket_family_with_buckets(distribution_buckets_number);
+        let (family2, _) =
+            create_distribution_bucket_family_with_buckets(distribution_buckets_number);
+
+        let family_policy = BTreeMap::from_iter(vec![
+            (family1, family_policy_number1),
+            (family2, family_policy_number2),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(family_policy)
+            .call_and_assert(Ok(()));
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+                account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                prize: deletion_prize_value,
+            })
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::dynamic_bag(&dynamic_bag_id);
+
+        let total_distributed_buckets_number = family_policy_number1 + family_policy_number2;
+        assert_eq!(
+            bag.distributed_by.len(),
+            total_distributed_buckets_number as usize
+        );
+
+        let distributed_by_bag = bag.distributed_by.clone();
+        for distribution_bucket_id in &distributed_by_bag {
+            let bucket = Storage::distribution_bucket_by_family_id_by_index(
+                distribution_bucket_id.distribution_bucket_family_id,
+                distribution_bucket_id.distribution_bucket_index,
+            );
+
+            assert_eq!(bucket.assigned_bags, 1);
+        }
+
+        DeleteDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+
+        for distribution_bucket_id in &distributed_by_bag {
+            let bucket = Storage::distribution_bucket_by_family_id_by_index(
+                distribution_bucket_id.distribution_bucket_family_id,
+                distribution_bucket_id.distribution_bucket_index,
+            );
+
+            assert_eq!(bucket.assigned_bags, 0);
+        }
+    });
+}
+
+#[test]
 fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
@@ -3131,8 +3201,25 @@ fn create_dynamic_bag_succeeded() {
         run_to_block(starting_block);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let distribution_buckets_number = 10;
+        let family_policy_number1 = 2;
+        let family_policy_number2 = 3;
 
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        let (family1, _) =
+            create_distribution_bucket_family_with_buckets(distribution_buckets_number);
+        let (family2, _) =
+            create_distribution_bucket_family_with_buckets(distribution_buckets_number);
+
+        let family_policy = BTreeMap::from_iter(vec![
+            (family1, family_policy_number1),
+            (family2, family_policy_number2),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(family_policy)
+            .call_and_assert(Ok(()));
 
         let deletion_prize_value = 100;
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
@@ -3173,6 +3260,21 @@ fn create_dynamic_bag_succeeded() {
             bag.stored_by.len(),
             creation_policy.number_of_storage_buckets as usize
         );
+
+        let total_distributed_buckets_number = family_policy_number1 + family_policy_number2;
+        assert_eq!(
+            bag.distributed_by.len(),
+            total_distributed_buckets_number as usize
+        );
+
+        for distribution_bucket_id in &bag.distributed_by {
+            let bucket = Storage::distribution_bucket_by_family_id_by_index(
+                distribution_bucket_id.distribution_bucket_family_id,
+                distribution_bucket_id.distribution_bucket_index,
+            );
+
+            assert_eq!(bucket.assigned_bags, 1);
+        }
 
         assert_eq!(bag.deletion_prize.unwrap(), deletion_prize_value);
 
