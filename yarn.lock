@@ -3131,7 +3131,7 @@
     yaml-validator "^3.0.0"
 
 "@joystream/types@link:types":
-  version "0.17.0"
+  version "0.17.1"
   dependencies:
     "@polkadot/api" "5.9.1"
     "@polkadot/keyring" "7.3.1"
@@ -3142,7 +3142,7 @@
     lodash "^4.17.15"
     moment "^2.24.0"
 
-"@joystream/warthog@2.41.2", "@joystream/warthog@~2.41.2":
+"@joystream/warthog@2.41.2", "@joystream/warthog@^2.40.0":
   version "2.41.2"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.2.tgz#6d3cf5c977320d1c77be518e848e011a9699b22d"
   integrity sha512-1w6aT5P3xiI/HaTtqJrVj4Yp1/gxG8cGTeYgzlwr3iq8J11skwE4rLCHQucHfVueyBX49AaqWrhl+wI2ACqk4Q==
