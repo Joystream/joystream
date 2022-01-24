@@ -824,6 +824,26 @@ pub struct StorageBucketRecord<WorkerId, AccountId> {
 
     /// Defines limits for a bucket.
     pub voucher: Voucher,
+
+    /// Number of assigned bags.
+    pub assigned_bags: u64,
+}
+
+impl<WorkerId, AccountId> StorageBucketRecord<WorkerId, AccountId> {
+    // Increment the assigned bags number.
+    fn register_bag_assignment(&mut self) {
+        self.assigned_bags = self.assigned_bags.saturating_add(1);
+    }
+
+    // Decrement the assigned bags number.
+    fn unregister_bag_assignment(&mut self) {
+        self.assigned_bags = self.assigned_bags.saturating_sub(1);
+    }
+
+    // Checks the bag assignment number. Returns true if it equals zero.
+    fn no_bags_assigned(&self) -> bool {
+        self.assigned_bags == 0
+    }
 }
 
 // Helper-struct for the data object uploading.
@@ -1537,6 +1557,9 @@ decl_module! {
                 Error::<T>::CannotDeleteNonEmptyStorageBucket
             );
 
+            // Check that no assigned bags left.
+            ensure!(bucket.no_bags_assigned(), Error::<T>::StorageBucketIsBoundToBag);
+
             //
             // == MUTATION SAFE ==
             //
@@ -1716,6 +1739,7 @@ decl_module! {
                 operator_status,
                 accepting_new_bags,
                 voucher,
+                assigned_bags: 0,
             };
 
             let storage_bucket_id = Self::next_storage_bucket_id();
@@ -1772,6 +1796,9 @@ decl_module! {
                     OperationType::Decrease
                 );
             }
+
+            // Update bag counters.
+            Self::change_bag_assignments_for_storage_buckets(&add_buckets, &remove_buckets);
 
             Bags::<T>::mutate(&bag_id, |bag| {
                 bag.update_storage_buckets(&mut add_buckets.clone(), &remove_buckets);
@@ -2223,7 +2250,10 @@ decl_module! {
                 bag.update_distribution_buckets(&mut add_buckets_ids.clone(), &remove_buckets_ids);
             });
 
-            Self::change_bag_assignments(&add_buckets_ids, &remove_buckets_ids);
+            Self::change_bag_assignments_for_distribution_buckets(
+                &add_buckets_ids,
+                &remove_buckets_ids
+            );
 
             Self::deposit_event(
                 RawEvent::DistributionBucketsUpdatedForBag(
@@ -2657,7 +2687,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::remove(&bag_id);
 
-        Self::change_bag_assignments(&BTreeSet::new(), &deleted_dynamic_bag.distributed_by);
+        Self::change_bag_assignments_for_distribution_buckets(
+            &BTreeSet::new(),
+            &deleted_dynamic_bag.distributed_by,
+        );
+
+        Self::change_bag_assignments_for_storage_buckets(
+            &BTreeSet::new(),
+            &deleted_dynamic_bag.stored_by,
+        );
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(
             deletion_prize_account_id,
@@ -2708,6 +2746,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         //
         // == MUTATION SAFE ==
         //
+
         Self::create_dynamic_bag_inner(
             &dynamic_bag_id,
             &deletion_prize,
@@ -2757,10 +2796,6 @@ impl<T: Trait> Module<T> {
         storage_buckets: &BTreeSet<T::StorageBucketId>,
         distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
-        //
-        // = MUTATION SAFE =
-        //
-
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
         }
@@ -2776,7 +2811,12 @@ impl<T: Trait> Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
-        Self::change_bag_assignments(&distribution_buckets, &BTreeSet::new());
+        Self::change_bag_assignments_for_distribution_buckets(
+            &distribution_buckets,
+            &BTreeSet::new(),
+        );
+
+        Self::change_bag_assignments_for_storage_buckets(&storage_buckets, &BTreeSet::new());
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id.clone(),
@@ -3832,7 +3872,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Add and/or remove distribution buckets assignments to bags.
-    fn change_bag_assignments(
+    fn change_bag_assignments_for_distribution_buckets(
         add_buckets: &BTreeSet<DistributionBucketId<T>>,
         remove_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) {
@@ -3863,6 +3903,28 @@ impl<T: Trait> Module<T> {
                         bucket.unregister_bag_assignment();
                     },
                 )
+            }
+        }
+    }
+
+    // Add and/or remove storage buckets assignments to bags.
+    fn change_bag_assignments_for_storage_buckets(
+        add_buckets: &BTreeSet<T::StorageBucketId>,
+        remove_buckets: &BTreeSet<T::StorageBucketId>,
+    ) {
+        for bucket_id in add_buckets.iter() {
+            if StorageBucketById::<T>::contains_key(bucket_id) {
+                StorageBucketById::<T>::mutate(bucket_id, |bucket| {
+                    bucket.register_bag_assignment();
+                })
+            }
+        }
+
+        for bucket_id in remove_buckets.iter() {
+            if StorageBucketById::<T>::contains_key(bucket_id) {
+                StorageBucketById::<T>::mutate(bucket_id, |bucket| {
+                    bucket.unregister_bag_assignment();
+                })
             }
         }
     }

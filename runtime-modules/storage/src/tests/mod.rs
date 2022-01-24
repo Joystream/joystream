@@ -330,6 +330,49 @@ fn update_storage_buckets_for_bags_succeeded() {
 }
 
 #[test]
+fn update_storage_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_and_removing() {
+    build_test_externalities().execute_with(|| {
+        set_default_update_storage_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id: BagId<Test> = static_bag_id.into();
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets_ids = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets_ids.clone())
+            .call_and_assert(Ok(()));
+
+        // Add check
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.stored_by, add_buckets_ids);
+
+        let bucket = Storage::storage_bucket_by_id(&bucket_id);
+        assert_eq!(bucket.assigned_bags, 1);
+
+        // ******
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_remove_bucket_ids(add_buckets_ids.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.stored_by.len(), 0);
+
+        let bucket = Storage::storage_bucket_by_id(&bucket_id);
+        assert_eq!(bucket.assigned_bags, 0);
+    });
+}
+
+#[test]
 fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
@@ -2691,6 +2734,49 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
 }
 
 #[test]
+fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let deletion_prize_value = 77;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let storage_buckets_number = DefaultMemberDynamicBagNumberOfStorageBuckets::get();
+        create_storage_buckets(storage_buckets_number);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+                account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                prize: deletion_prize_value,
+            })
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::dynamic_bag(&dynamic_bag_id);
+
+        assert_eq!(bag.stored_by.len(), storage_buckets_number as usize);
+
+        let stored_by_bag = bag.stored_by.clone();
+        for bucket_id in &stored_by_bag {
+            let bucket = Storage::storage_bucket_by_id(bucket_id);
+
+            assert_eq!(bucket.assigned_bags, 1);
+        }
+
+        DeleteDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+
+        for bucket_id in &stored_by_bag {
+            let bucket = Storage::storage_bucket_by_id(bucket_id);
+
+            assert_eq!(bucket.assigned_bags, 0);
+        }
+    });
+}
+
+#[test]
 fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
@@ -2798,6 +2884,20 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .call_and_assert(Err(Error::<Test>::CannotDeleteNonEmptyStorageBucket.into()));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_fails_with_assigned_bag() {
+    build_test_externalities().execute_with(|| {
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
+
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::StorageBucketIsBoundToBag.into()));
     });
 }
 
