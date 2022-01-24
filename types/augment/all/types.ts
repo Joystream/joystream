@@ -97,6 +97,27 @@ export interface BountyCreationParameters extends Struct {
 /** @name BountyId */
 export interface BountyId extends u32 {}
 
+/** @name BountyMilestone */
+export interface BountyMilestone extends Enum {
+  readonly isCreated: boolean;
+  readonly asCreated: {
+    readonly created_at: u32;
+    readonly has_contributions: bool;
+  } & Struct;
+  readonly isBountyMaxFundingReached: boolean;
+  readonly asBountyMaxFundingReached: {
+    readonly max_funding_reached_at: u32;
+  } & Struct;
+  readonly isWorkSubmitted: boolean;
+  readonly asWorkSubmitted: {
+    readonly work_period_started_at: u32;
+  } & Struct;
+  readonly isJudgmentSubmitted: boolean;
+  readonly asJudgmentSubmitted: {
+    readonly successful_bounty: bool;
+  } & Struct;
+}
+
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
   readonly root_account: AccountId;
@@ -430,6 +451,14 @@ export interface InviteMembershipParameters extends Struct {
 
 /** @name IsCensored */
 export interface IsCensored extends bool {}
+
+/** @name JSBounty */
+export interface JSBounty extends Struct {
+  readonly creation_params: BountyCreationParameters;
+  readonly total_funding: u128;
+  readonly milestone: BountyMilestone;
+  readonly active_work_entry_count: u32;
+}
 
 /** @name LiaisonJudgement */
 export interface LiaisonJudgement extends Enum {

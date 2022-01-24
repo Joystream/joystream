@@ -57,8 +57,41 @@ export class Entry extends JoyStructDecorated({
   oracle_judgment_result: Option.with(OracleJudgment),
 }) {}
 
+export class BountyMilestone_Created extends JoyStructDecorated({
+  created_at: u32, // BlockNumber
+  has_contributions: bool,
+}) {}
+
+export class BountyMilestone_BountyMaxFundingReached extends JoyStructDecorated({
+  max_funding_reached_at: u32, // BlockNumber
+}) {}
+
+export class BountyMilestone_WorkSubmitted extends JoyStructDecorated({
+  work_period_started_at: u32, // BlockNumber
+}) {}
+
+export class BountyMilestone_JudgmentSubmitted extends JoyStructDecorated({
+  successful_bounty: bool,
+}) {}
+
+export class BountyMilestone extends JoyEnum({
+  Created: BountyMilestone_Created,
+  BountyMaxFundingReached: BountyMilestone_BountyMaxFundingReached,
+  WorkSubmitted: BountyMilestone_WorkSubmitted,
+  JudgmentSubmitted: BountyMilestone_JudgmentSubmitted,
+}) {}
+
+export class JSBounty extends JoyStructDecorated({
+  creation_params: BountyCreationParameters,
+  total_funding: u128,
+  milestone: BountyMilestone,
+  active_work_entry_count: u32,
+}) {}
+
 export const bountyTypes = {
   BountyId,
+  JSBounty,
+  BountyMilestone,
   EntryId,
   BountyActor,
   AssuranceContractType,

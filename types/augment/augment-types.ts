@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BitVec, Bool, Bytes, Compact, Data, I128, I16, I256, I32, I64, I8, Json, Null, Option, Raw, StorageKey, Text, Type, U128, U16, U256, U32, U64, U8, USize, Vec, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types';
-import type { ActorId, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, AssuranceContractType, BalanceKind, BlockAndTime, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwner, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ConstitutionInfo, ContentActor, ContentId, ContentParameters, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateOpeningParameters, CuratorGroup, CuratorGroupId, CuratorId, DAOId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entry, EntryId, EpisodeParemters, ExecutionFailed, ExecutionStatus, ExtendedPostId, FillOpeningParameters, ForumUserId, FundingRequestParameters, FundingType, FundingType_Limited, FundingType_Perpetual, GeneralProposalParameters, InputValidationLengthConstraint, InviteMembershipParameters, IsCensored, LiaisonJudgement, MaxNumber, MemberId, Membership, MemoText, ModeratorId, NewAsset, ObjectOwner, Opening, OpeningId, OpeningType, OptionResult, OracleJudgment, OracleJudgment_Winner, ParticipantId, Penalty, Person, PersonActor, PersonController, PersonCreationParameters, PersonId, PersonUpdateParameters, Playlist, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Poll, PollAlternative, PollInput, Post, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Reply, ReplyId, ReplyToDelete, RewardPaymentType, Season, SeasonParameters, Series, SeriesId, SeriesParameters, SetLeadParams, StakeParameters, StakePolicy, StakingAccountMemberBinding, StorageObjectOwner, StorageProviderId, TerminateRoleParameters, Thread, ThreadId, ThreadMode, ThreadOf, Title, UpdatedBody, UpdatedTitle, UploadingStatus, Url, Video, VideoCategory, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VotePower, VotingResults, Voucher, VoucherLimit, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
+import type { ActorId, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, AssuranceContractType, BalanceKind, BlockAndTime, BountyActor, BountyCreationParameters, BountyId, BountyMilestone, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwner, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ConstitutionInfo, ContentActor, ContentId, ContentParameters, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateOpeningParameters, CuratorGroup, CuratorGroupId, CuratorId, DAOId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entry, EntryId, EpisodeParemters, ExecutionFailed, ExecutionStatus, ExtendedPostId, FillOpeningParameters, ForumUserId, FundingRequestParameters, FundingType, FundingType_Limited, FundingType_Perpetual, GeneralProposalParameters, InputValidationLengthConstraint, InviteMembershipParameters, IsCensored, JSBounty, LiaisonJudgement, MaxNumber, MemberId, Membership, MemoText, ModeratorId, NewAsset, ObjectOwner, Opening, OpeningId, OpeningType, OptionResult, OracleJudgment, OracleJudgment_Winner, ParticipantId, Penalty, Person, PersonActor, PersonController, PersonCreationParameters, PersonId, PersonUpdateParameters, Playlist, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Poll, PollAlternative, PollInput, Post, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Reply, ReplyId, ReplyToDelete, RewardPaymentType, Season, SeasonParameters, Series, SeriesId, SeriesParameters, SetLeadParams, StakeParameters, StakePolicy, StakingAccountMemberBinding, StorageObjectOwner, StorageProviderId, TerminateRoleParameters, Thread, ThreadId, ThreadMode, ThreadOf, Title, UpdatedBody, UpdatedTitle, UploadingStatus, Url, Video, VideoCategory, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VotePower, VotingResults, Voucher, VoucherLimit, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
 import type { AssetApproval, AssetApprovalKey, AssetBalance, AssetDestroyWitness, AssetDetails, AssetMetadata, TAssetBalance, TAssetDepositBalance } from '@polkadot/types/interfaces/assets';
 import type { BlockAttestations, IncludedBlocks, MoreAttestations } from '@polkadot/types/interfaces/attestations';
 import type { RawAuraPreDigest } from '@polkadot/types/interfaces/aura';
@@ -311,6 +311,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<BountyCreationParameters>': Option<BountyCreationParameters>;
     'Option<BountyId>': Option<BountyId>;
     'Option<BountyIndex>': Option<BountyIndex>;
+    'Option<BountyMilestone>': Option<BountyMilestone>;
     'Option<BountyStatus>': Option<BountyStatus>;
     'Option<BountyStatusActive>': Option<BountyStatusActive>;
     'Option<BountyStatusCuratorProposed>': Option<BountyStatusCuratorProposed>;
@@ -682,6 +683,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<InvalidTransaction>': Option<InvalidTransaction>;
     'Option<InviteMembershipParameters>': Option<InviteMembershipParameters>;
     'Option<IsCensored>': Option<IsCensored>;
+    'Option<JSBounty>': Option<JSBounty>;
     'Option<Json>': Option<Json>;
     'Option<Junction>': Option<Junction>;
     'Option<Justification>': Option<Justification>;
@@ -1403,6 +1405,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<BountyCreationParameters>': Vec<BountyCreationParameters>;
     'Vec<BountyId>': Vec<BountyId>;
     'Vec<BountyIndex>': Vec<BountyIndex>;
+    'Vec<BountyMilestone>': Vec<BountyMilestone>;
     'Vec<BountyStatus>': Vec<BountyStatus>;
     'Vec<BountyStatusActive>': Vec<BountyStatusActive>;
     'Vec<BountyStatusCuratorProposed>': Vec<BountyStatusCuratorProposed>;
@@ -1774,6 +1777,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<InvalidTransaction>': Vec<InvalidTransaction>;
     'Vec<InviteMembershipParameters>': Vec<InviteMembershipParameters>;
     'Vec<IsCensored>': Vec<IsCensored>;
+    'Vec<JSBounty>': Vec<JSBounty>;
     'Vec<Json>': Vec<Json>;
     'Vec<Junction>': Vec<Junction>;
     'Vec<Justification>': Vec<Justification>;
@@ -2495,6 +2499,7 @@ declare module '@polkadot/types/types/registry' {
     BountyCreationParameters: BountyCreationParameters;
     BountyId: BountyId;
     BountyIndex: BountyIndex;
+    BountyMilestone: BountyMilestone;
     BountyStatus: BountyStatus;
     BountyStatusActive: BountyStatusActive;
     BountyStatusCuratorProposed: BountyStatusCuratorProposed;
@@ -2866,6 +2871,7 @@ declare module '@polkadot/types/types/registry' {
     InvalidTransaction: InvalidTransaction;
     InviteMembershipParameters: InviteMembershipParameters;
     IsCensored: IsCensored;
+    JSBounty: JSBounty;
     Json: Json;
     Junction: Junction;
     Justification: Justification;

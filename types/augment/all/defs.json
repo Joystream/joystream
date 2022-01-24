@@ -500,6 +500,20 @@
         "text_hash": "Hash"
     },
     "BountyId": "u32",
+    "JSBounty": {
+        "creation_params": "BountyCreationParameters",
+        "total_funding": "u128",
+        "milestone": "BountyMilestone",
+        "active_work_entry_count": "u32"
+    },
+    "BountyMilestone": {
+        "_enum": {
+            "Created": "{\"created_at\":\"u32\",\"has_contributions\":\"bool\"}",
+            "BountyMaxFundingReached": "{\"max_funding_reached_at\":\"u32\"}",
+            "WorkSubmitted": "{\"work_period_started_at\":\"u32\"}",
+            "JudgmentSubmitted": "{\"successful_bounty\":\"bool\"}"
+        }
+    },
     "EntryId": "u32",
     "BountyActor": {
         "_enum": {
