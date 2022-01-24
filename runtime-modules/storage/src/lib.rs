@@ -2645,6 +2645,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
+        let deleted_dynamic_bag = Self::dynamic_bag(&dynamic_bag_id);
+
         //
         // == MUTATION SAFE ==
         //
@@ -2654,6 +2656,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         }
 
         <Bags<T>>::remove(&bag_id);
+
+        Self::change_bag_assignments(&BTreeSet::new(), &deleted_dynamic_bag.distributed_by);
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(
             deletion_prize_account_id,
@@ -2771,6 +2775,8 @@ impl<T: Trait> Module<T> {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
         <Bags<T>>::insert(&bag_id, bag);
+
+        Self::change_bag_assignments(&distribution_buckets, &BTreeSet::new());
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id.clone(),
