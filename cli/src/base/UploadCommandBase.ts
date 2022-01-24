@@ -102,7 +102,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     let ffProbeMetadata: VideoFFProbeMetadata = {}
     try {
       ffProbeMetadata = await this.getVideoFFProbeMetadata(filePath)
-    } catch (e) {
+    } catch (e: any) {
       const message = e.message || e
       this.warn(`Failed to get video metadata via ffprobe (${message})`)
     }
@@ -208,7 +208,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         maxBodyLength: fileSize,
       }
       await axios.put(uploadUrl, fileStream, config)
-    } catch (e) {
+    } catch (e: any) {
       progressBar.stop()
       const msg = (e.response && e.response.data && e.response.data.message) || e.message || e
       this.error(`Unexpected error when trying to upload a file: ${msg}`, {

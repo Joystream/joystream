@@ -18,6 +18,7 @@ import { mnemonicGenerate } from '@polkadot/util-crypto'
 import { validateAddress } from '../helpers/validation'
 import slug from 'slug'
 import { Membership } from '@joystream/types/members'
+import { CouncilMemberOf } from '@joystream/types/council'
 import BN from 'bn.js'
 
 const ACCOUNTS_DIRNAME = 'accounts'
@@ -158,7 +159,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       // Try adding and retrieving the keys in order to validate that the backup file is correct
       keyring.addFromJson(accountJsonObj)
       account = keyring.getPair(accountJsonObj.address) as NamedKeyringPair // We can be sure it's named, because we forced it before
-    } catch (e) {
+    } catch (e: any) {
       throw new CLIError(`Provided backup file is not valid (${e.message})`, { exit: ExitCodes.InvalidFile })
     }
 
@@ -323,6 +324,19 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     } else {
       return this.promptForCustomAddress()
     }
+  }
+
+  // TODO: check if the logic to validate Council is correct.
+  // get the context of council member that will take action on behalf of the Council
+  async getCouncilMemberContext(): Promise<CouncilMemberOf> {
+    const member = await this.getRequiredMemberContext()
+    const councilMembers = await this.getOriginalApi().query.council.councilMembers()
+
+    const councilMember = councilMembers.find((cm) => cm.membership_id === member.id)
+    if (councilMember === undefined) {
+      this.error('No council member controller key available!', { exit: ExitCodes.AccessDenied })
+    }
+    return councilMember
   }
 
   async getRequiredMemberContext(): Promise<MemberDetails> {

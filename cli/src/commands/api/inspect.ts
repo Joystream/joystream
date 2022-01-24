@@ -80,7 +80,7 @@ export default class ApiInspect extends ApiCommandBase {
       return this.getUnaugmentedApi().query[apiModule][apiMethod].creator.meta
     } else {
       // Currently the only other optoin is api.consts
-      const method = (this.getUnaugmentedApi().consts[apiModule][apiMethod] as unknown) as AugmentedConst<'promise'>
+      const method = this.getUnaugmentedApi().consts[apiModule][apiMethod] as unknown as AugmentedConst<'promise'>
       return method.meta
     }
   }
