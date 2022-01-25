@@ -24,8 +24,7 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
-    self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    AccountId,
+    self, chain_spec_properties, forum_config, initial_balances, initial_members, AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -86,9 +85,6 @@ enum ChainSpecBuilder {
         /// The path to an initial forum data
         #[structopt(long, short)]
         initial_forum_path: Option<PathBuf>,
-        /// The path to an initial content directory data file
-        #[structopt(long, short)]
-        initial_content_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
@@ -121,9 +117,6 @@ enum ChainSpecBuilder {
         /// The path to an initial forum data
         #[structopt(long, short)]
         initial_forum_path: Option<PathBuf>,
-        /// The path to an initial content directory data file
-        #[structopt(long, short)]
-        initial_content_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
@@ -223,7 +216,6 @@ fn genesis_constructor(
     sudo_account: &AccountId,
     initial_members_path: &Option<PathBuf>,
     initial_forum_path: &Option<PathBuf>,
-    initial_content_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
@@ -241,14 +233,6 @@ fn genesis_constructor(
         .as_ref()
         .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
         .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
-
-    let data_directory_config = if let Some(path) = initial_content_path {
-        let path = path.as_path();
-
-        content_config::data_directory_config_from_json(path)
-    } else {
-        content_config::empty_data_directory_config()
-    };
 
     let initial_account_balances = initial_balances_path
         .as_ref()
@@ -276,7 +260,6 @@ fn generate_chain_spec(
     sudo_account: String,
     initial_members_path: Option<PathBuf>,
     initial_forum_path: Option<PathBuf>,
-    initial_content_path: Option<PathBuf>,
     initial_balances_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
@@ -310,7 +293,6 @@ fn generate_chain_spec(
                 &sudo_account,
                 &initial_members_path,
                 &initial_forum_path,
-                &initial_content_path,
                 &initial_balances_path,
             )
         },
@@ -443,7 +425,6 @@ fn main() -> Result<(), String> {
         sudo_account,
         initial_members_path,
         initial_forum_path,
-        initial_content_path,
         initial_balances_path,
     )?;
 

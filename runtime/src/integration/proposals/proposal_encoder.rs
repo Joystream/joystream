@@ -17,13 +17,23 @@ use sp_std::vec::Vec;
 macro_rules! wrap_working_group_call {
     ($working_group:expr, $working_group_instance_call:expr) => {{
         match $working_group {
-            WorkingGroup::Content => {
-                Call::ContentDirectoryWorkingGroup($working_group_instance_call)
-            }
+            WorkingGroup::Content => Call::ContentWorkingGroup($working_group_instance_call),
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
             WorkingGroup::Forum => Call::ForumWorkingGroup($working_group_instance_call),
             WorkingGroup::Membership => Call::MembershipWorkingGroup($working_group_instance_call),
             WorkingGroup::Operations => Call::OperationsWorkingGroup($working_group_instance_call),
+            WorkingGroup::Distribution => {
+                Call::DistributionWorkingGroup($working_group_instance_call)
+            }
+            WorkingGroup::OperationsAlpha => {
+                Call::OperationsWorkingGroupAlpha($working_group_instance_call)
+            }
+            WorkingGroup::OperationsBeta => {
+                Call::OperationsWorkingGroupBeta($working_group_instance_call)
+            }
+            WorkingGroup::OperationsGamma => {
+                Call::OperationsWorkingGroupGamma($working_group_instance_call)
+            }
             WorkingGroup::Gateway => Call::GatewayWorkingGroup($working_group_instance_call),
         }
     }};

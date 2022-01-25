@@ -15,8 +15,8 @@ use working_group::StakeParameters;
 use crate::primitives::{ActorId, MemberId};
 use crate::tests::run_to_block;
 use crate::{
-    Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
-    ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
+    Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentWorkingGroupInstance,
+    ContentWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
     ForumWorkingGroupStakingManager, GatewayWorkingGroup, GatewayWorkingGroupInstance,
     GatewayWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
     MembershipWorkingGroupStakingManager, OperationsWorkingGroup, OperationsWorkingGroupInstance,
@@ -37,10 +37,10 @@ fn add_opening(
 
     let opening_id = match group {
         WorkingGroup::Content => {
-            let opening_id = ContentDirectoryWorkingGroup::next_opening_id();
+            let opening_id = ContentWorkingGroup::next_opening_id();
             assert!(!<working_group::OpeningById<
                 Runtime,
-                ContentDirectoryWorkingGroupInstance,
+                ContentWorkingGroupInstance,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -65,6 +65,38 @@ fn add_opening(
             assert!(!<working_group::OpeningById<
                 Runtime,
                 MembershipWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::Distribution => {
+            let opening_id = DistributionWorkingGroup::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                DistributionWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsAlpha => {
+            let opening_id = OperationsWorkingGroupAlpha::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceAlpha,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsBeta => {
+            let opening_id = OperationsWorkingGroupBeta::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceBeta,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsGamma => {
+            let opening_id = OperationsWorkingGroupGamma::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceGamma,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -386,7 +418,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
             WorkingGroup::Content => {
                 run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
-                    ContentDirectoryWorkingGroupInstance,
+                    ContentWorkingGroupInstance,
                 >(group);
             }
             WorkingGroup::Storage => {
@@ -405,6 +437,30 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                 run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
                     MembershipWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
             WorkingGroup::Gateway => {
@@ -430,6 +486,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
+    <T as hiring::Trait>::OpeningId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
@@ -470,10 +527,10 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
     for group in WorkingGroup::iter() {
         match group {
             WorkingGroup::Content => {
-                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
-                    Runtime,
-                    ContentDirectoryWorkingGroupInstance,
-                >(group);
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                ContentWorkingGroupInstance,
+            >(group);
             }
             WorkingGroup::Storage => {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
@@ -492,6 +549,30 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     Runtime,
                     MembershipWorkingGroupInstance,
                 >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstanceAlpha,
+            >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstanceBeta,
+            >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstanceGamma,
+            >(group);
             }
             WorkingGroup::Gateway => {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
@@ -594,8 +675,8 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             WorkingGroup::Content => {
                 run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                     Runtime,
-                    ContentDirectoryWorkingGroupInstance,
-                    ContentDirectoryWorkingGroupStakingManager,
+                    ContentWorkingGroupInstance,
+                    ContentWorkingGroupStakingManager,
                 >(group);
             }
             WorkingGroup::Storage => {
@@ -617,6 +698,30 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
                     Runtime,
                     MembershipWorkingGroupInstance,
                     MembershipWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
             WorkingGroup::Gateway => {

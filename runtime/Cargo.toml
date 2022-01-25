@@ -86,7 +86,7 @@ sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com
 strum = {version = "0.19", default-features = false}
 
 [build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
+wasm-builder-runner = { version = "1.0.5", package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 
 [features]
 default = ['std']
@@ -183,6 +183,7 @@ runtime-benchmarks = [
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
     "bounty/runtime-benchmarks",
+    'storage/runtime-benchmarks',       
     "blog/runtime-benchmarks",
 ]
 

@@ -7,20 +7,31 @@ use strum_macros::EnumIter;
 
 /// Defines well-known working groups.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
 pub enum WorkingGroup {
     /// Forum working group: working_group::Instance1.
     Forum,
+
     /// Storage working group: working_group::Instance2.
     Storage,
-    /// Content directory working group: working_group::Instance3.
+
+    /// Storage working group: working_group::Instance3.
     Content,
-    /// Membership working group: working_group::Instance4.
-    Membership,
-    /// Operations working group: working_group::Instance5.
-    Operations,
-    /// Gateway working group: working_group::Instance6.
+
+    /// Operations working group: working_group::Instance4.
+    OperationsAlpha,
+
+    /// Gateway working group: working_group::Instance5.
     Gateway,
+
+    /// Distribution working group: working_group::Instance6.
+    Distribution,
+
+    /// Operations working group: working_group::Instance7.
+    OperationsBeta,
+
+    /// Operations working group: working_group::Instance8.
+    OperationsGamma,
 }
 
 /// Working group interface to work with its members - workers and leaders.

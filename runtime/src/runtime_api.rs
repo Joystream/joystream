@@ -13,13 +13,18 @@ use sp_std::vec::Vec;
 use crate::constants::PRIMARY_PROBABILITY;
 
 use crate::{
-    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
-    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
+    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Balances, Call, DataDirectory, Grandpa, Historical,
     InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
     TransactionPayment,
+};
+
+use crate::{
+    DistributionWorkingGroupInstance, OperationsWorkingGroupInstanceBeta,
+    OperationsWorkingGroupInstanceGamma,
 };
 use frame_support::weights::Weight;
 
@@ -77,9 +82,16 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
-// Default Executive type without the RuntimeUpgrade
-// pub type Executive =
-//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+// Alias for the beta operations working group
+pub(crate) type OperationsWorkingGroupBeta<T> =
+    working_group::Module<T, OperationsWorkingGroupInstanceBeta>;
+
+// Alias for the gamma operations working group
+pub(crate) type OperationsWorkingGroupGamma<T> =
+    working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
+
+pub(crate) type DistributionWorkingGroup<T> =
+    working_group::Module<T, DistributionWorkingGroupInstance>;
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
@@ -87,15 +99,43 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
+        // initialize content module
         content::Module::<Runtime>::on_runtime_upgrade();
 
-        DataDirectory::initialize_data_directory(
-            Vec::new(),
-            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_GLOBAL_VOUCHER,
-            data_directory::DEFAULT_VOUCHER,
-            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
+        // Initialize new groups
+        let default_text_constraint = crate::working_group::default_text_constraint();
+
+        let default_storage_size_constraint =
+            crate::working_group::default_storage_size_constraint();
+
+        let default_content_working_group_mint_capacity = 0;
+
+        // Do not init persisted working group module instances
+        // OperationsWorkingGroupAlpha (previously OperationsWorkingGroup)
+        // ContentWorkingGroup (previously ContentDirectoryWorkingGroup)
+
+        OperationsWorkingGroupBeta::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        DistributionWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_storage_size_constraint,
+            default_content_working_group_mint_capacity,
         );
 
         10_000_000 // TODO: adjust weight
@@ -309,6 +349,7 @@ impl_runtime_apis! {
             use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
+            use crate::StorageV2;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -402,6 +443,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
+            add_benchmark!(params, batches, storage_v2, StorageV2);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

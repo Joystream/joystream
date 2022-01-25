@@ -32,15 +32,17 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    ContentConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DistributionWorkingGroupConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupAlphaConfig,
+    OperationsWorkingGroupBetaConfig, OperationsWorkingGroupGammaConfig, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
-pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
@@ -135,7 +137,6 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
-                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -172,7 +173,6 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
-                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -274,12 +274,61 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        data_directory: Some(data_directory_config),
-        data_object_type_registry: Some(DataObjectTypeRegistryConfig {
-            first_data_object_type_id: 1,
+        working_group_Instance2: Some(StorageWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
-            first_relationship_id: 1,
+        working_group_Instance3: Some(ContentWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance5: Some(GatewayWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance6: Some(DistributionWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         content: Some({
             ContentConfig {
@@ -291,7 +340,33 @@ pub fn testnet_genesis(
                 next_playlist_id: 1,
                 next_series_id: 1,
                 next_person_id: 1,
+                next_video_post_id: 1,
                 next_channel_transfer_request_id: 1,
+                video_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
+                channel_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
+                max_reward_allowed: 1000,
+                min_cashout_allowed: 1,
+                min_auction_duration: 3,
+                max_auction_duration: 20,
+                min_auction_extension_period: 5,
+                max_auction_extension_period: 30,
+                min_bid_lock_duration: 2,
+                max_bid_lock_duration: 10,
+                min_starting_price: 10,
+                max_starting_price: 1000,
+                min_creator_royalty: Perbill::from_percent(1),
+                max_creator_royalty: Perbill::from_percent(5),
+                min_bid_step: 10,
+                max_bid_step: 100,
+                platform_fee_percentage: Perbill::from_percent(1),
+                auction_starts_at_max_delta: 90_000,
+                max_auction_whitelist_length: 100,
             }
         }),
     }
@@ -318,7 +393,6 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
-            content_config::empty_data_directory_config(),
         )
     }
 
@@ -351,7 +425,6 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
-            content_config::empty_data_directory_config(),
         )
     }
 
