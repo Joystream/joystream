@@ -10,6 +10,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
     # docker
     sudo apt-get install -y docker.io docker-compose containerd runc
+    # older linux distro may install old version of docker-compose
+    # Minimum required v1.29 - see https://docs.docker.com/compose/install/
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # install brew package manager
     if ! which brew >/dev/null 2>&1; then
