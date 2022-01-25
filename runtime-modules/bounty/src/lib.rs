@@ -289,7 +289,10 @@ pub enum BountyStage {
 
     /// Indicates a withdrawal on bounty failure. Workers get their stake back. Funders
     /// get their contribution back as well as part of the cherry.
-    FailedBountyWithdrawal,
+    FailedBountyWithdrawal {
+        /// Bounty has already been judged.
+        judgment_submitted: bool,
+    },
 }
 
 /// Defines current bounty state.
@@ -665,13 +668,13 @@ decl_error! {
         /// Cannot add work entry because of the limit.
         MaxWorkEntryLimitReached,
 
-        /// Cherry less then minimum allowed.
+        /// Cherry less than minimum allowed.
         CherryLessThenMinimumAllowed,
 
-        /// Oracle Cherry less then minimum allowed.
+        /// Oracle Cherry less than minimum allowed.
         OracleCherryLessThenMinimumAllowed,
 
-        /// Funding amount less then minimum allowed.
+        /// Funding amount less than minimum allowed.
         FundingLessThenMinimumAllowed,
 
         /// Incompatible assurance contract type for a member: cannot submit work to the 'closed
@@ -709,6 +712,9 @@ decl_error! {
 
         /// Invalid judgment - all winners should have work submissions.
         WinnerShouldHasWorkSubmission,
+
+        ///Cannot withdraw cherry or oracle cherry from bounty account, because of insufficient balance,
+        NoBountyBalanceToCherryWithdrawal
     }
 }
 
@@ -764,7 +770,8 @@ decl_module! {
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
-            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry + params.oracle_cherry)?;
+            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id,
+                params.cherry + params.oracle_cherry)?;
 
             let created_bounty_milestone = BountyMilestone::Created {
                 created_at: Self::current_block(),
@@ -797,6 +804,7 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
               .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
         pub fn cancel_bounty(origin, creator: BountyActor<MemberId<T>>, bounty_id: T::BountyId) {
+
             let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 creator.clone(),
@@ -810,6 +818,13 @@ decl_module! {
 
             Self::ensure_bounty_stage_for_canceling(current_bounty_stage)?;
 
+            let bounty_account_id = Self::bounty_account_id(bounty_id);
+            let balance = balances::Module::<T>::usable_balance(&bounty_account_id);
+
+            //Checks if there are suffiicient funds to safely perform cherry and oracle cherry withdrawal
+            ensure!(balance >= bounty.creation_params.cherry + bounty.creation_params.oracle_cherry,
+                Error::<T>::NoBountyBalanceToCherryWithdrawal);
+
             //
             // == MUTATION SAFE ==
             //
@@ -820,6 +835,7 @@ decl_module! {
             Self::remove_bounty(&bounty_id);
 
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
+
         }
 
         /// Vetoes a bounty.
@@ -843,6 +859,16 @@ decl_module! {
                 current_bounty_stage,
                 BountyStage::Funding { has_contributions: false }
             )?;
+
+            let bounty_account_id = Self::bounty_account_id(bounty_id);
+            let balance = balances::Module::<T>::usable_balance(&bounty_account_id);
+
+            BountyActorManager::<T>::get_bounty_actor_manager(
+                bounty.creation_params.creator.clone(),
+            )?;
+            //Checks if there are sufficient funds to safely perform cherry and oracle cherry withdrawal
+            ensure!(balance >= bounty.creation_params.cherry + bounty.creation_params.oracle_cherry,
+                Error::<T>::NoBountyBalanceToCherryWithdrawal);
 
             //
             // == MUTATION SAFE ==
@@ -954,8 +980,10 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::FailedBountyWithdrawal)?;
-
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::FailedBountyWithdrawal{..}),
+                Self::unexpected_bounty_stage_error(current_bounty_stage)
+            );
             ensure!(
                 <BountyContributions<T>>::contains_key(&bounty_id, &funder),
                 Error::<T>::NoBountyContributionFound,
@@ -963,7 +991,19 @@ decl_module! {
 
             let funding_amount = <BountyContributions<T>>::get(&bounty_id, &funder);
             let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding_amount);
+
             let withdrawal_amount = funding_amount + cherry_fraction;
+
+            let bounty_account_id = Self::bounty_account_id(bounty_id);
+            let balance = balances::Module::<T>::usable_balance(&bounty_account_id);
+
+            BountyActorManager::<T>::get_bounty_actor_manager(
+                bounty.creation_params.creator.clone(),
+            )?;
+
+            //Checks if there are sufficient funds to safely perform cherry and oracle cherry withdrawal
+            ensure!(balance >= withdrawal_amount + bounty.creation_params.oracle_cherry,
+                Error::<T>::NoBountyBalanceToCherryWithdrawal);
 
             //
             // == MUTATION SAFE ==
@@ -975,10 +1015,17 @@ decl_module! {
 
             Self::deposit_event(RawEvent::BountyFundingWithdrawal(bounty_id, funder));
 
-
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
-                //Only when all funds are withdrawn, should the oracle cherry reeturn to the creator.
-                Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?;
+
+                if let BountyStage::FailedBountyWithdrawal{judgment_submitted:false} = current_bounty_stage {
+                    //If the stage is FailedBountyWithdrawal, the reason must be because of
+                    //funding period expired with insuficient funds
+                    //working period expired with no active entries
+                    //judgement period expired with no judge submissions
+                    //In the above 3 cases the oracle cherry must return to the creator.
+                    Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?
+                }
+
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1172,6 +1219,16 @@ decl_module! {
             // Lookup for any winners in the judgment.
             let successful_bounty = Self::judgment_has_winners(&judgment);
 
+            BountyActorManager::<T>::get_bounty_actor_manager(
+                bounty.creation_params.oracle.clone(),
+            )?;
+
+            let bounty_account_id = Self::bounty_account_id(bounty_id);
+            let balance = balances::Module::<T>::usable_balance(&bounty_account_id);
+            //Checks if there are sufficient funds to safely perform oracle cherry withdrawal
+            ensure!(balance >= bounty.creation_params.oracle_cherry,
+                Error::<T>::NoBountyBalanceToCherryWithdrawal);
+
             //
             // == MUTATION SAFE ==
             //
@@ -1205,18 +1262,7 @@ decl_module! {
                     Self::deposit_event(RawEvent::WorkEntrySlashed(bounty_id, *entry_id));
                 }
             }
-
-
-            //Transferers oracle cherry to the oracle
-            bounty_oracle_manager
-                .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_cherry)?;
-
-            Self::deposit_event(RawEvent::BountyOracleCherryWithdrawal(
-                bounty_id,
-                bounty.creation_params.oracle,
-            ));
-
-
+            Self::withdraw_oracle_cherry_to_oracle(bounty_id, &bounty)?;
             // Fire a judgment event.
             Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
         }
@@ -1247,12 +1293,25 @@ decl_module! {
 
             // Ensure withdrawal for successful or failed bounty.
             ensure!(
-                current_bounty_stage == BountyStage::FailedBountyWithdrawal ||
+                matches!(current_bounty_stage, BountyStage::FailedBountyWithdrawal{..}) ||
                 current_bounty_stage == BountyStage::SuccessfulBountyWithdrawal,
                 Self::unexpected_bounty_stage_error(current_bounty_stage)
             );
 
             let entry = Self::ensure_work_entry_exists(&entry_id)?;
+
+
+            let bounty_account_id = Self::bounty_account_id(bounty_id);
+            let balance = balances::Module::<T>::usable_balance(&bounty_account_id);
+
+            BountyActorManager::<T>::get_bounty_actor_manager(
+                bounty.creation_params.creator.clone(),
+            )?;
+            if let BountyStage::FailedBountyWithdrawal{judgment_submitted:false} = current_bounty_stage {
+                //Checks if there are sufficient funds to safely perform oracle cherry withdrawal
+                ensure!(balance >= bounty.creation_params.oracle_cherry,
+                    Error::<T>::NoBountyBalanceToCherryWithdrawal);
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1266,7 +1325,6 @@ decl_module! {
                     reward
                 )?;
             }
-
             // Unstake the full work entry state.
             T::StakingHandler::unlock(&entry.staking_account_id);
 
@@ -1275,9 +1333,16 @@ decl_module! {
 
             // Fire an event.
             Self::deposit_event(RawEvent::WorkEntrantFundsWithdrawn(bounty_id, entry_id, member_id));
-
             // Remove the bounty in case of the last withdrawal operation.
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
+                if let BountyStage::FailedBountyWithdrawal{judgment_submitted:false} = current_bounty_stage {
+                    //If the stage is FailedBountyWithdrawal, the reason must be because of
+                    //founding period expired with insuficient funds
+                    //working period expired with no active entries
+                    //judgement period expired with no judge submissions
+                    //In the above 3 cases the oracle cherry must return to the creator.
+                    Self::return_bounty_oracle_cherry_to_creator(bounty_id, &bounty)?
+                }
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1455,7 +1520,9 @@ impl<T: Trait> Module<T> {
                 // All work entrants withdrew their stakes and rewards.
                 has_no_work_entries
             }
-            BountyStage::FailedBountyWithdrawal => {
+            BountyStage::FailedBountyWithdrawal {
+                judgment_submitted: _,
+            } => {
                 // All work entrants withdrew their stakes and all funders withdrew cherry and
                 // provided funds.
                 has_no_contributions && has_no_work_entries
@@ -1736,9 +1803,9 @@ impl<T: Trait> Module<T> {
             BountyStage::SuccessfulBountyWithdrawal => {
                 Error::<T>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into()
             }
-            BountyStage::FailedBountyWithdrawal => {
-                Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawal.into()
-            }
+            BountyStage::FailedBountyWithdrawal {
+                judgment_submitted: _,
+            } => Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
         }
     }
 
@@ -1767,7 +1834,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Transfers oracle cherry back to the bounty creator and fires an event.
+    // Transfers oracle cherry back to the bounty creator and fires an event.
     fn return_bounty_oracle_cherry_to_creator(
         bounty_id: T::BountyId,
         bounty: &Bounty<T>,
@@ -1782,6 +1849,26 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
             bounty_id,
             bounty.creation_params.creator.clone(),
+        ));
+
+        Ok(())
+    }
+
+    // Transfers oracle cherry to oracle and fires an event.
+    fn withdraw_oracle_cherry_to_oracle(
+        bounty_id: T::BountyId,
+        bounty: &Bounty<T>,
+    ) -> DispatchResult {
+        let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor_manager(
+            bounty.creation_params.oracle.clone(),
+        )?;
+
+        bounty_oracle_manager
+            .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_cherry)?;
+
+        Self::deposit_event(RawEvent::BountyOracleCherryWithdrawal(
+            bounty_id,
+            bounty.creation_params.oracle.clone(),
         ));
 
         Ok(())

@@ -16,7 +16,7 @@ use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
-
+use sp_std::vec;
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 

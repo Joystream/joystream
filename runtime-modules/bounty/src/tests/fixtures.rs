@@ -45,6 +45,11 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
+pub fn decrease_bounty_account_balance(bounty_id: u64, amount: u64) {
+    let account_id = Bounty::bounty_account_id(bounty_id);
+    let _ = Balances::slash(&account_id, amount);
+}
+
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(

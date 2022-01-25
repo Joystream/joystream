@@ -170,7 +170,7 @@ fn create_funded_bounty<T: Trait>(
     params: BountyCreationParameters<T>,
     funding_amount: BalanceOf<T>,
 ) -> T::BountyId {
-    T::CouncilBudgetManager::set_budget(params.cherry + funding_amount);
+    T::CouncilBudgetManager::set_budget(params.cherry + params.oracle_cherry + funding_amount);
 
     Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
@@ -208,10 +208,11 @@ benchmarks! {
 
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let max_amount: BalanceOf<T> = 1000u32.into();
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let members = (1..=j)
             .map(|id| id.saturated_into())
@@ -221,6 +222,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            oracle_cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: max_amount },
             contract_type: AssuranceContractType::Closed(members),
@@ -242,6 +244,7 @@ benchmarks! {
 
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let max_amount: BalanceOf<T> = 1000u32.into();
 
@@ -257,6 +260,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            oracle_cherry,
             entrant_stake,
             creator: BountyActor::Member(member_id),
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -275,16 +279,18 @@ benchmarks! {
 
     cancel_bounty_by_council {
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let max_amount: BalanceOf<T> = 1000u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let creator = BountyActor::Council;
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            oracle_cherry,
             creator: creator.clone(),
             // same complexity with limited funding and FundingExpired stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -305,12 +311,13 @@ benchmarks! {
 
     cancel_bounty_by_member {
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let max_amount: BalanceOf<T> = 1000u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let creator = BountyActor::Member(member_id);
 
@@ -318,6 +325,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            oracle_cherry,
             creator: creator.clone(),
             // same complexity with limited funding and FundingExpired stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -343,15 +351,17 @@ benchmarks! {
     veto_bounty {
         let max_amount: BalanceOf<T> = 1000u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
+            oracle_cherry,
             entrant_stake,
             ..Default::default()
         };
@@ -370,15 +380,17 @@ benchmarks! {
     fund_bounty_by_member {
         let max_amount: BalanceOf<T> = 100u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
+            oracle_cherry,
             entrant_stake,
             ..Default::default()
         };
@@ -405,15 +417,17 @@ benchmarks! {
     fund_bounty_by_council {
         let max_amount: BalanceOf<T> = 100u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry + max_amount);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry + max_amount);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
+            oracle_cherry,
             entrant_stake,
             ..Default::default()
         };
@@ -435,9 +449,10 @@ benchmarks! {
         let funding_period = 1u32;
         let bounty_amount: BalanceOf<T> = 200u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
@@ -448,6 +463,7 @@ benchmarks! {
                 funding_period: funding_period.into(),
             },
             cherry,
+            oracle_cherry,
             entrant_stake,
             ..Default::default()
         };
@@ -488,10 +504,11 @@ benchmarks! {
         let funding_period = 1u32;
         let bounty_amount: BalanceOf<T> = 200u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry + funding_amount);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry + funding_amount);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
@@ -502,6 +519,7 @@ benchmarks! {
                 funding_period: funding_period.into(),
             },
             cherry,
+            oracle_cherry,
             entrant_stake,
             ..Default::default()
         };
@@ -525,7 +543,7 @@ benchmarks! {
 
     }: withdraw_funding(RawOrigin::Root, funder, bounty_id)
     verify {
-        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + funding_amount);
+        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + oracle_cherry + funding_amount);
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
@@ -533,6 +551,7 @@ benchmarks! {
         let i in 1 .. T::ClosedContractSizeLimit::get();
 
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let stake: BalanceOf<T> = 100u32.into();
 
@@ -548,6 +567,7 @@ benchmarks! {
             judging_period: One::one(),
             funding_type: FundingType::Perpetual{ target: funding_amount },
             cherry,
+            oracle_cherry,
             contract_type,
             entrant_stake: stake,
             ..Default::default()
@@ -579,6 +599,7 @@ benchmarks! {
 
     withdraw_work_entry {
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let stake: BalanceOf<T> = 100u32.into();
 
@@ -586,6 +607,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            oracle_cherry,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             entrant_stake: stake,
             ..Default::default()
@@ -617,6 +639,7 @@ benchmarks! {
         let work_data = vec![0u8].repeat(i as usize);
 
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let max_amount: BalanceOf<T> = 10000u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -628,6 +651,7 @@ benchmarks! {
             work_period,
             judging_period,
             cherry,
+            oracle_cherry,
             funding_type: FundingType::Limited{
                 min_funding_amount: funding_amount,
                 max_funding_amount: max_amount,
@@ -670,6 +694,7 @@ benchmarks! {
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let oracle = BountyActor::Council;
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -679,6 +704,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            oracle_cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
@@ -733,6 +759,7 @@ benchmarks! {
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let oracle = BountyActor::Council;
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -742,6 +769,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            oracle_cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
@@ -776,6 +804,7 @@ benchmarks! {
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
@@ -787,6 +816,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            oracle_cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
@@ -846,6 +876,7 @@ benchmarks! {
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
@@ -857,6 +888,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            oracle_cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
@@ -894,6 +926,7 @@ benchmarks! {
     withdraw_work_entrant_funds {
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
@@ -906,6 +939,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: creator.clone(),
             cherry,
+            oracle_cherry,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             entrant_stake: stake,

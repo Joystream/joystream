@@ -19,7 +19,9 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             .or_else(|| self.is_work_submission_stage())
             .or_else(|| self.is_judgment_stage())
             .or_else(|| self.is_successful_bounty_withdrawal_stage())
-            .unwrap_or(BountyStage::FailedBountyWithdrawal)
+            .unwrap_or(BountyStage::FailedBountyWithdrawal {
+                judgment_submitted: false,
+            })
     }
 
     // Calculates funding stage of the bounty.
@@ -131,15 +133,20 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         None
     }
 
-    // Calculates withdrawal stage for the successful bounty.
+    // Calculates withdrawal stage for the bounty.
     // Returns None if conditions are not met.
     fn is_successful_bounty_withdrawal_stage(&self) -> Option<BountyStage> {
-        // The bounty judgment was submitted and the bounty is successful (there are some winners).
+        //The bounty judgment was submitted and is successful (there are some winners)
+        //or unsuccessful (all entries rejected).
         if let BountyMilestone::JudgmentSubmitted { successful_bounty } =
             self.bounty.milestone.clone()
         {
             if successful_bounty {
                 return Some(BountyStage::SuccessfulBountyWithdrawal);
+            } else {
+                return Some(BountyStage::FailedBountyWithdrawal {
+                    judgment_submitted: true,
+                });
             }
         }
 
