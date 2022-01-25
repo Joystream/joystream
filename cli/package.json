@@ -7,10 +7,6 @@
     "joystream-cli": "./bin/run"
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
-  "resolutions": {
-    "@polkadot/util": "7.3.1",
-    "@polkadot/util-crypto": "7.3.1"
-  },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
@@ -23,6 +19,9 @@
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
     "@polkadot/api": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
