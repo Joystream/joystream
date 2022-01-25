@@ -88,8 +88,6 @@ pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
 pub use proposals_engine::ProposalParameters;
 pub use referendum;
-use storage::data_directory::Voucher;
-pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
 pub use content;
