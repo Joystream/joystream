@@ -79,6 +79,11 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
 * [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
 * [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
+* [`joystream-cli bounty:bounty BOUNTYID`](#joystream-cli-bountybounty-bountyid)
+* [`joystream-cli bounty:bounties`](#joystream-cli-bountybounties)
+* [`joystream-cli bounty:createBounty`](#joystream-cli-bountycreatebounty)
+* [`joystream-cli bounty:cancelBounty BOUNTYID`](#joystream-cli-bountycancelbounty-bountyid)
+* [`joystream-cli bounty:vetoBounty BOUNTYID`](#joystream-cli-bountyvetobounty-bountyid)
 * [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 * [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
 * [`joystream-cli content:channels`](#joystream-cli-contentchannels)
@@ -346,6 +351,73 @@ EXAMPLES
 ```
 
 _See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.2.1/src/commands/autocomplete/index.ts)_
+
+## `joystream-cli bounty:bounty BOUNTYID`
+
+Show Bounty details by id.
+
+```
+USAGE
+  $ joystream-cli bounty:bounty BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty
+```
+
+## `joystream-cli bounty:bounties`
+
+List all existing bounties.
+
+```
+USAGE
+  $ joystream-cli bounty:bounties 
+```
+
+## `joystream-cli bounty:createBounty`
+
+Create bounty by a member or council.
+
+```
+USAGE
+  $ joystream-cli bounty:createBounty 
+
+
+OPTIONS
+  -i, --input=input                  (required) Path to JSON file to use as input
+  --creatorContext=(Member|Council)  Actor context to execute the command in (Member/Council)
+  --contract=(Perpetual|Limited)     Contract type to use in Bounty is (Perpetual/Limited)
+  --funding=(Open|Closed)            Funding type to use in Bounty is (Open/Closed)
+```
+`contractTypeInput` property of JSON input should be emply in case of `--contract=Open`  and
+contain list of members allowed to submit work in case of `--contarct=Closed` 
+`oracle` property of JSON input should be undefined(omitted from the input) if oracle bounty 
+actor is `Council`, and a vaild memberId if oracle is `Member`
+## `joystream-cli bounty:cancelBounty BOUNTYID`
+
+Cancel a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:cancelBounty BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty to cancel
+
+OPTIONS
+  --context=(Member|Council)  Actor context to execute the command in (Member/Council)
+```
+
+## `joystream-cli bounty:vetoBounty BOUNTYID`
+
+Veto bounty by the Council.
+
+```
+USAGE
+  $ joystream-cli bounty:vetoBounty BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty to veto
+```
 
 ## `joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`
 
