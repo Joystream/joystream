@@ -547,45 +547,6 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-#[allow(clippy::type_complexity)]
-impl stake::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (
-        (
-            (
-                crate::integration::proposals::StakingEventsHandler<Self>,
-                crate::integration::working_group::ContentWgStakingEventsHandler<Self>,
-            ),
-            (
-                crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-                crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<Self>,
-            ),
-        ),
-        (
-            (
-                crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<Self>,
-                crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
-            ),
-            (
-                crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
-                crate::integration::working_group::DistributionWgStakingEventsHandler<Self>,
-            ),
-        ),
-    );
-
-    type StakeId = u64;
-    type SlashId = u64;
-
-    fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <CouncilModule as ReferendumConnection<Runtime>>::get_option_power(option_id)
-    }
-
-    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <CouncilModule as ReferendumConnection<Runtime>>::increase_option_power(option_id, amount);
-    }
-}
-
 impl council::Trait for Runtime {
     type Event = Event;
     type Referendum = ReferendumModule;
