@@ -7,6 +7,10 @@
     "joystream-cli": "./bin/run"
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
+  "resolutions": {
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1"
+  },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
@@ -48,7 +52,8 @@
     "multihashes": "^4.0.3",
     "@apollo/client": "^3.2.5",
     "cross-fetch": "^3.0.6",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "graphql": "^14.7.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
