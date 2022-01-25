@@ -1,0 +1,13 @@
+{
+  "title": "Video like feature",
+  "description": "Members can like the videos",
+  "discussionThread": "https://testnet.joystream.org/#/bounty",
+  "bannerImageUri": "",
+  "contractTypeInput": [],
+  "oracle": 3,
+  "cherry": 100,
+  "entrantStake": 100,
+  "fundingTypeInput": { "target": 20 },
+  "workPeriod": 50,
+  "judgementPeriod": 50
+}

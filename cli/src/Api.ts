@@ -42,6 +42,7 @@ import {
   VideoCategory,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
+import { BountyId, JSBounty as Bounty } from '@joystream/types/bounty'
 import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
 import fetch from 'cross-fetch'
 import { Maybe } from './graphql/generated/schema'
@@ -95,7 +96,7 @@ export default class Api {
 
   // Get api for use-cases where no type augmentations are desirable
   public getUnaugmentedApi(): UnaugmentedApiPromise {
-    return (this._api as unknown) as UnaugmentedApiPromise
+    return this._api as unknown as UnaugmentedApiPromise
   }
 
   private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
@@ -456,6 +457,19 @@ export default class Api {
 
   async allMembers(): Promise<[MemberId, Membership][]> {
     return this.entriesByIds<MemberId, Membership>(this._api.query.members.membershipById)
+  }
+
+  // Bounty
+  async availableBounties(): Promise<[BountyId, Bounty][]> {
+    return await this.entriesByIds<BountyId, Bounty>(this._api.query.bounty.bounties)
+  }
+
+  async bountyById(bountyId: BountyId | number | string): Promise<Bounty> {
+    const exists = !!(await this._api.query.bounty.bounties.size(bountyId)).toNumber()
+    if (!exists) {
+      throw new CLIError(`Bonuty by id ${bountyId.toString()} not found!`)
+    }
+    return await this._api.query.bounty.bounties(bountyId)
   }
 
   // Content directory

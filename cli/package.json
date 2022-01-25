@@ -114,6 +114,9 @@
       },
       "content": {
         "description": "Interactions with content directory module - managing vidoes, channels, assets, categories and curator groups"
+      },
+      "bounty": {
+        "description": "Bounty management - create bounties, submit work and win rewards"
       }
     }
   },

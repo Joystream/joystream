@@ -16,6 +16,7 @@ import {
   IVideoMetadata,
   IVideoCategoryMetadata,
   IChannelCategoryMetadata,
+  IBountyMetadata,
 } from '@joystream/metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
@@ -176,6 +177,31 @@ export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avat
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
 export type VideoCategoryInputParameters = IVideoCategoryMetadata
+
+export type FundingTypeLimited = {
+  minFundingAmount: number
+  maxFundingAmount: number
+  fundingPeriod: number
+}
+
+export type FundingTypePrepetual = {
+  target: number
+}
+
+export type BountyInputParameters = IBountyMetadata & {
+  // oracle should undefined if bounty actor is Council, and
+  // a valid member id if bounty actor is a Member
+  oracle?: number
+  // contractTypeInput should be emply list in case of Open contract and
+  // contain list of members allowed to submit work in case of Closed contarct
+  contractTypeInput: string[]
+  cherry: number
+  entrantStake: number
+  // TODO: can this be improved?
+  fundingType: FundingTypeLimited & FundingTypePrepetual
+  workPeriod: number
+  judgementPeriod: number
+}
 
 type AnyNonObject = string | number | boolean | any[] | Long
 
