@@ -74,7 +74,6 @@ use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
-use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use codec::Encode;
@@ -86,11 +85,11 @@ pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
+pub use proposals_codex::ProposalsConfigParameters;
 pub use proposals_engine::ProposalParameters;
 pub use referendum;
 use storage::data_directory::Voucher;
 pub use storage::{data_directory, data_object_type_registry};
-pub use proposals_codex::ProposalsConfigParameters;
 pub use working_group;
 
 pub use content;
@@ -558,7 +557,7 @@ impl stake::Trait for Runtime {
         (
             (
                 crate::integration::proposals::StakingEventsHandler<Self>,
-                crate::integration::working_group::ContentDirectoryWgStakingEventsHandler<Self>,
+                crate::integration::working_group::ContentWgStakingEventsHandler<Self>,
             ),
             (
                 crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
@@ -576,7 +575,7 @@ impl stake::Trait for Runtime {
             ),
         ),
     );
-    
+
     type StakeId = u64;
     type SlashId = u64;
 
@@ -710,7 +709,7 @@ parameter_types! {
 // Staking managers type aliases.
 pub type ForumWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ForumGroupLockId>;
-pub type ContentDirectoryWorkingGroupStakingManager =
+pub type ContentWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
 pub type StorageWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
@@ -740,9 +739,6 @@ pub type DistributionWorkingGroupInstance = working_group::Instance6;
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance6;
-
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -765,6 +761,9 @@ pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
 // The operation working group gamma instance alias .
 pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance9;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -785,7 +784,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 impl working_group::Trait<ContentWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
+    type StakingHandler = ContentWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
@@ -892,7 +891,7 @@ parameter_types! {
 macro_rules! call_wg {
     ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
@@ -1146,23 +1145,20 @@ construct_runtime!(
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Event<T>},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
-        GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Event<T>},
-        MembershipWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Event<T>},
-        Storage: storage::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
         DistributionWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
-        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Module, Call, Storage, Config<T>, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Module, Call, Storage, Config<T>, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance9>::{Module, Call, Storage, Event<T>},
     }
 );
