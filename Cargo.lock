@@ -3806,12 +3806,15 @@ dependencies = [
 
 [[package]]
 name = "pallet-content"
-version = "5.0.0"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-randomness-collective-flip",
+ "pallet-storage",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -4194,16 +4197,16 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "5.0.0"
+version = "4.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-staking-handler",
+ "pallet-randomness-collective-flip",
  "pallet-timestamp",
- "pallet-working-group",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
