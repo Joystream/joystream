@@ -21,7 +21,7 @@ import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
 import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
+import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
 import {
   Channel,
   Video,
@@ -35,6 +35,9 @@ import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 import QueryNodeApi from './QueryNodeApi'
 import { MembershipFieldsFragment } from './graphql/generated/queries'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { Category, CategoryId, Post, Thread } from '@joystream/types/forum'
+import chalk from 'chalk'
+import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -159,7 +162,8 @@ export default class Api {
   }
 
   async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {
-    const membersQnData = await this._qnApi?.membersByIds(entries.map(([id]) => id))
+    // TODO: Uncomment once ready
+    const membersQnData: MembershipFieldsFragment[] = [] // await this._qnApi?.membersByIds(entries.map(([id]) => id))
     const memberQnDataById = new Map<string, MembershipFieldsFragment>()
     membersQnData?.forEach((m) => {
       memberQnDataById.set(m.id, m)
@@ -254,18 +258,11 @@ export default class Api {
     }
   }
 
-  async workerByWorkerId(group: WorkingGroups, workerId: number): Promise<Worker> {
-    const nextId = await this.workingGroupApiQuery(group).nextWorkerId()
-
-    // This is chain specfic, but if next id is still 0, it means no workers have been added yet
-    if (workerId < 0 || workerId >= nextId.toNumber()) {
-      throw new CLIError('Invalid worker id!')
-    }
-
+  async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
     const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
     if (worker.isEmpty) {
-      throw new CLIError('This worker is not active anymore')
+      throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
     }
 
     return worker
@@ -461,5 +458,64 @@ export default class Api {
     const handleHash = blake2AsHex(handle)
     const existingMeber = await this._api.query.members.memberIdByHandleHash(handleHash)
     return !existingMeber.isEmpty
+  }
+
+  async forumCategoryExists(categoryId: CategoryId | number): Promise<boolean> {
+    const size = await this._api.query.forum.categoryById.size(categoryId)
+    return size.gtn(0)
+  }
+
+  async forumThreadExists(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<boolean> {
+    const size = await this._api.query.forum.threadById.size(categoryId, threadId)
+    return size.gtn(0)
+  }
+
+  async forumPostExists(threadId: ThreadId | number, postId: PostId | number): Promise<boolean> {
+    const size = await this._api.query.forum.postById.size(threadId, postId)
+    return size.gtn(0)
+  }
+
+  async forumCategoryAncestors(categoryId: CategoryId | number): Promise<[CategoryId, Category][]> {
+    const ancestors: [CategoryId, Category][] = []
+    let category = await this._api.query.forum.categoryById(categoryId)
+    while (category.parent_category_id.isSome) {
+      const parentCategoryId = category.parent_category_id.unwrap()
+      category = await this._api.query.forum.categoryById(parentCategoryId)
+      ancestors.push([parentCategoryId, category])
+    }
+    return ancestors
+  }
+
+  async forumCategoryModerators(categoryId: CategoryId | number): Promise<WorkerId[]> {
+    const categoryAncestors = await this.forumCategoryAncestors(categoryId)
+
+    const moderatorIds = _.uniqWith(
+      _.flatten(
+        await Promise.all(
+          [categoryId, ...categoryAncestors.map(([id]) => id)].map(async (id) => {
+            const storageKeys = await this._api.query.forum.categoryByModerator.keys(id)
+            return storageKeys.map((k) => k.args[1])
+          })
+        )
+      ),
+      (a, b) => a.eq(b)
+    )
+
+    return moderatorIds
+  }
+
+  async getForumCategory(categoryId: CategoryId | number): Promise<Category> {
+    const category = await this._api.query.forum.categoryById(categoryId)
+    return category
+  }
+
+  async getForumThread(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<Thread> {
+    const thread = await this._api.query.forum.threadById(categoryId, threadId)
+    return thread
+  }
+
+  async getForumPost(threadId: ThreadId | number, postId: PostId | number): Promise<Post> {
+    const post = await this._api.query.forum.postById(threadId, postId)
+    return post
   }
 }

@@ -3,6 +3,7 @@ import { flags } from '@oclif/command'
 import { WorkingGroups, GroupMember } from '../Types'
 import _ from 'lodash'
 import MembershipsCommandBase from './MembershipsCommandBase'
+import { WorkerId } from '@joystream/types/working-group'
 
 /**
  * Abstract base class for commands relying on a specific working group context
@@ -46,20 +47,30 @@ export default abstract class WorkingGroupCommandBase extends MembershipsCommand
   }
 
   // Use when worker access is required in given command
-  async getRequiredWorkerContext(expectedKeyType: 'Role' | 'MemberController' = 'Role'): Promise<GroupMember> {
+  async getRequiredWorkerContext(
+    expectedKeyType: 'Role' | 'MemberController' = 'Role',
+    allowedIds?: WorkerId[]
+  ): Promise<GroupMember> {
     const flags = this.parse(this.constructor as typeof WorkingGroupCommandBase).flags
 
     const groupMembers = await this.getApi().groupMembers(this.group)
-    const availableGroupMemberContexts = groupMembers.filter((m) =>
+    const allowedGroupMembers = groupMembers.filter((m) => !allowedIds || allowedIds.some((id) => id.eq(m.workerId)))
+
+    const availableGroupMemberContexts = allowedGroupMembers.filter((m) =>
       expectedKeyType === 'Role'
         ? this.isKeyAvailable(m.roleAccount.toString())
         : this.isKeyAvailable(m.profile.membership.controller_account.toString())
     )
 
     if (!availableGroupMemberContexts.length) {
-      this.error(`No ${_.startCase(this.group)} Group Worker ${_.startCase(expectedKeyType)} key available!`, {
-        exit: ExitCodes.AccessDenied,
-      })
+      this.error(
+        `No ${_.startCase(this.group)} Group Worker ${_.startCase(expectedKeyType)} key ${
+          allowedIds ? ` (from the allowed set of workers: ${allowedIds.map((id) => id.toString())})` : ''
+        } available!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
     } else if (availableGroupMemberContexts.length === 1) {
       return availableGroupMemberContexts[0]
     } else {
@@ -85,5 +96,9 @@ export default abstract class WorkingGroupCommandBase extends MembershipsCommand
     })
 
     return groupMembers[chosenWorkerIndex]
+  }
+
+  async ensureWorkerExists(workerId: WorkerId | number): Promise<void> {
+    await this.getApi().workerByWorkerId(this.group, workerId)
   }
 }
