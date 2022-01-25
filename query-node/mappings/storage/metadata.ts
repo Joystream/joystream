@@ -1,4 +1,4 @@
-import { DatabaseManager } from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import {
   DistributionBucketFamilyMetadata,
   DistributionBucketOperatorMetadata,
@@ -11,7 +11,7 @@ import {
   GeographicalAreaSubdivistion,
   DistributionBucketFamilyGeographicArea,
 } from 'query-node/dist/model'
-import { deserializeMetadata, invalidMetadata } from '../common'
+import { deserializeMetadata, deterministicEntityId, invalidMetadata } from '../common'
 import { Bytes } from '@polkadot/types'
 import {
   DistributionBucketOperatorMetadata as DistributionBucketOperatorMetadataProto,
@@ -21,6 +21,7 @@ import {
   GeographicalArea as GeographicalAreaProto,
 } from '@joystream/metadata-protobuf'
 import { isSet, isEmptyObject, isValidCountryCode, isValidSubdivisionCode } from '@joystream/metadata-protobuf/utils'
+import _ from 'lodash'
 
 const protobufContinentToGraphlContinent: { [key in GeographicalAreaProto.Continent]: Continent } = {
   [GeographicalAreaProto.Continent.AF]: Continent.AF,
@@ -33,11 +34,12 @@ const protobufContinentToGraphlContinent: { [key in GeographicalAreaProto.Contin
 }
 
 async function processNodeLocationMetadata(
+  event: SubstrateEvent,
   store: DatabaseManager,
   current: NodeLocationMetadata | undefined,
   meta: INodeLocationMetadata
 ): Promise<NodeLocationMetadata> {
-  const nodeLocation = current || new NodeLocationMetadata()
+  const nodeLocation = current || new NodeLocationMetadata({ id: deterministicEntityId(event) })
   if (isSet(meta.city)) {
     nodeLocation.city = meta.city
   }
@@ -45,7 +47,7 @@ async function processNodeLocationMetadata(
     if (isEmptyObject(meta.coordinates)) {
       nodeLocation.coordinates = null as any
     } else {
-      const coordinates = current?.coordinates || new GeoCoordinates()
+      const coordinates = current?.coordinates || new GeoCoordinates({ id: deterministicEntityId(event) })
       coordinates.latitude = meta.coordinates.latitude || coordinates.latitude || 0
       coordinates.longitude = meta.coordinates.longitude || coordinates.longitude || 0
       await store.save<GeoCoordinates>(coordinates)
@@ -65,6 +67,7 @@ async function processNodeLocationMetadata(
 }
 
 export async function processDistributionOperatorMetadata(
+  event: SubstrateEvent,
   store: DatabaseManager,
   current: DistributionBucketOperatorMetadata | undefined,
   metadataBytes: Bytes
@@ -73,14 +76,14 @@ export async function processDistributionOperatorMetadata(
   if (!meta) {
     return current
   }
-  const metadataEntity = current || new DistributionBucketOperatorMetadata()
+  const metadataEntity = current || new DistributionBucketOperatorMetadata({ id: deterministicEntityId(event) })
   if (isSet(meta.endpoint)) {
     metadataEntity.nodeEndpoint = meta.endpoint
   }
   if (isSet(meta.location)) {
     metadataEntity.nodeLocation = isEmptyObject(meta.location)
       ? (null as any)
-      : await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
+      : await processNodeLocationMetadata(event, store, metadataEntity.nodeLocation, meta.location)
   }
   if (isSet(meta.extra)) {
     metadataEntity.extra = meta.extra
@@ -92,6 +95,7 @@ export async function processDistributionOperatorMetadata(
 }
 
 export async function processStorageOperatorMetadata(
+  event: SubstrateEvent,
   store: DatabaseManager,
   current: StorageBucketOperatorMetadata | undefined,
   metadataBytes: Bytes
@@ -100,14 +104,14 @@ export async function processStorageOperatorMetadata(
   if (!meta) {
     return current
   }
-  const metadataEntity = current || new StorageBucketOperatorMetadata()
+  const metadataEntity = current || new StorageBucketOperatorMetadata({ id: deterministicEntityId(event) })
   if (isSet(meta.endpoint)) {
     metadataEntity.nodeEndpoint = meta.endpoint || (null as any)
   }
   if (isSet(meta.location)) {
     metadataEntity.nodeLocation = isEmptyObject(meta.location)
       ? (null as any)
-      : await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
+      : await processNodeLocationMetadata(event, store, metadataEntity.nodeLocation, meta.location)
   }
   if (isSet(meta.extra)) {
     metadataEntity.extra = meta.extra || (null as any)
@@ -119,6 +123,7 @@ export async function processStorageOperatorMetadata(
 }
 
 export async function processDistributionBucketFamilyMetadata(
+  event: SubstrateEvent,
   store: DatabaseManager,
   current: DistributionBucketFamilyMetadata | undefined,
   metadataBytes: Bytes
@@ -127,7 +132,7 @@ export async function processDistributionBucketFamilyMetadata(
   if (!meta) {
     return current
   }
-  const metadataEntity = current || new DistributionBucketFamilyMetadata()
+  const metadataEntity = current || new DistributionBucketFamilyMetadata({ id: deterministicEntityId(event) })
   if (isSet(meta.region)) {
     metadataEntity.region = meta.region || (null as any)
   }
@@ -138,7 +143,7 @@ export async function processDistributionBucketFamilyMetadata(
     metadataEntity.latencyTestTargets = meta.latencyTestTargets.filter((t) => t)
   }
 
-  await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
+  await store.save<DistributionBucketFamilyMetadata>(metadataEntity)
 
   // Update areas after metadata is saved (since we need an id to reference)
   if (isSet(meta.areas)) {
@@ -146,45 +151,42 @@ export async function processDistributionBucketFamilyMetadata(
     await Promise.all(metadataEntity.areas?.map((a) => store.remove<DistributionBucketFamilyGeographicArea>(a)) || [])
     // Save new areas
     await Promise.all(
-      meta.areas
-        .filter((a) => !isEmptyObject(a))
-        .map(async (a) => {
-          const area = new DistributionBucketFamilyGeographicArea({
-            distributionBucketFamilyMetadata: metadataEntity,
-          })
-
-          if (a.continent) {
-            const continent = new GeographicalAreaContinent()
-            continent.code = protobufContinentToGraphlContinent[a.continent]
-            if (!continent.code) {
-              return invalidMetadata(`Unrecognized continent enum variant: ${a.continent}`)
-            }
-            area.id = `${metadataEntity.id}-C-${continent.code}`
-            area.area = continent
-          }
-
-          if (a.countryCode) {
-            if (!isValidCountryCode(a.countryCode)) {
-              return invalidMetadata(`Invalid country code: ${a.countryCode}`)
-            }
-            const country = new GeographicalAreaCountry()
-            country.code = a.countryCode
-            area.id = `${metadataEntity.id}-c-${country.code}`
-            area.area = country
-          }
-
-          if (a.subdivisionCode) {
-            if (!isValidSubdivisionCode(a.subdivisionCode)) {
-              return invalidMetadata(`Invalid subdivision code: ${a.subdivisionCode}`)
-            }
-            const subdivision = new GeographicalAreaSubdivistion()
-            subdivision.code = a.subdivisionCode
-            area.id = `${metadataEntity.id}-s-${subdivision.code}`
-            area.area = subdivision
-          }
-
-          await store.save<DistributionBucketFamilyGeographicArea>(area)
+      _.uniqWith(
+        meta.areas.filter((a) => !isEmptyObject(a)),
+        _.isEqual
+      ).map(async (a, i) => {
+        const area = new DistributionBucketFamilyGeographicArea({
+          id: `${metadataEntity.id}-${i}`,
+          distributionBucketFamilyMetadata: metadataEntity,
         })
+
+        if (a.continent) {
+          const continent = new GeographicalAreaContinent()
+          continent.code = protobufContinentToGraphlContinent[a.continent]
+          if (!continent.code) {
+            return invalidMetadata(`Unrecognized continent enum variant: ${a.continent}`)
+          }
+          area.area = continent
+        } else if (a.countryCode) {
+          if (!isValidCountryCode(a.countryCode)) {
+            return invalidMetadata(`Invalid country code: ${a.countryCode}`)
+          }
+          const country = new GeographicalAreaCountry()
+          country.code = a.countryCode
+          area.area = country
+        } else if (a.subdivisionCode) {
+          if (!isValidSubdivisionCode(a.subdivisionCode)) {
+            return invalidMetadata(`Invalid subdivision code: ${a.subdivisionCode}`)
+          }
+          const subdivision = new GeographicalAreaSubdivistion()
+          subdivision.code = a.subdivisionCode
+          area.area = subdivision
+        } else {
+          return
+        }
+
+        await store.save<DistributionBucketFamilyGeographicArea>(area)
+      })
     )
   }
 

@@ -1,5 +1,5 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions, Raw } from 'typeorm'
+import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -8,7 +8,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger } from '../common'
+import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -209,9 +209,8 @@ async function processVideoMediaEncoding(
   const encoding =
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
+      id: deterministicEntityId(event),
       createdAt: new Date(event.blockTimestamp),
-      createdById: '1',
-      updatedById: '1',
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
@@ -231,10 +230,9 @@ async function processVideoMediaMetadata(
   const videoMedia =
     existingVideoMedia ||
     new VideoMediaMetadata({
+      id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
       createdAt: new Date(event.blockTimestamp),
-      createdById: '1',
-      updatedById: '1',
     })
 
   // integrate media-related data
@@ -364,13 +362,11 @@ async function processLanguage(
 
   // create new language
   const newLanguage = new Language({
+    id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
-    // TODO: remove these lines after Hydra auto-fills the values when cascading save (remove them on all places)
-    createdById: '1',
-    updatedById: '1',
   })
 
   await store.save<Language>(newLanguage)
@@ -397,9 +393,8 @@ async function updateVideoLicense(
     license =
       previousLicense ||
       new License({
+        id: deterministicEntityId(event),
         createdAt: new Date(event.blockTimestamp),
-        createdById: '1',
-        updatedById: '1',
       })
     license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])

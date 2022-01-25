@@ -3131,7 +3131,7 @@
     yaml-validator "^3.0.0"
 
 "@joystream/types@link:types":
-  version "0.17.0"
+  version "0.17.1"
   dependencies:
     "@polkadot/api" "5.9.1"
     "@polkadot/keyring" "7.3.1"
@@ -5694,6 +5694,13 @@
   version "3.5.36"
   resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.36.tgz#00d9301d4dc35c2f6465a8aec634bb533674c652"
   integrity sha512-HBNx4lhkxN7bx6P0++W8E289foSu8kO8GCk2unhuVggO+cE7rh9DhZUyPhUxNRG9m+5B5BTKxZQ5ZP92x/mx9Q==
+
+"@types/bmp-js@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@types/bmp-js/-/bmp-js-0.1.0.tgz#301afe2bb3ac7ef0f18465966e4166f0491b3332"
+  integrity sha512-uMU85ROcmlY1f4mVPTlNodRXa6Z5f0AIxvv5b0pvjty3KNg7ljf5lNSspHgaF6iFDCiGpLQmJna+VwEpUC9TyA==
+  dependencies:
+    "@types/node" "*"
 
 "@types/bn.js@^4.11.5", "@types/bn.js@^4.11.6":
   version "4.11.6"
@@ -9526,6 +9533,11 @@ bluebird@~3.4.1:
   version "3.4.7"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.4.7.tgz#f72d760be09b7f76d08ed8fae98b289a8d05fab3"
   integrity sha1-9y12C+Cbf3bQjtj66Ysomo0F+rM=
+
+bmp-js@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/bmp-js/-/bmp-js-0.1.0.tgz#e05a63f796a6c1ff25f4771ec7adadc148c07233"
+  integrity sha1-4Fpj95amwf8l9Hcex62twUjAcjM=
 
 bn.js@4.12.0, bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.11.8, bn.js@^4.11.9, bn.js@^4.12.0, bn.js@^5.0.0, bn.js@^5.1.1, bn.js@^5.1.2, bn.js@^5.1.3, bn.js@^5.2.0:
   version "4.12.0"

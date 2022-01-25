@@ -29,6 +29,9 @@ export default {
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
     return workerPayouts(api, env, WorkingGroups.Content, lock)
   },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workerPayouts(api, env, WorkingGroups.Distribution, lock)
+  },
 }
 
 async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
