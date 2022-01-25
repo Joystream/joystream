@@ -1059,6 +1059,7 @@ export interface StorageBucket extends Struct {
   readonly operator_status: StorageBucketOperatorStatus;
   readonly accepting_new_bags: bool;
   readonly voucher: Voucher;
+  readonly assigned_bags: u64;
 }
 
 /** @name StorageBucketId */
