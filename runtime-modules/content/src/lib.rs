@@ -58,7 +58,7 @@ pub trait Trait:
     frame_system::Trait
     + ContentActorAuthenticator
     + Clone
-    + MembershipTypes
+    + membership::Trait
     + balances::Trait
     + storage::Trait
     + GovernanceCurrency

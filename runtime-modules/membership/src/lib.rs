@@ -1029,7 +1029,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
+    pub fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)
     }
 
