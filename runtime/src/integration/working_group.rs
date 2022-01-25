@@ -2,7 +2,8 @@ use frame_support::StorageMap;
 use sp_std::marker::PhantomData;
 
 use crate::{
-    ContentWorkingGroupInstance, DistributionWorkingGroupInstance, GatewayWorkingGroupInstance,
+    ContentWorkingGroupInstance, DistributionWorkingGroupInstance, ForumWorkingGroupInstance,
+    GatewayWorkingGroupInstance, MembershipWorkingGroupInstance,
     OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
     OperationsWorkingGroupInstanceGamma, StorageWorkingGroupInstance,
 };
@@ -54,7 +55,7 @@ macro_rules! wg_staking_event_impl {
 
 // Will be removed in the next releases.
 #[allow(clippy::upper_case_acronyms)]
-pub struct ContentDirectoryWgStakingEventsHandler<T> {
+pub struct ContentWgStakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }
 
@@ -82,9 +83,17 @@ pub struct DistributionWgStakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }
 
+pub struct ForumWgStakingEventsHandler<T> {
+    pub marker: PhantomData<T>,
+}
+
+pub struct MembershipWgStakingEventsHandler<T> {
+    pub marker: PhantomData<T>,
+}
+
 wg_staking_event_impl!(
     ContentWorkingGroupInstance,
-    ContentDirectoryWgStakingEventsHandler<T>
+    ContentWgStakingEventsHandler<T>
 );
 
 wg_staking_event_impl!(
@@ -115,4 +124,9 @@ wg_staking_event_impl!(
 wg_staking_event_impl!(
     DistributionWorkingGroupInstance,
     DistributionWgStakingEventsHandler<T>
+);
+wg_staking_event_impl!(ForumWorkingGroupInstance, ForumWgStakingEventsHandler<T>);
+wg_staking_event_impl!(
+    MembershipWorkingGroupInstance,
+    MembershipWgStakingEventsHandler<T>
 );
