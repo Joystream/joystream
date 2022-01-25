@@ -28,7 +28,10 @@ pub use storage::{
     UploadParametersRecord,
 };
 
-pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership, Url};
+pub use common::{
+    currency::GovernanceCurrency, working_group::WorkingGroup, MembershipTypes, StorageOwnership,
+    Url,
+};
 use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
@@ -58,6 +61,7 @@ pub trait Trait:
     + MembershipTypes
     + balances::Trait
     + storage::Trait
+    + GovernanceCurrency
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
