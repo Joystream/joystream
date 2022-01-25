@@ -7,16 +7,19 @@ use crate::{
     OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
     OperationsWorkingGroupInstanceGamma, StorageWorkingGroupInstance,
 };
-use stake::{BalanceOf, NegativeImbalance};
+
+use pallet_balances::NegativeImbalance;
+
+type BalanceOf<T> = <T as pallet_balances::Trait>::Balance;
 
 macro_rules! wg_staking_event_impl {
     ($operation_wg_instance:ident, $operation_wg_staking_event_handler:ty) => {
-        impl<T: stake::Trait + working_group::Trait<$operation_wg_instance>>
-            stake::StakingEventsHandler<T> for $operation_wg_staking_event_handler
+        impl<T: staking_handler::Trait + working_group::Trait<$operation_wg_instance>>
+            staking_handler::StakingEventsHandler<T> for $operation_wg_staking_event_handler
         {
             /// Unstake remaining sum back to the source_account_id
             fn unstaked(
-                stake_id: &<T as stake::Trait>::StakeId,
+                stake_id: &<T as staking_handler::Trait>::StakeId,
                 _unstaked_amount: BalanceOf<T>,
                 remaining_imbalance: NegativeImbalance<T>,
             ) -> NegativeImbalance<T> {
@@ -41,8 +44,8 @@ macro_rules! wg_staking_event_impl {
 
             /// Empty handler for the slashing.
             fn slashed(
-                _: &<T as stake::Trait>::StakeId,
-                _: Option<<T as stake::Trait>::SlashId>,
+                _: &<T as staking_handler::Trait>::StakeId,
+                _: Option<<T as staking_handler::Trait>::SlashId>,
                 _: BalanceOf<T>,
                 _: BalanceOf<T>,
                 remaining_imbalance: NegativeImbalance<T>,
