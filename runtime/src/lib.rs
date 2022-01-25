@@ -680,8 +680,12 @@ pub type StakingCandidateStakingHandler =
     staking_handler::StakingManager<Runtime, StakingCandidateLockId>;
 pub type GatewayWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
-pub type OperationsWorkingGroupStakingManager =
-    staking_handler::StakingManager<Runtime, OperationsWorkingGroupLockId>;
+pub type OperationsWorkingGroupAlphaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupAlphaLockId>;
+pub type OperationsWorkingGroupBetaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupBetaLockId>;
+pub type OperationsWorkingGroupGammaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupGammaLockId>;
 
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
@@ -694,22 +698,9 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance6;
-
+nnn
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
-
-impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = ForumWorkingGroupStakingManager;
-    type StakingAccountValidator = Members;
-    type MemberOriginValidator = Members;
-    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = ForumWorkingGroupRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
 
 // The operation working group alpha instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
@@ -725,6 +716,19 @@ pub type MembershipWorkingGroupInstance = working_group::Instance9;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+}
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = ForumWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
+    type MemberOriginValidator = Members;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = ForumWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -771,19 +775,6 @@ impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = OperationsWorkingGroupStakingManager;
-    type StakingAccountValidator = Members;
-    type MemberOriginValidator = Members;
-    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = OperationsRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
-
 impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -797,14 +788,17 @@ impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-}
-
-impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Runtime {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = OperationsWorkingGroupAlphaStakingManager;
+    type StakingAccountValidator = Members;
+    type MemberOriginValidator = Members;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = OperationsRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 parameter_types! {
