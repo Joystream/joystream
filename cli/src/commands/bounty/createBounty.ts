@@ -1,5 +1,6 @@
 import { getInputJson } from '../../helpers/InputOutput'
 import { BountyCreationParameters } from '@joystream/types/bounty'
+import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { BountyInputSchema } from '../../json-schemas/Bounty'
@@ -48,8 +49,22 @@ export default class CreateBountyCommand extends BountyCommandBase {
     const metadata = asValidatedMetadata(BountyMetadata, bountyInput)
 
     const oracle = await this.validateAndPrepareOracleInput(bountyInput.oracle)
-    const contractType = await this.prepareContractTypeInput(contract, bountyInput.contractTypeInput)
+    const contractType = await this.validateAndPrepareContractTypeInput(contract, bountyInput.contractTypeInput)
     const fundingType = await this.validateAndPrepareFundingTypeInput(funding, bountyInput.fundingType)
+
+    // Do remaining validations on input
+    if (bountyInput.cherry < this.getOriginalApi().consts.bounty.minCherryLimit.toNumber()) {
+      this.error('Attached cherry is less that minimum cherry limit', { exit: ExitCodes.InvalidInput })
+    }
+    if (bountyInput.entrantStake < this.getOriginalApi().consts.bounty.minWorkEntrantStake.toNumber()) {
+      this.error('Attached entrant stake is less that minimum work entrant stake', { exit: ExitCodes.InvalidInput })
+    }
+    if (bountyInput.workPeriod !== 0) {
+      this.error('Work period cannot be zero', { exit: ExitCodes.InvalidInput })
+    }
+    if (bountyInput.judgementPeriod !== 0) {
+      this.error('Judging period cannot be zero', { exit: ExitCodes.InvalidInput })
+    }
 
     const bountyCreationParameters: CreateInterface<BountyCreationParameters> = {
       oracle,

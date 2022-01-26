@@ -68,6 +68,17 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
     })
   }
 
+  async validateAndPrepareOracleInput(oracle: number | undefined): Promise<BountyActor> {
+    if (!oracle) {
+      return this.createType('BountyActor', { Council: null })
+    } else {
+      // ensure that member id is valid
+      await this.getOriginalApi().query.members.membershipById(oracle)
+
+      return this.createType('BountyActor', { Member: oracle })
+    }
+  }
+
   // validate funding type input passed as json object key value
   async validateAndPrepareFundingTypeInput(
     fundingType: typeof FUNDING_TYPE_CONTEXTS[number],
@@ -100,17 +111,26 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
 
   // prepare 'AssuranceContractType' based on contract type input i.e. Open | Closed. if contract type
   // is open then contractTypeInput field in json input to createBounty command supposed to be empty array.
-  // Otherwise it would contain list of member id that can submit work.
-  async prepareContractTypeInput(
+  // Otherwise it would contain list of member ids that can submit work.
+  async validateAndPrepareContractTypeInput(
     contractType: typeof CONTRACT_TYPE_CONTEXTS[number],
-    contractInput?: string[]
+    contractInput: string[]
   ): Promise<AssuranceContractType> {
     if (contractType === 'Open') {
       return this.createType('AssuranceContractType', { Open: null })
     } else {
-      if (contractInput !== undefined && contractInput.length === 0) {
+      if (contractInput.length === 0) {
         throw new Error('Closed contract member list is empty')
       }
+      if (contractInput.length > this.getOriginalApi().consts.bounty.closedContractSizeLimit.toNumber()) {
+        throw new CLIError(`Judging period cannot be zero`)
+      }
+
+      // Checks that each member id id valid
+      contractInput.forEach(async (each) => {
+        const memberId = await this.createType('MemberId', each)
+        await this.getApi().expectedMembershipById(memberId)
+      })
       return this.createType('AssuranceContractType', { Closed: contractInput })
     }
   }
@@ -126,17 +146,6 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
 
     if (!bounty.milestone.isOfType('Created') || !bounty.milestone.asType('Created').has_contributions) {
       throw new CLIError(`Bounty cannot be cancelled at this stage`)
-    }
-  }
-
-  async validateAndPrepareOracleInput(oracle: number | undefined): Promise<BountyActor> {
-    if (!oracle) {
-      return this.createType('BountyActor', { Council: null })
-    } else {
-      // ensure that memver id is valid
-      await this.getOriginalApi().query.members.membershipById(oracle)
-
-      return this.createType('BountyActor', { Member: oracle })
     }
   }
 
