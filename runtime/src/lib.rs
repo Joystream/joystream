@@ -400,6 +400,30 @@ impl pallet_im_online::Trait for Runtime {
     type UnsignedPriority = ImOnlineUnsignedPriority;
 }
 
+impl pallet_staking::Trait for Runtime {
+    type Currency = Balances;
+    type UnixTime = Timestamp;
+    type CurrencyToVote = CurrencyToVoteHandler;
+    type RewardRemainder = (); // Could be Treasury.
+    type Event = Event;
+    type Slash = (); // Where to send the slashed funds. Could be Treasury.
+    type Reward = (); // Rewards are minted from the void.
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SlashDeferDuration = SlashDeferDuration;
+    type SlashCancelOrigin = EnsureRoot<AccountId>; // Requires sudo. Parity recommends: a super-majority of the council can cancel the slash.
+    type SessionInterface = Self;
+    type RewardCurve = RewardCurve;
+    type NextNewSession = Session;
+    type ElectionLookahead = ElectionLookahead;
+    type Call = Call;
+    type MaxIterations = MaxIterations;
+    type MinSolutionScoreBump = MinSolutionScoreBump;
+    type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
+    type UnsignedPriority = StakingUnsignedPriority;
+    type WeightInfo = weights::pallet_staking::WeightInfo;
+}
+
 parameter_types! {
     pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MaximumBlockWeight::get();
 }
