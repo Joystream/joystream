@@ -22,7 +22,7 @@ function TxButton ({ accountId, className = '', extrinsic: propsExtrinsic, icon,
   const needsAccount = !isUnsigned && !accountId;
 
   const _onFailed = useCallback(
-    (result: SubmittableResult | null): void => {
+    (result: SubmittableResult | Error | null): void => {
       setIsSending(false);
 
       onFailed && onFailed(result);

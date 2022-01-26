@@ -38,19 +38,35 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH> --plaintext isMinikube=true \
-    --plaintext indexerURL=<URL>
+    --plaintext dbPassword=password --plaintext blockHeight=0 \
+    --plaintext joystreamWsEndpoint=ws://endpoint.somewhere.net:9944 \
+    --plaintext isMinikube=true --plaintext skipProcessor=false
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
 
    ```bash
-   $ puluim config set isMinikube false
+   $ pulumi config set isMinikube false
    ```
 
-1. Create a `.env` file in this directory (`cp ../../../.env ./.env`) and set the database and other variables in it
+   If you want to use an existing Indexer and not deploy a new one set `externalIndexerUrl`
 
-   Make sure to set `GRAPHQL_SERVER_PORT=4001`
+   ```bash
+   $ pulumi config set externalIndexerUrl <URL>
+   ```
+
+   You must have a valid docker image of `joystream/apps` either on Docker hub or your local to deploy the infrastructure.
+   If the image exists locally & you are running on minikube, run
+
+   ```bash
+   $ pulumi config set-all --plaintext useLocalRepo=true --plaintext appsImage=<IMAGE_NAME>
+   ```
+
+   NOTE: The docker deamon for minikube is different from that of the docker desktop. To connect your Docker CLI to the docker
+   daemon inside the VM you need to run: `eval $(minikube docker-env)`. To copy the image from your local deamon to minikube run
+   `minikube image load joystream/apps:latest --daemon`.
+
+   If not using minikube, just specify the `appsImage` config.
 
 1. Stand up the Kubernetes cluster:
 
@@ -70,6 +86,11 @@ After cloning this repo, from this working directory, run these commands:
 1. You can now access the endpoints using `pulumi stack output endpoint1` or `pulumi stack output endpoint2`
 
    The GraphQl server is accessible at `https://<ENDPOINT>/server/graphql` and indexer at `https://<ENDPOINT>/indexer/graphql`
+
+1. If you are using Minikube, run `minikube service graphql-server -n $(pulumi stack output namespaceName)`
+
+   This will setup a proxy for your `query-node` service, which can then be accessed at
+   the URL given in the output
 
 1. Access the Kubernetes Cluster using `kubectl`
 

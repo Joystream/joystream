@@ -9,7 +9,7 @@ import React, { useCallback, useState } from 'react';
 import styled from 'styled-components';
 import { Button, Icon, Extrinsic, Toggle, TxButton, InputNumber } from '@polkadot/react-components';
 import { useApi, useToggle } from '@polkadot/react-hooks';
-import { BN_ZERO } from '@polkadot/util';
+import { BN_ZERO, isFunction } from '@polkadot/util';
 
 import { useTranslation } from './translate';
 
@@ -56,7 +56,7 @@ function Sudo ({ className, isMine, sudoKey }: Props): React.ReactElement<Props>
             value={weight}
           />
         )}
-        {api.tx.sudo.sudoUncheckedWeight && (
+        {isFunction(api.tx.sudo.sudoUncheckedWeight) && (
           <Toggle
             className='sudoToggle'
             label={

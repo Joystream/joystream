@@ -14,11 +14,6 @@ pub type TransactionPriority = u64;
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
 
-/// Alias for DAOId, used in various places.
-// Allow DAOId alias to avoid breaking api/types names
-#[allow(clippy::upper_case_acronyms)]
-pub type DAOId = u64;
-
 /// Alias for DataObjectTypeId, used in various places.
 pub type DataObjectTypeId = u64;
 
@@ -93,6 +88,22 @@ pub type ActorId = u64;
 
 /// Represent an member in membership group, which is the same in the working groups.
 pub type MemberId = u64;
+
+/// Represent a data object from the storage pallet.
+pub type DataObjectId = u64;
+
+/// Represent a storage bucket from the storage pallet.
+pub type StorageBucketId = u64;
+
+/// Represent a distribution bucket index within the distribution bucket family from the
+/// storage pallet.
+pub type DistributionBucketIndex = u64;
+
+/// Represent a distribution bucket family from the storage pallet.
+pub type DistributionBucketFamilyId = u64;
+
+/// Represent relationships between distribution buckets and distribution working group workers.
+pub type DistributionBucketOperatorId = u64;
 
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this

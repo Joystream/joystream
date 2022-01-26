@@ -1,13 +1,15 @@
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { v4 as uuid } from 'uuid'
 import { RewardRelationship } from '@joystream/types/recurring-rewards'
-import { Application, ApplicationIdToWorkerIdMap, Worker, WorkerId } from '@joystream/types/working-group'
+import { Application, Worker, WorkerId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
 import { ApplicationId, Opening as HiringOpening, OpeningId } from '@joystream/types/hiring'
-import { BaseFixture } from '../Fixture'
+import { BaseFixture, FixtureRunner } from '../Fixture'
+import { BuyMembershipHappyCaseFixture } from './membershipModule'
 
 export class AddWorkerOpeningFixture extends BaseFixture {
   private applicationStake: BN
@@ -76,7 +78,7 @@ export class AddWorkerOpeningFixture extends BaseFixture {
     )
 
     // We don't assert, we allow potential failure
-    this.result = this.api.findOpeningAddedEvent(result.events, this.module)
+    this.result = this.api.findEvent(result, this.module, 'OpeningAdded')?.data[0]
   }
 }
 
@@ -128,7 +130,7 @@ export class SudoAddLeaderOpeningFixture extends BaseFixture {
     )
 
     // We don't assert, we allow potential failure
-    this.result = this.api.findOpeningAddedEvent(result.events, this.module)
+    this.result = this.api.findEvent(result, this.module, 'OpeningAdded')?.data[0]
   }
 }
 
@@ -270,7 +272,7 @@ export class BeginApplicationReviewFixture extends BaseFixture {
     // const beginApplicantReviewPromise: Promise<ApplicationId> = this.api.expectApplicationReviewBegan()
     const result = await this.api.beginApplicantReview(leadAccount, this.openingId, this.module)
 
-    assert.notEqual(this.api.findApplicationReviewBeganEvent(result.events, this.module), undefined)
+    this.api.getEvent(result, this.module, 'BeganApplicationReview')
   }
 }
 
@@ -352,11 +354,7 @@ export class FillOpeningFixture extends BaseFixture {
       this.payoutInterval,
       this.module
     )
-    const applicationIdToWorkerIdMap = this.api.findOpeningFilledEvent(
-      result.events,
-      this.module
-    ) as ApplicationIdToWorkerIdMap
-    assert.notEqual(applicationIdToWorkerIdMap, undefined)
+    const applicationIdToWorkerIdMap = this.api.getEvent(result, this.module, 'OpeningFilled').data[1]
 
     this.workerIds = []
     applicationIdToWorkerIdMap.forEach((workerId) => this.workerIds.push(workerId))
@@ -412,11 +410,7 @@ export class SudoFillLeaderOpeningFixture extends BaseFixture {
     )
 
     // Assertions
-    const applicationIdToWorkerIdMap = this.api.findOpeningFilledEvent(
-      result.events,
-      this.module
-    ) as ApplicationIdToWorkerIdMap
-    assert.notEqual(applicationIdToWorkerIdMap, undefined)
+    const applicationIdToWorkerIdMap = this.api.getEvent(result, this.module, 'OpeningFilled').data[1]
     assert.equal(applicationIdToWorkerIdMap.size, 1)
 
     applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
@@ -718,5 +712,112 @@ export class AwaitPayoutFixture extends BaseFixture {
       balanceAfterSecondPayout.eq(expectedBalanceSecond),
       `Unexpected balance, expected ${expectedBalanceSecond} got ${balanceAfterSecondPayout}`
     )
+  }
+}
+
+type HireWorkesConfig = {
+  applicationStake: BN
+  roleStake: BN
+  firstRewardInterval: BN
+  rewardInterval: BN
+  payoutAmount: BN
+  unstakingPeriod: BN
+  openingActivationDelay: BN
+}
+
+export class HireWorkesFixture extends BaseFixture {
+  private numberOfWorkers: number
+  private config: HireWorkesConfig
+  private module: WorkingGroups
+  private workerIds: WorkerId[] = []
+
+  constructor(api: Api, numberOfWorkers: number, module: WorkingGroups, config?: Partial<HireWorkesConfig>) {
+    super(api)
+    this.numberOfWorkers = numberOfWorkers
+    this.module = module
+    this.config = {
+      applicationStake: config?.applicationStake || new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!),
+      roleStake: config?.roleStake || new BN(process.env.WORKING_GROUP_ROLE_STAKE!),
+      firstRewardInterval: config?.firstRewardInterval || new BN(process.env.SHORT_FIRST_REWARD_INTERVAL!),
+      rewardInterval: config?.rewardInterval || new BN(process.env.SHORT_REWARD_INTERVAL!),
+      payoutAmount: config?.payoutAmount || new BN(process.env.PAYOUT_AMOUNT!),
+      unstakingPeriod: config?.unstakingPeriod || new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!),
+      openingActivationDelay: config?.openingActivationDelay || new BN(0),
+    }
+  }
+
+  public getHiredWorkers(): WorkerId[] {
+    if (!this.executed) {
+      throw new Error('Fixture not yet executed!')
+    }
+    return this.workerIds
+  }
+
+  public async execute(): Promise<void> {
+    const { api, module } = this
+    const {
+      applicationStake,
+      roleStake,
+      openingActivationDelay,
+      unstakingPeriod,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount,
+    } = this.config
+
+    const lead = await api.getGroupLead(module)
+    assert(lead)
+
+    const paidTemrsId = api.createPaidTermId(new BN(process.env.MEMBERSHIP_PAID_TERMS!))
+    const newMembers = api.createKeyPairs(this.numberOfWorkers).map(({ key }) => key.address)
+
+    const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTemrsId)
+    // Recreating set of members
+    await new FixtureRunner(memberSetFixture).run()
+    const applicants = newMembers
+
+    const addWorkerOpeningFixture = new AddWorkerOpeningFixture(
+      api,
+      applicationStake,
+      roleStake,
+      openingActivationDelay,
+      unstakingPeriod,
+      module
+    )
+    // Add worker opening
+    await new FixtureRunner(addWorkerOpeningFixture).run()
+
+    // First apply for worker opening
+    const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
+      api,
+      applicants,
+      applicationStake,
+      roleStake,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
+      module
+    )
+    await new FixtureRunner(applyForWorkerOpeningFixture).run()
+    const applicationIds = applyForWorkerOpeningFixture.getApplicationIds()
+
+    // Begin application review
+    const beginApplicationReviewFixture = new BeginApplicationReviewFixture(
+      api,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
+      module
+    )
+    await new FixtureRunner(beginApplicationReviewFixture).run()
+
+    // Fill worker opening
+    const fillOpeningFixture = new FillOpeningFixture(
+      api,
+      applicationIds,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount,
+      module
+    )
+    await new FixtureRunner(fillOpeningFixture).run()
+    this.workerIds = fillOpeningFixture.getWorkerIds()
   }
 }

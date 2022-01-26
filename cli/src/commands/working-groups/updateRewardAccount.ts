@@ -8,9 +8,9 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
   static description = 'Updates the worker/lead reward account (requires current role account to be selected)'
   static args = [
     {
-      name: 'accountAddress',
+      name: 'address',
       required: false,
-      description: 'New reward account address (if omitted, one of the existing CLI accounts can be selected)',
+      description: 'New reward account address (if omitted, can be provided interactivel)',
     },
   ]
 
@@ -18,31 +18,29 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
-    const { args } = this.parse(WorkingGroupsUpdateRewardAccount)
+  async run(): Promise<void> {
+    let { address } = this.parse(WorkingGroupsUpdateRewardAccount).args
 
-    const account = await this.getRequiredSelectedAccount()
     // Worker-only gate
-    const worker = await this.getRequiredWorker()
+    const worker = await this.getRequiredWorkerContext()
 
     if (!worker.reward) {
       this.error('There is no reward relationship associated with this role!', { exit: ExitCodes.InvalidInput })
     }
 
-    let newRewardAccount: string = args.accountAddress
-    if (!newRewardAccount) {
-      const accounts = await this.fetchAccounts()
-      newRewardAccount = (await this.promptForAccount(accounts, undefined, 'Choose the new reward account')).address
+    if (!address) {
+      address = await this.promptForAnyAddress('Select new reward account')
+    } else if (validateAddress(address) !== true) {
+      this.error('Invalid address', { exit: ExitCodes.InvalidInput })
     }
-    validateAddress(newRewardAccount)
 
-    await this.requestAccountDecoding(account)
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(worker.roleAccount),
+      apiModuleByGroup[this.group],
+      'updateRewardAccount',
+      [worker.workerId, address]
+    )
 
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAccount', [
-      worker.workerId,
-      newRewardAccount,
-    ])
-
-    this.log(chalk.green(`Successfully updated the reward account to: ${chalk.magentaBright(newRewardAccount)})`))
+    this.log(chalk.green(`Successfully updated the reward account to: ${chalk.magentaBright(address)})`))
   }
 }

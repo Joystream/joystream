@@ -4,47 +4,53 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "./build-npm-packages.sh && ./build-docker-images.sh",
-    "build:packages": "./build-npm-packages.sh",
-    "build:docker": "./build-docker-images.sh",
+    "build:node:docker": "./build-node-docker.sh",
+    "build:packages": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
-    "cargo-build": "scripts/cargo-build.sh"
+    "cargo-build": "scripts/cargo-build.sh",
+    "update-chain-metadata": "scripts/fetch-chain-metadata.sh > chain-metadata.json",
+    "verify-chain-metadata": "scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
     "tests/network-tests",
     "cli",
     "types",
     "storage-node",
-    "storage-node/packages/*",
+    "distributor-node",
     "devops/eslint-config",
     "devops/prettier-config",
     "pioneer",
     "pioneer/packages/*",
     "utils/api-scripts",
+    "utils/migration-scripts",
     "query-node",
     "query-node/mappings",
-    "query-node/generated/*",
-    "content-metadata-protobuf"
+    "query-node/generated/graphql-server",
+    "metadata-protobuf"
   ],
   "resolutions": {
-    "@polkadot/api": "4.2.1",
-    "@polkadot/api-contract": "4.2.1",
-    "@polkadot/keyring": "^6.0.5",
-    "@polkadot/metadata": "4.2.1",
-    "@polkadot/types": "4.2.1",
-    "@polkadot/util": "^6.0.5",
-    "@polkadot/util-crypto": "^6.0.5",
-    "@polkadot/wasm-crypto": "^4.0.2",
-    "warthog": "https://github.com/Joystream/warthog/releases/download/v2.37.3-sumer/joystream-warthog-v2.37.3-sumer.tgz",
+    "@polkadot/api": "5.9.1",
+    "@polkadot/api-contract": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/types": "5.9.1",
+    "@polkadot/types-known": "5.9.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
+    "@polkadot/api-derive": "5.9.1",
+    "@polkadot/rpc-core": "5.9.1",
+    "@polkadot/rpc-provider": "5.9.1",
+    "@polkadot/x-global": "7.3.1",
+    "@polkadot/networks": "7.3.1",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.9.7",
-    "bn.js": "^5.1.2",
-    "rxjs": "^6.6.2",
-    "typeorm": "^0.2.31",
+    "typescript": "^4.4.3",
+    "bn.js": "4.12.0",
+    "rxjs": "^7.4.0",
+    "typeorm": "0.2.34",
     "pg": "^8.4.0",
-    "chalk": "^4.0.0"
+    "chalk": "^4.0.0",
+    "@joystream/warthog": "2.41.2"
   },
   "devDependencies": {
     "eslint": "^7.25.0",
@@ -59,10 +65,10 @@
   },
   "engines": {
     "node": ">=14.0.0",
-    "yarn": "^1.22.0"
+    "yarn": "^1.22.15"
   },
   "volta": {
-    "node": "14.16.1",
-    "yarn": "1.22.4"
+    "node": "14.18.0",
+    "yarn": "1.22.15"
   }
 }

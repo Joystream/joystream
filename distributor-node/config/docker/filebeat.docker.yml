@@ -1,0 +1,19 @@
+setup.kibana:
+  host: 'kibana:5601'
+output.elasticsearch:
+  hosts: ['elasticsearch:9200']
+# Using log files:
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths: /logs/*.json
+    json.keys_under_root: true
+    json.overwrite_keys: true
+    json.add_error_key: true
+    json.expand_keys: true
+# Docker autodiscover alternative:
+# filebeat.autodiscover:
+#   providers:
+#     - type: docker
+#       hints.enabled: true
+#       hints.default_config.enabled: false

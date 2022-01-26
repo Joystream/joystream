@@ -1,3 +1,6 @@
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
+
 use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Zero};

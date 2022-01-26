@@ -1,9 +1,10 @@
-import { Vec, Option, Tuple } from '@polkadot/types'
+import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
-import { ContentParameters } from '../storage'
+import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
+
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
@@ -17,13 +18,13 @@ export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 
-export class NewAsset extends JoyEnum({
-  Upload: ContentParameters,
-  Urls: Vec.with(Url),
+export class StorageAssets extends JoyStructDecorated({
+  object_creation_list: Vec.with(DataObjectCreationParameters),
+  expected_data_size_fee: u128,
 }) {}
 
 export class CuratorGroup extends JoyStructDecorated({
-  curators: JoyBTreeSet(CuratorId),
+  curators: BTreeSet.with(CuratorId),
   active: bool,
 }) {}
 
@@ -31,33 +32,35 @@ export class ContentActor extends JoyEnum({
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
+  Collaborator: MemberId,
 }) {}
 
 export class ChannelOwner extends JoyEnum({
   Member: MemberId,
   Curators: CuratorGroupId,
-  Dao: DAOId,
 }) {}
 
 export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
-  videos: Vec.with(VideoId),
-  playlists: Vec.with(PlaylistId),
-  series: Vec.with(SeriesId),
+  num_videos: u64,
   is_censored: bool,
   reward_account: Option.with(AccountId),
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
-  meta: Bytes,
+  assets: Option.with(StorageAssets),
+  meta: Option.with(Bytes),
   reward_account: Option.with(AccountId),
+  collaborators: BTreeSet.with(MemberId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
   reward_account: Option.with(Option.with(AccountId)),
+  assets_to_remove: BTreeSet.with(DataObjectId),
+  collaborators: Option.with(BTreeSet.with(MemberId)),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
@@ -98,13 +101,14 @@ export class Video extends JoyStructDecorated({
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
-  meta: Bytes,
+  assets: Option.with(StorageAssets),
+  meta: Option.with(Bytes),
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
+  assets_to_remove: BTreeSet.with(DataObjectId),
 }) {}
 
 export class Playlist extends JoyStructDecorated({
@@ -129,7 +133,7 @@ export class Season extends JoyStructDecorated({
 }) {}
 
 export class SeasonParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(StorageAssets),
   episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
   meta: Option.with(Bytes),
 }) {}
@@ -140,7 +144,7 @@ export class Series extends JoyStructDecorated({
 }) {}
 
 export class SeriesParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(StorageAssets),
   seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
   meta: Option.with(Bytes),
 }) {}
@@ -155,12 +159,12 @@ export class Person extends JoyStructDecorated({
 }) {}
 
 export class PersonCreationParameters extends JoyStructDecorated({
-  assets: Vec.with(NewAsset),
+  assets: StorageAssets,
   meta: Bytes,
 }) {}
 
 export class PersonUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(Vec.with(NewAsset)),
+  assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
 }) {}
 
@@ -169,12 +173,21 @@ export class PersonActor extends JoyEnum({
   Curator: CuratorId,
 }) {}
 
+export class VideoMigrationConfig extends JoyStructDecorated({
+  current_id: VideoId,
+  final_id: VideoId,
+}) {}
+export class ChannelMigrationConfig extends JoyStructDecorated({
+  current_id: ChannelId,
+  final_id: ChannelId,
+}) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
   CuratorGroup,
   ContentActor,
-  NewAsset,
+  StorageAssets,
   Channel,
   ChannelOwner,
   ChannelCategoryId,
@@ -211,6 +224,8 @@ export const contentTypes = {
   EpisodeParemters,
   MaxNumber,
   IsCensored,
+  VideoMigrationConfig,
+  ChannelMigrationConfig,
 }
 
 export default contentTypes

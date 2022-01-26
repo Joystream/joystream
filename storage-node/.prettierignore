@@ -1,1 +1,2 @@
-packages/cli/dist
+/lib/
+.nyc_output

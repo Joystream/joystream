@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import {
   AddWorkerOpeningFixture,
@@ -23,10 +24,13 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return workerPayouts(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return workerPayouts(api, env, WorkingGroups.Content, lock)
+  },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workerPayouts(api, env, WorkingGroups.Distribution, lock)
   },
 }
 
