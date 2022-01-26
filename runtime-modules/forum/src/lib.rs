@@ -1102,7 +1102,13 @@ decl_module! {
         ).max(WeightInfoForum::<T>::move_thread_to_category_moderator(
             T::MaxCategoryDepth::get() as u32,
         ))]
-        fn move_thread_to_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> DispatchResult {
+        fn move_thread_to_category(
+            origin,
+            actor: PrivilegedActor<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            new_category_id: T::CategoryId
+        ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1115,8 +1121,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let updated_thread = Thread {
+                category_id: new_category_id,
+                ..thread
+            };
+
             <ThreadById<T>>::remove(thread.category_id, thread_id);
-            <ThreadById<T>>::insert(new_category_id, thread_id, thread.clone());
+            <ThreadById<T>>::insert(new_category_id, thread_id, updated_thread);
             <CategoryById<T>>::mutate(thread.category_id, |category| category.num_direct_threads -= 1);
             <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
 
