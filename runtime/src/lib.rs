@@ -890,11 +890,15 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
-        CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
+        Constitution: pallet_constitution::{Module, Call, Storage, Event},
+        Bounty: bounty::{Module, Call, Storage, Event<T>},
+        Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
+        JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Proposals
