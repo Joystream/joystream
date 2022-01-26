@@ -37,7 +37,7 @@ impl<
 }
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
+pub trait ContentActorAuthenticator: frame_system::Trait + common::MembershipTypes {
     /// Curator identifier
     type CuratorId: Parameter
         + Member

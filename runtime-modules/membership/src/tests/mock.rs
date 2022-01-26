@@ -230,62 +230,62 @@ impl working_group::WeightInfo for Weights {
     }
 }
 
-impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_profile(_: u32) -> Weight {
-        0
-    }
-    fn update_accounts_none() -> Weight {
-        0
-    }
-    fn update_accounts_root() -> Weight {
-        0
-    }
-    fn update_accounts_controller() -> Weight {
-        0
-    }
-    fn update_accounts_both() -> Weight {
-        0
-    }
-    fn set_referral_cut() -> Weight {
-        0
-    }
-    fn transfer_invites() -> Weight {
-        0
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_membership_price() -> Weight {
-        0
-    }
-    fn update_profile_verification() -> Weight {
-        0
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        0
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        0
-    }
-    fn set_initial_invitation_count() -> Weight {
-        0
-    }
-    fn add_staking_account_candidate() -> Weight {
-        0
-    }
-    fn confirm_staking_account() -> Weight {
-        0
-    }
-    fn remove_staking_account() -> Weight {
-        0
-    }
-}
+// impl WeightInfo for () {
+//     fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
+//         0
+//     }
+//     fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
+//         0
+//     }
+//     fn update_profile(_: u32) -> Weight {
+//         0
+//     }
+//     fn update_accounts_none() -> Weight {
+//         0
+//     }
+//     fn update_accounts_root() -> Weight {
+//         0
+//     }
+//     fn update_accounts_controller() -> Weight {
+//         0
+//     }
+//     fn update_accounts_both() -> Weight {
+//         0
+//     }
+//     fn set_referral_cut() -> Weight {
+//         0
+//     }
+//     fn transfer_invites() -> Weight {
+//         0
+//     }
+//     fn invite_member(_: u32, _: u32) -> Weight {
+//         0
+//     }
+//     fn set_membership_price() -> Weight {
+//         0
+//     }
+//     fn update_profile_verification() -> Weight {
+//         0
+//     }
+//     fn set_leader_invitation_quota() -> Weight {
+//         0
+//     }
+//     fn set_initial_invitation_balance() -> Weight {
+//         0
+//     }
+//     fn set_initial_invitation_count() -> Weight {
+//         0
+//     }
+//     fn add_staking_account_candidate() -> Weight {
+//         0
+//     }
+//     fn confirm_staking_account() -> Weight {
+//         0
+//     }
+//     fn remove_staking_account() -> Weight {
+//         0
+//     }
+// }
 
 impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(

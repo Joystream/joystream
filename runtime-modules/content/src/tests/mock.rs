@@ -1,15 +1,17 @@
 #![cfg(test)]
-
 use crate::*;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+pub use membership::WeightInfo;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     ModuleId, Perbill,
 };
+use sp_std::cell::RefCell;
+use staking_handler::LockComparator;
 
 use crate::ContentActorAuthenticator;
 use crate::Trait;
@@ -162,10 +164,6 @@ impl common::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
-}
-
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
@@ -187,20 +185,8 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl minting::Trait for Test {
-    type Currency = balances::Module<Self>;
-    type MintId = u64;
-}
-
 parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
-}
-
-impl membership::Trait for Test {
-    type Event = MetaEvent;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
-    type ScreenedMemberMaxInitialBalance = ();
 }
 
 impl ContentActorAuthenticator for Test {
@@ -616,40 +602,6 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-// Events
-
-// type RawEvent = crate::RawEvent<
-//     ContentActor<CuratorGroupId, CuratorId, MemberId>,
-//     MemberId,
-//     CuratorGroupId,
-//     CuratorId,
-//     VideoId,
-//     VideoCategoryId,
-//     ChannelId,
-//     ChannelCategoryId,
-//     ChannelOwnershipTransferRequestId,
-//     u64,
-//     u64,
-//     u64,
-//     ChannelOwnershipTransferRequest<Test>,
-//     Series<<Test as StorageOwnership>::ChannelId, VideoId>,
-//     Channel<Test>,
-//     <Test as storage::Trait>::DataObjectId,
-//     bool,
-//     AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
-//     BalanceOf<Test>,
-//     ChannelCreationParameters<Test>,
-//     ChannelUpdateParameters<Test>,
-//     VideoCreationParameters<Test>,
-//     VideoUpdateParameters<Test>,
-//     NewAssets<Test>,
-//     bool,
-// >;
-
-// pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
-//     MetaEvent::content(raw_event)
-// }
-
 pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
@@ -657,46 +609,6 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
     // Ensure  last emitted event is equal to expected one
     assert_eq!(System::events().iter().last().unwrap().event, tested_event);
 }
-
-// pub fn create_member_channel() -> ChannelId {
-//     let channel_id = Content::next_channel_id();
-
-//     // Member can create the channel
-//     assert_ok!(Content::create_channel(
-//         Origin::signed(FIRST_MEMBER_ORIGIN),
-//         ContentActor::Member(FIRST_MEMBER_ID),
-//         ChannelCreationParametersRecord {
-//             assets: NewAssets::<Test>::Urls(vec![]),
-//             meta: vec![],
-//             reward_account: None,
-//         }
-//     ));
-
-//     channel_id
-// }
-
-// pub fn get_video_creation_parameters() -> VideoCreationParameters<Test> {
-//     VideoCreationParametersRecord {
-//         assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-//             object_creation_list: vec![
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"first".to_vec(),
-//                 },
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"second".to_vec(),
-//                 },
-//                 DataObjectCreationParameters {
-//                     size: 3,
-//                     ipfs_content_id: b"third".to_vec(),
-//                 },
-//             ],
-//             expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-//         }),
-//         meta: b"test".to_vec(),
-//     }
-// }
 
 /// Get good params for open auction
 pub fn get_open_auction_params(
@@ -713,34 +625,102 @@ pub fn get_open_auction_params(
     }
 }
 
-// pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
-//     // deposit initial balance
-//     let _ = balances::Module::<Test>::deposit_creating(
-//         &sender,
-//         <Test as balances::Trait>::Balance::from(30u32),
-//     );
+// membership trait implementation and related stuff
 
-//     let channel_id = NextChannelId::<Test>::get();
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
+}
 
-//     create_channel_mock(
-//         sender,
-//         ContentActor::Member(member_id),
-//         ChannelCreationParametersRecord {
-//             assets: NewAssets::<Test>::Urls(vec![]),
-//             meta: vec![],
-//             reward_account: Some(REWARD_ACCOUNT_ID),
-//         },
-//         Ok(()),
-//     );
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: LockIdentifier = [9; 8];
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MinimumStakeForOpening: u32 = 50;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
+}
 
-//     let params = get_video_creation_parameters();
+impl membership::Trait for Test {
+    type Event = MetaEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
+    type WeightInfo = ();
+}
 
-//     // Create simple video using member actor
-//     create_video_mock(
-//         sender,
-//         ContentActor::Member(member_id),
-//         channel_id,
-//         params,
-//         Ok(()),
-//     );
-// }
+pub const WORKING_GROUP_BUDGET: u64 = 100;
+
+thread_local! {
+    pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+    pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        WG_BUDGET.with(|val| *val.borrow())
+    }
+
+    fn set_budget(new_value: u64) {
+        WG_BUDGET.with(|val| {
+            *val.borrow_mut() = new_value;
+        });
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
+}
+
+impl LockComparator<u64> for Test {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock == InvitedMemberLockId::get() {
+            existing_locks.contains(new_lock)
+        } else {
+            false
+        }
+    }
+}
