@@ -60,7 +60,7 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -316,15 +316,14 @@ async function parseProposalDetails(
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(
-    event
-  ).params
+  const [
+    proposalId,
+    generalProposalParameters,
+    runtimeProposalDetails,
+    proposalThreadId,
+  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
-
-  if (!MemoryCache.lastCreatedProposalThreadId) {
-    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalThreadId is empty')
-  }
 
   const proposal = new Proposal({
     id: proposalId.toString(),
@@ -346,7 +345,7 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
 
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
-    id: MemoryCache.lastCreatedProposalThreadId.toString(),
+    id: proposalThreadId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),
