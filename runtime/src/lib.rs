@@ -533,6 +533,27 @@ impl forum::Trait for Runtime {
     }
 }
 
+impl council::Trait for Runtime {
+    type Event = Event;
+    type Referendum = ReferendumModule;
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+    type StakingAccountValidator = Members;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+    type MemberOriginValidator = Members;
+    type WeightInfo = weights::council::WeightInfo;
+
+    fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
+        <proposals_engine::Module<Runtime>>::reject_active_proposals();
+        <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
+    }
+}
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
     type ContentId = ContentId;
