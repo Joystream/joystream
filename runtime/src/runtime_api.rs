@@ -17,9 +17,8 @@ use crate::{
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Balances, Call, DataDirectory, Grandpa, Historical,
-    InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
-    TransactionPayment,
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
+    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
 
 use crate::{
@@ -101,42 +100,6 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         // initialize content module
         content::Module::<Runtime>::on_runtime_upgrade();
-
-        // Initialize new groups
-        let default_text_constraint = crate::working_group::default_text_constraint();
-
-        let default_storage_size_constraint =
-            crate::working_group::default_storage_size_constraint();
-
-        let default_content_working_group_mint_capacity = 0;
-
-        // Do not init persisted working group module instances
-        // OperationsWorkingGroupAlpha (previously OperationsWorkingGroup)
-        // ContentWorkingGroup (previously ContentDirectoryWorkingGroup)
-
-        OperationsWorkingGroupBeta::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        DistributionWorkingGroup::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
 
         10_000_000 // TODO: adjust weight
     }

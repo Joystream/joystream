@@ -322,7 +322,6 @@ impl storage::Trait for Test {
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type MemberOriginValidator = ();
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
@@ -398,18 +397,6 @@ impl storage::Trait for Test {
             Err(DispatchError::Other("Invalid worker"))
         } else {
             Ok(())
-        }
-    }
-}
-
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = frame_system::ensure_signed(origin)?;
-
-        if signed_account_id == DEFAULT_MEMBER_ACCOUNT_ID && member_id == DEFAULT_MEMBER_ID {
-            Ok(signed_account_id)
-        } else {
-            Err(DispatchError::BadOrigin.into())
         }
     }
 }

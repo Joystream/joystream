@@ -5,7 +5,6 @@ pub mod constraints;
 pub mod council;
 pub mod currency;
 pub mod membership;
-pub mod origin;
 pub mod storage;
 pub mod working_group;
 

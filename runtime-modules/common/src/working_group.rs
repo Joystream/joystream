@@ -32,6 +32,9 @@ pub enum WorkingGroup {
 
     /// Operations working group: working_group::Instance8.
     OperationsGamma,
+
+    /// Membership Working Group
+    Membership,
 }
 
 /// Working group interface to work with its members - workers and leaders.
@@ -53,6 +56,8 @@ pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
 
     /// Verifies that a worker belongs to the working group.
     fn worker_exists(worker_id: &T::ActorId) -> bool;
+
+    fn ensure_worker_exists(worker_id: &T::ActorId) -> DispatchResult;
 }
 
 /// Working group interface to work with the its budget.

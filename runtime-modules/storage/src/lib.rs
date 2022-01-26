@@ -150,7 +150,6 @@ use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
-use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
 use random_buckets::DistributionBucketPicker;
@@ -323,9 +322,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
-
-    /// Validates member id and origin combination.
-    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// "Storage buckets per bag" value constraint.
     type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
