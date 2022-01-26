@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+pub use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system::ensure_signed;
 use sp_core::H256;
@@ -182,27 +183,6 @@ parameter_types! {
 impl common::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
-}
-
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
-    pub const DefaultMembershipPrice: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
-    pub const CandidateStake: u64 = 100;
-}
-
-impl membeship::Trait for Test {
-    type Event = TestEvent;
-    type DefaultMembershipPrice = DefaultMembershipPrice;
-    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
-    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
-    type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
-    type CandidateStake = CandidateStake;
-    type WeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
