@@ -19,6 +19,9 @@
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
     "@polkadot/api": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
@@ -48,7 +51,8 @@
     "multihashes": "^4.0.3",
     "@apollo/client": "^3.2.5",
     "cross-fetch": "^3.0.6",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "graphql": "^14.7.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
