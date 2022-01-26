@@ -32,12 +32,8 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
-    DistributionWorkingGroupConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupAlphaConfig,
-    OperationsWorkingGroupBetaConfig, OperationsWorkingGroupGammaConfig, ProposalsCodexConfig,
-    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
-    SudoConfig, SystemConfig, DAYS,
+    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
@@ -218,8 +214,6 @@ pub fn testnet_genesis(
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
-    let default_text_constraint = node_runtime::working_group::default_text_constraint();
-
     GenesisConfig {
         frame_system: Some(SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
@@ -275,62 +269,6 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        working_group_Instance2: Some(StorageWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance3: Some(ContentWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance5: Some(GatewayWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance9: Some(DistributionWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
         content: Some({
             ContentConfig {
                 next_curator_group_id: 1,

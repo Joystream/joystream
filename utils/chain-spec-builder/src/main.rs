@@ -246,7 +246,6 @@ fn genesis_constructor(
         members,
         forum_cfg,
         initial_account_balances,
-        data_directory_config,
     )
 }
 
