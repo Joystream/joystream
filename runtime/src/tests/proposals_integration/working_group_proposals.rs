@@ -183,6 +183,10 @@ fn add_opening(
             Runtime,
             OperationsWorkingGroupInstanceGamma,
         >::contains_key(opening_id)),
+        WorkingGroup::Distribution => assert!(working_group::OpeningById::<
+            Runtime,
+            DistributionWorkingGroupInstance,
+        >::contains_key(opening_id)),
     }
     opening_id
 }
@@ -484,7 +488,6 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
-    <T as hiring::Trait>::OpeningId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
@@ -692,35 +695,39 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
                     MembershipWorkingGroupStakingManager,
                 >(group);
             }
-            WorkingGroup::Distribution => {
-                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
-                    Runtime,
-                    DistributionWorkingGroupInstance,
-                >(group);
-            }
-            WorkingGroup::OperationsAlpha => {
-                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
-                    Runtime,
-                    OperationsWorkingGroupInstanceAlpha,
-                >(group);
-            }
-            WorkingGroup::OperationsBeta => {
-                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
-                    Runtime,
-                    OperationsWorkingGroupInstanceBeta,
-                >(group);
-            }
-            WorkingGroup::OperationsGamma => {
-                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
-                    Runtime,
-                    OperationsWorkingGroupInstanceGamma,
-                >(group);
-            }
             WorkingGroup::Gateway => {
                 run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                     Runtime,
                     GatewayWorkingGroupInstance,
                     GatewayWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                    DistributionWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                    OperationsWorkingGroupAlphaStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                    OperationsWorkingGroupBetaStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
+                    OperationsWorkingGroupGammaStakingManager,
                 >(group);
             }
         }
@@ -785,6 +792,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
             },
         );
 
+        println!("Group is: {:?}", working_group);
         assert_eq!(apply_result, Ok(()));
 
         let expected_application_id = 0;
@@ -878,6 +886,34 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
                     Runtime,
                     GatewayWorkingGroupInstance,
                     GatewayWorkingGroupStakingManager,
+                >(group)
+            }
+            WorkingGroup::Distribution => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                    DistributionWorkingGroupStakingManager,
+                >(group)
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                    OperationsWorkingGroupAlphaStakingManager,
+                >(group)
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                    OperationsWorkingGroupBetaStakingManager,
+                >(group)
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
+                    OperationsWorkingGroupGammaStakingManager,
                 >(group)
             }
         }
@@ -1031,6 +1067,30 @@ fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
                 run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
                     Runtime,
                     GatewayWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
         }
@@ -1193,10 +1253,28 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
                     GatewayWorkingGroupInstance,
                 >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
                 run_create_set_group_leader_reward_proposal_execution_succeeds::<
                     Runtime,
-                    OperationsWorkingGroupInstance,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
         }
@@ -1238,10 +1316,28 @@ fn create_syphon_working_group_mint_capacity_proposal_execution_succeeds() {
                     GatewayWorkingGroupInstance,
                 >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
                 run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
                     Runtime,
-                    OperationsWorkingGroupInstance,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
         }
@@ -1385,11 +1481,32 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
                     GatewayWorkingGroupStakingManager,
                 >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
                 run_create_terminate_group_leader_role_proposal_execution_succeeds::<
                     Runtime,
-                    OperationsWorkingGroupInstance,
-                    OperationsWorkingGroupStakingManager,
+                    DistributionWorkingGroupInstance,
+                    DistributionWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                    OperationsWorkingGroupAlphaStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                    OperationsWorkingGroupBetaStakingManager,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
+                    OperationsWorkingGroupGammaStakingManager,
                 >(group);
             }
         }
@@ -1540,6 +1657,13 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
                     Runtime,
                     GatewayWorkingGroupInstance,
                     GatewayWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Distribution => {
+                run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                    DistributionWorkingGroupStakingManager,
                 >(group);
             }
             WorkingGroup::OperationsAlpha => {
