@@ -214,10 +214,11 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
-    data_directory_config: DataDirectoryConfig,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
+
+    let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
         frame_system: Some(SystemConfig {
@@ -306,14 +307,6 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance6: Some(DistributionWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
         working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
@@ -323,6 +316,14 @@ pub fn testnet_genesis(
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance9: Some(DistributionWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
