@@ -70,7 +70,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -627,11 +627,11 @@ impl storage::Trait for Runtime {
     type ContentId = ContentId;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        StorageWorkingGroup::ensure_origin_is_active_leader(origin)
+        StorageWorkingGroup::ensure_leader_origin(origin)
     }
 
     fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
     }
 
     fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
@@ -641,14 +641,14 @@ impl storage::Trait for Runtime {
     }
 
     fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        DistributionWorkingGroup::ensure_origin_is_active_leader(origin)
+        DistributionWorkingGroup::ensure_leader_origin(origin)
     }
 
     fn ensure_distribution_worker_origin(
         origin: Self::Origin,
         worker_id: ActorId,
     ) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
     }
 
     fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
@@ -970,6 +970,7 @@ macro_rules! call_wg {
             WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
