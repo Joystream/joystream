@@ -713,18 +713,22 @@ parameter_types! {
 
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
-    type ProposerOriginValidator = MembershipOriginValidator<Self>;
-    type VoterOriginValidator = CouncilManager<Self>;
+    type ProposerOriginValidator = Members;
+    type CouncilOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type StakingHandler = staking_handler::StakingManager<Self, ProposalsLockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
+    type ProposalObserver = ProposalsCodex;
+    type WeightInfo = weights::proposals_engine::WeightInfo;
+    type StakingAccountValidator = Members;
 }
+
 impl Default for Call {
     fn default() -> Self {
         panic!("shouldn't call default for Call");
