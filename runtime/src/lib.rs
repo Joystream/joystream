@@ -443,6 +443,14 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
+    pub const MaxModerators: u64 = 5;    // TODO: update
+    pub const CleanupMargin: u32 = 3;    // TODO: update
+    pub const CleanupCost: u32 = 1; // TODO: update
+    pub const PricePerByte: u32 = 2; // TODO: update
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
+    pub const BloatBondCap: u32 = 1000;  // TODO: update
+    pub const VideosMigrationsEachBlock: u64 = 100;
+    pub const ChannelsMigrationsEachBlock: u64 = 25;
 }
 
 impl content::Trait for Runtime {
@@ -456,10 +464,17 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type StorageSystem = data_directory::Module<Self>;
-    type WorkingGroup = ContentDirectoryWorkingGroup;
-    type Membership = Members;
-    type CuratorGroupId = CuratorGroupId;
+    type DataObjectStorage = Storage;
+    type VideoPostId = VideoPostId;
+    type ReactionId = ReactionId;
+    type MaxModerators = MaxModerators;
+    type PricePerByte = PricePerByte;
+    type BloatBondCap = BloatBondCap;
+    type CleanupMargin = CleanupMargin;
+    type CleanupCost = CleanupCost;
+    type ModuleId = ContentModuleId;
+    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
+    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 // The referendum instance alias.
