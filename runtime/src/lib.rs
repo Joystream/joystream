@@ -461,58 +461,6 @@ impl content::Trait for Runtime {
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
-impl hiring::Trait for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
-impl minting::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type MintId = u64;
-}
-
-impl recurring_rewards::Trait for Runtime {
-    type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-parameter_types! {
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-}
-
-#[allow(clippy::type_complexity)]
-impl stake::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (
-        (
-            (
-                crate::integration::proposals::StakingEventsHandler<Self>,
-                crate::integration::working_group::ContentDirectoryWgStakingEventsHandler<Self>,
-            ),
-            (
-                crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-                crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<Self>,
-            ),
-        ),
-        (
-            (
-                crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<Self>,
-                crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
-            ),
-            (
-                crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
-                crate::integration::working_group::DistributionWgStakingEventsHandler<Self>,
-            ),
-        ),
-    );
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
