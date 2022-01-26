@@ -21,10 +21,6 @@ use crate::{
     ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
 
-use crate::{
-    DistributionWorkingGroupInstance, OperationsWorkingGroupInstanceBeta,
-    OperationsWorkingGroupInstanceGamma,
-};
 use frame_support::weights::Weight;
 
 /// Struct that handles the conversion of Balance -> `u64`. This is used for staking's election
@@ -80,17 +76,6 @@ pub type BlockId = generic::BlockId<Block>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
-
-// Alias for the beta operations working group
-pub(crate) type OperationsWorkingGroupBeta<T> =
-    working_group::Module<T, OperationsWorkingGroupInstanceBeta>;
-
-// Alias for the gamma operations working group
-pub(crate) type OperationsWorkingGroupGamma<T> =
-    working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
-
-pub(crate) type DistributionWorkingGroup<T> =
-    working_group::Module<T, DistributionWorkingGroupInstance>;
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
