@@ -73,7 +73,7 @@ Events of different types can be queried together, for example, take a look at t
   }
 }
 ```
-There is a separate file with the events input schemas for each module that supports them:
+There is a separate file with the event input schemas for each module that has some events mapped to entities:
 - [`membershipEvents.graphql`](./schemas/membershipEvents.graphql)
 - [`councilEvents.graphql`](./schemas/councilEvents.graphql)
 - [`forumEvents.graphql`](./schemas/forumEvents.graphql)
@@ -92,18 +92,18 @@ Runtime modules for which the mappings have been introduced in Olympia (there we
 ### Changes in existing schemas & mappings
 
 #### [Memberships](./schemas/membership.graphql)
-- `avatarUri` and `about` fields have been removed from `Membership` entity. They are now part of `MemberMetadata`, along with a new `name` field. Additionally, `avatarUri` is now of `Avatar` union type with `AvatarUri` / `AvatarObject` variants. Currently only `AvatarUri` variant is actually beeing used.
+- `avatarUri` and `about` fields have been removed from `Membership` entity. They are now part of `MemberMetadata`, along with the new `name` field. Additionally, `avatarUri` is now of `Avatar` union type with `AvatarUri` and `AvatarObject` variants. Currently only `AvatarUri` variant is actually being used.
 - `MembershipEntryMethod` (`Membership.entry`) is now an `union` (previously an `enum`) with 3 variants: `MembershipEntryPaid`, `MembershipEntryInvited` and `MembershipEntryGenesis`. The first two include a reference to the event which caused the membership to be created (`MembershipBoughtEvent` / `MemberInvitedEvent`)
 - `createdInBlock` field has been removed from the `Membership` entity. Use `.entry.{membershipBoughtEvent|memberInvitedEvent}.inBlock` instead.
 - `subscription` field has been removed.
-- A lot of new fields have been added because of the introduction of the member invitations feature, referrals and other mappings with bidirectional relations to `Membership`. For reference, [see the full `Membership` schema](./schemas/membership.graphql).
-- A new `MembershipSystemSnapshot` entity has been introduced which describes a snapshot of the membership system configuration parameters that can be changed through proposals. Those include default invitations count for new members, membership price, referral cut and initial balance of an invited member.
+- A lot of new fields have been added to `Membership` because of the introduction of the member invitations feature, referrals and mappings for other modules, which have bidirectional relations to `Membership`. For reference, [see the full `Membership` schema](./schemas/membership.graphql).
+- A new `MembershipSystemSnapshot` entity has been introduced, which describes a snapshot of the membership system configuration parameters that can be changed through proposals. Those include default invitations count for new members, membership price, referral cut and initial balance of an invited member.
 
 #### [Working groups](./schemas/workingGroups.graphql)
-- all working groups are now supported by the query node (previously only `Gateway` and `Storage` groups were supported)
+- All working groups are now supported by the query node (previously only `Gateway` and `Storage` groups were supported)
 - `Worker.id` now has a `{workingGroupModuleName}-{workerId}` format, for example: `storageWorkingGroup-1`.
 - `Worker.isActive` field has been removed in favor of `Worker.status` union (Note that `isActive` may be re-introduced after https://github.com/Joystream/joystream/issues/2657)
-- `Worker.type` enum is now replaced by `Worker.group`, which is a reference to a new `WorkingGroup` entity. Each supported group has a corresponding `WorkingGroup` record.
+- `Worker.type` enum has been replaced by `Worker.group`, which is a reference to the new `WorkingGroup` entity (each supported group has a corresponding `WorkingGroup` record).
 - `Worker.workerId` (`String`) is now `Worker.runtimeId` (`Int`)
 - `Worker.metadata` is now `Worker.storage`
 - The mappings have been significantly enriched. For reference, see the [full schema](./schemas/workingGroups.graphql).
