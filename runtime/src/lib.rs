@@ -470,6 +470,69 @@ impl common::MembershipTypes for Runtime {
     type ActorId = ActorId;
 }
 
+parameter_types! {
+    pub const DefaultMembershipPrice: Balance = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const DefaultInitialInvitationBalance: Balance = 100;
+    // The candidate stake should be more than the transaction fee which currently is 53
+    pub const CandidateStake: Balance = 200;
+}
+
+impl membership::Trait for Runtime {
+    type Event = Event;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = InvitedMemberStakingManager;
+    type StakingCandidateStakingHandler = StakingCandidateStakingHandler;
+    type WorkingGroup = MembershipWorkingGroup;
+    type WeightInfo = weights::membership::WeightInfo;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type CandidateStake = CandidateStake;
+}
+
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 6;
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxThreadsInCategory: u64 = 20;
+    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 20;
+    pub const MaxCategories: u64 = 20;
+    pub const MaxPollAlternativesNumber: u64 = 20;
+    pub const ThreadDeposit: u64 = 30;
+    pub const PostDeposit: u64 = 10;
+    pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
+    pub const PostLifeTime: BlockNumber = 3600;
+}
+
+pub struct MapLimits;
+impl forum::StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
+    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
+}
+
+impl forum::Trait for Runtime {
+    type Event = Event;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
+    type CategoryId = u64;
+    type PostReactionId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
+    type ThreadDeposit = ThreadDeposit;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ForumModuleId;
+    type MapLimits = MapLimits;
+    type WeightInfo = weights::forum::WeightInfo;
+    type WorkingGroup = ForumWorkingGroup;
+    type MemberOriginValidator = Members;
+    type PostLifeTime = PostLifeTime;
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
+}
+
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
     type ContentId = ContentId;
@@ -483,6 +546,9 @@ impl memo::Trait for Runtime {
 parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u128 = 5000;
 }
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -505,10 +571,21 @@ pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
 // The operation working group gamma instance alias .
 pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance9;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
 
+impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -745,5 +822,6 @@ construct_runtime!(
         DistributionWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Module, Call, Storage, Config<T>, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Module, Call, Storage, Config<T>, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance9>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );
