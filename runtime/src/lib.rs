@@ -588,21 +588,78 @@ parameter_types! {
     pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
 }
 
-impl storage::data_object_type_registry::Trait for Runtime {
-    type Event = Event;
-    type WorkingGroup = StorageWorkingGroup;
+parameter_types! {
+    pub const MaxDistributionBucketFamilyNumber: u64 = 200;
+    pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
+    pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
+    pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
 }
 
-impl storage::data_directory::Trait for Runtime {
+impl storage::Trait for Runtime {
     type Event = Event;
-    type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MembershipOriginValidator = Members;
-}
+    type DataObjectId = DataObjectId;
+    type StorageBucketId = StorageBucketId;
+    type DistributionBucketIndex = DistributionBucketIndex;
+    type DistributionBucketFamilyId = DistributionBucketFamilyId;
+    type ChannelId = ChannelId;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type Randomness = RandomnessCollectiveFlip;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type DistributionBucketOperatorId = DistributionBucketOperatorId;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxDataObjectSize = MaxDataObjectSize;
+    type ContentId = ContentId;
 
-impl storage::data_object_storage_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectStorageRelationshipId = u64;
-    type ContentIdExists = DataDirectory;
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        StorageWorkingGroup::ensure_origin_is_active_leader(origin)
+    }
+
+    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+    }
+
+    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_exists(&worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
+
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        DistributionWorkingGroup::ensure_origin_is_active_leader(origin)
+    }
+
+    fn ensure_distribution_worker_origin(
+        origin: Self::Origin,
+        worker_id: ActorId,
+    ) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+    }
+
+    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -1038,6 +1095,7 @@ construct_runtime!(
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
+        Storage: content::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
