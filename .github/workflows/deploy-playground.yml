@@ -19,7 +19,14 @@ on:
         description: 'AWS EC2 instance type (t2.micro, t2.large)'
         required: false
         default: 't2.micro'
-
+      stackName:
+        description: 'AWS CloudFormation Stack Name'
+        required: true
+      # TODO: customDomain instead of ip_address.nip.io
+      # customDomain:
+      #   description: 'DNS hostname to use for deployment'
+      #   required: false
+      #   default: ''
 defaults:
   run:
     working-directory: devops/aws
@@ -28,8 +35,8 @@ jobs:
   deploy-playground:
     name: Create an EC2 instance and configure docker-compose stack
     runs-on: ubuntu-latest
-    env:
-      STACK_NAME: joystream-playground-${{ github.event.inputs.branchName }}-${{ github.run_number }}
+    # env:
+    #   STACK_NAME: joystream-playground-${{ github.event.inputs.branchName }}-${{ github.run_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -48,7 +55,8 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         id: deploy_stack
         with:
-          name: ${{ env.STACK_NAME }}
+          # name: ${{ env.STACK_NAME }}
+          name: ${{ github.event.inputs.stackName }}
           template: devops/aws/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ github.event.inputs.keyName }},EC2InstanceType=${{ github.event.inputs.instanceType }}'
