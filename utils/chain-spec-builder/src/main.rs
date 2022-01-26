@@ -179,20 +179,6 @@ impl ChainSpecBuilder {
         }
     }
 
-    /// Returns the path to load initial platform content from
-    fn initial_content_path(&self) -> &Option<PathBuf> {
-        match self {
-            ChainSpecBuilder::New {
-                initial_content_path,
-                ..
-            } => initial_content_path,
-            ChainSpecBuilder::Generate {
-                initial_content_path,
-                ..
-            } => initial_content_path,
-        }
-    }
-
     /// Returns the chain deployment
     fn chain_deployment(&self) -> ChainDeployment {
         match self {
@@ -373,7 +359,6 @@ fn main() -> Result<(), String> {
     let initial_members_path = builder.initial_members_path().clone();
     let initial_forum_path = builder.initial_forum_path().clone();
     let initial_balances_path = builder.initial_balances_path().clone();
-    let initial_content_path = builder.initial_content_path().clone();
     let deployment = builder.chain_deployment();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
