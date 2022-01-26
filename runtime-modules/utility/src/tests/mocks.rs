@@ -51,6 +51,9 @@ impl_outer_event! {
         working_group Instance4 <T>,
         working_group Instance5 <T>,
         working_group Instance6 <T>,
+        working_group Instance7 <T>,
+        working_group Instance8 <T>,
+        working_group Instance9 <T>,
     }
 }
 
@@ -107,25 +110,17 @@ parameter_types! {
 }
 
 macro_rules! call_wg {
-    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentDirectoryWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Storage =>
-                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Forum =>
-                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Membership =>
-                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Gateway =>
-                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Operations =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
         }
     }};
 }
@@ -137,16 +132,25 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
-// The operations working group instance alias.
-pub type OperationsWorkingGroupInstance = working_group::Instance6;
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance6;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
+
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl frame_system::Trait for Test {
     type BaseCallFilter = ();
@@ -182,11 +186,11 @@ impl Trait for Test {
     type WeightInfo = ();
 
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
-        call_wg!(working_group<Test>, get_budget)
+        call_wg!(working_group, get_budget)
     }
 
     fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
-        call_wg!(working_group<Test>, set_budget, budget)
+        call_wg!(working_group, set_budget, budget)
     }
 }
 
@@ -480,7 +484,33 @@ impl working_group::Trait<GatewayWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance> for Test {
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
