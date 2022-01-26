@@ -1,13 +1,6 @@
-import {
-  DatabaseManager,
-  SubstrateEvent,
-  SubstrateExtrinsic,
-  ExtrinsicArg,
-  EventContext,
-  StoreContext,
-} from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent, EventContext, StoreContext } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup, WorkerId, ThreadId, ContentParameters } from '@joystream/types/augment/all'
+import { WorkingGroup, WorkerId, ContentParameters } from '@joystream/types/augment/all'
 import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
