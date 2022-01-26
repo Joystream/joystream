@@ -658,13 +658,15 @@ parameter_types! {
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type AuthorOriginValidator = Members;
+    type CouncilOriginValidator = Council;
     type ThreadId = ThreadId;
     type PostId = PostId;
-    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
-    type PostLengthLimit = ProposalPostLengthLimit;
-    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = weights::proposals_discussion::WeightInfo;
+    type PostDeposit = ProposalsPostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
+    type PostLifeTime = ForumPostLifeTime;
 }
 
 parameter_types! {
