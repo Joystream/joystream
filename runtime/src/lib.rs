@@ -400,30 +400,6 @@ impl pallet_im_online::Trait for Runtime {
     type UnsignedPriority = ImOnlineUnsignedPriority;
 }
 
-impl pallet_staking::Trait for Runtime {
-    type Currency = Balances;
-    type UnixTime = Timestamp;
-    type CurrencyToVote = CurrencyToVoteHandler;
-    type RewardRemainder = (); // Could be Treasury.
-    type Event = Event;
-    type Slash = (); // Where to send the slashed funds. Could be Treasury.
-    type Reward = (); // Rewards are minted from the void.
-    type SessionsPerEra = SessionsPerEra;
-    type BondingDuration = BondingDuration;
-    type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = EnsureRoot<AccountId>; // Requires sudo. Parity recommends: a super-majority of the council can cancel the slash.
-    type SessionInterface = Self;
-    type RewardCurve = RewardCurve;
-    type NextNewSession = Session;
-    type ElectionLookahead = ElectionLookahead;
-    type Call = Call;
-    type MaxIterations = MaxIterations;
-    type MinSolutionScoreBump = MinSolutionScoreBump;
-    type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
-    type UnsignedPriority = StakingUnsignedPriority;
-    type WeightInfo = weights::pallet_staking::WeightInfo;
-}
-
 parameter_types! {
     pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MaximumBlockWeight::get();
 }
@@ -506,20 +482,6 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u128 = 5000;
-}
-
-impl membership::Trait for Runtime {
-    type Event = Event;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
-    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
-}
-
-impl forum::Trait for Runtime {
-    type Event = Event;
-    type MembershipRegistry = integration::forum::ShimMembershipRegistry;
-    type ThreadId = ThreadId;
-    type PostId = PostId;
 }
 
 // The storage working group instance alias.
@@ -769,11 +731,11 @@ construct_runtime!(
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
-        Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
