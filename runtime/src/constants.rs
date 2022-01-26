@@ -117,6 +117,7 @@ parameter_types! {
     pub const GatewayWorkingGroupLockId: LockIdentifier = [14; 8];
     pub const OperationsWorkingGroupBetaLockId: LockIdentifier = [15; 8];
     pub const OperationsWorkingGroupGammaLockId: LockIdentifier = [16; 8];
+    pub const DistributionWorkingGroupLockId: LockIdentifier = [17; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
