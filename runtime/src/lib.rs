@@ -635,7 +635,7 @@ impl storage::Trait for Runtime {
     }
 
     fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_exists(&worker_id).map(|_| ())
+        StorageWorkingGroup::ensure_worker_exists(&worker_id)
     }
 
     fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
@@ -650,7 +650,7 @@ impl storage::Trait for Runtime {
     }
 
     fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_exists(&worker_id).map(|_| ())
+        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
     }
 }
 

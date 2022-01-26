@@ -16,6 +16,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 # Benchmarking
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
@@ -24,7 +25,8 @@ frame-benchmarking = { package = 'frame-benchmarking', default-features = false,
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
+    
 [features]
 default = ['std']
 runtime-benchmarks = [
@@ -43,5 +45,6 @@ std = [
     'sp-runtime/std',
     'common/std',
     'membership/std',
+	'staking-handler/std',    
 ]
 

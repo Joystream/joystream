@@ -239,7 +239,7 @@ pub trait DataObjectStorage<T: Trait> {
 }
 
 /// Storage trait.
-pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes {
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
