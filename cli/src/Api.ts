@@ -42,7 +42,7 @@ import {
   VideoCategory,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import { BountyId, JSBounty as Bounty } from '@joystream/types/bounty'
+import { BountyId, EntryId, JSBounty as Bounty, Entry } from '@joystream/types/bounty'
 import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
 import fetch from 'cross-fetch'
 import { Maybe } from './graphql/generated/schema'
@@ -265,7 +265,7 @@ export default class Api {
     return membership.isEmpty ? null : await this.memberDetails(memberId, membership)
   }
 
-  protected async expectedMembershipById(memberId: MemberId): Promise<MemberDetails> {
+  async expectedMembershipById(memberId: MemberId): Promise<MemberDetails> {
     const member = await this.membershipById(memberId)
     if (!member) {
       throw new CLIError(`Expected member was not found by id: ${memberId.toString()}`)
@@ -470,6 +470,18 @@ export default class Api {
       throw new CLIError(`Bonuty by id ${bountyId.toString()} not found!`)
     }
     return await this._api.query.bounty.bounties(bountyId)
+  }
+
+  async entryById(entryId: EntryId | number | string): Promise<Entry> {
+    const exists = !!(await this._api.query.bounty.entries.size(entryId)).toNumber()
+    if (!exists) {
+      throw new CLIError(`Bonuty by id ${entryId.toString()} not found!`)
+    }
+    return await this._api.query.bounty.entries(entryId)
+  }
+
+  async availableEntries(): Promise<[EntryId, Entry][]> {
+    return await this.entriesByIds<EntryId, Entry>(this._api.query.bounty.entries)
   }
 
   // Content directory
