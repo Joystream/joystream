@@ -2,7 +2,7 @@ mod accept_incoming_offer;
 mod buy_nft;
 mod cancel_buy_now;
 mod cancel_nft_auction;
-// mod cancel_offer;
+mod cancel_offer;
 // mod cancel_open_auction_bid;
 // mod claim_won_english_auction;
 // mod issue_nft;
