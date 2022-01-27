@@ -486,19 +486,23 @@ export default class Api {
     return ancestors
   }
 
-  async forumCategoryModerators(categoryId: CategoryId | number): Promise<WorkerId[]> {
+  async forumCategoryModerators(categoryId: CategoryId | number): Promise<[CategoryId, WorkerId][]> {
     const categoryAncestors = await this.forumCategoryAncestors(categoryId)
 
     const moderatorIds = _.uniqWith(
       _.flatten(
         await Promise.all(
-          [categoryId, ...categoryAncestors.map(([id]) => id)].map(async (id) => {
-            const storageKeys = await this._api.query.forum.categoryByModerator.keys(id)
-            return storageKeys.map((k) => k.args[1])
-          })
+          categoryAncestors
+            .map(([id]) => id as CategoryId | number)
+            .reverse()
+            .concat([categoryId])
+            .map(async (id) => {
+              const storageKeys = await this._api.query.forum.categoryByModerator.keys(id)
+              return storageKeys.map((k) => k.args)
+            })
         )
       ),
-      (a, b) => a.eq(b)
+      (a, b) => a[1].eq(b[1])
     )
 
     return moderatorIds
@@ -517,5 +521,9 @@ export default class Api {
   async getForumPost(threadId: ThreadId | number, postId: PostId | number): Promise<Post> {
     const post = await this._api.query.forum.postById(threadId, postId)
     return post
+  }
+
+  async forumCategories(): Promise<[CategoryId, Category][]> {
+    return this.entriesByIds(this._api.query.forum.categoryById)
   }
 }

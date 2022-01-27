@@ -93,7 +93,7 @@ export default abstract class ForumCommandBase extends WorkingGroupCommandBase {
     const moderatorsByCategory = await Promise.all(categories.map((id) => this.getApi().forumCategoryModerators(id)))
     const categoriesCountByModeratorId = new Map<number, number>()
     for (const moderators of moderatorsByCategory) {
-      for (const id of moderators) {
+      for (const [, id] of moderators) {
         categoriesCountByModeratorId.set(id.toNumber(), (categoriesCountByModeratorId.get(id.toNumber()) || 0) + 1)
       }
     }
