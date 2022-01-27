@@ -24,9 +24,7 @@ fn claim_won_english_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -116,9 +114,7 @@ fn claim_won_english_auction_cannot_be_completed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -186,9 +182,7 @@ fn claim_won_english_auction_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -309,9 +303,7 @@ fn claim_won_english_auction_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to claim won english auction for nft which is not in auction state
@@ -346,9 +338,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -415,9 +405,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
