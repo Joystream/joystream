@@ -1464,9 +1464,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            royalty: Option<Royalty>,
-            metadata: Metadata,
-            to: Option<T::MemberId>,
+            params: NFTIssuanceParameters<T>
         ) {
 
             let sender = ensure_signed(origin)?;
@@ -1485,16 +1483,16 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_owner = if let Some(to) = to {
-                NFTOwner::Member(to)
+            let nft_owner = if let Some(to) = params.non_channel_owner.as_ref() {
+                NFTOwner::Member(to.clone())
             } else {
                 // if `to` set to None, actor issues to ChannelOwner
                 NFTOwner::ChannelOwner
             };
 
             // Enure royalty bounds satisfied, if provided
-            if let Some(royalty) = royalty {
-                Self::ensure_royalty_bounds_satisfied(royalty)?;
+            if let Some(royalty) = params.royalty.as_ref() {
+                Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
             }
 
             //
@@ -1502,7 +1500,7 @@ decl_module! {
             //
 
             // Issue NFT
-            let video = video.set_nft_status(OwnedNFT::new(nft_owner, royalty));
+            let video = video.set_nft_status(OwnedNFT::new(nft_owner, params.royalty.clone()));
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1510,9 +1508,9 @@ decl_module! {
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
                 video_id,
-                royalty,
-                metadata,
-                to,
+                params.royalty,
+                params.nft_metadata,
+                params.non_channel_owner,
             ));
         }
 
