@@ -50,15 +50,6 @@ export const apiModuleByGroup = {
   [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 } as const
 
-export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
-  [WorkingGroups.StorageProviders]: '0x0606060606060606',
-  [WorkingGroups.Curators]: '0x0707070707070707',
-  [WorkingGroups.Forum]: '0x0808080808080808',
-  [WorkingGroups.Membership]: '0x0909090909090909',
-  [WorkingGroups.Gateway]: '0x0e0e0e0e0e0e0e0e',
-  // TODO: TBD. OperationsAlpha, OperationsBeta, OperationsGamma, Distribution
-}
-
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
@@ -230,12 +221,10 @@ export default class Api {
   }
 
   protected async fetchStake(account: AccountId | string, group: WorkingGroups): Promise<Balance> {
+    const groupLockId = this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId
     return this._api.createType(
       'Balance',
-      new BN(
-        (await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(lockIdByWorkingGroup[group]))
-          ?.amount || 0
-      )
+      new BN((await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(groupLockId))?.amount || 0)
     )
   }
 
