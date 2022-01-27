@@ -9,7 +9,7 @@ import { BTreeSet } from '@polkadot/types'
 
 const workingGroupModules = [
   'storageWorkingGroup',
-  'contentDirectoryWorkingGroup',
+  'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
   'operationsWorkingGroup',
@@ -28,7 +28,7 @@ async function main() {
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider, types })
 
-  const Group = process.env.GROUP || 'contentDirectoryWorkingGroup'
+  const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
   const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
   const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)

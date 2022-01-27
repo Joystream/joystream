@@ -45,7 +45,7 @@ export const DEFAULT_API_URI = 'ws://localhost:9944/'
 // Mapping of working group to api module
 export const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',

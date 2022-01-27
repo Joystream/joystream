@@ -223,7 +223,7 @@ export function hasValuesForProperties<
 
 export type WorkingGroupModuleName =
   | 'storageWorkingGroup'
-  | 'contentDirectoryWorkingGroup'
+  | 'contentWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
   | 'operationsWorkingGroupAlpha'
@@ -234,7 +234,7 @@ export type WorkingGroupModuleName =
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isContent) {
-    return 'contentDirectoryWorkingGroup'
+    return 'contentWorkingGroup'
   } else if (group.isMembership) {
     return 'membershipWorkingGroup'
   } else if (group.isForum) {

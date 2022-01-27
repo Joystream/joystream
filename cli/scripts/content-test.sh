@@ -9,7 +9,7 @@ echo "{}" > ~/tmp/empty.json
 export AUTO_CONFIRM=true
 
 # Init content lead
-GROUP=contentDirectoryWorkingGroup yarn workspace api-scripts initialize-lead
+GROUP=contentWorkingGroup yarn workspace api-scripts initialize-lead
 # Test create/update/remove category
 yarn joystream-cli content:createVideoCategory -i ./examples/content/CreateCategory.json
 yarn joystream-cli content:createVideoCategory -i ./examples/content/CreateCategory.json

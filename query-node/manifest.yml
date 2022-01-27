@@ -348,49 +348,49 @@ mappings:
     - event: membershipWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
     # Content directory working group
-    - event: contentDirectoryWorkingGroup.OpeningAdded
+    - event: contentWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
-    - event: contentDirectoryWorkingGroup.AppliedOnOpening
+    - event: contentWorkingGroup.AppliedOnOpening
       handler: workingGroups_AppliedOnOpening
-    - event: contentDirectoryWorkingGroup.OpeningFilled
+    - event: contentWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled
-    - event: contentDirectoryWorkingGroup.LeaderSet
+    - event: contentWorkingGroup.LeaderSet
       handler: workingGroups_LeaderSet
-    - event: contentDirectoryWorkingGroup.WorkerRoleAccountUpdated
+    - event: contentWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated
-    - event: contentDirectoryWorkingGroup.LeaderUnset
+    - event: contentWorkingGroup.LeaderUnset
       handler: workingGroups_LeaderUnset
-    - event: contentDirectoryWorkingGroup.WorkerExited
+    - event: contentWorkingGroup.WorkerExited
       handler: workingGroups_WorkerExited
-    - event: contentDirectoryWorkingGroup.TerminatedWorker
+    - event: contentWorkingGroup.TerminatedWorker
       handler: workingGroups_TerminatedWorker
-    - event: contentDirectoryWorkingGroup.TerminatedLeader
+    - event: contentWorkingGroup.TerminatedLeader
       handler: workingGroups_TerminatedLeader
-    - event: contentDirectoryWorkingGroup.StakeSlashed
+    - event: contentWorkingGroup.StakeSlashed
       handler: workingGroups_StakeSlashed
-    - event: contentDirectoryWorkingGroup.StakeDecreased
+    - event: contentWorkingGroup.StakeDecreased
       handler: workingGroups_StakeDecreased
-    - event: contentDirectoryWorkingGroup.StakeIncreased
+    - event: contentWorkingGroup.StakeIncreased
       handler: workingGroups_StakeIncreased
-    - event: contentDirectoryWorkingGroup.ApplicationWithdrawn
+    - event: contentWorkingGroup.ApplicationWithdrawn
       handler: workingGroups_ApplicationWithdrawn
-    - event: contentDirectoryWorkingGroup.OpeningCanceled
+    - event: contentWorkingGroup.OpeningCanceled
       handler: workingGroups_OpeningCanceled
-    - event: contentDirectoryWorkingGroup.BudgetSet
+    - event: contentWorkingGroup.BudgetSet
       handler: workingGroups_BudgetSet
-    - event: contentDirectoryWorkingGroup.WorkerRewardAccountUpdated
+    - event: contentWorkingGroup.WorkerRewardAccountUpdated
       handler: workingGroups_WorkerRewardAccountUpdated
-    - event: contentDirectoryWorkingGroup.WorkerRewardAmountUpdated
+    - event: contentWorkingGroup.WorkerRewardAmountUpdated
       handler: workingGroups_WorkerRewardAmountUpdated
-    - event: contentDirectoryWorkingGroup.StatusTextChanged
+    - event: contentWorkingGroup.StatusTextChanged
       handler: workingGroups_StatusTextChanged
-    - event: contentDirectoryWorkingGroup.BudgetSpending
+    - event: contentWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
-    - event: contentDirectoryWorkingGroup.RewardPaid
+    - event: contentWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
-    - event: contentDirectoryWorkingGroup.NewMissedRewardLevelReached
+    - event: contentWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached
-    - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
+    - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
     # Operations working group
     - event: operationsWorkingGroup.OpeningAdded
