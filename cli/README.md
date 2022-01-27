@@ -16,10 +16,17 @@ Command Line Interface for Joystream community and governance activities
 * [Commands](#commands)
 <!-- tocstop -->
 
+# Setup
+```
+git clone https://github.com/Joystream/joystream cli
+cd cli
+yarn build:packages
+```
+or `npm install -g @joystream/cli`
+
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
