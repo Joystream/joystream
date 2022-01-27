@@ -6,8 +6,6 @@ RUN rm -fr /joystream/pioneer
 # Replaced by "integration-tests" on Olympia
 RUN rm -fr /joystream/tests/network-tests
 
-ARG TYPEGEN_WS_URI
-
 # Do not set NODE_ENV=production until after running yarn install
 # to ensure dev dependencies are installed.
 RUN yarn --frozen-lockfile

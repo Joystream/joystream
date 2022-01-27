@@ -4,6 +4,14 @@ import { extendDebug, Debugger } from './Debugger'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
+  ElectedCouncilFieldsFragment,
+  GetCurrentCouncilMembers,
+  GetCurrentCouncilMembersQuery,
+  GetCurrentCouncilMembersQueryVariables,
+  CandidateFieldsFragment,
+  GetReferendumIntermediateWinners,
+  GetReferendumIntermediateWinnersQuery,
+  GetReferendumIntermediateWinnersQueryVariables,
   GetMemberByIdQuery,
   GetMemberByIdQueryVariables,
   GetMemberById,
@@ -432,6 +440,31 @@ export class QueryNodeApi {
       GetMemberInvitedEventsByEventIdsQuery,
       GetMemberInvitedEventsByEventIdsQueryVariables
     >(GetMemberInvitedEventsByEventIds, { eventIds }, 'memberInvitedEvents')
+  }
+
+  public async getCurrentCouncilMembers(): Promise<ElectedCouncilFieldsFragment | null> {
+    return this.firstEntityQuery<GetCurrentCouncilMembersQuery, GetCurrentCouncilMembersQueryVariables>(
+      GetCurrentCouncilMembers,
+      {},
+      'electedCouncils'
+    )
+  }
+
+  public async getReferendumIntermediateWinners(
+    electionRoundCycleId: number,
+    councilSize: number
+  ): Promise<CandidateFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetReferendumIntermediateWinnersQuery,
+      GetReferendumIntermediateWinnersQueryVariables
+    >(
+      GetReferendumIntermediateWinners,
+      {
+        electionRoundCycleId,
+        councilSize,
+      },
+      'candidates'
+    )
   }
 
   // TODO: Use event id

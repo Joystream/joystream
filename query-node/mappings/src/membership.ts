@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { Members } from './generated/types'
+import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { bytesToString, deserializeMetadata, genericEventFields } from './common'
@@ -27,6 +27,7 @@ import {
   LeaderInvitationQuotaUpdatedEvent,
   MembershipEntryPaid,
   MembershipEntryInvited,
+  AvatarUri,
 } from 'query-node/dist/model'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
@@ -69,16 +70,19 @@ async function createNewMemberFromParams(
   params: BuyMembershipParameters | InviteMembershipParameters
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
-  const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
-  const metadata = deserializeMetadata(MembershipMetadata, metatadaBytes)
+  const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metadataBytes } = params
+  const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
   const eventTime = new Date(event.blockTimestamp)
+
+  const avatar = new AvatarUri()
+  avatar.avatarUri = metadata?.avatarUri ?? ''
 
   const metadataEntity = new MemberMetadata({
     createdAt: eventTime,
     updatedAt: eventTime,
     name: metadata?.name || undefined,
     about: metadata?.about || undefined,
-    // TODO: avatar
+    avatar,
   })
 
   const member = new Membership({
@@ -104,6 +108,10 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
         : undefined,
     isFoundingMember: false,
+    isCouncilMember: false,
+
+    councilCandidacies: [],
+    councilMembers: [],
   })
 
   await store.save<MemberMetadata>(member.metadata)
@@ -154,7 +162,12 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     member.metadata.about = (metadata.about || null) as string | undefined
     member.metadata.updatedAt = eventTime
   }
-  // TODO: avatar
+
+  if (typeof metadata?.avatarUri === 'string') {
+    member.metadata.avatar = new AvatarUri()
+    member.metadata.avatar.avatarUri = metadata.avatarUri
+  }
+
   if (newHandle.isSome) {
     member.handle = bytesToString(newHandle.unwrap())
     member.updatedAt = eventTime

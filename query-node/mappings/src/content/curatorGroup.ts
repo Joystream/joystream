@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { FindConditions } from 'typeorm'
 import { CuratorGroup } from 'query-node/dist/model'
-import { Content } from '../generated/types'
+import { Content } from '../../generated/types'
 import { inconsistentState, logger } from '../common'
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {

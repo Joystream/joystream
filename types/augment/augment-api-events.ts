@@ -1434,7 +1434,7 @@ declare module '@polkadot/api/types/events' {
       /**
        * Emits on post creation.
        **/
-      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes]>;
+      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes, bool]>;
       /**
        * Emits on post deleted
        **/

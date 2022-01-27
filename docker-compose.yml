@@ -35,14 +35,16 @@ services:
       "
 
   colossus:
-    image: joystream/apps
+    image: node:14
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
     restart: on-failure
     depends_on:
       - "joystream-node"
       - "ipfs"
-    build:
-      context: .
-      dockerfile: apps.Dockerfile
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -50,9 +52,7 @@ services:
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
-    environment:
-      - DEBUG=*
+    command: yarn colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
 
   db:
     image: postgres:12
@@ -69,12 +69,14 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
 
-  graphql-server: &graphql-server
-    image: joystream/apps
+  graphql-server:
+    image: node:14
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
     restart: unless-stopped
-    build:
-      context: .
-      dockerfile: apps.Dockerfile
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -85,25 +87,17 @@ services:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on:
       - db
-    command: ["workspace", "query-node-root", "query-node:start:prod"]
+    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
 
-  graphql-server-mnt:
-    <<: *graphql-server
+  processor:
     image: node:14
-    build: .
     volumes:
       - type: bind
         source: .
         target: /joystream
+      - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     working_dir: /joystream
-    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
-
-  processor: &processor
-    image: joystream/apps
     restart: unless-stopped
-    build:
-      context: .
-      dockerfile: apps.Dockerfile
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -113,21 +107,8 @@ services:
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
-    volumes:
-      - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
       - hydra-indexer-gateway
-    command: ["workspace", "query-node-root", "processor:start"]
-
-  processor-mnt:
-    <<: *processor
-    image: node:14
-    build: .
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
-    working_dir: /joystream
     command: ["yarn", "workspace", "query-node-root", "processor:start"]
 
   indexer:

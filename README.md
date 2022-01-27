@@ -25,8 +25,8 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm package dependencies, build packages and docker images
-yarn build
+# Install npm package dependencies, build npm packages
+yarn build:packages
 
 # start a local development network
 yarn start
@@ -89,7 +89,7 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2021-03-24 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-5.json
 ```
 

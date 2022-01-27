@@ -31,15 +31,7 @@ docker-compose up -d colossus
 GROUP=contentDirectoryWorkingGroup yarn workspace api-scripts initialize-lead
 
 ## Query Node Infrastructure
-# Initialize a new database for the query node infrastructure
-docker-compose up -d db
-yarn workspace query-node-root db:prepare
-yarn workspace query-node-root db:migrate
-
-# Startup all query-node infrastructure services
-export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
-docker-compose up -d graphql-server
-docker-compose up -d processor
+./query-node/start.sh
 
 echo "use Ctrl+C to shutdown the development network."
 

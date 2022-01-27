@@ -35,7 +35,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     this.memberContext = memberContext
     this.oldValues = oldValues
     this.newValues = newValues
-    console.log({ oldValues, newValues })
   }
 
   private assertProfileUpdateSuccesful(qMember: MembershipFieldsFragment | null) {

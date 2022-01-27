@@ -9,8 +9,8 @@ set -a
 set +a
 
 # Only remove query-node related services
-docker-compose rm -vsf processor-mnt
-docker-compose rm -vsf graphql-server-mnt
+docker-compose rm -vsf processor
+docker-compose rm -vsf graphql-server
 docker-compose rm -vsf indexer
 docker-compose rm -vsf hydra-indexer-gateway
 docker-compose rm -vsf redis

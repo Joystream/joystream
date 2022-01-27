@@ -508,14 +508,17 @@ export interface OptionResult extends Struct {
 }
 
 /** @name OracleJudgment */
-export interface OracleJudgment extends Enum {
+export interface OracleJudgment extends BTreeMap<EntryId, OracleWorkEntryJudgment> {}
+
+/** @name OracleWorkEntryJudgment */
+export interface OracleWorkEntryJudgment extends Enum {
   readonly isWinner: boolean;
-  readonly asWinner: OracleJudgment_Winner;
+  readonly asWinner: OracleWorkEntryJudgment_Winner;
   readonly isRejected: boolean;
 }
 
-/** @name OracleJudgment_Winner */
-export interface OracleJudgment_Winner extends Struct {
+/** @name OracleWorkEntryJudgment_Winner */
+export interface OracleWorkEntryJudgment_Winner extends Struct {
   readonly reward: u128;
 }
 
@@ -899,7 +902,6 @@ export interface TerminateRoleParameters extends Struct {
 
 /** @name Thread */
 export interface Thread extends Struct {
-  readonly metadata_hash: Hash;
   readonly category_id: CategoryId;
   readonly author_id: ForumUserId;
   readonly poll: Option<Poll>;
@@ -919,7 +921,6 @@ export interface ThreadMode extends Enum {
 
 /** @name ThreadOf */
 export interface ThreadOf extends Struct {
-  readonly metadata_hash: Hash;
   readonly category_id: CategoryId;
   readonly author_id: ForumUserId;
   readonly poll: Option<Poll>;

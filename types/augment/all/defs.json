@@ -112,7 +112,6 @@
         "sticky_thread_ids": "Vec<ThreadId>"
     },
     "Thread": {
-        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
         "poll": "Option<Poll>",
@@ -147,7 +146,6 @@
         "poll_alternatives": "Vec<Bytes>"
     },
     "ThreadOf": {
-        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
         "poll": "Option<Poll>",
@@ -539,15 +537,16 @@
         "work_period": "u32",
         "judging_period": "u32"
     },
-    "OracleJudgment_Winner": {
+    "OracleWorkEntryJudgment_Winner": {
         "reward": "u128"
     },
-    "OracleJudgment": {
+    "OracleWorkEntryJudgment": {
         "_enum": {
-            "Winner": "OracleJudgment_Winner",
+            "Winner": "OracleWorkEntryJudgment_Winner",
             "Rejected": "Null"
         }
     },
+    "OracleJudgment": "BTreeMap<EntryId,OracleWorkEntryJudgment>",
     "Entry": {
         "member_id": "MemberId",
         "staking_account_id": "AccountId",

@@ -10,4 +10,4 @@ yes | cargo +nightly-2021-02-20 run --release -- purge-chain --dev
 
 # Run local development chain -
 # No need to specify `-p joystream-node` it is the default bin crate in the cargo workspace
-cargo +nightly-2021-02-20 run --release -- --dev
+cargo +nightly-2021-02-20 run --release -- --dev --log runtime
