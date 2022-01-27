@@ -12,8 +12,11 @@ const workingGroupModules = [
   'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
-  'operationsWorkingGroup',
   'gatewayWorkingGroup',
+  'operationsWorkingGroupAlpha',
+  'operationsWorkingGroupBeta',
+  'operationsWorkingGroupGamma',
+  'distributionWorkingGroup',
 ] as const
 
 type WorkingGroupModuleName = typeof workingGroupModules[number]
