@@ -120,7 +120,7 @@ decl_module! {
         type Error = Error<T>;
 
         /// Exposes allowed lock combinations from the runtime level.
-        const AllowedLockCombinationProvider: BTreeSet<(LockIdentifier, LockIdentifier)> =
+        const AllowedLockCombinations: BTreeSet<(LockIdentifier, LockIdentifier)> =
             T::AllowedLockCombinationProvider::get_allowed_lock_combinations();
 
         /// Signal proposal extrinsic. Should be used as callable object to pass to the `engine` module.
