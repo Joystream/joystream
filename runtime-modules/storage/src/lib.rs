@@ -1967,7 +1967,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             transactor_account_id: T::AccountId,
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            T::StorageWorkingGroup::ensure_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2002,7 +2002,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             metadata: Vec<u8>
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            T::StorageWorkingGroup::ensure_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2467,7 +2467,6 @@ decl_module! {
             );
         }
 
-
         // ===== Distribution Operator actions =====
 
         /// Accept pending invite.
@@ -2477,7 +2476,7 @@ decl_module! {
             worker_id: WorkerId<T>,
             bucket_id: DistributionBucketId<T>,
         ) {
-            T::ensure_distribution_worker_origin(origin, worker_id)?;
+            T::DistributionWorkingGroup::ensure_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2512,7 +2511,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             metadata: Vec<u8>,
         ) {
-            T::ensure_distribution_worker_origin(origin, worker_id)?;
+            T::DistributionWorkingGroup::ensure_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
