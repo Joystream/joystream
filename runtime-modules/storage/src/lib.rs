@@ -150,7 +150,7 @@ use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupAuthenticator};
 
 use random_buckets::DistributionBucketPicker;
 use random_buckets::StorageBucketPicker;
@@ -355,36 +355,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
 
     type DistributionWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
         + common::working_group::WorkingGroupBudgetHandler<Self>;
-
-    /// Demand the storage working group leader authorization.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
-
-    /// Validate origin for the storage worker.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_worker_origin(
-        origin: Self::Origin,
-        worker_id: WorkerId<Self>,
-    ) -> DispatchResult;
-
-    /// Validate storage worker existence.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
-
-    /// Demand the distribution group leader authorization.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
-
-    /// Validate origin for the distribution worker.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: WorkerId<Self>,
-    ) -> DispatchResult;
-
-    /// Validate distribution worker existence.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
 }
 
 /// Operations with local pallet account.
@@ -1967,7 +1937,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             transactor_account_id: T::AccountId,
         ) {
-            T::StorageWorkingGroup::ensure_worker_origin(origin, worker_id)?;
+            T::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2002,7 +1972,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             metadata: Vec<u8>
         ) {
-            T::StorageWorkingGroup::ensure_worker_origin(origin, worker_id)?;
+            T::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2476,7 +2446,7 @@ decl_module! {
             worker_id: WorkerId<T>,
             bucket_id: DistributionBucketId<T>,
         ) {
-            T::DistributionWorkingGroup::ensure_worker_origin(origin, worker_id)?;
+            T::DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2511,7 +2481,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             metadata: Vec<u8>,
         ) {
-            T::DistributionWorkingGroup::ensure_worker_origin(origin, worker_id)?;
+            T::DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -3636,7 +3606,7 @@ impl<T: Trait> Module<T> {
     // Verifies storage operator existence.
     fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
         ensure!(
-            T::ensure_storage_worker_exists(operator_id).is_ok(),
+            T::StorageWorkingGroup::ensure_worker_exists(operator_id).is_ok(),
             Error::<T>::StorageProviderOperatorDoesntExist
         );
 
@@ -3833,7 +3803,7 @@ impl<T: Trait> Module<T> {
         worker_id: &WorkerId<T>,
     ) -> DispatchResult {
         ensure!(
-            T::ensure_distribution_worker_exists(worker_id).is_ok(),
+            T::DistributionWorkingGroup::ensure_worker_exists(worker_id).is_ok(),
             Error::<T>::DistributionProviderOperatorDoesntExist
         );
 
