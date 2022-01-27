@@ -13,7 +13,7 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
     }),
   }
 
-  async run(): Promise<void>  {
+  async run(): Promise<void> {
     // Worker-only gate
     const worker = await this.getRequiredWorkerContext()
 
