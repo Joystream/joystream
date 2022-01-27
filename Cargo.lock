@@ -4199,7 +4199,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
