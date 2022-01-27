@@ -32,25 +32,29 @@ fn issue_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state after call
 
         // Ensure nft created succesfully
-        let nft_status = Some(OwnedNFT::new(NFTOwner::ChannelOwner, None));
+        let nft_status = Some(OwnedNFT::new(
+            NFTOwner::ChannelOwner,
+            None,
+            InitTransactionalStatus::<Test>::default().into(),
+        ));
         assert_eq!(nft_status, Content::video_by_id(video_id).nft_status);
 
         // Last event checked
+        let nft_issue_params = NFTIssuanceParameters::<Test>::default();
         assert_event(
             MetaEvent::content(RawEvent::NftIssued(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
-                None,
-                b"metablob".to_vec(),
-                None,
+                nft_issue_params.royalty,
+                nft_issue_params.nft_metadata,
+                nft_issue_params.non_channel_owner,
+                nft_issue_params.init_transactional_status,
             )),
             number_of_events_before_call + 1,
         );
@@ -70,9 +74,7 @@ fn issue_nft_video_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -97,9 +99,7 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to issue nft once again for the same video
@@ -107,9 +107,7 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -134,9 +132,7 @@ fn issue_nft_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -161,9 +157,7 @@ fn issue_nft_actor_not_authorized() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -188,9 +182,10 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            Some(Perbill::one()),
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test> {
+                royalty: Some(Perbill::one()),
+                ..NFTIssuanceParameters::<Test>::default()
+            },
         );
 
         // Failure checked
@@ -201,9 +196,10 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            Some(Perbill::from_perthousand(1)),
-            b"metablob".to_vec(),
-            None,
+            NFTIssuanceParameters::<Test> {
+                royalty: Some(Perbill::from_perthousand(1)),
+                ..NFTIssuanceParameters::<Test>::default()
+            },
         );
 
         // Failure checked
