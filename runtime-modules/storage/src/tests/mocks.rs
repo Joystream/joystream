@@ -107,70 +107,8 @@ impl crate::Trait for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = u64;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers =
-            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
-
-        if !allowed_storage_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
-        ];
-
-        if !allowed_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
+    type StorageWorkingGroup = ();
+    type DistributionWorkingGroup = ();
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;
@@ -238,6 +176,61 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
         .unwrap();
 
     t.into()
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
+            origin.into();
+
+        if let RawOrigin::Signed(_) = raw_origin.unwrap() {
+            if *worker_id == 1 || *worker_id == 0 {
+                Ok(())
+            } else {
+                Err(working_group::Error::<Test, MembershipWorkingGroupInstance>::WorkerDoesNotExist.into())
+            }
+        } else {
+            Err(DispatchError::BadOrigin)
+        }
+    }
+
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        LEAD_SET.with(|lead_set| {
+            if *lead_set.borrow() {
+                Some(ALICE_MEMBER_ID)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 pub type Storage = crate::Module<Test>;
