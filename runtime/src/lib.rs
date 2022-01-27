@@ -739,7 +739,9 @@ parameter_types! {
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const GatewayRewardPeriod: u32 = 14400 + 50;
     pub const DistributionRewardPeriod: u32 = 14400 + 50;
-    pub const OperationsRewardPeriod: u32 = 14400 + 60;
+    pub const OperationsAlphaRewardPeriod: u32 = 14400 + 60;
+    pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
+    pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
@@ -860,7 +862,7 @@ impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = OperationsRewardPeriod;
+    type RewardPeriod = OperationsAlphaRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -886,7 +888,7 @@ impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Runtime {
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = OperationsRewardPeriod;
+    type RewardPeriod = OperationsBetaRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -899,7 +901,7 @@ impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Runtime {
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = OperationsRewardPeriod;
+    type RewardPeriod = OperationsGammaRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
