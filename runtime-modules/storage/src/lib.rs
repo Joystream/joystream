@@ -150,7 +150,7 @@ use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
-use common::working_group::WorkingGroup;
+use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 
 use random_buckets::DistributionBucketPicker;
 use random_buckets::StorageBucketPicker;
@@ -349,6 +349,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
 
     /// Max data object size in bytes.
     type MaxDataObjectSize: Get<u64>;
+
+    type StorageWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
+
+    type DistributionWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
