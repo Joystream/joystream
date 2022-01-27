@@ -57,7 +57,7 @@ Use the `--chain` argument, and specify the path to the genesis `chain.json` fil
 Running unit tests:
 
 ```bash
-cargo test --release --all
+cargo +nightly-2021-02-20 test --release --all
 ```
 
 Running full suite of checks, tests, formatting and linting:

@@ -5,7 +5,7 @@ import { useWindowDimensions } from '../../../joy-utils/src/react/hooks';
 
 import { TokenomicsData, StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
 
-import { COLORS } from './index';
+import { NON_WORKING_GROUPS, WORKING_GROUPS } from '../tokenomicsGroupsData';
 
 const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
 
@@ -121,25 +121,24 @@ const SpendingAndStakeTableRow: React.FC<{
   );
 };
 
-const WORKING_GROUPS = ['storageProviders', 'contentCurators', 'operations'] as const;
-
-type TokenomicsGroup =
-  'validators' |
-  'council' |
-  typeof WORKING_GROUPS[number]
+type TokenomicsGroup = typeof WORKING_GROUPS[number]['groupType'] | typeof NON_WORKING_GROUPS[number]['groupType'];
 
 const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
   const { width } = useWindowDimensions();
 
   const displayStatusData = (group: TokenomicsGroup, dataType: 'rewardsPerWeek' | 'totalStake', lead = false): string | undefined => {
-    if ((WORKING_GROUPS.includes(group as any)) && lead) {
+    if (WORKING_GROUPS.map(({ groupType }) => groupType).includes(group as any) && lead) {
       return statusData === null
         ? 'Data currently unavailable...'
-        : (data && statusData) && `${(data[group as typeof WORKING_GROUPS[number]].lead[dataType] * Number(statusData.price)).toFixed(2)}`;
+        : data &&
+            statusData &&
+            `${(
+              data[group as typeof WORKING_GROUPS[number]['groupType']].lead[dataType] * Number(statusData.price)
+            ).toFixed(2)}`;
     } else {
       return statusData === null
         ? 'Data currently unavailable...'
-        : (data && statusData) && `${(data[group][dataType] * Number(statusData.price)).toFixed(2)}`;
+        : data && statusData && `${(data[group][dataType] * Number(statusData.price)).toFixed(2)}`;
     }
   };
 
@@ -160,102 +159,59 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
       </Table.Header>
 
       <Table.Body>
-        <SpendingAndStakeTableRow
-          role={width <= 1050 ? 'Validators' : 'Validators (Nominators)'}
-          helpContent='The current set of active Validators (and Nominators), and the sum of the sets projected rewards and total stakes (including Nominators).'
-          numberOfActors={data && `${data.validators.number} (${data.validators.nominators.number})`}
-          groupEarning={data && `${Math.round(data.validators.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('validators', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.validators.rewardsShare * 100)}`}
-          groupStake={data && `${data.validators.totalStake}`}
-          groupStakeDollar={displayStatusData('validators', 'totalStake')}
-          stakeShare={data && `${round(data.validators.stakeShare * 100)}`}
-          color={COLORS.VALIDATOR}
-        />
-        <SpendingAndStakeTableRow
-          role={width <= 1015 ? 'Council' : 'Council Members'}
-          helpContent='The current Council Members, and the sum of their projected rewards and total stakes (including voters/backers).'
-          numberOfActors={data && `${data.council.number}`}
-          groupEarning={data && `${Math.round(data.council.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('council', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.council.rewardsShare * 100)}`}
-          groupStake={data && `${data.council.totalStake}`}
-          groupStakeDollar={displayStatusData('council', 'totalStake')}
-          stakeShare={data && `${round(data.council.stakeShare * 100)}`}
-          color={COLORS.COUNCIL_MEMBER}
-        />
-        <SpendingAndStakeTableRow
-          role={width <= 1015 ? 'Storage' : 'Storage Providers'}
-          helpContent='The current Storage Providers, and the sum of their projected rewards and stakes.'
-          numberOfActors={data && `${data.storageProviders.number}`}
-          groupEarning={data && `${Math.round(data.storageProviders.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('storageProviders', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.storageProviders.rewardsShare * 100)}`}
-          groupStake={data && `${data.storageProviders.totalStake}`}
-          groupStakeDollar={displayStatusData('storageProviders', 'totalStake')}
-          stakeShare={data && `${round(data.storageProviders.stakeShare * 100)}`}
-          color={COLORS.STORAGE_PROVIDER}
-        />
-        <SpendingAndStakeTableRow
-          role={width <= 1015 ? 'S. Lead' : width <= 1050 ? 'Storage Lead' : 'Storage Provider Lead'}
-          helpContent='Current Storage Provider Lead, and their projected reward and stake.'
-          numberOfActors={data && `${data.storageProviders.lead.number}`}
-          groupEarning={data && `${Math.round(data.storageProviders.lead.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('storageProviders', 'rewardsPerWeek', true)}
-          earningShare={data && `${round(data.storageProviders.lead.rewardsShare * 100)}`}
-          groupStake={data && `${data.storageProviders.lead.totalStake}`}
-          groupStakeDollar={displayStatusData('storageProviders', 'totalStake', true)}
-          stakeShare={data && `${round(data.storageProviders.lead.stakeShare * 100)}`}
-          color={COLORS.STORAGE_LEAD}
-        />
-        <SpendingAndStakeTableRow
-          role={width <= 1015 ? 'Curators' : 'Content Curators'}
-          helpContent='The current Content Curators, and the sum of their projected rewards and stakes.'
-          numberOfActors={data && `${data.contentCurators.number}`}
-          groupEarning={data && `${Math.round(data.contentCurators.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('contentCurators', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.contentCurators.rewardsShare * 100)}`}
-          groupStake={data && `${data.contentCurators.totalStake}`}
-          groupStakeDollar={displayStatusData('contentCurators', 'totalStake')}
-          stakeShare={data && `${round(data.contentCurators.stakeShare * 100)}`}
-          color={COLORS.CONTENT_CURATOR}
-        />
-        <SpendingAndStakeTableRow
-          role={width <= 1015 ? 'C. Lead' : 'Curators Lead'}
-          helpContent='Current Content Curators Lead, and their projected reward and stake.'
-          numberOfActors={data && `${data.contentCurators.lead.number}`}
-          groupEarning={data && `${Math.round(data.contentCurators.lead.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('contentCurators', 'rewardsPerWeek', true)}
-          earningShare={data && `${round(data.contentCurators.lead.rewardsShare * 100)}`}
-          groupStake={data && `${data.contentCurators.lead.totalStake}`}
-          groupStakeDollar={displayStatusData('contentCurators', 'totalStake', true)}
-          stakeShare={data && `${round(data.contentCurators.lead.stakeShare * 100)}`}
-          color={COLORS.CURATOR_LEAD}
-        />
-        <SpendingAndStakeTableRow
-          role='Operations'
-          helpContent='The current Operations members, and the sum of their projected rewards and stakes.'
-          numberOfActors={data && `${data.operations.number}`}
-          groupEarning={data && `${Math.round(data.operations.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.operations.rewardsShare * 100)}`}
-          groupStake={data && `${data.operations.totalStake}`}
-          groupStakeDollar={displayStatusData('operations', 'totalStake')}
-          stakeShare={data && `${round(data.operations.stakeShare * 100)}`}
-          color={COLORS.OPERATIONS}
-        />
-        <SpendingAndStakeTableRow
-          role='Operations Lead'
-          helpContent='Current Operations Lead, and their projected reward and stake.'
-          numberOfActors={data && `${data.operations.lead.number}`}
-          groupEarning={data && `${Math.round(data.operations.lead.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek', true)}
-          earningShare={data && `${round(data.operations.lead.rewardsShare * 100)}`}
-          groupStake={data && `${data.operations.lead.totalStake}`}
-          groupStakeDollar={displayStatusData('operations', 'totalStake', true)}
-          stakeShare={data && `${round(data.operations.lead.stakeShare * 100)}`}
-          color={COLORS.OPERATIONS_LEAD}
-        />
+        {NON_WORKING_GROUPS.map(({ groupType, titleCutoff, shortTitle, title, helpText, color }) => {
+          let numberOfActors = data && `${data[groupType].number}`;
+
+          if (groupType === 'validators' && data) {
+            numberOfActors = `${data.validators.number} (${data.validators.nominators.number})`;
+          }
+
+          return (
+            <SpendingAndStakeTableRow
+              key={groupType}
+              role={width <= titleCutoff ? shortTitle : title}
+              helpContent={helpText}
+              numberOfActors={numberOfActors}
+              groupEarning={data && `${Math.round(data[groupType].rewardsPerWeek)}`}
+              groupEarningDollar={displayStatusData(groupType, 'rewardsPerWeek')}
+              earningShare={data && `${round(data[groupType].rewardsShare * 100)}`}
+              groupStake={data && `${data[groupType].totalStake}`}
+              groupStakeDollar={displayStatusData(groupType, 'totalStake')}
+              stakeShare={data && `${round(data[groupType].stakeShare * 100)}`}
+              color={color}
+            />
+          );
+        })}
+        {WORKING_GROUPS.map(({ groupType, titleCutoff, shortTitle, title, helpText, color, lead }) => {
+          return (
+            <React.Fragment key={groupType}>
+              <SpendingAndStakeTableRow
+                role={width <= titleCutoff ? shortTitle : title}
+                helpContent={helpText}
+                numberOfActors={data && `${data[groupType].number}`}
+                groupEarning={data && `${Math.round(data[groupType].rewardsPerWeek)}`}
+                groupEarningDollar={displayStatusData(groupType, 'rewardsPerWeek')}
+                earningShare={data && `${round(data[groupType].rewardsShare * 100)}`}
+                groupStake={data && `${data[groupType].totalStake}`}
+                groupStakeDollar={displayStatusData(groupType, 'totalStake')}
+                stakeShare={data && `${round(data[groupType].stakeShare * 100)}`}
+                color={color}
+              />
+              <SpendingAndStakeTableRow
+                role={width <= lead.titleCutoff ? lead.shortTitle : lead.title}
+                helpContent={lead.helpText}
+                numberOfActors={data && `${data[groupType].lead.number}`}
+                groupEarning={data && `${Math.round(data[groupType].lead.rewardsPerWeek)}`}
+                groupEarningDollar={displayStatusData(groupType, 'rewardsPerWeek', true)}
+                earningShare={data && `${round(data[groupType].lead.rewardsShare * 100)}`}
+                groupStake={data && `${data[groupType].lead.totalStake}`}
+                groupStakeDollar={displayStatusData(groupType, 'totalStake', true)}
+                stakeShare={data && `${round(data[groupType].lead.stakeShare * 100)}`}
+                color={lead.color}
+              />
+            </React.Fragment>
+          );
+        })}
         <SpendingAndStakeTableRow
           role='TOTAL'
           active={true}

@@ -1,0 +1,308 @@
+"Global storage system parameters"
+type StorageSystemParameters @entity {
+  "Blacklisted content hashes"
+  blacklist: [String!]
+
+  "How many buckets can be assigned to store a bag"
+  storageBucketsPerBagLimit: Int!
+
+  "How many buckets can be assigned to distribute a bag"
+  distributionBucketsPerBagLimit: Int!
+
+  "Whether the uploading is globally blocked"
+  uploadingBlocked: Boolean!
+
+  "Additional fee for storing 1 MB of data"
+  dataObjectFeePerMB: BigInt!
+
+  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsCountLimit: BigInt!
+
+  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsSizeLimit: BigInt!
+
+  "ID of the next data object when created"
+  nextDataObjectId: BigInt!
+}
+
+type StorageBucketOperatorStatusMissing @variant {
+  _phantom: Int
+}
+
+type StorageBucketOperatorStatusInvited @variant {
+  workerId: Int!
+}
+
+type StorageBucketOperatorStatusActive @variant {
+  workerId: Int!
+  transactorAccountId: String!
+}
+
+union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
+
+type GeoCoordinates @entity {
+  latitude: Float!
+  longitude: Float!
+}
+
+enum Continent {
+  AF
+  NA
+  OC
+  AN
+  AS
+  EU
+  SA
+}
+
+type GeographicalAreaContinent @variant {
+  code: Continent
+}
+
+type GeographicalAreaCountry @variant {
+  "ISO 3166-1 alpha-2 country code"
+  code: String
+}
+
+type GeographicalAreaSubdivistion @variant {
+  "ISO 3166-2 subdivision code"
+  code: String
+}
+
+union GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion
+
+type NodeLocationMetadata @entity {
+  "ISO 3166-1 alpha-2 country code (2 letters)"
+  countryCode: String
+
+  "City name"
+  city: String
+
+  "Geographic coordinates"
+  coordinates: GeoCoordinates
+}
+
+type StorageBucketOperatorMetadata @entity {
+  "Root node endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+type StorageBucket @entity {
+  "Runtime bucket id"
+  id: ID!
+
+  "Current bucket operator status"
+  operatorStatus: StorageBucketOperatorStatus!
+
+  "Storage bucket operator metadata"
+  operatorMetadata: StorageBucketOperatorMetadata
+
+  "Whether the bucket is accepting any new storage bags"
+  acceptingNewBags: Boolean!
+
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "storageBuckets")
+
+  "Bucket's data object size limit in bytes"
+  dataObjectsSizeLimit: BigInt!
+
+  "Bucket's data object count limit"
+  dataObjectCountLimit: BigInt!
+
+  "Number of assigned data objects"
+  dataObjectsCount: BigInt!
+
+  "Total size of assigned data objects"
+  dataObjectsSize: BigInt!
+}
+
+type StorageBagOwnerCouncil @variant {
+  _phantom: Int
+}
+
+type StorageBagOwnerWorkingGroup @variant {
+  workingGroupId: String
+}
+
+type StorageBagOwnerMember @variant {
+  memberId: Int
+}
+
+type StorageBagOwnerChannel @variant {
+  channelId: Int
+}
+
+# Note: Not supported by runtime yet
+type StorageBagOwnerDAO @variant {
+  daoId: Int
+}
+
+union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
+
+type StorageBag @entity {
+  "Storage bag id"
+  id: ID!
+
+  "Data objects in the bag"
+  objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
+
+  "Storage buckets assigned to the bag"
+  storageBuckets: [StorageBucket!]
+
+  "Distribution buckets assigned to the bag"
+  distributionBuckets: [DistributionBucket!]
+
+  "Owner of the storage bag"
+  owner: StorageBagOwner!
+}
+
+type DataObjectTypeChannelAvatar @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeChannelCoverPhoto @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeVideoMedia @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeVideoThumbnail @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeUnknown @variant {
+  _phantom: Int
+}
+
+union DataObjectType = DataObjectTypeChannelAvatar | DataObjectTypeChannelCoverPhoto | DataObjectTypeVideoMedia | DataObjectTypeVideoThumbnail | DataObjectTypeUnknown
+
+type StorageDataObject @entity {
+  "Data object runtime id"
+  id: ID!
+
+  "Whether the data object was uploaded and accepted by the storage provider"
+  isAccepted: Boolean!
+
+  "Data object size in bytes"
+  size: BigInt!
+
+  "Storage bag the data object is part of"
+  storageBag: StorageBag!
+
+  "IPFS content hash"
+  ipfsHash: String!
+
+  # FIXME: Cannot be optional because: https://github.com/Joystream/hydra/issues/434
+  "The type of the asset that the data object represents (if known)"
+  type: DataObjectType!
+
+  "Prize for removing the data object"
+  deletionPrize: BigInt!
+
+  "If the object is no longer used as an asset - the time at which it was unset (if known)"
+  unsetAt: DateTime
+}
+
+type DistributionBucketFamilyGeographicArea @entity {
+  "{metadataId}-{(C|c|s)}-{code}"
+  id: ID!
+
+  "Geographical area (continent / country / subdivision)"
+  area: GeographicalArea!
+
+  "Related distribution bucket family metadata"
+  distributionBucketFamilyMetadata: DistributionBucketFamilyMetadata!
+}
+
+type DistributionBucketFamilyMetadata @entity {
+  "Name of the geographical region covered by the family (ie.: us-east-1)"
+  region: String
+
+  "Optional, more specific description of the region covered by the family"
+  description: String
+
+  "Geographical areas covered by the family"
+  areas: [DistributionBucketFamilyGeographicArea!] @derivedFrom(field: "distributionBucketFamilyMetadata")
+
+  "List of targets (hosts/ips) best suited latency measurements for the family"
+  latencyTestTargets: [String]
+}
+
+type DistributionBucketOperatorMetadata @entity {
+  "Root distributor node api endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+enum DistributionBucketOperatorStatus {
+  INVITED,
+  ACTIVE
+}
+
+type DistributionBucketOperator @entity {
+  "{bucketId}-{workerId}"
+  id: ID!
+
+  "Related distirbution bucket"
+  distributionBucket: DistributionBucket!
+
+  "ID of the distribution group worker"
+  workerId: Int!
+
+  "Current operator status"
+  status: DistributionBucketOperatorStatus!
+
+  "Operator metadata"
+  metadata: DistributionBucketOperatorMetadata
+}
+
+type DistributionBucket @entity {
+  "Runtime bucket id in {familyId}:{bucketIndex} format"
+  id: ID!
+
+  "Distribution family the bucket is part of"
+  family: DistributionBucketFamily!
+
+  "Bucket index within the family"
+  bucketIndex: Int!
+
+  "Distribution bucket operators (either active or invited)"
+  operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
+
+  "Whether the bucket is accepting any new bags"
+  acceptingNewBags: Boolean!
+
+  "Whether the bucket is currently distributing content"
+  distributing: Boolean!
+
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "distributionBuckets")
+}
+
+type DistributionBucketFamily @entity {
+  "Runtime bucket family id"
+  id: ID!
+
+  "Current bucket family metadata"
+  metadata: DistributionBucketFamilyMetadata
+
+  "Distribution buckets belonging to the family"
+  buckets: [DistributionBucket!] @derivedFrom(field: "family")
+}

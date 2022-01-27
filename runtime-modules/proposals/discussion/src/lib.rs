@@ -40,6 +40,8 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
@@ -57,7 +59,7 @@ use sp_std::vec::Vec;
 use common::origin::ActorOriginValidator;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
-type MemberId<T> = <T as membership::Trait>::MemberId;
+type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 decl_event!(
     /// Proposals engine events

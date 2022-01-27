@@ -32,18 +32,17 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
-    DataDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ElectionParameters, ForumConfig, GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig,
-    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, DAYS,
+    ContentConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DistributionWorkingGroupConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupAlphaConfig,
+    OperationsWorkingGroupBetaConfig, OperationsWorkingGroupGammaConfig, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
-pub mod content_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
@@ -138,7 +137,6 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_data_directory_config(),
                         vec![],
                     )
                 },
@@ -176,7 +174,6 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_data_directory_config(),
                         vec![],
                     )
                 },
@@ -219,7 +216,6 @@ pub fn testnet_genesis(
     cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
-    data_directory_config: DataDirectoryConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
@@ -303,13 +299,6 @@ pub fn testnet_genesis(
             members,
         }),
         forum: Some(forum_config),
-        data_directory: Some(data_directory_config),
-        data_object_type_registry: Some(DataObjectTypeRegistryConfig {
-            first_data_object_type_id: 1,
-        }),
-        data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
-            first_relationship_id: 1,
-        }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
@@ -318,7 +307,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
+        working_group_Instance3: Some(ContentWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -326,7 +315,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance4: Some(OperationsWorkingGroupConfig {
+        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -335,6 +324,30 @@ pub fn testnet_genesis(
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance5: Some(GatewayWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance6: Some(DistributionWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -353,6 +366,14 @@ pub fn testnet_genesis(
                 next_series_id: 1,
                 next_person_id: 1,
                 next_channel_transfer_request_id: 1,
+                video_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
+                channel_migration: node_runtime::content::MigrationConfigRecord {
+                    current_id: 1,
+                    final_id: 1,
+                },
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
@@ -420,7 +441,6 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_data_directory_config(),
             vec![],
         )
     }
@@ -454,7 +474,6 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_data_directory_config(),
             vec![],
         )
     }

@@ -2,7 +2,7 @@ import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import * as fs from 'fs'
 
-export class configMapFromFile extends pulumi.ComponentResource {
+export class ConfigMapFromFile extends pulumi.ComponentResource {
   public readonly configName?: pulumi.Output<string>
 
   constructor(name: string, args: ConfigMapArgs, opts: pulumi.ComponentResourceOptions = {}) {

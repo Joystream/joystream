@@ -65,6 +65,7 @@ jobs:
         run: |
           export WORKSPACE_ROOT=`cargo metadata --offline --no-deps --format-version 1 | jq .workspace_root -r`
           sudo chmod a+w $WORKSPACE_ROOT
+          sudo chmod -R a+w $HOME/.cargo/registry
           ./scripts/raspberry-cross-build.sh
 
       - name: Tar the binary

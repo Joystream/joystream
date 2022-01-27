@@ -184,7 +184,7 @@ function Payouts ({ className = '', isInElection }: Props): React.ReactElement<P
 
   return (
     <div className={className}>
-      {api.tx.staking.payoutStakers && (
+      {isFunction(api.tx.staking.payoutStakers) && (
         <Button.Group>
           <PayToggle
             onChange={setEraSelectionIndex}
@@ -215,7 +215,7 @@ function Payouts ({ className = '', isInElection }: Props): React.ReactElement<P
           />
         ))}
       </Table>
-      {api.tx.staking.payoutStakers && !isLoadingRewards && validators && (validators.length !== 0) && (
+      {isFunction(api.tx.staking.payoutStakers) && !isLoadingRewards && validators && (validators.length !== 0) && (
         <Table
           header={headerValidators}
           isFixed

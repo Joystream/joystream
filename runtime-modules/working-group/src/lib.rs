@@ -42,9 +42,11 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
+
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -76,7 +78,7 @@ pub use types::{
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
 /// Member identifier in membership::member module
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Workaround for BTreeSet type
 pub type ApplicationIdSet<T> = BTreeSet<ApplicationId<T>>;
@@ -107,7 +109,7 @@ pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
 pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as common::MembershipTypes>::ActorId;
 
 /// Alias for the application id from the hiring module.
 pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
@@ -1205,13 +1207,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> DispatchResult {
-        <OpeningHumanReadableText<I>>::get()
-            .ensure_valid(
-                text.len(),
-                Error::<T, I>::OpeningTextTooShort.into(),
-                Error::<T, I>::OpeningTextTooLong.into(),
-            )
-            .map_err(|e| DispatchError::Other(e))
+        <OpeningHumanReadableText<I>>::get().ensure_valid(
+            text.len(),
+            Error::<T, I>::OpeningTextTooShort.into(),
+            Error::<T, I>::OpeningTextTooLong.into(),
+        )
     }
 
     /// Ensures origin is signed by the leader.
@@ -1257,13 +1257,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_application_text_is_valid(text: &[u8]) -> DispatchResult {
-        <WorkerApplicationHumanReadableText<I>>::get()
-            .ensure_valid(
-                text.len(),
-                Error::<T, I>::WorkerApplicationTextTooShort.into(),
-                Error::<T, I>::WorkerApplicationTextTooLong.into(),
-            )
-            .map_err(|e| DispatchError::Other(e))
+        <WorkerApplicationHumanReadableText<I>>::get().ensure_valid(
+            text.len(),
+            Error::<T, I>::WorkerApplicationTextTooShort.into(),
+            Error::<T, I>::WorkerApplicationTextTooLong.into(),
+        )
     }
 
     // CRITICAL:
@@ -1365,13 +1363,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> DispatchResult {
-        Self::worker_exit_rationale_text()
-            .ensure_valid(
-                text.len(),
-                Error::<T, I>::WorkerExitRationaleTextTooShort.into(),
-                Error::<T, I>::WorkerExitRationaleTextTooLong.into(),
-            )
-            .map_err(|e| DispatchError::Other(e))
+        Self::worker_exit_rationale_text().ensure_valid(
+            text.len(),
+            Error::<T, I>::WorkerExitRationaleTextTooShort.into(),
+            Error::<T, I>::WorkerExitRationaleTextTooLong.into(),
+        )
     }
 
     fn ensure_worker_role_storage_text_is_valid(text: &[u8]) -> DispatchResult {
@@ -1440,15 +1436,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .filter_map(|(worker_id, _)| {
                 // Filter the leader worker id if the leader is set.
-                lead_worker_id
-                    .clone()
-                    .map_or(Some(worker_id), |lead_worker_id| {
-                        if worker_id == lead_worker_id {
-                            None
-                        } else {
-                            Some(worker_id)
-                        }
-                    })
+                lead_worker_id.map_or(Some(worker_id), |lead_worker_id| {
+                    if worker_id == lead_worker_id {
+                        None
+                    } else {
+                        Some(worker_id)
+                    }
+                })
             })
             .collect()
     }

@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory } from './Api'
+import { ApiFactory, Api, KeyGenInfo } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -9,12 +9,37 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
-import fs from 'fs'
+import fs, { readFileSync } from 'fs'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
   debug: Debugger.Debugger
   job: (label: string, flows: Flow[] | Flow) => Job
+}
+
+const OUTPUT_FILE_PATH = 'output.json'
+
+type TestsOutput = {
+  accounts: { [k: string]: number }
+  keyIds: KeyGenInfo
+  miniSecret: string
+}
+
+function writeOutput(api: Api, miniSecret: string) {
+  console.error('Writing generated account to', OUTPUT_FILE_PATH)
+  // account to key ids
+  const accounts = api.getAllGeneratedAccounts()
+
+  // first and last key id used to generate keys in this scenario
+  const keyIds = api.keyGenInfo()
+
+  const output: TestsOutput = {
+    accounts,
+    keyIds,
+    miniSecret,
+  }
+
+  fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
 
 export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
@@ -35,11 +60,20 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const api = apiFactory.getApi('Key Generation')
 
-  // Generate all key ids before START_KEY_ID
-  const startKeyId = parseInt(env.START_KEY_ID || '0')
-  if (startKeyId) {
-    api.createKeyPairs(startKeyId)
+  // Generate all key ids based on REUSE_KEYS or START_KEY_ID (if provided)
+  const reuseKeys = Boolean(env.REUSE_KEYS)
+  let startKeyId: number
+  let customKeys: string[] = []
+  if (reuseKeys) {
+    const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
+    startKeyId = output.keyIds.final
+    customKeys = output.keyIds.custom
+  } else {
+    startKeyId = parseInt(env.START_KEY_ID || '0')
   }
+
+  api.createKeyPairs(startKeyId)
+  customKeys.forEach((k) => api.createCustomKeyPair(k))
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 
@@ -59,6 +93,12 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const resources = new ResourceManager()
 
+  process.on('SIGINT', () => {
+    console.error('Aborting scenario')
+    writeOutput(api, miniSecret)
+    process.exit(0)
+  })
+
   let exitCode = 0
 
   try {
@@ -68,19 +108,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     exitCode = -1
   }
 
-  // account to key ids
-  const accounts = api.getAllgeneratedAccounts()
-
-  // first and last key id used to generate keys in this scenario
-  const keyIds = api.keyGenInfo()
-
-  const output = {
-    accounts,
-    keyIds,
-    miniSecret,
-  }
-
-  fs.writeFileSync('output.json', JSON.stringify(output, undefined, 2))
+  writeOutput(api, miniSecret)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

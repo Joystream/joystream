@@ -9,14 +9,23 @@ set -a
 . ../.env
 set +a
 
-# only use this when new Hydra releases and contents of `generated/` folder needs to be refreshed
-#yarn clean
-#yarn codegen:noinstall
-#yarn codegen:typegen # if this fails try to run this command outside of yarn workspaces
+# Install codegen tools (outside of workspaces to avoid @polkadot/api conflicts)
+yarn --cwd codegen install
 
-yarn query-node:build
-yarn mappings:build
+yarn clean
+yarn codegen:noinstall
+yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
+
+# Add missing typeorm binary symlink
+ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
+
+yarn workspace query-node codegen
+yarn workspace query-node build
+
+yarn workspace query-node-mappings build
+
+
