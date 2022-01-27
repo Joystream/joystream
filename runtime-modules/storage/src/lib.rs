@@ -1550,7 +1550,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1576,7 +1576,7 @@ decl_module! {
         /// Updates global uploading flag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_uploading_blocked_status(origin, new_status: bool) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1590,7 +1590,7 @@ decl_module! {
         /// Updates size-based pricing of new objects uploaded.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_data_size_fee(origin, new_data_size_fee: BalanceOf<T>) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1604,7 +1604,7 @@ decl_module! {
         /// Updates "Storage buckets per bag" number limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
                 new_limit,
@@ -1628,7 +1628,7 @@ decl_module! {
             new_objects_size: u64,
             new_objects_number: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1649,7 +1649,7 @@ decl_module! {
             dynamic_bag_type: DynamicBagType,
             number_of_storage_buckets: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1676,7 +1676,7 @@ decl_module! {
             remove_hashes: BTreeSet<Cid>,
             add_hashes: BTreeSet<Cid>
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             // Get only hashes that exist in the blacklist.
             let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes);
@@ -1719,7 +1719,7 @@ decl_module! {
             size_limit: u64,
             objects_limit: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let voucher = Voucher {
                 size_limit,
@@ -1769,7 +1769,7 @@ decl_module! {
             add_buckets: BTreeSet<T::StorageBucketId>,
             remove_buckets: BTreeSet<T::StorageBucketId>,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_bag_exists(&bag_id)?;
 
@@ -1814,7 +1814,7 @@ decl_module! {
         /// Cancel pending storage bucket invite. An invitation must be pending.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1840,7 +1840,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             operator_id: WorkerId<T>,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1868,7 +1868,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1895,7 +1895,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             accepting_new_bags: bool
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1920,7 +1920,7 @@ decl_module! {
             new_objects_size_limit: u64,
             new_objects_number_limit: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
