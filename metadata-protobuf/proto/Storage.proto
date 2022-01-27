@@ -1,0 +1,48 @@
+syntax = "proto2";
+
+message GeoCoordiantes {
+  optional float latitude = 3;
+  optional float longitude = 4;
+}
+
+message NodeLocationMetadata {
+  optional string country_code = 1; // ISO 3166-1 alpha-2 country code (2 letters)
+  optional string city = 2; // City name
+  optional GeoCoordiantes coordinates = 3; // Geographic coordinates (providing {} will unset current value)
+}
+
+message StorageBucketOperatorMetadata {
+  optional string endpoint = 1; // Root storage node endpoint (ie. https://example.com/storage)
+  optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
+  optional string extra = 3; // Additional information about the node / node operator
+}
+
+message DistributionBucketOperatorMetadata {
+  optional string endpoint = 1; // Root distribution node endpoint (ie. https://example.com/distribution)
+  optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
+  optional string extra = 3; // Additional information about the node / node operator
+}
+
+message GeographicalArea {
+  enum Continent {
+    AF = 1;
+    NA = 2;
+    OC = 3;
+    AN = 4;
+    AS = 5;
+    EU = 6;
+    SA = 7;
+  }
+  oneof code {
+    Continent continent = 1;
+    string country_code = 2; // ISO 3166-1 alpha-2 country code
+    string subdivision_code = 3; // ISO 3166-2 subdivision code
+  }
+}
+
+message DistributionBucketFamilyMetadata {
+  optional string region = 1; // ID / name of the region covered by the distribution family (ie. us-east-1). Should be unique.
+  optional string description = 2; // Additional, more specific description of the region
+  repeated GeographicalArea areas = 3; // Standarized geographical areas covered by the family (providing [{}] will unset the current value)
+  repeated string latency_test_targets = 4; // List of targets (hosts/ips) best suited latency measurements for this family
+}

@@ -77,7 +77,7 @@ const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 // Set Working Group Mint Capacity
 // TODO: Discuss the actual values
 const WG_MINT_CAP_MIN = 0;
-const WG_MINT_CAP_MAX = 5000000;
+const WG_MINT_CAP_MAX = 50000000;
 
 // Fill Working Group Leader Opening / Set Working Group Lead Reward
 // TODO: Discuss the actual values

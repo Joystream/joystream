@@ -1,24 +1,28 @@
 {
   "compilerOptions": {
-    "composite": true,
-    "rootDir": "./packages/",
-    "outDir": "./build",
-    "allowJs": true,
-    "target": "es2017",
+    "declaration": true,
+    "importHelpers": true,
     "module": "commonjs",
-    "esModuleInterop": true,
-    "baseUrl": ".",
+    "outDir": "lib",
+    "rootDir": "src",
+    "strict": true,
+    "strictNullChecks": true,
+    "target": "es2017",
     "skipLibCheck": true,
-    "types": ["node", "mocha"],
+    "baseUrl": ".",
     "paths": {
       "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
-    }
+      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"],
+    },
+    "esModuleInterop": true,
+    "types" : [ "node", "mocha" ],
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "useUnknownInCatchVariables": false
   },
-  "files": [],
-  "exclude": ["**/node_modules/*", "build"],
-  "references": [
-    { "path": "packages/cli" }
-    //   { "path": "packages/storage" }
+  "include": [
+    "src/**/*"
   ]
 }
+
+

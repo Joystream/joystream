@@ -1,0 +1,3 @@
+## cacheState Type
+
+`string`

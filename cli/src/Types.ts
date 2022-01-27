@@ -1,3 +1,4 @@
+import BN from 'bn.js'
 import { Codec } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
@@ -8,15 +9,14 @@ import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
-import { ContentId, ContentParameters } from '@joystream/types/storage'
-
-import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
+import { JSONSchema4 } from 'json-schema'
 import {
   IChannelMetadata,
   IVideoMetadata,
   IVideoCategoryMetadata,
   IChannelCategoryMetadata,
 } from '@joystream/metadata-protobuf'
+import { DataObjectCreationParameters } from '@joystream/types/storage'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -43,8 +43,11 @@ export enum WorkingGroups {
   Curators = 'curators',
   Forum = 'forum',
   Membership = 'membership',
-  Operations = 'operations',
+  OperationsAlpha = 'operationsAlpha',
+  OperationsBeta = 'operationsBeta',
+  OperationsGamma = 'operationsGamma',
   Gateway = 'gateway',
+  Distribution = 'distributors',
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI
@@ -53,8 +56,11 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Curators,
   WorkingGroups.Forum,
   WorkingGroups.Membership,
-  WorkingGroups.Operations,
   WorkingGroups.Gateway,
+  WorkingGroups.OperationsAlpha,
+  WorkingGroups.OperationsBeta,
+  WorkingGroups.OperationsGamma,
+  WorkingGroups.Distribution,
 ] as const
 
 export type Reward = {
@@ -134,18 +140,14 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   consts: { [key: string]: QueryableModuleConsts }
 }
 
-// Content-related
-export enum AssetType {
-  AnyAsset = 1,
-}
-
-export type InputAsset = {
+export type AssetToUpload = {
+  dataObjectId: BN
   path: string
-  contentId: ContentId
 }
 
-export type InputAssetDetails = InputAsset & {
-  parameters: ContentParameters
+export type ResolvedAsset = {
+  path: string
+  parameters: DataObjectCreationParameters
 }
 
 export type VideoFFProbeMetadata = {
@@ -171,6 +173,7 @@ export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avat
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
+  collaborators?: number[]
 }
 
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
@@ -180,6 +183,14 @@ export type VideoCategoryInputParameters = IVideoCategoryMetadata
 type AnyNonObject = string | number | boolean | any[] | Long
 
 // JSONSchema utility types
+
+// Based on: https://stackoverflow.com/questions/51465182/how-to-remove-index-signature-using-mapped-types
+type RemoveIndex<T> = {
+  [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K]
+}
+
+type AnyJSONSchema = RemoveIndex<JSONSchema4>
+
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
@@ -192,19 +203,35 @@ export type JSONTypeName<T> = T extends string
   ? 'number' | ['number', 'null']
   : 'object' | ['object', 'null']
 
-export type PropertySchema<P> = Omit<
-  JSONSchema7Definition & {
-    type: JSONTypeName<P>
-    properties: P extends AnyNonObject ? never : JsonSchemaProperties<P>
-  },
-  P extends AnyNonObject ? 'properties' : ''
->
+export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
+  type: JSONTypeName<P>
+} & (P extends AnyNonObject ? { properties?: never } : { properties: JsonSchemaProperties<P> })
 
 export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
 }
 
-export type JsonSchema<T> = JSONSchema7 & {
+export type JsonSchema<T> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: 'object'
   properties: JsonSchemaProperties<T>
+}
+
+// Storage node related types
+
+export type StorageNodeInfo = {
+  bucketId: number
+  apiEndpoint: string
+}
+
+export type TokenRequest = {
+  data: TokenRequestData
+  signature: string
+}
+
+export type TokenRequestData = {
+  memberId: number
+  accountId: string
+  dataObjectId: number
+  storageBucketId: number
+  bagId: string
 }

@@ -1,3 +1,5 @@
+// TODO: FIXME: Use Bytes instead of Text to avoid issues with type decoding (ie. 0x909090)
+// (or investigate ways of mitigating this by creating a PR to @polkadot/api library)
 import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'

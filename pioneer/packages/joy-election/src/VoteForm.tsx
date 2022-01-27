@@ -174,7 +174,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ isFormSubmitted: true });
   }
 
-  private onTxFailed: TxFailedCallback = (_txResult: SubmittableResult | null): void => {
+  private onTxFailed: TxFailedCallback = (_txResult: SubmittableResult | Error | null): void => {
     // TODO Possible UX improvement: tell a user that his vote hasn't been accepted.
   }
 

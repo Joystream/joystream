@@ -1,0 +1,108 @@
+---
+# Run the docker-compose setup on a new EC2 instance
+
+- name: Setup EC2 instance and start docker-compose services
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Get code from git repo
+      include_role:
+        name: common
+        tasks_from: get-code-git
+
+    - name: Creat bash profile file
+      command: 'touch /home/ubuntu/.bash_profile'
+
+    - name: Run setup script
+      command: ./setup.sh
+      args:
+        chdir: '{{ remote_code_path }}'
+
+    - name: Copy bash_profile content
+      shell: cat ~/.bash_profile
+      register: bash_data
+
+    - name: Copy bash_profile content to bashrc for non-interactive sessions
+      blockinfile:
+        block: '{{ bash_data.stdout }}'
+        path: ~/.bashrc
+        insertbefore: BOF
+
+    - name: Make sure docker is running
+      command: systemctl start docker
+      become: yes
+
+    - name: Build packages
+      command: yarn build:packages
+      args:
+        chdir: '{{ remote_code_path }}'
+      async: 3600
+      poll: 0
+      register: build_result
+
+    - name: Check on build async task
+      async_status:
+        jid: '{{ build_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 36
+      # Check for the status every 100s
+      delay: 100
+
+    - name: Build Node image
+      command: yarn build:node:docker
+      args:
+        chdir: '{{ remote_code_path }}'
+
+    - name: Run docker-compose
+      command: yarn start
+      args:
+        chdir: '{{ remote_code_path }}'
+      environment:
+        PERSIST: 'true'
+        COLOSSUS_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
+        DISTRIBUTOR_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+      async: 1800
+      poll: 0
+      register: compose_result
+
+    - name: Check on yarn start task
+      async_status:
+        jid: '{{ compose_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 18
+      # Check for the status every 100s
+      delay: 100
+
+    - name: Set nip.io domain with IP
+      set_fact:
+        nip_domain: '{{ inventory_hostname }}.nip.io'
+      run_once: yes
+
+    - name: Install and configure Caddy
+      include_role:
+        name: caddy_ansible.caddy_ansible
+        apply:
+          become: yes
+      vars:
+        caddy_config: "{{ lookup('template', 'templates/Playground-Caddyfile.j2') }}"
+        caddy_systemd_capabilities_enabled: true
+        caddy_update: false
+
+    - name: Print endpoints
+      debug:
+        msg:
+          - 'The services should now be accesible at:'
+          - 'Pioneer: https://{{ nip_domain }}/'
+          - 'WebSocket RPC: wss://{{ nip_domain }}/ws-rpc'
+          - 'HTTP RPC: https://{{ nip_domain }}/http-rpc'
+          - 'Colossus: https://{{ nip_domain }}/colossus-1'
+          - 'Distributor: https://{{ nip_domain }}/distributor-1'
+          - 'GraphQL server: https://{{ nip_domain }}/query-node/server/graphql'
+          - 'Indexer: https://{{ nip_domain }}/query-node/indexer/graphql'
+          - 'Member Faucet: https://{{ nip_domain }}/member-faucet/register'
+          - 'Orion: https://{{ nip_domain }}/orion/graphql'

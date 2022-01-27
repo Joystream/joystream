@@ -19,6 +19,7 @@ import { ThreadId, PostId } from '@joystream/types/common';
 import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails, ProposalStatus } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
 import { u32, Bytes, Null } from '@polkadot/types/';
+import { Callback, Codec } from '@polkadot/types/types';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
 import { bytesToString } from '../functions/misc';
@@ -26,6 +27,7 @@ import _ from 'lodash';
 import { metadata as proposalsConsts, apiMethods as proposalsApiMethods } from '../consts/proposals';
 
 import { ApiPromise } from '@polkadot/api';
+import { UnsubscribePromise } from '@polkadot/api/types';
 import MembersTransport from './members';
 import ChainTransport from './chain';
 import CouncilTransport from './council';
@@ -118,8 +120,8 @@ export default class ProposalsTransport extends BaseTransport {
 
     return {
       id,
-      title: rawProposal.title.toString(),
-      description: rawProposal.description.toString(),
+      title: bytesToString(rawProposal.title),
+      description: bytesToString(rawProposal.description),
       parameters: rawProposal.parameters,
       votingResults: rawProposal.votingResults,
       proposerId: rawProposal.proposerId.toNumber(),
@@ -247,8 +249,8 @@ export default class ProposalsTransport extends BaseTransport {
     return Promise.all(ProposalTypes.map((type) => this.parametersFromProposalType(type)));
   }
 
-  async subscribeProposal (id: number|ProposalId, callback: () => void) {
-    return this.api.query.proposalsEngine.proposals(id, callback);
+  async subscribeProposal (id: number|ProposalId, callback: Callback<Proposal>): UnsubscribePromise {
+    return (this.api.query.proposalsEngine.proposals as { <T extends Codec>(arg: unknown, callback: Callback<T>): UnsubscribePromise })<Proposal>(id, callback);
   }
 
   async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {

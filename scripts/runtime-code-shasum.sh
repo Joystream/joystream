@@ -25,6 +25,7 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020
     joystream-node.Dockerfile \
     node \
     $(test -n "$TEST_NODE" && echo "$TEST_PROPOSALS_PARAMETERS_PATH") \
+    joystream-node-armv7.Dockerfile \
     | if [[ -n "$TEST_NODE" ]]; then sed '$a'"$TEST_NODE_BLOCKTIME"; else tee; fi \
     | shasum \
     | cut -d " " -f 1

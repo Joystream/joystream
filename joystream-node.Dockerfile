@@ -1,11 +1,13 @@
-FROM liuchong/rustup:nightly AS rustup
-RUN rustup install nightly-2021-02-20
+FROM rust:1.52.1-buster AS rust
+RUN rustup self update
+RUN rustup install nightly-2021-02-20 --force
 RUN rustup default nightly-2021-02-20
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+RUN rustup component add --toolchain nightly-2021-02-20 clippy
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev
 
-FROM rustup AS builder
+FROM rust AS builder
 LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
 COPY . /joystream
@@ -23,7 +25,7 @@ RUN test -n "$TEST_NODE" && export ALL_PROPOSALS_PARAMETERS_JSON="$(cat ./tests/
     cargo test --release --all && \
     cargo build --release
 
-FROM debian:buster
+FROM ubuntu:21.04
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node

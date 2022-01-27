@@ -6,9 +6,10 @@ import { In } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { processVideoMetadata } from './utils'
-import { AssetNone, Channel, Video, VideoCategory } from 'query-node/dist/model'
+import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import _ from 'lodash'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -106,14 +107,14 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
-    thumbnailPhoto: new AssetNone(),
-    media: new AssetNone(),
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
   })
   // deserialize & process metadata
-  const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta) || {}
-  await processVideoMetadata(ctx, channel, video, metadata, videoCreationParameters.assets)
+  if (videoCreationParameters.meta.isSome) {
+    const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta.unwrap()) || {}
+    await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets.unwrapOr(undefined))
+  }
 
   // save video
   await store.save<Video>(video)
@@ -144,7 +145,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video.channel, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
+    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
   }
 
   // set last update time
@@ -233,7 +234,7 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
     })
   )
 
-  // read videos previously not-featured videos that are meant to be featured
+  // read previously not-featured videos that are meant to be featured
   const videosToAdd = await store.getMany(Video, {
     where: {
       id: In(videoIdsToAdd.map((item) => item.toString())),
@@ -241,9 +242,13 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   })
 
   if (videosToAdd.length !== videoIdsToAdd.length) {
-    return inconsistentState(
-      'At least one non-existing video featuring requested',
-      videosToAdd.map((v) => v.id)
+    // Do not throw, as this is not validated by the runtime
+    console.warn(
+      'Non-existing video(s) in featuredVideos set:',
+      _.difference(
+        videoIdsToAdd.map((v) => v.toString()),
+        videosToAdd.map((v) => v.id)
+      )
     )
   }
 
@@ -260,7 +265,7 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   )
 
   // emit log event
-  const newFeaturedVideoIds = videoIds.map((id) => id.toString())
-  const removedFeaturedVideosIds = videosToRemove.map((v) => v.id)
-  logger.info('New featured videos have been set', { newFeaturedVideoIds, removedFeaturedVideosIds })
+  const addedVideoIds = videosToAdd.map((v) => v.id)
+  const removedVideoIds = videosToRemove.map((v) => v.id)
+  logger.info('Featured videos have been updated', { addedVideoIds, removedVideoIds })
 }

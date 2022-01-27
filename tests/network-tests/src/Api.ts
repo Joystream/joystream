@@ -1,21 +1,20 @@
-import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
+import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
-import { Codec, ISubmittableResult } from '@polkadot/types/types'
+import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
   Application,
-  ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
   OpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@joystream/types/stake'
@@ -29,26 +28,63 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-import { v4 as uuid } from 'uuid'
-import { ContentId, DataObject } from '@joystream/types/storage'
+// import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
+import { VideoId, VideoCategoryId } from '@joystream/types/content'
+import { ChannelId } from '@joystream/types/common'
+import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
+import { assert } from 'chai'
+import { WorkingGroups } from './WorkingGroups'
 
-export enum WorkingGroups {
-  StorageWorkingGroup = 'storageWorkingGroup',
-  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
+const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
+  'distributionWorkingGroup': 'Distribution',
+  'storageWorkingGroup': 'Storage',
+  'contentWorkingGroup': 'Content',
+  'gatewayWorkingGroup': 'Gateway',
+  'operationsWorkingGroupAlpha': 'OperationsAlpha',
+  'operationsWorkingGroupBeta': 'OperationsBeta',
+  'operationsWorkingGroupGamma': 'OperationsGamma',
+}
+
+type EventSection = keyof ApiPromise['events'] & string
+type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+
+export type KeyGenInfo = {
+  start: number
+  final: number
+  custom: string[]
 }
 
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
+  // number used as part of key derivation path
+  private keyId = 0
+  // stores names of the created custom keys
+  private customKeys: string[] = []
+  // mapping from account address to key id.
+  // To be able to re-derive keypair externally when mini-secret is known.
+  readonly addressesToKeyId: Map<string, number> = new Map()
+  // mapping from account address to suri.
+  // To be able to get the suri of a known key for the purpose of, for example, interacting with the CLIs
+  readonly addressesToSuri: Map<string, string>
+  // mini secret used in SURI key derivation path
+  private readonly miniSecret: string
+
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string
+    sudoAccountUri: string,
+    miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
     let connectAttempts = 0
@@ -65,7 +101,7 @@ export class ApiFactory {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -75,34 +111,123 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
+    this.miniSecret = miniSecret
+    this.addressesToKeyId = new Map()
+    this.addressesToSuri = new Map()
+    this.keyId = 0
   }
 
   public getApi(label: string): Api {
-    return new Api(this.api, this.treasuryAccount, this.keyring, label)
+    return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  // public close(): void {
-  //   this.api.disconnect()
-  // }
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    const keys: { key: KeyringPair; id: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const id = this.keyId++
+      const key = this.createKeyPair(`${id}`)
+      keys.push({ key, id })
+      this.addressesToKeyId.set(key.address, id)
+    }
+    return keys
+  }
+
+  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+    if (isCustom) {
+      this.customKeys.push(suriPath)
+    }
+    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const pair = this.keyring.addFromUri(uri)
+    this.addressesToSuri.set(pair.address, uri)
+    return pair
+  }
+
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    return this.createKeyPair(customPath, true)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    const start = 0
+    const final = this.keyId
+    return {
+      start,
+      final,
+      custom: this.customKeys,
+    }
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return Object.fromEntries(this.addressesToKeyId)
+  }
+
+  public getKeypair(address: AccountId | string): KeyringPair {
+    return this.keyring.getPair(address)
+  }
+
+  public getSuri(address: AccountId | string): string {
+    const suri = this.addressesToSuri.get(address.toString())
+    if (!suri) {
+      throw new Error(`Suri for address ${address} not available!`)
+    }
+    return suri
+  }
 }
 
 export class Api {
+  private readonly factory: ApiFactory
   private readonly api: ApiPromise
   private readonly sender: Sender
-  private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+  constructor(factory: ApiFactory, api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.factory = factory
     this.api = api
-    this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
+  }
+
+  public get query(): ApiPromise['query'] {
+    return this.api.query
+  }
+
+  public get consts(): ApiPromise['consts'] {
+    return this.api.consts
+  }
+
+  public get tx(): ApiPromise['tx'] {
+    return this.api.tx
+  }
+
+  public signAndSend(tx: SubmittableExtrinsic<'promise'>, account: string | AccountId): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(tx, account)
+  }
+
+  public signAndSendMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    account: string | AccountId
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx) => this.sender.signAndSend(tx, account)))
+  }
+
+  public signAndSendManyByMany(
+    txs: SubmittableExtrinsic<'promise'>[],
+    accounts: string[] | AccountId[]
+  ): Promise<ISubmittableResult[]> {
+    return Promise.all(txs.map((tx, i) => this.sender.signAndSend(tx, accounts[i])))
+  }
+
+  public getKeypair(address: string | AccountId): KeyringPair {
+    return this.factory.getKeypair(address)
+  }
+
+  public getSuri(address: string | AccountId): string {
+    return this.factory.getSuri(address)
   }
 
   public enableDebugTxLogs(): void {
@@ -113,29 +238,35 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  public createKeyPairs(n: number): KeyringPair[] {
-    const nKeyPairs: KeyringPair[] = []
-    for (let i = 0; i < n; i++) {
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
-    }
-    return nKeyPairs
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    return this.factory.createKeyPairs(n)
+  }
+
+  public createCustomKeyPair(path: string): KeyringPair {
+    return this.factory.createCustomKeyPair(path)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    return this.factory.keyGenInfo()
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return this.factory.getAllGeneratedAccounts()
   }
 
   // Well known WorkingGroup enum defined in runtime
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
-    switch (workingGroup) {
-      case WorkingGroups.StorageWorkingGroup:
-        return 'Storage'
-      case WorkingGroups.ContentDirectoryWorkingGroup:
-        return 'Content'
-      default:
-        throw new Error(`Invalid working group string representation: ${workingGroup}`)
-    }
+    return workingGroupNameByGroup[workingGroup]
   }
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
     return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
+  }
+
+  public async makeSudoAsCall(who: string, tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
+    const sudo = await this.api.query.sudo.key()
+    return this.sender.signAndSend(this.api.tx.sudo.sudoAs(who, tx), sudo)
   }
 
   public createPaidTermId(value: BN): PaidTermId {
@@ -149,8 +280,16 @@ export class Api {
     )
   }
 
-  public getMemberIds(address: string): Promise<MemberId[]> {
-    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+  // Many calls in the testing framework take an account id instead of a member id when an action
+  // is intended to be in the context of the member. This function is used to do a reverse lookup.
+  // There is an underlying assumption that each member has a unique controller account even
+  // though the runtime does not place that constraint. But for the purpose of the tests we throw
+  // if that condition is found to be false to esnure the tests do not fail. As long as all memberships
+  // are created through the membership fixture this should not happen.
+  public async getMemberId(address: string): Promise<MemberId> {
+    const ids = await this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+    assert.equal(ids.length, 1, 'Only a single member with same controller account is allowed')
+    return ids[0]
   }
 
   public async getBalance(address: string): Promise<Balance> {
@@ -631,7 +770,7 @@ export class Api {
     description: string,
     runtime: Bytes | string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
       account
@@ -645,7 +784,7 @@ export class Api {
     description: string,
     text: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
       account
@@ -660,7 +799,7 @@ export class Api {
     balance: BN,
     destination: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
       account
@@ -674,7 +813,7 @@ export class Api {
     stake: BN,
     validatorCount: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
       account
@@ -695,7 +834,7 @@ export class Api {
     minCouncilStake: BN,
     minVotingStake: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, {
         announcing_period: announcingPeriod,
@@ -719,7 +858,7 @@ export class Api {
     openingId: OpeningId,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
@@ -741,7 +880,7 @@ export class Api {
     const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
       councilAccounts.map(async (account) => {
-        const memberId: MemberId = (await this.getMemberIds(account))[0]
+        const memberId: MemberId = await this.getMemberId(account)
         return this.approveProposal(account, memberId, proposal)
       })
     )
@@ -755,79 +894,52 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
-  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
-    return events.find((record) => record.event.section === section && record.event.method === method)
-  }
-
-  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public findEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> | undefined {
+    if (Array.isArray(result)) {
+      return result.find(({ event }) => event.section === section && event.method === method)?.event as
+        | EventType<S, M>
+        | undefined
     }
+    return result.findRecord(section, method)?.event as EventType<S, M> | undefined
   }
 
-  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
-    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
-    if (record) {
-      return record.event.data[1] as ProposalId
+  public getEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> {
+    const event = this.findEvent(result, section, method)
+    if (!event) {
+      throw new Error(
+        `Cannot find expected ${section}.${method} event in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}`
+      )
     }
+    return event
   }
 
-  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
-    if (record) {
-      return record.event.data[0] as OpeningId
+  public findEvents<S extends EventSection, M extends EventMethod<S>>(
+    result: SubmittableResult | EventRecord[],
+    section: S,
+    method: M,
+    expectedCount?: number
+  ): EventType<S, M>[] {
+    const events = Array.isArray(result)
+      ? result.filter(({ event }) => event.section === section && event.method === method).map(({ event }) => event)
+      : result.filterRecords(section, method).map((r) => r.event)
+    if (expectedCount && events.length !== expectedCount) {
+      throw new Error(
+        `Unexpected count of ${section}.${method} events in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
+      )
     }
-  }
-
-  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
-    if (record) {
-      return (record.event.data as unknown) as WorkerId
-    }
-  }
-
-  public findBeganApplicationReviewEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
-  }
-
-  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
-  }
-
-  public findWorkerRewardAmountUpdatedEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups,
-    workerId: WorkerId
-  ): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
-    if (record) {
-      const id = (record.event.data[0] as unknown) as WorkerId
-      if (id.eq(workerId)) {
-        return workerId
-      }
-    }
-  }
-
-  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
-  }
-
-  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
-  }
-
-  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
-    if (record) {
-      return (record.event.data[1] as unknown) as BN
-    }
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
@@ -860,26 +972,6 @@ export class Api {
     })
 
     return invertedPromise
-  }
-
-  public findOpeningFilledEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationIdToWorkerIdMap | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
-    if (record) {
-      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
-    }
-  }
-
-  public findApplicationReviewBeganEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
-    if (record) {
-      return (record.event.data as unknown) as ApplicationId
-    }
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
@@ -1156,7 +1248,7 @@ export class Api {
       ),
     })
 
-    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(leaderOpening.account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
@@ -1186,7 +1278,7 @@ export class Api {
     payoutInterval: BN
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(fillOpening.account))[0]
+    const memberId: MemberId = await this.getMemberId(fillOpening.account)
 
     const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: fillOpening.openingId,
@@ -1221,7 +1313,7 @@ export class Api {
     slash: boolean,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
@@ -1248,7 +1340,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
@@ -1272,7 +1364,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1296,7 +1388,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1319,7 +1411,7 @@ export class Api {
     mintCapacity: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
@@ -1372,7 +1464,7 @@ export class Api {
     text: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const memberId: MemberId = await this.getMemberId(account)
     return this.sender.signAndSend(
       this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account
@@ -1590,6 +1682,16 @@ export class Api {
     return await this.api.query[group].openingById<WorkingGroupOpening>(id)
   }
 
+  public async getActiveWorkerIds(module: WorkingGroups): Promise<WorkerId[]> {
+    return (await this.api.query[module].workerById.entries<Worker>()).map(
+      ([
+        {
+          args: [id],
+        },
+      ]) => id
+    )
+  }
+
   public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
     return (await this.api.query[module].workerById.entries<Worker>()).map((workerWithId) => workerWithId[1])
   }
@@ -1646,13 +1748,11 @@ export class Api {
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
+    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
 
-    return entries
-      .filter(([idKey]) => {
-        return workerIds.includes(idKey.args[0] as WorkerId)
-      })
-      .map(([, worker]) => worker.role_account_id.toString())
+    return workers.map((worker) => {
+      return worker.role_account_id.toString()
+    })
   }
 
   public async getStake(id: StakeId): Promise<Stake> {
@@ -1699,8 +1799,137 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
-    return dataObject.unwrapOr(null)
+  async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
+    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  public async getNumberOfOutstandingVideos(): Promise<number> {
+    return (await this.api.query.content.videoById.entries<VideoId>()).length
+  }
+
+  public async getNumberOfOutstandingChannels(): Promise<number> {
+    return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
+    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
+  }
+
+  // Create a mock channel, throws on failure
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a channel without any assets
+    const tx = this.api.tx.content.createChannel(
+      { Member: memberId },
+      {
+        assets: null,
+        meta: null,
+        reward_account: null,
+      }
+    )
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'ChannelCreated')
+    return event.data[1]
+  }
+
+  // Create a mock video, throws on failure
+  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a video without any assets
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
+      assets: null,
+      meta: null,
+    })
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'VideoCreated')
+    return event.data[2]
+  }
+
+  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.Content)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new ChannelCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createChannelCategory(
+        { Lead: null },
+        { meta: metadataToBytes(ChannelCategoryMetadata, meta) }
+      ),
+      account?.toString()
+    )
+  }
+
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const lead = await this.getGroupLead(WorkingGroups.Content)
+
+    if (!lead) {
+      throw new Error('No Content Lead asigned, cannot create channel category')
+    }
+
+    const account = lead?.role_account_id
+    const meta = new VideoCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createVideoCategory({ Lead: null }, { meta: metadataToBytes(VideoCategoryMetadata, meta) }),
+      account?.toString()
+    )
+  }
+
+  async assignWorkerRoleAccount(
+    group: WorkingGroups,
+    workerId: WorkerId,
+    account: string
+  ): Promise<ISubmittableResult> {
+    if (!(await this.isWorker(workerId, group))) {
+      throw new Error('Worker not found')
+    }
+    const worker = await this.getWorkerById(workerId, group)
+
+    const memberController = await this.getMemberControllerAccount(worker.member_id.toNumber())
+    // there cannot be a worker associated with member that does not exist
+    if (!memberController) {
+      throw new Error('Member controller not found')
+    }
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of caller to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    return this.makeSudoAsCall(memberController, updateRoleAccountCall)
+  }
+
+  async assignWorkerWellknownAccount(group: WorkingGroups, workerId: WorkerId): Promise<ISubmittableResult> {
+    // path to append to base SURI
+    const uri = `worker//${this.getWorkingGroupString(group)}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return this.assignWorkerRoleAccount(group, workerId, account)
+  }
+
+  async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
+    const setCouncilCall = this.api.tx.council.setCouncil(accounts)
+    return this.makeSudoCall(setCouncilCall)
   }
 }

@@ -14,7 +14,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args

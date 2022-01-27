@@ -1,4 +1,4 @@
-import { Codec, ITuple, RegistryTypes } from '@polkadot/types/types'
+import { Codec, DetectCodec, RegistryTypes, ITuple } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
@@ -11,7 +11,6 @@ import referendum from './referendum'
 import constitution from './constitution'
 import bounty from './bounty'
 import content from './content'
-import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap, Tuple } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
@@ -46,8 +45,8 @@ registry.register(types)
 // will create a type like: { a: string } | { b: number } | { c: Null } | "c"
 type EnumVariant<T> = keyof T extends infer K
   ? K extends keyof T
-    ? T[K] extends Null
-      ? K
+    ? T[K] extends Null | null
+      ? K | { [I in K]: T[I] }
       : { [I in K]: T[I] }
     : never
   : never
@@ -74,7 +73,9 @@ type CreateInterface_NoOption<T extends Codec> =
         : { [K in keyof S]: CreateInterface<T[K]> }
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
-      : any)
+      : T extends Null
+      ? null
+      : unknown)
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
 // (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
@@ -82,11 +83,9 @@ export type CreateInterface<T> = T extends Codec
   ? T | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
   : any
 
-export type AnyTypeName = keyof InterfaceTypes
-
-export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] = InterfaceTypes[TN]>(
-  type: TN,
+export function createType<T extends Codec, TN extends string>(
+  typeName: TN,
   value: CreateInterface<T>
-): InterfaceTypes[TN] {
-  return registry.createType(type, value)
+): DetectCodec<T, TN> {
+  return registry.createType<T, TN>(typeName, value)
 }

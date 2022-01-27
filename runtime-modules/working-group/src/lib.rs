@@ -1565,6 +1565,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     fn worker_exists(worker_id: &T::ActorId) -> bool {
         checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
     }
+
+    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
 }
 
 impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>

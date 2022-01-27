@@ -37,10 +37,14 @@ export default class AccountImport extends AccountsCommandBase {
       options: ['sr25519', 'ed25519'],
       exclusive: ['backupFilePath'],
     }),
+    password: flags.string({
+      required: false,
+      description: `Account password`,
+    }),
   }
 
-  async run() {
-    const { name, mnemonic, seed, backupFilePath, suri, type } = this.parse(AccountImport).flags
+  async run(): Promise<void> {
+    const { name, mnemonic, seed, backupFilePath, suri, type, password } = this.parse(AccountImport).flags
 
     const keyring = new Keyring(KEYRING_OPTIONS)
 
@@ -58,6 +62,6 @@ export default class AccountImport extends AccountsCommandBase {
       return
     }
 
-    await this.createAccount(name, keyring.getPairs()[0])
+    await this.createAccount(name, keyring.getPairs()[0], password)
   }
 }

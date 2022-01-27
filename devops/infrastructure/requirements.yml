@@ -1,6 +1,0 @@
----
-roles:
-- caddy_ansible.caddy_ansible
-collections:
-- community.aws
-- amazon.aws

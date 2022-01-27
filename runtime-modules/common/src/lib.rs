@@ -3,6 +3,7 @@
 
 pub mod constraints;
 pub mod council;
+pub mod currency;
 pub mod membership;
 pub mod storage;
 pub mod working_group;
@@ -19,22 +20,12 @@ use sp_std::vec::Vec;
 
 /// HTTP Url string
 pub type Url = Vec<u8>;
+pub type AssetUrls = Vec<Url>;
 
 /// Generic trait for strorage ownership dependent pallets.
 pub trait StorageOwnership {
     /// Channel id representation.
     type ChannelId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
-
-    /// DAO id representation.
-    type DAOId: Parameter
         + Member
         + BaseArithmetic
         + Codec

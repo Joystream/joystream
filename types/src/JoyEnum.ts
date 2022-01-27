@@ -33,7 +33,7 @@ export function JoyEnum<Types extends Record<string, Constructor>>(types: Types)
     }
 
     // eslint-disable-next-line no-useless-constructor
-    constructor(registry: Registry, value?: any, index?: number) {
+    constructor(registry: Registry, value?: unknown, index?: number) {
       super(registry, value, index)
     }
 

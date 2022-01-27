@@ -47,7 +47,7 @@ const DiscussionPostFormInner = (props: InnerProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | Error | null) => {
     setSubmitting(false);
   };
 

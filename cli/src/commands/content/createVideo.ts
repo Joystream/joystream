@@ -2,12 +2,13 @@ import UploadCommandBase from '../../base/UploadCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
-import { CreateInterface } from '@joystream/types'
+import { createTypeFromConstructor } from '@joystream/types'
 import { flags } from '@oclif/command'
 import { VideoCreationParameters } from '@joystream/types/content'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video under specific channel inside content directory.'
@@ -22,73 +23,82 @@ export default class CreateVideoCommand extends UploadCommandBase {
       required: true,
       description: 'ID of the Channel',
     }),
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
   }
 
-  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): void {
-    const videoMetaToIntegrate = {
+  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
+    return {
       duration: videoFileMetadata.duration,
       mediaPixelWidth: videoFileMetadata.width,
       mediaPixelHeight: videoFileMetadata.height,
+      mediaType: {
+        codecName: videoFileMetadata.codecName,
+        container: videoFileMetadata.container,
+        mimeMediaType: videoFileMetadata.mimeType,
+      },
+      ...metadata,
     }
-    const mediaTypeMetaToIntegrate = {
-      codecName: videoFileMetadata.codecName,
-      container: videoFileMetadata.container,
-      mimeMediaType: videoFileMetadata.mimeType,
-    }
-    integrateMeta(metadata, videoMetaToIntegrate, ['duration', 'mediaPixelWidth', 'mediaPixelHeight'])
-    integrateMeta(metadata.mediaType || {}, mediaTypeMetaToIntegrate, ['codecName', 'container', 'mimeMediaType'])
   }
 
-  async run() {
-    const { input, channelId } = this.parse(CreateVideoCommand).flags
+  async run(): Promise<void> {
+    const { input, channelId, context } = this.parse(CreateVideoCommand).flags
 
     // Get context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getChannelOwnerActor(channel)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [memberId] = await this.getRequiredMemberContext(true)
+    const keypair = await this.getDecodedPair(address)
 
     // Get input from file
-    const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input)
-    const meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
+    const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
+    let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
-    const assetsPaths = [videoPath, thumbnailPhotoPath].filter((a) => a !== undefined) as string[]
-    const inputAssets = await this.prepareInputAssets(assetsPaths, input)
-    const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
-    // Set assets indexes in the metadata
-    const [videoIndex, thumbnailPhotoIndex] = this.assetsIndexes([videoPath, thumbnailPhotoPath], assetsPaths)
-    meta.video = videoIndex
-    meta.thumbnailPhoto = thumbnailPhotoIndex
+    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Set assets indices in the metadata
+    meta.video = assetIndices.videoPath
+    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
     // Try to get video file metadata
-    if (videoIndex !== undefined) {
-      const videoFileMetadata = await this.getVideoFileMetadata(inputAssets[videoIndex].path)
+    if (assetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[assetIndices.videoPath].path)
       this.log('Video media file parameters established:', videoFileMetadata)
-      this.setVideoMetadataDefaults(meta, videoFileMetadata)
+      meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
 
-    // Create final extrinsic params and send the extrinsic
-    const videoCreationParameters: CreateInterface<VideoCreationParameters> = {
+    // Preare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const videoCreationParameters = createTypeFromConstructor(VideoCreationParameters, {
       assets,
       meta: metadataToBytes(VideoMetadata, meta),
-    }
+    })
 
-    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'createVideo', [
+    const result = await this.sendAndFollowNamedTx(keypair, 'content', 'createVideo', [
       actor,
       channelId,
       videoCreationParameters,
     ])
-    if (result) {
-      const event = this.findEvent(result, 'content', 'VideoCreated')
-      const videoId = event?.data[2]
-      this.log(chalk.green(`Video with id ${chalk.cyanBright(videoId?.toString())} successfully created!`))
-    }
 
-    // Upload assets
-    await this.uploadAssets(inputAssets, input)
+    const videoCreatedEvent = this.findEvent(result, 'content', 'VideoCreated')
+    this.log(
+      chalk.green(`Video with id ${chalk.cyanBright(videoCreatedEvent?.data[2].toString())} successfully created!`)
+    )
+
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    if (dataObjectsUploadedEvent) {
+      const [objectIds] = dataObjectsUploadedEvent.data
+      await this.uploadAssets(
+        keypair,
+        memberId.toNumber(),
+        `dynamic:channel:${channelId.toString()}`,
+        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        input
+      )
+    }
   }
 }

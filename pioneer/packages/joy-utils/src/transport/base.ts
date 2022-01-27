@@ -1,14 +1,15 @@
 import { ApiPromise } from '@polkadot/api';
 import { UInt } from '@polkadot/types/codec';
-import { Codec, CodecArg } from '@polkadot/types/types';
+import { Codec } from '@polkadot/types/types';
 import { QueryableStorageEntry } from '@polkadot/api/types/storage';
 import { APIQueryCache } from './APIQueryCache';
 
 export async function entriesByIds<IDType extends UInt, ValueType extends Codec> (
   apiMethod: QueryableStorageEntry<'promise'>,
-  firstKey?: CodecArg // First key in case of double maps
+  firstKey?: unknown // First key in case of double maps
 ): Promise<[IDType, ValueType][]> {
-  const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey))
+  const storageEntries = firstKey ? await apiMethod.entries<ValueType>(firstKey) : await apiMethod.entries<ValueType>();
+  const entries: [IDType, ValueType][] = storageEntries
     .map(([storageKey, value]) => ([
       // If double-map (first key is provided), we map entries by second key
       storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,

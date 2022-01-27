@@ -17,7 +17,7 @@ export default class AccountCreate extends AccountsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { name, type } = this.parse(AccountCreate).flags
     await this.createAccount(name, undefined, undefined, type)
   }
