@@ -38,7 +38,6 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
 };
@@ -70,7 +69,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
