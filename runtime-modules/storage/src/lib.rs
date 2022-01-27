@@ -2066,7 +2066,7 @@ decl_module! {
         /// Create a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_distribution_bucket_family(origin) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             ensure!(
                 Self::distribution_bucket_family_number() <
@@ -2094,7 +2094,7 @@ decl_module! {
         /// Deletes a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
@@ -2128,7 +2128,7 @@ decl_module! {
             family_id: T::DistributionBucketFamilyId,
             accepting_new_bags: bool,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
@@ -2165,7 +2165,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             accepting_new_bags: bool
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2192,7 +2192,7 @@ decl_module! {
             origin,
             bucket_id: DistributionBucketId<T>,
         ){
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2225,7 +2225,7 @@ decl_module! {
             add_buckets_indices: BTreeSet<T::DistributionBucketIndex>,
             remove_buckets_indices: BTreeSet<T::DistributionBucketIndex>,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::validate_update_distribution_buckets_for_bag_params(
                 &bag_id,
@@ -2270,7 +2270,7 @@ decl_module! {
         /// Updates "Distribution buckets per bag" number limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u64) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
                 new_limit,
@@ -2294,7 +2294,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             distributing: bool
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2322,7 +2322,7 @@ decl_module! {
             dynamic_bag_type: DynamicBagType,
             families: BTreeMap<T::DistributionBucketFamilyId, u32>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::validate_update_families_in_dynamic_bag_creation_policy_params(&families)?;
 
@@ -2351,7 +2351,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2381,7 +2381,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2417,7 +2417,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>,
         ){
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2451,7 +2451,7 @@ decl_module! {
             family_id: T::DistributionBucketFamilyId,
             metadata: Vec<u8>,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            T::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
