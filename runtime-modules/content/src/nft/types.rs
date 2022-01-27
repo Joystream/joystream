@@ -493,3 +493,46 @@ pub struct OpenAuctionDetails<BlockNumber> {
     // bid lock duration
     pub bid_lock_duration: BlockNumber,
 }
+
+/// NFT Issuance parameters
+/// Open auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct NFTIssuanceParametersRecord<MemberId, AutomatedTransactionalStatusParameters> {
+    pub royalty: Option<Royalty>,
+    pub nft_metadata: Metadata,
+    pub non_channel_owner: Option<MemberId>,
+    pub auto_setup_transactional_status: AutomatedTransactionalStatusParameters,
+}
+
+pub type NFTIssuanceParameters<T> = NFTIssuanceParametersRecord<
+    <T as common::MembershipTypes>::MemberId,
+    AutomatedTransactionalStatusSetupParameters<T>,
+>;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum AutomatedTransactionalStatusSetupParametersRecord<MemberId, CurrencyOf, AuctionParams> {
+    Idle,
+    OfferToMember(MemberId, Option<CurrencyOf>), // to, price
+    Auction(AuctionParams),
+}
+
+impl<MemberId, CurrencyOf, AuctionParams> Default
+    for AutomatedTransactionalStatusSetupParametersRecord<MemberId, CurrencyOf, AuctionParams>
+{
+    fn default() -> Self {
+        AutomatedTransactionalStatusSetupParametersRecord::<MemberId, CurrencyOf, AuctionParams>::Idle
+    }
+}
+
+pub type AutomatedTransactionalStatusSetupParameters<T> =
+    AutomatedTransactionalStatusSetupParametersRecord<
+        <T as common::MembershipTypes>::MemberId,
+        CurrencyOf<T>,
+        AuctionParams<
+            <T as frame_system::Trait>::BlockNumber,
+            CurrencyOf<T>,
+            <T as common::MembershipTypes>::MemberId,
+        >,
+    >;
