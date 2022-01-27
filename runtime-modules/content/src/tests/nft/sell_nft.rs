@@ -24,9 +24,7 @@ fn sell_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state before call
@@ -130,9 +128,7 @@ fn sell_nft_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sell nft with wrong credentials
@@ -165,9 +161,7 @@ fn sell_nft_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sell nft if actor is not authorized
@@ -200,9 +194,7 @@ fn sell_nft_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
