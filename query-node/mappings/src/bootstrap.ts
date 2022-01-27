@@ -11,7 +11,7 @@ import { storageSystemData, membershipSystemData, workingGroupsData } from './bo
 
 import { CURRENT_NETWORK } from './common'
 
-export async function loadGenesisData({ store }: StoreContext): Promise<void> {
+export async function bootstrapData({ store }: StoreContext): Promise<void> {
   await initMembershipSystem(store)
   await initStorageSystem(store)
   await initWorkingGroups(store)
