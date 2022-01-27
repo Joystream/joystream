@@ -792,7 +792,6 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
             },
         );
 
-        println!("Group is: {:?}", working_group);
         assert_eq!(apply_result, Ok(()));
 
         let expected_application_id = 0;
