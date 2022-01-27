@@ -1748,13 +1748,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
 
         // Make sure post exists and is mutable
-        let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
-        } else {
-            <PostById<T>>::get(thread_id, post_id)
-        };
-
-        Ok(post)
+        Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)
     }
 
     fn ensure_can_delete_post(

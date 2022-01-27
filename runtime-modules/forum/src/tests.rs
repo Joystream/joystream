@@ -2006,6 +2006,78 @@ fn moderate_post_origin() {
     }
 }
 
+#[test]
+// Test for moderator permissions for the incorrect category
+fn moderate_post_origin_with_incorrect_permissions_for_categories() {
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MODERATOR_ORIGIN];
+    let results = vec![
+        Err(Error::<Runtime>::PostDoesNotExist.into()),
+        Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
+    ];
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
+        with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            let moderator_id = forum_lead;
+
+            let category_id1 = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let category_id2 = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_membership_of_moderator_mock(
+                origin.clone(),
+                moderator_id,
+                category_id2,
+                true,
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                forum_lead,
+                category_id1,
+                good_thread_metadata(),
+                good_thread_text(),
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(
+                origin.clone(),
+                forum_lead,
+                forum_lead,
+                category_id1,
+                thread_id,
+                good_post_text(),
+                true,
+                Ok(()),
+            );
+            moderate_post_mock(
+                origins[index].clone(),
+                moderator_id,
+                category_id2,
+                thread_id,
+                post_id,
+                good_moderation_rationale(),
+                results[index].clone(),
+            );
+        });
+    }
+}
+
 /*
  * Delete post
 */
