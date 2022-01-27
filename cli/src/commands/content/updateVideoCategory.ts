@@ -1,11 +1,12 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { VideoCategoryInputParameters } from '../../Types'
-import { metadataToBytes, videoCategoryMetadataFromInput } from '../../helpers/serialization'
+import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryUpdateParameters } from '@joystream/types/content'
-import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
+import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
 export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Update video category inside content directory.'
@@ -26,29 +27,25 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(UpdateVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(UpdateVideoCategoryCommand).args
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
-    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
+    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input, VideoCategoryInputSchema)
-
-    const meta = videoCategoryMetadataFromInput(videoCategoryInput)
+    const meta = asValidatedMetadata(VideoCategoryMetadata, videoCategoryInput)
 
     const videoCategoryUpdateParameters: CreateInterface<VideoCategoryUpdateParameters> = {
-      new_meta: metadataToBytes(meta),
+      new_meta: metadataToBytes(VideoCategoryMetadata, meta),
     }
 
     this.jsonPrettyPrint(JSON.stringify(videoCategoryInput))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCategory', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideoCategory', [
       actor,
       videoCategoryId,
       videoCategoryUpdateParameters,

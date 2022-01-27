@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'chain-spec-builder'
-version = '3.1.1'
+version = '3.3.1'
 
 [dependencies]
 ansi_term = "0.12.1"

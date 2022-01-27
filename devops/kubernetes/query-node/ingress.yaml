@@ -1,0 +1,27 @@
+# deploy this ingress with kubectl:
+# kubectl apply -f ingress.yaml --namespace NAMESPACE_NAME
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: graphql-ingress
+  # From example at: https://kubernetes.github.io/ingress-nginx/examples/rewrite/
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /server(/|$)(.*)
+        backend:
+          service:
+            name: graphql-server
+            port:
+              name: port-1
+      - pathType: Prefix
+        path: /indexer(/|$)(.*)
+        backend:
+          service:
+            name: indexer
+            port:
+              name: port-1

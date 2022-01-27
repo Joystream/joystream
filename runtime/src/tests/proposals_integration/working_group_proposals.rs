@@ -11,9 +11,12 @@ use proposals_codex::AddOpeningParameters;
 use working_group::{OpeningPolicyCommitment, RewardPolicy};
 
 use crate::{
-    Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
-    GatewayWorkingGroup, GatewayWorkingGroupInstance, OperationsWorkingGroup,
-    OperationsWorkingGroupInstance, StorageWorkingGroup, StorageWorkingGroupInstance,
+    Balance, BlockNumber, ContentWorkingGroup, ContentWorkingGroupInstance,
+    DistributionWorkingGroup, DistributionWorkingGroupInstance, GatewayWorkingGroup,
+    GatewayWorkingGroupInstance, OperationsWorkingGroupAlpha, OperationsWorkingGroupBeta,
+    OperationsWorkingGroupGamma, OperationsWorkingGroupInstanceAlpha,
+    OperationsWorkingGroupInstanceBeta, OperationsWorkingGroupInstanceGamma, StorageWorkingGroup,
+    StorageWorkingGroupInstance,
 };
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -38,10 +41,10 @@ fn add_opening(
 
     let opening_id = match working_group {
         WorkingGroup::Content => {
-            let opening_id = ContentDirectoryWorkingGroup::next_opening_id();
+            let opening_id = ContentWorkingGroup::next_opening_id();
             assert!(!<working_group::OpeningById<
                 Runtime,
-                ContentDirectoryWorkingGroupInstance,
+                ContentWorkingGroupInstance,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -53,11 +56,35 @@ fn add_opening(
             >>::contains_key(opening_id));
             opening_id
         }
-        WorkingGroup::Operations => {
-            let opening_id = OperationsWorkingGroup::next_opening_id();
+        WorkingGroup::Distribution => {
+            let opening_id = DistributionWorkingGroup::next_opening_id();
             assert!(!<working_group::OpeningById<
                 Runtime,
-                OperationsWorkingGroupInstance,
+                DistributionWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsAlpha => {
+            let opening_id = OperationsWorkingGroupAlpha::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceAlpha,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsBeta => {
+            let opening_id = OperationsWorkingGroupBeta::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceBeta,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::OperationsGamma => {
+            let opening_id = OperationsWorkingGroupGamma::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstanceGamma,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -338,7 +365,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
             WorkingGroup::Content => {
                 run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
-                    ContentDirectoryWorkingGroupInstance,
+                    ContentWorkingGroupInstance,
                 >(group);
             }
             WorkingGroup::Storage => {
@@ -347,10 +374,28 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                     StorageWorkingGroupInstance,
                 >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
                 run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
-                    OperationsWorkingGroupInstance,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
                 >(group);
             }
             WorkingGroup::Gateway => {
@@ -369,7 +414,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
 >(
     working_group: WorkingGroup,
 ) where
-    <T as membership::Trait>::MemberId: From<u64>,
+    <T as common::MembershipTypes>::MemberId: From<u64>,
     <T as hiring::Trait>::OpeningId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
@@ -408,7 +453,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             WorkingGroup::Content => {
                 run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
                 Runtime,
-                ContentDirectoryWorkingGroupInstance,
+                ContentWorkingGroupInstance,
             >(group);
             }
             WorkingGroup::Storage => {
@@ -417,12 +462,31 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
                 StorageWorkingGroupInstance,
             >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                    Runtime,
+                    DistributionWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::OperationsAlpha => {
                 run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
                 Runtime,
-                OperationsWorkingGroupInstance,
+                OperationsWorkingGroupInstanceAlpha,
             >(group);
             }
+            WorkingGroup::OperationsBeta => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstanceBeta,
+            >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstanceGamma,
+            >(group);
+            }
+
             WorkingGroup::Gateway => {
                 run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
                 Runtime,
@@ -500,7 +564,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             WorkingGroup::Content => {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
-                    ContentDirectoryWorkingGroupInstance,
+                    ContentWorkingGroupInstance,
                 >(group);
             }
             WorkingGroup::Storage => {
@@ -509,12 +573,31 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     StorageWorkingGroupInstance,
                 >(group);
             }
-            WorkingGroup::Operations => {
+            WorkingGroup::Distribution => {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
-                    OperationsWorkingGroupInstance,
+                    DistributionWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::OperationsAlpha => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceAlpha,
+                >(group);
+            }
+            WorkingGroup::OperationsBeta => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceBeta,
+                >(group);
+            }
+            WorkingGroup::OperationsGamma => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstanceGamma,
+                >(group);
+            }
+
             WorkingGroup::Gateway => {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
@@ -531,7 +614,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
         working_group: WorkingGroup,
     ) where
         <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-        <T as membership::Trait>::MemberId: From<u64>,
+        <T as common::MembershipTypes>::MemberId: From<u64>,
         <T as hiring::Trait>::OpeningId: From<u64>,
     {
         initial_test_ext().execute_with(|| {
@@ -589,7 +672,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 WorkingGroup::Content => {
                     run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
-                        ContentDirectoryWorkingGroupInstance,
+                        ContentWorkingGroupInstance,
                     >(group);
                 }
                 WorkingGroup::Storage => {
@@ -598,12 +681,31 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                         StorageWorkingGroupInstance,
                     >(group);
                 }
-                WorkingGroup::Operations => {
+                WorkingGroup::Distribution => {
                     run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
-                        OperationsWorkingGroupInstance,
+                        DistributionWorkingGroupInstance,
                     >(group);
                 }
+                WorkingGroup::OperationsAlpha => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceAlpha,
+                    >(group);
+                }
+                WorkingGroup::OperationsBeta => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceBeta,
+                    >(group);
+                }
+                WorkingGroup::OperationsGamma => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceGamma,
+                    >(group);
+                }
+
                 WorkingGroup::Gateway => {
                     run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
@@ -622,8 +724,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
     ) where
         <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
         <T as hiring::Trait>::OpeningId: From<u64>,
-        <T as membership::Trait>::MemberId: From<u64>,
-        <T as membership::Trait>::ActorId: Into<u64>,
+        <T as common::MembershipTypes>::MemberId: From<u64>,
+        <T as common::MembershipTypes>::ActorId: Into<u64>,
         <<T as stake::Trait>::Currency as traits::Currency<
             <T as frame_system::Trait>::AccountId,
         >>::Balance: From<u128>,
@@ -718,7 +820,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 WorkingGroup::Content => {
                     run_create_slash_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
-                        ContentDirectoryWorkingGroupInstance,
+                        ContentWorkingGroupInstance,
                     >(group)
                 }
                 WorkingGroup::Storage => {
@@ -727,10 +829,28 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                         StorageWorkingGroupInstance,
                     >(group)
                 }
-                WorkingGroup::Operations => {
+                WorkingGroup::Distribution => {
                     run_create_slash_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
-                        OperationsWorkingGroupInstance,
+                        DistributionWorkingGroupInstance,
+                    >(group)
+                }
+                WorkingGroup::OperationsAlpha => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceAlpha,
+                    >(group)
+                }
+                WorkingGroup::OperationsBeta => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceBeta,
+                    >(group)
+                }
+                WorkingGroup::OperationsGamma => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceGamma,
                     >(group)
                 }
                 WorkingGroup::Gateway => {
@@ -751,8 +871,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
     ) where
         <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
         <T as hiring::Trait>::OpeningId: From<u64>,
-        <T as membership::Trait>::MemberId: From<u64>,
-        <T as membership::Trait>::ActorId: Into<u64>,
+        <T as common::MembershipTypes>::MemberId: From<u64>,
+        <T as common::MembershipTypes>::ActorId: Into<u64>,
         <<T as stake::Trait>::Currency as traits::Currency<
             <T as frame_system::Trait>::AccountId,
         >>::Balance: From<u128>,
@@ -848,7 +968,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 WorkingGroup::Content => {
                     run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
                         Runtime,
-                        ContentDirectoryWorkingGroupInstance,
+                        ContentWorkingGroupInstance,
                     >(group);
                 }
                 WorkingGroup::Storage => {
@@ -857,11 +977,29 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                         StorageWorkingGroupInstance,
                     >(group);
                 }
-                WorkingGroup::Operations => {
+                WorkingGroup::Distribution => {
                     run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
                         Runtime,
-                        OperationsWorkingGroupInstance,
+                        DistributionWorkingGroupInstance,
                     >(group);
+                }
+                WorkingGroup::OperationsAlpha => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceAlpha,
+                    >(group)
+                }
+                WorkingGroup::OperationsBeta => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceBeta,
+                    >(group)
+                }
+                WorkingGroup::OperationsGamma => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstanceGamma,
+                    >(group)
                 }
                 WorkingGroup::Gateway => {
                     run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
@@ -879,7 +1017,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             working_group: WorkingGroup,
         ) where
             <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-            <T as membership::Trait>::MemberId: From<u64>,
+            <T as common::MembershipTypes>::MemberId: From<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <<T as minting::Trait>::Currency as traits::Currency<
                 <T as frame_system::Trait>::AccountId,
@@ -914,25 +1052,43 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             for group in WorkingGroup::iter() {
                 match group {
                     WorkingGroup::Content => {
-                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
                             Runtime,
-                            ContentDirectoryWorkingGroupInstance,
+                            ContentWorkingGroupInstance,
                         >(group);
                     }
                     WorkingGroup::Storage => {
-                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
                             Runtime,
                             StorageWorkingGroupInstance,
                         >(group);
                     }
-                    WorkingGroup::Operations => {
-                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    WorkingGroup::Distribution => {
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
                             Runtime,
-                            OperationsWorkingGroupInstance,
+                            DistributionWorkingGroupInstance,
                         >(group);
                     }
+                    WorkingGroup::OperationsAlpha => {
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceAlpha,
+                        >(group)
+                    }
+                    WorkingGroup::OperationsBeta => {
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceBeta,
+                        >(group)
+                    }
+                    WorkingGroup::OperationsGamma => {
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceGamma,
+                        >(group)
+                    }
                     WorkingGroup::Gateway => {
-                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        run_create_set_group_leader_reward_proposal_execution_succeeds::<
                             Runtime,
                             GatewayWorkingGroupInstance,
                         >(group);
@@ -948,8 +1104,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             working_group: WorkingGroup,
         ) where
             <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-            <T as membership::Trait>::MemberId: From<u64>,
-            <T as membership::Trait>::ActorId: Into<u64>,
+            <T as common::MembershipTypes>::MemberId: From<u64>,
+            <T as common::MembershipTypes>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as minting::Trait>::Currency as traits::Currency<
@@ -1051,7 +1207,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     WorkingGroup::Content => {
                         run_create_terminate_group_leader_role_proposal_execution_succeeds::<
                             Runtime,
-                            ContentDirectoryWorkingGroupInstance,
+                            ContentWorkingGroupInstance,
                         >(group);
                     }
                     WorkingGroup::Storage => {
@@ -1060,12 +1216,31 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                             StorageWorkingGroupInstance,
                         >(group);
                     }
-                    WorkingGroup::Operations => {
+                    WorkingGroup::Distribution => {
                         run_create_terminate_group_leader_role_proposal_execution_succeeds::<
                             Runtime,
-                            OperationsWorkingGroupInstance,
+                            DistributionWorkingGroupInstance,
                         >(group);
                     }
+                    WorkingGroup::OperationsAlpha => {
+                        run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceAlpha,
+                        >(group)
+                    }
+                    WorkingGroup::OperationsBeta => {
+                        run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceBeta,
+                        >(group)
+                    }
+                    WorkingGroup::OperationsGamma => {
+                        run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstanceGamma,
+                        >(group)
+                    }
+
                     WorkingGroup::Gateway => {
                         run_create_terminate_group_leader_role_proposal_execution_succeeds::<
                             Runtime,
@@ -1083,8 +1258,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             working_group: WorkingGroup,
         ) where
             <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-            <T as membership::Trait>::MemberId: From<u64>,
-            <T as membership::Trait>::ActorId: Into<u64>,
+            <T as common::MembershipTypes>::MemberId: From<u64>,
+            <T as common::MembershipTypes>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as stake::Trait>::Currency as traits::Currency<
@@ -1186,13 +1361,22 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             for group in WorkingGroup::iter() {
                 match group {
                     WorkingGroup::Content => {
-                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, ContentDirectoryWorkingGroupInstance>(group);
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, ContentWorkingGroupInstance>(group);
                     }
                     WorkingGroup::Storage => {
                         run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, StorageWorkingGroupInstance>(group);
                     }
-                    WorkingGroup::Operations => {
-                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, OperationsWorkingGroupInstance>(group);
+                    WorkingGroup::Distribution => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, DistributionWorkingGroupInstance>(group);
+                    }
+                    WorkingGroup::OperationsAlpha => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, OperationsWorkingGroupInstanceAlpha>(group);
+                    }
+                    WorkingGroup::OperationsBeta => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, OperationsWorkingGroupInstanceBeta>(group);
+                    }
+                    WorkingGroup::OperationsGamma => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, OperationsWorkingGroupInstanceGamma>(group);
                     }
                     WorkingGroup::Gateway => {
                         run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, GatewayWorkingGroupInstance>(group);
@@ -1208,8 +1392,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             working_group: WorkingGroup,
         ) where
             <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-            <T as membership::Trait>::MemberId: From<u64>,
-            <T as membership::Trait>::ActorId: Into<u64>,
+            <T as common::MembershipTypes>::MemberId: From<u64>,
+            <T as common::MembershipTypes>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as stake::Trait>::Currency as traits::Currency<

@@ -3,7 +3,7 @@ import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
-
+import { createType } from '@joystream/types'
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   static description = "Allows filling working group opening that's currently in review. Requires lead access."
   static args = [
@@ -18,12 +18,11 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsFillOpening)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const openingId = parseInt(args.wgOpeningId)
     const opening = await this.getOpeningForLeadAction(openingId, OpeningStatus.InReview)
@@ -31,13 +30,12 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     const applicationIds = await this.promptForApplicationsToAccept(opening)
     const rewardPolicyOpt = await this.promptForParam(`Option<RewardPolicy>`, createParamOptions('RewardPolicy'))
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
-      openingId,
-      applicationIds,
-      rewardPolicyOpt,
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount),
+      apiModuleByGroup[this.group],
+      'fillOpening',
+      [openingId, createType('BTreeSet<ApplicationId>', applicationIds), rewardPolicyOpt]
+    )
 
     this.log(chalk.green(`Opening ${chalk.magentaBright(openingId)} successfully filled!`))
     this.log(

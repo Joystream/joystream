@@ -14,7 +14,7 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(DeleteChannelCategoryCommand).args
@@ -22,12 +22,12 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
     const channelCategoryIds = await this.getApi().channelCategoryIds()
 
     if (channelCategoryIds.some((id) => id.toString() === channelCategoryId)) {
-      const currentAccount = await this.getRequiredSelectedAccount()
-      await this.requestAccountDecoding(currentAccount)
+      const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
-      const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
-
-      await this.sendAndFollowNamedTx(currentAccount, 'content', 'deleteChannelCategory', [actor, channelCategoryId])
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannelCategory', [
+        actor,
+        channelCategoryId,
+      ])
     } else {
       this.error('Channel category under given id does not exist...')
     }

@@ -32,10 +32,9 @@ export = async () => {
   const certificateARN = config.get('acmCertificateARN')
 
   const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
-  let pvcClaimName: pulumi.Output<any>
 
   const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
-  pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
+  const pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
 
   const jsonModifyConfig = new configMapFromFile(
     'json-modify-config',

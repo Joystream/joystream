@@ -1,75 +1,15 @@
 {
-    "ChannelContentType": "Null",
-    "ChannelCurationStatus": "Null",
-    "ChannelPublicationStatus": "Null",
-    "CurationActor": "Null",
-    "Curator": "Null",
-    "CuratorApplication": "Null",
-    "CuratorApplicationId": "Null",
-    "CuratorApplicationIdSet": "Null",
-    "CuratorApplicationIdToCuratorIdMap": "Null",
-    "CuratorOpening": "Null",
-    "CuratorOpeningId": "Null",
-    "Lead": "Null",
-    "LeadId": "Null",
-    "OptionalText": "Null",
-    "Principal": "Null",
-    "PrincipalId": "Null",
-    "WorkingGroupUnstaker": "Null",
-    "Credential": "Null",
-    "CredentialSet": "Null",
-    "Nonce": "Null",
-    "EntityId": "Null",
-    "ClassId": "Null",
-    "VecMaxLength": "Null",
-    "TextMaxLength": "Null",
-    "HashedTextMaxLength": "Null",
-    "PropertyId": "Null",
-    "SchemaId": "Null",
-    "SameController": "Null",
-    "ClassPermissions": "Null",
-    "PropertyTypeSingle": "Null",
-    "PropertyTypeVector": "Null",
-    "PropertyType": "Null",
-    "PropertyLockingPolicy": "Null",
-    "Property": "Null",
-    "Schema": "Null",
-    "Class": "Null",
-    "ClassOf": "Null",
-    "EntityController": "Null",
-    "EntityPermissions": "Null",
-    "StoredValue": "Null",
-    "VecStoredValue": "Null",
-    "VecStoredPropertyValue": "Null",
-    "StoredPropertyValue": "Null",
-    "InboundReferenceCounter": "Null",
-    "Entity": "Null",
-    "EntityOf": "Null",
-    "EntityCreationVoucher": "Null",
-    "Actor": "Null",
-    "EntityReferenceCounterSideEffect": "Null",
-    "ReferenceCounterSideEffects": "Null",
-    "SideEffects": "Null",
-    "SideEffect": "Null",
-    "Status": "Null",
-    "InputValue": "Null",
-    "VecInputValue": "Null",
-    "InputPropertyValue": "Null",
-    "ParameterizedEntity": "Null",
-    "ParametrizedPropertyValue": "Null",
-    "ParametrizedClassPropertyValue": "Null",
-    "CreateEntityOperation": "Null",
-    "UpdatePropertyValuesOperation": "Null",
-    "AddSchemaSupportToEntityOperation": "Null",
-    "OperationType": "Null",
-    "InputEntityValuesMap": "Null",
-    "ClassPermissionsType": "Null",
-    "ClassPropertyValue": "Null",
-    "Operation": "Null",
-    "ReferenceConstraint": "Null",
-    "FailedAt": "Null",
-    "IPNSIdentity": "Null",
-    "ServiceProviderRecord": "Null",
+    "ContentId": "Null",
+    "ContentParameters": "Null",
+    "DataObjectStorageRelationship": "Null",
+    "DataObjectStorageRelationshipId": "Null",
+    "DataObjectType": "Null",
+    "DataObjectTypeId": "Null",
+    "NewAsset": "Null",
+    "ObjectOwner": "Null",
+    "StorageObjectOwner": "Null",
+    "UploadingStatus": "Null",
+    "VoucherLimit": "Null",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
@@ -84,8 +24,11 @@
         "_enum": [
             "Storage",
             "Content",
-            "Operations",
-            "Gateway"
+            "OperationsAlpha",
+            "Gateway",
+            "Distribution",
+            "OperationsBeta",
+            "OperationsGamma"
         ]
     },
     "SlashingTerms": {
@@ -102,7 +45,6 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "ChannelId": "u64",
-    "DAOId": "u64",
     "Url": "Text",
     "EntryMethod": {
         "_enum": {
@@ -367,7 +309,7 @@
     },
     "ActiveOpeningStageVariant": {
         "stage": "ActiveOpeningStage",
-        "applications_added": "Vec<ApplicationId>",
+        "applications_added": "BTreeSet<ApplicationId>",
         "active_application_count": "u32",
         "unstaking_application_count": "u32",
         "deactivated_application_count": "u32"
@@ -445,7 +387,7 @@
     },
     "OpeningOf": {
         "hiring_opening_id": "OpeningId",
-        "applications": "Vec<ApplicationId>",
+        "applications": "BTreeSet<ApplicationId>",
         "policy_commitment": "OpeningPolicyCommitment",
         "opening_type": "OpeningType"
     },
@@ -481,66 +423,131 @@
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
-    "ContentId": "[u8;32]",
-    "LiaisonJudgement": {
-        "_enum": [
-            "Pending",
-            "Accepted"
-        ]
+    "StorageBucketId": "u64",
+    "StorageBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
     },
-    "DataObject": {
-        "owner": "StorageObjectOwner",
-        "added_at": "BlockAndTime",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "liaison": "Option<StorageProviderId>",
-        "liaison_judgement": "LiaisonJudgement",
-        "ipfs_content_id": "Text"
-    },
-    "DataObjectStorageRelationshipId": "u64",
-    "DataObjectStorageRelationship": {
-        "content_id": "ContentId",
-        "storage_provider": "StorageProviderId",
-        "ready": "bool"
-    },
-    "DataObjectTypeId": "u64",
-    "DataObjectType": {
-        "description": "Text",
-        "active": "bool"
-    },
-    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
-    "ContentParameters": {
-        "content_id": "ContentId",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "ipfs_content_id": "Bytes"
-    },
-    "StorageObjectOwner": {
+    "DataObjectId": "u64",
+    "DynamicBagId": {
         "_enum": {
             "Member": "MemberId",
-            "Channel": "ChannelId",
-            "DAO": "DAOId",
-            "Council": "Null",
-            "WorkingGroup": "WorkingGroup"
-        }
-    },
-    "ObjectOwner": {
-        "_enum": {
-            "Member": "MemberId",
-            "Channel": "ChannelId",
-            "DAO": "DAOId",
-            "Council": "Null",
-            "WorkingGroup": "WorkingGroup"
+            "Channel": "u64"
         }
     },
     "Voucher": {
-        "size_limit": "u64",
-        "objects_limit": "u64",
-        "size_used": "u64",
-        "objects_used": "u64"
+        "sizeLimit": "u64",
+        "objectsLimit": "u64",
+        "sizeUsed": "u64",
+        "objectsUsed": "u64"
     },
-    "VoucherLimit": "u64",
-    "UploadingStatus": "bool",
+    "DynamicBagType": {
+        "_enum": [
+            "Member",
+            "Channel"
+        ]
+    },
+    "DynamicBagCreationPolicy": {
+        "numberOfStorageBuckets": "u64",
+        "families": "BTreeMap<DistributionBucketFamilyId,u32>"
+    },
+    "DynamicBagDeletionPrize": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "DynamicBagDeletionPrizeRecord": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "Bag": {
+        "stored_by": "BTreeSet<StorageBucketId>",
+        "distributed_by": "BTreeSet<DistributionBucketId>",
+        "deletion_prize": "Option<u128>",
+        "objects_total_size": "u64",
+        "objects_number": "u64"
+    },
+    "StorageBucket": {
+        "operator_status": "StorageBucketOperatorStatus",
+        "accepting_new_bags": "bool",
+        "voucher": "Voucher",
+        "assigned_bags": "u64"
+    },
+    "StaticBagId": {
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Static": {
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Dynamic": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "u64"
+        }
+    },
+    "BagId": {
+        "_enum": {
+            "Static": "Static",
+            "Dynamic": "Dynamic"
+        }
+    },
+    "DataObjectCreationParameters": {
+        "size": "u64",
+        "ipfsContentId": "Bytes"
+    },
+    "BagIdType": {
+        "_enum": {
+            "Static": "Static",
+            "Dynamic": "Dynamic"
+        }
+    },
+    "UploadParameters": {
+        "bagId": "BagId",
+        "objectCreationList": "Vec<DataObjectCreationParameters>",
+        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "expectedDataSizeFee": "u128"
+    },
+    "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
+    "DataObjectIdSet": "BTreeSet<DataObjectId>",
+    "ContentIdSet": "BTreeSet<Cid>",
+    "Cid": "Bytes",
+    "StorageBucketOperatorStatus": {
+        "_enum": {
+            "Missing": "Null",
+            "InvitedStorageWorker": "WorkerId",
+            "StorageWorker": "(WorkerId,GenericAccountId)"
+        }
+    },
+    "DataObject": {
+        "accepted": "bool",
+        "deletion_prize": "u128",
+        "size": "u64",
+        "ipfsContentId": "Bytes"
+    },
+    "DistributionBucketId": {
+        "distribution_bucket_family_id": "DistributionBucketFamilyId",
+        "distribution_bucket_index": "DistributionBucketIndex"
+    },
+    "DistributionBucketIndex": "u64",
+    "DistributionBucketFamilyId": "u64",
+    "DistributionBucket": {
+        "accepting_new_bags": "bool",
+        "distributing": "bool",
+        "pending_invitations": "BTreeSet<WorkerId>",
+        "operators": "BTreeSet<WorkerId>",
+        "assigned_bags": "u64"
+    },
+    "DistributionBucketFamily": {
+        "next_distribution_bucket_index": "DistributionBucketIndex"
+    },
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
+    "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -691,35 +698,32 @@
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
     "CuratorGroup": {
-        "curators": "Vec<CuratorId>",
+        "curators": "BTreeSet<CuratorId>",
         "active": "bool"
     },
     "ContentActor": {
         "_enum": {
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
-            "Lead": "Null"
+            "Lead": "Null",
+            "Collaborator": "MemberId"
         }
     },
-    "NewAsset": {
-        "_enum": {
-            "Upload": "ContentParameters",
-            "Urls": "Vec<Url>"
-        }
+    "StorageAssets": {
+        "object_creation_list": "Vec<DataObjectCreationParameters>",
+        "expected_data_size_fee": "u128"
     },
     "Channel": {
         "owner": "ChannelOwner",
-        "videos": "Vec<VideoId>",
-        "playlists": "Vec<PlaylistId>",
-        "series": "Vec<SeriesId>",
+        "num_videos": "u64",
         "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<GenericAccountId>",
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
-            "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
+            "Curators": "CuratorGroupId"
         }
     },
     "ChannelCategoryId": "u64",
@@ -731,14 +735,17 @@
         "new_meta": "Bytes"
     },
     "ChannelCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes",
-        "reward_account": "Option<GenericAccountId>"
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>",
+        "reward_account": "Option<GenericAccountId>",
+        "collaborators": "BTreeSet<MemberId>"
     },
     "ChannelUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>"
+        "reward_account": "Option<Option<GenericAccountId>>",
+        "assets_to_remove": "BTreeSet<DataObjectId>",
+        "collaborators": "Option<BTreeSet<MemberId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
@@ -762,12 +769,13 @@
         "new_meta": "Bytes"
     },
     "VideoCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
+        "assets": "Option<StorageAssets>",
+        "meta": "Option<Bytes>"
     },
     "VideoUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Option<Bytes>"
+        "assets_to_upload": "Option<StorageAssets>",
+        "new_meta": "Option<Bytes>",
+        "assets_to_remove": "BTreeSet<DataObjectId>"
     },
     "Person": {
         "controlled_by": "PersonController"
@@ -786,11 +794,11 @@
         }
     },
     "PersonCreationParameters": {
-        "assets": "Vec<NewAsset>",
+        "assets": "StorageAssets",
         "meta": "Bytes"
     },
     "PersonUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>"
     },
     "Playlist": {
@@ -812,12 +820,12 @@
         "episodes": "Vec<VideoId>"
     },
     "SeriesParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "seasons": "Option<Vec<Option<SeasonParameters>>>",
         "meta": "Option<Bytes>"
     },
     "SeasonParameters": {
-        "assets": "Option<Vec<NewAsset>>",
+        "assets": "Option<StorageAssets>",
         "episodes": "Option<Vec<Option<EpisodeParemters>>>",
         "meta": "Option<Bytes>"
     },
@@ -828,5 +836,14 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool"
+    "IsCensored": "bool",
+    "VideoMigrationConfig": {
+        "current_id": "VideoId",
+        "final_id": "VideoId"
+    },
+    "ChannelMigrationConfig": {
+        "current_id": "ChannelId",
+        "final_id": "ChannelId"
+    },
+    "AccountInfo": "AccountInfoWithRefCount"
 }

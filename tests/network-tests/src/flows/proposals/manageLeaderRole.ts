@@ -1,5 +1,6 @@
 import BN from 'bn.js'
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
@@ -14,7 +15,6 @@ import {
 } from '../../fixtures/proposalsModule'
 import { ApplyForOpeningFixture } from '../../fixtures/workingGroupModule'
 import { PaidTermId } from '@joystream/types/members'
-import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
 import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
@@ -24,10 +24,13 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Content, lock)
+  },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return manageLeaderRole(api, env, WorkingGroups.Distribution, lock)
   },
 }
 
@@ -83,8 +86,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
 
-  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
-  assert(openingId)
+  const openingId = api.getEvent(voteForCreateOpeningProposalFixture.events, group, 'OpeningAdded').data[0]
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
     api,
@@ -150,9 +152,8 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   const leadId = (await api.getLeadWorkerId(group)) as WorkerId
   assert(leadId)
-  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.events, group, leadId) as WorkerId
-  assert(workerId)
-  assert(leadId!.eq(workerId))
+  const workerId = api.getEvent(voteForeLeaderRewardFixture.events, group, 'WorkerRewardAmountUpdated').data[0]
+  assert(workerId.eq(leadId))
   const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
   assert(rewardRelationship.amount_per_payout.eq(alteredPayoutAmount))
 

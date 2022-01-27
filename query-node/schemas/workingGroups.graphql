@@ -1,0 +1,17 @@
+enum WorkerType {
+  GATEWAY
+  STORAGE
+}
+
+type Worker @entity {
+  "Unique identifier"
+  id: ID!
+  "Sign of worker still being active"
+  isActive: Boolean!
+  "Runtime identifier"
+  workerId: String!
+  "Associated working group"
+  type: WorkerType!
+  "Custom metadata set by provider"
+  metadata: String
+}

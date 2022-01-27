@@ -17,7 +17,7 @@ members = [
 	"runtime-modules/working-group",
 	"runtime-modules/content",
 	"node",
-	"utils/chain-spec-builder/"
+	"utils/chain-spec-builder/",
 ]
 
 [profile.release]

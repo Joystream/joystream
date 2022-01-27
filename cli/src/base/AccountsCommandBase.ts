@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs, { readdirSync } from 'fs'
 import path from 'path'
 import slug from 'slug'
 import inquirer from 'inquirer'
@@ -10,9 +10,20 @@ import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
+import { MemberId, Membership } from '@joystream/types/members'
+import { AccountId } from '@polkadot/types/interfaces'
+import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
+import { KeypairType } from '@polkadot/util-crypto/types'
+import { createTestKeyring } from '@polkadot/keyring/testing'
+import chalk from 'chalk'
+import { mnemonicGenerate } from '@polkadot/util-crypto'
+import { validateAddress } from '../helpers/validation'
 
 const ACCOUNTS_DIRNAME = 'accounts'
-const SPECIAL_ACCOUNT_POSTFIX = '__DEV'
+export const DEFAULT_ACCOUNT_TYPE = 'sr25519'
+export const KEYRING_OPTIONS: KeyringOptions = {
+  type: DEFAULT_ACCOUNT_TYPE,
+}
 
 /**
  * Abstract base class for account-related commands.
@@ -22,16 +33,36 @@ const SPECIAL_ACCOUNT_POSTFIX = '__DEV'
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
+  private selectedMember: [MemberId, Membership] | undefined
+  private _keyring: KeyringInstance | undefined
+
+  private get keyring(): KeyringInstance {
+    if (!this._keyring) {
+      this.error('Trying to access Keyring before AccountsCommandBase initialization', {
+        exit: ExitCodes.UnexpectedException,
+      })
+    }
+    return this._keyring
+  }
+
+  isKeyAvailable(key: AccountId | string): boolean {
+    return this.keyring.getPairs().some((p) => p.address === key.toString())
+  }
+
   getAccountsDirPath(): string {
     return path.join(this.getAppDataPath(), ACCOUNTS_DIRNAME)
   }
 
-  getAccountFilePath(account: NamedKeyringPair, isSpecial = false): string {
-    return path.join(this.getAccountsDirPath(), this.generateAccountFilename(account, isSpecial))
+  getAccountFileName(accountName: string): string {
+    return `${slug(accountName)}.json`
   }
 
-  generateAccountFilename(account: NamedKeyringPair, isSpecial = false): string {
-    return `${slug(account.meta.name, '_')}__${account.address}${isSpecial ? SPECIAL_ACCOUNT_POSTFIX : ''}.json`
+  getAccountFilePath(accountName: string): string {
+    return path.join(this.getAccountsDirPath(), this.getAccountFileName(accountName))
+  }
+
+  isAccountNameTaken(accountName: string): boolean {
+    return readdirSync(this.getAccountsDirPath()).some((filename) => filename === this.getAccountFileName(accountName))
   }
 
   private initAccountsFs(): void {
@@ -40,23 +71,58 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  saveAccount(account: NamedKeyringPair, password: string, isSpecial = false): void {
-    try {
-      const destPath = this.getAccountFilePath(account, isSpecial)
-      fs.writeFileSync(destPath, JSON.stringify(account.toJson(password)))
-    } catch (e) {
-      throw this.createDataWriteError()
+  async createAccount(
+    name?: string,
+    masterKey?: KeyringPair,
+    password?: string,
+    type?: KeypairType
+  ): Promise<NamedKeyringPair> {
+    while (!name || this.isAccountNameTaken(name)) {
+      if (name) {
+        this.warn(`Account ${chalk.magentaBright(name)} already exists... Try different name`)
+      }
+      name = await this.simplePrompt({ message: 'New account name' })
     }
-  }
 
-  // Add dev "Alice" and "Bob" accounts
-  initSpecialAccounts() {
-    const keyring = new Keyring({ type: 'sr25519' })
-    keyring.addFromUri('//Alice', { name: 'Alice' })
-    keyring.addFromUri('//Bob', { name: 'Bob' })
-    keyring
-      .getPairs()
-      .forEach((pair) => this.saveAccount({ ...pair, meta: { name: pair.meta.name as string } }, '', true))
+    if (!masterKey) {
+      const keyring = new Keyring(KEYRING_OPTIONS)
+      const mnemonic = mnemonicGenerate()
+      keyring.addFromMnemonic(mnemonic, { name, whenCreated: Date.now() }, type)
+      masterKey = keyring.getPairs()[0]
+      this.log(chalk.magentaBright(`${chalk.bold('New account memonic: ')}${mnemonic}`))
+    } else {
+      const { address } = masterKey
+      const existingAcc = this.getPairs().find((p) => p.address === address)
+      if (existingAcc) {
+        this.error(`Account with this key already exists (${chalk.magentaBright(existingAcc.meta.name)})`, {
+          exit: ExitCodes.InvalidInput,
+        })
+      }
+      await this.requestPairDecoding(masterKey, 'Current account password')
+      masterKey.meta.name = name
+    }
+
+    while (password === undefined) {
+      password = await this.promptForPassword("Set new account's password")
+      const password2 = await this.promptForPassword("Confirm new account's password")
+
+      if (password !== password2) {
+        this.warn('Passwords are not the same!')
+        password = undefined
+      }
+    }
+    if (!password) {
+      this.warn('Using empty password is not recommended!')
+    }
+
+    const destPath = this.getAccountFilePath(name)
+    fs.writeFileSync(destPath, JSON.stringify(masterKey.toJson(password)))
+
+    this.keyring.addPair(masterKey)
+
+    this.log(chalk.greenBright(`\nNew account succesfully created!`))
+
+    return masterKey as NamedKeyringPair
   }
 
   fetchAccountFromJsonFile(jsonBackupFilePath: string): NamedKeyringPair {
@@ -76,18 +142,20 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       throw new CLIError('Provided backup file is not valid', { exit: ExitCodes.InvalidFile })
     }
 
-    // Force some default account name if none is provided in the original backup
     if (!accountJsonObj.meta) accountJsonObj.meta = {}
-    if (!accountJsonObj.meta.name) accountJsonObj.meta.name = 'Unnamed Account'
+    // Normalize the CLI account name based on file name
+    // (makes sure getAccountFilePath(name) will always point to the correct file, preserving backward-compatibility
+    // with older CLI versions)
+    accountJsonObj.meta.name = path.basename(jsonBackupFilePath, '.json')
 
-    const keyring = new Keyring()
+    const keyring = new Keyring(KEYRING_OPTIONS)
     let account: NamedKeyringPair
     try {
       // Try adding and retrieving the keys in order to validate that the backup file is correct
       keyring.addFromJson(accountJsonObj)
       account = keyring.getPair(accountJsonObj.address) as NamedKeyringPair // We can be sure it's named, because we forced it before
     } catch (e) {
-      throw new CLIError('Provided backup file is not valid', { exit: ExitCodes.InvalidFile })
+      throw new CLIError(`Provided backup file is not valid (${(e as Error).message})`, { exit: ExitCodes.InvalidFile })
     }
 
     return account
@@ -103,7 +171,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  fetchAccounts(includeSpecial = false): NamedKeyringPair[] {
+  fetchAccounts(): NamedKeyringPair[] {
     let files: string[] = []
     const accountDir = this.getAccountsDirPath()
     try {
@@ -116,123 +184,35 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return files
       .map((fileName) => {
         const filePath = path.join(accountDir, fileName)
-        if (!includeSpecial && filePath.includes(SPECIAL_ACCOUNT_POSTFIX + '.')) return null
         return this.fetchAccountOrNullFromFile(filePath)
       })
-      .filter((accObj) => accObj !== null) as NamedKeyringPair[]
+      .filter((account) => account !== null) as NamedKeyringPair[]
   }
 
-  getSelectedAccountFilename(): string {
-    return this.getPreservedState().selectedAccountFilename
+  getPairs(includeDevAccounts = true): NamedKeyringPair[] {
+    return this.keyring.getPairs().filter((p) => includeDevAccounts || !p.meta.isTesting) as NamedKeyringPair[]
   }
 
-  getSelectedAccount(): NamedKeyringPair | null {
-    const selectedAccountFilename = this.getSelectedAccountFilename()
-
-    if (!selectedAccountFilename) {
-      return null
-    }
-
-    const account = this.fetchAccountOrNullFromFile(path.join(this.getAccountsDirPath(), selectedAccountFilename))
-
-    return account
+  getPair(key: string): NamedKeyringPair {
+    return this.keyring.getPair(key) as NamedKeyringPair
   }
 
-  // Use when account usage is required in given command
-  async getRequiredSelectedAccount(promptIfMissing = true): Promise<NamedKeyringPair> {
-    let selectedAccount: NamedKeyringPair | null = this.getSelectedAccount()
-    if (!selectedAccount) {
-      if (!promptIfMissing) {
-        this.error('No default account selected! Use account:choose to set the default account.', {
-          exit: ExitCodes.NoAccountSelected,
-        })
-      }
+  async getDecodedPair(key: string | AccountId): Promise<NamedKeyringPair> {
+    const pair = this.getPair(key.toString())
 
-      const accounts: NamedKeyringPair[] = this.fetchAccounts()
-      if (!accounts.length) {
-        this.error('No accounts available! Use account:import in order to import accounts into the CLI.', {
-          exit: ExitCodes.NoAccountFound,
-        })
-      }
-
-      this.warn('No default account selected!')
-      selectedAccount = await this.promptForAccount(accounts)
-      await this.setSelectedAccount(selectedAccount)
-    }
-
-    return selectedAccount
+    return (await this.requestPairDecoding(pair)) as NamedKeyringPair
   }
 
-  async setSelectedAccount(account: NamedKeyringPair): Promise<void> {
-    const accountFilename = fs.existsSync(this.getAccountFilePath(account, true))
-      ? this.generateAccountFilename(account, true)
-      : this.generateAccountFilename(account)
-
-    await this.setPreservedState({ selectedAccountFilename: accountFilename })
-  }
-
-  async promptForPassword(message = "Your account's password") {
-    const { password } = await inquirer.prompt([{ name: 'password', type: 'password', message }])
-
-    return password
-  }
-
-  async requireConfirmation(
-    message = 'Are you sure you want to execute this action?',
-    defaultVal = false
-  ): Promise<void> {
-    if (process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '')) {
-      return
-    }
-    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
-    if (!confirmed) {
-      this.exit(ExitCodes.OK)
-    }
-  }
-
-  async promptForAccount(
-    accounts: NamedKeyringPair[],
-    defaultAccount: NamedKeyringPair | null = null,
-    message = 'Select an account',
-    showBalances = true
-  ): Promise<NamedKeyringPair> {
-    let balances: DeriveBalancesAll[]
-    if (showBalances) {
-      balances = await this.getApi().getAccountsBalancesInfo(accounts.map((acc) => acc.address))
-    }
-    const longestAccNameLength: number = accounts.reduce((prev, curr) => Math.max(curr.meta.name.length, prev), 0)
-    const accNameColLength: number = Math.min(longestAccNameLength + 1, 20)
-    const { chosenAccountFilename } = await inquirer.prompt([
-      {
-        name: 'chosenAccountFilename',
-        message,
-        type: 'list',
-        choices: accounts.map((account: NamedKeyringPair, i) => ({
-          name:
-            `${toFixedLength(account.meta.name, accNameColLength)} | ` +
-            `${account.address} | ` +
-            ((showBalances || '') &&
-              `${formatBalance(balances[i].availableBalance)} / ` + `${formatBalance(balances[i].votingBalance)}`),
-          value: this.generateAccountFilename(account),
-          short: `${account.meta.name} (${account.address})`,
-        })),
-        default: defaultAccount && this.generateAccountFilename(defaultAccount),
-      },
-    ])
-
-    return accounts.find((acc) => this.generateAccountFilename(acc) === chosenAccountFilename) as NamedKeyringPair
-  }
-
-  async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {
-    // Skip if account already unlocked
-    if (!account.isLocked) {
-      return
+  async requestPairDecoding(pair: KeyringPair, message?: string): Promise<KeyringPair> {
+    // Skip if pair already unlocked
+    if (!pair.isLocked) {
+      return pair
     }
 
     // First - try decoding using empty string
     try {
-      account.decodePkcs8('')
-      return
+      pair.decodePkcs8('')
+      return pair
     } catch (e) {
       // Continue...
     }
@@ -240,32 +220,161 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     let isPassValid = false
     while (!isPassValid) {
       try {
-        const password = await this.promptForPassword()
-        account.decodePkcs8(password)
+        const password = await this.promptForPassword(
+          message || `Enter ${pair.meta.name ? pair.meta.name : pair.address} account password`
+        )
+        pair.decodePkcs8(password)
         isPassValid = true
       } catch (e) {
         this.warn('Invalid password... Try again.')
       }
     }
+
+    return pair
   }
 
-  async getRequiredMemberId(): Promise<number> {
-    const account = await this.getRequiredSelectedAccount()
-    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
-    if (!memberIds.length) {
-      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+  initKeyring(): void {
+    this._keyring = this.getApi().isDevelopment ? createTestKeyring(KEYRING_OPTIONS) : new Keyring(KEYRING_OPTIONS)
+    const accounts = this.fetchAccounts()
+    accounts.forEach((a) => this.keyring.addPair(a))
+  }
+
+  async promptForPassword(message = "Your account's password"): Promise<string> {
+    const { password } = await inquirer.prompt([
+      {
+        name: 'password',
+        type: 'password',
+        message,
+      },
+    ])
+
+    return password
+  }
+
+  async promptForAccount(
+    message = 'Select an account',
+    createIfUnavailable = true,
+    includeDevAccounts = true,
+    showBalances = true
+  ): Promise<string> {
+    const pairs = this.getPairs(includeDevAccounts)
+
+    if (!pairs.length) {
+      this.warn('No accounts available!')
+      if (createIfUnavailable) {
+        await this.requireConfirmation('Do you want to create a new account?', true)
+        pairs.push(await this.createAccount())
+      } else {
+        this.exit()
+      }
     }
 
-    return memberIds[0].toNumber() // FIXME: Temporary solution (just using the first one)
+    let balances: DeriveBalancesAll[] = []
+    if (showBalances) {
+      balances = await this.getApi().getAccountsBalancesInfo(pairs.map((p) => p.address))
+    }
+
+    const longestNameLen: number = pairs.reduce((prev, curr) => Math.max(curr.meta.name.length, prev), 0)
+    const nameColLength: number = Math.min(longestNameLen + 1, 20)
+    const chosenKey = await this.simplePrompt({
+      message,
+      type: 'list',
+      choices: pairs.map((p, i) => ({
+        name:
+          `${toFixedLength(p.meta.name, nameColLength)} | ` +
+          `${p.address} | ` +
+          ((showBalances || '') &&
+            `${formatBalance(balances[i].availableBalance)} / ` + `${formatBalance(balances[i].votingBalance)}`),
+        value: p.address,
+      })),
+    })
+
+    return chosenKey
   }
 
-  async init() {
+  promptForCustomAddress(): Promise<string> {
+    return this.simplePrompt({
+      message: 'Provide custom address',
+      validate: (a) => validateAddress(a),
+    })
+  }
+
+  async promptForAnyAddress(message = 'Select an address'): Promise<string> {
+    const type: 'available' | 'new' | 'custom' = await this.simplePrompt({
+      message,
+      type: 'list',
+      choices: [
+        { name: 'Available account', value: 'available' },
+        { name: 'New account', value: 'new' },
+        { name: 'Custom address', value: 'custom' },
+      ],
+    })
+
+    if (type === 'available') {
+      return this.promptForAccount()
+    } else if (type === 'new') {
+      return (await this.createAccount()).address
+    } else {
+      return this.promptForCustomAddress()
+    }
+  }
+
+  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<[MemberId, Membership]> {
+    if (
+      useSelected &&
+      this.selectedMember &&
+      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.[0])))
+    ) {
+      return this.selectedMember
+    }
+
+    const membersEntries = allowedIds
+      ? await this.getApi().memberEntriesByIds(allowedIds)
+      : await this.getApi().allMemberEntries()
+    const availableMemberships = await Promise.all(
+      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
+    )
+
+    if (!availableMemberships.length) {
+      this.error(
+        `No ${allowedIds ? 'allowed ' : ''}member controller key available!` +
+          (allowedIds ? ` Allowed members: ${allowedIds.join(', ')}.` : ''),
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    } else if (availableMemberships.length === 1) {
+      this.selectedMember = availableMemberships[0]
+    } else {
+      this.selectedMember = await this.promptForMember(availableMemberships, 'Choose member context')
+    }
+
+    return this.selectedMember
+  }
+
+  async promptForMember(
+    availableMemberships: [MemberId, Membership][],
+    message = 'Choose a member'
+  ): Promise<[MemberId, Membership]> {
+    const memberIndex = await this.simplePrompt({
+      type: 'list',
+      message,
+      choices: availableMemberships.map(([, membership], i) => ({
+        name: membership.handle.toString(),
+        value: i,
+      })),
+    })
+
+    return availableMemberships[memberIndex]
+  }
+
+  async init(): Promise<void> {
     await super.init()
     try {
       this.initAccountsFs()
-      this.initSpecialAccounts()
     } catch (e) {
       throw this.createDataDirInitError()
     }
+    await this.initKeyring()
   }
 }

@@ -1,14 +1,18 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
+import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {
   readonly started_accepting_applicants_at_block: u32;
 }
+
+/** @name AccountInfo */
+export interface AccountInfo extends AccountInfoWithRefCount {}
 
 /** @name ActivateOpeningAt */
 export interface ActivateOpeningAt extends Enum {
@@ -30,7 +34,7 @@ export interface ActiveOpeningStage extends Enum {
 /** @name ActiveOpeningStageVariant */
 export interface ActiveOpeningStageVariant extends Struct {
   readonly stage: ActiveOpeningStage;
-  readonly applications_added: Vec<ApplicationId>;
+  readonly applications_added: BTreeSet<ApplicationId>;
   readonly active_application_count: u32;
   readonly unstaking_application_count: u32;
   readonly deactivated_application_count: u32;
@@ -41,9 +45,6 @@ export interface ActiveStake extends Struct {
   readonly stake_id: StakeId;
   readonly source_account_id: GenericAccountId;
 }
-
-/** @name Actor */
-export interface Actor extends Null {}
 
 /** @name ActorId */
 export interface ActorId extends u64 {}
@@ -58,9 +59,6 @@ export interface AddOpeningParameters extends Struct {
 
 /** @name Address */
 export interface Address extends AccountId {}
-
-/** @name AddSchemaSupportToEntityOperation */
-export interface AddSchemaSupportToEntityOperation extends Null {}
 
 /** @name AdjustCapacityBy */
 export interface AdjustCapacityBy extends Enum {
@@ -148,6 +146,31 @@ export interface Backer extends Struct {
 /** @name Backers */
 export interface Backers extends Vec<Backer> {}
 
+/** @name Bag */
+export interface Bag extends Struct {
+  readonly stored_by: BTreeSet<StorageBucketId>;
+  readonly distributed_by: BTreeSet<DistributionBucketId>;
+  readonly deletion_prize: Option<u128>;
+  readonly objects_total_size: u64;
+  readonly objects_number: u64;
+}
+
+/** @name BagId */
+export interface BagId extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
+}
+
+/** @name BagIdType */
+export interface BagIdType extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
+}
+
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
 
@@ -178,11 +201,10 @@ export interface CategoryId extends u64 {}
 /** @name Channel */
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
-  readonly videos: Vec<VideoId>;
-  readonly playlists: Vec<PlaylistId>;
-  readonly series: Vec<SeriesId>;
+  readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
 }
 
 /** @name ChannelCategory */
@@ -201,21 +223,22 @@ export interface ChannelCategoryUpdateParameters extends Struct {
   readonly new_meta: Bytes;
 }
 
-/** @name ChannelContentType */
-export interface ChannelContentType extends Null {}
-
 /** @name ChannelCreationParameters */
 export interface ChannelCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
-  readonly meta: Bytes;
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
   readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
 }
-
-/** @name ChannelCurationStatus */
-export interface ChannelCurationStatus extends Null {}
 
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
+
+/** @name ChannelMigrationConfig */
+export interface ChannelMigrationConfig extends Struct {
+  readonly current_id: ChannelId;
+  readonly final_id: ChannelId;
+}
 
 /** @name ChannelOwner */
 export interface ChannelOwner extends Enum {
@@ -223,8 +246,6 @@ export interface ChannelOwner extends Enum {
   readonly asMember: MemberId;
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
 }
 
 /** @name ChannelOwnershipTransferRequest */
@@ -238,14 +259,13 @@ export interface ChannelOwnershipTransferRequest extends Struct {
 /** @name ChannelOwnershipTransferRequestId */
 export interface ChannelOwnershipTransferRequestId extends u64 {}
 
-/** @name ChannelPublicationStatus */
-export interface ChannelPublicationStatus extends Null {}
-
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly reward_account: Option<Option<GenericAccountId>>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -254,23 +274,8 @@ export interface ChildPositionInParentCategory extends Struct {
   readonly child_nr_in_parent_category: u32;
 }
 
-/** @name Class */
-export interface Class extends Null {}
-
-/** @name ClassId */
-export interface ClassId extends Null {}
-
-/** @name ClassOf */
-export interface ClassOf extends Null {}
-
-/** @name ClassPermissions */
-export interface ClassPermissions extends Null {}
-
-/** @name ClassPermissionsType */
-export interface ClassPermissionsType extends Null {}
-
-/** @name ClassPropertyValue */
-export interface ClassPropertyValue extends Null {}
+/** @name Cid */
+export interface Cid extends Bytes {}
 
 /** @name ContentActor */
 export interface ContentActor extends Enum {
@@ -279,48 +284,22 @@ export interface ContentActor extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
+  readonly isCollaborator: boolean;
+  readonly asCollaborator: MemberId;
 }
 
 /** @name ContentId */
-export interface ContentId extends U8aFixed {}
+export interface ContentId extends Null {}
+
+/** @name ContentIdSet */
+export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name ContentParameters */
-export interface ContentParameters extends Struct {
-  readonly content_id: ContentId;
-  readonly type_id: DataObjectTypeId;
-  readonly ipfs_content_id: Bytes;
-}
-
-/** @name CreateEntityOperation */
-export interface CreateEntityOperation extends Null {}
-
-/** @name Credential */
-export interface Credential extends Null {}
-
-/** @name CredentialSet */
-export interface CredentialSet extends Null {}
-
-/** @name CurationActor */
-export interface CurationActor extends Null {}
-
-/** @name Curator */
-export interface Curator extends Null {}
-
-/** @name CuratorApplication */
-export interface CuratorApplication extends Null {}
-
-/** @name CuratorApplicationId */
-export interface CuratorApplicationId extends Null {}
-
-/** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends Null {}
-
-/** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends Null {}
+export interface ContentParameters extends Null {}
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: Vec<CuratorId>;
+  readonly curators: BTreeSet<CuratorId>;
   readonly active: bool;
 }
 
@@ -330,46 +309,38 @@ export interface CuratorGroupId extends u64 {}
 /** @name CuratorId */
 export interface CuratorId extends u64 {}
 
-/** @name CuratorOpening */
-export interface CuratorOpening extends Null {}
-
-/** @name CuratorOpeningId */
-export interface CuratorOpeningId extends Null {}
-
-/** @name DAOId */
-export interface DAOId extends u64 {}
-
 /** @name DataObject */
 export interface DataObject extends Struct {
-  readonly owner: StorageObjectOwner;
-  readonly added_at: BlockAndTime;
-  readonly type_id: DataObjectTypeId;
-  readonly liaison: Option<StorageProviderId>;
-  readonly liaison_judgement: LiaisonJudgement;
-  readonly ipfs_content_id: Text;
+  readonly accepted: bool;
+  readonly deletion_prize: u128;
+  readonly ipfsContentId: Bytes;
 }
 
-/** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
+/** @name DataObjectCreationParameters */
+export interface DataObjectCreationParameters extends Struct {
+  readonly ipfsContentId: Bytes;
+}
+
+/** @name DataObjectId */
+export interface DataObjectId extends u64 {}
+
+/** @name DataObjectIdMap */
+export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
+
+/** @name DataObjectIdSet */
+export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
 /** @name DataObjectStorageRelationship */
-export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: ContentId;
-  readonly storage_provider: StorageProviderId;
-  readonly ready: bool;
-}
+export interface DataObjectStorageRelationship extends Null {}
 
 /** @name DataObjectStorageRelationshipId */
-export interface DataObjectStorageRelationshipId extends u64 {}
+export interface DataObjectStorageRelationshipId extends Null {}
 
 /** @name DataObjectType */
-export interface DataObjectType extends Struct {
-  readonly description: Text;
-  readonly active: bool;
-}
+export interface DataObjectType extends Null {}
 
 /** @name DataObjectTypeId */
-export interface DataObjectTypeId extends u64 {}
+export interface DataObjectTypeId extends Null {}
 
 /** @name Deactivated */
 export interface Deactivated extends Struct {
@@ -394,6 +365,78 @@ export interface DiscussionThread extends Struct {
   readonly title: Bytes;
   readonly created_at: u32;
   readonly author_id: MemberId;
+}
+
+/** @name DistributionBucket */
+export interface DistributionBucket extends Struct {
+  readonly accepting_new_bags: bool;
+  readonly distributing: bool;
+  readonly pending_invitations: BTreeSet<WorkerId>;
+  readonly operators: BTreeSet<WorkerId>;
+  readonly assigned_bags: u64;
+}
+
+/** @name DistributionBucketFamily */
+export interface DistributionBucketFamily extends Struct {
+  readonly next_distribution_bucket_index: DistributionBucketIndex;
+}
+
+/** @name DistributionBucketFamilyId */
+export interface DistributionBucketFamilyId extends u64 {}
+
+/** @name DistributionBucketId */
+export interface DistributionBucketId extends Struct {
+  readonly distribution_bucket_family_id: DistributionBucketFamilyId;
+  readonly distribution_bucket_index: DistributionBucketIndex;
+}
+
+/** @name DistributionBucketIndex */
+export interface DistributionBucketIndex extends u64 {}
+
+/** @name DistributionBucketIndexSet */
+export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketIndex> {}
+
+/** @name Dynamic */
+export interface Dynamic extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
+/** @name DynamicBagCreationPolicy */
+export interface DynamicBagCreationPolicy extends Struct {
+  readonly numberOfStorageBuckets: u64;
+  readonly families: BTreeMap<DistributionBucketFamilyId, u32>;
+}
+
+/** @name DynamicBagCreationPolicyDistributorFamiliesMap */
+export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
+
+/** @name DynamicBagDeletionPrize */
+export interface DynamicBagDeletionPrize extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagDeletionPrizeRecord */
+export interface DynamicBagDeletionPrizeRecord extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagId */
+export interface DynamicBagId extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
+/** @name DynamicBagType */
+export interface DynamicBagType extends Enum {
+  readonly isMember: boolean;
+  readonly isChannel: boolean;
 }
 
 /** @name ElectionParameters */
@@ -424,27 +467,6 @@ export interface ElectionStake extends Struct {
   readonly transferred: u128;
 }
 
-/** @name Entity */
-export interface Entity extends Null {}
-
-/** @name EntityController */
-export interface EntityController extends Null {}
-
-/** @name EntityCreationVoucher */
-export interface EntityCreationVoucher extends Null {}
-
-/** @name EntityId */
-export interface EntityId extends Null {}
-
-/** @name EntityOf */
-export interface EntityOf extends Null {}
-
-/** @name EntityPermissions */
-export interface EntityPermissions extends Null {}
-
-/** @name EntityReferenceCounterSideEffect */
-export interface EntityReferenceCounterSideEffect extends Null {}
-
 /** @name EntryMethod */
 export interface EntryMethod extends Enum {
   readonly isPaid: boolean;
@@ -467,9 +489,6 @@ export interface ExecutionFailed extends Struct {
   readonly error: Bytes;
 }
 
-/** @name FailedAt */
-export interface FailedAt extends Null {}
-
 /** @name FillOpeningParameters */
 export interface FillOpeningParameters extends Struct {
   readonly opening_id: OpeningId;
@@ -486,9 +505,6 @@ export interface Finalized extends Struct {
   readonly stakeDataAfterUnstakingError: Option<ActiveStake>;
 }
 
-/** @name HashedTextMaxLength */
-export interface HashedTextMaxLength extends Null {}
-
 /** @name HiringApplicationId */
 export interface HiringApplicationId extends u64 {}
 
@@ -499,41 +515,14 @@ export interface InactiveApplicationStage extends Struct {
   readonly cause: ApplicationDeactivationCause;
 }
 
-/** @name InboundReferenceCounter */
-export interface InboundReferenceCounter extends Null {}
-
-/** @name InputEntityValuesMap */
-export interface InputEntityValuesMap extends Null {}
-
-/** @name InputPropertyValue */
-export interface InputPropertyValue extends Null {}
-
 /** @name InputValidationLengthConstraint */
 export interface InputValidationLengthConstraint extends Struct {
   readonly min: u16;
   readonly max_min_diff: u16;
 }
 
-/** @name InputValue */
-export interface InputValue extends Null {}
-
-/** @name IPNSIdentity */
-export interface IPNSIdentity extends Null {}
-
 /** @name IsCensored */
 export interface IsCensored extends bool {}
-
-/** @name Lead */
-export interface Lead extends Null {}
-
-/** @name LeadId */
-export interface LeadId extends Null {}
-
-/** @name LiaisonJudgement */
-export interface LiaisonJudgement extends Enum {
-  readonly isPending: boolean;
-  readonly isAccepted: boolean;
-}
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
@@ -583,12 +572,7 @@ export interface ModerationAction extends Struct {
 }
 
 /** @name NewAsset */
-export interface NewAsset extends Enum {
-  readonly isUpload: boolean;
-  readonly asUpload: ContentParameters;
-  readonly isUrls: boolean;
-  readonly asUrls: Vec<Url>;
-}
+export interface NewAsset extends Null {}
 
 /** @name NextAdjustment */
 export interface NextAdjustment extends Struct {
@@ -596,21 +580,8 @@ export interface NextAdjustment extends Struct {
   readonly at_block: u32;
 }
 
-/** @name Nonce */
-export interface Nonce extends Null {}
-
 /** @name ObjectOwner */
-export interface ObjectOwner extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
-  readonly isCouncil: boolean;
-  readonly isWorkingGroup: boolean;
-  readonly asWorkingGroup: WorkingGroup;
-}
+export interface ObjectOwner extends Null {}
 
 /** @name Opening */
 export interface Opening extends Struct {
@@ -638,7 +609,7 @@ export interface OpeningId extends u64 {}
 /** @name OpeningOf */
 export interface OpeningOf extends Struct {
   readonly hiring_opening_id: OpeningId;
-  readonly applications: Vec<ApplicationId>;
+  readonly applications: BTreeSet<ApplicationId>;
   readonly policy_commitment: OpeningPolicyCommitment;
   readonly opening_type: OpeningType;
 }
@@ -673,15 +644,6 @@ export interface OpeningType extends Enum {
   readonly isWorker: boolean;
 }
 
-/** @name Operation */
-export interface Operation extends Null {}
-
-/** @name OperationType */
-export interface OperationType extends Null {}
-
-/** @name OptionalText */
-export interface OptionalText extends Null {}
-
 /** @name PaidMembershipTerms */
 export interface PaidMembershipTerms extends Struct {
   readonly fee: u128;
@@ -690,15 +652,6 @@ export interface PaidMembershipTerms extends Struct {
 
 /** @name PaidTermId */
 export interface PaidTermId extends u64 {}
-
-/** @name ParameterizedEntity */
-export interface ParameterizedEntity extends Null {}
-
-/** @name ParametrizedClassPropertyValue */
-export interface ParametrizedClassPropertyValue extends Null {}
-
-/** @name ParametrizedPropertyValue */
-export interface ParametrizedPropertyValue extends Null {}
 
 /** @name Person */
 export interface Person extends Struct {
@@ -722,7 +675,7 @@ export interface PersonController extends Enum {
 
 /** @name PersonCreationParameters */
 export interface PersonCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
+  readonly assets: StorageAssets;
   readonly meta: Bytes;
 }
 
@@ -731,7 +684,7 @@ export interface PersonId extends u64 {}
 
 /** @name PersonUpdateParameters */
 export interface PersonUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
 }
 
@@ -773,30 +726,6 @@ export interface PostTextChange extends Struct {
   readonly expired_at: BlockAndTime;
   readonly text: Text;
 }
-
-/** @name Principal */
-export interface Principal extends Null {}
-
-/** @name PrincipalId */
-export interface PrincipalId extends Null {}
-
-/** @name Property */
-export interface Property extends Null {}
-
-/** @name PropertyId */
-export interface PropertyId extends Null {}
-
-/** @name PropertyLockingPolicy */
-export interface PropertyLockingPolicy extends Null {}
-
-/** @name PropertyType */
-export interface PropertyType extends Null {}
-
-/** @name PropertyTypeSingle */
-export interface PropertyTypeSingle extends Null {}
-
-/** @name PropertyTypeVector */
-export interface PropertyTypeVector extends Null {}
 
 /** @name ProposalDecisionStatus */
 export interface ProposalDecisionStatus extends Enum {
@@ -930,12 +859,6 @@ export interface Recipient extends Struct {
 /** @name RecipientId */
 export interface RecipientId extends u64 {}
 
-/** @name ReferenceConstraint */
-export interface ReferenceConstraint extends Null {}
-
-/** @name ReferenceCounterSideEffects */
-export interface ReferenceCounterSideEffects extends Null {}
-
 /** @name Reply */
 export interface Reply extends Struct {
   readonly owner: GenericAccountId;
@@ -996,15 +919,6 @@ export interface RoleStakeProfile extends Struct {
   readonly exit_unstaking_period: Option<u32>;
 }
 
-/** @name SameController */
-export interface SameController extends Null {}
-
-/** @name Schema */
-export interface Schema extends Null {}
-
-/** @name SchemaId */
-export interface SchemaId extends Null {}
-
 /** @name SealedVote */
 export interface SealedVote extends Struct {
   readonly voter: GenericAccountId;
@@ -1020,7 +934,7 @@ export interface Season extends Struct {
 
 /** @name SeasonParameters */
 export interface SeasonParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<StorageAssets>;
   readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1046,22 +960,13 @@ export interface SeriesId extends u64 {}
 
 /** @name SeriesParameters */
 export interface SeriesParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets: Option<StorageAssets>;
   readonly seasons: Option<Vec<Option<SeasonParameters>>>;
   readonly meta: Option<Bytes>;
 }
 
-/** @name ServiceProviderRecord */
-export interface ServiceProviderRecord extends Null {}
-
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
-
-/** @name SideEffect */
-export interface SideEffect extends Null {}
-
-/** @name SideEffects */
-export interface SideEffects extends Null {}
 
 /** @name Slash */
 export interface Slash extends Struct {
@@ -1129,30 +1034,60 @@ export interface StakingStatus extends Enum {
   readonly asStaked: Staked;
 }
 
-/** @name Status */
-export interface Status extends Null {}
-
-/** @name StorageObjectOwner */
-export interface StorageObjectOwner extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
+/** @name Static */
+export interface Static extends Enum {
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
   readonly asWorkingGroup: WorkingGroup;
 }
 
+/** @name StaticBagId */
+export interface StaticBagId extends Enum {
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
+}
+
+/** @name StorageAssets */
+export interface StorageAssets extends Struct {
+  readonly object_creation_list: Vec<DataObjectCreationParameters>;
+  readonly expected_data_size_fee: u128;
+}
+
+/** @name StorageBucket */
+export interface StorageBucket extends Struct {
+  readonly operator_status: StorageBucketOperatorStatus;
+  readonly accepting_new_bags: bool;
+  readonly voucher: Voucher;
+  readonly assigned_bags: u64;
+}
+
+/** @name StorageBucketId */
+export interface StorageBucketId extends u64 {}
+
+/** @name StorageBucketIdSet */
+export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
+
+/** @name StorageBucketOperatorStatus */
+export interface StorageBucketOperatorStatus extends Enum {
+  readonly isMissing: boolean;
+  readonly isInvitedStorageWorker: boolean;
+  readonly asInvitedStorageWorker: WorkerId;
+  readonly isStorageWorker: boolean;
+  readonly asStorageWorker: ITuple<[WorkerId, GenericAccountId]>;
+}
+
+/** @name StorageBucketsPerBagValueConstraint */
+export interface StorageBucketsPerBagValueConstraint extends Struct {
+  readonly min: u64;
+  readonly max_min_diff: u64;
+}
+
+/** @name StorageObjectOwner */
+export interface StorageObjectOwner extends Null {}
+
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
-
-/** @name StoredPropertyValue */
-export interface StoredPropertyValue extends Null {}
-
-/** @name StoredValue */
-export interface StoredValue extends Null {}
 
 /** @name SubscriptionId */
 export interface SubscriptionId extends u64 {}
@@ -1164,9 +1099,6 @@ export interface TerminateRoleParameters extends Struct {
   readonly slash: bool;
   readonly working_group: WorkingGroup;
 }
-
-/** @name TextMaxLength */
-export interface TextMaxLength extends Null {}
 
 /** @name Thread */
 export interface Thread extends Struct {
@@ -1209,26 +1141,19 @@ export interface UnstakingApplicationStage extends Struct {
   readonly cause: ApplicationDeactivationCause;
 }
 
-/** @name UpdatePropertyValuesOperation */
-export interface UpdatePropertyValuesOperation extends Null {}
-
 /** @name UploadingStatus */
-export interface UploadingStatus extends bool {}
+export interface UploadingStatus extends Null {}
+
+/** @name UploadParameters */
+export interface UploadParameters extends Struct {
+  readonly bagId: BagId;
+  readonly objectCreationList: Vec<DataObjectCreationParameters>;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
+}
 
 /** @name Url */
 export interface Url extends Text {}
-
-/** @name VecInputValue */
-export interface VecInputValue extends Null {}
-
-/** @name VecMaxLength */
-export interface VecMaxLength extends Null {}
-
-/** @name VecStoredPropertyValue */
-export interface VecStoredPropertyValue extends Null {}
-
-/** @name VecStoredValue */
-export interface VecStoredValue extends Null {}
 
 /** @name Video */
 export interface Video extends Struct {
@@ -1255,17 +1180,24 @@ export interface VideoCategoryUpdateParameters extends Struct {
 
 /** @name VideoCreationParameters */
 export interface VideoCreationParameters extends Struct {
-  readonly assets: Vec<NewAsset>;
-  readonly meta: Bytes;
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
 }
 
 /** @name VideoId */
 export interface VideoId extends u64 {}
 
+/** @name VideoMigrationConfig */
+export interface VideoMigrationConfig extends Struct {
+  readonly current_id: VideoId;
+  readonly final_id: VideoId;
+}
+
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
-  readonly assets: Option<Vec<NewAsset>>;
+  readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
 }
 
 /** @name VoteKind */
@@ -1286,14 +1218,14 @@ export interface VotingResults extends Struct {
 
 /** @name Voucher */
 export interface Voucher extends Struct {
-  readonly size_limit: u64;
-  readonly objects_limit: u64;
-  readonly size_used: u64;
-  readonly objects_used: u64;
+  readonly sizeLimit: u64;
+  readonly objectsLimit: u64;
+  readonly sizeUsed: u64;
+  readonly objectsUsed: u64;
 }
 
 /** @name VoucherLimit */
-export interface VoucherLimit extends u64 {}
+export interface VoucherLimit extends Null {}
 
 /** @name WaitingToBeingOpeningStageVariant */
 export interface WaitingToBeingOpeningStageVariant extends Struct {
@@ -1315,11 +1247,11 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
-  readonly isOperations: boolean;
+  readonly isOperationsAlpha: boolean;
   readonly isGateway: boolean;
+  readonly isDistribution: boolean;
+  readonly isOperationsBeta: boolean;
+  readonly isOperationsGamma: boolean;
 }
-
-/** @name WorkingGroupUnstaker */
-export interface WorkingGroupUnstaker extends Null {}
 
 export type PHANTOM_ALL = 'all';
