@@ -24,9 +24,10 @@ fn sling_nft_back() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            Some(SECOND_MEMBER_ID),
+            NFTIssuanceParameters::<Test> {
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                ..NFTIssuanceParameters::<Test>::default()
+            }
         ));
 
         // Runtime tested state before call
