@@ -1,6 +1,6 @@
 #![cfg(test)]
 use crate::*;
-use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use membership::WeightInfo;
