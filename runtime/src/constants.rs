@@ -142,6 +142,7 @@ lazy_static! {
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
+            DistributionWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (StakingCandidateLockId::get(), [
@@ -155,6 +156,7 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
+            DistributionWorkingGroupLockId::get(),
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
@@ -171,6 +173,7 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
+            DistributionWorkingGroupLockId::get(),
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
@@ -216,6 +219,11 @@ lazy_static! {
             StakingCandidateLockId::get(),
         ].to_vec()),
         (GatewayWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (DistributionWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
