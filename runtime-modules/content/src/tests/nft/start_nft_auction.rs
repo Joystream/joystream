@@ -25,9 +25,7 @@ fn start_nft_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state before call
@@ -141,9 +139,7 @@ fn start_nft_auction_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = get_open_auction_params();
@@ -178,9 +174,7 @@ fn start_nft_auction_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = get_open_auction_params();
@@ -215,9 +209,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -261,9 +253,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to start nft auction if starting price provided is less then min starting price
