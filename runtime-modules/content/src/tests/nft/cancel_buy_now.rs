@@ -24,9 +24,7 @@ fn cancel_buy_now() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
@@ -134,9 +132,7 @@ fn cancel_buy_now_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -176,9 +172,7 @@ fn cancel_buy_now_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -218,9 +212,7 @@ fn cancel_buy_now_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NFTIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to cancel buy now if there is no pending one
