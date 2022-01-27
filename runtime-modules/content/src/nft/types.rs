@@ -55,10 +55,14 @@ impl<
     > OwnedNFT<BlockNumber, MemberId, AccountId, Balance>
 {
     /// Create new NFT
-    pub fn new(owner: NFTOwner<MemberId>, creator_royalty: Option<Royalty>) -> Self {
+    pub fn new(
+        owner: NFTOwner<MemberId>,
+        creator_royalty: Option<Royalty>,
+        transactional_status: TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>,
+    ) -> Self {
         Self {
             owner,
-            transactional_status: TransactionalStatus::Idle,
+            transactional_status,
             creator_royalty,
         }
     }
@@ -498,41 +502,71 @@ pub struct OpenAuctionDetails<BlockNumber> {
 /// Open auction details
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NFTIssuanceParametersRecord<MemberId, AutomatedTransactionalStatusParameters> {
+pub struct NFTIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     pub royalty: Option<Royalty>,
     pub nft_metadata: Metadata,
     pub non_channel_owner: Option<MemberId>,
-    pub auto_setup_transactional_status: AutomatedTransactionalStatusParameters,
+    pub init_transactional_status: InitTransactionalStatus,
 }
 
 pub type NFTIssuanceParameters<T> = NFTIssuanceParametersRecord<
     <T as common::MembershipTypes>::MemberId,
-    AutomatedTransactionalStatusSetupParameters<T>,
+    InitTransactionalStatus<T>,
 >;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AutomatedTransactionalStatusSetupParametersRecord<MemberId, CurrencyOf, AuctionParams> {
+pub enum InitTransactionalStatusRecord<
+    BlockNumber: BaseArithmetic + Copy + Default,
+    MemberId: Default + Copy + Ord,
+    AccountId: Default + Clone + Ord,
+    Balance: Default + Clone + BaseArithmetic,
+> {
     Idle,
-    OfferToMember(MemberId, Option<CurrencyOf>), // to, price
-    Auction(AuctionParams),
+    InitiatedOfferToMember(MemberId, Option<Balance>),
+    Auction(AuctionRecord<BlockNumber, Balance, MemberId, AccountId>),
 }
 
-impl<MemberId, CurrencyOf, AuctionParams> Default
-    for AutomatedTransactionalStatusSetupParametersRecord<MemberId, CurrencyOf, AuctionParams>
+impl<
+        BlockNumber: BaseArithmetic + Copy + Default,
+        MemberId: Default + Copy + Ord,
+        AccountId: Default + Clone + Ord,
+        Balance: Default + Clone + BaseArithmetic,
+    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>
 {
     fn default() -> Self {
-        AutomatedTransactionalStatusSetupParametersRecord::<MemberId, CurrencyOf, AuctionParams>::Idle
+        Self::Idle
     }
 }
 
-pub type AutomatedTransactionalStatusSetupParameters<T> =
-    AutomatedTransactionalStatusSetupParametersRecord<
-        <T as common::MembershipTypes>::MemberId,
-        CurrencyOf<T>,
-        AuctionParams<
-            <T as frame_system::Trait>::BlockNumber,
-            CurrencyOf<T>,
-            <T as common::MembershipTypes>::MemberId,
-        >,
-    >;
+impl<
+        BlockNumber: BaseArithmetic + Copy + Default,
+        MemberId: Default + Copy + Ord,
+        AccountId: Default + Clone + Ord,
+        Balance: Default + Clone + BaseArithmetic,
+    > From<InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>>
+    for TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>
+{
+    fn from(
+        item: InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
+    ) -> Self {
+        match item {
+            InitTransactionalStatusRecord::<
+                    BlockNumber, MemberId, AccountId, Balance>::Idle =>
+                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::Idle,
+            InitTransactionalStatusRecord::<
+                    BlockNumber, MemberId, AccountId, Balance>::InitiatedOfferToMember(id, amount) =>
+                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::InitiatedOfferToMember(id, amount),
+            InitTransactionalStatusRecord::<
+                    BlockNumber, MemberId, AccountId, Balance>::Auction(params) =>
+                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::Auction(params)
+            }
+    }
+}
+
+pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
+    CurrencyOf<T>,
+>;

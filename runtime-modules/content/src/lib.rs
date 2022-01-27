@@ -1495,12 +1495,18 @@ decl_module! {
                 Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
             }
 
+            let transactional_status = params.init_transactional_status.clone().into();
+
             //
             // == MUTATION SAFE ==
             //
 
             // Issue NFT
-            let video = video.set_nft_status(OwnedNFT::new(nft_owner, params.royalty.clone()));
+                let video = video.set_nft_status(OwnedNFT::new(
+                    nft_owner,
+                    params.royalty.clone(),
+                    transactional_status,
+                ));
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1511,6 +1517,7 @@ decl_module! {
                 params.royalty,
                 params.nft_metadata,
                 params.non_channel_owner,
+                params.init_transactional_status
             ));
         }
 
@@ -2368,6 +2375,7 @@ decl_event!(
             CurrencyOf<T>,
             <T as common::MembershipTypes>::MemberId,
         >,
+        InitTransactionalStatus = InitTransactionalStatus<T>,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
@@ -2504,6 +2512,7 @@ decl_event!(
             Option<Royalty>,
             Metadata,
             Option<MemberId>,
+            InitTransactionalStatus,
         ),
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
