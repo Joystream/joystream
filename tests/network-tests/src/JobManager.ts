@@ -4,31 +4,18 @@ import { Job, JobOutcome, JobProps } from './Job'
 import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { ResourceManager } from './Resources'
-import { CliApi } from './CliApi'
 
 export class JobManager extends EventEmitter {
   private _jobs: Job[] = []
   private readonly _apiFactory: ApiFactory
   private readonly _env: NodeJS.ProcessEnv
   private readonly _query: QueryNodeApi
-  private readonly _cli: CliApi
 
-  constructor({
-    apiFactory,
-    env,
-    query,
-    cli,
-  }: {
-    apiFactory: ApiFactory
-    env: NodeJS.ProcessEnv
-    query: QueryNodeApi
-    cli: CliApi
-  }) {
+  constructor({ apiFactory, env, query }: { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }) {
     super()
     this._apiFactory = apiFactory
     this._env = env
     this._query = query
-    this._cli = cli
   }
 
   public createJob(label: string, flows: Flow[] | Flow): Job {
@@ -45,7 +32,6 @@ export class JobManager extends EventEmitter {
       env: this._env,
       query: this._query,
       apiFactory: this._apiFactory,
-      cli: this._cli,
     }
   }
 

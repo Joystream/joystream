@@ -139,18 +139,23 @@ export class ApiFactory {
     return keys
   }
 
-  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+  private createKeyPair(suriPath: string, isCustom = false, isFinalPath = false): KeyringPair {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}//${uuid().substring(0, 8)}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}//${uuid().substring(0, 8)}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    return this.createKeyPair(customPath, true)
+  public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
+    return this.createKeyPair(customPath, true, isFinalPath)
+  }
+
+  public createRawKeyPair(customPath: string): KeyringPair {
+    const pair = this.keyring.addFromUri(customPath)
+    return pair
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -244,8 +249,8 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public createCustomKeyPair(path: string): KeyringPair {
-    return this.factory.createCustomKeyPair(path)
+  public createCustomKeyPair(path: string, finalPath = false): KeyringPair {
+    return this.factory.createCustomKeyPair(path, finalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {

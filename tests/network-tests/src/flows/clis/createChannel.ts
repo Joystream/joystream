@@ -8,6 +8,7 @@ import { TmpFileManager } from '../../cli/utils'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { statSync } from 'fs'
+import { createJoystreamCli } from '../utils'
 
 export default async function createChannel({ api, env, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
@@ -23,17 +24,16 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   const channelOwnerBalance = api.consts.storage.dataObjectDeletionPrize.muln(2)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
-  // Create Joystream CLI
-  const tmpFileManager = new TmpFileManager()
-  const joystreamCli = new JoystreamCLI(tmpFileManager)
+  // Create and init Joystream CLI
+  const joystreamCli = await createJoystreamCli()
 
-  // Init CLI, import & select channel owner key
+  // Import & select channel owner key
   await joystreamCli.init()
-  await joystreamCli.importKey(channelOwnerKeypair.key)
+  await joystreamCli.importAccount(channelOwnerKeypair.key)
 
   // Create channel
-  const avatarPhotoPath = tmpFileManager.randomImgFile(300, 300)
-  const coverPhotoPath = tmpFileManager.randomImgFile(1920, 500)
+  const avatarPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(300, 300)
+  const coverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1920, 500)
   const channelInput = {
     title: 'Test channel',
     avatarPhotoPath,
@@ -43,7 +43,7 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
     language: 'en',
     rewardAccount: channelOwnerKeypair.key.address,
   }
-  const { out: createChannelOut } = await joystreamCli.createChannel(channelInput, ['--context', 'Member'])
+  const { out: createChannelOut } = await joystreamCli.createChannelOoooriginal(channelInput, ['--context', 'Member'])
 
   const channelIdMatch = /Channel with id ([0-9]+) successfully created/.exec(createChannelOut)
   if (!channelIdMatch) {

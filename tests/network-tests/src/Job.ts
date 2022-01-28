@@ -5,13 +5,11 @@ import { QueryNodeApi } from './QueryNodeApi'
 import { Flow } from './Flow'
 import { InvertedPromise } from './InvertedPromise'
 import { ResourceManager } from './Resources'
-import { CliApi } from './CliApi'
 
 export type JobProps = {
   apiFactory: ApiFactory
   env: NodeJS.ProcessEnv
   query: QueryNodeApi
-  cli: CliApi
 }
 
 export enum JobOutcome {
@@ -106,7 +104,6 @@ export class Job {
             api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}-${index}`),
             env: jobProps.env,
             query: jobProps.query,
-            cli: jobProps.cli,
             lock: locker.lock,
           })
         } catch (err) {

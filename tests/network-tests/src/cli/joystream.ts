@@ -3,8 +3,14 @@ import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
 import { ChannelInputParameters } from '@joystream/cli/src/Types'
+import { MemberId } from '@joystream/types/members'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
+
+export interface ICreatedVideoData {
+  videoId: number
+  assetContentIds: string[]
+}
 
 export class JoystreamCLI extends CLI {
   protected keys: string[] = []
@@ -14,16 +20,24 @@ export class JoystreamCLI extends CLI {
     const defaultEnv = {
       HOME: tmpFileManager.tmpDataDir,
     }
+
     super(CLI_ROOT_PATH, defaultEnv)
     this.tmpFileManager = tmpFileManager
   }
 
+  /**
+    Inits all required connections, etc.
+  */
   async init(): Promise<void> {
     await this.run('api:setUri', [process.env.NODE_URL || 'ws://127.0.0.1:9944'])
     await this.run('api:setQueryNodeEndpoint', [process.env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'])
   }
 
-  async importKey(pair: KeyringPair): Promise<void> {
+  /**
+    Imports accounts key to CLI.
+  */
+  async importAccount(pair: KeyringPair): Promise<void> {
+    const password = ''
     const jsonFile = this.tmpFileManager.jsonFile(pair.toJson())
     await this.run('account:import', [
       '--backupFilePath',
@@ -31,17 +45,172 @@ export class JoystreamCLI extends CLI {
       '--name',
       `Account${this.keys.length}`,
       '--password',
-      '',
+      password,
     ])
     this.keys.push(pair.address)
   }
 
-  async run(command: string, customArgs: string[] = [], keyLocks?: string[]): Promise<CommandResult> {
-    return super.run(command, customArgs, keyLocks || this.keys)
+  /**
+    Runs Joystream CLI command.
+  */
+  async run(
+    command: string,
+    customArgs: string[] = [],
+    keyLocks?: string[],
+    requireSuccess = true
+  ): Promise<CommandResult> {
+    return super.run(command, customArgs, keyLocks || this.keys, requireSuccess)
   }
 
-  async createChannel(inputData: ChannelInputParameters, args: string[]): Promise<CommandResult> {
+  // TODO: remove
+  async createChannelOoooriginal(inputData: ChannelInputParameters, args: string[]): Promise<CommandResult> {
     const jsonFile = this.tmpFileManager.jsonFile(inputData)
     return this.run('content:createChannel', ['--input', jsonFile, ...args])
+  }
+
+  /**
+    Getter for temporary-file manager.
+  */
+  public getTmpFileManager(): TmpFileManager {
+    return this.tmpFileManager
+  }
+
+  /**
+    Parses `id` of newly created content entity from CLI's stdout.
+  */
+  private parseCreatedIdFromStdout(stdout: string): number {
+    return parseInt((stdout.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
+  }
+
+  /**
+    Checks if CLI's stderr contains warning about no storage provider available.
+  */
+  private containsWarningNoStorage(stderr: string): boolean {
+    return !!stderr.match(/^\s*\S\s*Warning: No storage provider is currently available!/m)
+  }
+
+  /**
+    Checks if CLI's stderr contains warning about no password used when importing account.
+  */
+  private containsWarningEmptyPassword(text: string): boolean {
+    return !!text.match(/^\s*\S\s*Warning: Using empty password is not recommended!/)
+  }
+
+  /**
+    Selects active member for CLI commands.
+  */
+  async chooseMemberAccount(memberId: MemberId) {
+    const { stderr } = await this.run('account:chooseMember', ['--memberId', memberId.toString()])
+
+    if (stderr) {
+      throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
+    }
+  }
+
+  /**
+    Creates a new channel.
+  */
+  async createChannel(channel: unknown): Promise<number> {
+    const jsonFile = this.tmpFileManager.jsonFile(channel)
+
+    const { stdout, stderr } = await this.run('content:createChannel', ['--input', jsonFile, '--context', 'Member'])
+
+    if (stderr && !this.containsWarningNoStorage(stderr)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating channel: "${stderr}"`)
+    }
+
+    return this.parseCreatedIdFromStdout(stdout)
+  }
+
+  /**
+    Creates a new channel category.
+  */
+  async createChannelCategory(channelCategory: unknown): Promise<number> {
+    const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
+
+    const { stdout, stderr } = await this.run('content:createChannelCategory', [
+      '--input',
+      jsonFile,
+      '--context',
+      'Lead',
+    ])
+
+    if (stderr) {
+      throw new Error(`Unexpected CLI failure on creating channel category: "${stderr}"`)
+    }
+
+    return this.parseCreatedIdFromStdout(stdout)
+  }
+
+  /**
+    Creates a new video.
+  */
+  async createVideo(channelId: number, video: unknown, canOmitUpload = true): Promise<ICreatedVideoData> {
+    const jsonFile = this.tmpFileManager.jsonFile(video)
+
+    const { stdout, stderr, exitCode } = await this.run(
+      'content:createVideo',
+      ['--input', jsonFile, '--channelId', channelId.toString()],
+      undefined,
+      !canOmitUpload
+    )
+
+    // prevent error from CLI that create
+    if (canOmitUpload && exitCode > 0 && !this.containsWarningNoStorage(stderr)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating video: "${stderr}"`)
+    }
+
+    const videoId = this.parseCreatedIdFromStdout(stdout)
+    const assetContentIds = Array.from(stdout.matchAll(/ objectId: '([a-z0-9]+)'/g)).map((item) => item[1])
+
+    return {
+      videoId,
+      assetContentIds,
+    }
+  }
+
+  /**
+    Creates a new video category.
+  */
+  async createVideoCategory(videoCategory: unknown): Promise<number> {
+    const jsonFile = this.tmpFileManager.jsonFile(videoCategory)
+
+    const { stdout, stderr } = await this.run('content:createVideoCategory', ['--input', jsonFile, '--context', 'Lead'])
+
+    if (stderr) {
+      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
+
+    return this.parseCreatedIdFromStdout(stdout)
+  }
+
+  /**
+    Updates an existing video.
+  */
+  async updateVideo(videoId: number, video: unknown): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(video)
+
+    const { stdout, stderr } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
+
+    if (stderr && !this.containsWarningNoStorage(stderr)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
+  }
+
+  /**
+    Updates a channel.
+  */
+  async updateChannel(channelId: number, channel: unknown): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(channel)
+
+    const { stdout, stderr } = await this.run('content:updateChannel', ['--input', jsonFile, channelId.toString()])
+
+    if (stderr && !this.containsWarningNoStorage(stderr)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
   }
 }

@@ -3,7 +3,6 @@ import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
 import { QueryNodeApi } from './QueryNodeApi'
-import { CliApi } from './CliApi'
 
 export abstract class BaseFixture {
   protected readonly api: Api
@@ -87,12 +86,10 @@ export abstract class BaseFixture {
 
 export abstract class BaseQueryNodeFixture extends BaseFixture {
   protected readonly query: QueryNodeApi
-  protected readonly cli: CliApi
 
-  constructor(api: Api, query: QueryNodeApi, cli: CliApi) {
+  constructor(api: Api, query: QueryNodeApi) {
     super(api)
     this.query = query
-    this.cli = cli
   }
 }
 
