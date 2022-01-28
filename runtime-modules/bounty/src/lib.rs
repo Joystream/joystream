@@ -61,6 +61,9 @@ pub trait WeightInfo {
     fn cancel_bounty_by_member() -> Weight;
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
+    fn oracle_member_switch_to_oracle_council() -> Weight;
+    fn oracle_member_switch_to_oracle_member() -> Weight;
+    fn oracle_council_switch_to_oracle_member() -> Weight;
     fn fund_bounty_by_member() -> Weight;
     fn fund_bounty_by_council() -> Weight;
     fn withdraw_funding_by_member() -> Weight;
@@ -509,6 +512,13 @@ decl_event! {
         /// - bounty metadata
         BountyCreated(BountyId, BountyCreationParameters, Vec<u8>),
 
+        /// A bounty oracle was switched.
+        /// Params:
+        /// - bounty ID
+        /// - Previous oracle
+        /// - New oracle
+        BountyOracleSwitched(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
+
         /// A bounty was canceled.
         /// Params:
         /// - bounty ID
@@ -608,6 +618,10 @@ decl_event! {
 decl_error! {
     /// Bounty pallet predefined errors
     pub enum Error for Module<T: Trait> {
+
+        /// This Member is already the actual oracle.
+        MemberIsAlreadyAnOracle,
+
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
 
@@ -638,8 +652,11 @@ decl_error! {
         /// Unexpected bounty stage for an operation: SuccessfulBountyWithdrawal.
         InvalidStageUnexpectedSuccessfulBountyWithdrawal,
 
-        /// Unexpected bounty stage for an operation: FailedBountyWithdrawal.
-        InvalidStageUnexpectedFailedBountyWithdrawal,
+        /// Unexpected bounty stage for an operation: FailedBountyWithdrawal{judgment_submitted: false}.
+        InvalidStageUnexpectedFailedBountyWithdrawalWithoutJudgementSubmitted,
+
+        /// Unexpected bounty stage for an operation: FailedBountyWithdrawal{judgment_submitted: true}.
+        InvalidStageUnexpectedFailedBountyWithdrawalWithJudgementSubmitted,
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
@@ -933,7 +950,6 @@ decl_module! {
 
             bounty_funder_manager.transfer_funds_to_bounty_account(bounty_id, actual_funding)?;
 
-
             let new_milestone = Self::get_bounty_milestone_on_funding(
                     maximum_funding_reached,
                     bounty.milestone
@@ -955,6 +971,62 @@ decl_module! {
             if  maximum_funding_reached{
                 Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
+        }
+
+        /// Switch the oracle to a new one selected by the actual oracle
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::oracle_member_switch_to_oracle_council()
+        .max(WeightInfoBounty::<T>::oracle_member_switch_to_oracle_member())
+        .max(WeightInfoBounty::<T>::oracle_council_switch_to_oracle_member())]
+        pub fn switch_oracle(
+            origin,
+            new_oracle: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+        ) {
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            let current_oracle = bounty.creation_params.oracle.clone();
+
+            //Checks if the function caller (origin) is current oracle
+            BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                current_oracle.clone(),
+            )?;
+
+            //Checkk if new oracle is a member
+            BountyActorManager::<T>::get_bounty_actor_manager(new_oracle.clone())?;
+
+            //The current oracle must be different from thhe new ooracle
+            ensure!(new_oracle != current_oracle, Error::<T>::MemberIsAlreadyAnOracle);
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            //Oracle can be switched only in the following stages:
+            //Funding period
+            //Working period
+            ensure!(
+                !matches!(current_bounty_stage, BountyStage::FailedBountyWithdrawal{..}) &&
+                current_bounty_stage != BountyStage::SuccessfulBountyWithdrawal &&
+                current_bounty_stage != BountyStage::Judgment,
+                Self::unexpected_bounty_stage_error(current_bounty_stage)
+            );
+
+            //Mutates the bounty params replacing the current oracle
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.creation_params.oracle  = new_oracle.clone()
+            });
+
+            // Fire an oracle switch event.
+            Self::deposit_event(RawEvent::BountyOracleSwitched(
+                bounty_id,
+                current_oracle,
+                new_oracle));
         }
 
         /// Withdraw bounty funding by a member or a council.
@@ -1803,9 +1875,14 @@ impl<T: Trait> Module<T> {
             BountyStage::SuccessfulBountyWithdrawal => {
                 Error::<T>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into()
             }
-            BountyStage::FailedBountyWithdrawal {
-                judgment_submitted: _,
-            } => Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            BountyStage::FailedBountyWithdrawal { judgment_submitted } => {
+                if judgment_submitted {
+                    Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawalWithJudgementSubmitted
+                        .into()
+                } else {
+                    Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawalWithoutJudgementSubmitted.into()
+                }
+            }
         }
     }
 

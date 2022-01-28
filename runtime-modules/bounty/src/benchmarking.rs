@@ -992,6 +992,121 @@ benchmarks! {
         );
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
+    oracle_council_switch_to_oracle_member {
+
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
+
+        let oracle = BountyActor::Council;
+
+        let (new_oracle_account_id, new_oracle_member_id) = member_funded_account::<T>("new_oracle", 2);
+        let new_oracle = BountyActor::Member(new_oracle_member_id);
+
+        let creator = BountyActor::Council;
+
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
+
+        let params = BountyCreationParameters::<T>{
+            creator,
+            cherry,
+            oracle_cherry,
+            oracle: oracle.clone(),
+            work_period: One::one(),
+            judging_period: One::one(),
+            funding_type: FundingType::Perpetual{ target: 100u32.into() },
+            entrant_stake: 100u32.into(),
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+    }: switch_oracle (RawOrigin::Root, new_oracle.clone(), bounty_id)
+    verify {
+        let bounty_id: T::BountyId = 1u32.into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
+        assert_last_event::<T>(Event::<T>::BountyOracleSwitched(bounty_id, oracle, new_oracle).into());
+    }
+    oracle_member_switch_to_oracle_member{
+
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
+
+        let (current_oracle_account_id, current_oracle_member_id) = member_funded_account::<T>("current_oracle", 1);
+        let oracle = BountyActor::Member(current_oracle_member_id);
+
+        let (new_oracle_account_id, new_oracle_member_id) = member_funded_account::<T>("new_oracle", 2);
+        let new_oracle = BountyActor::Member(new_oracle_member_id);
+
+        let creator = BountyActor::Council;
+
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
+
+        let params = BountyCreationParameters::<T>{
+            creator,
+            cherry,
+            oracle_cherry,
+            oracle: oracle.clone(),
+            work_period: One::one(),
+            judging_period: One::one(),
+            funding_type: FundingType::Perpetual{ target: 100u32.into() },
+            entrant_stake: 100u32.into(),
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+    }: switch_oracle (RawOrigin::Signed(current_oracle_account_id), new_oracle.clone(), bounty_id)
+    verify {
+        let bounty_id: T::BountyId = 1u32.into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
+        assert_last_event::<T>(Event::<T>::BountyOracleSwitched(bounty_id, oracle, new_oracle).into());
+    }
+    oracle_member_switch_to_oracle_council {
+
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_cherry: BalanceOf<T> = 100u32.into();
+
+        let (current_oracle_account_id, current_oracle_member_id) = member_funded_account::<T>("current_oracle", 1);
+        let oracle = BountyActor::Member(current_oracle_member_id);
+
+        let new_oracle = BountyActor::Council;
+
+        let creator = BountyActor::Council;
+
+        T::CouncilBudgetManager::set_budget(cherry + oracle_cherry);
+
+        let params = BountyCreationParameters::<T>{
+            creator,
+            cherry,
+            oracle_cherry,
+            oracle: oracle.clone(),
+            work_period: One::one(),
+            judging_period: One::one(),
+            funding_type: FundingType::Perpetual{ target: 100u32.into() },
+            entrant_stake: 100u32.into(),
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+    }: switch_oracle (RawOrigin::Signed(current_oracle_account_id), new_oracle.clone(), bounty_id)
+    verify {
+        let bounty_id: T::BountyId = 1u32.into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
+        assert_last_event::<T>(Event::<T>::BountyOracleSwitched(bounty_id, oracle, new_oracle).into());
+    }
 }
 
 #[cfg(test)]
@@ -1116,6 +1231,27 @@ mod tests {
     fn withdraw_work_entrant_funds() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_work_entrant_funds::<Test>());
+        });
+    }
+
+    #[test]
+    fn oracle_council_switch_to_oracle_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_oracle_council_switch_to_oracle_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn oracle_member_switch_to_oracle_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_oracle_member_switch_to_oracle_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn oracle_member_switch_to_oracle_council() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_oracle_member_switch_to_oracle_council::<Test>());
         });
     }
 }

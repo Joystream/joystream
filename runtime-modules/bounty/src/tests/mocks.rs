@@ -162,6 +162,15 @@ impl crate::WeightInfo for () {
     fn cancel_bounty_by_council() -> u64 {
         0
     }
+    fn oracle_council_switch_to_oracle_member() -> u64 {
+        0
+    }
+    fn oracle_member_switch_to_oracle_member() -> u64 {
+        0
+    }
+    fn oracle_member_switch_to_oracle_council() -> u64 {
+        0
+    }
     fn veto_bounty() -> u64 {
         0
     }
