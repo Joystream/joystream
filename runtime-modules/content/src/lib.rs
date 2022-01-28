@@ -1495,6 +1495,11 @@ decl_module! {
                 Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
             }
 
+            if InitTransactionalStatus::<T>::Auction(auction_params)
+                = &params.init_transactional_status {
+                    Self::validate_auction_params(&auction_params)?;
+                }
+
             let transactional_status = params.init_transactional_status.clone().into();
 
             //
