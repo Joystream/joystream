@@ -84,6 +84,15 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli bounty:createBounty`](#joystream-cli-bountycreatebounty)
 * [`joystream-cli bounty:cancelBounty BOUNTYID`](#joystream-cli-bountycancelbounty-bountyid)
 * [`joystream-cli bounty:vetoBounty BOUNTYID`](#joystream-cli-bountyvetobounty-bountyid)
+* [`joystream-cli bounty:entry ENTRYID`](#joystream-cli-bountyentry-entryid)
+* [`joystream-cli bounty:entries`](#joystream-cli-bountyentries)
+* [`joystream-cli bounty:fundBounty BOUNTYID AMOUNT`](#joystream-cli-bountyfundbounty-bountyid-amount)
+* [`joystream-cli bounty:withdrawFunding BOUNTYID`](#joystream-cli-bountywithdrawfunding-bountyid)
+* [`joystream-cli bounty:announceWorkEntry BOUNTYID`](#joystream-cli-bountyannounceworkentry-bountyid)
+* [`joystream-cli bounty:withdrawWorkEntry BOUNTYID ENTRYID`](#joystream-cli-bountywithdrawworkentry-bountyid-entryid)
+* [`joystream-cli bounty:submitWork BOUNTYID ENTRYID`](#joystream-cli-bountysubmitwork-bountyid-entryid)
+* [`joystream-cli bounty:submitOracleJudgment BOUNTYID`](#joystream-cli-bountysubmitoraclejudgment-bountyid)
+* [`joystream-cli bounty:withdrawWorkEntrantFunds BOUNTYID ENTRYID`](#joystream-cli-bountywithdrawworkentrantfunds-bountyid-entryid)
 * [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 * [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
 * [`joystream-cli content:channels`](#joystream-cli-contentchannels)
@@ -416,8 +425,134 @@ USAGE
   $ joystream-cli bounty:vetoBounty BOUNTYID 
 
 ARGUMENTS
-  BOUNTYID  ID of the Bounty to veto
+  BOUNTYID  ID of the Bounty
 ```
+
+## `joystream-cli bounty:fundBounty BOUNTYID AMOUNT`
+
+Provide funding to bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:fundBounty BOUNTYID AMOUNT 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty to veto
+  AMOUNT    Amount to be contributed towards bounty by funder
+
+OPTIONS
+  --funderContext=(Member|Council)  Actor context to execute the command in (Member/Council)
+```
+
+## `joystream-cli bounty:withdrawFunding BOUNTYID`
+
+Withdraw funding from the bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:withdrawFunding BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty 
+
+OPTIONS
+  --funderContext=(Member|Council)  Actor context to execute the command in (Member/Council)
+```
+
+## `joystream-cli bounty:entry ENTRYID`
+
+Show work entry details by id.
+
+```
+USAGE
+  $ joystream-cli bounty:entry ENTRYID 
+
+ARGUMENTS
+  ENTRYID  ID of the Work entry
+```
+
+## `joystream-cli bounty:entries`
+
+List all existing entries.
+
+```
+USAGE
+  $ joystream-cli bounty:entries 
+```
+
+## `joystream-cli bounty:announceWorkEntry BOUNTYID`
+
+Announce work entry for a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:announceWorkEntry BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty
+```
+This command will ask for member account and staking account.
+
+## `joystream-cli bounty:withdrawWorkEntry BOUNTYID ENTRYID`
+
+Withdraw work entry from a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:withdrawWorkEntry BOUNTYID ENTRYID
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty
+  ENTRYID   ID of the Work entry
+```
+This command will ask for member account.
+
+## `joystream-cli bounty:submitWork BOUNTYID ENTRYID`
+
+Submit work for a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:submitWork BOUNTYID ENTRYID
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty
+  ENTRYID   ID of the Work entry
+
+OPTIONS
+  -i, --input=input  (required) Path to work data JSON file to use as input
+```
+This command will ask for member account.
+
+## `joystream-cli bounty:submitOracleJudgment BOUNTYID`
+
+Submit judgment for a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:submitOracleJudgment BOUNTYID 
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty 
+
+OPTIONS
+  -i, --input=input                 (required) Path to judgments data JSON file to use as input
+  --oracleContext=(Member|Council)  Actor context to execute the command in (Member/Council)
+```
+
+## `joystream-cli bounty:withdrawWorkEntrantFunds BOUNTYID ENTRYID`
+
+Withdraw work entrant funds from a bounty.
+
+```
+USAGE
+  $ joystream-cli bounty:withdrawWorkEntrantFunds BOUNTYID ENTRYID
+
+ARGUMENTS
+  BOUNTYID  ID of the Bounty
+  ENTRYID   ID of the Work entry
+```
+This command will ask for member account.
 
 ## `joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`
 
