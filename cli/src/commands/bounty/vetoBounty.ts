@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import BountyCommandBase from '../../base/BountyCommandBase'
 
-export default class CreateBountyCommand extends BountyCommandBase {
+export default class VetoBountyCommand extends BountyCommandBase {
   static description = 'Veto bounty by the Council.'
   static args = [
     {
@@ -12,7 +12,7 @@ export default class CreateBountyCommand extends BountyCommandBase {
   ]
 
   async run() {
-    const { bountyId } = this.parse(CreateBountyCommand).args
+    const { bountyId } = this.parse(VetoBountyCommand).args
 
     const [councilMember, councilMemberAddress] = await this.getBountyActor('Council')
     await this.ensureBountyCanBeCanceled(bountyId, councilMember)
