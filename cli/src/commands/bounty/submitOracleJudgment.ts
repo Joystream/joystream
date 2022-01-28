@@ -1,6 +1,6 @@
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { OracleJudgmentInputSchema } from 'src/json-schemas/Bounty'
+import { OracleJudgmentInputSchema } from '../../json-schemas/Bounty'
 import BountyCommandBase from '../../base/BountyCommandBase'
 import ExitCodes from '../../ExitCodes'
 import { getInputJson } from '../../helpers/InputOutput'
