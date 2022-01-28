@@ -221,16 +221,19 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParametersRecord<StorageAssets> {
+pub struct VideoCreationParametersRecord<StorageAssets, NFTIssuanceParameters> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
     pub meta: Option<Vec<u8>>,
     /// Comments enabled or not
     pub enable_comments: bool,
+    /// Parameters for issuing video NFT
+    pub auto_issue_nft: Option<NFTIssuanceParameters>,
 }
 
-pub type VideoCreationParameters<T> = VideoCreationParametersRecord<StorageAssets<T>>;
+pub type VideoCreationParameters<T> =
+    VideoCreationParametersRecord<StorageAssets<T>, NFTIssuanceParameters<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

@@ -744,11 +744,6 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // upload to storage: check is performed beforehand in the extrinsics so storage state won't be endangered
             if let Some(upload_assets) = params.assets.as_ref() {
                 let params = Self::construct_upload_parameters(
                     upload_assets,
@@ -757,6 +752,17 @@ decl_module! {
                 );
                 Storage::<T>::upload_data_objects(params)?;
             }
+
+            let nft_status = params.auto_issue_nft.map(|issuance_params| {
+                let transactional_status = Self::ensure_valid_init_transactional_status(
+                    &params.init_transactional_status
+                );
+                Ok(OwnedNFT::new(
+                    nft_owner,
+                    params.royalty.clone(),
+                    transactional_status,
+                ))
+            })?;
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -768,6 +774,11 @@ decl_module! {
                 /// Newly created video has no nft
                 nft_status: None,
             };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
