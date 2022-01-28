@@ -554,12 +554,13 @@
     "OracleJudgment_Winner": {
         "reward": "u128"
     },
-    "OracleJudgment": {
+    "OracleWorkEntryJudgment": {
         "_enum": {
             "Winner": "OracleJudgment_Winner",
             "Rejected": "Null"
         }
     },
+    "OracleJudgment": "BTreeMap<EntryId,OracleWorkEntryJudgment>",
     "Entry": {
         "member_id": "MemberId",
         "staking_account_id": "AccountId",

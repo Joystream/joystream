@@ -273,7 +273,7 @@ declare module '@polkadot/api/types/submittable' {
        * - `O(N)`
        * # </weight>
        **/
-      submitOracleJudgment: AugmentedSubmittable<(oracle: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, judgment: OracleJudgment | { Winner: any } | { Rejected: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [BountyActor, BountyId, OracleJudgment]>;
+      submitOracleJudgment: AugmentedSubmittable<(oracle: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, judgment: OracleJudgment) => SubmittableExtrinsic<ApiType>, [BountyActor, BountyId, OracleJudgment]>;
       /**
        * Submit work for a bounty.
        * # <weight>
