@@ -38,7 +38,6 @@ import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metad
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
-import { v4 as uuid } from 'uuid'
 
 const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   'distributionWorkingGroup': 'Distribution',
@@ -143,7 +142,7 @@ export class ApiFactory {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}//${uuid().substring(0, 8)}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
@@ -151,11 +150,6 @@ export class ApiFactory {
 
   public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
     return this.createKeyPair(customPath, true, isFinalPath)
-  }
-
-  public createRawKeyPair(customPath: string): KeyringPair {
-    const pair = this.keyring.addFromUri(customPath)
-    return pair
   }
 
   public keyGenInfo(): KeyGenInfo {

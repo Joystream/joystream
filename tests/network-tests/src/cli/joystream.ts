@@ -62,12 +62,6 @@ export class JoystreamCLI extends CLI {
     return super.run(command, customArgs, keyLocks || this.keys, requireSuccess)
   }
 
-  // TODO: remove
-  async createChannelOoooriginal(inputData: ChannelInputParameters, args: string[]): Promise<CommandResult> {
-    const jsonFile = this.tmpFileManager.jsonFile(inputData)
-    return this.run('content:createChannel', ['--input', jsonFile, ...args])
-  }
-
   /**
     Getter for temporary-file manager.
   */
@@ -113,9 +107,14 @@ export class JoystreamCLI extends CLI {
   async createChannel(channel: unknown): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
-    const { stdout, stderr } = await this.run('content:createChannel', ['--input', jsonFile, '--context', 'Member'])
+    const { stdout, stderr, exitCode } = await this.run('content:createChannel', [
+      '--input',
+      jsonFile,
+      '--context',
+      'Member',
+    ])
 
-    if (stderr && !this.containsWarningNoStorage(stderr)) {
+    if (exitCode && !this.containsWarningNoStorage(stderr)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating channel: "${stderr}"`)
     }
@@ -157,7 +156,7 @@ export class JoystreamCLI extends CLI {
     )
 
     // prevent error from CLI that create
-    if (canOmitUpload && exitCode > 0 && !this.containsWarningNoStorage(stderr)) {
+    if (canOmitUpload && exitCode && !this.containsWarningNoStorage(stderr)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video: "${stderr}"`)
     }

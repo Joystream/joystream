@@ -5,7 +5,7 @@ import initStorage, { singleBucketConfig as storageConfig } from '../flows/stora
 import { WorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('setup working group leads', [
     leaderSetup(WorkingGroups.Content, true),
     leaderSetup(WorkingGroups.Storage, true),

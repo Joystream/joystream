@@ -19,6 +19,7 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   const paidTermId = api.createPaidTermId(new BN(+(env.MEMBERSHIP_PAID_TERMS || 0)))
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, [channelOwnerKeypair.key.address], paidTermId)
   await new FixtureRunner(buyMembershipFixture).run()
+  const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
   // Send some funds to pay the deletion_prize
   const channelOwnerBalance = api.consts.storage.dataObjectDeletionPrize.muln(2)
@@ -30,6 +31,7 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   // Import & select channel owner key
   await joystreamCli.init()
   await joystreamCli.importAccount(channelOwnerKeypair.key)
+  await joystreamCli.chooseMemberAccount(memberId)
 
   // Create channel
   const avatarPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(300, 300)
@@ -43,16 +45,11 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
     language: 'en',
     rewardAccount: channelOwnerKeypair.key.address,
   }
-  const { out: createChannelOut } = await joystreamCli.createChannelOoooriginal(channelInput, ['--context', 'Member'])
 
-  const channelIdMatch = /Channel with id ([0-9]+) successfully created/.exec(createChannelOut)
-  if (!channelIdMatch) {
-    throw new Error(`No channel id found in output:\n${createChannelOut}`)
-  }
-  const [, channelId] = channelIdMatch
+  const channelId = await joystreamCli.createChannel(channelInput)
 
   await query.tryQueryWithTimeout(
-    () => query.channelById(channelId),
+    () => query.channelById(channelId.toString()),
     (channel) => {
       Utils.assert(channel, 'Channel not found')
       assert.equal(channel.title, channelInput.title)
