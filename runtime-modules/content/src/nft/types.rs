@@ -523,15 +523,14 @@ pub enum InitTransactionalStatusRecord<
 > {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionParameters<BlockNumber, Balance, MemberId>),
+    Auction(AuctionParams<BlockNumber, Balance, MemberId>),
 }
 
 impl<
         BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + Ord,
-        AccountId: Default + Clone + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>
+    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
