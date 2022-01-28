@@ -12,7 +12,7 @@ export default class CreateBountyCommand extends BountyCommandBase {
   ]
 
   static flags = {
-    context: BountyCommandBase.creatorContextFlag,
+    context: BountyCommandBase.bountyActorContextFlag,
   }
 
   async run() {

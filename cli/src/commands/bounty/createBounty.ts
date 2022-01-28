@@ -13,7 +13,7 @@ import { BountyMetadata } from '@joystream/metadata-protobuf'
 export default class CreateBountyCommand extends BountyCommandBase {
   static description = 'Create bounty by member or council.'
   static flags = {
-    creatorContext: BountyCommandBase.creatorContextFlag,
+    creatorContext: BountyCommandBase.bountyActorContextFlag,
     contract: BountyCommandBase.contractTypeFlag,
     funding: BountyCommandBase.fundingTypeFlag,
     input: flags.string({

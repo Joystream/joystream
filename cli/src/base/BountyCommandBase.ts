@@ -1,15 +1,23 @@
-import { RolesCommandBase } from './WorkingGroupsCommandBase'
+import {
+  AssuranceContractType,
+  BountyActor,
+  BountyId,
+  FundingType,
+  JSBounty as Bounty,
+  OracleJudgment,
+  OracleWorkEntryJudgment,
+} from '@joystream/types/bounty'
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import ExitCodes from '../ExitCodes'
-import { AssuranceContractType, BountyActor, FundingType, BountyId } from '@joystream/types/bounty'
-import { FundingTypeLimited, FundingTypePrepetual } from 'src/Types'
+import { FundingTypeLimited, FundingTypePrepetual, OracleJudgmentInputParameters, Winner } from '../Types'
+import { RolesCommandBase } from './WorkingGroupsCommandBase'
 
-const CREATOR_CONTEXTS = ['Member', 'Council'] as const
+const BOUNTY_ACTOR_CONTEXTS = ['Member', 'Council'] as const
 const CONTRACT_TYPE_CONTEXTS = ['Open', 'Closed'] as const
 const FUNDING_TYPE_CONTEXTS = ['Perpetual', 'Limited'] as const
 
-type CreatorContext = typeof CREATOR_CONTEXTS[number]
+type BountyActorContext = typeof BOUNTY_ACTOR_CONTEXTS[number]
 type ContractTypeContext = typeof CONTRACT_TYPE_CONTEXTS[number]
 type FundingTypeContext = typeof FUNDING_TYPE_CONTEXTS[number]
 
@@ -17,11 +25,11 @@ type FundingTypeContext = typeof FUNDING_TYPE_CONTEXTS[number]
  * Abstract base class for commands related to bounty module.
  */
 export default abstract class BountyCommandBase extends RolesCommandBase {
-  static creatorContextFlag = flags.enum({
+  static bountyActorContextFlag = flags.enum({
     name: 'creatorContext',
     required: false,
-    description: `Actor context to execute the command in (${CREATOR_CONTEXTS.join('/')})`,
-    options: [...CREATOR_CONTEXTS],
+    description: `Actor context to execute the command in (${BOUNTY_ACTOR_CONTEXTS.join('/')})`,
+    options: [...BOUNTY_ACTOR_CONTEXTS],
   })
 
   static contractTypeFlag = flags.enum({
@@ -40,11 +48,11 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
 
   async promptForCreatorContext(
     message = 'Choose in which context you wish to execute the command'
-  ): Promise<CreatorContext> {
+  ): Promise<BountyActorContext> {
     return this.simplePrompt({
       message,
       type: 'list',
-      choices: CREATOR_CONTEXTS.map((c) => ({ name: c, value: c })),
+      choices: BOUNTY_ACTOR_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
@@ -73,7 +81,8 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
       return this.createType('BountyActor', { Council: null })
     } else {
       // ensure that member id is valid
-      await this.getOriginalApi().query.members.membershipById(oracle)
+      const oracleId = await this.createType('MemberId', oracle)
+      await this.getApi().expectedMembershipById(oracleId)
 
       return this.createType('BountyActor', { Member: oracle })
     }
@@ -120,7 +129,7 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
       return this.createType('AssuranceContractType', { Open: null })
     } else {
       if (contractInput.length === 0) {
-        throw new Error('Closed contract member list is empty')
+        throw new CLIError('Closed contract member list is empty')
       }
       if (contractInput.length > this.getOriginalApi().consts.bounty.closedContractSizeLimit.toNumber()) {
         throw new CLIError(`Judging period cannot be zero`)
@@ -134,6 +143,167 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
       return this.createType('AssuranceContractType', { Closed: contractInput })
     }
   }
+
+  async validateAndPrepareOracleJudgement(
+    bounty: Bounty,
+    judgementInput: OracleJudgmentInputParameters
+  ): Promise<OracleJudgment> {
+    const oracleJudgmentMap = {} as OracleJudgment
+    let rewardSumFromJudgment = 0
+
+    judgementInput.map(async ({ entryId, judgment }) => {
+      // ensure that entry exists
+      await this.getApi().entryById(entryId)
+
+      let workEntryJudgment: OracleWorkEntryJudgment
+      const workEntryId = this.createType('EntryId', entryId)
+
+      // if oracle judgment is Winner
+      if (judgment.hasOwnProperty('reward')) {
+        const reward = (judgment as Winner).reward
+
+        if (reward === 0) {
+          throw new CLIError(`Judgment reward cannot be zero`)
+        }
+        // calculate total reward money
+        rewardSumFromJudgment += reward
+
+        workEntryJudgment = this.createType(
+          'OracleWorkEntryJudgment',
+          this.createType('OracleJudgment_Winner', { Winner: { reward } })
+        )
+      }
+
+      // if oracle judgment is Rejected
+      workEntryJudgment = this.createType('OracleWorkEntryJudgment', { Rejected: null })
+      // insert entry id, work entry judgment pair to oracleJudgmentMap
+      oracleJudgmentMap.set(workEntryId, workEntryJudgment)
+    })
+
+    if (rewardSumFromJudgment !== bounty.total_funding.toNumber()) {
+      throw new CLIError(`Total reward should be equal to total funding`)
+    }
+    return oracleJudgmentMap
+  }
+
+  // -----------------------------------
+  // BOUNTY STAGE CALCULATION FUNCTIONS
+  // -----------------------------------
+
+  async isFundingStage(bounty: Bounty): Promise<boolean> {
+    const fundingPeriodIsNotExpired = !(await this.fundingPeriodExpired(bounty))
+    return fundingPeriodIsNotExpired
+  }
+
+  async isFundingExpiredStage(bounty: Bounty): Promise<boolean> {
+    if (bounty.milestone.isOfType('Created')) {
+      const hasNoContributions = bounty.milestone.asType('Created').has_contributions.isFalse
+      const fundingPeriodIsExpired = await this.fundingPeriodExpired(bounty)
+      return fundingPeriodIsExpired && hasNoContributions
+    }
+    return false
+  }
+
+  async isWorkSubmissionStage(bounty: Bounty): Promise<boolean> {
+    // Funding period is over. Minimum funding reached. Work period is not expired.
+    if (bounty.milestone.isOfType('Created')) {
+      // Never expires
+      if (bounty.creation_params.funding_type.isOfType('Perpetual')) {
+        return false
+      }
+      const createdAt = bounty.milestone.asType('Created').created_at.toNumber()
+      const fundingPeriod = bounty.creation_params.funding_type.asType('Limited').funding_period.toNumber()
+      if (
+        this.minimumFundingReached(bounty) &&
+        (await this.fundingPeriodExpired(bounty)) &&
+        !(await this.workPeriodExpired(bounty, createdAt + fundingPeriod))
+      ) {
+        return true
+      }
+    }
+
+    // Maximum funding reached. Work period is not expired.
+    if (bounty.milestone.isOfType('BountyMaxFundingReached')) {
+      const maxFundingReachedAt = bounty.milestone.asType('BountyMaxFundingReached').max_funding_reached_at.toNumber()
+      const workPeriodIsNotExpired = !(await this.workPeriodExpired(bounty, maxFundingReachedAt))
+      return workPeriodIsNotExpired
+    }
+
+    // Work in progress. Work period is not expired.
+    if (bounty.milestone.isOfType('WorkSubmitted')) {
+      const workPeriodStartedAt = bounty.milestone.asType('WorkSubmitted').work_period_started_at.toNumber()
+      const workPeriodIsNotExpired = !(await this.workPeriodExpired(bounty, workPeriodStartedAt))
+      return workPeriodIsNotExpired
+    }
+    return false
+  }
+
+  async isJudgmentStage(bounty: Bounty): Promise<boolean> {
+    if (bounty.milestone.isOfType('WorkSubmitted')) {
+      const workPeriodStartedAt = bounty.milestone.asType('WorkSubmitted').work_period_started_at.toNumber()
+      const workPeriodExpired = await this.workPeriodExpired(bounty, workPeriodStartedAt)
+      const judgmentPeriodIsNotExpired = !(await this.judgmentPeriodExpired(bounty, workPeriodStartedAt))
+
+      return workPeriodExpired && judgmentPeriodIsNotExpired
+    }
+    return false
+  }
+
+  async isSuccessfulBountyWithdrawalStage(bounty: Bounty): Promise<boolean> {
+    if (bounty.milestone.isOfType('JudgmentSubmitted')) {
+      const successfulBounty = bounty.milestone.asType('JudgmentSubmitted').successful_bounty
+      return successfulBounty.isTrue
+    }
+    return false
+  }
+
+  // ---------------------------------
+  // BOUNTY STAGE CALCULATION HELPERS
+  // ---------------------------------
+
+  // Checks whether the minimum funding reached for the bounty.
+  protected minimumFundingReached(bounty: Bounty): boolean {
+    if (bounty.creation_params.funding_type.isOfType('Perpetual')) {
+      // There is no minimum for the perpetual
+      // funding type - only maximum (target)
+      return false
+    }
+    const minFundingAmount = bounty.creation_params.funding_type.asType('Limited').min_funding_amount.toNumber()
+    return bounty.total_funding.toNumber() >= minFundingAmount
+  }
+
+  async fundingPeriodExpired(bounty: Bounty): Promise<boolean> {
+    // Prepetual funding never expires
+    if (bounty.creation_params.funding_type.isOfType('Perpetual')) {
+      return false
+    }
+    // Ensure if limited funding has expired
+    const createdAt = bounty.milestone.asType('Created').created_at.toNumber()
+    const currentBlock = (await this.getOriginalApi().query.system.number()).toNumber()
+    const fundingPeriod = bounty.creation_params.funding_type.asType('Limited').funding_period.toNumber()
+
+    return createdAt + fundingPeriod < currentBlock
+  }
+
+  // Checks whether the work period expired by now starting from the provided block number.
+  async workPeriodExpired(bounty: Bounty, workPeriodStartedAt: number): Promise<boolean> {
+    const currentBlock = (await this.getOriginalApi().query.system.number()).toNumber()
+    return workPeriodStartedAt + bounty.creation_params.work_period.toNumber() < currentBlock
+  }
+
+  // Checks whether the judgment period expired by now when
+  // work period start from the provided block number.
+  async judgmentPeriodExpired(bounty: Bounty, workPeriodStartedAt: number): Promise<boolean> {
+    const currentBlock = (await this.getOriginalApi().query.system.number()).toNumber()
+    return (
+      workPeriodStartedAt +
+        bounty.creation_params.work_period.toNumber() +
+        bounty.creation_params.judging_period.toNumber() <
+      currentBlock
+    )
+  }
+
+  // ----------------------------------------------------------------
 
   async ensureBountyCanBeCanceled(bountyId: BountyId, creator: BountyActor): Promise<void> {
     const bounty = await this.getApi().bountyById(bountyId)
@@ -149,7 +319,7 @@ export default abstract class BountyCommandBase extends RolesCommandBase {
     }
   }
 
-  async getBountyActor(context: typeof CREATOR_CONTEXTS[number]): Promise<[BountyActor, string]> {
+  async getBountyActor(context: typeof BOUNTY_ACTOR_CONTEXTS[number]): Promise<[BountyActor, string]> {
     let bountyActorContext: [BountyActor, string]
 
     if (context === 'Member') {
