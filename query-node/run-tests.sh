@@ -8,17 +8,20 @@ set -a
 . ../.env
 set +a
 
-function cleanup() {
-    # Show tail end of logs for the processor and indexer containers to
-    # see any possible errors
-    (echo "\n\n## Processor Logs ##" && docker logs joystream_processor_1 --tail 50) || :
-    (echo "\n\n## Indexer Logs ##" && docker logs joystream_indexer_1 --tail 50) || :
-    (echo "\n\n## Indexer API Gateway Logs ##" && docker logs joystream_hydra-indexer-gateway_1 --tail 50) || :
-    (echo "\n\n## Graphql Server Logs ##" && docker logs joystream_graphql-server_1 --tail 50) || :
-    docker-compose down -v
-}
+if [ "${PERSIST}" != true ]
+then
+  function cleanup() {
+      # Show tail end of logs for the processor and indexer containers to
+      # see any possible errors
+      (echo "\n\n## Processor Logs ##" && docker logs joystream_processor_1 --tail 50) || :
+      (echo "\n\n## Indexer Logs ##" && docker logs joystream_indexer_1 --tail 50) || :
+      (echo "\n\n## Indexer API Gateway Logs ##" && docker logs joystream_hydra-indexer-gateway_1 --tail 50) || :
+      (echo "\n\n## Graphql Server Logs ##" && docker logs joystream_graphql-server_1 --tail 50) || :
+      docker-compose down -v
+  }
 
-trap cleanup EXIT
+  trap cleanup EXIT
+fi
 
 # Clean start
 docker-compose down -v
