@@ -83,12 +83,12 @@ export const WorkingGroupDef = {
   Forum: Null,
   Storage: Null,
   Content: Null,
-  Membership: Null,
   OperationsAlpha: Null,
   Gateway: Null,
   Distribution: Null,
   OperationsBeta: Null,
   OperationsGamma: Null,
+  Membership: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
