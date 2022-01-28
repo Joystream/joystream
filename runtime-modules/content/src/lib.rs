@@ -55,7 +55,7 @@ use sp_runtime::{
 use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    frame_system::Trait
+frame_system::Trait
     + ContentActorAuthenticator
     + Clone
     + membership::Trait
@@ -474,7 +474,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
 
-        // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel(
             origin,
@@ -1504,11 +1503,11 @@ decl_module! {
             //
 
             // Issue NFT
-                let video = video.set_nft_status(OwnedNFT::new(
-                    nft_owner,
-                    params.royalty.clone(),
-                    transactional_status,
-                ));
+            let video = video.set_nft_status(OwnedNFT::new(
+                nft_owner,
+                params.royalty.clone(),
+                transactional_status,
+            ));
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -2266,14 +2265,14 @@ impl<T: Trait> Module<T> {
     pub fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
     ) -> Result<
-        TransactionalStatus<
-            <T as frame_system::Trait>::BlockNumber,
-            <T as common::MembershipTypes>::MemberId,
-            <T as frame_system::Trait>::AccountId,
-            CurrencyOf<T>,
-        >,
+            TransactionalStatus<
+                    <T as frame_system::Trait>::BlockNumber,
+                <T as common::MembershipTypes>::MemberId,
+                <T as frame_system::Trait>::AccountId,
+                CurrencyOf<T>,
+                >,
         DispatchError,
-    > {
+        > {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::Idle),
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
@@ -2380,44 +2379,44 @@ decl_event!(
     where
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
-            <T as ContentActorAuthenticator>::CuratorId,
-            <T as common::MembershipTypes>::MemberId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as common::MembershipTypes>::MemberId,
         >,
-        MemberId = <T as common::MembershipTypes>::MemberId,
-        CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
-        CuratorId = <T as ContentActorAuthenticator>::CuratorId,
-        VideoId = <T as Trait>::VideoId,
-        VideoCategoryId = <T as Trait>::VideoCategoryId,
-        ChannelId = <T as storage::Trait>::ChannelId,
-        ChannelCategoryId = <T as Trait>::ChannelCategoryId,
-        ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
-        PlaylistId = <T as Trait>::PlaylistId,
-        SeriesId = <T as Trait>::SeriesId,
-        PersonId = <T as Trait>::PersonId,
-        ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-        Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
-        Channel = Channel<T>,
-        DataObjectId = DataObjectId<T>,
-        IsCensored = bool,
-        AuctionParams = AuctionParams<
-            <T as frame_system::Trait>::BlockNumber,
-            CurrencyOf<T>,
-            <T as common::MembershipTypes>::MemberId,
-        >,
-        InitTransactionalStatus = InitTransactionalStatus<T>,
-        Balance = BalanceOf<T>,
-        CurrencyAmount = CurrencyOf<T>,
-        ChannelCreationParameters = ChannelCreationParameters<T>,
-        ChannelUpdateParameters = ChannelUpdateParameters<T>,
-        VideoCreationParameters = VideoCreationParameters<T>,
-        VideoUpdateParameters = VideoUpdateParameters<T>,
-        StorageAssets = StorageAssets<T>,
-        VideoPost = VideoPost<T>,
-        VideoPostId = <T as Trait>::VideoPostId,
-        ReactionId = <T as Trait>::ReactionId,
-        ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
-        Hash = <T as frame_system::Trait>::Hash,
-        IsExtended = bool,
+    MemberId = <T as common::MembershipTypes>::MemberId,
+    CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
+    CuratorId = <T as ContentActorAuthenticator>::CuratorId,
+    VideoId = <T as Trait>::VideoId,
+    VideoCategoryId = <T as Trait>::VideoCategoryId,
+    ChannelId = <T as storage::Trait>::ChannelId,
+    ChannelCategoryId = <T as Trait>::ChannelCategoryId,
+    ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
+    PlaylistId = <T as Trait>::PlaylistId,
+    SeriesId = <T as Trait>::SeriesId,
+    PersonId = <T as Trait>::PersonId,
+    ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
+    Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
+    Channel = Channel<T>,
+    DataObjectId = DataObjectId<T>,
+    IsCensored = bool,
+    AuctionParams = AuctionParams<
+        <T as frame_system::Trait>::BlockNumber,
+    CurrencyOf<T>,
+    <T as common::MembershipTypes>::MemberId,
+    >,
+    InitTransactionalStatus = InitTransactionalStatus<T>,
+    Balance = BalanceOf<T>,
+    CurrencyAmount = CurrencyOf<T>,
+    ChannelCreationParameters = ChannelCreationParameters<T>,
+    ChannelUpdateParameters = ChannelUpdateParameters<T>,
+    VideoCreationParameters = VideoCreationParameters<T>,
+    VideoUpdateParameters = VideoUpdateParameters<T>,
+    StorageAssets = StorageAssets<T>,
+    VideoPost = VideoPost<T>,
+    VideoPostId = <T as Trait>::VideoPostId,
+    ReactionId = <T as Trait>::ReactionId,
+    ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
+    Hash = <T as frame_system::Trait>::Hash,
+    IsExtended = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
