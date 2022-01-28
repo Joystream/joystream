@@ -17,6 +17,7 @@ import {
   IVideoCategoryMetadata,
   IChannelCategoryMetadata,
   IBountyMetadata,
+  IBountyWorkData,
 } from '@joystream/metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
@@ -198,10 +199,23 @@ export type BountyInputParameters = IBountyMetadata & {
   cherry: number
   entrantStake: number
   // TODO: can this be improved?
-  fundingType: FundingTypeLimited & FundingTypePrepetual
+  fundingType: FundingTypeLimited | FundingTypePrepetual
   workPeriod: number
   judgementPeriod: number
 }
+
+export type BountyWorkDataInputParameters = IBountyWorkData
+
+export type Winner = {
+  reward: number
+}
+
+export enum Rejected {}
+
+export type OracleJudgmentInputParameters = {
+  entryId: number
+  judgment: Winner | Rejected
+}[]
 
 type AnyNonObject = string | number | boolean | any[] | Long
 
