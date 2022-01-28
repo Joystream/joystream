@@ -1495,12 +1495,9 @@ decl_module! {
                 Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
             }
 
-            if InitTransactionalStatus::<T>::Auction(auction_params)
-                = &params.init_transactional_status {
-                    Self::validate_auction_params(&auction_params)?;
-                }
-
-            let transactional_status = params.init_transactional_status.clone().try_into()?;
+            let transactional_status = Self::ensure_valid_init_transactional_status(
+                &params.init_transactional_status
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -2263,6 +2260,33 @@ impl<T: Trait> Module<T> {
             Ok(reward_account)
         } else {
             Err(Error::<T>::RewardAccountIsNotSet)
+        }
+    }
+
+    pub fn ensure_valid_init_transactional_status(
+        init_status: &InitTransactionalStatus<T>,
+    ) -> Result<
+        TransactionalStatus<
+            <T as frame_system::Trait>::BlockNumber,
+            <T as common::MembershipTypes>::MemberId,
+            <T as frame_system::Trait>::AccountId,
+            CurrencyOf<T>,
+        >,
+        DispatchError,
+    > {
+        match init_status {
+            InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::Idle),
+            InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
+                TransactionalStatus::InitiatedOfferToMember(member.clone(), balance.clone()),
+            ),
+            InitTransactionalStatus::<T>::Auction(params) => {
+                Self::validate_auction_params(&params)?;
+                let mut auction = AuctionRecord::new(params.clone());
+                if params.starts_at.is_none() {
+                    auction.starts_at = <frame_system::Module<T>>::block_number();
+                }
+                Ok(TransactionalStatus::Auction(auction))
+            }
         }
     }
 

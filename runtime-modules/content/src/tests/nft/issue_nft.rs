@@ -41,7 +41,7 @@ fn issue_nft() {
         let nft_status = Some(OwnedNFT::new(
             NFTOwner::ChannelOwner,
             None,
-            InitTransactionalStatus::<Test>::default().into(),
+            TransactionalStatus::Idle,
         ));
         assert_eq!(nft_status, Content::video_by_id(video_id).nft_status);
 
