@@ -519,12 +519,11 @@ pub type NFTIssuanceParameters<T> = NFTIssuanceParametersRecord<
 pub enum InitTransactionalStatusRecord<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
-    AccountId: Default + Clone + Ord,
     Balance: Default + Clone + BaseArithmetic,
 > {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionRecord<BlockNumber, Balance, MemberId, AccountId>),
+    Auction(AuctionParameters<BlockNumber, Balance, MemberId>),
 }
 
 impl<
@@ -539,34 +538,8 @@ impl<
     }
 }
 
-impl<
-        BlockNumber: BaseArithmetic + Copy + Default,
-        MemberId: Default + Copy + Ord,
-        AccountId: Default + Clone + Ord,
-        Balance: Default + Clone + BaseArithmetic,
-    > From<InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>>
-    for TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>
-{
-    fn from(
-        item: InitTransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
-    ) -> Self {
-        match item {
-            InitTransactionalStatusRecord::<
-                    BlockNumber, MemberId, AccountId, Balance>::Idle =>
-                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::Idle,
-            InitTransactionalStatusRecord::<
-                    BlockNumber, MemberId, AccountId, Balance>::InitiatedOfferToMember(id, amount) =>
-                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::InitiatedOfferToMember(id, amount),
-            InitTransactionalStatusRecord::<
-                    BlockNumber, MemberId, AccountId, Balance>::Auction(params) =>
-                TransactionalStatus::<BlockNumber, MemberId, AccountId, Balance>::Auction(params)
-            }
-    }
-}
-
 pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
     <T as frame_system::Trait>::BlockNumber,
     <T as common::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
     CurrencyOf<T>,
 >;
