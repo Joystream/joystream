@@ -91,10 +91,12 @@ export abstract class BaseFixture {
 
 export abstract class BaseQueryNodeFixture extends BaseFixture {
   protected readonly query: QueryNodeApi
+  public readonly queryNodeChecksEnabled: boolean
 
   constructor(api: Api, query: QueryNodeApi) {
     super(api)
     this.query = query
+    this.queryNodeChecksEnabled = !process.env.SKIP_QUERY_NODE_CHECKS
   }
 
   public async runQueryNodeChecks(): Promise<void> {

@@ -8,7 +8,6 @@ import { Worker, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { lockIdByWorkingGroup } from '../../consts'
 import { StakeSlashedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
 export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
@@ -36,7 +35,7 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
   protected async loadWorkersData(): Promise<void> {
     this.workers = await this.api.query[this.group].workerById.multi<Worker>(this.workerIds)
     this.workerStakes = await Promise.all(
-      this.workers.map((w) => this.api.getStakedBalance(w.staking_account_id, lockIdByWorkingGroup[this.group]))
+      this.workers.map((w) => this.api.getStakedBalance(w.staking_account_id, this.api.lockIdByGroup(this.group)))
     )
   }
 

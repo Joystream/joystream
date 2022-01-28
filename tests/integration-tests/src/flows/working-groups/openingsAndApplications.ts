@@ -85,9 +85,9 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
       const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
       // Create some applications
-      const roleAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map((kp) => kp.address)
-      const stakingAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map((kp) => kp.address)
-      const rewardAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map((kp) => kp.address)
+      const roleAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map(({ key }) => key.address)
+      const stakingAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map(({ key }) => key.address)
+      const rewardAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map(({ key }) => key.address)
 
       const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, roleAccounts)
       await new FixtureRunner(buyMembershipFixture).run()

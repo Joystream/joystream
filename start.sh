@@ -3,7 +3,7 @@ set -e
 
 # Run a complete joystream development network on your machine using docker
 
-INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setup-new-chain}
+INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setupNewChain}
 
 if [ "${PERSIST}" == true ]
 then
@@ -26,15 +26,13 @@ docker-compose up -d joystream-node
 
 ## Init the chain with some state
 export SKIP_MOCK_CONTENT=true
+export SKIP_QUERY_NODE_CHECKS=true
 # TODO: Move back to this approach once Giza<->Olympia integration tests merged
 # HOST_IP=$(tests/network-tests/get-host-ip.sh)
 # export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 # export COLOSSUS_1_TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
 # export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
-./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
-
-## Set sudo as the membership screening authority
-yarn workspace api-scripts set-sudo-as-screening-auth
+./tests/integration-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
 ## Member faucet
 docker-compose up -d faucet

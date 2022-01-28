@@ -51,7 +51,10 @@ export class NotEnoughCandidatesFixture extends BaseQueryNodeFixture {
       councilMemberIds.map((item) => item.toString()),
       councilMembersEnding.map((item) => item.membership_id.toString())
     )
+  }
 
+  public async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }

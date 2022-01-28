@@ -54,7 +54,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
       }
     }
 
-    const memberKeys = (await api.createKeyPairs(testCases.length)).map((key) => key.address)
+    const memberKeys = (await api.createKeyPairs(testCases.length)).map(({ key }) => key.address)
     const membersFixture = new BuyMembershipHappyCaseFixture(api, query, memberKeys)
     await new FixtureRunner(membersFixture).run()
     const memberIds = membersFixture.getCreatedMembers()

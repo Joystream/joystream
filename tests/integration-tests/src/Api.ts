@@ -4,14 +4,13 @@ import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { AccountId, MemberId, PostId, ThreadId } from '@joystream/types/common'
 
-import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
 
-import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import {
@@ -46,19 +45,44 @@ import {
 import { DeriveAllSections } from '@polkadot/api/util/decorate'
 import { ExactDerive } from '@polkadot/api-derive'
 import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
-import { BLOCKTIME, proposalTypeToProposalParamsKey } from './consts'
+import {
+  BLOCKTIME,
+  KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
+  proposalTypeToProposalParamsKey,
+  workingGroupNameByModuleName,
+} from './consts'
 import { CategoryId } from '@joystream/types/forum'
+
+export type KeyGenInfo = {
+  start: number
+  final: number
+  custom: string[]
+}
 
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
+  // number used as part of key derivation path
+  private keyId = 0
+  // stores names of the created custom keys
+  private customKeys: string[] = []
+  // mapping from account address to key id.
+  // To be able to re-derive keypair externally when mini-secret is known.
+  readonly addressesToKeyId: Map<string, number> = new Map()
+  // mapping from account address to suri.
+  // To be able to get the suri of a known key for the purpose of, for example, interacting with the CLIs
+  readonly addressesToSuri: Map<string, string>
+  // mini secret used in SURI key derivation path
+  private readonly miniSecret: string
+
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string
+    sudoAccountUri: string,
+    miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
     let connectAttempts = 0
@@ -66,16 +90,16 @@ export class ApiFactory {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = await ApiPromise.create({ provider, types })
+        const api = new ApiPromise({ provider, types })
 
         // Wait for api to be connected and ready
-        await api.isReady
+        await api.isReadyOrError
 
         // If a node was just started up it might take a few seconds to start producing blocks
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -85,32 +109,83 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
+    this.miniSecret = miniSecret
+    this.addressesToKeyId = new Map()
+    this.addressesToSuri = new Map()
+    this.keyId = 0
   }
 
   public getApi(label: string): Api {
-    return new Api(this.api, this.treasuryAccount, this.keyring, label)
+    return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    const keys: { key: KeyringPair; id: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const id = this.keyId++
+      const key = this.createKeyPair(`${id}`)
+      keys.push({ key, id })
+      this.addressesToKeyId.set(key.address, id)
+    }
+    return keys
+  }
+
+  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+    if (isCustom) {
+      this.customKeys.push(suriPath)
+    }
+    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const pair = this.keyring.addFromUri(uri)
+    this.addressesToSuri.set(pair.address, uri)
+    return pair
+  }
+
+  public createCustomKeyPair(customPath: string): KeyringPair {
+    return this.createKeyPair(customPath, true)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    const start = 0
+    const final = this.keyId
+    return {
+      start,
+      final,
+      custom: this.customKeys,
+    }
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return Object.fromEntries(this.addressesToKeyId)
+  }
+
+  public getKeypair(address: AccountId | string): KeyringPair {
+    return this.keyring.getPair(address)
+  }
+
+  public getSuri(address: AccountId | string): string {
+    const suri = this.addressesToSuri.get(address.toString())
+    if (!suri) {
+      throw new Error(`Suri for address ${address} not available!`)
+    }
+    return suri
   }
 }
 
 export class Api {
+  private readonly factory: ApiFactory
   private readonly api: ApiPromise
   private readonly sender: Sender
-  private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+  constructor(factory: ApiFactory, api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.factory = factory
     this.api = api
-    this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
   }
@@ -175,20 +250,24 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  // Create new keys and store them in the shared keyring
-  public async createKeyPairs(n: number, withExistentialDeposit = true): Promise<KeyringPair[]> {
-    const nKeyPairs: KeyringPair[] = []
-    for (let i = 0; i < n; i++) {
-      // What are risks of generating duplicate keys this way?
-      // Why not use a deterministic /TestKeys/N and increment N
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
-    }
+  public async createKeyPairs(n: number, withExistentialDeposit = true): Promise<{ key: KeyringPair; id: number }[]> {
+    const pairs = this.factory.createKeyPairs(n)
     if (withExistentialDeposit) {
-      await Promise.all(
-        nKeyPairs.map(({ address }) => this.treasuryTransferBalance(address, this.existentialDeposit()))
-      )
+      await Promise.all(pairs.map(({ key }) => this.treasuryTransferBalance(key.address, this.existentialDeposit())))
     }
-    return nKeyPairs
+    return pairs
+  }
+
+  public createCustomKeyPair(path: string): KeyringPair {
+    return this.factory.createCustomKeyPair(path)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    return this.factory.keyGenInfo()
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return this.factory.getAllGeneratedAccounts()
   }
 
   public getBlockDuration(): BN {
@@ -220,7 +299,7 @@ export class Api {
     return accountData.data.free
   }
 
-  public async getStakedBalance(address: string | AccountId, lockId?: string): Promise<BN> {
+  public async getStakedBalance(address: string | AccountId, lockId?: LockIdentifier | string): Promise<BN> {
     const locks = await this.api.query.balances.locks(address)
     if (lockId) {
       const foundLock = locks.find((l) => l.id.eq(lockId))
@@ -426,6 +505,54 @@ export class Api {
     return await this.api.query[group].workerById(leadId.unwrap())
   }
 
+  public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
+    return (await this.api.query[group].workerById.entries<Worker>()).map(
+      ([
+        {
+          args: [id],
+        },
+      ]) => id
+    )
+  }
+
+  async assignWorkerRoleAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
+    account: string
+  ): Promise<ISubmittableResult> {
+    const worker = await this.api.query[group].workerById(workerId)
+    if (worker.isEmpty) {
+      throw new Error(`Worker not found by id: ${workerId}!`)
+    }
+
+    const memberController = await this.getControllerAccountOfMember(worker.member_id)
+    // there cannot be a worker associated with member that does not exist
+    if (!memberController) {
+      throw new Error('Member controller not found')
+    }
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of caller to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    await this.prepareAccountsForFeeExpenses(memberController, [updateRoleAccountCall])
+    return this.sender.signAndSend(updateRoleAccountCall, memberController)
+  }
+
+  async assignWorkerWellknownAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
+    initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
+  ): Promise<ISubmittableResult[]> {
+    // path to append to base SURI
+    const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return Promise.all([
+      this.assignWorkerRoleAccount(group, workerId, account),
+      this.treasuryTransferBalance(account, initialBalance),
+    ])
+  }
+
   public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
     return (await this.getLeader(group)).role_account_id.toString()
   }
@@ -605,5 +732,9 @@ export class Api {
       ...details,
       postId: details.event.data[0] as PostId,
     }
+  }
+
+  lockIdByGroup(group: WorkingGroupModuleName): LockIdentifier {
+    return this.api.consts[group].stakingHandlerLockId
   }
 }

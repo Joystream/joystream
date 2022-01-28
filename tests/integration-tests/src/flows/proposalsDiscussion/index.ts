@@ -23,7 +23,7 @@ export default async function proposalsDiscussion({ api, query, lock }: FlowProp
   api.enableDebugTxLogs()
 
   const threadsN = 3
-  const accounts = (await api.createKeyPairs(threadsN)).map((kp) => kp.address)
+  const accounts = (await api.createKeyPairs(threadsN)).map(({ key }) => key.address)
 
   const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
   await new FixtureRunner(buyMembershipsFixture).run()

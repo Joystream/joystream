@@ -36,7 +36,7 @@ export default async function workerActions({ api, query, env }: FlowProps): Pro
       // Independent updates that don't interfere with each other
       const workerUpdatesRunners: FixtureRunner[] = []
 
-      const newRoleAccounts = (await api.createKeyPairs(WORKERS_N)).map((kp) => kp.address)
+      const newRoleAccounts = (await api.createKeyPairs(WORKERS_N)).map(({ key }) => key.address)
       const updateRoleAccountsFixture = new UpdateWorkerRoleAccountsFixture(
         api,
         query,
@@ -48,7 +48,7 @@ export default async function workerActions({ api, query, env }: FlowProps): Pro
       await updateRoleAccountsRunner.run()
       workerUpdatesRunners.push(updateRoleAccountsRunner)
 
-      const newRewardAccounts = (await api.createKeyPairs(WORKERS_N)).map((kp) => kp.address)
+      const newRewardAccounts = (await api.createKeyPairs(WORKERS_N)).map(({ key }) => key.address)
       const updateRewardAccountsFixture = new UpdateWorkerRewardAccountsFixture(
         api,
         query,
