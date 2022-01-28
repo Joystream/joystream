@@ -55,7 +55,7 @@ use sp_runtime::{
 use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-frame_system::Trait
+    frame_system::Trait
     + ContentActorAuthenticator
     + Clone
     + membership::Trait
@@ -66,9 +66,6 @@ frame_system::Trait
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
-    /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
-    type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
-
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
@@ -77,18 +74,6 @@ frame_system::Trait
 
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
-
-    /// Type of identifier for Playlists
-    type PlaylistId: NumericIdentifier;
-
-    /// Type of identifier for Persons
-    type PersonId: NumericIdentifier;
-
-    /// Type of identifier for Channels
-    type SeriesId: NumericIdentifier;
-
-    /// Type of identifier for Channel transfer requests
-    type ChannelOwnershipTransferRequestId: NumericIdentifier;
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
@@ -140,14 +125,6 @@ decl_storage! {
         pub VideoCategoryById get(fn video_category_by_id):
         map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
-        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId>;
-
-        pub SeriesById get(fn series_by_id):
-        map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
-
-        pub PersonById get(fn person_by_id):
-        map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
@@ -155,15 +132,6 @@ decl_storage! {
         pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
-
-        pub NextPlaylistId get(fn next_playlist_id) config(): T::PlaylistId;
-
-        pub NextPersonId get(fn next_person_id) config(): T::PersonId;
-
-        pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
-
-        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config():
-        T::ChannelOwnershipTransferRequestId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -753,26 +721,23 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
-            let nft_status = params.auto_issue_nft.map(|issuance_params| {
-                let transactional_status = Self::ensure_valid_init_transactional_status(
-                    &params.init_transactional_status
-                );
-                Ok(OwnedNFT::new(
-                    nft_owner,
-                    params.royalty.clone(),
-                    transactional_status,
-                ))
-            })?;
+            let nft_status = params.auto_issue_nft
+                .as_ref()
+                .map_or(
+                    Ok(None),
+                    |issuance_params| {
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                    }
+            )?;
 
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                in_series: None,
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 /// Newly created video has no nft
-                nft_status: None,
+                nft_status: nft_status,
             };
 
             //
@@ -879,9 +844,6 @@ decl_module! {
                 &channel,
             )?;
 
-            // ensure video can be removed
-            Self::ensure_video_can_be_removed(&video)?;
-
             // Ensure nft for this video have not been issued
             video.ensure_nft_is_not_issued::<T>()?;
 
@@ -932,36 +894,6 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: PlaylistCreationParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _playlist: T::PlaylistId,
-            _params: PlaylistUpdateParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _playlist: T::PlaylistId,
-        ) {
-            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1041,54 +973,6 @@ decl_module! {
 
             Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
         }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-            _params: PersonUpdateParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_person_to_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId,
-            _person: T::PersonId
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_person_from_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId
-        ) {
-            Self::not_implemented()?;
-        }
-
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_censorship_status(
             origin,
@@ -1128,35 +1012,6 @@ decl_module! {
                 ));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _series: T::SeriesId,
-        ) {
-            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1493,32 +1348,14 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_owner = if let Some(to) = params.non_channel_owner.as_ref() {
-                NFTOwner::Member(to.clone())
-            } else {
-                // if `to` set to None, actor issues to ChannelOwner
-                NFTOwner::ChannelOwner
-            };
-
-            // Enure royalty bounds satisfied, if provided
-            if let Some(royalty) = params.royalty.as_ref() {
-                Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
-            }
-
-            let transactional_status = Self::ensure_valid_init_transactional_status(
-                &params.init_transactional_status
-            )?;
+            let nft_status = Self::construct_owned_nft(&params)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Issue NFT
-            let video = video.set_nft_status(OwnedNFT::new(
-                nft_owner,
-                params.royalty.clone(),
-                transactional_status,
-            ));
+            let video = video.set_nft_status(nft_status);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -2192,12 +2029,6 @@ impl<T: Trait> Module<T> {
         Ok(VideoById::<T>::get(video_id))
     }
 
-    // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
-        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
-        Ok(())
-    }
-
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -2227,10 +2058,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::VideoPostDoesNotExist
         );
         Ok(VideoPostById::<T>::get(video_id, post_id))
-    }
-
-    fn not_implemented() -> DispatchResult {
-        Err(Error::<T>::FeatureNotImplemented.into())
     }
 
     fn refund(
@@ -2276,14 +2103,14 @@ impl<T: Trait> Module<T> {
     pub fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
     ) -> Result<
-            TransactionalStatus<
-                    <T as frame_system::Trait>::BlockNumber,
-                <T as common::MembershipTypes>::MemberId,
-                <T as frame_system::Trait>::AccountId,
-                CurrencyOf<T>,
-                >,
+        TransactionalStatus<
+            <T as frame_system::Trait>::BlockNumber,
+            <T as common::MembershipTypes>::MemberId,
+            <T as frame_system::Trait>::AccountId,
+            CurrencyOf<T>,
+        >,
         DispatchError,
-        > {
+    > {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::Idle),
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
@@ -2298,6 +2125,32 @@ impl<T: Trait> Module<T> {
                 Ok(TransactionalStatus::Auction(auction))
             }
         }
+    }
+
+    pub fn construct_owned_nft(
+        issuance_params: &NFTIssuanceParameters<T>,
+    ) -> Result<Nft<T>, DispatchError> {
+        let transactional_status = Self::ensure_valid_init_transactional_status(
+            &issuance_params.init_transactional_status,
+        )?;
+        // The content owner will be..
+        let nft_owner = if let Some(to) = issuance_params.non_channel_owner.as_ref() {
+            NFTOwner::Member(to.clone())
+        } else {
+            // if `to` set to None, actor issues to ChannelOwner
+            NFTOwner::ChannelOwner
+        };
+
+        // Enure royalty bounds satisfied, if provided
+        if let Some(royalty) = issuance_params.royalty.as_ref() {
+            Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
+        }
+
+        Ok(Nft::<T>::new(
+            nft_owner,
+            issuance_params.royalty.clone(),
+            transactional_status,
+        ))
     }
 
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
@@ -2390,44 +2243,37 @@ decl_event!(
     where
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as ContentActorAuthenticator>::CuratorId,
-        <T as common::MembershipTypes>::MemberId,
+            <T as ContentActorAuthenticator>::CuratorId,
+            <T as common::MembershipTypes>::MemberId,
         >,
-    MemberId = <T as common::MembershipTypes>::MemberId,
-    CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
-    CuratorId = <T as ContentActorAuthenticator>::CuratorId,
-    VideoId = <T as Trait>::VideoId,
-    VideoCategoryId = <T as Trait>::VideoCategoryId,
-    ChannelId = <T as storage::Trait>::ChannelId,
-    ChannelCategoryId = <T as Trait>::ChannelCategoryId,
-    ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
-    PlaylistId = <T as Trait>::PlaylistId,
-    SeriesId = <T as Trait>::SeriesId,
-    PersonId = <T as Trait>::PersonId,
-    ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-    Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
-    Channel = Channel<T>,
-    DataObjectId = DataObjectId<T>,
-    IsCensored = bool,
-    AuctionParams = AuctionParams<
-        <T as frame_system::Trait>::BlockNumber,
-    CurrencyOf<T>,
-    <T as common::MembershipTypes>::MemberId,
-    >,
-    InitTransactionalStatus = InitTransactionalStatus<T>,
-    Balance = BalanceOf<T>,
-    CurrencyAmount = CurrencyOf<T>,
-    ChannelCreationParameters = ChannelCreationParameters<T>,
-    ChannelUpdateParameters = ChannelUpdateParameters<T>,
-    VideoCreationParameters = VideoCreationParameters<T>,
-    VideoUpdateParameters = VideoUpdateParameters<T>,
-    StorageAssets = StorageAssets<T>,
-    VideoPost = VideoPost<T>,
-    VideoPostId = <T as Trait>::VideoPostId,
-    ReactionId = <T as Trait>::ReactionId,
-    ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
-    Hash = <T as frame_system::Trait>::Hash,
-    IsExtended = bool,
+        MemberId = <T as common::MembershipTypes>::MemberId,
+        CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
+        CuratorId = <T as ContentActorAuthenticator>::CuratorId,
+        VideoId = <T as Trait>::VideoId,
+        VideoCategoryId = <T as Trait>::VideoCategoryId,
+        ChannelId = <T as storage::Trait>::ChannelId,
+        ChannelCategoryId = <T as Trait>::ChannelCategoryId,
+        Channel = Channel<T>,
+        DataObjectId = DataObjectId<T>,
+        IsCensored = bool,
+        AuctionParams = AuctionParams<
+            <T as frame_system::Trait>::BlockNumber,
+            CurrencyOf<T>,
+            <T as common::MembershipTypes>::MemberId,
+        >,
+        InitTransactionalStatus = InitTransactionalStatus<T>,
+        Balance = BalanceOf<T>,
+        CurrencyAmount = CurrencyOf<T>,
+        ChannelCreationParameters = ChannelCreationParameters<T>,
+        ChannelUpdateParameters = ChannelUpdateParameters<T>,
+        VideoCreationParameters = VideoCreationParameters<T>,
+        VideoUpdateParameters = VideoUpdateParameters<T>,
+        VideoPost = VideoPost<T>,
+        VideoPostId = <T as Trait>::VideoPostId,
+        ReactionId = <T as Trait>::ReactionId,
+        ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
+        Hash = <T as frame_system::Trait>::Hash,
+        IsExtended = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2439,6 +2285,7 @@ decl_event!(
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
+        ChannelDeleted(ContentActor, ChannelId),
 
         ChannelCensorshipStatusUpdated(
             ContentActor,
@@ -2446,15 +2293,6 @@ decl_event!(
             IsCensored,
             Vec<u8>, /* rationale */
         ),
-
-        // Channel Ownership Transfers
-        ChannelOwnershipTransferRequested(
-            ContentActor,
-            ChannelOwnershipTransferRequestId,
-            ChannelOwnershipTransferRequest,
-        ),
-        ChannelOwnershipTransferRequestWithdrawn(ContentActor, ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(ContentActor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -2491,44 +2329,6 @@ decl_event!(
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),
-
-        // Video Playlists
-        PlaylistCreated(ContentActor, PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(ContentActor, PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(ContentActor, PlaylistId),
-
-        // Series
-        SeriesCreated(
-            ContentActor,
-            SeriesId,
-            StorageAssets,
-            SeriesParameters<VideoId, StorageAssets>,
-            Series,
-        ),
-        SeriesUpdated(
-            ContentActor,
-            SeriesId,
-            StorageAssets,
-            SeriesParameters<VideoId, StorageAssets>,
-            Series,
-        ),
-        SeriesDeleted(ContentActor, SeriesId),
-
-        // Persons
-        PersonCreated(
-            ContentActor,
-            PersonId,
-            StorageAssets,
-            PersonCreationParameters<StorageAssets>,
-        ),
-        PersonUpdated(
-            ContentActor,
-            PersonId,
-            StorageAssets,
-            PersonUpdateParameters<StorageAssets>,
-        ),
-        PersonDeleted(ContentActor, PersonId),
-        ChannelDeleted(ContentActor, ChannelId),
 
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),

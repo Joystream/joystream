@@ -254,9 +254,9 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT> {
+pub struct VideoRecord<ChannelId, VideoPostId, OwnedNFT> {
+    /// channel the video is in
     pub in_channel: ChannelId,
-    pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// enable or not comments
@@ -267,146 +267,8 @@ pub struct VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT> {
     pub nft_status: Option<OwnedNFT>,
 }
 
-pub type Video<T> = VideoRecord<
-    <T as storage::Trait>::ChannelId,
-    <T as Trait>::SeriesId,
-    <T as Trait>::VideoPostId,
-    Nft<T>,
->;
-
-/// Information about the plyalist being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistCreationParameters {
-    /// Metadata about the playlist.
-    meta: Vec<u8>,
-}
-
-/// Information about the playlist being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistUpdateParameters {
-    // It is the only field so its not an Option
-    /// Metadata update for the playlist.
-    new_meta: Vec<u8>,
-}
-
-/// A playlist is an ordered collection of videos.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Playlist<ChannelId> {
-    /// The channel the playlist belongs to.
-    in_channel: ChannelId,
-}
-
-/// Information about the episode being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId, StorageAssets> {
-    /// A new video is being added as the episode.
-    NewVideo(VideoCreationParametersRecord<StorageAssets>),
-    /// An existing video is being made into an episode.
-    ExistingVideo(VideoId),
-}
-
-/// Information about the season being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId, StorageAssets> {
-    /// Season assets referenced by metadata
-    assets: Option<StorageAssets>,
-    // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
-    /// If set, updates the episodes of a season. Extends the number of episodes in a season
-    /// when length of new_episodes is greater than previously set. Last elements must all be
-    /// 'Some' in that case.
-    /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId, StorageAssets>>>>,
-
-    meta: Option<Vec<u8>>,
-}
-
-/// Information about the series being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId, StorageAssets> {
-    /// Series assets referenced by metadata
-    assets: Option<StorageAssets>,
-    // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
-    /// If set, updates the seasons of a series. Extend a series when length of seasons is
-    /// greater than previoulsy set. Last elements must all be 'Some' in that case.
-    /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId, StorageAssets>>>>,
-    meta: Option<Vec<u8>>,
-}
-
-/// A season is an ordered list of videos (episodes).
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Season<VideoId> {
-    episodes: Vec<VideoId>,
-}
-
-/// A series is an ordered list of seasons that belongs to a channel.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Series<ChannelId, VideoId> {
-    in_channel: ChannelId,
-    seasons: Vec<Season<VideoId>>,
-}
-
-/// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PersonActor<MemberId, CuratorId> {
-    Member(MemberId),
-    Curator(CuratorId),
-}
-
-/// The authorized actor that may update or delete a Person.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PersonController<MemberId> {
-    /// Member controls the person
-    Member(MemberId),
-    /// Any curator controls the person
-    Curators,
-}
-
-/// Default trait implemented only because its used in Person which needs to implement a Default trait
-/// since it is a StorageValue.
-impl<MemberId: Default> Default for PersonController<MemberId> {
-    fn default() -> Self {
-        PersonController::Member(MemberId::default())
-    }
-}
-
-/// Information for Person being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PersonCreationParameters<StorageAssets> {
-    /// Assets referenced by metadata
-    assets: StorageAssets,
-    /// Metadata for person.
-    meta: Vec<u8>,
-}
-
-/// Information for Persion being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonUpdateParameters<StorageAssets> {
-    /// Assets referenced by metadata
-    assets: Option<StorageAssets>,
-    /// Metadata to update person.
-    new_meta: Option<Vec<u8>>,
-}
-
-/// A Person represents a real person that may be associated with a video.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Person<MemberId> {
-    /// Who can update or delete this person.
-    controlled_by: PersonController<MemberId>,
-}
+pub type Video<T> =
+    VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::VideoPostId, Nft<T>>;
 
 pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
@@ -544,8 +406,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
-    VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT>
+impl<ChannelId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
+    VideoRecord<ChannelId, VideoPostId, OwnedNFT>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
