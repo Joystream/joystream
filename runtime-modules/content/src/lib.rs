@@ -1500,7 +1500,7 @@ decl_module! {
                     Self::validate_auction_params(&auction_params)?;
                 }
 
-            let transactional_status = params.init_transactional_status.clone().into();
+            let transactional_status = params.init_transactional_status.clone().try_into()?;
 
             //
             // == MUTATION SAFE ==
