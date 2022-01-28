@@ -407,9 +407,6 @@ impl Trait for Test {
     /// The overarching event type.
     type Event = MetaEvent;
 
-    /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
-    type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
-
     /// Type of identifier for Videos
     type VideoId = u64;
 
@@ -418,18 +415,6 @@ impl Trait for Test {
 
     /// Type of identifier for Channel Categories
     type ChannelCategoryId = u64;
-
-    /// Type of identifier for Playlists
-    type PlaylistId = u64;
-
-    /// Type of identifier for Persons
-    type PersonId = u64;
-
-    /// Type of identifier for Channels
-    type SeriesId = u64;
-
-    /// Type of identifier for Channel transfer requests
-    type ChannelOwnershipTransferRequestId = u64;
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -472,10 +457,6 @@ pub struct ExtBuilder {
     next_channel_id: u64,
     next_video_category_id: u64,
     next_video_id: u64,
-    next_playlist_id: u64,
-    next_person_id: u64,
-    next_series_id: u64,
-    next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
     next_video_post_id: u64,
     video_migration: VideoMigrationConfig<Test>,
@@ -554,10 +535,6 @@ impl ExtBuilder {
             next_channel_id: self.next_channel_id,
             next_video_category_id: self.next_video_category_id,
             next_video_id: self.next_video_id,
-            next_playlist_id: self.next_playlist_id,
-            next_person_id: self.next_person_id,
-            next_series_id: self.next_series_id,
-            next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
             next_video_post_id: self.next_video_post_id,
             video_migration: self.video_migration,
