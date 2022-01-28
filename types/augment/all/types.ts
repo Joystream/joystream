@@ -1289,12 +1289,12 @@ export interface WorkingGroup extends Enum {
   readonly isForum: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
-  readonly isMembership: boolean;
   readonly isOperationsAlpha: boolean;
   readonly isGateway: boolean;
   readonly isDistribution: boolean;
   readonly isOperationsBeta: boolean;
   readonly isOperationsGamma: boolean;
+  readonly isMembership: boolean;
 }
 
 export type PHANTOM_ALL = 'all';
