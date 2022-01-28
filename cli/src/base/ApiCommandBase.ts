@@ -114,7 +114,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async promptForApiUri(): Promise<string> {
-    let selectedNodeUri = await this.simplePrompt({
+    let selectedNodeUri = await this.simplePrompt<string>({
       type: 'list',
       message: 'Choose a node websocket api uri:',
       choices: [

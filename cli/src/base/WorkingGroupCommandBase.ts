@@ -75,7 +75,7 @@ export default abstract class WorkingGroupCommandBase extends MembershipsCommand
   }
 
   async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
-    const chosenWorkerIndex = await this.simplePrompt({
+    const chosenWorkerIndex = await this.simplePrompt<number>({
       message: `Choose the intended ${_.startCase(this.group)} Group Worker context:`,
       type: 'list',
       choices: groupMembers.map((groupMember, index) => ({

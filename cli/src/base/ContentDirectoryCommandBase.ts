@@ -45,7 +45,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
   async init(): Promise<void> {
     await super.init()
-    this.group = WorkingGroups.Curators // override group for RolesCommandBase
+    this._group = WorkingGroups.Curators // override group for RolesCommandBase
   }
 
   async promptForChannelCreationContext(
@@ -217,7 +217,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       this.warn('No Curator Groups to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
-    const selectedId = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedId = await this.simplePrompt<number>({ message, type: 'list', choices })
 
     return selectedId
   }
@@ -227,7 +227,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     if (!choices.length) {
       return []
     }
-    const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
+    const selectedIds = await this.simplePrompt<number[]>({ message, type: 'checkbox', choices })
 
     return selectedIds
   }
@@ -246,7 +246,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedCuratorId = await this.simplePrompt({
+    const selectedCuratorId = await this.simplePrompt<number>({
       message,
       type: 'list',
       choices,

@@ -22,7 +22,7 @@ export default abstract class WorkingGroupsCommandBase extends WorkingGroupComma
   }
 
   async promptForApplicationsToAccept(opening: OpeningDetails): Promise<number[]> {
-    const acceptedApplications = await this.simplePrompt({
+    const acceptedApplications = await this.simplePrompt<number[]>({
       message: 'Select succesful applicants',
       type: 'checkbox',
       choices: opening.applications.map((a) => ({
@@ -83,7 +83,7 @@ export default abstract class WorkingGroupsCommandBase extends WorkingGroupComma
     await super.init()
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
     if (flags.group) {
-      this.group = flags.group
+      this._group = flags.group
     }
     this.log(chalk.magentaBright('Current Group: ' + this.group))
   }
