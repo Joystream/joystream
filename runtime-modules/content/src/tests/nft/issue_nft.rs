@@ -206,3 +206,45 @@ fn issue_nft_royalty_bounds_violated() {
         assert_err!(issue_nft_result, Error::<Test>::RoyaltyLowerBoundExceeded);
     })
 }
+
+#[test]
+fn issue_nft_fails_with_invalid_auction_parameters() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let auction_params = AuctionParams {
+            starting_price: Content::min_starting_price() - 1,
+            buy_now_price: None,
+            auction_type: AuctionType::Open(OpenAuctionDetails {
+                bid_lock_duration: Content::min_bid_lock_duration(),
+            }),
+            minimal_bid_step: Content::min_bid_step(),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Make an attempt to issue nft with wrong credentials
+        let issue_nft_result = Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NFTIssuanceParameters::<Test> {
+                init_transactional_status: InitTransactionalStatus::<Test>::Auction(auction_params),
+                ..NFTIssuanceParameters::<Test>::default()
+            },
+        );
+
+        // Failure checked
+        assert_err!(
+            issue_nft_result,
+            Error::<Test>::StartingPriceLowerBoundExceeded
+        );
+    })
+}
