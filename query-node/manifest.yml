@@ -458,8 +458,6 @@ mappings:
     - event: proposalsEngine.ProposalCancelled
       handler: proposalsEngine_ProposalCancelled
     # Proposals discussion
-    - event: proposalsDiscussion.ThreadCreated
-      handler: proposalsDiscussion_ThreadCreated
     - event: proposalsDiscussion.PostCreated
       handler: proposalsDiscussion_PostCreated
     - event: proposalsDiscussion.PostUpdated
