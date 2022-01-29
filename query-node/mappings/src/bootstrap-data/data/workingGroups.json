@@ -16,11 +16,23 @@
     "budget": 0
   },
   {
-    "name": "operationsWorkingGroup",
+    "name": "operationsWorkingGroupAlpha",
     "budget": 0
   },
   {
     "name": "gatewayWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "distributionWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "operationsWorkingGroupBeta",
+    "budget": 0
+  },
+  {
+    "name": "operationsWorkingGroupGamma",
     "budget": 0
   }
 ]
