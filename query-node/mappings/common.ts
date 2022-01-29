@@ -6,6 +6,7 @@ import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 export const CURRENT_NETWORK = Network.GIZA
+
 /*
   Simple logger enabling error and informational reporting.
 
@@ -236,4 +237,11 @@ export async function getById<T extends BaseModel>(
   }
 
   return result
+}
+
+export function deterministicEntityId(createdInEvent: SubstrateEvent, additionalIdentifier?: string | number): string {
+  return (
+    `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
+    (additionalIdentifier ? `-${additionalIdentifier}` : '')
+  )
 }

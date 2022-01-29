@@ -469,7 +469,8 @@
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
         "accepting_new_bags": "bool",
-        "voucher": "Voucher"
+        "voucher": "Voucher",
+        "assigned_bags": "u64"
     },
     "StaticBagId": {
         "_enum": {
