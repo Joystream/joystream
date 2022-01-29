@@ -10,7 +10,6 @@ import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
 import fs from 'fs'
-import { CliApi } from './CliApi'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -43,7 +42,7 @@ function writeOutput(api: Api, miniSecret: string) {
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
 
-export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
+export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables
   config()
   const env = process.env
@@ -86,11 +85,11 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const query = new QueryNodeApi(queryNodeProvider)
 
-  const cli = new CliApi()
-
   const debug = extendDebug('scenario')
 
-  const jobs = new JobManager({ apiFactory, query, env, cli })
+  debug(label)
+
+  const jobs = new JobManager({ apiFactory, query, env })
 
   await scene({ env, debug, job: jobs.createJob.bind(jobs) })
 

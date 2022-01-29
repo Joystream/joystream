@@ -30,7 +30,6 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-// import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 import { VideoId, VideoCategoryId } from '@joystream/types/content'
@@ -39,7 +38,6 @@ import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metad
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
 import { assert } from 'chai'
 import { WorkingGroups } from './WorkingGroups'
-import { v4 as uuid } from 'uuid'
 
 const workingGroupNameByGroup: { [key in WorkingGroups]: string } = {
   'distributionWorkingGroup': 'Distribution',
@@ -133,25 +131,25 @@ export class ApiFactory {
     const keys: { key: KeyringPair; id: number }[] = []
     for (let i = 0; i < n; i++) {
       const id = this.keyId++
-      const key = this.createCustomKeyPair(`${id}`)
+      const key = this.createKeyPair(`${id}`)
       keys.push({ key, id })
       this.addressesToKeyId.set(key.address, id)
     }
     return keys
   }
 
-  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+  private createKeyPair(suriPath: string, isCustom = false, isFinalPath = false): KeyringPair {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}/${uuid().substring(0, 8)}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    return this.createKeyPair(customPath, true)
+  public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
+    return this.createKeyPair(customPath, true, isFinalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -245,8 +243,8 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public createCustomKeyPair(path: string): KeyringPair {
-    return this.factory.createCustomKeyPair(path)
+  public createCustomKeyPair(path: string, finalPath = false): KeyringPair {
+    return this.factory.createCustomKeyPair(path, finalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -943,14 +941,6 @@ export class Api {
       )
     }
     return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
-  }
-
-  public findStorageBucketCreated(events: EventRecord[]): DataObjectId | undefined {
-    const record = this.findEvent(events, 'storage', 'StorageBucketCreated')
-
-    if (record) {
-      return (record.data[0] as unknown) as DataObjectId
-    }
   }
 
   // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
@@ -1970,16 +1960,12 @@ export class Api {
     channelId: string,
     addStorageBuckets: StorageBucketId[]
   ) {
-    const bagId = { Dynamic: { Channel: channelId } }
-    const encodedStorageBucketIds = new BTreeSet<StorageBucketId>(
-      this.api.registry,
-      'StorageBucketId',
-      addStorageBuckets.map((item) => item.toString())
-    )
-    const noBucketsToRemove = new BTreeSet<StorageBucketId>(this.api.registry, 'StorageBucketId', [])
-
     return this.sender.signAndSend(
-      this.api.tx.storage.updateStorageBucketsForBag(bagId, encodedStorageBucketIds, noBucketsToRemove),
+      this.api.tx.storage.updateStorageBucketsForBag(
+        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
+        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
+        this.api.createType('BTreeSet<StorageBucketId>', [])
+      ),
       accountFrom
     )
   }

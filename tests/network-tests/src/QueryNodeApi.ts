@@ -1,3 +1,6 @@
+import { BLOCKTIME } from './consts'
+import { gql, ApolloClient, ApolloQueryResult, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
+import { extendDebug, Debugger } from './Debugger'
 import {
   StorageDataObjectFieldsFragment,
   GetDataObjectsByIdsQuery,
@@ -10,9 +13,6 @@ import {
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
-import { gql, ApolloClient, ApolloQueryResult, DocumentNode, NormalizedCacheObject } from '@apollo/client'
-import { BLOCKTIME } from './consts'
-import { extendDebug, Debugger } from './Debugger'
 import { Utils } from './utils'
 
 export class QueryNodeApi {

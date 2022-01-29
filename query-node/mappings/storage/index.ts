@@ -273,9 +273,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
     performance issues. In that case, a unit test for this mapping will be required.
   */
   // load relevant videos one by one and update related active-video-counters
-  await initialActiveStates.reduce(async (accPromise, initialActiveState) => {
-    await accPromise
-
+  for (const initialActiveState of initialActiveStates) {
     // load refreshed version of videos and related entities (channel, channel category, category)
 
     const video = (await store.get(Video, {
@@ -284,7 +282,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
     })) as Video
 
     await updateVideoActiveCounters(store, initialActiveState, getVideoActiveStatus(video))
-  }, Promise.resolve())
+  }
 }
 
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -311,19 +309,16 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
   await Promise.all(
     dataObjects.map(async (dataObject) => {
       // remember if video is fully active before update
-      const initialVideoActiveStatusThumbnail = dataObject.videoThumbnail
-        ? getVideoActiveStatus(dataObject.videoThumbnail)
-        : null
-      const initialVideoActiveStatusMedia = dataObject.videoMedia ? getVideoActiveStatus(dataObject.videoMedia) : null
+      const initialVideoActiveStatus =
+        (dataObject.videoThumbnail && getVideoActiveStatus(dataObject.videoThumbnail)) ||
+        (dataObject.videoMedia && getVideoActiveStatus(dataObject.videoMedia)) ||
+        null
 
       await unsetAssetRelations(store, dataObject)
 
       // update video active counters
-      if (initialVideoActiveStatusThumbnail) {
-        await updateVideoActiveCounters(store, initialVideoActiveStatusThumbnail, undefined)
-      }
-      if (initialVideoActiveStatusMedia) {
-        await updateVideoActiveCounters(store, initialVideoActiveStatusMedia, undefined)
+      if (initialVideoActiveStatus) {
+        await updateVideoActiveCounters(store, initialVideoActiveStatus, undefined)
       }
     })
   )

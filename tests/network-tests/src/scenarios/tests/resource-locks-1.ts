@@ -6,6 +6,6 @@ async function flow1({ lock }: FlowProps) {
   await lock(Resource.Council)
 }
 
-scenario(async ({ job }) => {
+scenario('Resource locks 1', async ({ job }) => {
   job('test', [flow1, flow1])
 })

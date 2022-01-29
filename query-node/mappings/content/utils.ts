@@ -527,7 +527,7 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     await store.save<Video>(video)
 
     // update video active counters
-    await updateVideoActiveCounters(store, wasFullyActive as IVideoActiveStatus, undefined)
+    await updateVideoActiveCounters(store, wasFullyActive, undefined)
 
     // emit log event
     logger.info('Content has been disconnected from Video', {
@@ -549,19 +549,8 @@ export interface IVideoActiveStatus {
 }
 
 export function getVideoActiveStatus(video: Video): IVideoActiveStatus {
-  const productionEnv = () => {
-    const isFullyActive =
-      !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto?.isAccepted && !!video.media?.isAccepted
-
-    return isFullyActive
-  }
-  const testEnv = () => {
-    const isFullyActive = !!video.isPublic && !video.isCensored
-
-    return isFullyActive
-  }
-
-  const isFullyActive = process.env.QN_TEST_ENV ? testEnv() : productionEnv()
+  const isFullyActive =
+    !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto?.isAccepted && !!video.media?.isAccepted
 
   const videoCategory = video.category
   const channel = video.channel
@@ -581,18 +570,13 @@ export async function updateVideoActiveCounters(
   initialActiveStatus: IVideoActiveStatus | null | undefined,
   activeStatus: IVideoActiveStatus | null | undefined
 ): Promise<void> {
-  // definition of generic type for Hydra DatabaseManager's methods
-  type EntityType<T> = {
-    new (...args: any[]): T
-  }
-
   async function updateSingleEntity<Entity extends VideoCategory | Channel>(
     entity: Entity,
     counterChange: number
   ): Promise<void> {
     entity.activeVideosCounter += counterChange
 
-    await store.save<EntityType<Entity>>(entity)
+    await store.save(entity)
   }
 
   async function reflectUpdate<Entity extends VideoCategory | Channel>(
@@ -624,16 +608,16 @@ export async function updateVideoActiveCounters(
 
     // didEntityChange === true
 
-    if (oldEntity) {
-      // if video was fully active before, prepare to decrease counter; increase counter otherwise
-      const counterChange = initFullyActive ? -1 : 1
+    if (oldEntity && initFullyActive) {
+      // if video was fully active before, prepare to decrease counter
+      const counterChange = -1
 
       await updateSingleEntity(oldEntity, counterChange)
     }
 
-    if (newEntity) {
-      // if video is fully active now, prepare to increase counter; decrease counter otherwise
-      const counterChange = nowFullyActive ? 1 : -1
+    if (newEntity && nowFullyActive) {
+      // if video is fully active now, prepare to increase counter
+      const counterChange = 1
 
       await updateSingleEntity(newEntity, counterChange)
     }
