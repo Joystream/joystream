@@ -75,6 +75,7 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
 
 interface OperationsGroupProps extends GroupOverviewOuterProps{
   group: WorkingGroups;
+  customGroupName?: string;
 }
 
 const GroupOverview = Loadable<GroupOverviewProps>(
@@ -165,6 +166,7 @@ export const OperationsGroup = (props: OperationsGroupProps) => (
 export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsAlpha}
+    customGroupName='Builders'
     {...props}
   />
 );
@@ -172,6 +174,7 @@ export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
 export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsBeta}
+    customGroupName='Human Resources'
     {...props}
   />
 );
@@ -179,6 +182,7 @@ export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
 export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsGamma}
+    customGroupName='Marketing'
     {...props}
   />
 );
