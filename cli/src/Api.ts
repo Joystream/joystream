@@ -162,8 +162,9 @@ export default class Api {
   }
 
   async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {
-    // TODO: Uncomment once ready
-    const membersQnData: MembershipFieldsFragment[] = [] // await this._qnApi?.membersByIds(entries.map(([id]) => id))
+    const membersQnData: MembershipFieldsFragment[] | undefined = await this._qnApi?.membersByIds(
+      entries.map(([id]) => id)
+    )
     const memberQnDataById = new Map<string, MembershipFieldsFragment>()
     membersQnData?.forEach((m) => {
       memberQnDataById.set(m.id, m)
@@ -525,5 +526,15 @@ export default class Api {
 
   async forumCategories(): Promise<[CategoryId, Category][]> {
     return this.entriesByIds(this._api.query.forum.categoryById)
+  }
+
+  async forumThreads(categoryId: CategoryId | number): Promise<[ThreadId, Thread][]> {
+    const entries = await this._api.query.forum.threadById.entries(categoryId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
+  }
+
+  async forumPosts(threadId: ThreadId | number): Promise<[PostId, Post][]> {
+    const entries = await this._api.query.forum.postById.entries(threadId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
   }
 }
