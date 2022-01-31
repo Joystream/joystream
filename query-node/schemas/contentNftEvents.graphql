@@ -1,20 +1,16 @@
-# TODO: add `implements Event @entity` to events
-# remove relations in events and save snapshot representation (immutable)
-# TODO: unite leading dot `.` in property descriptions
-
 type AuctionStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -22,29 +18,29 @@ type AuctionStartedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Actor that started this auction"
+  "Actor that started this auction."
   actor: ContentActor!
 
-  "Video that's being auctioned"
+  "Video that's being auctioned."
   video: Video!
 
-  "Auction started"
+  "Auction started."
   auction: Auction!
 }
 
 type NftIssuedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -52,36 +48,36 @@ type NftIssuedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Content actor that issued the NFT"
+  "Content actor that issued the NFT."
   contentActor: ContentActor!
 
-  "Video represented via NFT"
+  "Video represented via NFT."
   video: Video!
 
-  "Royalty for the NFT/video"
+  "Royalty for the NFT/video."
   royalty: Float
 
   # TODO: inspect if metadata can be unpacked and mean something useful
-  "NFT's metadata"
+  "NFT's metadata."
   metadata: String!
 
-  "Member NFT was originally issued to"
+  "Member NFT was originally issued to."
   newOwner: Membership
 }
 
 type AuctionBidMadeEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -92,29 +88,29 @@ type AuctionBidMadeEvent implements Event @entity {
   "Member bidding in the auction."
   member: Membership!
 
-  "Video that's bidden on"
+  "Video that's bidden on."
   video: Video!
 
-  "Bid made"
+  "Bid made."
   bidAmount: BigInt!
 
-  "Sign of auction duration being extended by making this bid"
+  "Sign of auction duration being extended by making this bid."
   extendsAuction: Boolean!
 }
 
 type AuctionBidCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -122,26 +118,26 @@ type AuctionBidCanceledEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Auction that canceled the bid"
+  "Auction that canceled the bid."
   member: Membership!
 
-  "Auctioned video"
+  "Auctioned video."
   video: Video!
 }
 
 type AuctionCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -149,26 +145,26 @@ type AuctionCanceledEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Content actor canceling the event"
+  "Content actor canceling the event."
   contentActor: ContentActor!
 
-  "Auctioned video"
+  "Auctioned video."
   video: Video!
 }
 
 type EnglishAuctionCompletedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -176,26 +172,26 @@ type EnglishAuctionCompletedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Member claiming the auctioned NFT"
+  "Member claiming the auctioned NFT."
   member: Membership!
 
-  "Auctioned video"
+  "Auctioned video."
   video: Video!
 }
 
 type BidMadeCompletingAuctionEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -203,26 +199,26 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Member completing the auction"
+  "Member completing the auction."
   member: Membership!
 
-  "Auctioned video"
+  "Auctioned video."
   video: Video!
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -230,26 +226,26 @@ type OpenAuctionBidAcceptedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Content actor canceling the event"
+  "Content actor canceling the event."
   contentActor: ContentActor!
 
-  "Auctioned video"
+  "Auctioned video."
   video: Video!
 }
 
 type OfferStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -257,32 +253,32 @@ type OfferStartedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 
-  "Content actor acting as NFT owner"
+  "Content actor acting as NFT owner."
   contentActor: ContentActor!
 
-  "Member that receives the offer"
+  "Member that receives the offer."
   member: Membership!
 
-  "Offer's price"
+  "Offer's price."
   price: BigInt
 }
 
 type OfferAcceptedEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -290,23 +286,23 @@ type OfferAcceptedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 }
 
 type OfferCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -314,26 +310,26 @@ type OfferCanceledEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 
-  "Content actor acting as NFT owner"
+  "Content actor acting as NFT owner."
   contentActor: ContentActor!
 }
 
 type NftSellOrderMadeEvent @entity { # NFT in name can't be UPPERCASE because it causes codegenimplements Event  errors
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -341,29 +337,29 @@ type NftSellOrderMadeEvent @entity { # NFT in name can't be UPPERCASE because it
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 
-  "Content actor acting as NFT owner"
+  "Content actor acting as NFT owner."
   contentActor: ContentActor!
 
-  "Offer's price"
+  "Offer's price."
   price: BigInt!
 }
 
 type NftBoughtEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -371,26 +367,26 @@ type NftBoughtEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 
-  "Member that bought the NFT"
+  "Member that bought the NFT."
   member: Membership!
 }
 
 type BuyNowCanceledEvent implements Event @entity {
   ### GENERIC DATA ###
 
-  "(network}-{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}."
   id: ID!
 
-  "Hash of the extrinsic which caused the event to be emitted"
+  "Hash of the extrinsic which caused the event to be emitted."
   inExtrinsic: String
 
   "Blocknumber of the block in which the event was emitted."
   inBlock: Int!
 
-  "Network the block was produced in"
+  "Network the block was produced in."
   network: Network!
 
   "Index of event in block from which it was emitted."
@@ -398,9 +394,9 @@ type BuyNowCanceledEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "NFT's video"
+  "NFT's video."
   video: Video!
 
-  "Content actor acting as NFT owner"
+  "Content actor acting as NFT owner."
   contentActor: ContentActor!
 }

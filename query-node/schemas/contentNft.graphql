@@ -90,7 +90,7 @@ type TransactionalStatusIdle @variant {
 "Represents TransactionalStatus InitiatedOfferToMember"
 type TransactionalStatusInitiatedOfferToMember @variant {
   "Member identifier"
-  member: Int!
+  memberId: Int!
 
   "Whether member should pay to accept offer (optional)"
   price: BigInt
@@ -107,7 +107,7 @@ type TransactionalStatusAuction @variant {
 
 "Represents TransactionalStatus BuyNow"
 type TransactionalStatusBuyNow @variant {
-  price: Int!
+  price: BigInt!
 }
 
 "Represents various action types"
