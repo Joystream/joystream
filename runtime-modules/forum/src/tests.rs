@@ -1351,6 +1351,126 @@ fn move_thread_moderator_permissions() {
 }
 
 #[test]
+fn category_updated_successfully_on_thread_moving() {
+    let moderator = FORUM_MODERATOR_ORIGIN_ID;
+    let moderator_origin = FORUM_MODERATOR_ORIGIN;
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // sanity check
+        assert_ne!(category_id_1, category_id_2);
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            forum_lead,
+            category_id_1,
+            good_thread_metadata(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // set incomplete permissions for first user (only category 1)
+        update_category_membership_of_moderator_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_1,
+            true,
+            Ok(()),
+        );
+
+        // give the rest of necessary permissions to the first moderator
+        update_category_membership_of_moderator_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
+        // move in one direction
+        move_thread_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Ok(()),
+        );
+
+        assert_eq!(
+            TestForumModule::thread_by_id(category_id_2, thread_id).category_id,
+            category_id_2
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            0,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            1,
+        );
+
+        // move in opposite direction
+        move_thread_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_2,
+            thread_id,
+            category_id_1,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
+        assert_eq!(
+            TestForumModule::thread_by_id(category_id_1, thread_id).category_id,
+            category_id_1
+        );
+    });
+}
+
+#[test]
 // test if error is thrown when origin and destination category is the same
 fn move_thread_invalid_move() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
