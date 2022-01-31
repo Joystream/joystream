@@ -700,6 +700,7 @@ pub struct SubmitJudgmentFixture {
     bounty_id: u64,
     oracle: BountyActor<u64>,
     judgment: OracleJudgmentOf<Test>,
+    rationale: Vec<u8>,
 }
 
 impl SubmitJudgmentFixture {
@@ -709,6 +710,7 @@ impl SubmitJudgmentFixture {
             bounty_id: 1,
             oracle: BountyActor::Council,
             judgment: Default::default(),
+            rationale: Default::default(),
         }
     }
 
@@ -731,6 +733,10 @@ impl SubmitJudgmentFixture {
         Self { judgment, ..self }
     }
 
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
         let actual_result = Bounty::submit_oracle_judgment(
@@ -738,6 +744,7 @@ impl SubmitJudgmentFixture {
             self.oracle.clone(),
             self.bounty_id,
             self.judgment.clone(),
+            self.rationale.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
