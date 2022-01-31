@@ -14,6 +14,7 @@ type StorageBucketConfig = {
   objectsLimit: number
   operatorId: number
   transactorKey: string
+  transactorBalance: BN
 }
 
 type InitStorageConfig = {
@@ -47,6 +48,7 @@ export const singleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorBalance: new BN(100_000),
     },
   ],
 }
@@ -64,6 +66,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorBalance: new BN(100_000),
     },
     {
       metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
@@ -72,6 +75,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_2_TRANSACTOR_KEY || '5FbzYmQ3HogiEEDSXPYJe58yCcmSh3vsZLodTdBB6YuLDAj7', // //Colossus2
+      transactorBalance: new BN(100_000),
     },
   ],
 }
@@ -128,7 +132,7 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     )
     await api.sendExtrinsicsAndGetResults(acceptInvitationTxs, operatorKeys)
 
-    // Bucket metadata and static bags
+    // Bucket metadata, static bags, transactor balances
     const bucketSetupPromises = _.flatten(
       Array.from(bucketById.entries()).map(([bucketId, bucketConfig], i) => {
         const operatorId = operatorIds[i]
@@ -144,7 +148,10 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
           )
         })
         const updateBagsPromise = api.sendExtrinsicsAndGetResults(updateBagTxs, storageLeaderKey)
-        return [updateBagsPromise, setMetaPromise]
+        const setupTransactorBalancePromise = (async () => [
+          await api.treasuryTransferBalance(bucketConfig.transactorKey, bucketConfig.transactorBalance),
+        ])()
+        return [updateBagsPromise, setMetaPromise, setupTransactorBalancePromise]
       })
     )
     await Promise.all(bucketSetupPromises)
