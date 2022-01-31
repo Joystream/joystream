@@ -3138,7 +3138,7 @@
     yaml-validator "^3.0.0"
 
 "@joystream/types@link:types":
-  version "0.17.1"
+  version "0.17.2"
   dependencies:
     "@polkadot/api" "5.9.1"
     "@polkadot/keyring" "7.3.1"
