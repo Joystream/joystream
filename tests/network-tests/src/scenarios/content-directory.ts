@@ -1,5 +1,6 @@
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import initStorageBucket from '../flows/clis/initStorageBucket'
 import initStorage, { singleBucketConfig as storageConfig } from '../flows/storagev2/initStorage'
 import { WorkingGroups } from '../WorkingGroups'
@@ -14,4 +15,5 @@ scenario('Content directory', async ({ job }) => {
   const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(leadSetupJob)
 
   job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  job('nft auction and offers', nftAuctionAndOffers).requires(initStorageJob)
 })
