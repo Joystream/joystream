@@ -1,12 +1,18 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, BTreeMap } from '@polkadot/types'
-import { ISubmittableResult } from '@polkadot/types/types'
+import { IEvent, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { AccountId, MemberId, PostId, ThreadId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
+import {
+  AugmentedEvent,
+  QueryableConsts,
+  QueryableStorage,
+  SubmittableExtrinsic,
+  SubmittableExtrinsics,
+} from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
@@ -58,6 +64,13 @@ export type KeyGenInfo = {
   final: number
   custom: string[]
 }
+
+type EventSection = keyof ApiPromise['events'] & string
+type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -364,6 +377,54 @@ export class Api {
     return this.api.consts.balances.existentialDeposit
   }
 
+  public findEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> | undefined {
+    if (Array.isArray(result)) {
+      return result.find(({ event }) => event.section === section && event.method === method)?.event as
+        | EventType<S, M>
+        | undefined
+    }
+    return result.findRecord(section, method)?.event as EventType<S, M> | undefined
+  }
+
+  public getEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> {
+    const event = this.findEvent(result, section, method)
+    if (!event) {
+      throw new Error(
+        `Cannot find expected ${section}.${method} event in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}`
+      )
+    }
+    return event
+  }
+
+  public findEvents<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M,
+    expectedCount?: number
+  ): EventType<S, M>[] {
+    const events = Array.isArray(result)
+      ? result.filter(({ event }) => event.section === section && event.method === method).map(({ event }) => event)
+      : result.filterRecords(section, method).map((r) => r.event)
+    if (expectedCount && events.length !== expectedCount) {
+      throw new Error(
+        `Unexpected count of ${section}.${method} events in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
+      )
+    }
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+  }
+
   // TODO: Augmentations comming with new @polkadot/typegen!
 
   public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
@@ -497,12 +558,12 @@ export class Api {
     return opening
   }
 
-  public async getLeader(group: WorkingGroupModuleName): Promise<Worker> {
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
     const leadId = await this.api.query[group].currentLead()
     if (leadId.isNone) {
-      throw new Error('Cannot get lead role key: Lead not yet hired!')
+      throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return await this.api.query[group].workerById(leadId.unwrap())
+    return [leadId.unwrap(), await this.api.query[group].workerById(leadId.unwrap())]
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
@@ -513,6 +574,14 @@ export class Api {
         },
       ]) => id
     )
+  }
+
+  public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroupModuleName): Promise<string[]> {
+    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
+
+    return workers.map((worker) => {
+      return worker.role_account_id.toString()
+    })
   }
 
   async assignWorkerRoleAccount(
@@ -554,11 +623,11 @@ export class Api {
   }
 
   public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
-    return (await this.getLeader(group)).role_account_id.toString()
+    return (await this.getLeader(group))[1].role_account_id.toString()
   }
 
   public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
-    return (await this.getLeader(group)).staking_account_id.toString()
+    return (await this.getLeader(group))[1].staking_account_id.toString()
   }
 
   public async retrieveProposalsEngineEventDetails(
