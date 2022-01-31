@@ -2453,6 +2453,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         let entrant_stake = 37;
         let working_period = 10;
         let judging_period = 10;
+        let rationale = b"text".to_vec();
 
         set_council_budget(initial_balance);
 
@@ -2560,6 +2561,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment.clone())
+            .with_rationale(rationale.clone())
             .call_and_assert(Ok(()));
 
         assert_eq!(
@@ -2578,6 +2580,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             bounty_id,
             BountyActor::Council,
             judgment,
+            rationale,
         ));
     });
 }
@@ -2760,6 +2763,7 @@ fn submit_judgment_by_member_succeeded() {
         let judging_period = 10;
         let oracle_member_id = 1;
         let oracle_account_id = 1;
+        let rationale = b"text".to_vec();
 
         set_council_budget(initial_balance);
 
@@ -2818,12 +2822,14 @@ fn submit_judgment_by_member_succeeded() {
             .with_origin(RawOrigin::Signed(oracle_account_id))
             .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
+            .with_rationale(rationale.clone())
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Member(oracle_member_id),
             judgment,
+            rationale,
         ));
     });
 }

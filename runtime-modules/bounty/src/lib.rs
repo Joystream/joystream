@@ -571,7 +571,8 @@ decl_event! {
         /// - bounty ID
         /// - oracle
         /// - judgment data
-        OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment),
+        /// - rationale
+        OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment, Vec<u8>),
 
         /// Work entry was slashed.
         /// Params:
@@ -1123,7 +1124,8 @@ decl_module! {
             origin,
             oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgment: OracleJudgment<T::EntryId, BalanceOf<T>>
+            judgment: OracleJudgment<T::EntryId, BalanceOf<T>>,
+            rationale: Vec<u8>,
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
@@ -1180,7 +1182,12 @@ decl_module! {
             }
 
             // Fire a judgment event.
-            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
+            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(
+                bounty_id,
+                oracle,
+                judgment,
+                rationale,
+            ));
         }
 
         /// Withdraw work entrant funds.
