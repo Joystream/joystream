@@ -8,7 +8,7 @@ import { BTreeSet } from '@polkadot/types'
 
 const workingGroupModules = [
   'storageWorkingGroup',
-  'contentDirectoryWorkingGroup',
+  'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
   'operationsWorkingGroup',
@@ -29,7 +29,7 @@ async function main() {
   const api = await ApiPromise.create({ provider, types })
 
   // Input data
-  const Group = process.env.GROUP || 'contentDirectoryWorkingGroup'
+  const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadRoleKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
   const WorkerMemberKeyPair = process.env.WORKER_MEMBER_URI
     ? getKeyFromSuri(process.env.WORKER_MEMBER_URI)

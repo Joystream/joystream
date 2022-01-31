@@ -1,9 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
-import { ApplicationId } from '@joystream/types/working-group'
-import { BTreeSet } from '@polkadot/types'
-import { registry } from '@joystream/types'
+import { createType } from '@joystream/types'
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   static description = "Allows filling working group opening that's currently in review. Requires lead access."
@@ -19,7 +17,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsFillOpening)
 
     // Lead-only gate
@@ -31,13 +29,13 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     const applicationIds = await this.promptForApplicationsToAccept(opening)
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(lead.roleAccount.toString()),
+      await this.getDecodedPair(lead.roleAccount),
       apiModuleByGroup[this.group],
       'fillOpening',
-      [openingId, new (BTreeSet.with(ApplicationId))(registry, applicationIds)]
+      [openingId, createType('BTreeSet<ApplicationId>', applicationIds)]
     )
 
-    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId.toString())} succesfully filled!`))
+    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId.toString())} successfully filled!`))
     this.log(
       chalk.green('Accepted working group application IDs: ') +
         chalk.magentaBright(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')

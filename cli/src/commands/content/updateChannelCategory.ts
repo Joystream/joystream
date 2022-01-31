@@ -5,7 +5,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryUpdateParameters } from '@joystream/types/content'
 import { flags } from '@oclif/command'
-import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { ChannelCategoryInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelCategoryMetadata } from '@joystream/metadata-protobuf'
 export default class UpdateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Update channel category inside content directory.'
@@ -26,7 +26,7 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(UpdateChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(UpdateChannelCategoryCommand).args

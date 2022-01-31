@@ -1,40 +1,64 @@
 #!/usr/bin/env bash
 set -e
 
-# Run a complete joystream development network on your machine using docker.
-# Make sure to run build-docker-images.sh prior to running this script to use
-# the local build.
+# Run a complete joystream development network on your machine using docker
 
-set -a
-. .env
-set +a
+INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setup-new-chain}
 
-# Clean start!
-docker-compose down -v
+if [ "${PERSIST}" == true ]
+then
+  echo "Services startup up.."
+else
+  # Clean start!
+  docker-compose down -v
 
-function down()
-{
-    # Stop containers and clear volumes
-    docker-compose down -v
-}
+  function down()
+  {
+      # Stop containers and clear volumes
+      docker-compose down -v
+  }
 
-trap down EXIT
+  trap down EXIT
+fi
 
-# Run a local development chain
+## Run a local development chain
 docker-compose up -d joystream-node
 
-## Storage Infrastructure
-# Configure a dev storage node and start storage node
-yarn workspace api-scripts storage-dev-init
-docker-compose up -d colossus
-# Create a new content directory lead
-GROUP=contentDirectoryWorkingGroup yarn workspace api-scripts initialize-lead
+## Init the chain with some state
+export SKIP_MOCK_CONTENT=true
+# TODO: Move back to this approach once Giza<->Olympia integration tests merged
+# HOST_IP=$(tests/network-tests/get-host-ip.sh)
+# export COLOSSUS_1_URL="http://${HOST_IP}:3333"
+# export COLOSSUS_1_TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
+# export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
+./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
+
+## Set sudo as the membership screening authority
+yarn workspace api-scripts set-sudo-as-screening-auth
+
+## Member faucet
+docker-compose up -d faucet
+
+## Storage Infrastructure Configuration
+# TODO: Move back to INIT_CHAIN_SCENARIO approach once Giza<->Olympia integration tests merged
+./storage-playground-config.sh
 
 ## Query Node Infrastructure
 ./query-node/start.sh
 
-echo "use Ctrl+C to shutdown the development network."
+## Storage Infrastructure Nodes
+docker-compose up -d colossus-1
+docker-compose up -d distributor-1
 
-while true; do
-  read
-done
+## Orion
+docker-compose up -d orion
+
+if [ "${PERSIST}" == true ]
+then
+  echo "All services started in the background"
+else
+  echo "use Ctrl+C to shutdown the development network."
+  while true; do
+    read
+  done
+fi

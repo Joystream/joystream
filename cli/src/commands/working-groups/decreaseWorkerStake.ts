@@ -28,7 +28,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
       args: { workerId, amount },
     } = this.parse(WorkingGroupsDecreaseWorkerStake)

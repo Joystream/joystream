@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs, { readdirSync } from 'fs'
 import path from 'path'
 import inquirer from 'inquirer'
 import ExitCodes from '../ExitCodes'
@@ -35,21 +35,20 @@ export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
-  private keyring: KeyringInstance | undefined
+  private selectedMember: [MemberId, Membership] | undefined
+  private _keyring: KeyringInstance | undefined
 
-  getKeyring(): KeyringInstance {
-    if (!this.keyring) {
+  private get keyring(): KeyringInstance {
+    if (!this._keyring) {
       this.error('Trying to access Keyring before AccountsCommandBase initialization', {
         exit: ExitCodes.UnexpectedException,
       })
     }
-    return this.keyring
+    return this._keyring
   }
 
   isKeyAvailable(key: AccountId | string): boolean {
-    return this.getKeyring()
-      .getPairs()
-      .some((p) => p.address === key.toString())
+    return this.keyring.getPairs().some((p) => p.address === key.toString())
   }
 
   getAccountsDirPath(): string {
@@ -65,7 +64,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   isAccountNameTaken(accountName: string): boolean {
-    return this.getPairs().some((p) => this.getAccountFileName(p.meta.name) === this.getAccountFileName(accountName))
+    return readdirSync(this.getAccountsDirPath()).some((filename) => filename === this.getAccountFileName(accountName))
   }
 
   private initAccountsFs(): void {
@@ -94,16 +93,15 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       masterKey = keyring.getPairs()[0]
       this.log(chalk.magentaBright(`${chalk.bold('New account memonic: ')}${mnemonic}`))
     } else {
-      const existingAcc = this.getPairs().find((p) => p.address === masterKey!.address)
+      const { address } = masterKey
+      const existingAcc = this.getPairs().find((p) => p.address === address)
       if (existingAcc) {
         this.error(`Account with this key already exists (${chalk.magentaBright(existingAcc.meta.name)})`, {
           exit: ExitCodes.InvalidInput,
         })
       }
       await this.requestPairDecoding(masterKey, 'Current account password')
-      if (!masterKey.meta.name) {
-        masterKey.meta.name = name
-      }
+      masterKey.meta.name = name
     }
 
     while (password === undefined) {
@@ -122,9 +120,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const destPath = this.getAccountFilePath(name)
     fs.writeFileSync(destPath, JSON.stringify(masterKey.toJson(password)))
 
-    this.getKeyring().addPair(masterKey)
+    this.keyring.addPair(masterKey)
 
-    this.log(chalk.greenBright(`\nNew account succesfully created!`))
+    this.log(chalk.greenBright(`\nNew account successfully created!`))
 
     return masterKey as NamedKeyringPair
   }
@@ -148,7 +146,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     if (!accountJsonObj.meta) accountJsonObj.meta = {}
     // Normalize the CLI account name based on file name
-    // (makes sure getFilePath(name) will always point to the correct file, preserving backward-compatibility
+    // (makes sure getAccountFilePath(name) will always point to the correct file, preserving backward-compatibility
     // with older CLI versions)
     accountJsonObj.meta.name = path.basename(jsonBackupFilePath, '.json')
 
@@ -159,7 +157,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       keyring.addFromJson(accountJsonObj)
       account = keyring.getPair(accountJsonObj.address) as NamedKeyringPair // We can be sure it's named, because we forced it before
     } catch (e) {
-      throw new CLIError(`Provided backup file is not valid (${e.message})`, { exit: ExitCodes.InvalidFile })
+      throw new CLIError(`Provided backup file is not valid (${(e as Error).message})`, { exit: ExitCodes.InvalidFile })
     }
 
     return account
@@ -194,17 +192,15 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   getPairs(includeDevAccounts = true): NamedKeyringPair[] {
-    return this.getKeyring()
-      .getPairs()
-      .filter((p) => includeDevAccounts || !p.meta.isTesting) as NamedKeyringPair[]
+    return this.keyring.getPairs().filter((p) => includeDevAccounts || !p.meta.isTesting) as NamedKeyringPair[]
   }
 
   getPair(key: string): NamedKeyringPair {
-    return this.getKeyring().getPair(key) as NamedKeyringPair
+    return this.keyring.getPair(key) as NamedKeyringPair
   }
 
-  async getDecodedPair(key: string): Promise<NamedKeyringPair> {
-    const pair = this.getPair(key)
+  async getDecodedPair(key: string | AccountId): Promise<NamedKeyringPair> {
+    const pair = this.getPair(key.toString())
 
     return (await this.requestPairDecoding(pair)) as NamedKeyringPair
   }
@@ -240,9 +236,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   initKeyring(): void {
-    this.keyring = this.getApi().isDevelopment ? createTestKeyring(KEYRING_OPTIONS) : new Keyring(KEYRING_OPTIONS)
+    this._keyring = this.getApi().isDevelopment ? createTestKeyring(KEYRING_OPTIONS) : new Keyring(KEYRING_OPTIONS)
     const accounts = this.fetchAccounts()
-    accounts.forEach((a) => this.getKeyring().addPair(a))
+    accounts.forEach((a) => this.keyring.addPair(a))
   }
 
   async promptForPassword(message = "Your account's password"): Promise<string> {
@@ -325,35 +321,53 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberContext(): Promise<MemberDetails> {
-    // TODO: Limit only to a set of members provided by the user?
-    const allMembers = await this.getApi().allMembers()
-    const availableMembers = await Promise.all(
-      allMembers
-        .filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
-        .map(([id, m]) => this.getApi().memberDetails(id, m))
+  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<[MemberId, Membership]> {
+    if (
+      useSelected &&
+      this.selectedMember &&
+      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.[0])))
+    ) {
+      return this.selectedMember
+    }
+
+    const membersEntries = allowedIds
+      ? await this.getApi().memberEntriesByIds(allowedIds)
+      : await this.getApi().allMemberEntries()
+    const availableMemberships = await Promise.all(
+      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
     )
 
-    if (!availableMembers.length) {
-      this.error('No member controller key available!', { exit: ExitCodes.AccessDenied })
-    } else if (availableMembers.length === 1) {
-      return availableMembers[0]
+    if (!availableMemberships.length) {
+      this.error(
+        `No ${allowedIds ? 'allowed ' : ''}member controller key available!` +
+          (allowedIds ? ` Allowed members: ${allowedIds.join(', ')}.` : ''),
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    } else if (availableMemberships.length === 1) {
+      this.selectedMember = availableMemberships[0]
     } else {
-      return this.promptForMember(availableMembers, 'Choose member context')
+      this.selectedMember = await this.promptForMember(availableMemberships, 'Choose member context')
     }
+
+    return this.selectedMember
   }
 
-  async promptForMember(availableMembers: MemberDetails[], message = 'Choose a member'): Promise<MemberDetails> {
+  async promptForMember(
+    availableMemberships: [MemberId, Membership][],
+    message = 'Choose a member'
+  ): Promise<[MemberId, Membership]> {
     const memberIndex = await this.simplePrompt({
       type: 'list',
       message,
-      choices: availableMembers.map((m, i) => ({
-        name: memberHandle(m),
+      choices: availableMemberships.map(([, membership], i) => ({
+        name: membership.handle.toString(),
         value: i,
       })),
     })
 
-    return availableMembers[memberIndex]
+    return availableMemberships[memberIndex]
   }
 
   async promptForStakingAccount(stakeValue: BN, memberId: MemberId, member: Membership): Promise<string> {
@@ -449,7 +463,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return stakingAccount
   }
 
-  async init() {
+  async init(): Promise<void> {
     await super.init()
     try {
       this.initAccountsFs()

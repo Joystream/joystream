@@ -96,7 +96,7 @@ export type WorkingGroupsEventName =
 
 export type WorkingGroupModuleName =
   | 'storageWorkingGroup'
-  | 'contentDirectoryWorkingGroup'
+  | 'contentWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
   | 'operationsWorkingGroup'

@@ -113,8 +113,11 @@ parameter_types! {
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
     pub const StakingCandidateLockId: LockIdentifier = [11; 8];
     pub const BountyLockId: LockIdentifier = [12; 8];
-    pub const OperationsWorkingGroupLockId: LockIdentifier = [13; 8];
+    pub const OperationsWorkingGroupAlphaLockId: LockIdentifier = [13; 8];
     pub const GatewayWorkingGroupLockId: LockIdentifier = [14; 8];
+    pub const OperationsWorkingGroupBetaLockId: LockIdentifier = [15; 8];
+    pub const OperationsWorkingGroupGammaLockId: LockIdentifier = [16; 8];
+    pub const DistributionWorkingGroupLockId: LockIdentifier = [17; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -136,7 +139,10 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
-            OperationsWorkingGroupLockId::get(),
+            OperationsWorkingGroupAlphaLockId::get(),
+            OperationsWorkingGroupBetaLockId::get(),
+            OperationsWorkingGroupGammaLockId::get(),
+            DistributionWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (StakingCandidateLockId::get(), [
@@ -150,7 +156,10 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
-            OperationsWorkingGroupLockId::get(),
+            DistributionWorkingGroupLockId::get(),
+            OperationsWorkingGroupAlphaLockId::get(),
+            OperationsWorkingGroupBetaLockId::get(),
+            OperationsWorkingGroupGammaLockId::get(),
             InvitedMemberLockId::get(),
         ].to_vec()),
         (VotingLockId::get(), [
@@ -164,7 +173,10 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
-            OperationsWorkingGroupLockId::get(),
+            DistributionWorkingGroupLockId::get(),
+            OperationsWorkingGroupAlphaLockId::get(),
+            OperationsWorkingGroupBetaLockId::get(),
+            OperationsWorkingGroupGammaLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (CandidacyLockId::get(), [
@@ -211,7 +223,22 @@ lazy_static! {
             VotingLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
-        (OperationsWorkingGroupLockId::get(), [
+        (DistributionWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (OperationsWorkingGroupAlphaLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (OperationsWorkingGroupBetaLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (OperationsWorkingGroupGammaLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),

@@ -15,6 +15,7 @@ import { withCallDiv } from '@polkadot/react-api/hoc';
 import valueToText from '@polkadot/react-params/valueToText';
 import { Option, Raw } from '@polkadot/types';
 import { isU8a, u8aToHex, u8aToString, compactStripLength } from '@polkadot/util';
+import { registry } from '@joystream/types';
 
 interface Props {
   className?: string;
@@ -52,7 +53,7 @@ function keyToName (isConst: boolean, _key: Uint8Array | QueryableStorageEntry<'
 }
 
 function typeToString ({ creator: { meta: { modifier, type } } }: QueryableStorageEntry<'promise'>): string {
-  const _type = unwrapStorageType(type);
+  const _type = unwrapStorageType(registry, type);
 
   return modifier.isOptional
     ? `Option<${_type}>`
@@ -105,22 +106,14 @@ function getCachedComponent (query: QueryTypes): CacheInstance {
             ? 1
             : 2;
 
-        if ((values.length === allCount) || (type.isMap && type.asMap.linked.isTrue)) {
-          // render function to create an element for the query results which is plugged to the api
-          renderHelper = withCallDiv('subscribe', {
-            paramName: 'params',
-            paramValid: true,
-            params: [key, ...values],
-            withIndicator: true
-          });
-        } else {
-          renderHelper = withCallDiv('subscribe', {
-            paramName: 'params',
-            paramValid: true,
-            params: [key.entries, ...values],
-            withIndicator: true
-          });
-        }
+        renderHelper = withCallDiv('subscribe', {
+          paramName: 'params',
+          paramValid: true,
+          params: values.length === allCount
+            ? [key, ...values]
+            : [key.entries, ...values],
+          withIndicator: true
+        });
       }
 
       type = key.creator && key.creator.meta

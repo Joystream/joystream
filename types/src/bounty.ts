@@ -1,4 +1,4 @@
-import { Null, u32, u128, bool, Option, BTreeSet, BTreeMap } from '@polkadot/types'
+import { Null, u32, u128, bool, Option, Vec, BTreeMap } from '@polkadot/types'
 import { JoyEnum, JoyStructDecorated, MemberId, AccountId } from './common'
 
 export class BountyId extends u32 {}
@@ -11,7 +11,7 @@ export class BountyActor extends JoyEnum({
 
 export class AssuranceContractType extends JoyEnum({
   Open: Null,
-  Closed: BTreeSet.with(MemberId),
+  Closed: Vec.with(MemberId), // FIXME: @polkadot/typegen Error: Enum: AssuranceContractType: Unhandled nested "BTreeSet"
 }) {}
 
 export class FundingType_Perpetual extends JoyStructDecorated({

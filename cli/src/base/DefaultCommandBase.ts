@@ -115,6 +115,9 @@ export default abstract class DefaultCommandBase extends Command {
     // called after run and catch regardless of whether or not the command errored
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
     if (!err) this.exit(ExitCodes.OK)
+    if (err && process.env.DEBUG === 'true') {
+      console.log(err)
+    }
     super.finally(err)
   }
 

@@ -14,7 +14,7 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(DeleteChannelCategoryCommand).args

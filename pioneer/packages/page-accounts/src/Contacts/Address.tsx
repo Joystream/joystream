@@ -11,7 +11,7 @@ import styled from 'styled-components';
 import { AddressSmall, AddressInfo, Button, ChainLock, Icon, LinkExternal, Forget, Menu, Popup, Tags } from '@polkadot/react-components';
 import { useApi, useCall } from '@polkadot/react-hooks';
 import keyring from '@polkadot/ui-keyring';
-import { BN_ZERO, formatNumber } from '@polkadot/util';
+import { BN_ZERO, formatNumber, isFunction } from '@polkadot/util';
 
 import Transfer from '../Accounts/modals/Transfer';
 import { useTranslation } from '../translate';
@@ -58,7 +58,7 @@ function Address ({ address, className = '', filter, isFavorite, toggleFavorite 
   useEffect((): void => {
     const { identity, nickname } = info || {};
 
-    if (api.api.query.identity && api.api.query.identity.identityOf) {
+    if (api.api.query.identity && isFunction(api.api.query.identity.identityOf)) {
       if (identity?.display) {
         setAccName(identity.display);
       }

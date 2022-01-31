@@ -13,7 +13,7 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { id } = this.parse(CuratorGroupCommand).args
     const group = await this.getCuratorGroup(id)
     const members = (await this.getApi().groupMembers(WorkingGroups.Curators)).filter((curator) =>

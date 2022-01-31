@@ -29,9 +29,9 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
-      args,
+       args,
       flags: { penalty, rationale },
     } = this.parse(WorkingGroupsEvictWorker)
 

@@ -1,10 +1,11 @@
 # Compiles new joystream/node and joystream/apps images if local images not found
 # and runs a complete joystream development network
 # To prevent build of docker images run docker-compose with "--no-build" arg
-version: "3.4"
+version: '3.4'
 services:
   joystream-node:
-    image: joystream/node:latest
+    image: joystream/node:$JOYSTREAM_NODE_TAG
+    restart: unless-stopped
     build:
       # context is relative to the compose file
       context: .
@@ -12,55 +13,154 @@ services:
       dockerfile: joystream-node.Dockerfile
     container_name: joystream-node
     volumes:
-      - /data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
+      - chain-data:/data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
-      - "127.0.0.1:9944:9944"
-      - "127.0.0.1:9933:9933"
+      - 9944:9944
+      - 9933:9933
 
-  ipfs:
-    image: ipfs/go-ipfs:latest
-    ports:
-      - '127.0.0.1:5001:5001'
-      - '127.0.0.1:8080:8080'
-    volumes:
-      - /data/ipfs
-    entrypoint: ''
-    command: |
-      /bin/sh -c "
-        set -e
-        /usr/local/bin/start_ipfs config profile apply lowpower
-        /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
-        /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
-      "
-
-  colossus:
+  colossus-1:
     image: node:14
+    container_name: colossus-1
+    restart: on-failure
     volumes:
+      - colossus-1-data:/data
+      - colossus-1-keystore:/keystore
+      - colossus-1-logs:/logs
       - type: bind
         source: .
         target: /joystream
-    working_dir: /joystream
-    restart: on-failure
-    depends_on:
-      - "joystream-node"
-      - "ipfs"
+    working_dir: /joystream/storage-node
+    ports:
+      - 3333:3333
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
+      # ACCOUNT_URI overrides command line arg --accountUri
+      - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
+    command: [
+      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      '--sync', '--syncInterval=1',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
+      '--apiUrl=${JOYSTREAM_NODE_WS}',
+      '--logFilePath=/logs'
+    ]
+
+  distributor-1:
+    image: node:14
+    container_name: distributor-1
+    restart: on-failure
+    volumes:
+      - distributor-1-data:/data
+      - distributor-1-cache:/cache
+      - distributor-1-logs:/logs
+      - type: bind
+        source: .
+        target: /joystream
+    # let the working_dir be the distributor node to pickup the config.yml file
+    working_dir: /joystream/distributor-node
     ports:
-      - '127.0.0.1:3001:3001'
-    command: yarn colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
+      - 3334:3334
+      - 127.0.0.1:4334:4334
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    # Node configuration can be overriden via env, for exampe:
+    environment:
+      JOYSTREAM_DISTRIBUTOR__ID: distributor-1
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_1_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_1_WORKER_ID}
+      JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
+      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
+      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
+      JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
+    command: ['yarn', 'joystream-distributor', 'start']
+
+  colossus-2:
+    image: node:14
+    container_name: colossus-2
+    restart: on-failure
+    volumes:
+      - colossus-2-data:/data
+      - colossus-2-keystore:/keystore
+      - colossus-2-logs:/logs
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream/storage-node
+    ports:
+      - 3335:3333
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      # ACCOUNT_URI overrides command line arg --accountUri
+      - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+    command: [
+      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
+      '--sync', '--syncInterval=1',
+      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
+      '--apiUrl=${JOYSTREAM_NODE_WS}',
+      '--logFilePath=/logs'
+    ]
+
+  distributor-2:
+    image: node:14
+    container_name: distributor-2
+    restart: on-failure
+    volumes:
+      - distributor-2-data:/data
+      - distributor-2-cache:/cache
+      - distributor-2-logs:/logs
+      - type: bind
+        source: .
+        target: /joystream
+    # let the working_dir be the distributor node to pickup the config.yml file
+    working_dir: /joystream/distributor-node
+    ports:
+      - 3336:3334
+      - 127.0.0.1:4336:4334
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    # Node configuration can be overriden via env, for exampe:
+    environment:
+      JOYSTREAM_DISTRIBUTOR__ID: distributor-2
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_2_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_2_WORKER_ID}
+      JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
+      JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__JOYSTREAM_NODE_WS: ${JOYSTREAM_NODE_WS}
+      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
+      JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
+      JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
+    command: ['yarn', 'joystream-distributor', 'start']
 
   db:
     image: postgres:12
-    restart: always
+    container_name: db
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:${DB_PORT}:5432"
+      - '127.0.0.1:${DB_PORT}:${DB_PORT}'
     volumes:
-      - /var/lib/postgresql/data
+      - query-node-data:/var/lib/postgresql/data
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -68,63 +168,63 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
+      PGPORT: ${DB_PORT}
 
   graphql-server:
     image: node:14
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
-    working_dir: /joystream
+    container_name: graphql-server
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
       - DB_HOST=db
-      - DB_NAME=${DB_NAME}
+      - WARTHOG_APP_PORT=${GRAPHQL_SERVER_PORT}
     ports:
-      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+      - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
     depends_on:
       - db
-    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
+    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
     image: node:14
+    container_name: processor
+    restart: unless-stopped
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - INDEXER_ENDPOINT_URL=${PROCESSOR_INDEXER_GATEWAY}
+      - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${DB_NAME}
+    depends_on:
+      - db
     volumes:
       - type: bind
         source: .
         target: /joystream
-      - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     working_dir: /joystream
-    restart: unless-stopped
-    env_file:
-      # relative to working directory where docker-compose was run from
-      - .env
-    environment:
-      - INDEXER_ENDPOINT_URL=http://hydra-indexer-gateway:${WARTHOG_APP_PORT}/graphql
-      - TYPEORM_HOST=db
-      - TYPEORM_DATABASE=${DB_NAME}
-      - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
-    depends_on:
-      - hydra-indexer-gateway
-    command: ["yarn", "workspace", "query-node-root", "processor:start"]
+    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
     image: joystream/hydra-indexer:3.0.0
+    container_name: indexer
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - DB_HOST=db
       - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
-      - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - TYPES_JSON=types.json
+      - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
+      - DB_HOST=db
     depends_on:
       - db
       - redis
@@ -135,6 +235,7 @@ services:
 
   hydra-indexer-gateway:
     image: joystream/hydra-indexer-gateway:3.0.0
+    container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
@@ -146,26 +247,94 @@ services:
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
-      - WARTHOG_APP_PORT=${WARTHOG_APP_PORT}
-      - PORT=${WARTHOG_APP_PORT}
+      - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
+      - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - DEBUG=*
     ports:
-      - "127.0.0.1:4000:4002"
+      - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:
-      - redis
       - db
-      - indexer
+      - redis
 
   redis:
     image: redis:6.0-alpine
-    restart: always
+    container_name: redis
+    restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
 
   pioneer:
-    image: joystream/pioneer
-    build:
-      context: .
-      dockerfile: pioneer.Dockerfile
+    image: nginx
+    container_name: pioneer
+    restart: unless-stopped
+    volumes:
+      - ./pioneer/packages/apps/build:/usr/share/nginx/html
     ports:
-      - "127.0.0.1:3000:80"
+      - "3000:80"
+    environment:
+      - NGINX_PORT=80
+
+  faucet:
+    image: joystream/faucet:giza
+    restart: on-failure
+    container_name: faucet
+    environment:
+      - SCREENING_AUTHORITY_SEED=//Alice
+      - PORT=3002
+      - PROVIDER=ws://joystream-node:9944
+      - ENDOWMENT=0
+    ports:
+      - "3002:3002"
+
+  orion:
+    container_name: orion
+    image: joystream/orion
+    environment:
+      - ORION_PORT=6116
+      - ORION_MONGO_HOSTNAME=mongo
+      - ORION_FEATURED_CONTENT_SECRET=password123
+      - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
+    ports:
+      - "6116:6116"
+    depends_on:
+      - mongo
+    restart: always
+
+  mongo:
+    restart: always
+    container_name: mongo
+    image: library/mongo:4.4
+    volumes:
+      - orion-mongo-data:/data/db
+
+volumes:
+  chain-data:
+    driver: local
+  query-node-data:
+    driver: local
+  colossus-1-data:
+    driver: local
+  colossus-1-keystore:
+    driver: local
+  colossus-1-logs:
+    driver: local
+  colossus-2-data:
+    driver: local
+  colossus-2-keystore:
+    driver: local
+  colossus-2-logs:
+    driver: local
+  distributor-1-logs:
+    driver: local
+  distributor-1-cache:
+    driver: local
+  distributor-1-data:
+    driver: local
+  distributor-2-logs:
+    driver: local
+  distributor-2-cache:
+    driver: local
+  distributor-2-data:
+    driver: local
+  orion-mongo-data:
+    driver: local

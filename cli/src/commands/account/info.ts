@@ -13,7 +13,7 @@ export default class AccountInfo extends AccountsCommandBase {
     { name: 'address', required: false, description: 'An address to inspect (can also be provided interavtively)' },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let { address } = this.parse(AccountInfo).args
 
     if (!address) {

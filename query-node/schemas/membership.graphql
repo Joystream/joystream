@@ -1,6 +1,6 @@
 type AvatarObject @variant {
   "The avatar data object"
-  avatarObject: DataObject!
+  avatarObject: StorageDataObject!
 }
 
 type AvatarUri @variant {
@@ -95,6 +95,9 @@ type Membership @entity {
 
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  "List of channels the member has collaborator access to"
+  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
 
   # Council & Referendum relations
 

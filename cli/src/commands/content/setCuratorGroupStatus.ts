@@ -17,7 +17,7 @@ export default class SetCuratorGroupStatusCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()
 
     let { id, status } = this.parse(SetCuratorGroupStatusCommand).args
@@ -46,12 +46,10 @@ export default class SetCuratorGroupStatusCommand extends ContentDirectoryComman
       status = !!parseInt(status)
     }
 
-    await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(lead.roleAccount.toString()),
-      'content',
-      'setCuratorGroupStatus',
-      [id, status]
-    )
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'setCuratorGroupStatus', [
+      id,
+      status,
+    ])
 
     console.log(
       chalk.green(

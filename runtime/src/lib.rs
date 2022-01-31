@@ -38,6 +38,7 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
 };
@@ -69,11 +70,10 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
-use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
@@ -86,8 +86,6 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
 pub use referendum;
-use storage::data_directory::Voucher;
-pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
 pub use content;
@@ -440,9 +438,21 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
+impl common::currency::GovernanceCurrency for Runtime {
+    type Currency = pallet_balances::Module<Self>;
+}
+
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
+    pub const MaxModerators: u64 = 5;    // TODO: update
+    pub const CleanupMargin: u32 = 3;    // TODO: update
+    pub const CleanupCost: u32 = 1; // TODO: update
+    pub const PricePerByte: u32 = 2; // TODO: update
+    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
+    pub const BloatBondCap: u32 = 1000;  // TODO: update
+    pub const VideosMigrationsEachBlock: u64 = 100;
+    pub const ChannelsMigrationsEachBlock: u64 = 25;
 }
 
 impl content::Trait for Runtime {
@@ -456,10 +466,17 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type StorageSystem = data_directory::Module<Self>;
-    type WorkingGroup = ContentDirectoryWorkingGroup;
-    type Membership = Members;
-    type CuratorGroupId = CuratorGroupId;
+    type DataObjectStorage = Storage;
+    type VideoPostId = VideoPostId;
+    type ReactionId = ReactionId;
+    type MaxModerators = MaxModerators;
+    type PricePerByte = PricePerByte;
+    type BloatBondCap = BloatBondCap;
+    type CleanupMargin = CleanupMargin;
+    type CleanupCost = CleanupCost;
+    type ModuleId = ContentModuleId;
+    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
+    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 // The referendum instance alias.
@@ -560,7 +577,6 @@ impl council::Trait for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
-    type DAOId = DaoId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }
@@ -570,24 +586,72 @@ impl memo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
+    pub const MaxDistributionBucketFamilyNumber: u64 = 200;
+    pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
+    pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
+    pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
 }
 
-impl storage::data_object_type_registry::Trait for Runtime {
+impl storage::Trait for Runtime {
     type Event = Event;
-    type WorkingGroup = StorageWorkingGroup;
-}
+    type DataObjectId = DataObjectId;
+    type StorageBucketId = StorageBucketId;
+    type DistributionBucketIndex = DistributionBucketIndex;
+    type DistributionBucketFamilyId = DistributionBucketFamilyId;
+    type ChannelId = ChannelId;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type Randomness = RandomnessCollectiveFlip;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type DistributionBucketOperatorId = DistributionBucketOperatorId;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxDataObjectSize = MaxDataObjectSize;
+    type ContentId = ContentId;
 
-impl storage::data_directory::Trait for Runtime {
-    type Event = Event;
-    type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MembershipOriginValidator = Members;
-}
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        StorageWorkingGroup::ensure_leader_origin(origin)
+    }
 
-impl storage::data_object_storage_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectStorageRelationshipId = u64;
-    type ContentIdExists = DataDirectory;
+    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
+    }
+
+    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_exists(&worker_id)
+    }
+
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        DistributionWorkingGroup::ensure_leader_origin(origin)
+    }
+
+    fn ensure_distribution_worker_origin(
+        origin: Self::Origin,
+        worker_id: ActorId,
+    ) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
+    }
+
+    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
+    }
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -674,7 +738,10 @@ parameter_types! {
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const GatewayRewardPeriod: u32 = 14400 + 50;
-    pub const OperationsRewardPeriod: u32 = 14400 + 60;
+    pub const DistributionRewardPeriod: u32 = 14400 + 50;
+    pub const OperationsAlphaRewardPeriod: u32 = 14400 + 60;
+    pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
+    pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
@@ -688,7 +755,7 @@ parameter_types! {
 // Staking managers type aliases.
 pub type ForumWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ForumGroupLockId>;
-pub type ContentDirectoryWorkingGroupStakingManager =
+pub type ContentWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
 pub type StorageWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
@@ -700,8 +767,14 @@ pub type StakingCandidateStakingHandler =
     staking_handler::StakingManager<Runtime, StakingCandidateLockId>;
 pub type GatewayWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
-pub type OperationsWorkingGroupStakingManager =
-    staking_handler::StakingManager<Runtime, OperationsWorkingGroupLockId>;
+pub type OperationsWorkingGroupAlphaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupAlphaLockId>;
+pub type OperationsWorkingGroupBetaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupBetaLockId>;
+pub type OperationsWorkingGroupGammaStakingManager =
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupGammaLockId>;
+pub type DistributionWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, DistributionWorkingGroupLockId>;
 
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
@@ -710,16 +783,25 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 // The builder working group instance alias.
-pub type OperationsWorkingGroupInstance = working_group::Instance4;
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
+
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
@@ -747,10 +829,10 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+impl working_group::Trait<ContentWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
+    type StakingHandler = ContentWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
@@ -773,14 +855,14 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = OperationsWorkingGroupStakingManager;
+    type StakingHandler = OperationsWorkingGroupAlphaStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = OperationsRewardPeriod;
+    type RewardPeriod = OperationsAlphaRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -794,6 +876,45 @@ impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = GatewayRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = OperationsWorkingGroupBetaStakingManager;
+    type StakingAccountValidator = Members;
+    type MemberOriginValidator = Members;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = OperationsBetaRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = OperationsWorkingGroupGammaStakingManager;
+    type StakingAccountValidator = Members;
+    type MemberOriginValidator = Members;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = OperationsGammaRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = DistributionWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
+    type MemberOriginValidator = Members;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = DistributionRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -842,12 +963,15 @@ parameter_types! {
 macro_rules! call_wg {
     ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
             WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Operations => <OperationsWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
         }
     }};
 }
@@ -1023,10 +1147,7 @@ construct_runtime!(
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
-        // --- Storage
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
@@ -1034,9 +1155,12 @@ construct_runtime!(
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
-        OperationsWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
+        ContentWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
         GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Event<T>},
         MembershipWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance7>::{Module, Call, Storage, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance8>::{Module, Call, Storage, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance9>::{Module, Call, Storage, Event<T>},
     }
 );

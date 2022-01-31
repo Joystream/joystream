@@ -20,7 +20,7 @@ export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.fro
 
 export const lockIdByWorkingGroup: { [K in WorkingGroupModuleName]: string } = {
   storageWorkingGroup: '0x0606060606060606',
-  contentDirectoryWorkingGroup: '0x0707070707070707',
+  contentWorkingGroup: '0x0707070707070707',
   forumWorkingGroup: '0x0808080808080808',
   membershipWorkingGroup: '0x0909090909090909',
   operationsWorkingGroup: '0x0d0d0d0d0d0d0d0d',
@@ -29,7 +29,7 @@ export const lockIdByWorkingGroup: { [K in WorkingGroupModuleName]: string } = {
 
 export const workingGroups: WorkingGroupModuleName[] = [
   'storageWorkingGroup',
-  'contentDirectoryWorkingGroup',
+  'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
   'operationsWorkingGroup',
@@ -38,7 +38,7 @@ export const workingGroups: WorkingGroupModuleName[] = [
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isOfType('Content')) {
-    return 'contentDirectoryWorkingGroup'
+    return 'contentWorkingGroup'
   } else if (group.isOfType('Membership')) {
     return 'membershipWorkingGroup'
   } else if (group.isOfType('Forum')) {

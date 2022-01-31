@@ -26,7 +26,7 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let {
       args: { id, status },
       flags: { rationale },

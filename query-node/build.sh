@@ -9,17 +9,12 @@ set -a
 . ../.env
 set +a
 
+# Install codegen tools (outside of workspaces to avoid @polkadot/api conflicts)
+yarn --cwd codegen install
+
 yarn clean
-
-# Install hydra codegen in separate dir to avoid dependency clashes
-cd ./codegen
-yarn
-cd ..
-
-# Generate types and server code
-yarn typegen
 yarn codegen:noinstall
-yarn format
+yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
@@ -29,6 +24,8 @@ yarn
 ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
 
 yarn workspace query-node codegen
-yarn workspace query-node build:prod
+yarn workspace query-node build
 
 yarn workspace query-node-mappings build
+
+
