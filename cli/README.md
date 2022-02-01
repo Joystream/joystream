@@ -45,7 +45,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.6.0 linux-x64 node-v14.16.1
+@joystream/cli/0.6.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -89,8 +89,11 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
 * [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
 * [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
+* [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
 * [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
+* [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
 * [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
+* [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 * [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 * [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
 * [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
@@ -98,12 +101,18 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
 * [`joystream-cli content:updateChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentupdatechannelcategory-channelcategoryid)
 * [`joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatechannelcensorshipstatus-id-status)
+* [`joystream-cli content:updateChannelModerators`](#joystream-cli-contentupdatechannelmoderators)
 * [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
 * [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
 * [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
 * [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 * [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
+* [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
+* [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
+* [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
+* [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
+* [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 * [`joystream-cli working-groups:apply [OPENINGID]`](#joystream-cli-working-groupsapply-openingid)
 * [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
@@ -163,6 +172,10 @@ Forget (remove) account from the list of available accounts
 ```
 USAGE
   $ joystream-cli account:forget
+
+OPTIONS
+  --address=address  Address of the account to remove
+  --name=name        Name of the account to remove
 ```
 
 _See code: [src/commands/account/forget.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/forget.ts)_
@@ -179,6 +192,7 @@ OPTIONS
   --backupFilePath=backupFilePath  Path to account backup JSON file
   --mnemonic=mnemonic              Mnemonic phrase
   --name=name                      Account name
+  --password=password              Account password
   --seed=seed                      Secret seed
   --suri=suri                      Substrate uri
   --type=(sr25519|ed25519)         Account type (defaults to sr25519)
@@ -358,6 +372,10 @@ USAGE
 ARGUMENTS
   GROUPID    ID of the Curator Group
   CURATORID  ID of the curator
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/addCuratorToGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/addCuratorToGroup.ts)_
@@ -372,6 +390,10 @@ USAGE
 
 ARGUMENTS
   CHANNELID  Name or ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/channel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channel.ts)_
@@ -383,6 +405,10 @@ List existing content directory channels.
 ```
 USAGE
   $ joystream-cli content:channels
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/channels.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channels.ts)_
@@ -398,6 +424,8 @@ USAGE
 OPTIONS
   -i, --input=input           (required) Path to JSON file to use as input
   --context=(Member|Curator)  Actor context to execute the command in (Member/Curator)
+  --useMemberId=useMemberId   Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId   Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannel.ts)_
@@ -411,8 +439,10 @@ USAGE
   $ joystream-cli content:createChannelCategory
 
 OPTIONS
-  -i, --input=input         (required) Path to JSON file to use as input
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  -i, --input=input          (required) Path to JSON file to use as input
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannelCategory.ts)_
@@ -424,6 +454,10 @@ Create new Curator Group.
 ```
 USAGE
   $ joystream-cli content:createCuratorGroup
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 
 ALIASES
   $ joystream-cli createCuratorGroup
@@ -440,8 +474,11 @@ USAGE
   $ joystream-cli content:createVideo
 
 OPTIONS
-  -c, --channelId=channelId  (required) ID of the Channel
-  -i, --input=input          (required) Path to JSON file to use as input
+  -c, --channelId=channelId       (required) ID of the Channel
+  -i, --input=input               (required) Path to JSON file to use as input
+  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
+  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createVideo.ts)_
@@ -455,8 +492,10 @@ USAGE
   $ joystream-cli content:createVideoCategory
 
 OPTIONS
-  -i, --input=input         (required) Path to JSON file to use as input
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  -i, --input=input          (required) Path to JSON file to use as input
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createVideoCategory.ts)_
@@ -471,6 +510,10 @@ USAGE
 
 ARGUMENTS
   ID  ID of the Curator Group
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/curatorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/curatorGroup.ts)_
@@ -482,9 +525,30 @@ List existing Curator Groups.
 ```
 USAGE
   $ joystream-cli content:curatorGroups
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/curatorGroups.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/curatorGroups.ts)_
+
+## `joystream-cli content:deleteChannel`
+
+Delete the channel and optionally all associated data objects.
+
+```
+USAGE
+  $ joystream-cli content:deleteChannel
+
+OPTIONS
+  -c, --channelId=channelId  (required) ID of the Channel
+  -f, --force                Force-remove all associated channel data objects
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannel.ts)_
 
 ## `joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`
 
@@ -498,10 +562,30 @@ ARGUMENTS
   CHANNELCATEGORYID  ID of the Channel Category
 
 OPTIONS
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/deleteChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelCategory.ts)_
+
+## `joystream-cli content:deleteVideo`
+
+Delete the video and optionally all associated data objects.
+
+```
+USAGE
+  $ joystream-cli content:deleteVideo
+
+OPTIONS
+  -f, --force                     Force-remove all associated video data objects
+  -v, --videoId=videoId           (required) ID of the Video
+  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
+  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideo.ts)_
 
 ## `joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`
 
@@ -515,10 +599,30 @@ ARGUMENTS
   VIDEOCATEGORYID  ID of the Video Category
 
 OPTIONS
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/deleteVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoCategory.ts)_
+
+## `joystream-cli content:removeChannelAssets`
+
+Remove data objects associated with the channel or any of its videos.
+
+```
+USAGE
+  $ joystream-cli content:removeChannelAssets
+
+OPTIONS
+  -c, --channelId=channelId       (required) ID of the Channel
+  -o, --objectId=objectId         (required) ID of an object to remove
+  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
+  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/removeChannelAssets.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/removeChannelAssets.ts)_
 
 ## `joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`
 
@@ -531,6 +635,10 @@ USAGE
 ARGUMENTS
   GROUPID    ID of the Curator Group
   CURATORID  ID of the curator
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/removeCuratorFromGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/removeCuratorFromGroup.ts)_
@@ -544,7 +652,9 @@ USAGE
   $ joystream-cli content:reuploadAssets
 
 OPTIONS
-  -i, --input=input  (required) Path to JSON file containing array of assets to reupload (contentIds and paths)
+  -i, --input=input          (required) Path to JSON file containing array of assets to reupload (contentIds and paths)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/reuploadAssets.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/reuploadAssets.ts)_
@@ -560,6 +670,10 @@ USAGE
 ARGUMENTS
   ID      ID of the Curator Group
   STATUS  New status of the group (1 - active, 0 - inactive)
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/setCuratorGroupStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setCuratorGroupStatus.ts)_
@@ -574,6 +688,10 @@ USAGE
 
 ARGUMENTS
   FEATUREDVIDEOIDS  Comma-separated video IDs (ie. 1,2,3)
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/setFeaturedVideos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setFeaturedVideos.ts)_
@@ -590,7 +708,10 @@ ARGUMENTS
   CHANNELID  ID of the Channel
 
 OPTIONS
-  -i, --input=input  (required) Path to JSON file to use as input
+  -i, --input=input               (required) Path to JSON file to use as input
+  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
+  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
@@ -607,8 +728,10 @@ ARGUMENTS
   CHANNELCATEGORYID  ID of the Channel Category
 
 OPTIONS
-  -i, --input=input         (required) Path to JSON file to use as input
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  -i, --input=input          (required) Path to JSON file to use as input
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCategory.ts)_
@@ -626,10 +749,32 @@ ARGUMENTS
   STATUS  New censorship status of the channel (1 - censored, 0 - not censored)
 
 OPTIONS
-  --rationale=rationale  rationale
+  --rationale=rationale      rationale
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateChannelCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCensorshipStatus.ts)_
+
+## `joystream-cli content:updateChannelModerators`
+
+Update Channel's moderator set.
+
+```
+USAGE
+  $ joystream-cli content:updateChannelModerators
+
+OPTIONS
+  -c, --channelId=channelId    (required) Channel id
+  -m, --moderators=moderators  New set of moderators
+  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
+
+EXAMPLE
+  $ content:updateChannelModerators -c 1 -m 1 2 3
+```
+
+_See code: [src/commands/content/updateChannelModerators.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelModerators.ts)_
 
 ## `joystream-cli content:updateVideo VIDEOID`
 
@@ -643,7 +788,10 @@ ARGUMENTS
   VIDEOID  ID of the Video
 
 OPTIONS
-  -i, --input=input  (required) Path to JSON file to use as input
+  -i, --input=input               (required) Path to JSON file to use as input
+  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
+  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideo.ts)_
@@ -660,8 +808,10 @@ ARGUMENTS
   VIDEOCATEGORYID  ID of the Video Category
 
 OPTIONS
-  -i, --input=input         (required) Path to JSON file to use as input
-  --context=(Lead|Curator)  Actor context to execute the command in (Lead/Curator)
+  -i, --input=input          (required) Path to JSON file to use as input
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCategory.ts)_
@@ -679,7 +829,9 @@ ARGUMENTS
   STATUS  New video censorship status (1 - censored, 0 - not censored)
 
 OPTIONS
-  --rationale=rationale  rationale
+  --rationale=rationale      rationale
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateVideoCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCensorshipStatus.ts)_
@@ -694,6 +846,10 @@ USAGE
 
 ARGUMENTS
   VIDEOID  ID of the Video
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/video.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/video.ts)_
@@ -708,6 +864,10 @@ USAGE
 
 ARGUMENTS
   CHANNELID  ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
@@ -729,6 +889,104 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
 
+## `joystream-cli membership:addStakingAccount`
+
+Associate a new staking account with an existing membership.
+
+```
+USAGE
+  $ joystream-cli membership:addStakingAccount
+
+OPTIONS
+  --address=address          Address of the staking account to be associated with the member
+
+  --fundsSource=fundsSource  If provided, this account will be used as funds source for the purpose of initializing the
+                             staking accout
+
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+
+  --withBalance=withBalance  Allows optionally specifying required initial balance for the staking account
+```
+
+_See code: [src/commands/membership/addStakingAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/addStakingAccount.ts)_
+
+## `joystream-cli membership:buy`
+
+Buy / register a new membership on the Joystream platform.
+
+```
+USAGE
+  $ joystream-cli membership:buy
+
+OPTIONS
+  --about=about                  Member's md-formatted about text (bio)
+  --avatarUri=avatarUri          Member's avatar uri
+  --controllerKey=controllerKey  Member's controller key. Can also be provided interactively.
+  --handle=handle                (required) Member's handle
+  --name=name                    Member's first name / full name
+  --rootKey=rootKey              Member's root key. Can also be provided interactively.
+  --senderKey=senderKey          Tx sender key. If not provided, controllerKey will be used by default.
+
+ALIASES
+  $ joystream-cli membership:create
+  $ joystream-cli membership:register
+```
+
+_See code: [src/commands/membership/buy.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/buy.ts)_
+
+## `joystream-cli membership:details`
+
+Display membership details by specified memberId.
+
+```
+USAGE
+  $ joystream-cli membership:details
+
+OPTIONS
+  -m, --memberId=memberId  (required) Member id
+
+ALIASES
+  $ joystream-cli membership:info
+  $ joystream-cli membership:inspect
+  $ joystream-cli membership:show
+```
+
+_See code: [src/commands/membership/details.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/details.ts)_
+
+## `joystream-cli membership:update`
+
+Update existing membership metadata and/or handle.
+
+```
+USAGE
+  $ joystream-cli membership:update
+
+OPTIONS
+  --newAbout=newAbout          Member's new md-formatted about text (bio)
+  --newAvatarUri=newAvatarUri  Member's new avatar uri
+  --newHandle=newHandle        Member's new handle
+  --newName=newName            Member's new first name / full name
+  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/membership/update.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/update.ts)_
+
+## `joystream-cli membership:updateAccounts`
+
+Update existing membership accounts/keys (root / controller).
+
+```
+USAGE
+  $ joystream-cli membership:updateAccounts
+
+OPTIONS
+  --newControllerAccount=newControllerAccount  Member's new controller account/key
+  --newRootAccount=newRootAccount              Member's new root account/key
+  --useMemberId=useMemberId                    Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/membership/updateAccounts.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/updateAccounts.ts)_
+
 ## `joystream-cli working-groups:application WGAPPLICATIONID`
 
 Shows an overview of given application by Working Group Application ID
@@ -741,11 +999,18 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
@@ -762,11 +1027,18 @@ ARGUMENTS
   OPENINGID  Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/apply.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/apply.ts)_
@@ -783,11 +1055,18 @@ ARGUMENTS
   OPENINGID  Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/cancelOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/cancelOpening.ts)_
@@ -801,28 +1080,31 @@ USAGE
   $ joystream-cli working-groups:createOpening
 
 OPTIONS
-  -e, --edit                                                                   If provided along with --input - launches
-                                                                               in edit mode allowing to modify the input
-                                                                               before sending the exstinsic
+  -e, --edit
+      If provided along with --input - launches in edit mode allowing to modify the input before sending the exstinsic
 
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
 
-  -i, --input=input                                                            Path to JSON file to use as input (if not
-                                                                               specified - the input can be provided
-                                                                               interactively)
+  -i, --input=input
+      Path to JSON file to use as input (if not specified - the input can be provided interactively)
 
-  -o, --output=output                                                          Path to the file where the output JSON
-                                                                               should be saved (this output can be then
-                                                                               reused as input)
+  -o, --output=output
+      Path to the file where the output JSON should be saved (this output can be then reused as input)
 
-  --dryRun                                                                     If provided along with --output - skips
-                                                                               sending the actual extrinsic(can be used
-                                                                               to generate a "draft" which can be
-                                                                               provided as input later)
+  --dryRun
+      If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be 
+      provided as input later)
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/createOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/createOpening.ts)_
@@ -840,11 +1122,18 @@ ARGUMENTS
   AMOUNT    Amount of JOY to decrease the current worker stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
@@ -861,15 +1150,24 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
 
-  --penalty=penalty                                                            Optional penalty in JOY
+  --penalty=penalty
+      Optional penalty in JOY
 
-  --rationale=rationale                                                        Optional rationale
+  --rationale=rationale
+      Optional rationale
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
@@ -886,11 +1184,18 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
@@ -907,11 +1212,18 @@ ARGUMENTS
   AMOUNT  Amount of JOY to increase the current stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
@@ -925,13 +1237,20 @@ USAGE
   $ joystream-cli working-groups:leaveRole
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
 
   --rationale=rationale
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
@@ -948,11 +1267,18 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
@@ -966,11 +1292,18 @@ USAGE
   $ joystream-cli working-groups:openings
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
@@ -984,11 +1317,18 @@ USAGE
   $ joystream-cli working-groups:overview
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
@@ -1002,11 +1342,18 @@ USAGE
   $ joystream-cli working-groups:setDefaultGroup
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/setDefaultGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/setDefaultGroup.ts)_
@@ -1024,13 +1371,20 @@ ARGUMENTS
   AMOUNT    Slash amount
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
 
   --rationale=rationale
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
@@ -1044,14 +1398,21 @@ USAGE
   $ joystream-cli working-groups:updateRewardAccount [ADDRESS]
 
 ARGUMENTS
-  ADDRESS  New reward account address (if omitted, one of the existing CLI accounts can be selected)
+  ADDRESS  New reward account address (if omitted, can be provided interactivel)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
@@ -1068,11 +1429,18 @@ ARGUMENTS
   ADDRESS  New role account address (if omitted, can be provided interactively)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
@@ -1089,11 +1457,18 @@ ARGUMENTS
   STORAGE  Worker storage
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
@@ -1111,11 +1486,18 @@ ARGUMENTS
   NEWREWARD  New reward
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
-                                                                               command should be executed
-                                                                               Available values are: storageProviders,
-                                                                               curators, forum, membership, operations,
-                                                                               gateway.
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
