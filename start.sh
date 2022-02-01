@@ -22,7 +22,8 @@ else
 fi
 
 ## Run a local development chain
-docker-compose up -d joystream-node
+JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(scripts/runtime-code-shasum.sh)} \
+  docker-compose up -d joystream-node
 
 ## Init the chain with some state
 export SKIP_MOCK_CONTENT=true
