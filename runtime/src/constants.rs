@@ -121,8 +121,11 @@ parameter_types! {
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
-// This is a copye because the current Substrate staking lock ID is not exported.
+// This is a copy because the current Substrate staking lock ID is not exported.
 const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
+
+// Vesting lock ID used by the vesting pallet.
+const VESTING_LOCK_ID: LockIdentifier = *b"vesting ";
 
 lazy_static! {
     // pairs of allowed lock combinations
@@ -144,6 +147,7 @@ lazy_static! {
             OperationsWorkingGroupGammaLockId::get(),
             DistributionWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (StakingCandidateLockId::get(), [
             VotingLockId::get(),
@@ -161,6 +165,7 @@ lazy_static! {
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
             InvitedMemberLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (VotingLockId::get(), [
             InvitedMemberLockId::get(),
@@ -178,76 +183,90 @@ lazy_static! {
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (CandidacyLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             CouncilorLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (CouncilorLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             CandidacyLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         // Proposals
         (ProposalsLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         // Working Groups
         (ForumGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (ContentWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (StorageWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (MembershipWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (GatewayWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (DistributionWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (OperationsWorkingGroupAlphaLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (OperationsWorkingGroupBetaLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         (OperationsWorkingGroupGammaLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
         // Bounty
         (BountyLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
+            VESTING_LOCK_ID,
         ].to_vec()),
     ]
     .iter()
