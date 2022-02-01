@@ -11,6 +11,7 @@ export AUTO_CONFIRM=true
 # Init content lead
 GROUP=contentWorkingGroup yarn workspace api-scripts initialize-lead
 # Add integration tests lead key (in case the script is executed after ./start.sh)
+yarn joystream-cli account:forget --name "Test content lead key" || true
 yarn joystream-cli account:import --suri //testing//worker//Content//0 --name "Test content lead key" --password "" || true
 # Test create/update/remove category
 yarn joystream-cli content:createVideoCategory -i ./examples/content/CreateCategory.json
@@ -62,3 +63,5 @@ yarn joystream-cli content:deleteVideo -v 3 -f
 yarn joystream-cli content:deleteChannel -c 1 -f
 yarn joystream-cli content:deleteChannel -c 2 -f
 yarn joystream-cli content:deleteChannel -c 3 -f
+# Forget test content lead account
+yarn joystream-cli account:forget --name "Test content lead key"
