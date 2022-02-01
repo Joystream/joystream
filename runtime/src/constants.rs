@@ -117,7 +117,6 @@ parameter_types! {
     pub const GatewayWorkingGroupLockId: LockIdentifier = [14; 8];
     pub const OperationsWorkingGroupBetaLockId: LockIdentifier = [15; 8];
     pub const OperationsWorkingGroupGammaLockId: LockIdentifier = [16; 8];
-    pub const DistributionWorkingGroupLockId: LockIdentifier = [17; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -142,7 +141,6 @@ lazy_static! {
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
-            DistributionWorkingGroupLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
         (StakingCandidateLockId::get(), [
@@ -156,7 +154,6 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
-            DistributionWorkingGroupLockId::get(),
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
@@ -173,7 +170,6 @@ lazy_static! {
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
             GatewayWorkingGroupLockId::get(),
-            DistributionWorkingGroupLockId::get(),
             OperationsWorkingGroupAlphaLockId::get(),
             OperationsWorkingGroupBetaLockId::get(),
             OperationsWorkingGroupGammaLockId::get(),
@@ -223,11 +219,6 @@ lazy_static! {
             VotingLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
-        (DistributionWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
         (OperationsWorkingGroupAlphaLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
@@ -245,7 +236,6 @@ lazy_static! {
         ].to_vec()),
         // Bounty
         (BountyLockId::get(), [
-            InvitedMemberLockId::get(),
             VotingLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),

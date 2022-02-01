@@ -24,7 +24,7 @@ pub enum WorkingGroup {
     /// Gateway working group: working_group::Instance5.
     Gateway,
 
-    /// Distribution working group: working_group::Instance9.
+    /// Distribution working group: working_group::Instance6.
     Distribution,
 
     /// Operations working group: working_group::Instance7.
@@ -33,7 +33,7 @@ pub enum WorkingGroup {
     /// Operations working group: working_group::Instance8.
     OperationsGamma,
 
-    /// Membership Working Group: working_group::Instanc6.
+    /// Membership Working Group
     Membership,
 }
 
