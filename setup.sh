@@ -19,7 +19,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install coreutils gnu-tar jq curl llvm || :
+    brew install coreutils gnu-tar jq curl llvm gnu-sed || :
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
     echo "It is also recommended to install qemu emulators with following command:"
     echo "docker run --privileged --rm tonistiigi/binfmt --install all"
