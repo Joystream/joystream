@@ -1,0 +1,169 @@
+name: Deploy Network
+
+on:
+  workflow_dispatch:
+    inputs:
+      jsonInput:
+        description: 'Json input (refer to .pipelines/deploy-node-network-inputs.json)'
+        required: true
+        default: ''
+
+defaults:
+  run:
+    working-directory: devops/aws
+
+jobs:
+  deploy-node-network:
+    name: Create CloudFormation stack and run Ansible playbook
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: ga-deploy-node-network-${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set env variables
+        id: myoutputs # set the outputs
+        run: |
+          jsonInput=$(jq -r '.inputs.jsonInput' $GITHUB_EVENT_PATH)
+          export ENCRYPTION_KEY=$(echo $jsonInput | jq -r '.encryptionKey.value')
+          echo ::set-output name=encryptionKey::$ENCRYPTION_KEY
+          echo "::add-mask::$ENCRYPTION_KEY"
+          echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
+          echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
+          echo ::set-output name=keyName::$(echo $jsonInput | jq -r '.keyName.value')
+          echo ::set-output name=numberOfValidators::$(echo $jsonInput | jq -r '.numberOfValidators.value')
+          echo ::set-output name=validatorInstanceType::$(echo $jsonInput | jq -r '.validatorInstanceType.value')
+          echo ::set-output name=buildInstanceType::$(echo $jsonInput | jq -r '.buildInstanceType.value')
+          echo ::set-output name=rpcInstanceType::$(echo $jsonInput | jq -r '.rpcInstanceType.value')
+          echo ::set-output name=ec2AMI::$(echo $jsonInput | jq -r '.ec2AMI.value')
+          echo ::set-output name=networkSuffix::$(echo $jsonInput | jq -r '.networkSuffix.value')
+          echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
+          initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
+          initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
+          if [ -z "$initialBalancesFile" ]
+          then
+            echo ::set-output name=initialBalancesFilePath::''
+          else
+            wget $initialBalancesFile -O initial-balances.json
+            echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
+          fi
+          if [ -z "$initialMembersFile" ]
+          then
+            echo ::set-output name=initialMembersFilePath::''
+          else
+            wget $initialMembersFile -O initial-members.json
+            echo ::set-output name=initialMembersFilePath::'initial-members.json'
+          fi
+
+      - name: Install Ansible dependencies
+        run: pipx inject ansible-core boto3 botocore
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        id: deploy_stack
+        with:
+          name: ${{ env.STACK_NAME }}
+          template: devops/aws/cloudformation/infrastructure.yml
+          no-fail-on-empty-changeset: '1'
+          parameter-overrides: >-
+            KeyName=${{ steps.myoutputs.outputs.keyName }},
+            ValidatorEC2InstanceType=${{ steps.myoutputs.outputs.validatorInstanceType }},
+            RPCEC2InstanceType=${{ steps.myoutputs.outputs.rpcInstanceType }},
+            BuildEC2InstanceType=${{ steps.myoutputs.outputs.buildInstanceType }},
+            EC2AMI=${{ steps.myoutputs.outputs.ec2AMI }},
+            NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }}
+
+      - name: Prepare inventory for Ansible
+        run: |
+          ASG=${{ steps.deploy_stack.outputs.AutoScalingId }}
+
+          VALIDATORS=""
+
+          INSTANCES=$(aws autoscaling describe-auto-scaling-instances \
+            --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
+
+          for ID in $INSTANCES
+          do
+            IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --output text)
+            VALIDATORS+="$IP\n"
+          done
+
+          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n" >> inventory
+          echo -e "[validators]\n$VALIDATORS" >> inventory
+          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
+          cat inventory
+
+      - name: Run playbook to compile joystream-node on build server
+        uses: dawidd6/action-ansible-playbook@v2
+        if: steps.myoutputs.outputs.ec2AMI == ''
+        with:
+          playbook: build-code.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "branch_name=${{ steps.myoutputs.outputs.branchName }} \
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata"
+
+      - name: Run playbook to install additional utils on build server
+        uses: dawidd6/action-ansible-playbook@v2
+        if: steps.myoutputs.outputs.ec2AMI == ''
+        with:
+          playbook: setup-admin.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+
+      - name: Run playbook to configure chain-spec and pioneer
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: chain-spec-pioneer.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "network_suffix=${{ steps.myoutputs.outputs.networkSuffix }} data_path=mydata \
+                          number_of_validators=${{ steps.myoutputs.outputs.numberOfValidators }} \
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} \
+                          deployment_type=${{ steps.myoutputs.outputs.deploymentType }} \
+                          bucket_name=${{ steps.deploy_stack.outputs.S3BucketName }} \
+                          branch_name=${{ steps.myoutputs.outputs.branchName }} \
+                          initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
+                          initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }}"
+
+      - name: Encrpyt the artifacts
+        run: |
+          7z a -p${{ steps.myoutputs.outputs.encryptionKey }} chain-data.7z mydata/*
+
+      - name: Save the output as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: data-chainspec-auth
+          path: devops/aws/chain-data.7z
+
+      - name: Print output URL's
+        run: |
+          echo -e "Pioneer URL: https://${{ steps.deploy_stack.outputs.DomainName }}"
+          echo -e "RPC: wss://${{ steps.deploy_stack.outputs.RPCPublicIp }}.nip.io/ws-rpc"
+
+      - name: Delete CloudFormation Stack if any step failed
+        if: failure()
+        run: |
+          echo "Empty the bucket"
+          aws s3 rm s3://${{ steps.deploy_stack.outputs.S3BucketName }} --recursive || echo "No bucket"
+          echo "Deleting ${{ env.STACK_NAME }} stack"
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
