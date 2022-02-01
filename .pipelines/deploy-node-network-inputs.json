@@ -28,8 +28,8 @@
     "value": "t2.micro"
   },
   "ec2AMI": {
-    "description": "Pre-built AMI ID (ami-0090c9c49dc765fbb)",
-    "value": "ami-0090c9c49dc765fbb"
+    "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
+    "value": "ami-095792100b6e43a67"
   },
   "networkSuffix": {
     "description": "Network suffix that will be added to the network name",
