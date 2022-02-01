@@ -43,6 +43,8 @@
 
 - name: Run query node containers
   command: yarn workspace query-node-root start:dev
+  environment:
+    JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
   args:
     chdir: '{{ remote_code_path }}'
   async: 1800
