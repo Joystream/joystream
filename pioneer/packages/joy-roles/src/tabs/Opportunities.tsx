@@ -485,20 +485,20 @@ const OpeningLabel = styled(Label)`
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
 const renderWorkingGroupName = (workingGroup: WorkingGroups) => {
-  if(workingGroup === WorkingGroups.OperationsAlpha) {
-    return "Builders";
+  if (workingGroup === WorkingGroups.OperationsAlpha) {
+    return 'Builders';
   }
 
-  if(workingGroup === WorkingGroups.OperationsBeta) {
-    return "Human Resources";
+  if (workingGroup === WorkingGroups.OperationsBeta) {
+    return 'Human Resources';
   }
 
-  if(workingGroup === WorkingGroups.OperationsGamma) {
-    return "Marketing";
+  if (workingGroup === WorkingGroups.OperationsGamma) {
+    return 'Marketing';
   }
 
   return workingGroup;
-}
+};
 
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
