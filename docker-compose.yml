@@ -263,17 +263,6 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
-  pioneer:
-    image: nginx
-    container_name: pioneer
-    restart: unless-stopped
-    volumes:
-      - ./pioneer/packages/apps/build:/usr/share/nginx/html
-    ports:
-      - "3000:80"
-    environment:
-      - NGINX_PORT=80
-
   faucet:
     image: joystream/faucet:giza
     restart: on-failure

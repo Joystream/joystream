@@ -3,8 +3,8 @@
 // run this script with:
 // yarn workspace api-scripts script example
 //
-// or copy and paste the code into the pioneer javascript toolbox at:
-// https://testnet.joystream.org/#/js
+// or copy and paste the code into the Polkadot-js/apps javascript toolbox at:
+// https://polkadot.js.org/apps/#/js
 //
 // Example works on nicaea release+
 
@@ -23,7 +23,7 @@ const script = async ({ api, hashing, keyring, types, util, joy }) => {
 }
 
 if (typeof module === 'undefined') {
-  // Pioneer js-toolbox
+  // Polkadot-js/apps js-toolbox
   // Available globals [api, hashing, keyring, types, util, joy]
   script({ api, hashing, keyring, types, util, joy })
 } else {

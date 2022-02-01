@@ -50,7 +50,6 @@ export enum WorkingGroups {
   Distribution = 'distributors',
 }
 
-// In contrast to Pioneer, currently only StorageProviders group is available in CLI
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
