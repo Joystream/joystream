@@ -82,7 +82,7 @@ const WG_MINT_CAP_MAX = 50000000;
 // Fill Working Group Leader Opening / Set Working Group Lead Reward
 // TODO: Discuss the actual values
 const MIN_REWARD_AMOUNT = 1;
-const MAX_REWARD_AMOUNT = 100000;
+const MAX_REWARD_AMOUNT = 1000000;
 const MIN_REWARD_INTERVAL = 600; // 1 h
 const MAX_REWARD_INTERVAL = 30 * 14400; // 30 days
 // 3 days margin (voting_period) to prevent FillOpeningInvalidNextPaymentBlock
