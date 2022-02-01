@@ -30,7 +30,7 @@ export SKIP_QUERY_NODE_CHECKS=true
 HOST_IP=$(tests/network-tests/get-host-ip.sh)
 export COLOSSUS_1_URL=${COLOSSUS_1_URL:="http://${HOST_IP}:3333"}
 export COLOSSUS_1_TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
-export DISTRIBUTOR_1_URL={DISTRIBUTOR_1_URL:="http://${HOST_IP}:3334"}
+export DISTRIBUTOR_1_URL=${DISTRIBUTOR_1_URL:="http://${HOST_IP}:3334"}
 ./tests/integration-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
 ## Member faucet
