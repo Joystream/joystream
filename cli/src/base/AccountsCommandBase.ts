@@ -35,7 +35,7 @@ export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
-  private selectedMember: [MemberId, Membership] | undefined
+  private selectedMember: MemberDetails | undefined
   private _keyring: KeyringInstance | undefined
 
   private get keyring(): KeyringInstance {
@@ -321,20 +321,20 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<[MemberId, Membership]> {
+  async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<MemberDetails> {
     if (
       useSelected &&
       this.selectedMember &&
-      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.[0])))
+      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.id)))
     ) {
       return this.selectedMember
     }
 
-    const membersEntries = allowedIds
-      ? await this.getApi().memberEntriesByIds(allowedIds)
-      : await this.getApi().allMemberEntries()
+    const membersDetails = allowedIds
+      ? await this.getApi().membersDetailsByIds(allowedIds)
+      : await this.getApi().allMembersDetails()
     const availableMemberships = await Promise.all(
-      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
+      membersDetails.filter((m) => this.isKeyAvailable(m.membership.controller_account.toString()))
     )
 
     if (!availableMemberships.length) {
@@ -354,15 +354,12 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return this.selectedMember
   }
 
-  async promptForMember(
-    availableMemberships: [MemberId, Membership][],
-    message = 'Choose a member'
-  ): Promise<[MemberId, Membership]> {
+  async promptForMember(availableMemberships: MemberDetails[], message = 'Choose a member'): Promise<MemberDetails> {
     const memberIndex = await this.simplePrompt({
       type: 'list',
       message,
-      choices: availableMemberships.map(([, membership], i) => ({
-        name: membership.handle.toString(),
+      choices: availableMemberships.map((m, i) => ({
+        name: `id: ${m.id}, handle: ${memberHandle(m)}`,
         value: i,
       })),
     })

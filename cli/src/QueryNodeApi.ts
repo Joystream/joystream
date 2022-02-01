@@ -24,9 +24,9 @@ import {
   GetDataObjectsByChannelId,
   GetDataObjectsByChannelIdQuery,
   GetDataObjectsByChannelIdQueryVariables,
-  GetMemberById,
-  GetMemberByIdQuery,
-  GetMemberByIdQueryVariables,
+  GetMembersByIds,
+  GetMembersByIdsQuery,
+  GetMembersByIdsQueryVariables,
   MembershipFieldsFragment,
 } from './graphql/generated/queries'
 import { URL } from 'url'
@@ -128,13 +128,13 @@ export default class QueryNodeApi {
     return validNodesInfo
   }
 
-  async fetchMemberQueryNodeData(memberId: MemberId): Promise<MembershipFieldsFragment | null | undefined> {
-    return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
-      GetMemberById,
+  async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetMembersByIdsQuery, GetMembersByIdsQueryVariables>(
+      GetMembersByIds,
       {
-        id: memberId.toString(),
+        ids: ids.map((id) => id.toString()),
       },
-      'membershipByUniqueInput'
+      'memberships'
     )
   }
 }

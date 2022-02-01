@@ -5,7 +5,7 @@
   },
   "runtime_upgrade_proposal": {
     "voting_period": 100,
-    "grace_period": 20,
+    "grace_period": 40,
     "constitutionality": 2
   },
   "signal_proposal": {
@@ -14,7 +14,7 @@
   },
   "funding_request_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "create_working_group_lead_opening_proposal": {
       "voting_period": 20,
@@ -46,7 +46,7 @@
   },
   "amend_constitution_proposal": {
       "voting_period": 20,
-      "grace_period": 20,
+      "grace_period": 40,
       "constitutionality": 2
   },
   "cancel_working_group_lead_opening_proposal": {
@@ -55,47 +55,47 @@
   },
   "set_membership_price_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "set_council_budget_increment_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "set_councilor_reward_proposal": {
       "voting_period": 20,
-      "grace_period": 20
+      "grace_period": 40
   },
   "set_initial_invitation_balance_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "set_membership_lead_invitation_quota_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "set_referral_cut_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "set_invitation_count_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "create_blog_post_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "edit_blog_post_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "lock_blog_post_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "unlock_blog_post_proposal": {
       "voting_period": 20,
-      "grace_period": 10
+      "grace_period": 20
   },
   "veto_proposal_proposal": {
       "voting_period": 20,

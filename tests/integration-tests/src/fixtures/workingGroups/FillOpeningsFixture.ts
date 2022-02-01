@@ -10,7 +10,6 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
 import { BTreeSet } from '@polkadot/types'
 import { registry } from '@joystream/types'
-import { lockIdByWorkingGroup } from '../../consts'
 import {
   LeaderSetEventFieldsFragment,
   OpeningFieldsFragment,
@@ -80,7 +79,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
       this.acceptedApplicationsArrays.map((acceptedApplications) =>
         Promise.all(
           acceptedApplications.map((a) =>
-            this.api.getStakedBalance(a.staking_account_id, lockIdByWorkingGroup[this.group])
+            this.api.getStakedBalance(a.staking_account_id, this.api.lockIdByGroup(this.group))
           )
         )
       )

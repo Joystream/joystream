@@ -17,7 +17,7 @@ export default async function polls({ api, query }: FlowProps): Promise<void> {
   api.enableDebugTxLogs()
 
   // Create test member(s)
-  const accounts = (await api.createKeyPairs(5)).map((kp) => kp.address)
+  const accounts = (await api.createKeyPairs(5)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
   await new FixtureRunner(buyMembershipFixture).run()
   const memberIds = buyMembershipFixture.getCreatedMembers()

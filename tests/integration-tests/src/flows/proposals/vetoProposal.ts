@@ -12,7 +12,7 @@ export default async function vetoProposal({ api, query, lock }: FlowProps): Pro
 
   const unlocks = await Promise.all(Array.from({ length: 2 }, () => lock(Resource.Proposals)))
 
-  const [account] = (await api.createKeyPairs(1)).map((kp) => kp.address)
+  const [account] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()

@@ -20,6 +20,8 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
         'InChannel': aVideo.in_channel.toString(),
         'InSeries': aVideo.in_series.unwrapOr('NONE').toString(),
         'IsCensored': aVideo.is_censored.toString(),
+        'CommentsEnabled': aVideo.enable_comments.toString(),
+        'PostId': aVideo.video_post_id.toString(),
       })
     } else {
       this.error(`Video not found by channel id: "${videoId}"!`)

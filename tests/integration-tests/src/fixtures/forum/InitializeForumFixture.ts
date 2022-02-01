@@ -117,7 +117,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
       moderatorsPerCategory,
     } = this.config
     // Create forum members
-    const accounts = (await api.createKeyPairs(numberOfForumMembers)).map((kp) => kp.address)
+    const accounts = (await api.createKeyPairs(numberOfForumMembers)).map(({ key }) => key.address)
     const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
     await new FixtureRunner(buyMembershipFixture).run()
     const forumMemberIds = buyMembershipFixture.getCreatedMembers()

@@ -13,7 +13,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const numberOfVoters = numberOfCandidates
 
     // Prepare memberships
-    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map((kp) => kp.address)
+    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
     await new FixtureRunner(buyMembershipsFixture).run()
     const candidatesMemberIds = buyMembershipsFixture.getCreatedMembers()
@@ -22,7 +22,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const councilCandidateStake = api.consts.council.minCandidateStake
     const voteStake = api.consts.referendum.minimumStake
 
-    const candidatesStakingAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map((kp) => kp.address)
+    const candidatesStakingAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
     const addStakingAccountsFixture = new AddStakingAccountsHappyCaseFixture(
       api,
       query,
@@ -34,7 +34,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     )
     await new FixtureRunner(addStakingAccountsFixture).run()
 
-    const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map((kp) => kp.address)
+    const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
     await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake.addn(MINIMUM_STAKING_ACCOUNT_BALANCE))
 
     // Announcing stage
@@ -80,15 +80,17 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
 
     // check intermediate election winners are properly set
-    await query.tryQueryWithTimeout(
-      () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
-      (qnReferendumIntermediateWinners) => {
-        assert.sameMembers(
-          qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
-          candidatesToWinIds
-        )
-      }
-    )
+    if (this.queryNodeChecksEnabled) {
+      await query.tryQueryWithTimeout(
+        () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
+        (qnReferendumIntermediateWinners) => {
+          assert.sameMembers(
+            qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
+            candidatesToWinIds
+          )
+        }
+      )
+    }
 
     await this.api.untilCouncilStage('Idle')
 
@@ -97,7 +99,10 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       councilMembers.map((m) => m.membership_id.toString()),
       candidatesToWinIds
     )
+  }
 
+  public async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }

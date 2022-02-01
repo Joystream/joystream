@@ -27,7 +27,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   await new FixtureRunner(createLeadOpeningsFixture).run()
   const [openingToCancelId, openingToFillId] = createLeadOpeningsFixture.getCreatedOpeningIds()
 
-  const [applicantControllerAcc, applicantStakingAcc] = (await api.createKeyPairs(2)).map((kp) => kp.address)
+  const [applicantControllerAcc, applicantStakingAcc] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [applicantControllerAcc])
   await new FixtureRunner(buyMembershipFixture).run()
   const [applicantMemberId] = buyMembershipFixture.getCreatedMembers()
@@ -56,7 +56,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   const [applicationId] = applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingToFillId)
   debug('Openings and applicantions created')
 
-  const accountsToFund = (await api.createKeyPairs(5)).map((key) => key.address)
+  const accountsToFund = (await api.createKeyPairs(5)).map(({ key }) => key.address)
   const proposalsToTest: TestedProposal[] = [
     { details: { AmendConstitution: 'New constitution' } },
     {

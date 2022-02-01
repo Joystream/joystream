@@ -53,7 +53,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
 
   protected async initStakingAccounts(): Promise<void> {
     const { api, query } = this
-    const stakingAccounts = (await this.api.createKeyPairs(this.proposalsParams.length)).map((kp) => kp.address)
+    const stakingAccounts = (await this.api.createKeyPairs(this.proposalsParams.length)).map(({ key }) => key.address)
     const addStakingAccountsFixture = new AddStakingAccountsHappyCaseFixture(
       api,
       query,

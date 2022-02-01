@@ -26,7 +26,7 @@ import { u8aToHex, formatBalance } from '@polkadot/util'
 import { KeyringPair } from '@polkadot/keyring/types'
 import FormData from 'form-data'
 import BN from 'bn.js'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { StorageAssets } from '@joystream/types/content'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
@@ -187,7 +187,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async generateDataObjectParameters(filePath: string): Promise<DataObjectCreationParameters> {
-    return createTypeFromConstructor(DataObjectCreationParameters, {
+    return createType<DataObjectCreationParameters, 'DataObjectCreationParameters'>('DataObjectCreationParameters', {
       size: this.getFileSize(filePath),
       ipfsContentId: await this.calculateFileHash(filePath),
     })
@@ -359,7 +359,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           )} (recoverable on data object(s) removal)\n` +
           `Are you sure you want to continue?`
       )
-      return createTypeFromConstructor(StorageAssets, {
+      return createType<StorageAssets, 'StorageAssets'>('StorageAssets', {
         expected_data_size_fee: feePerMB,
         object_creation_list: resolvedAssets.map((a) => a.parameters),
       })

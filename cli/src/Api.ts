@@ -19,14 +19,7 @@ import {
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
-import {
-  Worker,
-  WorkerId,
-  OpeningId,
-  Application,
-  ApplicationId,
-  Opening,
-} from '@joystream/types/working-group'
+import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
 import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
 import {
@@ -39,6 +32,8 @@ import {
   VideoCategoryId,
 } from '@joystream/types/content'
 import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
+import QueryNodeApi from './QueryNodeApi'
+import { MembershipFieldsFragment } from './graphql/generated/queries'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -55,23 +50,16 @@ export const apiModuleByGroup = {
   [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 } as const
 
-export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
-  [WorkingGroups.StorageProviders]: '0x0606060606060606',
-  [WorkingGroups.Curators]: '0x0707070707070707',
-  [WorkingGroups.Forum]: '0x0808080808080808',
-  [WorkingGroups.Membership]: '0x0909090909090909',
-  [WorkingGroups.Gateway]: '0x0e0e0e0e0e0e0e0e',
-  // TODO: TBD. OperationsAlpha, OperationsBeta, OperationsGamma, Distribution
-}
-
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
+  private _qnApi: QueryNodeApi | undefined
   public isDevelopment = false
 
-  private constructor(originalApi: ApiPromise, isDevelopment: boolean) {
+  private constructor(originalApi: ApiPromise, isDevelopment: boolean, qnApi?: QueryNodeApi) {
     this.isDevelopment = isDevelopment
     this._api = originalApi
+    this._qnApi = qnApi
   }
 
   public getOriginalApi(): ApiPromise {
@@ -103,9 +91,13 @@ export default class Api {
     return { api, properties, chainType }
   }
 
-  static async create(apiUri = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
+  static async create(
+    apiUri = DEFAULT_API_URI,
+    metadataCache: Record<string, any>,
+    qnApi?: QueryNodeApi
+  ): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
-    return new Api(api, chainType.isDevelopment || chainType.isLocal)
+    return new Api(api, chainType.isDevelopment || chainType.isLocal, qnApi)
   }
 
   async bestNumber(): Promise<number> {
@@ -134,10 +126,6 @@ export default class Api {
     return paymentInfo.partialFee
   }
 
-  createTransferTx(recipient: string, amount: BN) {
-    return this._api.tx.balances.transfer(recipient, amount)
-  }
-
   // Working groups
   // TODO: This is a lot of repeated logic from "/pioneer/joy-utils/transport"
   // It will be refactored to "joystream-js" soon
@@ -164,22 +152,30 @@ export default class Api {
     return new Date(blockTime.toNumber())
   }
 
-  protected workingGroupApiQuery(group: WorkingGroups) {
+  protected workingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][typeof apiModuleByGroup[T]] {
     const module = apiModuleByGroup[group]
     return this._api.query[module]
   }
 
-  // TODO: old fetchMemberQueryNodeData moved to QueryNodeApi and will be made available here
+  async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {
+    const membersQnData = await this._qnApi?.membersByIds(entries.map(([id]) => id))
+    const memberQnDataById = new Map<string, MembershipFieldsFragment>()
+    membersQnData?.forEach((m) => {
+      memberQnDataById.set(m.id, m)
+    })
 
-  async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
-    const memberData = await this.fetchMemberQueryNodeData(memberId)
-
-    return {
+    return entries.map(([memberId, membership]) => ({
       id: memberId,
-      name: memberData?.metadata.name,
-      handle: memberData?.handle,
+      name: memberQnDataById.get(memberId.toString())?.metadata.name,
+      handle: memberQnDataById.get(memberId.toString())?.handle,
       membership,
-    }
+    }))
+  }
+
+  // TODO: Try to avoid fetching members "one-by-one" whenever possible
+  async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
+    const [memberDetails] = await this.membersDetails([[memberId, membership]])
+    return memberDetails
   }
 
   protected async membershipById(memberId: MemberId): Promise<MemberDetails | null> {
@@ -196,6 +192,21 @@ export default class Api {
     return member
   }
 
+  async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
+    return this._api.query.members.membershipById.multi(ids)
+  }
+
+  async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
+    const memberships = await this.getMembers(ids)
+    const entries: [MemberId, Membership][] = ids.map((id, i) => [createType('MemberId', id), memberships[i]])
+    return this.membersDetails(entries)
+  }
+
+  async allMembersDetails(): Promise<MemberDetails[]> {
+    const entries = await this.entriesByIds(this._api.query.members.membershipById)
+    return this.membersDetails(entries)
+  }
+
   async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
     const optLeadId = await this.workingGroupApiQuery(group).currentLead()
 
@@ -210,12 +221,10 @@ export default class Api {
   }
 
   protected async fetchStake(account: AccountId | string, group: WorkingGroups): Promise<Balance> {
+    const groupLockId = this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId
     return this._api.createType(
       'Balance',
-      new BN(
-        (await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(lockIdByWorkingGroup[group]))
-          ?.amount || 0
-      )
+      new BN((await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(groupLockId))?.amount || 0)
     )
   }
 
@@ -444,19 +453,6 @@ export default class Api {
       dataObjectId,
       value,
     ])
-  }
-
-  async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
-    return this._api.query.members.membershipById.multi(ids)
-  }
-
-  async memberEntriesByIds(ids: MemberId[] | number[]): Promise<[MemberId, Membership][]> {
-    const memberships = await this._api.query.members.membershipById.multi<Membership>(ids)
-    return ids.map((id, i) => [createType('MemberId', id), memberships[i]])
-  }
-
-  allMemberEntries(): Promise<[MemberId, Membership][]> {
-    return this.entriesByIds(this._api.query.members.membershipById)
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {

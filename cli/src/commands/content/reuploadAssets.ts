@@ -20,7 +20,7 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
     const { input } = this.parse(ReuploadVideoAssetsCommand).flags
 
     // Get context
-    const [memberId, membership] = await this.getRequiredMemberContext()
+    const { id: memberId, membership } = await this.getRequiredMemberContext()
 
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)
