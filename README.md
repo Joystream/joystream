@@ -46,13 +46,13 @@ yarn start
 **Server Applications - infrastructure**
 
 - [Storage Node](./storage-node) - Media Storage Infrastructure
-- [Query Node](https://github.com/Joystream/joystream/tree/query_node/query-node) - _under development_
-- [Discovery Node](https://github.com/Joystream/joystream/tree/init_discovery_node/discovery_node) - _under development_
+- [Distributor Node](./distributor-node) - Bandwith Infrastructure
+- [Query Node](./query-node) - GraphQL query infrastructure powering front end applications
 
 **Front-end Applications**
 
 - [Pioneer](./pioneer) - Main UI for accessing all Joystream features
-- [Atlas](https://github.com/Joystream/joystream/tree/init_atlas/atlas) - Media Player- _under development_
+- [Atlas](https://github.com/Joystream/atlas) - Media Player
 
 **Tools and CLI**
 
