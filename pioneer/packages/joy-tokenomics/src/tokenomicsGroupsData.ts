@@ -55,13 +55,13 @@ export const WORKING_GROUPS = [
     titleCutoff: 1050,
     shortTitle: 'Builders',
     title: 'Builders',
-    helpText: 'The current Builders, and the sum of their projected rewards and stakes.',
+    helpText: 'The current Builders (Operations Group Alpha), and the sum of their projected rewards and stakes.',
     color: '#009688',
     lead: {
       titleCutoff: 1015,
       shortTitle: 'Builders Lead',
       title: 'Builders Lead',
-      helpText: 'Current Builders Lead, and their projected reward and stake.',
+      helpText: 'Current Builders (Operations Group Alpha) Lead, and their projected reward and stake.',
       color: '#00bcd4'
     }
   },
@@ -70,13 +70,13 @@ export const WORKING_GROUPS = [
     titleCutoff: 1050,
     shortTitle: 'Human Res.',
     title: 'Human Resources',
-    helpText: 'The current Human Resources Workers, and the sum of their projected rewards and stakes.',
+    helpText: 'The current Human Resources (Operations Group Beta) Workers, and the sum of their projected rewards and stakes.',
     color: '#03a9f4',
     lead: {
       titleCutoff: 1015,
       shortTitle: 'HR Lead',
       title: 'Human Res. Lead',
-      helpText: 'Current Human Resources Lead, and their projected reward and stake.',
+      helpText: 'Current Human Resources (Operations Group Beta) Lead, and their projected reward and stake.',
       color: '#2196f3'
     }
   },
@@ -85,13 +85,13 @@ export const WORKING_GROUPS = [
     titleCutoff: 1050,
     shortTitle: 'Marketing',
     title: 'Marketing',
-    helpText: 'The current Marketers, and the sum of their projected rewards and stakes.',
+    helpText: 'The current Marketers (Operations Group Gamma), and the sum of their projected rewards and stakes.',
     color: '#3f51b5',
     lead: {
       titleCutoff: 1015,
       shortTitle: 'Marketing Lead',
       title: 'Marketing Lead',
-      helpText: 'Current Marketing Lead, and their projected reward and stake.',
+      helpText: 'Current Marketing Lead (Operations Group Gamma), and their projected reward and stake.',
       color: '#673ab7'
     }
   },

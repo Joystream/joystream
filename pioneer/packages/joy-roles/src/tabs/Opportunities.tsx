@@ -484,6 +484,22 @@ const OpeningLabel = styled(Label)`
 
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
+const renderWorkingGroupName = (workingGroup: WorkingGroups) => {
+  if(workingGroup === WorkingGroups.OperationsAlpha) {
+    return "Builders";
+  }
+
+  if(workingGroup === WorkingGroups.OperationsBeta) {
+    return "Human Resources";
+  }
+
+  if(workingGroup === WorkingGroups.OperationsGamma) {
+    return "Marketing";
+  }
+
+  return workingGroup;
+}
+
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   (props) => {
@@ -495,7 +511,7 @@ export const OpeningView = Loadable<OpeningViewProps>(
         <OpeningTitle>
           {text.job.title}
           <OpeningLabel>
-            { _.startCase(props.meta.group) }{ isLeadOpening ? ' Lead' : '' }
+            { _.startCase(renderWorkingGroupName(props.meta.group)) }{ isLeadOpening ? ' Lead' : '' }
           </OpeningLabel>
         </OpeningTitle>
         <Card fluid className='container'>
@@ -554,7 +570,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
 
     const groupOption = (group: WorkingGroups | null, lead = false) => ({
       value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
-      text: _.startCase(`${group || 'All opportunities'}`) + (lead ? ' (Lead)' : '')
+      text: _.startCase(`${group ? renderWorkingGroupName(group) : 'All opportunities'}`) + (lead ? ' (Lead)' : '')
     });
     // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
     const filteredOpenings = props.openings!.filter((o) =>
