@@ -13,7 +13,8 @@ CLI=../bin/run
 # Init forum lead
 GROUP=forumWorkingGroup yarn workspace api-scripts initialize-lead
 # Add integration tests lead key (in case the script is executed after ./start.sh)
-yarn joystream-cli account:import --suri //testing//worker//Forum//0 --name "Test forum lead key" --password "" || true
+yarn joystream-cli account:forget --name "Test forum lead key" || true
+yarn joystream-cli account:import --suri //testing//worker//Forum//0 --name "Test forum lead key" --password ""
 
 # Assume leader is the first worker
 LEADER_WORKER_ID="0"
@@ -86,3 +87,6 @@ ${CLI} forum:moderateThread --categoryId ${CATEGORY_1_ID} --threadId ${THREAD_2_
 ${CLI} forum:deleteCategory --categoryId ${CATEGORY_2_ID} --context Moderator
 # Delete category as lead
 ${CLI} forum:deleteCategory --categoryId ${CATEGORY_1_ID} --context Leader
+
+# Forget test lead account
+yarn joystream-cli account:forget --name "Test forum lead key"
