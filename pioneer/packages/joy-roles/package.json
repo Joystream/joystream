@@ -17,7 +17,7 @@
     "@polkadot/react-query": "0.51.1",
     "@types/faker": "^4.1.8",
     "faker": "^4.1.0",
-    "marked": "^0.7.0",
+    "marked": "^4.0.10",
     "moment": "^2.24.0",
     "react-compound-slider": "^2.4.0",
     "react-moment": "^0.9.6",
