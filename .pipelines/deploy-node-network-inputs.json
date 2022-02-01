@@ -42,5 +42,13 @@
   "initialMembersFile": {
     "description": "HTTP Link to the Initial Members file",
     "value": ""
+  },
+  "deploymentType": {
+    "description": "Chain deployment type (live, dev etc.)",
+    "value": "live"
+  },
+  "encryptionKey": {
+    "description": "Password to encrypt the artifacts",
+    "value": "password"
   }
 }

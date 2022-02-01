@@ -1,4 +1,4 @@
-name: Deploy node network
+name: Deploy Network
 
 on:
   workflow_dispatch:
@@ -25,7 +25,10 @@ jobs:
       - name: Set env variables
         id: myoutputs # set the outputs
         run: |
-          jsonInput='${{ github.event.inputs.jsonInput }}'
+          jsonInput=$(jq -r '.inputs.jsonInput' $GITHUB_EVENT_PATH)
+          export ENCRYPTION_KEY=$(echo $jsonInput | jq -r '.encryptionKey.value')
+          echo ::set-output name=encryptionKey::$ENCRYPTION_KEY
+          echo "::add-mask::$ENCRYPTION_KEY"
           echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
           echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
           echo ::set-output name=keyName::$(echo $jsonInput | jq -r '.keyName.value')
@@ -35,6 +38,7 @@ jobs:
           echo ::set-output name=rpcInstanceType::$(echo $jsonInput | jq -r '.rpcInstanceType.value')
           echo ::set-output name=ec2AMI::$(echo $jsonInput | jq -r '.ec2AMI.value')
           echo ::set-output name=networkSuffix::$(echo $jsonInput | jq -r '.networkSuffix.value')
+          echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
           if [ -z "$initialBalancesFile" ]
@@ -132,17 +136,22 @@ jobs:
             --inventory inventory
             --extra-vars "network_suffix=${{ steps.myoutputs.outputs.networkSuffix }} data_path=mydata \
                           number_of_validators=${{ steps.myoutputs.outputs.numberOfValidators }} \
-                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} deployment_type=live \
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} \
+                          deployment_type=${{ steps.myoutputs.outputs.deploymentType }} \
                           bucket_name=${{ steps.deploy_stack.outputs.S3BucketName }} \
                           branch_name=${{ steps.myoutputs.outputs.branchName }} \
                           initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
                           initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }}"
 
+      - name: Encrpyt the artifacts
+        run: |
+          7z a -p${{ steps.myoutputs.outputs.encryptionKey }} chain-data.7z mydata/*
+
       - name: Save the output as an artifact
         uses: actions/upload-artifact@v2
         with:
           name: data-chainspec-auth
-          path: devops/aws/mydata
+          path: devops/aws/chain-data.7z
 
       - name: Print output URL's
         run: |
