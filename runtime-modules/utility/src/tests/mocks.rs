@@ -110,31 +110,17 @@ parameter_types! {
 }
 
 macro_rules! call_wg {
-    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Storage =>
-                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Forum =>
-                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Membership =>
-                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Gateway =>
-                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Distribution =>
-                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-            WorkingGroup::OperationsAlpha =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-            WorkingGroup::OperationsBeta =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-            WorkingGroup::OperationsGamma =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
         }
     }};
 }
@@ -200,11 +186,11 @@ impl Trait for Test {
     type WeightInfo = ();
 
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
-        call_wg!(working_group<Test>, get_budget)
+        call_wg!(working_group, get_budget)
     }
 
     fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
-        call_wg!(working_group<Test>, set_budget, budget)
+        call_wg!(working_group, set_budget, budget)
     }
 }
 
@@ -295,12 +281,6 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
         unimplemented!();
     }
-
-    fn ensure_worker_exists(
-        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
-    ) -> DispatchResult {
-        unimplemented!();
-    }
 }
 
 pub struct Weights;
@@ -370,7 +350,7 @@ parameter_types! {
 }
 
 pub struct WorkingGroupWeightInfo;
-impl working_group::Trait<ContentWorkingGroupInstance> for Test {
+impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
@@ -492,19 +472,6 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
 }
 
 impl working_group::Trait<GatewayWorkingGroupInstance> for Test {
-    type Event = TestEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
-    type MemberOriginValidator = ();
-    type MinUnstakingPeriodLimit = ();
-    type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
