@@ -62,8 +62,8 @@
         chdir: '{{ remote_code_path }}'
       environment:
         PERSIST: 'true'
-        COLOSSUS_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
-        DISTRIBUTOR_1_NODE_URI: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+        COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
+        DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
       async: 1800
       poll: 0
       register: compose_result
