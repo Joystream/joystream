@@ -177,7 +177,7 @@ export async function createWorkingGroupOpeningMetadata(
     description: description || undefined,
     shortDescription: shortDescription || undefined,
     hiringLimit: hiringLimit || undefined,
-    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp) : undefined,
+    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp * 1000) : undefined,
     applicationFormQuestions: [],
   })
 
