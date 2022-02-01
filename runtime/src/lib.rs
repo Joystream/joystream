@@ -55,7 +55,9 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
+use sp_runtime::traits::{
+    BlakeTwo256, Block as BlockT, ConvertInto, IdentityLookup, OpaqueKeys, Saturating,
+};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -96,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 0,
+    spec_version: 1,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1095,6 +1097,18 @@ impl blog::Trait<BlogInstance> for Runtime {
 /// Forum identifier for category
 pub type CategoryId = u64;
 
+parameter_types! {
+    pub const MinVestedTransfer: Balance = 100; // TODO: adjust value
+}
+
+impl pallet_vesting::Trait for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type BlockNumberToBalance = ConvertInto;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = weights::pallet_vesting::WeightInfo;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -1136,6 +1150,7 @@ construct_runtime!(
         Offences: pallet_offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+        Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
         // Joystream
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
