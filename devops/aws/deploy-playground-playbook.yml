@@ -55,6 +55,19 @@
       command: yarn build:node:docker
       args:
         chdir: '{{ remote_code_path }}'
+      async: 3600
+      poll: 0
+      register: node_build_result
+
+    - name: Check on build node image async task
+      async_status:
+        jid: '{{ node_build_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 36
+      # Check for the status every 100s
+      delay: 100
 
     - name: Run docker-compose
       command: yarn start
