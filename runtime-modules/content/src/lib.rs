@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 // Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit, clippy::all)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
