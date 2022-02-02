@@ -29,7 +29,9 @@ export const assertQueriedOpeningMetadataIsValid = (
   assert.equal(qOpeningMeta.shortDescription, shortDescription || null)
   assert.equal(qOpeningMeta.description, description || null)
   assert.equal(
-    qOpeningMeta.expectedEnding ? new Date(qOpeningMeta.expectedEnding).getTime() : qOpeningMeta.expectedEnding,
+    qOpeningMeta.expectedEnding
+      ? Math.floor(new Date(qOpeningMeta.expectedEnding).getTime() / 1000)
+      : qOpeningMeta.expectedEnding,
     expectedEndingTimestamp || null
   )
   assert.equal(qOpeningMeta.hiringLimit, hiringLimit || null)
