@@ -2085,7 +2085,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure owner account id exists, retreive corresponding one.
-    pub fn ensure_owner_account_id(
+    fn ensure_owner_account_id(
         video: &Video<T>,
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
@@ -2100,7 +2100,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_valid_init_transactional_status(
+    fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
     ) -> Result<
         TransactionalStatus<
