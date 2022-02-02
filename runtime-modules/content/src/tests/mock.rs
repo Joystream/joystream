@@ -488,10 +488,6 @@ impl Default for ExtBuilder {
             next_channel_id: 1,
             next_video_category_id: 1,
             next_video_id: 1,
-            next_playlist_id: 1,
-            next_person_id: 1,
-            next_series_id: 1,
-            next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
             next_video_post_id: 1,
             video_migration: MigrationConfigRecord {
