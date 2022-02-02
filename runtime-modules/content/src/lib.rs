@@ -2089,6 +2089,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
     ) -> Result<
@@ -2116,6 +2117,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Construct the NFT that is intended to be issued
     pub fn construct_owned_nft(
         issuance_params: &NFTIssuanceParameters<T>,
     ) -> Result<Nft<T>, DispatchError> {
