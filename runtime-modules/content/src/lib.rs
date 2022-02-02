@@ -96,7 +96,6 @@ pub trait Trait:
     /// Cleanup Margin used in bloat bond calculation
     type CleanupMargin: Get<<Self as balances::Trait>::Balance>;
 
-    // TODO: make it a function of the create_post extrinsic weights when weights will be established
     /// Cleanup Cost used in bloat bond calculation
     type CleanupCost: Get<<Self as balances::Trait>::Balance>;
 
@@ -853,16 +852,6 @@ decl_module! {
                     &assets_to_remove,
                 )?;
             }
-
-            // TODO: Solve #now
-            // If video is on storage, remove it
-            // if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
-            //     Storage::<T>::delete_data_objects(
-            //         channel.deletion_prize_source_account_id,
-            //         Self::bag_id_for_channel(&channel_id),
-            //         data_objects_id_set,
-            //     )?;
-            // }
 
             // bloat bond logic: channel owner is refunded
             video.video_post_id.as_ref().map(

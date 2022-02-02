@@ -508,14 +508,17 @@ pub struct OpenAuctionDetails<BlockNumber> {
     pub bid_lock_duration: BlockNumber,
 }
 
-/// NFT Issuance parameters
-/// Open auction details
+/// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct NFTIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
+    /// Roayalty used for the author
     pub royalty: Option<Royalty>,
+    /// Metadata
     pub nft_metadata: Metadata,
+    /// member id NFT will be issued to
     pub non_channel_owner: Option<MemberId>,
+    /// Initial transactional status for the nft
     pub init_transactional_status: InitTransactionalStatus,
 }
 
@@ -524,6 +527,7 @@ pub type NFTIssuanceParameters<T> = NFTIssuanceParametersRecord<
     InitTransactionalStatus<T>,
 >;
 
+/// Initial Transactional status for the NFT: See InitialTransactionalStatusRecord above
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum InitTransactionalStatusRecord<

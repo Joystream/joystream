@@ -495,9 +495,8 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
     type ModuleId = ModId;
 }
 
-/// Local module account handler.
+/// Type Aliases
 pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
-
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
