@@ -14,7 +14,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) v14.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) and docker-compose - _required_
+- [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -60,7 +60,7 @@ yarn start
 
 **Testing infrastructure**
 
-- [Network integration](./tests/network-tests) - Joystream network integration testing framework
+- [Network integration](./tests/integration-tests) - Joystream network integration testing framework
 
 ## Running a local full node
 
@@ -77,7 +77,7 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 ### Integration tests
 
 ```bash
-tests/network-tests/run-tests.sh
+tests/integration-tests/run-full-tests.sh
 ```
 
 ### Contributing

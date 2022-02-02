@@ -9,10 +9,19 @@
   shell: "WS_URL=wss://{{ ws_rpc }} yarn && yarn workspace @joystream/types build && yarn workspace pioneer build"
   args:
     chdir: "{{ remote_code_path }}"
-  retries: 3
-  delay: 5
-  register: result
-  until: result is not failed
+  async: 3600
+  poll: 0
+  register: build_result
+
+- name: Check on build async task
+  async_status:
+    jid: '{{ build_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 36
+  # Check for the status every 100s
+  delay: 100
 
 - name: Copying build files to local
   synchronize:
@@ -25,6 +34,5 @@
   community.aws.s3_sync:
     bucket: "{{ bucket_name }}"
     file_root: "{{ data_path }}/build"
-    profile: joystream-user
     region: us-east-1
   delegate_to: localhost
