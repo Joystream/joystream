@@ -28,5 +28,5 @@ else
 fi
 
 # At this point image should be in local repo
-echo "Tagging ${IMAGE} as ${LATEST}"
-docker image tag ${IMAGE} ${LATEST}
+# echo "Tagging ${IMAGE} as ${LATEST}"
+# docker image tag ${IMAGE} ${LATEST}

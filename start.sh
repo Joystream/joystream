@@ -2,6 +2,7 @@
 set -e
 
 # Run a complete joystream development network on your machine using docker
+export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(./scripts/runtime-code-shasum.sh)}
 
 INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setup-new-chain}
 
@@ -22,8 +23,7 @@ else
 fi
 
 ## Run a local development chain
-JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(scripts/runtime-code-shasum.sh)} \
-  docker-compose up -d joystream-node
+docker-compose up -d joystream-node
 
 ## Init the chain with some state
 export SKIP_MOCK_CONTENT=true

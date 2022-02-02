@@ -112,6 +112,7 @@ jobs:
           mkdir -p ${HOME}/.local/share/joystream-cli
           joystream-cli api:setUri ws://localhost:9944
           export RUNTIME=sumer
+          export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh
 
   basic_runtime:
@@ -140,7 +141,9 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: tests/network-tests/run-full-tests.sh
+        run: |
+          export RUNTIME=latest
+          tests/network-tests/run-full-tests.sh
 
   new_chain_setup:
     name: Initialize new chain
@@ -172,5 +175,7 @@ jobs:
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
-        run: tests/network-tests/test-setup-new-chain.sh
+        run: |
+          export RUNTIME=latest
+          tests/network-tests/test-setup-new-chain.sh
 
