@@ -74,7 +74,7 @@ fn buy_nft() {
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
                 owner: NFTOwner::Member(SECOND_MEMBER_ID),
-                transactional_status: TransactionalStatus::Idle,
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
         ));

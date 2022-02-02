@@ -55,7 +55,7 @@ fn start_nft_auction() {
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Auction(created_auction,),
+                transactional_status: TransactionalStatus::<Test>::Auction(created_auction,),
                 ..
             }) if auction == created_auction
         ));

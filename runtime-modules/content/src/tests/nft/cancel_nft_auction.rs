@@ -53,7 +53,7 @@ fn cancel_nft_auction() {
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
         ));

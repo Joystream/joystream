@@ -84,7 +84,7 @@ impl<
     pub fn ensure_auction_state<T: Trait>(
         &self,
     ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId, AccountId>, Error<T>> {
-        if let TransactionalStatus::<T>::Auction(auction) = &self.transactional_status {
+        if let TransactionalStatusRecord::Auction(auction) = &self.transactional_status {
             Ok(auction.to_owned())
         } else {
             Err(Error::<T>::NotInAuctionState)
@@ -93,7 +93,7 @@ impl<
 
     ///  Ensure nft transactional status is set to `Idle`
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
-        if let TransactionalStatus::<T>::Idle = self.transactional_status {
+        if let TransactionalStatusRecord::Idle = self.transactional_status {
             Ok(())
         } else {
             Err(Error::<T>::NftIsNotIdle.into())
@@ -102,7 +102,7 @@ impl<
 
     /// Sets nft transactional status to `BuyNow`
     pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
-        self.transactional_status = TransactionalStatus::<T>::BuyNow(buy_now_price);
+        self.transactional_status = TransactionalStatusRecord::BuyNow(buy_now_price);
         self
     }
 
@@ -111,13 +111,13 @@ impl<
         mut self,
         auction: AuctionRecord<BlockNumber, Balance, MemberId, AccountId>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::<T>::Auction(auction);
+        self.transactional_status = TransactionalStatusRecord::Auction(auction);
         self
     }
 
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
-        self.transactional_status = TransactionalStatus::<T>::Idle;
+        self.transactional_status = TransactionalStatusRecord::Idle;
         self
     }
 
@@ -127,7 +127,7 @@ impl<
         to: MemberId,
         balance: Option<Balance>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::<T>::InitiatedOfferToMember(to, balance);
+        self.transactional_status = TransactionalStatusRecord::InitiatedOfferToMember(to, balance);
         self
     }
 
@@ -136,7 +136,7 @@ impl<
         ensure!(
             matches!(
                 self.transactional_status,
-                TransactionalStatus::<T>::InitiatedOfferToMember(..),
+                TransactionalStatusRecord::InitiatedOfferToMember(..),
             ),
             Error::<T>::PendingOfferDoesNotExist
         );
@@ -148,7 +148,7 @@ impl<
         ensure!(
             matches!(
                 self.transactional_status,
-                TransactionalStatus::<T>::BuyNow(..),
+                TransactionalStatusRecord::BuyNow(..),
             ),
             Error::<T>::NFTNotInBuyNowState
         );

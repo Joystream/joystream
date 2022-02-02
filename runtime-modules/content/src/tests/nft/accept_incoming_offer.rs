@@ -53,7 +53,7 @@ fn accept_incoming_offer() {
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
                 owner: NFTOwner::Member(member_id),
-                transactional_status: TransactionalStatus::Idle,
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             }) if member_id == SECOND_MEMBER_ID
         ));

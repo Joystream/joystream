@@ -46,7 +46,7 @@ fn sell_nft() {
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                transactional_status: TransactionalStatus::BuyNow(
+                transactional_status: TransactionalStatus::<Test>::BuyNow(
                     cost,
                 ),
                 ..

@@ -47,7 +47,7 @@ fn offer_nft() {
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                transactional_status: TransactionalStatus::InitiatedOfferToMember(
+                transactional_status: TransactionalStatus::<Test>::InitiatedOfferToMember(
                     SECOND_MEMBER_ID,
                     None
                 ),

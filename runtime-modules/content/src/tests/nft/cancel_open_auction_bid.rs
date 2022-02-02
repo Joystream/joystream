@@ -80,7 +80,7 @@ fn cancel_open_auction_bid() {
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Auction(auction_without_bid,),
+                transactional_status: TransactionalStatus::<Test>::Auction(auction_without_bid,),
                 ..
             }) if auction_without_bid.last_bid.is_none()
         ));
