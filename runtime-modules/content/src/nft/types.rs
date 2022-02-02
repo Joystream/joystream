@@ -9,7 +9,7 @@ pub type Royalty = Perbill;
 /// NFT transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum TransactionalStatus<
+pub enum TransactionalStatusRecord<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
@@ -26,12 +26,19 @@ impl<
         MemberId: Default + Copy + Ord,
         AccountId: Default + Clone + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > Default for TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>
+    > Default for TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>
 {
     fn default() -> Self {
         Self::Idle
     }
 }
+
+pub type TransactionalStatus<T> = TransactionalStatusRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
+    CurrencyOf<T>,
+>;
 
 /// Owned NFT representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -43,7 +50,7 @@ pub struct OwnedNFT<
     Balance: Default + Clone + BaseArithmetic,
 > {
     pub owner: NFTOwner<MemberId>,
-    pub transactional_status: TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>,
+    pub transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
 
@@ -58,7 +65,7 @@ impl<
     pub fn new(
         owner: NFTOwner<MemberId>,
         creator_royalty: Option<Royalty>,
-        transactional_status: TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>,
+        transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
     ) -> Self {
         Self {
             owner,
@@ -77,7 +84,7 @@ impl<
     pub fn ensure_auction_state<T: Trait>(
         &self,
     ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId, AccountId>, Error<T>> {
-        if let TransactionalStatus::Auction(auction) = &self.transactional_status {
+        if let TransactionalStatus::<T>::Auction(auction) = &self.transactional_status {
             Ok(auction.to_owned())
         } else {
             Err(Error::<T>::NotInAuctionState)
@@ -86,7 +93,7 @@ impl<
 
     ///  Ensure nft transactional status is set to `Idle`
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
-        if let TransactionalStatus::Idle = self.transactional_status {
+        if let TransactionalStatus::<T>::Idle = self.transactional_status {
             Ok(())
         } else {
             Err(Error::<T>::NftIsNotIdle.into())
@@ -95,7 +102,7 @@ impl<
 
     /// Sets nft transactional status to `BuyNow`
     pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
-        self.transactional_status = TransactionalStatus::BuyNow(buy_now_price);
+        self.transactional_status = TransactionalStatus::<T>::BuyNow(buy_now_price);
         self
     }
 
@@ -104,13 +111,13 @@ impl<
         mut self,
         auction: AuctionRecord<BlockNumber, Balance, MemberId, AccountId>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::Auction(auction);
+        self.transactional_status = TransactionalStatus::<T>::Auction(auction);
         self
     }
 
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
-        self.transactional_status = TransactionalStatus::Idle;
+        self.transactional_status = TransactionalStatus::<T>::Idle;
         self
     }
 
@@ -120,7 +127,7 @@ impl<
         to: MemberId,
         balance: Option<Balance>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::InitiatedOfferToMember(to, balance);
+        self.transactional_status = TransactionalStatus::<T>::InitiatedOfferToMember(to, balance);
         self
     }
 
@@ -129,7 +136,7 @@ impl<
         ensure!(
             matches!(
                 self.transactional_status,
-                TransactionalStatus::InitiatedOfferToMember(..),
+                TransactionalStatus::<T>::InitiatedOfferToMember(..),
             ),
             Error::<T>::PendingOfferDoesNotExist
         );
@@ -139,7 +146,10 @@ impl<
     /// Ensure NFT is in BuyNow state
     pub fn ensure_buy_now_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
-            matches!(self.transactional_status, TransactionalStatus::BuyNow(..),),
+            matches!(
+                self.transactional_status,
+                TransactionalStatus::<T>::BuyNow(..),
+            ),
             Error::<T>::NFTNotInBuyNowState
         );
         Ok(())

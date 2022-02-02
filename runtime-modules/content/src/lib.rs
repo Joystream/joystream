@@ -2103,7 +2103,7 @@ impl<T: Trait> Module<T> {
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
     ) -> Result<
-        TransactionalStatus<
+        TransactionalStatusRecord<
             <T as frame_system::Trait>::BlockNumber,
             <T as common::MembershipTypes>::MemberId,
             <T as frame_system::Trait>::AccountId,
@@ -2112,9 +2112,9 @@ impl<T: Trait> Module<T> {
         DispatchError,
     > {
         match init_status {
-            InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::Idle),
+            InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
-                TransactionalStatus::InitiatedOfferToMember(member.clone(), balance.clone()),
+                TransactionalStatus::<T>::InitiatedOfferToMember(member.clone(), balance.clone()),
             ),
             InitTransactionalStatus::<T>::Auction(params) => {
                 Self::validate_auction_params(&params)?;
@@ -2122,7 +2122,7 @@ impl<T: Trait> Module<T> {
                 if params.starts_at.is_none() {
                     auction.starts_at = <frame_system::Module<T>>::block_number();
                 }
-                Ok(TransactionalStatus::Auction(auction))
+                Ok(TransactionalStatus::<T>::Auction(auction))
             }
         }
     }
