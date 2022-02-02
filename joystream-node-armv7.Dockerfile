@@ -16,6 +16,7 @@ COPY . /joystream
 # Ensure our tests and linter pass before actual build
 ENV WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
 RUN apt-get install -y libprotobuf-dev protobuf-compiler
+RUN cargo update -p librocksdb-sys
 RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --target armv7-unknown-linux-gnueabihf --release
