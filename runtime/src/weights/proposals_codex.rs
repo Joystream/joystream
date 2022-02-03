@@ -191,4 +191,11 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }
+    fn create_proposal_veto_bounty(t: u32, d: u32) -> Weight {
+        (714_146_000 as Weight)
+            .saturating_add((667_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((235_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(6 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
 }

@@ -149,8 +149,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::VetoProposal(proposal_id) => {
                 Call::ProposalsEngine(proposals_engine::Call::veto_proposal(proposal_id))
             }
-            ProposalDetails::VetoBounty(proposal_id) => {
-                Call::ProposalsEngine(bounty::Call::veto_bounty(bounty_id))
+            ProposalDetails::VetoBounty(bounty_id) => {
+                Call::Bounty(bounty::Call::veto_bounty(bounty_id))
             }
         };
 

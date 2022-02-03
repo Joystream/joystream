@@ -26,7 +26,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
     blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
-    <T as Trait>::BountyId,
+    <T as crate::Trait>::BountyId,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -126,8 +126,17 @@ pub enum ProposalDetails<
     VetoBounty(BountyId),
 }
 
-impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> Default
-    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId>
+impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId, BountyId> Default
+    for ProposalDetails<
+        Balance,
+        BlockNumber,
+        AccountId,
+        WorkerId,
+        OpeningId,
+        PostId,
+        ProposalId,
+        BountyId,
+    >
 {
     fn default() -> Self {
         ProposalDetails::Signal(b"invalid proposal details".to_vec())

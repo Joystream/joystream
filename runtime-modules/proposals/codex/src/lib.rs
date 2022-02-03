@@ -49,7 +49,7 @@ mod benchmarking;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;

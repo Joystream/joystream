@@ -596,7 +596,7 @@ impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
-    type BountyId = u32;
+    type BountyId = u64;
     type SetMaxValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
     type SignalProposalParameters = DefaultProposalParameters;
@@ -884,6 +884,9 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_veto_bounty(_: u32, _: u32) -> Weight {
         0
     }
 }
