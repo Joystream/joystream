@@ -21,7 +21,7 @@ then
   if ! docker inspect ${IMAGE} > /dev/null;
   then
     echo "Building ${IMAGE}.."
-    docker build . --file joystream-node.Dockerfile --tag ${IMAGE}
+    docker build . --file joystream-node.Dockerfile --tag ${IMAGE} --build-arg TEST_NODE=${TEST_NODE}
   fi
 else
   echo "Found ${IMAGE} in local repo"
