@@ -68,4 +68,4 @@ benchmark membership
 benchmark bounty
 benchmark blog
 benchmark joystream_utility
-benchmark storage_v2
+# benchmark storage_v2
