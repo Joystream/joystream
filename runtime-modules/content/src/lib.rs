@@ -378,7 +378,7 @@ decl_module! {
 
             let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
                 prize: Zero::zero(), // put 0 for Giza release
-                account_id: sender.clone(),
+                account_id: sender,
             };
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
@@ -417,7 +417,7 @@ decl_module! {
             }
 
             // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
-            if let Some(params) = upload_params.clone() {
+            if let Some(params) = upload_params{
                 Storage::<T>::upload_data_objects(params)?;
             }
 
@@ -502,7 +502,7 @@ decl_module! {
                     &sender
                 );
 
-                Storage::<T>::upload_data_objects(params.clone())?;
+                Storage::<T>::upload_data_objects(params)?;
             }
 
             if !params.assets_to_remove.is_empty() {
@@ -580,7 +580,7 @@ decl_module! {
                     Storage::<T>::delete_data_objects(
                         sender.clone(),
                         Self::bag_id_for_channel(&channel_id),
-                        assets_to_remove.clone(),
+                        assets_to_remove,
                     )?;
                 }
 
@@ -697,7 +697,7 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_validity(&channel_id)?;
@@ -767,7 +767,7 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_validity(&video_id)?;
 
@@ -828,7 +828,7 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that video exists
             let video = Self::ensure_video_validity(&video_id)?;
@@ -866,7 +866,7 @@ decl_module! {
                 Storage::<T>::delete_data_objects(
                     sender,
                     Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone()
+                    assets_to_remove,
                 )?;
             }
 
@@ -1010,7 +1010,7 @@ decl_module! {
             params: VideoPostCreationParameters<T>,
         ) -> DispatchResult {
 
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // ensure channel is valid
             let video = Self::ensure_video_validity(&params.video_reference)?;
@@ -1036,7 +1036,7 @@ decl_module! {
                 author: actor,
                 bloat_bond: initial_bloat_bond,
                 replies_count: T::VideoPostId::zero(),
-                video_reference: params.video_reference.clone(),
+                video_reference: params.video_reference,
                 post_type: params.post_type.clone(),
             };
 
@@ -1048,7 +1048,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
+            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond)?;
 
             <NextVideoPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
             <VideoPostById<T>>::insert(&params.video_reference, &post_id, post.clone());
@@ -1061,7 +1061,7 @@ decl_module! {
                     |x| x.replies_count = x.replies_count.saturating_add(One::one())),
                 VideoPostType::<T>::Description => VideoById::<T>::mutate(
                     &params.video_reference,
-                    |video| video.video_post_id = Some(post_id.clone())),
+                    |video| video.video_post_id = Some(post_id)),
             };
 
             // deposit event
@@ -1078,7 +1078,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_text: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
@@ -1108,7 +1108,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoPostDeletionParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
@@ -1148,15 +1148,15 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            Self::refund(&sender, cleanup_actor, post.bloat_bond.clone())?;
+            Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
 
             match post.post_type {
                 VideoPostType::<T>::Comment(parent_id) => {
                     VideoPostById::<T>::remove(&video_id, &post_id);
                     // parent post might have been already deleted
                     if let Ok(mut parent_post) = Self::ensure_post_exists(
-                        video_id.clone(),
-                        parent_id.clone(),
+                        video_id,
+                        parent_id,
                     ){
                         parent_post.replies_count =
                             parent_post.replies_count.saturating_sub(T::VideoPostId::one());
@@ -1972,7 +1972,7 @@ impl<T: Trait> Module<T> {
 
         let channel_migration_done = current_id == final_id;
 
-        return video_migration_done && channel_migration_done;
+        video_migration_done && channel_migration_done
     }
 
     /// Ensure `CuratorGroup` under given id exists
@@ -2092,19 +2092,11 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
-    ) -> Result<
-        TransactionalStatusRecord<
-            <T as frame_system::Trait>::BlockNumber,
-            <T as common::MembershipTypes>::MemberId,
-            <T as frame_system::Trait>::AccountId,
-            CurrencyOf<T>,
-        >,
-        DispatchError,
-    > {
+    ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
-                TransactionalStatus::<T>::InitiatedOfferToMember(member.clone(), balance.clone()),
+                TransactionalStatus::<T>::InitiatedOfferToMember(*member, *balance),
             ),
             InitTransactionalStatus::<T>::Auction(params) => {
                 Self::validate_auction_params(&params)?;
@@ -2125,8 +2117,8 @@ impl<T: Trait> Module<T> {
             &issuance_params.init_transactional_status,
         )?;
         // The content owner will be..
-        let nft_owner = if let Some(to) = issuance_params.non_channel_owner.as_ref() {
-            NftOwner::Member(to.clone())
+        let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
+            NftOwner::Member(to)
         } else {
             // if `to` set to None, actor issues to ChannelOwner
             NftOwner::ChannelOwner
@@ -2134,12 +2126,12 @@ impl<T: Trait> Module<T> {
 
         // Enure royalty bounds satisfied, if provided
         if let Some(royalty) = issuance_params.royalty.as_ref() {
-            Self::ensure_royalty_bounds_satisfied(royalty.clone())?;
+            Self::ensure_royalty_bounds_satisfied(*royalty)?;
         }
 
         Ok(Nft::<T>::new(
             nft_owner,
-            issuance_params.royalty.clone(),
+            issuance_params.royalty,
             transactional_status,
         ))
     }
