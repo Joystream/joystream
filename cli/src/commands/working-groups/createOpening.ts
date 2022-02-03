@@ -4,14 +4,15 @@ import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import OpeningParamsSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
-import { WorkingGroupOpening as OpeningParamsJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
+import OpeningParamsSchema from '../../schemas/json/WorkingGroupOpening.schema.json'
+import { WorkingGroupOpening as OpeningParamsJson } from '../../schemas/typings/WorkingGroupOpening.schema'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
 import { AugmentedSubmittables } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
+import { CLIError } from '@oclif/errors'
 
 const OPENING_STAKE = new BN(2000)
 
@@ -92,7 +93,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }
   }
 
-  async run() {
+  async run(): Promise<void> {
     // lead-only gate
     const lead = await this.getRequiredLeadContext()
 
@@ -146,19 +147,17 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      const result = await this.sendAndFollowNamedTx(
-        await this.getDecodedPair(lead.roleAccount.toString()),
-        apiModuleByGroup[this.group],
-        'addOpening',
-        txParams,
-        true // warnOnly
-      )
-
-      // Display a success message on success or ask to try again on error
-      if (result) {
+      try {
+        await this.sendAndFollowTx(
+          await this.getDecodedPair(lead.roleAccount),
+          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
+        )
         this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
-      } else {
+      } catch (e) {
+        if (e instanceof CLIError) {
+          this.warn(e.message)
+        }
         tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
       }
     } while (tryAgain)

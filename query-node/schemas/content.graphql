@@ -1,21 +1,3 @@
-type AssetExternal @variant {
-  # FIXME: [String!] currnetly not supported in variants
-  "JSON array of the urls"
-  urls: String!
-}
-
-type AssetJoystreamStorage @variant {
-  "Related DataObject entity"
-  dataObject: DataObject!
-}
-
-# FIXME: https://github.com/Joystream/hydra/issues/434
-type AssetNone @variant {
-  _phantom: Int
-}
-
-union Asset = AssetExternal | AssetJoystreamStorage | AssetNone
-
 "Category of media channel"
 type ChannelCategory @entity {
   id: ID!
@@ -60,10 +42,10 @@ type Channel @entity {
   description: String
 
   "Channel's cover (background) photo asset. Recommended ratio: 16:9."
-  coverPhoto: Asset
+  coverPhoto: StorageDataObject
 
   "Channel's avatar photo asset."
-  avatarPhoto: Asset
+  avatarPhoto: StorageDataObject
 
   ##########################
 
@@ -76,9 +58,14 @@ type Channel @entity {
   "The primary langauge of the channel's content"
   language: Language
 
+  "List of videos that belong to the channel"
   videos: [Video!]! @derivedFrom(field: "channel")
 
+  "Number of the block the channel was created in"
   createdInBlock: Int!
+
+  "List of channel collaborators (members)"
+  collaborators: [Membership!]
 }
 
 type CuratorGroup @entity {
@@ -126,7 +113,7 @@ type Video @entity {
   duration: Int
 
   "Video thumbnail asset (recommended ratio: 16:9)"
-  thumbnailPhoto: Asset
+  thumbnailPhoto: StorageDataObject
 
   ##########################
 
@@ -152,7 +139,7 @@ type Video @entity {
   license: License
 
   "Video media asset"
-  media: Asset
+  media: StorageDataObject
 
   ##########################
 

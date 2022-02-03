@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import {
   AddWorkerOpeningFixture,
@@ -8,7 +9,10 @@ import {
   FillOpeningFixture,
 } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
-import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
+import {
+  VoteForProposalAndExpectExecutionFixture,
+  WorkingGroupMintCapacityProposalFixture,
+} from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
@@ -20,10 +24,13 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return workerPayouts(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return workerPayouts(api, env, WorkingGroups.Content, lock)
+  },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workerPayouts(api, env, WorkingGroups.Distribution, lock)
   },
 }
 
@@ -45,7 +52,7 @@ async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGro
   const lead = await api.getGroupLead(group)
   assert(lead)
 
-  const newMembers = api.createKeyPairs(5).map((key) => key.address)
+  const newMembers = api.createKeyPairs(5).map(({ key }) => key.address)
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
@@ -61,7 +68,7 @@ async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGro
   await new FixtureRunner(workingGroupMintCapacityProposalFixture).run()
 
   // Approve mint capacity
-  const voteForProposalFixture = new VoteForProposalFixture(
+  const voteForProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )

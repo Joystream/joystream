@@ -1,5 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 
 use frame_support::traits::Currency;
 use frame_support::{decl_event, decl_module, decl_storage, ensure};

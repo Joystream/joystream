@@ -346,7 +346,7 @@ export class QueryNodeApi {
       try {
         assertResultIsValid(result)
       } catch (e) {
-        debug(`Unexpected query result${e && e.message ? ` (${e.message})` : ''}`)
+        debug(`Unexpected query result${e instanceof Error ? ` (${e.message})` : ''}`)
         await retry(e)
         continue
       }

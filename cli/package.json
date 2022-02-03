@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -12,14 +12,18 @@
     "cross-fetch": "^3.0.6",
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/types": "^0.17.0",
+    "@joystream/metadata-protobuf": "^2.0.0",
+    "@joystream/types": "^0.18.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
     "@oclif/plugin-help": "^3.2.2",
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
-    "@polkadot/api": "5.3.2",
+    "@polkadot/api": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
@@ -44,12 +48,16 @@
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1"
+    "tslib": "^1.11.1",
+    "blake3-wasm": "^2.1.5",
+    "multihashes": "^4.0.3",
+    "form-data": "^4.0.0",
+    "graphql": "^14.7.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
     "@oclif/test": "^1.2.5",
-    "@polkadot/ts": "^0.4.4",
+    "@polkadot/ts": "^0.4.8",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.17.18",
@@ -60,9 +68,9 @@
     "globby": "^10.0.2",
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
-    "ts-node": "^8.8.2",
-    "typescript": "^3.8.3",
-    "json-schema-to-typescript": "^9.1.1",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3",
+    "json-schema-to-typescript": "^10.1.4",
     "@graphql-codegen/cli": "^1.21.4",
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/import-types-preset": "^1.18.1",
@@ -132,13 +140,13 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/ && yarn format",
+    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./src/schemas/typings/ && yarn format",
     "generate:graphql-typings": "graphql-codegen",
     "generate:all": "yarn generate:schema-typings && yarn generate:graphql-typings"
   },
   "types": "lib/index.d.ts",
   "volta": {
     "node": "14.16.1",
-    "yarn": "1.22.4"
+    "yarn": "1.22.15"
   }
 }

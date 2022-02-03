@@ -23,6 +23,7 @@ trap cleanup EXIT
 # Clean start
 docker-compose down -v
 
+docker-compose -f ../docker-compose.yml up -d joystream-node
 ./start.sh
 
 # pass the scenario name without .ts extension

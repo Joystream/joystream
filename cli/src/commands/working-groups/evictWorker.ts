@@ -29,7 +29,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
       args,
       flags: { penalty, rationale },

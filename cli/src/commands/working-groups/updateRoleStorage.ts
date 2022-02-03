@@ -16,13 +16,13 @@ export default class WorkingGroupsUpdateRoleStorage extends WorkingGroupsCommand
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { storage } = this.parse(WorkingGroupsUpdateRoleStorage).args
 
     const worker = await this.getRequiredWorkerContext()
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(worker.roleAccount.toString()),
+      await this.getDecodedPair(worker.roleAccount),
       apiModuleByGroup[this.group],
       'updateRoleStorage',
       [worker.workerId, storage]

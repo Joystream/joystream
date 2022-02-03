@@ -1,0 +1,76 @@
+name: Deploy Playground
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRepo:
+        description: 'Code repository'
+        required: false
+        default: 'https://github.com/Joystream/joystream.git'
+      branchName:
+        description: 'Branch to deploy'
+        required: false
+        default: 'master'
+      keyName:
+        description: 'SSH key pair on AWS'
+        required: false
+        default: 'joystream-github-action-key'
+      instanceType:
+        description: 'AWS EC2 instance type (t2.micro, t2.large)'
+        required: false
+        default: 't2.micro'
+      stackNamePrefix:
+        description: 'Additional identifier to include in stack name'
+        required: false
+        default: 'playground'
+      # TODO: customDomain instead of ip_address.nip.io
+      # customDomain:
+      #   description: 'DNS hostname to use for deployment'
+      #   required: false
+      #   default: ''
+defaults:
+  run:
+    working-directory: devops/aws
+
+jobs:
+  deploy-playground:
+    name: Create an EC2 instance and configure docker-compose stack
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: ${{ github.event.inputs.stackNamePrefix }}-${{ github.event.inputs.branchName }}-${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Ansible dependencies
+        run: pipx inject ansible-core boto3 botocore
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        id: deploy_stack
+        with:
+          name: ${{ env.STACK_NAME }}
+          template: devops/aws/cloudformation/single-instance-docker.yml
+          no-fail-on-empty-changeset: '1'
+          parameter-overrides: 'KeyName=${{ github.event.inputs.keyName }},EC2InstanceType=${{ github.event.inputs.instanceType }}'
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: deploy-playground-playbook.yml
+          directory: devops/aws
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          inventory: |
+            [all]
+            ${{ steps.deploy_stack.outputs.PublicIp }}
+          options: |
+            --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
+                          branch_name=${{ github.event.inputs.branchName }}"

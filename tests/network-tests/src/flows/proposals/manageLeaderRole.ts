@@ -1,5 +1,6 @@
 import BN from 'bn.js'
-import { Api, WorkingGroups } from '../../Api'
+import { Api } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
@@ -10,11 +11,10 @@ import {
   SetLeaderRewardProposalFixture,
   SlashLeaderProposalFixture,
   TerminateLeaderRoleProposalFixture,
-  VoteForProposalFixture,
+  VoteForProposalAndExpectExecutionFixture,
 } from '../../fixtures/proposalsModule'
 import { ApplyForOpeningFixture } from '../../fixtures/workingGroupModule'
 import { PaidTermId } from '@joystream/types/members'
-import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
 import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
@@ -24,10 +24,13 @@ import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
   storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Storage, lock)
   },
   content: async function ({ api, env, lock }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
+    return manageLeaderRole(api, env, WorkingGroups.Content, lock)
+  },
+  distribution: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return manageLeaderRole(api, env, WorkingGroups.Distribution, lock)
   },
 }
 
@@ -36,7 +39,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   debug('Started')
   await lock(Resource.Proposals)
 
-  const leaderAccount = api.createKeyPairs(1)[0].address
+  const leaderAccount = api.createKeyPairs(1)[0].key.address
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
@@ -76,15 +79,14 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   await new FixtureRunner(createWorkingGroupLeaderOpeningFixture).run()
 
   // Approve add opening proposal
-  const voteForCreateOpeningProposalFixture = new VoteForProposalFixture(
+  const voteForCreateOpeningProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as ProposalId
   )
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
 
-  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
-  assert(openingId)
+  const openingId = api.getEvent(voteForCreateOpeningProposalFixture.events, group, 'OpeningAdded').data[0]
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
     api,
@@ -106,7 +108,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   // Propose begin leader application review
   await new FixtureRunner(beginWorkingGroupLeaderApplicationReviewFixture).run()
 
-  const voteForBeginReviewProposal = new VoteForProposalFixture(
+  const voteForBeginReviewProposal = new VoteForProposalAndExpectExecutionFixture(
     api,
     beginWorkingGroupLeaderApplicationReviewFixture.getCreatedProposalId() as ProposalId
   )
@@ -126,7 +128,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   // Propose fill leader opening
   await new FixtureRunner(fillLeaderOpeningProposalFixture).run()
 
-  const voteForFillLeaderProposalFixture = new VoteForProposalFixture(
+  const voteForFillLeaderProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     fillLeaderOpeningProposalFixture.getCreatedProposalId() as ProposalId
   )
@@ -140,7 +142,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   // Propose leader reward
   await new FixtureRunner(setLeaderRewardProposalFixture).run()
 
-  const voteForeLeaderRewardFixture = new VoteForProposalFixture(
+  const voteForeLeaderRewardFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     setLeaderRewardProposalFixture.getCreatedProposalId() as ProposalId
   )
@@ -150,9 +152,8 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   const leadId = (await api.getLeadWorkerId(group)) as WorkerId
   assert(leadId)
-  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.events, group, leadId) as WorkerId
-  assert(workerId)
-  assert(leadId!.eq(workerId))
+  const workerId = api.getEvent(voteForeLeaderRewardFixture.events, group, 'WorkerRewardAmountUpdated').data[0]
+  assert(workerId.eq(leadId))
   const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
   assert(rewardRelationship.amount_per_payout.eq(alteredPayoutAmount))
 
@@ -168,7 +169,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   // let newStake: BN = applicationStake.sub(stakeDecrement)
   // Approve decreased leader stake
-  const voteForDecreaseStakeProposal = new VoteForProposalFixture(
+  const voteForDecreaseStakeProposal = new VoteForProposalAndExpectExecutionFixture(
     api,
     decreaseLeaderStakeProposalFixture.getCreatedProposalId() as ProposalId
   )
@@ -180,7 +181,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   // Approve leader slash
   // newStake = newStake.sub(slashAmount)
-  const voteForSlashProposalFixture = new VoteForProposalFixture(
+  const voteForSlashProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     slashLeaderProposalFixture.getCreatedProposalId() as ProposalId
   )
@@ -190,7 +191,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   // Propose terminate leader role
   await new FixtureRunner(terminateLeaderRoleProposalFixture).run()
 
-  const voteForLeaderRoleTerminationFixture = new VoteForProposalFixture(
+  const voteForLeaderRoleTerminationFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     terminateLeaderRoleProposalFixture.getCreatedProposalId() as ProposalId
   )

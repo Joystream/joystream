@@ -12,12 +12,11 @@ import { assert } from 'chai'
 export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:memberships')
   debug('Started')
-  api.enableDebugTxLogs()
 
   const N: number = +env.MEMBERSHIP_CREATION_N!
   assert(N > 0)
-  const nAccounts = api.createKeyPairs(N).map((key) => key.address)
-  const aAccount = api.createKeyPairs(1)[0].address
+  const nAccounts = api.createKeyPairs(N).map(({ key }) => key.address)
+  const aAccount = api.createKeyPairs(1)[0].key.address
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
   // Assert membership can be bought if sufficient funds are available

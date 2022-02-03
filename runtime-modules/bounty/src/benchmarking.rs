@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use frame_benchmarking::{account, benchmarks};
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
@@ -566,7 +566,7 @@ benchmarks! {
     verify {
         let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
-        assert!(Entries::<T>::contains_key(entry_id));
+        assert!(Entries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
             Event::<T>::WorkEntryAnnounced(
                 bounty_id,
@@ -606,7 +606,7 @@ benchmarks! {
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id)
     verify {
-        assert!(!Entries::<T>::contains_key(entry_id));
+        assert!(!Entries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
             Event::<T>::WorkEntryWithdrawn(bounty_id, entry_id, member_id).into()
         );
@@ -657,7 +657,7 @@ benchmarks! {
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id, work_data.clone())
     verify {
-        let entry = Bounty::<T>::entries(entry_id);
+        let entry = Bounty::<T>::entries(bounty_id, entry_id);
 
         assert!(entry.work_submitted);
         assert_last_event::<T>(
@@ -673,6 +673,7 @@ benchmarks! {
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let oracle = BountyActor::Council;
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -709,10 +710,15 @@ benchmarks! {
 
         run_to_block::<T>((work_period + One::one()).into());
 
-    }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
+    }: submit_oracle_judgment(
+        RawOrigin::Root,
+        oracle.clone(),
+        bounty_id,
+        judgment.clone(),
+        rationale.clone())
     verify {
         for entry_id in entry_ids {
-            let entry = Bounty::<T>::entries(entry_id);
+            let entry = Bounty::<T>::entries(bounty_id, entry_id);
             let corrected_winner_reward = if entry_id == One::one() {
                     winner_reward + correction
                 } else {
@@ -724,7 +730,7 @@ benchmarks! {
             );
         }
         assert_last_event::<T>(
-            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment, rationale).into()
         );
     }
 
@@ -736,6 +742,7 @@ benchmarks! {
         let funding_amount: BalanceOf<T> = 100u32.into();
         let oracle = BountyActor::Council;
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -761,13 +768,18 @@ benchmarks! {
 
         run_to_block::<T>((work_period + One::one()).into());
 
-    }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
+    }: submit_oracle_judgment(
+        RawOrigin::Root,
+        oracle.clone(),
+        bounty_id,
+        judgment.clone(),
+        rationale.clone())
     verify {
         for entry_id in entry_ids {
-            assert!(!<Entries<T>>::contains_key(entry_id));
+            assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         }
         assert_last_event::<T>(
-            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment, rationale).into()
         );
     }
 
@@ -781,6 +793,7 @@ benchmarks! {
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -821,11 +834,11 @@ benchmarks! {
         RawOrigin::Signed(oracle_account_id),
         oracle.clone(),
         bounty_id,
-        judgment.clone()
-    )
+        judgment.clone(),
+        rationale.clone())
     verify {
         for entry_id in entry_ids {
-            let entry = Bounty::<T>::entries(entry_id);
+            let entry = Bounty::<T>::entries(bounty_id, entry_id);
             let corrected_winner_reward = if entry_id == One::one() {
                     winner_reward + correction
                 } else {
@@ -837,7 +850,7 @@ benchmarks! {
             );
         }
         assert_last_event::<T>(
-            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment, rationale).into()
         );
     }
 
@@ -851,6 +864,7 @@ benchmarks! {
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -880,14 +894,14 @@ benchmarks! {
         RawOrigin::Signed(oracle_account_id),
         oracle.clone(),
         bounty_id,
-        judgment.clone()
-    )
+        judgment.clone(),
+        rationale.clone())
     verify {
         for entry_id in entry_ids {
-            assert!(!<Entries<T>>::contains_key(entry_id));
+            assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         }
         assert_last_event::<T>(
-            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment, rationale).into()
         );
     }
 
@@ -947,12 +961,13 @@ benchmarks! {
             RawOrigin::Signed(oracle_account_id).into(),
             oracle.clone(),
             bounty_id,
-            judgment.clone()
+            judgment.clone(),
+            Vec::new(),
         ).unwrap();
 
     }: _ (RawOrigin::Signed(work_account_id), work_member_id, bounty_id, entry_id)
     verify {
-        assert!(!<Entries<T>>::contains_key(entry_id));
+        assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         assert_was_fired::<T>(
             Event::<T>::WorkEntrantFundsWithdrawn(bounty_id, entry_id, work_member_id).into()
         );

@@ -6,7 +6,7 @@ import AccountsCommandBase from '../../base/AccountsCommandBase'
 export default class AccountForget extends AccountsCommandBase {
   static description = 'Forget (remove) account from the list of available accounts'
 
-  async run() {
+  async run(): Promise<void> {
     const selecteKey = await this.promptForAccount('Select an account to forget', false, false)
     await this.requireConfirmation('Are you sure you want to PERMANENTLY FORGET this account?')
 

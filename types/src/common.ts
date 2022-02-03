@@ -1,5 +1,5 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed } from '@polkadot/types'
-import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
+import { Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
@@ -9,19 +9,20 @@ import { GenericAccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
+export class Balance extends u128 {}
+export class BlockNumber extends u32 {}
+
 export class ActorId extends u64 {}
 export class MemberId extends u64 {}
 export class Url extends Text {}
 
 export class ChannelId extends u64 {}
-export class DAOId extends u64 {}
 
 // Indentical type names for Forum and Proposal Discussions modules
 // Ensure they are both configured in runtime to have same type
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
 
-// Which module uses this?
 export class Hash extends U8aFixed implements PolkadotHash {}
 
 export type BlockAndTimeType = {
@@ -82,9 +83,12 @@ export const WorkingGroupDef = {
   Forum: Null,
   Storage: Null,
   Content: Null,
-  Membership: Null,
-  Operations: Null,
+  OperationsAlpha: Null,
   Gateway: Null,
+  Distribution: Null,
+  OperationsBeta: Null,
+  OperationsGamma: Null,
+  Membership: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
@@ -101,6 +105,7 @@ export class BalanceKind extends JoyEnum({
 export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
+export class BalanceOf extends Balance {}
 
 export const commonTypes: RegistryTypes = {
   ActorId,
@@ -116,7 +121,6 @@ export const commonTypes: RegistryTypes = {
   Address,
   LookupSource,
   ChannelId,
-  DAOId,
   Url,
 }
 

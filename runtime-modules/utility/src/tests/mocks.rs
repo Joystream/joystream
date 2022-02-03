@@ -51,6 +51,9 @@ impl_outer_event! {
         working_group Instance4 <T>,
         working_group Instance5 <T>,
         working_group Instance6 <T>,
+        working_group Instance7 <T>,
+        working_group Instance8 <T>,
+        working_group Instance9 <T>,
     }
 }
 
@@ -110,7 +113,7 @@ macro_rules! call_wg {
     ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
         match $working_group {
             WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentDirectoryWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
 
             WorkingGroup::Storage =>
                 <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
@@ -124,8 +127,14 @@ macro_rules! call_wg {
             WorkingGroup::Gateway =>
                 <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
 
-            WorkingGroup::Operations =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::Distribution =>
+                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha =>
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta =>
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma =>
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
         }
     }};
 }
@@ -137,16 +146,25 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
-// The operations working group instance alias.
-pub type OperationsWorkingGroupInstance = working_group::Instance6;
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance6;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
+
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl frame_system::Trait for Test {
     type BaseCallFilter = ();
@@ -277,6 +295,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
         unimplemented!();
     }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 pub struct Weights;
@@ -346,7 +370,7 @@ parameter_types! {
 }
 
 pub struct WorkingGroupWeightInfo;
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
+impl working_group::Trait<ContentWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
@@ -480,7 +504,46 @@ impl working_group::Trait<GatewayWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance> for Test {
+impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;

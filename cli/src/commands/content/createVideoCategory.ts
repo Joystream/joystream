@@ -5,7 +5,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryCreationParameters } from '@joystream/types/content'
-import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
@@ -20,7 +20,7 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(CreateVideoCategoryCommand).flags
 
     const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()

@@ -165,7 +165,7 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asUpdateWorkingGroupBudget
     const [amount, workingGroup, balanceKind] = specificDetails
     details.groupId = getWorkingGroupModuleName(workingGroup)
-    details.amount = amount.muln(balanceKind.isNegative ? -1 : 1)
+    details.amount = new BN(`${balanceKind.isNegative ? '-' : ''}${amount.toString()}`)
     return details
   }
   // DecreaseWorkingGroupLeadStakeProposalDetails:

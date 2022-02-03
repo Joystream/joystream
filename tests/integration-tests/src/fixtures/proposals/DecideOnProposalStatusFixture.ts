@@ -76,7 +76,7 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     } else {
       const otherResultMinThreshold = Math.min(
         approvalThresholdPercentage.toNumber(),
-        approvalQuorumPercentage.toNumber()
+        slashingThresholdPercentage.toNumber()
       )
       const minRejectOrAbstainVotesN = Math.ceil((councilSize * (100 - otherResultMinThreshold)) / 100)
       return Array.from({ length: minRejectOrAbstainVotesN }, (v, i) => vote('Reject', i))
