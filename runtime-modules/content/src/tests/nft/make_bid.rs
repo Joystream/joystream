@@ -25,7 +25,7 @@ fn make_bid() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = get_open_auction_params();
@@ -75,7 +75,7 @@ fn make_bid() {
         // Ensure nft status changed to given Auction
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
+            Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::Auction(auction_with_bid,),
                 ..
             }) if auction == auction_with_bid
@@ -111,7 +111,7 @@ fn make_bid_completes_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let buy_now_price = Content::min_starting_price();
@@ -158,11 +158,11 @@ fn make_bid_completes_auction() {
         // Ensure nft status changed to given Auction
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
+            Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::Idle,
                 owner,
                 ..
-            }) if owner == NFTOwner::Member(SECOND_MEMBER_ID)
+            }) if owner == NftOwner::Member(SECOND_MEMBER_ID)
         ));
 
         // Last event checked
@@ -193,7 +193,7 @@ fn make_bid_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = get_open_auction_params();
@@ -241,7 +241,7 @@ fn make_bid_insufficient_balance() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = get_open_auction_params();
@@ -321,7 +321,7 @@ fn make_bid_nft_is_not_issued() {
         );
 
         // Failure checked
-        assert_err!(make_bid_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(make_bid_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -342,7 +342,7 @@ fn make_bid_nft_is_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // deposit initial balance
@@ -380,7 +380,7 @@ fn make_bid_nft_auction_expired() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -420,7 +420,7 @@ fn make_bid_nft_auction_expired() {
         );
 
         // Failure checked
-        assert_err!(make_bid_result, Error::<Test>::NFTAuctionIsAlreadyExpired);
+        assert_err!(make_bid_result, Error::<Test>::NftAuctionIsAlreadyExpired);
     })
 }
 
@@ -441,7 +441,7 @@ fn make_bid_nft_auction_is_not_started() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let starting_price = Content::min_starting_price();
@@ -498,7 +498,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -563,7 +563,7 @@ fn make_bid_starting_price_constraint_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -622,7 +622,7 @@ fn make_bid_bid_step_constraint_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {

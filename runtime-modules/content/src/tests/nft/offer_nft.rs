@@ -24,7 +24,7 @@ fn offer_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state before call
@@ -46,7 +46,7 @@ fn offer_nft() {
         // Ensure nft offered succesfully
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
+            Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::InitiatedOfferToMember(
                     SECOND_MEMBER_ID,
                     None
@@ -112,7 +112,7 @@ fn offer_nft_not_issued() {
         );
 
         // Failure checked
-        assert_err!(offer_nft_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(offer_nft_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -133,7 +133,7 @@ fn offer_nft_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to offer nft with wrong credentials
@@ -167,7 +167,7 @@ fn offer_nft_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to offer nft if actor is not authorized
@@ -201,7 +201,7 @@ fn offer_nft_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft

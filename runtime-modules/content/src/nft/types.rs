@@ -1,12 +1,12 @@
 use super::*;
 
-/// Metadata for NFT issuance
+/// Metadata for Nft issuance
 pub type Metadata = Vec<u8>;
 
 /// Owner royalty
 pub type Royalty = Perbill;
 
-/// NFT transactional status
+/// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransactionalStatusRecord<
@@ -40,16 +40,16 @@ pub type TransactionalStatus<T> = TransactionalStatusRecord<
     CurrencyOf<T>,
 >;
 
-/// Owned NFT representation
+/// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OwnedNFT<
+pub struct OwnedNft<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
     Balance: Default + Clone + BaseArithmetic,
 > {
-    pub owner: NFTOwner<MemberId>,
+    pub owner: NftOwner<MemberId>,
     pub transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
@@ -59,11 +59,11 @@ impl<
         MemberId: Default + Copy + PartialEq + Ord,
         AccountId: Default + Clone + PartialEq + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > OwnedNFT<BlockNumber, MemberId, AccountId, Balance>
+    > OwnedNft<BlockNumber, MemberId, AccountId, Balance>
 {
-    /// Create new NFT
+    /// Create new Nft
     pub fn new(
-        owner: NFTOwner<MemberId>,
+        owner: NftOwner<MemberId>,
         creator_royalty: Option<Royalty>,
         transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
     ) -> Self {
@@ -75,7 +75,7 @@ impl<
     }
 
     /// Set nft owner
-    pub fn set_owner(mut self, owner: NFTOwner<MemberId>) -> Self {
+    pub fn set_owner(mut self, owner: NftOwner<MemberId>) -> Self {
         self.owner = owner;
         self
     }
@@ -131,7 +131,7 @@ impl<
         self
     }
 
-    /// Ensure NFT has pending offer
+    /// Ensure Nft has pending offer
     pub fn ensure_pending_offer_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(
@@ -143,14 +143,14 @@ impl<
         Ok(())
     }
 
-    /// Ensure NFT is in BuyNow state
+    /// Ensure Nft is in BuyNow state
     pub fn ensure_buy_now_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(
                 self.transactional_status,
                 TransactionalStatusRecord::BuyNow(..),
             ),
-            Error::<T>::NFTNotInBuyNowState
+            Error::<T>::NftNotInBuyNowState
         );
         Ok(())
     }
@@ -158,12 +158,12 @@ impl<
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTOwner<MemberId> {
+pub enum NftOwner<MemberId> {
     ChannelOwner,
     Member(MemberId),
 }
 
-impl<MemberId> Default for NFTOwner<MemberId> {
+impl<MemberId> Default for NftOwner<MemberId> {
     fn default() -> Self {
         Self::ChannelOwner
     }
@@ -353,7 +353,7 @@ impl<
     ) -> DispatchResult {
         ensure!(
             !self.is_nft_auction_expired(current_block),
-            Error::<T>::NFTAuctionIsAlreadyExpired
+            Error::<T>::NftAuctionIsAlreadyExpired
         );
         Ok(())
     }
@@ -452,8 +452,8 @@ pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::AccountId,
 >;
 
-/// OwnedNFT alias type for simplification.
-pub type Nft<T> = OwnedNFT<
+/// OwnedNft alias type for simplification.
+pub type Nft<T> = OwnedNft<
     <T as frame_system::Trait>::BlockNumber,
     <T as common::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
@@ -511,23 +511,23 @@ pub struct OpenAuctionDetails<BlockNumber> {
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NFTIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     /// Roayalty used for the author
     pub royalty: Option<Royalty>,
     /// Metadata
     pub nft_metadata: Metadata,
-    /// member id NFT will be issued to
+    /// member id Nft will be issued to
     pub non_channel_owner: Option<MemberId>,
     /// Initial transactional status for the nft
     pub init_transactional_status: InitTransactionalStatus,
 }
 
-pub type NFTIssuanceParameters<T> = NFTIssuanceParametersRecord<
+pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
     <T as common::MembershipTypes>::MemberId,
     InitTransactionalStatus<T>,
 >;
 
-/// Initial Transactional status for the NFT: See InitialTransactionalStatusRecord above
+/// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum InitTransactionalStatusRecord<

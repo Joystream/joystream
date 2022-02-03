@@ -24,7 +24,7 @@ fn sell_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state before call
@@ -45,7 +45,7 @@ fn sell_nft() {
         // Ensure nft offer made succesfully
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
+            Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::BuyNow(
                     cost,
                 ),
@@ -55,7 +55,7 @@ fn sell_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NFTSellOrderMade(
+            MetaEvent::content(RawEvent::NftSellOrderMade(
                 video_id,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 DEFAULT_NFT_PRICE,
@@ -107,7 +107,7 @@ fn sell_nft_not_issued() {
         );
 
         // Failure checked
-        assert_err!(sell_nft_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(sell_nft_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -128,7 +128,7 @@ fn sell_nft_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sell nft with wrong credentials
@@ -161,7 +161,7 @@ fn sell_nft_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sell nft if actor is not authorized
@@ -194,7 +194,7 @@ fn sell_nft_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft

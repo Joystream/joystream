@@ -32,21 +32,21 @@ fn issue_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state after call
 
         // Ensure nft created succesfully
-        let nft_status = Some(OwnedNFT::new(
-            NFTOwner::ChannelOwner,
+        let nft_status = Some(OwnedNft::new(
+            NftOwner::ChannelOwner,
             None,
             TransactionalStatus::<Test>::Idle,
         ));
         assert_eq!(nft_status, Content::video_by_id(video_id).nft_status);
 
         // Last event checked
-        let nft_issue_params = NFTIssuanceParameters::<Test>::default();
+        let nft_issue_params = NftIssuanceParameters::<Test>::default();
         assert_event(
             MetaEvent::content(RawEvent::NftIssued(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
@@ -74,7 +74,7 @@ fn issue_nft_video_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -99,7 +99,7 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to issue nft once again for the same video
@@ -107,11 +107,11 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
-        assert_err!(issue_nft_result, Error::<Test>::NFTAlreadyExists);
+        assert_err!(issue_nft_result, Error::<Test>::NftAlreadyExists);
     })
 }
 
@@ -132,7 +132,7 @@ fn issue_nft_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -157,7 +157,7 @@ fn issue_nft_actor_not_authorized() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -182,9 +182,9 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test> {
+            NftIssuanceParameters::<Test> {
                 royalty: Some(Perbill::one()),
-                ..NFTIssuanceParameters::<Test>::default()
+                ..NftIssuanceParameters::<Test>::default()
             },
         );
 
@@ -196,9 +196,9 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test> {
+            NftIssuanceParameters::<Test> {
                 royalty: Some(Perbill::from_perthousand(1)),
-                ..NFTIssuanceParameters::<Test>::default()
+                ..NftIssuanceParameters::<Test>::default()
             },
         );
 
@@ -235,9 +235,9 @@ fn issue_nft_fails_with_invalid_auction_parameters() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test> {
+            NftIssuanceParameters::<Test> {
                 init_transactional_status: InitTransactionalStatus::<Test>::Auction(auction_params),
-                ..NFTIssuanceParameters::<Test>::default()
+                ..NftIssuanceParameters::<Test>::default()
             },
         );
 

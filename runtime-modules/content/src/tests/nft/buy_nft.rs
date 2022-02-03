@@ -26,7 +26,7 @@ fn buy_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // deposit balance to second member
@@ -72,8 +72,8 @@ fn buy_nft() {
         // Ensure nft succesfully bought
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                owner: NFTOwner::Member(SECOND_MEMBER_ID),
+            Some(OwnedNft {
+                owner: NftOwner::Member(SECOND_MEMBER_ID),
                 transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
@@ -81,7 +81,7 @@ fn buy_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID)),
+            MetaEvent::content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
             number_of_events_before_call + 1,
         );
     })
@@ -134,7 +134,7 @@ fn buy_nft_not_issued() {
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(buy_nft_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -156,7 +156,7 @@ fn buy_nft_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -196,7 +196,7 @@ fn buy_nft_not_in_buy_now_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to buy nft which is not in BuyNow state
@@ -207,7 +207,7 @@ fn buy_nft_not_in_buy_now_state() {
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::NFTNotInBuyNowState);
+        assert_err!(buy_nft_result, Error::<Test>::NftNotInBuyNowState);
     })
 }
 
@@ -227,7 +227,7 @@ fn buy_nft_insufficient_balance() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -273,7 +273,7 @@ fn buy_nft_reward_account_is_not_set() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // deposit balance to second member

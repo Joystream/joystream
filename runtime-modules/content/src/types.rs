@@ -221,19 +221,19 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParametersRecord<StorageAssets, NFTIssuanceParameters> {
+pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
     pub meta: Option<Vec<u8>>,
     /// Comments enabled or not
     pub enable_comments: bool,
-    /// Parameters for issuing video NFT
-    pub auto_issue_nft: Option<NFTIssuanceParameters>,
+    /// Parameters for issuing video Nft
+    pub auto_issue_nft: Option<NftIssuanceParameters>,
 }
 
 pub type VideoCreationParameters<T> =
-    VideoCreationParametersRecord<StorageAssets<T>, NFTIssuanceParameters<T>>;
+    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -254,7 +254,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, VideoPostId, OwnedNFT> {
+pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
     /// channel the video is in
     pub in_channel: ChannelId,
     /// Whether the curators have censored the video or not.
@@ -264,7 +264,7 @@ pub struct VideoRecord<ChannelId, VideoPostId, OwnedNFT> {
     /// First post to a video works as a description
     pub video_post_id: Option<VideoPostId>,
     /// Whether nft for this video have been issued.
-    pub nft_status: Option<OwnedNFT>,
+    pub nft_status: Option<OwnedNft>,
 }
 
 pub type Video<T> =
@@ -406,26 +406,26 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
-    VideoRecord<ChannelId, VideoPostId, OwnedNFT>
+impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
+    VideoRecord<ChannelId, VideoPostId, OwnedNft>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.nft_status.is_none(), Error::<T>::NFTAlreadyExists);
+        ensure!(self.nft_status.is_none(), Error::<T>::NftAlreadyExists);
         Ok(())
     }
 
     /// Ensure nft is issued
-    pub fn ensure_nft_is_issued<T: Trait>(&self) -> Result<OwnedNFT, Error<T>> {
+    pub fn ensure_nft_is_issued<T: Trait>(&self) -> Result<OwnedNft, Error<T>> {
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.clone())
         } else {
-            Err(Error::<T>::NFTDoesNotExist)
+            Err(Error::<T>::NftDoesNotExist)
         }
     }
 
     /// Set video nft status
-    pub fn set_nft_status(mut self, nft: OwnedNFT) -> Self {
+    pub fn set_nft_status(mut self, nft: OwnedNft) -> Self {
         self.nft_status = Some(nft);
         self
     }

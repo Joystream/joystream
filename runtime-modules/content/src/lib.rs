@@ -736,7 +736,7 @@ decl_module! {
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 /// Newly created video has no nft
-                nft_status: nft_status,
+                nft_status,
             };
 
             //
@@ -1318,7 +1318,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            params: NFTIssuanceParameters<T>
+            params: NftIssuanceParameters<T>
         ) {
 
             let sender = ensure_signed(origin)?;
@@ -1343,7 +1343,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Issue NFT
+            // Issue Nft
             let video = video.set_nft_status(nft_status);
 
             // Update the video
@@ -1440,7 +1440,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        /// Cancel NFT offer
+        /// Cancel Nft offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
@@ -1473,7 +1473,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferCanceled(video_id, owner_id));
         }
 
-        /// Cancel NFT sell order
+        /// Cancel Nft sell order
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_buy_now(
             origin,
@@ -1720,7 +1720,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
         }
 
-        /// Offer NFT
+        /// Offer Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn offer_nft(
             origin,
@@ -1756,7 +1756,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
         }
 
-        /// Return NFT back to the original artist at no cost
+        /// Return Nft back to the original artist at no cost
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn sling_nft_back(
             origin,
@@ -1781,7 +1781,7 @@ decl_module! {
             //
 
             // Set nft owner to ChannelOwner
-            let nft = nft.set_owner(NFTOwner::ChannelOwner);
+            let nft = nft.set_owner(NftOwner::ChannelOwner);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
@@ -1790,7 +1790,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftSlingedBackToTheOriginalArtist(video_id, owner_id));
         }
 
-        /// Accept incoming NFT offer
+        /// Accept incoming Nft offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_incoming_offer(
             origin,
@@ -1823,7 +1823,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferAccepted(video_id));
         }
 
-        /// Sell NFT
+        /// Sell Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn sell_nft(
             origin,
@@ -1855,10 +1855,10 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, owner_id, price));
+            Self::deposit_event(RawEvent::NftSellOrderMade(video_id, owner_id, price));
         }
 
-        /// Buy NFT
+        /// Buy Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_nft(
             origin,
@@ -1892,7 +1892,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
+            Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
     }
 }
@@ -2078,7 +2078,7 @@ impl<T: Trait> Module<T> {
         video: &Video<T>,
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
-        if let NFTOwner::Member(member_id) = owned_nft.owner {
+        if let NftOwner::Member(member_id) = owned_nft.owner {
             let membership = <membership::Module<T>>::ensure_membership(member_id)
                 .map_err(|_| Error::<T>::MemberProfileNotFound)?;
             Ok(membership.controller_account)
@@ -2117,19 +2117,19 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Construct the NFT that is intended to be issued
+    /// Construct the Nft that is intended to be issued
     pub fn construct_owned_nft(
-        issuance_params: &NFTIssuanceParameters<T>,
+        issuance_params: &NftIssuanceParameters<T>,
     ) -> Result<Nft<T>, DispatchError> {
         let transactional_status = Self::ensure_valid_init_transactional_status(
             &issuance_params.init_transactional_status,
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner.as_ref() {
-            NFTOwner::Member(to.clone())
+            NftOwner::Member(to.clone())
         } else {
             // if `to` set to None, actor issues to ChannelOwner
-            NFTOwner::ChannelOwner
+            NftOwner::ChannelOwner
         };
 
         // Enure royalty bounds satisfied, if provided
@@ -2334,7 +2334,7 @@ decl_event!(
         ChannelRewardUpdated(Balance, ChannelId),
         MaxRewardUpdated(Balance),
         MinCashoutUpdated(Balance),
-        // NFT auction
+        // Nft auction
         AuctionStarted(ContentActor, VideoId, AuctionParams),
         NftIssued(
             ContentActor,
@@ -2353,8 +2353,8 @@ decl_event!(
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
-        NFTSellOrderMade(VideoId, ContentActor, CurrencyAmount),
-        NFTBought(VideoId, MemberId),
+        NftSellOrderMade(VideoId, ContentActor, CurrencyAmount),
+        NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
     }

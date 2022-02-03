@@ -21,7 +21,7 @@ fn delete_video_nft_is_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to delete a video, which has an nft issued already.
@@ -32,7 +32,7 @@ fn delete_video_nft_is_issued() {
                 video_id,
                 BTreeSet::new(),
             ),
-            Error::<Test>::NFTAlreadyExists
+            Error::<Test>::NftAlreadyExists
         );
     })
 }

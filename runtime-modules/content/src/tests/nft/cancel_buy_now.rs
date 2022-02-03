@@ -24,7 +24,7 @@ fn cancel_buy_now() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
@@ -54,7 +54,7 @@ fn cancel_buy_now() {
         // Ensure nft status changed to given Auction
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
+            Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
@@ -111,7 +111,7 @@ fn cancel_buy_now_not_issued() {
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(cancel_buy_now_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -132,7 +132,7 @@ fn cancel_buy_now_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -172,7 +172,7 @@ fn cancel_buy_now_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Sell nft
@@ -212,7 +212,7 @@ fn cancel_buy_now_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to cancel buy now if there is no pending one
@@ -223,6 +223,6 @@ fn cancel_buy_now_not_in_auction_state() {
         );
 
         // Failure checked
-        assert_err!(cancel_buy_now_result, Error::<Test>::NFTNotInBuyNowState);
+        assert_err!(cancel_buy_now_result, Error::<Test>::NftNotInBuyNowState);
     })
 }

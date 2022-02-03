@@ -224,7 +224,7 @@ impl<T: Trait> Module<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::ensure_sufficient_free_balance(participant_account_id, *price)
         } else {
-            Err(Error::<T>::NFTNotInBuyNowState.into())
+            Err(Error::<T>::NftNotInBuyNowState.into())
         }
     }
 
@@ -248,7 +248,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Cancel NFT transaction
+    /// Cancel Nft transaction
     pub fn cancel_transaction(nft: Nft<T>) -> Nft<T> {
         if let TransactionalStatus::<T>::Auction(ref auction) = nft.transactional_status {
             if let Some(ref last_bid) = auction.last_bid {
@@ -278,7 +278,7 @@ impl<T: Trait> Module<T> {
                 false,
             );
 
-            nft.owner = NFTOwner::Member(new_owner);
+            nft.owner = NftOwner::Member(new_owner);
         }
 
         nft.set_idle_transactional_status()
@@ -305,7 +305,7 @@ impl<T: Trait> Module<T> {
                 );
             }
 
-            nft.owner = NFTOwner::Member(*to);
+            nft.owner = NftOwner::Member(*to);
         }
 
         nft.set_idle_transactional_status()
@@ -352,11 +352,9 @@ impl<T: Trait> Module<T> {
                 // Deposit royalty into creator account
                 T::Currency::deposit_creating(&creator_account_id, royalty);
             }
-        } else {
-            if let Some(receiver_account_id) = receiver_account_id {
-                // Deposit amount, exluding auction fee into receiver account
-                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
-            }
+        } else if let Some(receiver_account_id) = receiver_account_id {
+            // Deposit amount, exluding auction fee into receiver account
+            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
@@ -380,7 +378,7 @@ impl<T: Trait> Module<T> {
             true,
         );
 
-        nft.owner = NFTOwner::Member(last_bidder);
+        nft.owner = NftOwner::Member(last_bidder);
         nft.transactional_status = TransactionalStatus::<T>::Idle;
         nft
     }

@@ -23,7 +23,7 @@ fn accept_incoming_offer() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -51,8 +51,8 @@ fn accept_incoming_offer() {
         // Ensure nft offer accepted succesfully
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                owner: NFTOwner::Member(member_id),
+            Some(OwnedNft {
+                owner: NftOwner::Member(member_id),
                 transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             }) if member_id == SECOND_MEMBER_ID
@@ -102,7 +102,7 @@ fn accept_incoming_offer_nft_not_issued() {
             Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
-        assert_err!(accept_incoming_offer_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(accept_incoming_offer_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -122,7 +122,7 @@ fn accept_incoming_offer_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -164,7 +164,7 @@ fn accept_incoming_offer_no_incoming_offers() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
@@ -201,7 +201,7 @@ fn accept_incoming_offer_reward_account_is_not_set() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -241,7 +241,7 @@ fn accept_incoming_offer_insufficient_balance() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            NFTIssuanceParameters::<Test>::default(),
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
