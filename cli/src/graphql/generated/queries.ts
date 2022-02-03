@@ -52,6 +52,37 @@ export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
 
 export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
+export type WorkingGroupOpeningDetailsFragment = {
+  metadata: {
+    description?: Types.Maybe<string>
+    shortDescription?: Types.Maybe<string>
+    hiringLimit?: Types.Maybe<number>
+    expectedEnding?: Types.Maybe<any>
+    applicationDetails?: Types.Maybe<string>
+    applicationFormQuestions: Array<{ question?: Types.Maybe<string>; type: Types.ApplicationFormQuestionType }>
+  }
+}
+
+export type WorkingGroupApplicationDetailsFragment = {
+  answers: Array<{ answer: string; question: { question?: Types.Maybe<string> } }>
+}
+
+export type OpeningDetailsByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type OpeningDetailsByIdQuery = {
+  workingGroupOpeningByUniqueInput?: Types.Maybe<WorkingGroupOpeningDetailsFragment>
+}
+
+export type ApplicationDetailsByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type ApplicationDetailsByIdQuery = {
+  workingGroupApplicationByUniqueInput?: Types.Maybe<WorkingGroupApplicationDetailsFragment>
+}
+
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -106,6 +137,31 @@ export const DataObjectInfo = gql`
     }
   }
 `
+export const WorkingGroupOpeningDetails = gql`
+  fragment WorkingGroupOpeningDetails on WorkingGroupOpening {
+    metadata {
+      description
+      shortDescription
+      hiringLimit
+      expectedEnding
+      applicationDetails
+      applicationFormQuestions {
+        question
+        type
+      }
+    }
+  }
+`
+export const WorkingGroupApplicationDetails = gql`
+  fragment WorkingGroupApplicationDetails on WorkingGroupApplication {
+    answers {
+      question {
+        question
+      }
+      answer
+    }
+  }
+`
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {
     memberships(where: { id_in: $ids }) {
@@ -151,4 +207,20 @@ export const GetDataObjectsByVideoId = gql`
     }
   }
   ${DataObjectInfo}
+`
+export const OpeningDetailsById = gql`
+  query openingDetailsById($id: ID!) {
+    workingGroupOpeningByUniqueInput(where: { id: $id }) {
+      ...WorkingGroupOpeningDetails
+    }
+  }
+  ${WorkingGroupOpeningDetails}
+`
+export const ApplicationDetailsById = gql`
+  query applicationDetailsById($id: ID!) {
+    workingGroupApplicationByUniqueInput(where: { id: $id }) {
+      ...WorkingGroupApplicationDetails
+    }
+  }
+  ${WorkingGroupApplicationDetails}
 `

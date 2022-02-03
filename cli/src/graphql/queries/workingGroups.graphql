@@ -1,0 +1,34 @@
+fragment WorkingGroupOpeningDetails on WorkingGroupOpening {
+  metadata {
+    description
+    shortDescription
+    hiringLimit
+    expectedEnding
+    applicationDetails
+    applicationFormQuestions {
+      question
+      type
+    }
+  }
+}
+
+fragment WorkingGroupApplicationDetails on WorkingGroupApplication {
+  answers {
+    question {
+      question
+    }
+    answer
+  }
+}
+
+query openingDetailsById($id: ID!) {
+  workingGroupOpeningByUniqueInput(where: { id: $id }) {
+    ...WorkingGroupOpeningDetails
+  }
+}
+
+query applicationDetailsById($id: ID!) {
+  workingGroupApplicationByUniqueInput(where: { id: $id }) {
+    ...WorkingGroupApplicationDetails
+  }
+}

@@ -1,4 +1,4 @@
-import { StorageNodeInfo } from './Types'
+import { StorageNodeInfo, WorkingGroups } from './Types'
 import {
   ApolloClient,
   InMemoryCache,
@@ -28,10 +28,20 @@ import {
   GetMembersByIdsQuery,
   GetMembersByIdsQueryVariables,
   MembershipFieldsFragment,
+  WorkingGroupOpeningDetailsFragment,
+  OpeningDetailsByIdQuery,
+  OpeningDetailsByIdQueryVariables,
+  OpeningDetailsById,
+  WorkingGroupApplicationDetailsFragment,
+  ApplicationDetailsByIdQuery,
+  ApplicationDetailsByIdQueryVariables,
+  ApplicationDetailsById,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
 import { MemberId } from '@joystream/types/common'
+import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { apiModuleByGroup } from './Api'
 
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
@@ -135,6 +145,28 @@ export default class QueryNodeApi {
         ids: ids.map((id) => id.toString()),
       },
       'memberships'
+    )
+  }
+
+  async openingDetailsById(
+    group: WorkingGroups,
+    id: OpeningId | number
+  ): Promise<WorkingGroupOpeningDetailsFragment | null> {
+    return this.uniqueEntityQuery<OpeningDetailsByIdQuery, OpeningDetailsByIdQueryVariables>(
+      OpeningDetailsById,
+      { id: `${apiModuleByGroup[group]}-${id.toString()}` },
+      'workingGroupOpeningByUniqueInput'
+    )
+  }
+
+  async applicationDetailsById(
+    group: WorkingGroups,
+    id: ApplicationId | number
+  ): Promise<WorkingGroupApplicationDetailsFragment | null> {
+    return this.uniqueEntityQuery<ApplicationDetailsByIdQuery, ApplicationDetailsByIdQueryVariables>(
+      ApplicationDetailsById,
+      { id: `${apiModuleByGroup[group]}-${id.toString()}` },
+      'workingGroupApplicationByUniqueInput'
     )
   }
 }

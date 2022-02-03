@@ -15,9 +15,14 @@ import {
   IVideoMetadata,
   IVideoCategoryMetadata,
   IChannelCategoryMetadata,
+  IOpeningMetadata,
 } from '@joystream/metadata-protobuf'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
-import { MembershipFieldsFragment } from './graphql/generated/queries'
+import {
+  MembershipFieldsFragment,
+  WorkingGroupApplicationDetailsFragment,
+  WorkingGroupOpeningDetailsFragment,
+} from './graphql/generated/queries'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -88,6 +93,7 @@ export type ApplicationDetails = {
   rewardAccount: AccountId
   descriptionHash: string
   openingId: number
+  answers?: WorkingGroupApplicationDetailsFragment['answers']
 }
 
 export type OpeningDetails = {
@@ -100,6 +106,7 @@ export type OpeningDetails = {
   type: OpeningType
   createdAtBlock: number
   rewardPerBlock?: Balance
+  metadata?: WorkingGroupOpeningDetailsFragment['metadata']
 }
 
 // Extended membership information (including optional query node data)
@@ -185,7 +192,19 @@ export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
 export type VideoCategoryInputParameters = IVideoCategoryMetadata
 
-type AnyNonObject = string | number | boolean | any[] | Long
+export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applicationFormQuestions'> & {
+  stakingPolicy: {
+    amount: number
+    unstakingPeriod: number
+  }
+  rewardPerBlock?: number
+  applicationFormQuestions?: {
+    question: string
+    type: 'TEXTAREA' | 'TEXT'
+  }[]
+}
+
+type AnyPrimitive = string | number | boolean | Long
 
 // JSONSchema utility types
 
@@ -199,18 +218,22 @@ type AnyJSONSchema = RemoveIndex<JSONSchema4>
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
-  ? 'number' | ['number', 'null']
+  ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : T extends boolean
   ? 'boolean' | ['boolean', 'null']
   : T extends any[]
   ? 'array' | ['array', 'null']
   : T extends Long
-  ? 'number' | ['number', 'null']
+  ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : 'object' | ['object', 'null']
 
 export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: JSONTypeName<P>
-} & (P extends AnyNonObject ? { properties?: never } : { properties: JsonSchemaProperties<P> })
+} & (P extends AnyPrimitive
+    ? { properties?: never }
+    : P extends (infer T)[]
+    ? { properties?: never; items: PropertySchema<T> }
+    : { properties: JsonSchemaProperties<P> })
 
 export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>

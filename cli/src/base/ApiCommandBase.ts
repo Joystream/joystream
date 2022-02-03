@@ -17,6 +17,7 @@ import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import QueryNodeApi from '../QueryNodeApi'
 import { formatBalance } from '@polkadot/util'
+import cli from 'cli-ux'
 import BN from 'bn.js'
 import _ from 'lodash'
 
@@ -93,13 +94,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
         queryNodeUri = await this.promptForQueryNodeUri()
       }
-      this.queryNodeApi = queryNodeUri
-        ? new QueryNodeApi(queryNodeUri, (err) => {
-            this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
-          })
-        : null
+      if (queryNodeUri) {
+        cli.action.start(`Initializing the query node connection (${queryNodeUri})...`)
+        this.queryNodeApi = new QueryNodeApi(queryNodeUri, (err) => {
+          this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+        })
+        cli.action.stop()
+      } else {
+        this.queryNodeApi = null
+      }
 
       // Substrate api
+      cli.action.start(`Initializing the api connection (${apiUri})...`)
       const { metadataCache } = this.getPreservedState()
       this.api = await Api.create(apiUri, metadataCache, this.queryNodeApi || undefined)
 
@@ -110,6 +116,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
         await this.setPreservedState({ metadataCache })
       }
+      cli.action.stop()
     }
   }
 

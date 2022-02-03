@@ -3,7 +3,7 @@ import { createType, types } from '@joystream/types/'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Balance } from '@polkadot/types/interfaces'
+import { Balance, LockIdentifier } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, Observable } from '@polkadot/types/types'
 import { UInt } from '@polkadot/types'
@@ -16,6 +16,7 @@ import {
   OpeningDetails,
   UnaugmentedApiPromise,
   MemberDetails,
+  AvailableGroups,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -313,9 +314,11 @@ export default class Api {
   }
 
   protected async fetchApplicationDetails(
+    group: WorkingGroups,
     applicationId: number,
     application: Application
   ): Promise<ApplicationDetails> {
+    const qnData = await this._qnApi?.applicationDetailsById(group, applicationId)
     return {
       applicationId,
       member: await this.expectedMemberDetailsById(application.member_id),
@@ -324,12 +327,13 @@ export default class Api {
       stakingAccount: application.staking_account_id,
       descriptionHash: application.description_hash.toString(),
       openingId: application.opening_id.toNumber(),
+      answers: qnData?.answers,
     }
   }
 
   async groupApplication(group: WorkingGroups, applicationId: number): Promise<ApplicationDetails> {
     const application = await this.applicationById(group, applicationId)
-    return await this.fetchApplicationDetails(applicationId, application)
+    return await this.fetchApplicationDetails(group, applicationId, application)
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
@@ -340,7 +344,7 @@ export default class Api {
     return Promise.all(
       applicationEntries
         .filter(([, application]) => application.opening_id.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(id.toNumber(), application))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
     )
   }
 
@@ -361,6 +365,7 @@ export default class Api {
   }
 
   async fetchOpeningDetails(group: WorkingGroups, opening: Opening, openingId: number): Promise<OpeningDetails> {
+    const qnData = await this._qnApi?.openingDetailsById(group, openingId)
     const applications = await this.groupOpeningApplications(group, openingId)
     const type = opening.opening_type
     const stake = {
@@ -375,6 +380,7 @@ export default class Api {
       stake,
       createdAtBlock: opening.created.toNumber(),
       rewardPerBlock: opening.reward_per_block.unwrapOr(undefined),
+      metadata: qnData?.metadata || undefined,
     }
   }
 
@@ -461,5 +467,71 @@ export default class Api {
     const handleHash = blake2AsHex(handle)
     const existingMeber = await this._api.query.members.memberIdByHandleHash(handleHash)
     return !existingMeber.isEmpty
+  }
+
+  allowedLockCombinations(): { [lockId: string]: LockIdentifier[] } {
+    // TODO: Fetch from runtime once exposed
+    const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
+    const candidacyLockId = this._api.consts.council.candidacyLockId
+    const votingLockId = this._api.consts.referendum.stakingHandlerLockId
+    const councilorLockId = this._api.consts.council.councilorLockId
+    const stakingCandidateLockId = this._api.consts.members.stakingCandidateLockId
+    const proposalsLockId = this._api.consts.proposalsEngine.stakingHandlerLockId
+    const groupLockIds: { group: WorkingGroups; lockId: LockIdentifier }[] = AvailableGroups.map((group) => ({
+      group,
+      lockId: this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId,
+    }))
+    const bountyLockId = this._api.consts.bounty.bountyLockId
+
+    const lockCombinationsByWorkingGroupLockId: { [groupLockId: string]: LockIdentifier[] } = {}
+    groupLockIds.forEach(
+      ({ lockId }) =>
+        (lockCombinationsByWorkingGroupLockId[lockId.toString()] = [
+          invitedMemberLockId,
+          votingLockId,
+          stakingCandidateLockId,
+        ])
+    )
+
+    return {
+      [invitedMemberLockId.toString()]: [
+        votingLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        stakingCandidateLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [stakingCandidateLockId.toString()]: [
+        votingLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        invitedMemberLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [votingLockId.toString()]: [
+        invitedMemberLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        stakingCandidateLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [candidacyLockId.toString()]: [invitedMemberLockId, votingLockId, councilorLockId, stakingCandidateLockId],
+      [councilorLockId.toString()]: [invitedMemberLockId, votingLockId, candidacyLockId, stakingCandidateLockId],
+      [proposalsLockId.toString()]: [invitedMemberLockId, votingLockId, stakingCandidateLockId],
+      ...lockCombinationsByWorkingGroupLockId,
+      [bountyLockId.toString()]: [votingLockId, stakingCandidateLockId],
+    }
+  }
+
+  async areAccountLocksCompatibleWith(account: AccountId | string, lockId: LockIdentifier): Promise<boolean> {
+    const accountLocks = await this._api.query.balances.locks(account)
+    const allowedLocks = this.allowedLockCombinations()[lockId.toString()]
+    return accountLocks.every((l) => allowedLocks.some((allowedLock) => allowedLock.eq(l.id)))
   }
 }

@@ -1,11 +1,9 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { GroupMember } from '../../Types'
+import { WorkingGroupOpeningInputParameters } from '../../Types'
+import { WorkingGroupOpeningInputSchema } from '../../schemas/WorkingGroups'
 import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
-import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import OpeningParamsSchema from '../../schemas/json/WorkingGroupOpening.schema.json'
-import { WorkingGroupOpening as OpeningParamsJson } from '../../schemas/typings/WorkingGroupOpening.schema'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
@@ -13,6 +11,9 @@ import { AugmentedSubmittables } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
 import { CLIError } from '@oclif/errors'
+import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import { metadataToBytes } from '../../helpers/serialization'
+import { OpeningId } from '@joystream/types/working-group'
 
 const OPENING_STAKE = new BN(2000)
 
@@ -39,14 +40,29 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         '(can be used to generate a "draft" which can be provided as input later)',
       dependsOn: ['output'],
     }),
+    stakeTopUpSource: flags.string({
+      required: false,
+      description:
+        "If provided - this account (key) will be used as default funds source for lead stake top up (in case it's needed)",
+    }),
     ...WorkingGroupsCommandBase.flags,
   }
 
+  prepareMetadata(openingParamsJson: WorkingGroupOpeningInputParameters): IOpeningMetadata {
+    return {
+      ...openingParamsJson,
+      applicationFormQuestions: openingParamsJson.applicationFormQuestions?.map((q) => ({
+        question: q.question,
+        type: OpeningMetadata.ApplicationFormQuestion.InputType[q.type],
+      })),
+    }
+  }
+
   createTxParams(
-    openingParamsJson: OpeningParamsJson
+    openingParamsJson: WorkingGroupOpeningInputParameters
   ): Parameters<AugmentedSubmittables<'promise'>['membershipWorkingGroup']['addOpening']> {
     return [
-      openingParamsJson.description,
+      metadataToBytes(OpeningMetadata, this.prepareMetadata(openingParamsJson)),
       'Regular',
       {
         stake_amount: openingParamsJson.stakingPolicy.amount,
@@ -57,10 +73,12 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     ]
   }
 
-  async promptForData(lead: GroupMember, rememberedInput?: OpeningParamsJson): Promise<OpeningParamsJson> {
+  async promptForData(
+    rememberedInput?: WorkingGroupOpeningInputParameters
+  ): Promise<WorkingGroupOpeningInputParameters> {
     const openingDefaults = rememberedInput
-    const openingPrompt = new JsonSchemaPrompter<OpeningParamsJson>(
-      (OpeningParamsSchema as unknown) as JSONSchema,
+    const openingPrompt = new JsonSchemaPrompter<WorkingGroupOpeningInputParameters>(
+      WorkingGroupOpeningInputSchema,
       openingDefaults
     )
     const openingParamsJson = await openingPrompt.promptAll()
@@ -68,13 +86,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     return openingParamsJson
   }
 
-  async getInputFromFile(filePath: string): Promise<OpeningParamsJson> {
-    const inputParams = await getInputJson<OpeningParamsJson>(filePath, (OpeningParamsSchema as unknown) as JSONSchema)
-
-    return inputParams as OpeningParamsJson
+  async getInputFromFile(filePath: string): Promise<WorkingGroupOpeningInputParameters> {
+    return getInputJson<WorkingGroupOpeningInputParameters>(filePath, WorkingGroupOpeningInputSchema)
   }
 
-  async promptForStakeTopUp(stakingAccount: string): Promise<void> {
+  async promptForStakeTopUp(stakingAccount: string, fundsSource?: string): Promise<void> {
     this.log(`You need to stake ${chalk.bold(formatBalance(OPENING_STAKE))} in order to create a new opening.`)
 
     const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount])
@@ -85,8 +101,10 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
           formatBalance(missingBalance)
         )} to your staking account? (${stakingAccount})`
       )
-      const account = await this.promptForAccount('Choose account to transfer the funds from')
-      await this.sendAndFollowNamedTx(await this.getDecodedPair(account), 'balances', 'transferKeepAlive', [
+      if (!fundsSource) {
+        fundsSource = await this.promptForAccount('Choose account to transfer the funds from')
+      }
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(fundsSource), 'balances', 'transferKeepAlive', [
         stakingAccount,
         missingBalance,
       ])
@@ -98,37 +116,30 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     const lead = await this.getRequiredLeadContext()
 
     const {
-      flags: { input, output, edit, dryRun },
+      flags: { input, output, edit, dryRun, stakeTopUpSource },
     } = this.parse(WorkingGroupsCreateOpening)
 
     ensureOutputFileIsWriteable(output)
 
     let tryAgain = false
-    let rememberedInput: OpeningParamsJson | undefined
+    let rememberedInput: WorkingGroupOpeningInputParameters | undefined
     do {
       if (edit) {
         rememberedInput = await this.getInputFromFile(input as string)
       }
       // Either prompt for the data or get it from input file
       const openingJson =
-        !input || edit || tryAgain
-          ? await this.promptForData(lead, rememberedInput)
-          : await this.getInputFromFile(input)
+        !input || edit || tryAgain ? await this.promptForData(rememberedInput) : await this.getInputFromFile(input)
 
       // Remember the provided/fetched data in a variable
       rememberedInput = openingJson
 
-      await this.promptForStakeTopUp(lead.stakingAccount.toString())
+      await this.promptForStakeTopUp(lead.stakingAccount.toString(), stakeTopUpSource)
 
-      // Generate and ask to confirm tx params
-      const txParams = this.createTxParams(openingJson)
-      this.jsonPrettyPrint(JSON.stringify(txParams))
-      const confirmed = await this.simplePrompt({
-        type: 'confirm',
-        message: 'Do you confirm these extrinsic parameters?',
-      })
+      this.jsonPrettyPrint(JSON.stringify(rememberedInput))
+      const confirmed = await this.requestConfirmation('Do you confirm the provided input?')
       if (!confirmed) {
-        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+        tryAgain = await this.requestConfirmation('Try again with remembered input?')
         continue
       }
 
@@ -148,17 +159,19 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Send the tx
       try {
-        await this.sendAndFollowTx(
+        const result = await this.sendAndFollowTx(
           await this.getDecodedPair(lead.roleAccount),
-          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
+          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...this.createTxParams(rememberedInput))
         )
-        this.log(chalk.green('Opening successfully created!'))
+        const openingId: OpeningId = this.getEvent(result, apiModuleByGroup[this.group], 'OpeningAdded').data[0]
+        this.log(chalk.green(`Opening with id ${chalk.magentaBright(openingId)} successfully created!`))
+        this.output(openingId.toString())
         tryAgain = false
       } catch (e) {
         if (e instanceof CLIError) {
           this.warn(e.message)
         }
-        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+        tryAgain = await this.requestConfirmation('Try again with remembered input?')
       }
     } while (tryAgain)
   }

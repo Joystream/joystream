@@ -1,6 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayTable, displayCollapsedRow, displayHeader, shortAddress, memberHandle } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
+import moment from 'moment'
 
 export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
   static description = 'Shows an overview of given working group opening by Working Group Opening ID'
@@ -21,8 +22,6 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
 
     const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId))
 
-    // TODO: Opening desc?
-
     displayHeader('Opening details')
     const openingRow = {
       'Opening ID': opening.openingId,
@@ -41,6 +40,23 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
       displayCollapsedRow(stakingRow)
     } else {
       this.log('NONE')
+    }
+
+    if (opening.metadata) {
+      delete (opening.metadata as any).__typename
+      displayHeader('Metadata')
+      this.jsonPrettyPrint(
+        JSON.stringify({
+          ...opening.metadata,
+          applicationFormQuestions: opening.metadata.applicationFormQuestions.map(({ question, type }) => ({
+            question,
+            type,
+          })),
+          expectedEnding: opening.metadata.expectedEnding
+            ? moment(opening.metadata.expectedEnding).format('YYYY-MM-DD HH:mm:ss')
+            : undefined,
+        })
+      )
     }
 
     displayHeader(`Applications (${opening.applications.length})`)
