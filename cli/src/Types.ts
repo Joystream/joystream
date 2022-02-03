@@ -16,6 +16,7 @@ import {
   IVideoCategoryMetadata,
   IChannelCategoryMetadata,
   IOpeningMetadata,
+  IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
@@ -203,6 +204,8 @@ export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applica
     type: 'TEXTAREA' | 'TEXT'
   }[]
 }
+
+export type WorkingGroupUpdateStatusInputParameters = IWorkingGroupMetadata
 
 type AnyPrimitive = string | number | boolean | Long
 

@@ -1,4 +1,4 @@
-import { WorkingGroupOpeningInputParameters, JsonSchema } from '../Types'
+import { WorkingGroupOpeningInputParameters, WorkingGroupUpdateStatusInputParameters, JsonSchema } from '../Types'
 
 export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInputParameters> = {
   type: 'object',
@@ -53,5 +53,16 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       type: 'integer',
       minimum: 1,
     },
+  },
+}
+
+export const WorkingGroupUpdateStatusInputSchema: JsonSchema<WorkingGroupUpdateStatusInputParameters> = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    about: { type: 'string' },
+    description: { type: 'string' },
+    status: { type: 'string' },
+    statusMessage: { type: 'string' },
   },
 }
