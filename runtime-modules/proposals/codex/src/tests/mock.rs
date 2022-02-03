@@ -622,6 +622,7 @@ impl crate::Trait for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
+    type VetoBountyProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
