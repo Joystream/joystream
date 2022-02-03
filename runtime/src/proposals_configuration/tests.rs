@@ -237,3 +237,12 @@ fn proposal_parameters_are_initialized_veto_proposal_proposal() {
 
     assert_eq!(default_proposal_parameters(), actual_params);
 }
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_veto_bounty_proposal() {
+    let actual_params = super::VetoBountyProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}
