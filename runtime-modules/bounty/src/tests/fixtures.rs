@@ -121,6 +121,7 @@ pub struct CreateBountyFixture {
     judging_period: u64,
     cherry: u64,
     oracle_cherry: u64,
+    allow_council_switch_inactive_oracle: bool,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
     contract_type: AssuranceContractType<u64>,
@@ -140,6 +141,7 @@ impl CreateBountyFixture {
             judging_period: 1,
             cherry: DEFAULT_BOUNTY_CHERRY,
             oracle_cherry: DEFAULT_BOUNTY_ORACLE_CHERRY,
+            allow_council_switch_inactive_oracle: false,
             expected_milestone: None,
             entrant_stake: DEFAULT_BOUNTY_ENTRANT_STAKE,
             contract_type: AssuranceContractType::Open,
@@ -161,6 +163,13 @@ impl CreateBountyFixture {
     pub fn with_oracle_member_id(self, member_id: u64) -> Self {
         Self {
             oracle: BountyActor::Member(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_allow_council_switch_oracle(self) -> Self {
+        Self {
+            allow_council_switch_inactive_oracle: true,
             ..self
         }
     }
@@ -266,6 +275,7 @@ impl CreateBountyFixture {
             entrant_stake: self.entrant_stake,
             contract_type: self.contract_type.clone(),
             oracle: self.oracle.clone(),
+            allow_council_switch_inactive_oracle: self.allow_council_switch_inactive_oracle,
             ..Default::default()
         }
     }

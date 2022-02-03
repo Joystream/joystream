@@ -4160,6 +4160,45 @@ fn oracle_council_switch_to_oracle_member_successfull() {
 }
 
 #[test]
+fn council_switch_by_approval_new_oracle_member_successfull() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let current_oracle_member_id = 2;
+        let new_oracle_member_id = 5;
+
+        set_council_budget(initial_balance);
+
+        let create_bounty_fixture = CreateBountyFixture::default()
+            .with_allow_council_switch_oracle()
+            .with_oracle_member_id(current_oracle_member_id);
+
+        create_bounty_fixture.call_and_assert(Ok(()));
+        let bounty_id = 1u64;
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+            Vec::new(),
+        ));
+
+        SwitchOracleFixture::default()
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(
+            RawEvent::BountyInactiveOracleSwitchedByCouncilApproval(
+                bounty_id,
+                BountyActor::Member(current_oracle_member_id),
+                BountyActor::Member(new_oracle_member_id),
+            ),
+        );
+    });
+}
+
+#[test]
 fn oracle_member_switch_to_oracle_council_successfull() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -4288,6 +4327,38 @@ fn oracle_council_switch_to_council_fails_same_new_oracle() {
         SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Council)
             .call_and_assert(Err(Error::<Test>::MemberIsAlreadyAnOracle.into()));
+    });
+}
+
+#[test]
+fn council_switch_by_approval_new_oracle_member_fails_council_flag_switched_off() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let current_oracle_member_id = 2;
+        let new_oracle_member_id = 5;
+
+        set_council_budget(initial_balance);
+
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_oracle_member_id(current_oracle_member_id);
+
+        create_bounty_fixture.call_and_assert(Ok(()));
+        let bounty_id = 1u64;
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+            Vec::new(),
+        ));
+
+        SwitchOracleFixture::default()
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(
+                Error::<Test>::CouncilIsNotAllowedToSwitchInactiveOracle.into(),
+            ));
     });
 }
 

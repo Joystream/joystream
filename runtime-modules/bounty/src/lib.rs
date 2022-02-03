@@ -237,6 +237,11 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     /// does it, it comes from an account.
     pub oracle_cherry: Balance,
 
+    /// Allows the council to switch oracles even if the council
+    /// is not the actual oracle, this is necessary to prevent
+    /// the bounty being blocked due to an inactive oracle  
+    pub allow_council_switch_inactive_oracle: bool,
+
     /// Amount of stake required to enter bounty as entrant.
     pub entrant_stake: Balance,
 
@@ -519,6 +524,13 @@ decl_event! {
         /// - New oracle
         BountyOracleSwitched(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
 
+        /// A Bounty inactive oracle was switched by the council
+        /// Params:
+        /// - bounty ID
+        /// - Previous oracle
+        /// - New oracle
+        BountyInactiveOracleSwitchedByCouncilApproval(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
+
         /// A bounty was canceled.
         /// Params:
         /// - bounty ID
@@ -636,6 +648,12 @@ decl_error! {
 
         /// Judging period cannot be zero.
         JudgingPeriodCannotBeZero,
+
+        /// Council cannot switch actual oracle because the flag allow_council_switch_inactive_oracle is false
+        CouncilIsNotAllowedToSwitchInactiveOracle,
+
+        /// Origin is neither a council nor an oracle, so switching oracle is not allowed
+        OriginIsNotCouncilAndIsNotOracle,
 
         /// Unexpected bounty stage for an operation: Funding.
         InvalidStageUnexpectedFunding,
@@ -993,13 +1011,25 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
             let current_oracle = bounty.creation_params.oracle.clone();
 
+            let is_council = ensure_root(origin.clone());
             //Checks if the function caller (origin) is current oracle
-            BountyActorManager::<T>::ensure_bounty_actor_manager(
+            let is_origin_actual_oracle = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 current_oracle.clone(),
-            )?;
+            );
 
-            //Checkk if new oracle is a member
+            let council_origin_not_oracle_not_alowed = is_origin_actual_oracle.is_err() &&
+            !bounty.creation_params.allow_council_switch_inactive_oracle && is_council.is_ok();
+
+            ensure!(!council_origin_not_oracle_not_alowed,
+                Error::<T>::CouncilIsNotAllowedToSwitchInactiveOracle);
+
+            let origin_not_council_not_oracle = is_origin_actual_oracle.is_err() && is_council.is_err();
+
+            ensure!(!origin_not_council_not_oracle,
+                Error::<T>::OriginIsNotCouncilAndIsNotOracle);
+
+            //Check if new oracle is a member
             BountyActorManager::<T>::get_bounty_actor_manager(new_oracle.clone())?;
 
             //The current oracle must be different from thhe new ooracle
@@ -1022,11 +1052,22 @@ decl_module! {
                 bounty.creation_params.oracle  = new_oracle.clone()
             });
 
-            // Fire an oracle switch event.
-            Self::deposit_event(RawEvent::BountyOracleSwitched(
-                bounty_id,
-                current_oracle,
-                new_oracle));
+            if is_origin_actual_oracle.is_err()
+             && bounty.creation_params.allow_council_switch_inactive_oracle
+             && is_council.is_ok(){
+                // Fire an oracle switch event.
+                Self::deposit_event(RawEvent::BountyInactiveOracleSwitchedByCouncilApproval (
+                    bounty_id,
+                    current_oracle,
+                    new_oracle));
+             }
+             else{
+                // Fire an oracle switch event.
+                Self::deposit_event(RawEvent::BountyOracleSwitched(
+                    bounty_id,
+                    current_oracle,
+                    new_oracle));
+             }
         }
 
         /// Withdraw bounty funding by a member or a council.
