@@ -4,11 +4,9 @@ set -e
 
 # Looks for a cached joystream/node image matching code shasum.
 # Search order: local repo then dockerhub. If no cached image is found we build it.
-# Finally image is tagged as "latest"
 
 CODE_HASH=`scripts/runtime-code-shasum.sh`
 IMAGE=joystream/node:${CODE_HASH}
-LATEST=joystream/node:latest
 
 # Look for image locally
 if ! docker inspect ${IMAGE} > /dev/null;
@@ -26,7 +24,3 @@ then
 else
   echo "Found ${IMAGE} in local repo"
 fi
-
-# At this point image should be in local repo
-# echo "Tagging ${IMAGE} as ${LATEST}"
-# docker image tag ${IMAGE} ${LATEST}
