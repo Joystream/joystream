@@ -106,16 +106,28 @@
         caddy_systemd_capabilities_enabled: true
         caddy_update: false
 
+    - name: Set endpoints
+      set_fact:
+        all_services: |
+          The services should now be accesible at:
+
+          WebSocket RPC: wss://{{ nip_domain }}/ws-rpc
+          HTTP RPC: https://{{ nip_domain }}/http-rpc
+          Colossus: https://{{ nip_domain }}/colossus-1
+          Distributor: https://{{ nip_domain }}/distributor-1
+          GraphQL server: https://{{ nip_domain }}/query-node/server/graphql
+          Indexer: https://{{ nip_domain }}/query-node/indexer/graphql
+          Member Faucet: https://{{ nip_domain }}/member-faucet/register
+          Orion: https://{{ nip_domain }}/orion/graphql
+      run_once: yes
+
     - name: Print endpoints
       debug:
-        msg:
-          - 'The services should now be accesible at:'
-          - 'Pioneer: https://{{ nip_domain }}/'
-          - 'WebSocket RPC: wss://{{ nip_domain }}/ws-rpc'
-          - 'HTTP RPC: https://{{ nip_domain }}/http-rpc'
-          - 'Colossus: https://{{ nip_domain }}/colossus-1'
-          - 'Distributor: https://{{ nip_domain }}/distributor-1'
-          - 'GraphQL server: https://{{ nip_domain }}/query-node/server/graphql'
-          - 'Indexer: https://{{ nip_domain }}/query-node/indexer/graphql'
-          - 'Member Faucet: https://{{ nip_domain }}/member-faucet/register'
-          - 'Orion: https://{{ nip_domain }}/orion/graphql'
+        msg: '{{ all_services }}'
+      run_once: yes
+
+    - name: Save output as file
+      copy:
+        content: '{{ all_services }}'
+        dest: 'endpoints.txt'
+      delegate_to: localhost
