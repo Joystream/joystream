@@ -596,6 +596,7 @@ impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
+    type BountyId = u32;
     type SetMaxValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
     type SignalProposalParameters = DefaultProposalParameters;

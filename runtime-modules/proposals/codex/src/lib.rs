@@ -136,6 +136,9 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// Bounty Id type (mirroring bounty::Trait::BountyId)
+    type BountyId: From<u32> + Parameter + Default + Copy;
+
     /// 'Runtime Upgrade' proposal parameters.
     type RuntimeUpgradeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
