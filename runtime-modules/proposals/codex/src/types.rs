@@ -26,12 +26,22 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
     blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
+    <T as Trait>::BountyId,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
-pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> {
+pub enum ProposalDetails<
+    Balance,
+    BlockNumber,
+    AccountId,
+    WorkerId,
+    OpeningId,
+    PostId,
+    ProposalId,
+    BountyId,
+> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
 
@@ -111,6 +121,9 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
 
     /// `Veto Proposal` proposal
     VetoProposal(ProposalId),
+
+    /// `Veto Bounty` proposal
+    VetoBounty(BountyId),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> Default

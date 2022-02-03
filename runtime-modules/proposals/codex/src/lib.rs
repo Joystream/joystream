@@ -101,6 +101,7 @@ pub trait WeightInfo {
     fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
+    fn create_proposal_veto_bounty(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -246,6 +247,9 @@ pub trait Trait:
 
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Veto Bounty` proposal parameters
+    type VetoBountyProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -444,6 +448,8 @@ decl_module! {
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
+        const VetoBountyProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoBountyProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -646,6 +652,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::VetoBounty(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -711,6 +720,7 @@ impl<T: Trait> Module<T> {
             ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
+            ProposalDetails::VetoBounty(..) => T::VetoBountyProposalParameters::get(),
         }
     }
 
@@ -878,6 +888,11 @@ impl<T: Trait> Module<T> {
                 )
                 .saturated_into()
             }
+            ProposalDetails::VetoBounty(..) => WeightInfoCodex::<T>::create_proposal_veto_bounty(
+                title_length.saturated_into(),
+                description_length.saturated_into(),
+            )
+            .saturated_into(),
         }
     }
 }
