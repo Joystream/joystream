@@ -4126,7 +4126,7 @@ fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
 }
 
 #[test]
-fn oracle_council_switch_to_oracle_member_successfull() {
+fn oracle_council_switch_to_oracle_member_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4160,7 +4160,7 @@ fn oracle_council_switch_to_oracle_member_successfull() {
 }
 
 #[test]
-fn oracle_member_switch_to_oracle_council_successfull() {
+fn oracle_member_switch_to_oracle_council_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4197,7 +4197,7 @@ fn oracle_member_switch_to_oracle_council_successfull() {
 }
 
 #[test]
-fn oracle_member_switch_to_oracle_member_successfull() {
+fn oracle_member_switch_to_oracle_member_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
