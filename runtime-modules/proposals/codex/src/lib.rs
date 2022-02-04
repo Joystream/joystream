@@ -102,6 +102,7 @@ pub trait WeightInfo {
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_bounty(t: u32, d: u32) -> Weight;
+    fn create_proposal_withdraw_bounty_funding(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -253,6 +254,11 @@ pub trait Trait:
 
     /// `Veto Bounty` proposal parameters
     type VetoBountyProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Withdraw Bounty Funding` proposal parameters
+    type WithdrawBountyFundingProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -452,7 +458,10 @@ decl_module! {
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
         const VetoBountyProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoBountyProposalParameters::get();
+        ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoBountyProposalParameters::get();
+        const WithdrawBountyFundingProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::WithdrawBountyFundingProposalParameters::get();
+
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -658,6 +667,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoBounty(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::WithdrawBountyFunding(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -724,6 +736,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::VetoBounty(..) => T::VetoBountyProposalParameters::get(),
+            ProposalDetails::WithdrawBountyFunding(..) => {
+                T::WithdrawBountyFundingProposalParameters::get()
+            }
         }
     }
 
@@ -896,6 +911,13 @@ impl<T: Trait> Module<T> {
                 description_length.saturated_into(),
             )
             .saturated_into(),
+            ProposalDetails::WithdrawBountyFunding(..) => {
+                WeightInfoCodex::<T>::create_proposal_withdraw_bounty_funding(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
         }
     }
 }
