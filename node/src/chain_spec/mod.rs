@@ -276,11 +276,7 @@ pub fn testnet_genesis(
                 next_channel_id: 1,
                 next_video_category_id: 1,
                 next_video_id: 1,
-                next_playlist_id: 1,
-                next_series_id: 1,
-                next_person_id: 1,
                 next_video_post_id: 1,
-                next_channel_transfer_request_id: 1,
                 video_migration: node_runtime::content::MigrationConfigRecord {
                     current_id: 1,
                     final_id: 1,
