@@ -14,6 +14,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   SED=gsed
 fi
 
+# Make sure same default value is set in joystream-node.Dockerfile
+TEST_NODE_BLOCKTIME=1000
 TEST_PROPOSALS_PARAMETERS_PATH="./tests/integration-tests/proposal-parameters.json"
 
 # sort/owner/group/mtime arguments only work with gnu version of tar!
@@ -32,6 +34,6 @@ HASH=$(
     | cut -d " " -f 1
 )
 
-if [[ -n "$TEST_NODE" ]]; then SUFFIX=-test; else SUFFIX= ; fi
+if [[ -n "$TEST_NODE" ]]; then SUFFIX=-test-${TEST_NODE_BLOCKTIME}; else SUFFIX= ; fi
 
 echo ${HASH}${SUFFIX}
