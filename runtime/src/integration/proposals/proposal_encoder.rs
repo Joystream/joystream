@@ -3,6 +3,7 @@ use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
+use bounty::BountyActor;
 use codec::Encode;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
@@ -153,7 +154,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 Call::Bounty(bounty::Call::veto_bounty(bounty_id))
             }
             ProposalDetails::WithdrawBountyFunding(bounty_id) => Call::Bounty(
-                bounty::Call::withdraw_funding(bounty_id, BountyActor::Council),
+                bounty::Call::withdraw_funding(BountyActor::Council, bounty_id),
             ),
         };
 

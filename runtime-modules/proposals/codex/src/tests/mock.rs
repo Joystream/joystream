@@ -890,6 +890,9 @@ impl crate::WeightInfo for () {
     fn create_proposal_veto_bounty(_: u32, _: u32) -> Weight {
         0
     }
+    fn create_proposal_withdraw_bounty_funding(_: u32, _: u32) -> Weight {
+        0
+    }
 }
 
 impl ProposalEncoder<Test> for () {
