@@ -623,6 +623,7 @@ impl crate::Trait for Test {
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type VetoBountyProposalParameters = DefaultProposalParameters;
+    type WithdrawBountyFundingProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
