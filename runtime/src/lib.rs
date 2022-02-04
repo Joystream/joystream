@@ -1063,6 +1063,7 @@ impl proposals_codex::Trait for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type VetoBountyProposalParameters = VetoBountyProposalParameters;
+    type WithdrawBountyFundingProposalParameters = WithdrawBountyFundingProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
     type BountyId = u64;
 }
