@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: endpoints
-          path: devops/aws/endpoints.txt
+          path: devops/aws/endpoints.json
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip if stack already existed

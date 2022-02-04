@@ -109,25 +109,28 @@
     - name: Set endpoints
       set_fact:
         all_services: |
-          The services should now be accesible at:
-
-          WebSocket RPC: wss://{{ nip_domain }}/ws-rpc
-          HTTP RPC: https://{{ nip_domain }}/http-rpc
-          Colossus: https://{{ nip_domain }}/colossus-1
-          Distributor: https://{{ nip_domain }}/distributor-1
-          GraphQL server: https://{{ nip_domain }}/query-node/server/graphql
-          Indexer: https://{{ nip_domain }}/query-node/indexer/graphql
-          Member Faucet: https://{{ nip_domain }}/member-faucet/register
-          Orion: https://{{ nip_domain }}/orion/graphql
+          websocket_rpc: wss://{{ nip_domain }}/ws-rpc
+          http_rpc: https://{{ nip_domain }}/http-rpc
+          colossus: https://{{ nip_domain }}/colossus-1
+          distributor: https://{{ nip_domain }}/distributor-1
+          graphql_server: https://{{ nip_domain }}/query-node/server/graphql
+          indexer: https://{{ nip_domain }}/query-node/indexer/graphql
+          member_faucet: https://{{ nip_domain }}/member-faucet/register
+          orion: https://{{ nip_domain }}/orion/graphql
       run_once: yes
 
     - name: Print endpoints
       debug:
-        msg: '{{ all_services }}'
+        msg: '{{ all_services | from_yaml }}'
       run_once: yes
 
-    - name: Save output as file
+    - name: Create config.json to serve as Caddy endpoint
       copy:
-        content: '{{ all_services }}'
-        dest: 'endpoints.txt'
+        content: '{{ all_services | from_yaml | to_json }}'
+        dest: '/home/ubuntu/config.json'
+
+    - name: Save output as file on local
+      copy:
+        content: '{{ all_services | from_yaml | to_json }}'
+        dest: 'endpoints.json'
       delegate_to: localhost
