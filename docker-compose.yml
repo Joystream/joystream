@@ -257,14 +257,16 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:giza
+    image: joystream/faucet:olympia
     restart: on-failure
     container_name: faucet
+    env_file:
+      - .env
     environment:
-      - SCREENING_AUTHORITY_SEED=//Alice
+      - SCREENING_AUTHORITY_SEED=${SCREENING_AUTHORITY_SEED}
       - PORT=3002
-      - PROVIDER=ws://joystream-node:9944
-      - ENDOWMENT=0
+      - INVITING_MEMBER_ID=${INVITING_MEMBER_ID}
+      - PROVIDER=${JOYSTREAM_NODE_WS}
     ports:
       - "3002:3002"
 
