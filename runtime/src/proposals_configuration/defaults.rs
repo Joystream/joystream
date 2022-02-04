@@ -371,3 +371,16 @@ pub(crate) fn veto_bounty_proposal() -> ProposalParameters<BlockNumber, Balance>
         constitutionality: 1,
     }
 }
+// Proposal parameters for the 'Withdraw Bounty Funding' proposal (same as veto proposal)
+pub(crate) fn withdraw_bounty_funding_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200, // The longest grace period
+        grace_period: 0,
+        approval_quorum_percentage: 75,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 66,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

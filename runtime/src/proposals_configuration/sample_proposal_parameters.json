@@ -260,4 +260,14 @@
         "required_stake": 7,
         "constitutionality": 8
     }
+    "withdraw_bounty_funding_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    }
 }

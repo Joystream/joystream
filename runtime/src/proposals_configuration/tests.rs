@@ -246,3 +246,11 @@ fn proposal_parameters_are_initialized_veto_bounty_proposal() {
 
     assert_eq!(default_proposal_parameters(), actual_params);
 }
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_withdraw_bounty_funding_proposal() {
+    let actual_params = super::WithdrawBountyFundingProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}

@@ -65,6 +65,8 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.veto_proposal_proposal;
     pub VetoBountyProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.veto_bounty_proposal;
+    pub WithdrawBountyFundingProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.withdraw_bounty_funding_proposal;
 }
 
 ///////////
@@ -96,6 +98,7 @@ struct AllProposalsParameters {
     pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub veto_proposal_proposal: ProposalParameters<BlockNumber, Balance>,
     pub veto_bounty_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub withdraw_bounty_funding_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -197,7 +200,8 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), veto_proposal_proposal);
-        init_proposal_parameter_object!(params, jo, veto_bounty_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), veto_bounty_proposal);
+        init_proposal_parameter_object!(params, jo, withdraw_bounty_funding_proposal);
     }
 
     params
@@ -336,5 +340,6 @@ fn default_parameters() -> AllProposalsParameters {
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
         veto_proposal_proposal: defaults::veto_proposal_proposal(),
         veto_bounty_proposal: defaults::veto_bounty_proposal(),
+        withdraw_bounty_funding_proposal: defaults::withdraw_bounty_funding_proposal(),
     }
 }
