@@ -124,6 +124,9 @@ pub enum ProposalDetails<
 
     /// `Veto Bounty` proposal
     VetoBounty(BountyId),
+
+    /// `Withdraw Funding` proposal, BountyActor is Council
+    WithdrawBountyFounding(BountyId),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId, BountyId> Default
