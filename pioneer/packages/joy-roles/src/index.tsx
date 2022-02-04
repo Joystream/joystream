@@ -17,7 +17,6 @@ import { OpportunityController, OpportunityView } from './tabs/Opportunity.contr
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller';
 import { ApplyController, ApplyView } from './flows/apply.controller';
 import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller';
-import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 import './index.sass';
 
@@ -75,7 +74,6 @@ export const App: React.FC<Props> = (props: Props) => {
 
   return (
     <main className='roles--App'>
-      <FMReminderBanner contextualTitle='Working Groups'/>
       <header>
         <Tabs
           basePath={basePath}

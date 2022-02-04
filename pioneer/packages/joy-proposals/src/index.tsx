@@ -27,7 +27,6 @@ import { SignalForm,
 import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
 import style from './style';
 import { HistoricalProposalFromId } from './Proposal/ProposalFromId';
-import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ProposalsMain = styled.main`${style}`;
 
@@ -59,7 +58,6 @@ function App (props: Props): React.ReactElement<Props> {
 
   return (
     <ProposalsMain className='proposal--App'>
-      <FMReminderBanner contextualTitle='Proposals'/>
       <StyledHeader>
         <Tabs
           basePath={basePath}

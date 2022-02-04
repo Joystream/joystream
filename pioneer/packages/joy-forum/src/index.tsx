@@ -16,7 +16,6 @@ import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { LegacyPagingRedirect } from './LegacyPagingRedirect';
 import ForumRoot from './ForumRoot';
-import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ForumMain = styled.main`${style}`;
 
@@ -30,7 +29,6 @@ class App extends React.PureComponent<Props> {
       <ForumProvider>
         <ForumSudoProvider>
           <ForumMain className='forum--App'>
-            <FMReminderBanner contextualTitle='Forum'/>
             <Switch>
               <Route path={`${basePath}/categories/new`} component={NewCategory} />
               {/* routes for handling legacy format of forum paging within the routing path */}
