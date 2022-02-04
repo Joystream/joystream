@@ -6,13 +6,17 @@ import {
   WorkingGroup,
   ElectedCouncil,
   ElectionRound,
+  MembershipEntryGenesis,
 } from 'query-node/dist/model'
-import { storageSystemData, membershipSystemData, workingGroupsData } from './bootstrap-data'
+import { storageSystemData, membershipSystemData, workingGroupsData, membersData } from './bootstrap-data'
+import { createNewMember } from './membership'
 
 import { CURRENT_NETWORK } from './common'
+import { MembershipMetadata } from '@joystream/metadata-protobuf'
 
 export async function bootstrapData({ store }: StoreContext): Promise<void> {
   await initMembershipSystem(store)
+  await initMembers(store)
   await initStorageSystem(store)
   await initWorkingGroups(store)
   await initFirstElectionRound(store)
@@ -80,4 +84,33 @@ async function initFirstElectionRound(store: DatabaseManager): Promise<void> {
     candidates: [],
   })
   await store.save<ElectionRound>(initialElectionRound)
+}
+
+async function initMembers(store: DatabaseManager) {
+  for (const obj of membersData) {
+    // Casting for empty members array by default
+    const member = (obj as unknown) as {
+      member_id: number
+      root_account: string
+      controller_account: string
+      handle: string
+      about: string
+      avatar_uri: string
+    }
+
+    await createNewMember(
+      store,
+      new Date(0),
+      member.member_id.toString(),
+      new MembershipEntryGenesis(),
+      member.root_account,
+      member.controller_account,
+      member.handle,
+      0,
+      new MembershipMetadata({
+        about: member.about,
+        avatarUri: member.avatar_uri,
+      })
+    )
+  }
 }
