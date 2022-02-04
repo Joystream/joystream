@@ -249,7 +249,7 @@ async function handleAddUpcomingOpeningAction(
     metadata: openingMeta,
     group,
     rewardPerBlock: isSet(rewardPerBlock) && parseInt(rewardPerBlock) ? new BN(rewardPerBlock) : undefined,
-    expectedStart: expectedStart ? new Date(expectedStart) : undefined,
+    expectedStart: expectedStart ? new Date(expectedStart * 1000) : undefined,
     stakeAmount: isSet(minApplicationStake) && parseInt(minApplicationStake) ? new BN(minApplicationStake) : undefined,
     createdInEvent: statusChangedEvent,
   })

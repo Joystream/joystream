@@ -1,7 +1,7 @@
 import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
 import { assert } from 'chai'
 import { OpeningMetadataFieldsFragment } from '../../graphql/generated/queries'
-
+import moment from 'moment'
 import { ApplicationFormQuestionType } from '../../graphql/generated/schema'
 
 export const queryNodeQuestionTypeToMetadataQuestionType = (
@@ -29,9 +29,7 @@ export const assertQueriedOpeningMetadataIsValid = (
   assert.equal(qOpeningMeta.shortDescription, shortDescription || null)
   assert.equal(qOpeningMeta.description, description || null)
   assert.equal(
-    qOpeningMeta.expectedEnding
-      ? Math.floor(new Date(qOpeningMeta.expectedEnding).getTime() / 1000)
-      : qOpeningMeta.expectedEnding,
+    qOpeningMeta.expectedEnding ? moment(qOpeningMeta.expectedEnding).unix() : qOpeningMeta.expectedEnding,
     expectedEndingTimestamp || null
   )
   assert.equal(qOpeningMeta.hiringLimit, hiringLimit || null)
