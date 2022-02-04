@@ -57,6 +57,10 @@ export const WORKING_GROUPS = [
     title: 'Builders',
     helpText: 'The current Builders (Operations Group Alpha), and the sum of their projected rewards and stakes.',
     color: '#009688',
+    extraInfo: {
+      full: 'Operations Working Group Alpha',
+      short: 'OWG Alpha'
+    },
     lead: {
       titleCutoff: 1015,
       shortTitle: 'Builders Lead',
@@ -72,6 +76,10 @@ export const WORKING_GROUPS = [
     title: 'Human Resources',
     helpText: 'The current Human Resources (Operations Group Beta) Workers, and the sum of their projected rewards and stakes.',
     color: '#03a9f4',
+    extraInfo: {
+      full: 'Operations Working Group Beta',
+      short: 'OWG Beta'
+    },
     lead: {
       titleCutoff: 1015,
       shortTitle: 'HR Lead',
@@ -87,6 +95,10 @@ export const WORKING_GROUPS = [
     title: 'Marketing',
     helpText: 'The current Marketers (Operations Group Gamma), and the sum of their projected rewards and stakes.',
     color: '#3f51b5',
+    extraInfo: {
+      full: 'Operations Working Group Gamma',
+      short: 'OWG Gamma'
+    },
     lead: {
       titleCutoff: 1015,
       shortTitle: 'Marketing Lead',

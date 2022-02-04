@@ -154,15 +154,24 @@ export const OperationsGroup = (props: OperationsGroupProps) => (
   />
 );
 
+const OperationsGroupName = styled('p')`
+  font-size: 14px !important;
+  color: rgba(0,0,0,0.5) !important;
+  margin-top: -2px !important;
+`;
+
 export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsAlpha}
     customGroupName='Builders'
     description={
-      <span>
-        The Builders (Operations Group Alpha) working group is comprised of a diverse set of contributors that facilitate
-        the evolution and maintenance of the platform.
-      </span>
+      <>
+        <OperationsGroupName>Operations Group Alpha</OperationsGroupName>
+        <span>
+          The Builders working group is comprised of a diverse set of contributors that facilitate
+          the evolution and maintenance of the platform.
+        </span>
+      </>
     }
     {...props}
   />
@@ -173,10 +182,13 @@ export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
     group={WorkingGroups.OperationsBeta}
     customGroupName='Human Resources'
     description={
-      <span>
-        The Human Resources (Operations Group Beta) working group is responsible for the Human Resources tasks required
-        for the operation and growth of the platform and community.
-      </span>
+      <>
+        <OperationsGroupName>Operations Group Beta</OperationsGroupName>
+        <span>
+          The Human Resources working group is responsible for the Human Resources tasks required
+          for the operation and growth of the platform and community.
+        </span>
+      </>
     }
     {...props}
   />
@@ -187,10 +199,13 @@ export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
     group={WorkingGroups.OperationsGamma}
     customGroupName='Marketing'
     description={
-      <span>
-        The Marketing (Operations Group Gamma) working group is responsible for developing and executing strategies to
-        promote the Joystream platform.
-      </span>
+      <>
+        <OperationsGroupName>Operations Group Gamma</OperationsGroupName>
+        <span>
+          The Marketing working group is responsible for developing and executing strategies to
+          promote the Joystream platform.
+        </span>
+      </>
     }
     {...props}
   />
