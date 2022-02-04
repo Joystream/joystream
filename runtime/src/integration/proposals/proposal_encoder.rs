@@ -152,6 +152,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::VetoBounty(bounty_id) => {
                 Call::Bounty(bounty::Call::veto_bounty(bounty_id))
             }
+            ProposalDetails::WithdrawBountyFunding(bounty_id) => Call::Bounty(
+                bounty::Call::withdraw_funding(bounty_id, BountyActor::Council),
+            ),
         };
 
         call.encode()
