@@ -93,7 +93,7 @@ jobs:
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip if stack already existed
-        if: failure() && steps.stack_exists.outcome != 'failed'
+        if: failure() && steps.stack_exists.outcome != 'failure'
         run: |
           echo "Deleting ${{ env.STACK_NAME }} stack"
           aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
