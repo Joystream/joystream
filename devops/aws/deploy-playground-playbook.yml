@@ -77,6 +77,7 @@
         PERSIST: 'true'
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+        SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
       async: 1800
       poll: 0
       register: compose_result
@@ -114,6 +115,7 @@
           colossus: https://{{ nip_domain }}/colossus-1
           distributor: https://{{ nip_domain }}/distributor-1
           graphql_server: https://{{ nip_domain }}/query-node/server/graphql
+          graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
           indexer: https://{{ nip_domain }}/query-node/indexer/graphql
           member_faucet: https://{{ nip_domain }}/member-faucet/register
           orion: https://{{ nip_domain }}/orion/graphql
