@@ -1,15 +1,15 @@
 use super::*;
 
-/// Metadata for NFT issuance
+/// Metadata for Nft issuance
 pub type Metadata = Vec<u8>;
 
 /// Owner royalty
 pub type Royalty = Perbill;
 
-/// NFT transactional status
+/// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum TransactionalStatus<
+pub enum TransactionalStatusRecord<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
@@ -26,24 +26,31 @@ impl<
         MemberId: Default + Copy + Ord,
         AccountId: Default + Clone + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > Default for TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>
+    > Default for TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>
 {
     fn default() -> Self {
         Self::Idle
     }
 }
 
-/// Owned NFT representation
+pub type TransactionalStatus<T> = TransactionalStatusRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
+    CurrencyOf<T>,
+>;
+
+/// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OwnedNFT<
+pub struct OwnedNft<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
     AccountId: Default + Clone + Ord,
     Balance: Default + Clone + BaseArithmetic,
 > {
-    pub owner: NFTOwner<MemberId>,
-    pub transactional_status: TransactionalStatus<BlockNumber, MemberId, AccountId, Balance>,
+    pub owner: NftOwner<MemberId>,
+    pub transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
 
@@ -52,19 +59,23 @@ impl<
         MemberId: Default + Copy + PartialEq + Ord,
         AccountId: Default + Clone + PartialEq + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > OwnedNFT<BlockNumber, MemberId, AccountId, Balance>
+    > OwnedNft<BlockNumber, MemberId, AccountId, Balance>
 {
-    /// Create new NFT
-    pub fn new(owner: NFTOwner<MemberId>, creator_royalty: Option<Royalty>) -> Self {
+    /// Create new Nft
+    pub fn new(
+        owner: NftOwner<MemberId>,
+        creator_royalty: Option<Royalty>,
+        transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
+    ) -> Self {
         Self {
             owner,
-            transactional_status: TransactionalStatus::Idle,
+            transactional_status,
             creator_royalty,
         }
     }
 
     /// Set nft owner
-    pub fn set_owner(mut self, owner: NFTOwner<MemberId>) -> Self {
+    pub fn set_owner(mut self, owner: NftOwner<MemberId>) -> Self {
         self.owner = owner;
         self
     }
@@ -73,7 +84,7 @@ impl<
     pub fn ensure_auction_state<T: Trait>(
         &self,
     ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId, AccountId>, Error<T>> {
-        if let TransactionalStatus::Auction(auction) = &self.transactional_status {
+        if let TransactionalStatusRecord::Auction(auction) = &self.transactional_status {
             Ok(auction.to_owned())
         } else {
             Err(Error::<T>::NotInAuctionState)
@@ -82,7 +93,7 @@ impl<
 
     ///  Ensure nft transactional status is set to `Idle`
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
-        if let TransactionalStatus::Idle = self.transactional_status {
+        if let TransactionalStatusRecord::Idle = self.transactional_status {
             Ok(())
         } else {
             Err(Error::<T>::NftIsNotIdle.into())
@@ -91,7 +102,7 @@ impl<
 
     /// Sets nft transactional status to `BuyNow`
     pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
-        self.transactional_status = TransactionalStatus::BuyNow(buy_now_price);
+        self.transactional_status = TransactionalStatusRecord::BuyNow(buy_now_price);
         self
     }
 
@@ -100,13 +111,13 @@ impl<
         mut self,
         auction: AuctionRecord<BlockNumber, Balance, MemberId, AccountId>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::Auction(auction);
+        self.transactional_status = TransactionalStatusRecord::Auction(auction);
         self
     }
 
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
-        self.transactional_status = TransactionalStatus::Idle;
+        self.transactional_status = TransactionalStatusRecord::Idle;
         self
     }
 
@@ -116,27 +127,30 @@ impl<
         to: MemberId,
         balance: Option<Balance>,
     ) -> Self {
-        self.transactional_status = TransactionalStatus::InitiatedOfferToMember(to, balance);
+        self.transactional_status = TransactionalStatusRecord::InitiatedOfferToMember(to, balance);
         self
     }
 
-    /// Ensure NFT has pending offer
+    /// Ensure Nft has pending offer
     pub fn ensure_pending_offer_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(
                 self.transactional_status,
-                TransactionalStatus::InitiatedOfferToMember(..),
+                TransactionalStatusRecord::InitiatedOfferToMember(..),
             ),
             Error::<T>::PendingOfferDoesNotExist
         );
         Ok(())
     }
 
-    /// Ensure NFT is in BuyNow state
+    /// Ensure Nft is in BuyNow state
     pub fn ensure_buy_now_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
-            matches!(self.transactional_status, TransactionalStatus::BuyNow(..),),
-            Error::<T>::NFTNotInBuyNowState
+            matches!(
+                self.transactional_status,
+                TransactionalStatusRecord::BuyNow(..),
+            ),
+            Error::<T>::NftNotInBuyNowState
         );
         Ok(())
     }
@@ -144,12 +158,12 @@ impl<
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTOwner<MemberId> {
+pub enum NftOwner<MemberId> {
     ChannelOwner,
     Member(MemberId),
 }
 
-impl<MemberId> Default for NFTOwner<MemberId> {
+impl<MemberId> Default for NftOwner<MemberId> {
     fn default() -> Self {
         Self::ChannelOwner
     }
@@ -339,7 +353,7 @@ impl<
     ) -> DispatchResult {
         ensure!(
             !self.is_nft_auction_expired(current_block),
-            Error::<T>::NFTAuctionIsAlreadyExpired
+            Error::<T>::NftAuctionIsAlreadyExpired
         );
         Ok(())
     }
@@ -438,8 +452,8 @@ pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::AccountId,
 >;
 
-/// OwnedNFT alias type for simplification.
-pub type Nft<T> = OwnedNFT<
+/// OwnedNft alias type for simplification.
+pub type Nft<T> = OwnedNft<
     <T as frame_system::Trait>::BlockNumber,
     <T as common::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
@@ -493,3 +507,52 @@ pub struct OpenAuctionDetails<BlockNumber> {
     // bid lock duration
     pub bid_lock_duration: BlockNumber,
 }
+
+/// Parameters used to issue a nft
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
+    /// Roayalty used for the author
+    pub royalty: Option<Royalty>,
+    /// Metadata
+    pub nft_metadata: Metadata,
+    /// member id Nft will be issued to
+    pub non_channel_owner: Option<MemberId>,
+    /// Initial transactional status for the nft
+    pub init_transactional_status: InitTransactionalStatus,
+}
+
+pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
+    <T as common::MembershipTypes>::MemberId,
+    InitTransactionalStatus<T>,
+>;
+
+/// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum InitTransactionalStatusRecord<
+    BlockNumber: BaseArithmetic + Copy + Default,
+    MemberId: Default + Copy + Ord,
+    Balance: Default + Clone + BaseArithmetic,
+> {
+    Idle,
+    InitiatedOfferToMember(MemberId, Option<Balance>),
+    Auction(AuctionParams<BlockNumber, Balance, MemberId>),
+}
+
+impl<
+        BlockNumber: BaseArithmetic + Copy + Default,
+        MemberId: Default + Copy + Ord,
+        Balance: Default + Clone + BaseArithmetic,
+    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, Balance>
+{
+    fn default() -> Self {
+        Self::Idle
+    }
+}
+
+pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    CurrencyOf<T>,
+>;

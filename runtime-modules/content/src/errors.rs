@@ -79,17 +79,17 @@ decl_error! {
         /// Auction for given video did not start
         AuctionDidNotStart,
 
-        /// NFT for given video id already exists
-        NFTAlreadyExists,
+        /// Nft for given video id already exists
+        NftAlreadyExists,
 
-        /// NFT for given video id does not exist
-        NFTDoesNotExist,
+        /// Nft for given video id does not exist
+        NftDoesNotExist,
 
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
 
         /// Given origin does not own nft
-        DoesNotOwnNFT,
+        DoesNotOwnNft,
 
         /// Royalty Upper Bound Exceeded
         RoyaltyUpperBoundExceeded,
@@ -139,10 +139,10 @@ decl_error! {
         /// Already active auction cannot be cancelled
         ActionHasBidsAlready,
 
-        /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
+        /// Can not create auction for Nft, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// No pending offers for given NFT
+        /// No pending offers for given Nft
         PendingOfferDoesNotExist,
 
         /// Creator royalty requires reward account to be set.
@@ -173,7 +173,7 @@ decl_error! {
         MemberProfileNotFound,
 
         /// Given video nft is not in buy now state
-        NFTNotInBuyNowState,
+        NftNotInBuyNowState,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -184,8 +184,8 @@ decl_error! {
         /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,
 
-        /// NFT auction is already expired
-        NFTAuctionIsAlreadyExpired,
+        /// Nft auction is already expired
+        NftAuctionIsAlreadyExpired,
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,

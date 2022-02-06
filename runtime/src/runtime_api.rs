@@ -391,7 +391,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
-            add_benchmark!(params, batches, storage_v2, Storage);
+            add_benchmark!(params, batches, storage, Storage);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

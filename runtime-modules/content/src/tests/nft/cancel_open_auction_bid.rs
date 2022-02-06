@@ -24,9 +24,7 @@ fn cancel_open_auction_bid() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -81,8 +79,8 @@ fn cancel_open_auction_bid() {
         // Ensure bid on specific auction successfully canceled
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Auction(auction_without_bid,),
+            Some(OwnedNft {
+                transactional_status: TransactionalStatus::<Test>::Auction(auction_without_bid,),
                 ..
             }) if auction_without_bid.last_bid.is_none()
         ));
@@ -112,9 +110,7 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -181,9 +177,7 @@ fn cancel_open_auction_bid_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -281,7 +275,7 @@ fn cancel_open_auction_bid_nft_is_not_issued() {
         // Failure checked
         assert_err!(
             cancel_open_auction_bid_result,
-            Error::<Test>::NFTDoesNotExist
+            Error::<Test>::NftDoesNotExist
         );
     })
 }
@@ -303,9 +297,7 @@ fn cancel_open_auction_bid_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to cancel open auction bid for nft which is not in auction state
@@ -340,9 +332,7 @@ fn cancel_open_auction_bid_is_not_open_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -410,9 +400,7 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -469,9 +457,7 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();

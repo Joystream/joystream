@@ -174,6 +174,7 @@ impl CreateVideoFixture {
                 assets: None,
                 meta: None,
                 enable_comments: true,
+                auto_issue_nft: None,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }

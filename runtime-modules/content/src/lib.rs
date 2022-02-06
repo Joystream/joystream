@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 // Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit, clippy::all)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -66,9 +66,6 @@ pub trait Trait:
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
-    /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
-    type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
-
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
@@ -77,18 +74,6 @@ pub trait Trait:
 
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
-
-    /// Type of identifier for Playlists
-    type PlaylistId: NumericIdentifier;
-
-    /// Type of identifier for Persons
-    type PersonId: NumericIdentifier;
-
-    /// Type of identifier for Channels
-    type SeriesId: NumericIdentifier;
-
-    /// Type of identifier for Channel transfer requests
-    type ChannelOwnershipTransferRequestId: NumericIdentifier;
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
@@ -111,7 +96,6 @@ pub trait Trait:
     /// Cleanup Margin used in bloat bond calculation
     type CleanupMargin: Get<<Self as balances::Trait>::Balance>;
 
-    // TODO: make it a function of the create_post extrinsic weights when weights will be established
     /// Cleanup Cost used in bloat bond calculation
     type CleanupCost: Get<<Self as balances::Trait>::Balance>;
 
@@ -140,14 +124,6 @@ decl_storage! {
         pub VideoCategoryById get(fn video_category_by_id):
         map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
-        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId>;
-
-        pub SeriesById get(fn series_by_id):
-        map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
-
-        pub PersonById get(fn person_by_id):
-        map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
@@ -155,15 +131,6 @@ decl_storage! {
         pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
-
-        pub NextPlaylistId get(fn next_playlist_id) config(): T::PlaylistId;
-
-        pub NextPersonId get(fn next_person_id) config(): T::PersonId;
-
-        pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
-
-        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config():
-        T::ChannelOwnershipTransferRequestId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -411,7 +378,7 @@ decl_module! {
 
             let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
                 prize: Zero::zero(), // put 0 for Giza release
-                account_id: sender.clone(),
+                account_id: sender,
             };
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
@@ -450,7 +417,7 @@ decl_module! {
             }
 
             // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
-            if let Some(params) = upload_params.clone() {
+            if let Some(params) = upload_params{
                 Storage::<T>::upload_data_objects(params)?;
             }
 
@@ -474,7 +441,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
 
-        // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel(
             origin,
@@ -536,7 +502,7 @@ decl_module! {
                     &sender
                 );
 
-                Storage::<T>::upload_data_objects(params.clone())?;
+                Storage::<T>::upload_data_objects(params)?;
             }
 
             if !params.assets_to_remove.is_empty() {
@@ -614,7 +580,7 @@ decl_module! {
                     Storage::<T>::delete_data_objects(
                         sender.clone(),
                         Self::bag_id_for_channel(&channel_id),
-                        assets_to_remove.clone(),
+                        assets_to_remove,
                     )?;
                 }
 
@@ -731,7 +697,7 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_validity(&channel_id)?;
@@ -745,11 +711,6 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // upload to storage: check is performed beforehand in the extrinsics so storage state won't be endangered
             if let Some(upload_assets) = params.assets.as_ref() {
                 let params = Self::construct_upload_parameters(
                     upload_assets,
@@ -759,16 +720,29 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
+            let nft_status = params.auto_issue_nft
+                .as_ref()
+                .map_or(
+                    Ok(None),
+                    |issuance_params| {
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                    }
+            )?;
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                in_series: None,
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 /// Newly created video has no nft
-                nft_status: None,
+                nft_status,
             };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -793,7 +767,7 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_validity(&video_id)?;
 
@@ -854,7 +828,7 @@ decl_module! {
             video_id: T::VideoId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that video exists
             let video = Self::ensure_video_validity(&video_id)?;
@@ -869,9 +843,6 @@ decl_module! {
                 &channel,
             )?;
 
-            // ensure video can be removed
-            Self::ensure_video_can_be_removed(&video)?;
-
             // Ensure nft for this video have not been issued
             video.ensure_nft_is_not_issued::<T>()?;
 
@@ -881,16 +852,6 @@ decl_module! {
                     &assets_to_remove,
                 )?;
             }
-
-            // TODO: Solve #now
-            // If video is on storage, remove it
-            // if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
-            //     Storage::<T>::delete_data_objects(
-            //         channel.deletion_prize_source_account_id,
-            //         Self::bag_id_for_channel(&channel_id),
-            //         data_objects_id_set,
-            //     )?;
-            // }
 
             // bloat bond logic: channel owner is refunded
             video.video_post_id.as_ref().map(
@@ -905,7 +866,7 @@ decl_module! {
                 Storage::<T>::delete_data_objects(
                     sender,
                     Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone()
+                    assets_to_remove,
                 )?;
             }
 
@@ -922,36 +883,6 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: PlaylistCreationParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _playlist: T::PlaylistId,
-            _params: PlaylistUpdateParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_playlist(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _playlist: T::PlaylistId,
-        ) {
-            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1031,54 +962,6 @@ decl_module! {
 
             Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
         }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-            _params: PersonUpdateParameters<StorageAssets<T>>,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_person(
-            _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _person: T::PersonId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_person_to_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId,
-            _person: T::PersonId
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_person_from_video(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId
-        ) {
-            Self::not_implemented()?;
-        }
-
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_censorship_status(
             origin,
@@ -1121,42 +1004,13 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, StorageAssets<T>>
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_series(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _series: T::SeriesId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoPostCreationParameters<T>,
         ) -> DispatchResult {
 
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // ensure channel is valid
             let video = Self::ensure_video_validity(&params.video_reference)?;
@@ -1182,7 +1036,7 @@ decl_module! {
                 author: actor,
                 bloat_bond: initial_bloat_bond,
                 replies_count: T::VideoPostId::zero(),
-                video_reference: params.video_reference.clone(),
+                video_reference: params.video_reference,
                 post_type: params.post_type.clone(),
             };
 
@@ -1194,7 +1048,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond.clone())?;
+            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond)?;
 
             <NextVideoPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
             <VideoPostById<T>>::insert(&params.video_reference, &post_id, post.clone());
@@ -1207,7 +1061,7 @@ decl_module! {
                     |x| x.replies_count = x.replies_count.saturating_add(One::one())),
                 VideoPostType::<T>::Description => VideoById::<T>::mutate(
                     &params.video_reference,
-                    |video| video.video_post_id = Some(post_id.clone())),
+                    |video| video.video_post_id = Some(post_id)),
             };
 
             // deposit event
@@ -1224,7 +1078,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_text: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
@@ -1254,7 +1108,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoPostDeletionParameters<T>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
@@ -1294,15 +1148,15 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            Self::refund(&sender, cleanup_actor, post.bloat_bond.clone())?;
+            Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
 
             match post.post_type {
                 VideoPostType::<T>::Comment(parent_id) => {
                     VideoPostById::<T>::remove(&video_id, &post_id);
                     // parent post might have been already deleted
                     if let Ok(mut parent_post) = Self::ensure_post_exists(
-                        video_id.clone(),
-                        parent_id.clone(),
+                        video_id,
+                        parent_id,
                     ){
                         parent_post.replies_count =
                             parent_post.replies_count.saturating_sub(T::VideoPostId::one());
@@ -1464,9 +1318,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            royalty: Option<Royalty>,
-            metadata: Metadata,
-            to: Option<T::MemberId>,
+            params: NftIssuanceParameters<T>
         ) {
 
             let sender = ensure_signed(origin)?;
@@ -1485,24 +1337,14 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_owner = if let Some(to) = to {
-                NFTOwner::Member(to)
-            } else {
-                // if `to` set to None, actor issues to ChannelOwner
-                NFTOwner::ChannelOwner
-            };
-
-            // Enure royalty bounds satisfied, if provided
-            if let Some(royalty) = royalty {
-                Self::ensure_royalty_bounds_satisfied(royalty)?;
-            }
+            let nft_status = Self::construct_owned_nft(&params)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Issue NFT
-            let video = video.set_nft_status(OwnedNFT::new(nft_owner, royalty));
+            // Issue Nft
+            let video = video.set_nft_status(nft_status);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1510,9 +1352,10 @@ decl_module! {
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
                 video_id,
-                royalty,
-                metadata,
-                to,
+                params.royalty,
+                params.nft_metadata,
+                params.non_channel_owner,
+                params.init_transactional_status
             ));
         }
 
@@ -1597,7 +1440,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        /// Cancel NFT offer
+        /// Cancel Nft offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
@@ -1630,7 +1473,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferCanceled(video_id, owner_id));
         }
 
-        /// Cancel NFT sell order
+        /// Cancel Nft sell order
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_buy_now(
             origin,
@@ -1877,7 +1720,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
         }
 
-        /// Offer NFT
+        /// Offer Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn offer_nft(
             origin,
@@ -1913,7 +1756,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
         }
 
-        /// Return NFT back to the original artist at no cost
+        /// Return Nft back to the original artist at no cost
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn sling_nft_back(
             origin,
@@ -1938,7 +1781,7 @@ decl_module! {
             //
 
             // Set nft owner to ChannelOwner
-            let nft = nft.set_owner(NFTOwner::ChannelOwner);
+            let nft = nft.set_owner(NftOwner::ChannelOwner);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
@@ -1947,7 +1790,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftSlingedBackToTheOriginalArtist(video_id, owner_id));
         }
 
-        /// Accept incoming NFT offer
+        /// Accept incoming Nft offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_incoming_offer(
             origin,
@@ -1980,7 +1823,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferAccepted(video_id));
         }
 
-        /// Sell NFT
+        /// Sell Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn sell_nft(
             origin,
@@ -2012,10 +1855,10 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, owner_id, price));
+            Self::deposit_event(RawEvent::NftSellOrderMade(video_id, owner_id, price));
         }
 
-        /// Buy NFT
+        /// Buy Nft
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_nft(
             origin,
@@ -2049,7 +1892,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
+            Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
     }
 }
@@ -2129,7 +1972,7 @@ impl<T: Trait> Module<T> {
 
         let channel_migration_done = current_id == final_id;
 
-        return video_migration_done && channel_migration_done;
+        video_migration_done && channel_migration_done
     }
 
     /// Ensure `CuratorGroup` under given id exists
@@ -2175,12 +2018,6 @@ impl<T: Trait> Module<T> {
         Ok(VideoById::<T>::get(video_id))
     }
 
-    // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
-        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
-        Ok(())
-    }
-
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -2212,10 +2049,6 @@ impl<T: Trait> Module<T> {
         Ok(VideoPostById::<T>::get(video_id, post_id))
     }
 
-    fn not_implemented() -> DispatchResult {
-        Err(Error::<T>::FeatureNotImplemented.into())
-    }
-
     fn refund(
         sender: &<T as frame_system::Trait>::AccountId,
         cleanup_actor: CleanupActor,
@@ -2241,11 +2074,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure owner account id exists, retreive corresponding one.
-    pub fn ensure_owner_account_id(
+    fn ensure_owner_account_id(
         video: &Video<T>,
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
-        if let NFTOwner::Member(member_id) = owned_nft.owner {
+        if let NftOwner::Member(member_id) = owned_nft.owner {
             let membership = <membership::Module<T>>::ensure_membership(member_id)
                 .map_err(|_| Error::<T>::MemberProfileNotFound)?;
             Ok(membership.controller_account)
@@ -2254,6 +2087,53 @@ impl<T: Trait> Module<T> {
         } else {
             Err(Error::<T>::RewardAccountIsNotSet)
         }
+    }
+
+    /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
+    fn ensure_valid_init_transactional_status(
+        init_status: &InitTransactionalStatus<T>,
+    ) -> Result<TransactionalStatus<T>, DispatchError> {
+        match init_status {
+            InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
+            InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
+                TransactionalStatus::<T>::InitiatedOfferToMember(*member, *balance),
+            ),
+            InitTransactionalStatus::<T>::Auction(params) => {
+                Self::validate_auction_params(&params)?;
+                let mut auction = AuctionRecord::new(params.clone());
+                if params.starts_at.is_none() {
+                    auction.starts_at = <frame_system::Module<T>>::block_number();
+                }
+                Ok(TransactionalStatus::<T>::Auction(auction))
+            }
+        }
+    }
+
+    /// Construct the Nft that is intended to be issued
+    pub fn construct_owned_nft(
+        issuance_params: &NftIssuanceParameters<T>,
+    ) -> Result<Nft<T>, DispatchError> {
+        let transactional_status = Self::ensure_valid_init_transactional_status(
+            &issuance_params.init_transactional_status,
+        )?;
+        // The content owner will be..
+        let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
+            NftOwner::Member(to)
+        } else {
+            // if `to` set to None, actor issues to ChannelOwner
+            NftOwner::ChannelOwner
+        };
+
+        // Enure royalty bounds satisfied, if provided
+        if let Some(royalty) = issuance_params.royalty.as_ref() {
+            Self::ensure_royalty_bounds_satisfied(*royalty)?;
+        }
+
+        Ok(Nft::<T>::new(
+            nft_owner,
+            issuance_params.royalty,
+            transactional_status,
+        ))
     }
 
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
@@ -2356,12 +2236,6 @@ decl_event!(
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
-        ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
-        PlaylistId = <T as Trait>::PlaylistId,
-        SeriesId = <T as Trait>::SeriesId,
-        PersonId = <T as Trait>::PersonId,
-        ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-        Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         IsCensored = bool,
@@ -2370,13 +2244,13 @@ decl_event!(
             CurrencyOf<T>,
             <T as common::MembershipTypes>::MemberId,
         >,
+        InitTransactionalStatus = InitTransactionalStatus<T>,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        StorageAssets = StorageAssets<T>,
         VideoPost = VideoPost<T>,
         VideoPostId = <T as Trait>::VideoPostId,
         ReactionId = <T as Trait>::ReactionId,
@@ -2394,6 +2268,7 @@ decl_event!(
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
+        ChannelDeleted(ContentActor, ChannelId),
 
         ChannelCensorshipStatusUpdated(
             ContentActor,
@@ -2401,15 +2276,6 @@ decl_event!(
             IsCensored,
             Vec<u8>, /* rationale */
         ),
-
-        // Channel Ownership Transfers
-        ChannelOwnershipTransferRequested(
-            ContentActor,
-            ChannelOwnershipTransferRequestId,
-            ChannelOwnershipTransferRequest,
-        ),
-        ChannelOwnershipTransferRequestWithdrawn(ContentActor, ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(ContentActor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -2447,44 +2313,6 @@ decl_event!(
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),
 
-        // Video Playlists
-        PlaylistCreated(ContentActor, PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(ContentActor, PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(ContentActor, PlaylistId),
-
-        // Series
-        SeriesCreated(
-            ContentActor,
-            SeriesId,
-            StorageAssets,
-            SeriesParameters<VideoId, StorageAssets>,
-            Series,
-        ),
-        SeriesUpdated(
-            ContentActor,
-            SeriesId,
-            StorageAssets,
-            SeriesParameters<VideoId, StorageAssets>,
-            Series,
-        ),
-        SeriesDeleted(ContentActor, SeriesId),
-
-        // Persons
-        PersonCreated(
-            ContentActor,
-            PersonId,
-            StorageAssets,
-            PersonCreationParameters<StorageAssets>,
-        ),
-        PersonUpdated(
-            ContentActor,
-            PersonId,
-            StorageAssets,
-            PersonUpdateParameters<StorageAssets>,
-        ),
-        PersonDeleted(ContentActor, PersonId),
-        ChannelDeleted(ContentActor, ChannelId),
-
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),
         VideoPostTextUpdated(ContentActor, Vec<u8>, VideoPostId, VideoId),
@@ -2498,7 +2326,7 @@ decl_event!(
         ChannelRewardUpdated(Balance, ChannelId),
         MaxRewardUpdated(Balance),
         MinCashoutUpdated(Balance),
-        // NFT auction
+        // Nft auction
         AuctionStarted(ContentActor, VideoId, AuctionParams),
         NftIssued(
             ContentActor,
@@ -2506,6 +2334,7 @@ decl_event!(
             Option<Royalty>,
             Metadata,
             Option<MemberId>,
+            InitTransactionalStatus,
         ),
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
@@ -2516,8 +2345,8 @@ decl_event!(
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
-        NFTSellOrderMade(VideoId, ContentActor, CurrencyAmount),
-        NFTBought(VideoId, MemberId),
+        NftSellOrderMade(VideoId, ContentActor, CurrencyAmount),
+        NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
     }

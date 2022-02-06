@@ -221,10 +221,10 @@ impl<T: Trait> Module<T> {
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
-        if let TransactionalStatus::BuyNow(price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::ensure_sufficient_free_balance(participant_account_id, *price)
         } else {
-            Err(Error::<T>::NFTNotInBuyNowState.into())
+            Err(Error::<T>::NftNotInBuyNowState.into())
         }
     }
 
@@ -233,7 +233,7 @@ impl<T: Trait> Module<T> {
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
-        if let TransactionalStatus::InitiatedOfferToMember(member_id, price) =
+        if let TransactionalStatus::<T>::InitiatedOfferToMember(member_id, price) =
             &nft.transactional_status
         {
             // Authorize participant under given member id
@@ -248,9 +248,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Cancel NFT transaction
+    /// Cancel Nft transaction
     pub fn cancel_transaction(nft: Nft<T>) -> Nft<T> {
-        if let TransactionalStatus::Auction(ref auction) = nft.transactional_status {
+        if let TransactionalStatus::<T>::Auction(ref auction) = nft.transactional_status {
             if let Some(ref last_bid) = auction.last_bid {
                 // Unreserve previous bidder balance
                 T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
@@ -268,7 +268,7 @@ impl<T: Trait> Module<T> {
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
-        if let TransactionalStatus::BuyNow(price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::complete_payment(
                 in_channel,
                 nft.creator_royalty,
@@ -278,7 +278,7 @@ impl<T: Trait> Module<T> {
                 false,
             );
 
-            nft.owner = NFTOwner::Member(new_owner);
+            nft.owner = NftOwner::Member(new_owner);
         }
 
         nft.set_idle_transactional_status()
@@ -291,7 +291,9 @@ impl<T: Trait> Module<T> {
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
-        if let TransactionalStatus::InitiatedOfferToMember(to, price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
+            &nft.transactional_status
+        {
             if let Some(price) = price {
                 Self::complete_payment(
                     in_channel,
@@ -303,7 +305,7 @@ impl<T: Trait> Module<T> {
                 );
             }
 
-            nft.owner = NFTOwner::Member(*to);
+            nft.owner = NftOwner::Member(*to);
         }
 
         nft.set_idle_transactional_status()
@@ -350,11 +352,9 @@ impl<T: Trait> Module<T> {
                 // Deposit royalty into creator account
                 T::Currency::deposit_creating(&creator_account_id, royalty);
             }
-        } else {
-            if let Some(receiver_account_id) = receiver_account_id {
-                // Deposit amount, exluding auction fee into receiver account
-                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
-            }
+        } else if let Some(receiver_account_id) = receiver_account_id {
+            // Deposit amount, exluding auction fee into receiver account
+            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
@@ -378,8 +378,8 @@ impl<T: Trait> Module<T> {
             true,
         );
 
-        nft.owner = NFTOwner::Member(last_bidder);
-        nft.transactional_status = TransactionalStatus::Idle;
+        nft.owner = NftOwner::Member(last_bidder);
+        nft.transactional_status = TransactionalStatus::<T>::Idle;
         nft
     }
 }
