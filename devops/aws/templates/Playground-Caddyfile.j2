@@ -28,6 +28,11 @@
     reverse_proxy localhost:8081
 }
 
+wss://{{ nip_domain }}/query-node/server* {
+    uri strip_prefix /query-node/server
+    reverse_proxy localhost:8081
+}
+
 {{ nip_domain }}/query-node/indexer* {
     uri strip_prefix /query-node/indexer
     reverse_proxy localhost:4000

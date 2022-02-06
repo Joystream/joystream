@@ -111,7 +111,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: '40'
+              VolumeSize: '120'
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe

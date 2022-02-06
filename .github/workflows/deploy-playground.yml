@@ -23,6 +23,10 @@ on:
         description: 'Additional identifier to include in stack name'
         required: false
         default: 'playground'
+      skipChainSetup:
+        description: 'Optionally skip running newChainSetup script (true or false)'
+        required: true
+        default: 'false'
       # TODO: customDomain instead of ip_address.nip.io
       # customDomain:
       #   description: 'DNS hostname to use for deployment'
@@ -83,7 +87,8 @@ jobs:
             ${{ steps.deploy_stack.outputs.PublicIp }}
           options: |
             --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
-                          branch_name=${{ github.event.inputs.branchName }}"
+                          branch_name=${{ github.event.inputs.branchName }} \
+                          skip_chain_setup=${{ github.event.inputs.skipChainSetup }}"
 
       - name: Save the endpoints file as an artifact
         uses: actions/upload-artifact@v2
