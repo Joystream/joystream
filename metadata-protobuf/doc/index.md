@@ -3,12 +3,24 @@
 
 ## Table of Contents
 
+- [proto/Bounty.proto](#proto/Bounty.proto)
+    - [BountyMetadata](#.BountyMetadata)
+    - [BountyWorkData](#.BountyWorkData)
+  
 - [proto/Channel.proto](#proto/Channel.proto)
     - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
   
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
+  
+- [proto/CreatorPayout.proto](#proto/CreatorPayout.proto)
+    - [CreatorPayout](#.CreatorPayout)
+    - [CreatorPayoutBody](#.CreatorPayoutBody)
+    - [CreatorPayoutByteOffset](#.CreatorPayoutByteOffset)
+    - [CreatorPayoutHeader](#.CreatorPayoutHeader)
+    - [NonLeafNodeMerkleBranch](#.NonLeafNodeMerkleBranch)
+    - [NonLeafNodeMerkleBranchByteOffset](#.NonLeafNodeMerkleBranchByteOffset)
   
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
@@ -25,6 +37,9 @@
   
 - [proto/Playlist.proto](#proto/Playlist.proto)
     - [PlaylistMetadata](#.PlaylistMetadata)
+  
+- [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
+    - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
   
 - [proto/Series.proto](#proto/Series.proto)
     - [SeasonMetadata](#.SeasonMetadata)
@@ -61,6 +76,56 @@
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="proto/Bounty.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Bounty.proto
+
+
+
+<a name=".BountyMetadata"></a>
+
+### BountyMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Bounty title |
+| description | [string](#string) | optional | Bounty description |
+| discussionThread | [uint64](#uint64) | optional | Id of the forum thread used to discuss the bounty |
+| banner_image_uri | [string](#string) | optional | Image uri of the bounty&#39;s banner |
+
+
+
+
+
+
+<a name=".BountyWorkData"></a>
+
+### BountyWorkData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Title of the work |
+| description | [string](#string) | optional | Description which contains the work itself as a URL, a BLOB, or just text |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
 
 
 
@@ -135,6 +200,122 @@
 | bullet_points | [string](#string) | repeated | Candidate program in form of bullet points |
 | banner_image_uri | [string](#string) | optional | Image uri of candidate&#39;s banner |
 | description | [string](#string) | optional | Candidacy description (md-formatted) |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/CreatorPayout.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/CreatorPayout.proto
+
+
+
+<a name=".CreatorPayout"></a>
+
+### CreatorPayout
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [uint32](#uint32) | required | `c_i` |
+| cumulative_payout_owed | [float](#float) | required | `p_i` |
+| merkle_branch | [bytes](#bytes) | required | `proof_i` be the merkle branch for leaf `c_i||p_i||m_i`. where `m_i=hash(d_i)` |
+| payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
+
+
+
+
+
+
+<a name=".CreatorPayoutBody"></a>
+
+### CreatorPayoutBody
+Creator payout full body structure, it will not be downloaded by clients in full
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| creator_payouts | [CreatorPayout](#CreatorPayout) | repeated | List of creator payouts |
+| merkle_branches_of_non_leaf_nodes | [NonLeafNodeMerkleBranch](#NonLeafNodeMerkleBranch) | repeated | Merkle branch of non-leaf nodes, for total number of channels `n` they will be `n-1` if `n` even otherwise `n` |
+
+
+
+
+
+
+<a name=".CreatorPayoutByteOffset"></a>
+
+### CreatorPayoutByteOffset
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [uint32](#uint32) | required | Channel id; `c_i` |
+| byte_offset | [uint64](#uint64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
+
+
+
+
+
+
+<a name=".CreatorPayoutHeader"></a>
+
+### CreatorPayoutHeader
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payload_length_in_bytes | [uint64](#uint64) | required | Length in bytes of entire payload |
+| header_length_in_bytes | [uint64](#uint64) | required | Length in bytes of payload header |
+| number_of_channels | [uint32](#uint32) | required | Number of channels |
+| creator_payout_byte_offsets | [CreatorPayoutByteOffset](#CreatorPayoutByteOffset) | repeated | List of byte offsets for all channels |
+| non_leaf_node_merkle_branch_byte_offsets | [NonLeafNodeMerkleBranchByteOffset](#NonLeafNodeMerkleBranchByteOffset) | repeated | List of byte offsets for all merkle branches |
+
+
+
+
+
+
+<a name=".NonLeafNodeMerkleBranch"></a>
+
+### NonLeafNodeMerkleBranch
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| merkle_branch | [bytes](#bytes) | required |  |
+
+
+
+
+
+
+<a name=".NonLeafNodeMerkleBranchByteOffset"></a>
+
+### NonLeafNodeMerkleBranchByteOffset
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch_id | [uint32](#uint32) | required | id of merkle branch of non-leaf nodes |
+| byte_offset | [uint64](#uint64) | required | Byte offset from start of payload where merkle branch for branch_id exists |
 
 
 
@@ -236,7 +417,8 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | optional | Member&#39;s real name |
-| avatar | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
 
 
@@ -306,6 +488,38 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
 | videos | [uint64](#uint64) | repeated | Videos in the playlist |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/ProposalsDiscussion.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ProposalsDiscussion.proto
+
+
+
+<a name=".ProposalsDiscussionPostMetadata"></a>
+
+### ProposalsDiscussionPostMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) | optional | Post text content (md-formatted) |
+| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
 
 
 
