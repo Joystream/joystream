@@ -87,17 +87,7 @@ async function initFirstElectionRound(store: DatabaseManager): Promise<void> {
 }
 
 async function initMembers(store: DatabaseManager) {
-  for (const obj of membersData) {
-    // Casting for empty members array by default
-    const member = (obj as unknown) as {
-      member_id: number
-      root_account: string
-      controller_account: string
-      handle: string
-      about: string
-      avatar_uri: string
-    }
-
+  for (const member of membersData) {
     await createNewMember(
       store,
       new Date(0),
