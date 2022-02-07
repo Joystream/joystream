@@ -5,6 +5,7 @@ import {
   ActiveVideoCountersFixture,
   CreateChannelsAndVideosFixture,
   CreateContentStructureFixture,
+  CreateMembersFixture,
 } from '../../fixtures/content'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
@@ -23,11 +24,13 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
   const videoCategoryCount = 2
   const channelCount = 2
   const channelCategoryCount = 2
+  const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
   // flow itself
 
+  // create channel categories and video categories
   const createContentStructureFixture = new CreateContentStructureFixture(
     api,
     query,
@@ -39,20 +42,27 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
 
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
+  // create author of channels and videos
+  const createMembersFixture = new CreateMembersFixture(api, query, paidTerms, 1, sufficientTopupAmount)
+  await new FixtureRunner(createMembersFixture).run()
+  const author = createMembersFixture.getCreatedItems()[0]
+
+  // create channels and videos
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
     api,
     query,
     joystreamCli,
     paidTerms,
-    videoCount,
     channelCount,
+    videoCount,
     channelCategoryIds[0],
-    videoCategoryIds[0]
+    videoCategoryIds[0],
+    author
   )
   await new FixtureRunner(createChannelsAndVideos).run()
-
   const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
 
+  // check that active video counters are working
   const activeVideoCountersFixture = new ActiveVideoCountersFixture(
     api,
     query,

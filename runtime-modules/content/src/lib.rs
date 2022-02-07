@@ -1153,7 +1153,7 @@ decl_module! {
             actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
             royalty: Option<Royalty>,
-            metadata: Metadata,
+            metadata: NFTMetadata,
             to: Option<T::MemberId>,
         ) {
             let sender = ensure_signed(origin.clone())?;
@@ -2077,7 +2077,7 @@ decl_event!(
             ContentActor,
             VideoId,
             Option<Royalty>,
-            Metadata,
+            NFTMetadata,
             Option<MemberId>,
         ),
         AuctionBidMade(MemberId, VideoId, Balance, IsExtended),

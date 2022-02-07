@@ -1,5 +1,5 @@
 import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
-import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
+import { bool, u8, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
 import { JoyStructDecorated, JoyEnum, ChannelId } from '../common'
 
@@ -185,6 +185,8 @@ export class ChannelMigrationConfig extends JoyStructDecorated({
 
 export class IsExtended extends bool {}
 
+export class NFTMetadata extends Vec.with(u8) {}
+
 export class EnglishAuctionDetails extends JoyStructDecorated({
   extension_period: u32, // BlockNumber
   auction_duration: u32, // BlockNumber
@@ -302,6 +304,7 @@ export const contentTypes = {
   TransactionalStatus,
   NFTOwner,
   OwnedNFT,
+  NFTMetadata,
   IsExtended,
 }
 

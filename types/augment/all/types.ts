@@ -627,6 +627,9 @@ export interface NextAdjustment extends Struct {
   readonly at_block: u32;
 }
 
+/** @name NFTMetadata */
+export interface NFTMetadata extends Bytes {}
+
 /** @name NFTOwner */
 export interface NFTOwner extends Enum {
   readonly isChannelOwner: boolean;

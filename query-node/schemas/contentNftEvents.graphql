@@ -173,7 +173,7 @@ type EnglishAuctionCompletedEvent implements Event @entity {
   ### SPECIFIC DATA ###
 
   "Member claiming the auctioned NFT."
-  member: Membership!
+  winner: Membership!
 
   "Auctioned video."
   video: Video!

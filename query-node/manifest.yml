@@ -194,33 +194,33 @@ mappings:
 
     # content NFTs
     - event: content.AuctionStarted
-      handler: content_AuctionStarted
+      handler: contentNft_AuctionStarted
     - event: content.NftIssued
-      handler: content_NftIssued
+      handler: contentNft_NftIssued
     - event: content.AuctionBidMade
-      handler: content_AuctionBidMade
+      handler: contentNft_AuctionBidMade
     - event: content.AuctionBidCanceled
-      handler: content_AuctionBidCanceled
+      handler: contentNft_AuctionBidCanceled
     - event: content.AuctionCanceled
-      handler: content_AuctionCanceled
+      handler: contentNft_AuctionCanceled
     - event: content.EnglishAuctionCompleted
-      handler: content_EnglishAuctionCompleted
+      handler: contentNft_EnglishAuctionCompleted
     - event: content.BidMadeCompletingAuction
-      handler: content_BidMadeCompletingAuction
+      handler: contentNft_BidMadeCompletingAuction
     - event: content.OpenAuctionBidAccepted
-      handler: content_OpenAuctionBidAccepted
+      handler: contentNft_OpenAuctionBidAccepted
     - event: content.OfferStarted
-      handler: content_OfferStarted
+      handler: contentNft_OfferStarted
     - event: content.OfferAccepted
-      handler: content_OfferAccepted
+      handler: contentNft_OfferAccepted
     - event: content.OfferCanceled
-      handler: content_OfferCanceled
+      handler: contentNft_OfferCanceled
     - event: content.NftSellOrderMade
-      handler: content_NftSellOrderMade
+      handler: contentNft_NftSellOrderMade
     - event: content.NftBought
-      handler: content_NftBought
+      handler: contentNft_NftBought
     - event: content.BuyNowCanceled
-      handler: content_BuyNowCanceled
+      handler: contentNft_BuyNowCanceled
 
     # working groups
     ## storage - workers

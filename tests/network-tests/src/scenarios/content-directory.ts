@@ -14,6 +14,7 @@ scenario('Content directory', async ({ job }) => {
 
   const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(leadSetupJob)
 
-  job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  // const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  // job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
   job('nft auction and offers', nftAuctionAndOffers).requires(initStorageJob)
 })

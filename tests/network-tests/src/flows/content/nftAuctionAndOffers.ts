@@ -5,9 +5,13 @@ import {
   ActiveVideoCountersFixture,
   CreateChannelsAndVideosFixture,
   CreateContentStructureFixture,
-  NftAuctionFixture,
+  CreateMembersFixture,
+  NftEnglishAuctionFixture,
   NftBuyNowFixture,
   NftDirectOfferFixture,
+  NftOpenAuctionFixture,
+  AuctionCancelationsFixture,
+  IMember,
 } from '../../fixtures/content'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
@@ -22,14 +26,16 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCount = 2
+  const videoCount = 5 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
   const channelCategoryCount = 1
+  const auctionParticipantsCount = 3
+  const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
-  // flow itself
+  // prepare content
 
   const createContentStructureFixture = new CreateContentStructureFixture(
     api,
@@ -42,33 +48,89 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
+  // create author of channels and videos as well as auction participants
+  const createMembersFixture = new CreateMembersFixture(
+    api,
+    query,
+    paidTerms,
+    auctionParticipantsCount + 1,
+    sufficientTopupAmount
+  )
+  await new FixtureRunner(createMembersFixture).run()
+  const [author, ...auctionParticipants] = createMembersFixture.getCreatedItems()
+
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
     api,
     query,
     joystreamCli,
     paidTerms,
-    videoCount,
     channelCount,
+    videoCount,
     channelCategoryIds[0],
-    videoCategoryIds[0]
+    videoCategoryIds[0],
+    author
   )
   await new FixtureRunner(createChannelsAndVideos).run()
 
   const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
 
-  // TODO: NFT stuff
+  const nextVideo = (() => {
+    let i = 0
+    return () => videosData[i++]
+  })()
 
-  const nftAuctionFixture = new NftAuctionFixture(api, query, joystreamCli)
+  // test NFT features
+
+  const nftAuctionFixture = new NftEnglishAuctionFixture(
+    api,
+    query,
+    joystreamCli,
+    paidTerms,
+    nextVideo().videoId,
+    author as IMember,
+    auctionParticipants
+  )
 
   await new FixtureRunner(nftAuctionFixture).run()
 
-  const nftBuyNowFixture = new NftBuyNowFixture(api, query, joystreamCli)
+  const openAuctionFixture = new NftOpenAuctionFixture(
+    api,
+    query,
+    joystreamCli,
+    paidTerms,
+    nextVideo().videoId,
+    author,
+    auctionParticipants
+  )
+
+  await new FixtureRunner(openAuctionFixture).run()
+
+  /* TODO: fix this - QN doesn't catch the events for buy-know from unkown reason
+  const nftBuyNowFixture = new NftBuyNowFixture(api, query, joystreamCli, nextVideo().videoId, author as IMember, auctionParticipants[0])
 
   await new FixtureRunner(nftBuyNowFixture).run()
-
-  const nftDirectOfferFixture = new NftDirectOfferFixture(api, query, joystreamCli)
+*/
+  const nftDirectOfferFixture = new NftDirectOfferFixture(
+    api,
+    query,
+    joystreamCli,
+    nextVideo().videoId,
+    author as IMember,
+    auctionParticipants[0]
+  )
 
   await new FixtureRunner(nftDirectOfferFixture).run()
+
+  const auctionCancelations = new AuctionCancelationsFixture(
+    api,
+    query,
+    joystreamCli,
+    nextVideo().videoId,
+    author as IMember,
+    auctionParticipants[0]
+  )
+
+  await new FixtureRunner(auctionCancelations).run()
 
   debug('Done')
 }

@@ -902,6 +902,7 @@
         "transactional_status": "TransactionalStatus",
         "creator_royalty": "Option<Royalty>"
     },
+    "NFTMetadata": "Vec<u8>",
     "IsExtended": "bool",
     "AccountInfo": "AccountInfoWithRefCount"
 }

@@ -13,15 +13,7 @@ import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
 import { Worker, WorkerId } from '@joystream/types/working-group'
 import { createType } from '@joystream/types'
 import { singleBucketConfig } from '../../flows/storagev2/initStorage'
-
-interface IMember {
-  keyringPair: KeyringPair
-  account: string
-  memberId: MemberId
-}
-
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
+import { IMember } from './createMembers'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
@@ -33,6 +25,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private videoCount: number
   private channelCategoryId: number
   private videoCategoryId: number
+  private author: IMember
   private createdItems: {
     channelIds: number[]
     videosData: ICreatedVideoData[]
@@ -46,7 +39,8 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     channelCount: number,
     videoCount: number,
     channelCategoryId: number,
-    videoCategoryId: number
+    videoCategoryId: number,
+    author: IMember
   ) {
     super(api, query)
     this.paidTerms = paidTerms
@@ -55,6 +49,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     this.videoCount = videoCount
     this.channelCategoryId = channelCategoryId
     this.videoCategoryId = videoCategoryId
+    this.author = author
     this.debug = extendDebug('fixture:CreateChannelsAndVideosFixture')
 
     this.createdItems = {
@@ -71,11 +66,16 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     Execute this Fixture.
   */
   public async execute(): Promise<void> {
-    this.debug('Creating members')
-    const author = await this.prepareAuthor()
+    this.debug('Setting author')
+    await this.cli.importAccount(this.author.keyringPair)
+    await this.cli.chooseMemberAccount(this.author.memberId)
 
     this.debug('Creating channels')
-    this.createdItems.channelIds = await this.createChannels(this.channelCount, this.channelCategoryId, author.account)
+    this.createdItems.channelIds = await this.createChannels(
+      this.channelCount,
+      this.channelCategoryId,
+      this.author.account
+    )
 
     this.debug('Creating videos')
     this.createdItems.videosData = await this.createVideos(
@@ -96,45 +96,6 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
       this.createdItems.channelIds[0].toString(),
       allAssetIds
     )
-  }
-
-  /**
-    Prepares author for the content to be created.
-  */
-  private async prepareAuthor(): Promise<IMember> {
-    // prepare memberships
-    const members = await this.createMembers(1)
-
-    const authorMemberIndex = 0
-    const author = members[authorMemberIndex]
-    author.keyringPair.setMeta({
-      ...author.keyringPair.meta,
-      ...getMemberDefaults(authorMemberIndex),
-    })
-
-    this.debug('Top-uping accounts')
-    await this.api.treasuryTransferBalanceToAccounts([author.keyringPair.address], sufficientTopupAmount)
-
-    return author
-  }
-
-  /**
-    Creates new accounts and registers memberships for them.
-  */
-  private async createMembers(numberOfMembers: number): Promise<IMember[]> {
-    const keyringPairs = (await this.api.createKeyPairs(numberOfMembers)).map((kp) => kp.key)
-    const accounts = keyringPairs.map((item) => item.address)
-    const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(this.api, accounts, this.paidTerms)
-
-    await new FixtureRunner(buyMembershipsFixture).run()
-
-    const memberIds = buyMembershipsFixture.getCreatedMembers()
-
-    return keyringPairs.map((item, index) => ({
-      keyringPair: item,
-      account: accounts[index],
-      memberId: memberIds[index],
-    }))
   }
 
   /**

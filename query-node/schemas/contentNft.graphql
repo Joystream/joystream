@@ -57,7 +57,10 @@ type Curator @entity {
 "Represents NFT details"
 type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
   "NFT's video"
-  video: Video!
+  video: Video! @derivedFrom(field: "nft")
+
+  "Auctions done for this NFT"
+  auctions: [Auction!]! @derivedFrom(field: "nft")
 
   "Member owning the NFT (if any)"
   ownerMember: Membership
@@ -72,7 +75,7 @@ type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codeg
   transactionalStatus: TransactionalStatus!
 
   "Creator royalty"
-  creatorRoyalty: Float!
+  creatorRoyalty: Float
 }
 
 "NFT transactional state"
@@ -130,8 +133,8 @@ type AuctionTypeOpen @variant {
 
 "Represents NFT auction"
 type Auction @entity {
-  "NFT's video"
-  video: Video!
+  "Auctioned NFT"
+  nft: OwnedNft!
 
   "Member starting NFT auction"
   initialOwner: Membership!
@@ -144,6 +147,8 @@ type Auction @entity {
 
   "Whether auction can be completed instantly"
   buyNowPrice: BigInt
+
+  # TODO: maybe there is a need to distinguish regular auction completion from buy now
 
   "The type of auction"
   auctionType: AuctionType!
@@ -159,8 +164,11 @@ type Auction @entity {
   "Block when auction starts"
   startsAtBlock: Int!
 
-  "Block when auction starts"
-  endedAtBlock: Int!
+  "Block when auction ended"
+  endedAtBlock: Int
+
+  "Block when auction is supposed to end"
+  plannedEndAtBlock: Int
 
   "Is auction canceled"
   isCanceled: Boolean!
@@ -187,8 +195,11 @@ type Bid @entity {
   "Amount bidded"
   amount: BigInt!
 
+  "Sign for canceled bid"
   isCanceled: Boolean!
 
   "Block in which the bid was placed"
   createdInBlock: Int!
 }
+
+# TODO entity for (cancelable) offers; will be needed to see history of offers

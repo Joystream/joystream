@@ -10,6 +10,10 @@ import {
   GetChannelById,
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
+  OwnedNftFieldsFragment,
+  GetOwnedNftByVideoId,
+  GetOwnedNftByVideoIdQuery,
+  GetOwnedNftByVideoIdQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -155,5 +159,13 @@ export class QueryNodeApi {
       }
     `
     return await this.queryNodeProvider.query({ query })
+  }
+
+  public async ownedNftByVideoId(videoId: string): Promise<Maybe<OwnedNftFieldsFragment>> {
+    return this.firstEntityQuery<GetOwnedNftByVideoIdQuery, GetOwnedNftByVideoIdQueryVariables>(
+      GetOwnedNftByVideoId,
+      { videoId },
+      'ownedNfts'
+    )
   }
 }

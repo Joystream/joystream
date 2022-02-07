@@ -1,7 +1,7 @@
 use super::*;
 
 /// Metadata for NFT issuance
-pub type Metadata = Vec<u8>;
+pub type NFTMetadata = Vec<u8>;
 
 pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
 pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;

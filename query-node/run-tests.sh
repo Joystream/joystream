@@ -18,7 +18,7 @@ function cleanup() {
     docker-compose down -v
 }
 
-trap cleanup EXIT
+#trap cleanup EXIT
 
 # start node
 docker-compose up -d joystream-node

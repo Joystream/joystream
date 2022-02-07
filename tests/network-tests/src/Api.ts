@@ -32,7 +32,7 @@ import {
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
-import { VideoId, VideoCategoryId } from '@joystream/types/content'
+import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
@@ -2002,5 +2002,135 @@ export class Api {
       this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
       accountFrom
     )
+  }
+
+  async issueNft(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    metadata = '',
+    royaltyPercentage?: number,
+    toMemberId?: number | null
+  ): Promise<ISubmittableResult> {
+    const perbillOnePercent = 10 * 1000000
+
+    const royalty = this.api.createType(
+      'Option<Royalty>',
+      royaltyPercentage ? royaltyPercentage * perbillOnePercent : null
+    )
+    // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
+    // const encodedMetadata = this.api.createType('Metadata', metadata)
+    // const encodedMetadata = this.api.createType('Metadata', metadata).toU8a() // invalid type passed to Metadata constructor
+    // const encodedMetadata = this.api.createType('Vec<u8>', metadata)
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Bytes', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Metadata', {})
+    // const encodedMetadata = this.api.createType('Bytes', '0x') // error
+    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText')
+    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText').toU8a() // createType(NFTMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
+    const encodedMetadata = this.api.createType('NFTMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
+    // try this later on // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a()
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a() // throws error in QN when decoding this (but mb QN error)
+
+    const encodedToAccount = this.api.createType('Option<MemberId>', toMemberId || memberId)
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.issueNft({ Member: memberId }, videoId, royalty, encodedMetadata, encodedToAccount),
+      accountFrom
+    )
+  }
+
+  createAuctionParameters(
+    auctionType: 'English' | 'Open',
+    startingPrice: BN,
+    minimalBidStep: BN,
+    buyNowPrice?: BN,
+    startInBlock?: BN,
+    whitelist: string[] = []
+  ): AuctionParams {
+    const encodedAuctionType =
+      auctionType === 'English'
+        ? {
+            English: {
+              extension_period: 5, // TODO - read min/max bounds from runtime and set min value here (?)
+              auction_duration: 5, // TODO - read min/max bounds from runtime and set min value here (?)
+            },
+          }
+        : {
+            Open: {
+              bid_lock_duration: 2, // TODO - read min/max bounds from runtime and set min value here (?)
+            },
+          }
+
+    return this.api.createType('AuctionParams', {
+      auction_type: this.api.createType('AuctionType', encodedAuctionType),
+      starting_price: this.api.createType('u128', startingPrice),
+      minimal_bid_step: this.api.createType('u128', minimalBidStep),
+      buy_now_price: this.api.createType('Option<BlockNumber>', buyNowPrice),
+      starts_at: this.api.createType('Option<BlockNumber>', startInBlock),
+      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+    })
+  }
+
+  async startNftAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    auctionParams: AuctionParams
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.startNftAuction({ Member: memberId }, videoId, auctionParams),
+      accountFrom
+    )
+  }
+
+  async bidInNftAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    bidAmount: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.makeBid(memberId, videoId, bidAmount), accountFrom)
+  }
+
+  async claimWonEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
+  }
+
+  async pickOpenAuctionWinner(accountFrom: string, memberId: number, videoId: number) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.pickOpenAuctionWinner({ Member: memberId }, videoId),
+      accountFrom
+    )
+  }
+
+  async cancelOpenAuctionBid(accountFrom: string, participantId: number, videoId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.cancelOpenAuctionBid(participantId, videoId), accountFrom)
+  }
+
+  async cancelNftAuction(accountFrom: string, ownerId: number, videoId: number) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.cancelNftAuction({ Member: ownerId }, videoId),
+      accountFrom
+    )
+  }
+
+  async sellNft(accountFrom: string, videoId: number, ownerId: number, price: BN) {
+    return await this.sender.signAndSend(this.api.tx.content.sellNft(videoId, { Member: ownerId }, price), accountFrom)
+  }
+
+  async buyNft(accountFrom: string, videoId: number, participantId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId), accountFrom)
+  }
+
+  async offerNft(accountFrom: string, videoId: number, ownerId: number, toMemberId: number, price: BN | null = null) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.offerNft(videoId, { Member: ownerId }, toMemberId, price),
+      accountFrom
+    )
+  }
+
+  async acceptIncomingOffer(accountFrom: string, videoId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
   }
 }
