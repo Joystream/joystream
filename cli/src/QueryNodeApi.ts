@@ -36,6 +36,13 @@ import {
   ApplicationDetailsByIdQuery,
   ApplicationDetailsByIdQueryVariables,
   ApplicationDetailsById,
+  UpcomingWorkingGroupOpeningByEventQuery,
+  UpcomingWorkingGroupOpeningByEventQueryVariables,
+  UpcomingWorkingGroupOpeningByEvent,
+  UpcomingWorkingGroupOpeningDetailsFragment,
+  UpcomingWorkingGroupOpeningByIdQuery,
+  UpcomingWorkingGroupOpeningByIdQueryVariables,
+  UpcomingWorkingGroupOpeningById,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -54,7 +61,7 @@ export default class QueryNodeApi {
     links.push(new HttpLink({ uri, fetch }))
     this._qnClient = new ApolloClient({
       link: from(links),
-      cache: new InMemoryCache(),
+      cache: new InMemoryCache({ addTypename: false }),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }
@@ -167,6 +174,24 @@ export default class QueryNodeApi {
       ApplicationDetailsById,
       { id: `${apiModuleByGroup[group]}-${id.toString()}` },
       'workingGroupApplicationByUniqueInput'
+    )
+  }
+
+  async upcomingWorkingGroupOpeningByEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment | null> {
+    return this.firstEntityQuery<
+      UpcomingWorkingGroupOpeningByEventQuery,
+      UpcomingWorkingGroupOpeningByEventQueryVariables
+    >(UpcomingWorkingGroupOpeningByEvent, { blockNumber, indexInBlock }, 'upcomingWorkingGroupOpenings')
+  }
+
+  async upcomingWorkingGroupOpeningById(id: string): Promise<UpcomingWorkingGroupOpeningDetailsFragment | null> {
+    return this.uniqueEntityQuery<UpcomingWorkingGroupOpeningByIdQuery, UpcomingWorkingGroupOpeningByIdQueryVariables>(
+      UpcomingWorkingGroupOpeningById,
+      { id },
+      'upcomingWorkingGroupOpeningByUniqueInput'
     )
   }
 }

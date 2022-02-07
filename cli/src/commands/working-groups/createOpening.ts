@@ -1,5 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { WorkingGroupOpeningInputParameters } from '../../Types'
+import { GroupMember, WorkingGroupOpeningInputParameters } from '../../Types'
 import { WorkingGroupOpeningInputSchema } from '../../schemas/WorkingGroups'
 import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
@@ -11,14 +11,23 @@ import { AugmentedSubmittables } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
 import { CLIError } from '@oclif/errors'
-import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import {
+  IOpeningMetadata,
+  IWorkingGroupMetadataAction,
+  OpeningMetadata,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
 import { OpeningId } from '@joystream/types/working-group'
+import Long from 'long'
+import moment from 'moment'
+import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
 
 const OPENING_STAKE = new BN(2000)
+const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
-  static description = 'Create working group opening (requires lead access)'
+  static description = 'Create working group opening / upcoming opening (requires lead access)'
   static flags = {
     input: IOFlags.input,
     output: flags.string({
@@ -44,6 +53,14 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       required: false,
       description:
         "If provided - this account (key) will be used as default funds source for lead stake top up (in case it's needed)",
+    }),
+    upcoming: flags.boolean({
+      description: 'Whether the opening should be an upcoming opening',
+    }),
+    startsAt: flags.string({
+      required: false,
+      description: `If upcoming opening - the expected opening start date (${DATE_FORMAT})`,
+      dependsOn: ['upcoming'],
     }),
     ...WorkingGroupsCommandBase.flags,
   }
@@ -111,13 +128,113 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }
   }
 
+  async createOpening(lead: GroupMember, inputParameters: WorkingGroupOpeningInputParameters): Promise<OpeningId> {
+    const result = await this.sendAndFollowTx(
+      await this.getDecodedPair(lead.roleAccount),
+      this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...this.createTxParams(inputParameters))
+    )
+    const openingId: OpeningId = this.getEvent(result, apiModuleByGroup[this.group], 'OpeningAdded').data[0]
+    this.log(chalk.green(`Opening with id ${chalk.magentaBright(openingId)} successfully created!`))
+    this.output(openingId.toString())
+    return openingId
+  }
+
+  async createUpcomingOpening(
+    lead: GroupMember,
+    actionMetadata: IWorkingGroupMetadataAction
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment | undefined> {
+    const result = await this.sendAndFollowTx(
+      await this.getDecodedPair(lead.roleAccount),
+      this.getOriginalApi().tx[apiModuleByGroup[this.group]].setStatusText(
+        metadataToBytes(WorkingGroupMetadataAction, actionMetadata)
+      )
+    )
+    const { indexInBlock, blockNumber } = await this.getEventDetails(
+      result,
+      apiModuleByGroup[this.group],
+      'StatusTextChanged'
+    )
+    if (this.isQueryNodeUriSet()) {
+      let createdUpcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment | null = null
+      let currentAttempt = 0
+      const maxRetryAttempts = 5
+      while (!createdUpcomingOpening && currentAttempt <= maxRetryAttempts) {
+        ++currentAttempt
+        createdUpcomingOpening = await this.getQNApi().upcomingWorkingGroupOpeningByEvent(blockNumber, indexInBlock)
+        if (!createdUpcomingOpening && currentAttempt <= maxRetryAttempts) {
+          this.log(
+            `Waiting for the upcoming opening to be processed by the query node (${currentAttempt}/${maxRetryAttempts})...`
+          )
+          await new Promise((resolve) => setTimeout(resolve, 6000))
+        }
+      }
+      if (!createdUpcomingOpening) {
+        this.error('Could not fetch the upcoming opening from the query node', { exit: ExitCodes.QueryNodeError })
+      }
+      this.log(
+        chalk.green(`Upcoming opening with id ${chalk.magentaBright(createdUpcomingOpening.id)} successfully created!`)
+      )
+      this.output(createdUpcomingOpening.id)
+      return createdUpcomingOpening
+    } else {
+      this.log(`StatusTextChanged event emitted in block ${blockNumber}, index: ${indexInBlock}`)
+      this.warn('Query node uri not set, cannot confirm whether the upcoming opening was succesfully created')
+    }
+  }
+
+  validateUpcomingOpeningStartDate(dateStr: string): string | true {
+    const momentObj = moment(dateStr, DATE_FORMAT)
+    if (!momentObj.isValid()) {
+      return `Unrecognized date format: ${dateStr}`
+    }
+    const ts = momentObj.unix()
+    if (ts <= moment().unix()) {
+      return 'Upcoming opening start date should be in the future!'
+    }
+    return true
+  }
+
+  async getUpcomingOpeningExpectedStartTimestamp(dateStr: string | undefined): Promise<number> {
+    if (dateStr) {
+      const validationResult = this.validateUpcomingOpeningStartDate(dateStr)
+      if (validationResult === true) {
+        return moment(dateStr).unix()
+      } else {
+        this.warn(`Invalid opening start date provided: ${validationResult}`)
+      }
+    }
+    dateStr = await this.simplePrompt<string>({
+      message: `Expected upcoming opening start date (${DATE_FORMAT}):`,
+      validate: (dateStr) => this.validateUpcomingOpeningStartDate(dateStr),
+    })
+    return moment(dateStr).unix()
+  }
+
+  prepareCreateUpcomingOpeningMetadata(
+    inputParameters: WorkingGroupOpeningInputParameters,
+    expectedStartTs: number
+  ): IWorkingGroupMetadataAction {
+    return {
+      addUpcomingOpening: {
+        metadata: {
+          rewardPerBlock: inputParameters.rewardPerBlock ? Long.fromNumber(inputParameters.rewardPerBlock) : undefined,
+          expectedStart: expectedStartTs,
+          minApplicationStake: Long.fromNumber(inputParameters.stakingPolicy.amount),
+          metadata: this.prepareMetadata(inputParameters),
+        },
+      },
+    }
+  }
+
   async run(): Promise<void> {
     // lead-only gate
     const lead = await this.getRequiredLeadContext()
 
     const {
-      flags: { input, output, edit, dryRun, stakeTopUpSource },
+      flags: { input, output, edit, dryRun, stakeTopUpSource, upcoming, startsAt },
     } = this.parse(WorkingGroupsCreateOpening)
+
+    const expectedStartTs = upcoming ? await this.getUpcomingOpeningExpectedStartTimestamp(startsAt) : 0
 
     ensureOutputFileIsWriteable(output)
 
@@ -134,9 +251,18 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       // Remember the provided/fetched data in a variable
       rememberedInput = openingJson
 
-      await this.promptForStakeTopUp(lead.stakingAccount.toString(), stakeTopUpSource)
+      if (!upcoming) {
+        await this.promptForStakeTopUp(lead.stakingAccount.toString(), stakeTopUpSource)
+      }
 
-      this.jsonPrettyPrint(JSON.stringify(rememberedInput))
+      const createUpcomingOpeningActionMeta = this.prepareCreateUpcomingOpeningMetadata(
+        rememberedInput,
+        expectedStartTs
+      )
+
+      this.jsonPrettyPrint(
+        JSON.stringify(upcoming ? { WorkingGroupMetadataAction: createUpcomingOpeningActionMeta } : rememberedInput)
+      )
       const confirmed = await this.requestConfirmation('Do you confirm the provided input?')
       if (!confirmed) {
         tryAgain = await this.requestConfirmation('Try again with remembered input?')
@@ -159,13 +285,9 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Send the tx
       try {
-        const result = await this.sendAndFollowTx(
-          await this.getDecodedPair(lead.roleAccount),
-          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...this.createTxParams(rememberedInput))
-        )
-        const openingId: OpeningId = this.getEvent(result, apiModuleByGroup[this.group], 'OpeningAdded').data[0]
-        this.log(chalk.green(`Opening with id ${chalk.magentaBright(openingId)} successfully created!`))
-        this.output(openingId.toString())
+        upcoming
+          ? await this.createUpcomingOpening(lead, createUpcomingOpeningActionMeta)
+          : await this.createOpening(lead, rememberedInput)
         tryAgain = false
       } catch (e) {
         if (e instanceof CLIError) {

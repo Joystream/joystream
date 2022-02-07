@@ -23,6 +23,16 @@ GROUP="storageProviders"
 # Add integration tests lead key (in case the script is executed after ./start.sh)
 ${CLI} account:forget --name "Test wg lead key" || true
 ${CLI} account:import --suri ${TEST_LEAD_SURI} --name "Test wg lead key" --password "" || true
+# Set/update working group metadata
+${CLI} working-groups:updateGroupMetadata --group ${GROUP} -i ../examples/working-groups/UpdateMetadata.json
+# Create upcoming opening
+UPCOMING_OPENING_ID=`${CLI} working-groups:createOpening \
+  --group ${GROUP} \
+  --input ../examples/working-groups/CreateOpening.json \
+  --upcoming \
+  --startsAt 2030-01-01`
+# Delete upcoming opening
+${CLI} working-groups:removeUpcomingOpening --group ${GROUP} --id ${UPCOMING_OPENING_ID}
 # Create opening
 OPENING_ID=`${CLI} working-groups:createOpening \
   --group ${GROUP} \

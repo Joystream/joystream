@@ -8,7 +8,12 @@ import { Membership } from '@joystream/types/members'
 import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
-import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
+import {
+  SubmittableModuleExtrinsics,
+  QueryableModuleStorage,
+  QueryableModuleConsts,
+  AugmentedEvent,
+} from '@polkadot/api/types'
 import { JSONSchema4 } from 'json-schema'
 import {
   IChannelMetadata,
@@ -24,6 +29,7 @@ import {
   WorkingGroupApplicationDetailsFragment,
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
+import { IEvent } from '@polkadot/types/types'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -149,6 +155,23 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   consts: { [key: string]: QueryableModuleConsts }
 }
 
+// Event-related types
+export type EventSection = keyof ApiPromise['events'] & string
+export type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+export type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> & Codec : never
+
+export type EventDetails<E> = {
+  event: E
+  blockNumber: number
+  blockHash: string
+  blockTimestamp: number
+  indexInBlock: number
+}
+
+// Storage
 export type AssetToUpload = {
   dataObjectId: BN
   path: string

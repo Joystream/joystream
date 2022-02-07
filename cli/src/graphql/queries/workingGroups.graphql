@@ -21,6 +21,24 @@ fragment WorkingGroupApplicationDetails on WorkingGroupApplication {
   }
 }
 
+fragment UpcomingWorkingGroupOpeningDetails on UpcomingWorkingGroupOpening {
+  id
+  groupId
+  expectedStart
+  stakeAmount
+  rewardPerBlock
+  metadata {
+    shortDescription
+    description
+    hiringLimit
+    expectedEnding
+    applicationDetails
+    applicationFormQuestions {
+      question
+    }
+  }
+}
+
 query openingDetailsById($id: ID!) {
   workingGroupOpeningByUniqueInput(where: { id: $id }) {
     ...WorkingGroupOpeningDetails
@@ -30,5 +48,25 @@ query openingDetailsById($id: ID!) {
 query applicationDetailsById($id: ID!) {
   workingGroupApplicationByUniqueInput(where: { id: $id }) {
     ...WorkingGroupApplicationDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningByEvent($blockNumber: Int!, $indexInBlock: Int!) {
+  upcomingWorkingGroupOpenings(
+    where: { createdInEvent: { inBlock_eq: $blockNumber, indexInBlock_eq: $indexInBlock } }
+  ) {
+    ...UpcomingWorkingGroupOpeningDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningsByGroup($workingGroupId: ID!) {
+  upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }) {
+    ...UpcomingWorkingGroupOpeningDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningById($id: ID!) {
+  upcomingWorkingGroupOpeningByUniqueInput(where: { id: $id }) {
+    ...UpcomingWorkingGroupOpeningDetails
   }
 }
