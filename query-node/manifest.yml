@@ -88,9 +88,6 @@ typegen:
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
     - content.ChannelCensorshipStatusUpdated
-    - content.ChannelOwnershipTransferRequested
-    - content.ChannelOwnershipTransferRequestWithdrawn
-    - content.ChannelOwnershipTransferred
     - content.ChannelCategoryCreated
     - content.ChannelCategoryUpdated
     - content.ChannelCategoryDeleted
