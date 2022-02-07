@@ -9,32 +9,32 @@
 - name: Copying initial members file to the server
   copy:
     src: '{{ initial_members_file }}'
-    dest: '{{ admin_code_dir }}/initial-members.json'
+    dest: '{{ remote_code_path }}/initial-members.json'
   when: initial_members_file is defined and initial_members_file|length > 0
   run_once: true
 
 - name: Copying initial balances file to the server
   copy:
     src: '{{ initial_balances_file }}'
-    dest: '{{ admin_code_dir }}/initial-balances.json'
+    dest: '{{ remote_code_path }}/initial-balances.json'
   when: initial_balances_file is defined and initial_balances_file|length > 0
   run_once: true
 
 - name: Run chain-spec-builder to generate chainspec.json file (with initial data)
   shell: >
-    {{ admin_code_dir }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
+    {{ remote_code_path }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
     --chain-spec-path {{ chain_spec_path }}
     --endowed 1 --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
-    {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ admin_code_dir }}/initial-balances.json{% endif %}
-    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ admin_code_dir }}/initial-members.json{% endif %}
+    {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ remote_code_path }}/initial-members.json{% endif %}
   register: chain_spec_output
-  delegate_to: '{{ local_or_admin }}'
+  delegate_to: '{{ build_instance }}'
   run_once: true
 
 - name: Run subkey to generate node keys
   shell: subkey generate-node-key
-  delegate_to: '{{ local_or_admin }}'
+  delegate_to: '{{ build_instance }}'
   register: subkey_output
 
 - name: Print to stdout
@@ -51,7 +51,7 @@
   copy:
     content: '{{ chain_spec_output.stdout | regex_replace("\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]", "") }}'
     dest: '{{ remote_data_path }}/chain_spec_output.txt'
-  delegate_to: '{{ local_or_admin }}'
+  delegate_to: '{{ build_instance }}'
   run_once: true
 
 - name: Change chain spec name, id, protocolId
@@ -59,7 +59,7 @@
     chain_spec_path: '{{ chain_spec_path }}'
     prefix: '{{ network_suffix }}'
     all_nodes: '{{ hostvars }}'
-  delegate_to: '{{ local_or_admin }}'
+  delegate_to: '{{ build_instance }}'
   register: result
   run_once: true
 
@@ -69,8 +69,8 @@
   run_once: true
 
 - name: Run build-spec to generate raw chainspec file
-  shell: '{{ admin_code_dir }}/target/release/joystream-node build-spec --chain {{ chain_spec_path }} --raw > {{ raw_chain_spec_path }}'
-  delegate_to: '{{ local_or_admin }}'
+  shell: '{{ remote_code_path }}/target/release/joystream-node build-spec --chain {{ chain_spec_path }} --raw > {{ raw_chain_spec_path }}'
+  delegate_to: '{{ build_instance }}'
   run_once: true
 
 - name: Copying chain spec files to localhost
@@ -79,16 +79,14 @@
     dest: '{{ data_path }}'
     mode: pull
   run_once: true
-  when: run_on_admin_server|bool
 
 - name: Copy joystream-node binary to localhost
   fetch:
-    src: '{{ admin_code_dir }}/target/release/joystream-node'
+    src: '{{ remote_code_path }}/target/release/joystream-node'
     dest: '{{ data_path }}/joystream-node'
     flat: yes
-  delegate_to: '{{ local_or_admin }}'
+  delegate_to: '{{ build_instance }}'
   run_once: true
-  when: run_on_admin_server|bool
 
 - name: Copying raw chain spec file to all servers
   copy:

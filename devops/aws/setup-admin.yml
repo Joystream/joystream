@@ -6,4 +6,3 @@
 
   roles:
     - role: admin
-      when: run_on_admin_server|bool
