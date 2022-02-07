@@ -56,16 +56,16 @@ benchmark pallet_timestamp
 # benchmark pallet_im_online
 
 # Joystrem benchmarks
-benchmark proposals_discussion
-benchmark proposals_engine
+# benchmark proposals_discussion
+# benchmark proposals_engine
 benchmark proposals_codex
-benchmark pallet_constitution
-benchmark working_group
-benchmark council
-benchmark referendum
-benchmark forum
-benchmark membership
-benchmark bounty
-benchmark blog
-benchmark joystream_utility
-# benchmark storage
+# benchmark pallet_constitution
+# benchmark working_group
+# benchmark council
+# benchmark referendum
+# benchmark forum
+# benchmark membership
+# benchmark bounty
+# benchmark blog
+# benchmark joystream_utility
+#benchmark storage

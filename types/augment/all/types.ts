@@ -813,6 +813,10 @@ export interface ProposalDetails extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isVetoBounty: boolean;
+  readonly asVetoBounty: BountyId;
+  readonly isWithdrawBountyFunding: boolean;
+  readonly asWithdrawBountyFunding: BountyId;
 }
 
 /** @name ProposalDetailsOf */
@@ -867,6 +871,10 @@ export interface ProposalDetailsOf extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isVetoBounty: boolean;
+  readonly asVetoBounty: BountyId;
+  readonly isWithdrawBountyFunding: boolean;
+  readonly asWithdrawBountyFunding: BountyId;
 }
 
 /** @name ProposalId */

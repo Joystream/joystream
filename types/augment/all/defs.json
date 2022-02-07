@@ -415,7 +415,9 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "VetoBounty": "BountyId",
+            "WithdrawBountyFunding": "BountyId"
         }
     },
     "ProposalDetailsOf": {
@@ -444,7 +446,9 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "VetoBounty": "BountyId",
+            "WithdrawBountyFunding": "BountyId"
         }
     },
     "VotingResults": {
