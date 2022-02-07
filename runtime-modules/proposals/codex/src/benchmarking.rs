@@ -807,6 +807,51 @@ benchmarks! {
         );
     }
 
+    create_proposal_veto_bounty {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::VetoBounty(0.into());
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_withdraw_bounty_funding {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::WithdrawBountyFunding(0.into());
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+
 }
 
 #[cfg(test)]
@@ -984,6 +1029,19 @@ mod tests {
     fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_veto_bounty() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_veto_bounty::<Test>());
+        });
+    }
+    #[test]
+    fn test_create_proposal_withdraw_bounty_funding() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_withdraw_bounty_funding::<Test>());
         });
     }
 }
