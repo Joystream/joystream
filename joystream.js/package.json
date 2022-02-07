@@ -1,0 +1,22 @@
+{
+  "private": true,
+  "name": "joystream.js",
+  "version": "1.0.0",
+  "license": "GPL-3.0-only",
+  "scripts": {},
+  "workspaces": [
+    "packages/content"
+  ],
+  "devDependencies": {
+    "eslint": "^7.25.0",
+    "prettier": "^2.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "yarn": "^1.22.15"
+  },
+  "volta": {
+    "node": "14.18.0",
+    "yarn": "1.22.15"
+  }
+}
