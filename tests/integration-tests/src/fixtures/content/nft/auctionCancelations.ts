@@ -1,44 +1,32 @@
-import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { JoystreamCLI } from '../../../cli/joystream'
-import { Debugger, extendDebug } from '../../../Debugger'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
-import { BuyMembershipHappyCaseFixture } from '../../membershipModule'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
-import { PaidTermId } from '@joystream/types/members'
 import { Utils } from '../../../utils'
 import { assertNftOwner } from './utils'
 import BN from 'bn.js'
 
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
-
-export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
+export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private videoId: number
   private author: IMember
-  private paidTerms: PaidTermId
-  private participants: IMember[]
+  private participant: IMember
 
   constructor(
     api: Api,
     query: QueryNodeApi,
     cli: JoystreamCLI,
-    paidTerms: PaidTermId,
     videoId: number,
     author: IMember,
-    participants: IMember[]
+    participant: IMember
   ) {
     super(api, query)
     this.cli = cli
     this.videoId = videoId
     this.author = author
-    this.paidTerms = paidTerms
-    this.participants = participants
-    this.debug = extendDebug('fixture:NftEnglishAuctionFixture')
+    this.participant = participant
   }
 
   /*
@@ -51,7 +39,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     this.debug('Start NFT auction')
     const startingPrice = new BN(10) // TODO - read min/max bounds from runtime (?)
     const minimalBidStep = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const auctionParams = this.api.createAuctionParameters('English', startingPrice, minimalBidStep)
+    const auctionParams = this.api.createAuctionParameters('Open', startingPrice, minimalBidStep)
     await this.api.startNftAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
@@ -59,30 +47,30 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       auctionParams
     )
 
-    const winner = this.participants[this.participants.length - 1]
-
-    this.debug('Place bids')
+    this.debug('Place bid')
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
       this.api,
       this.query,
-      this.participants,
+      [this.participant],
       startingPrice,
       minimalBidStep,
       this.videoId
     )
     await new FixtureRunner(placeBidsFixture).run()
 
-    this.debug('Wait for auction to end')
-    const auctionDuration = 5 // TODO: read from runtime
-    const extensionPeriod = 5 // TODO: read from runtime
+    this.debug('Wait for bid to be cancelable')
+    const bidLockDuration = 2 // TODO - read min/max bounds from runtime and set min value here (?)
 
-    const waitBlocks = Math.min(auctionDuration, extensionPeriod + this.participants.length) + 1
+    const waitBlocks = bidLockDuration + 1
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
 
-    this.debug('Complete auction')
-    await this.api.claimWonEnglishAuction(winner.account, winner.memberId.toNumber(), this.videoId)
+    this.debug('Cancel bid')
+    await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
-    this.debug('Check NFT ownership change')
-    await assertNftOwner(this.query, this.videoId, winner)
+    this.debug('Cancel auction')
+    await this.api.cancelNftAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
+
+    this.debug(`Check NFT ownership haven't change`)
+    await assertNftOwner(this.query, this.videoId, this.author)
   }
 }

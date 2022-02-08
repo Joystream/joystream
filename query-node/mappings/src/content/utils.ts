@@ -636,7 +636,7 @@ export async function updateChannelCategoryVideoActiveCounter(
   originalCategory: ChannelCategory | undefined,
   newCategory: ChannelCategory | undefined,
   videosCount: number
-) {
+): Promise<void> {
   // escape if no counter change needed
   if (!videosCount || originalCategory === newCategory) {
     return

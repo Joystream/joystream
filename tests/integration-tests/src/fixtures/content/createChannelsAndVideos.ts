@@ -1,25 +1,22 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
-import { Debugger, extendDebug } from '../../Debugger'
 import { JoystreamCLI, ICreatedVideoData } from '../../cli/joystream'
-import { PaidTermId, MemberId } from '@joystream/types/members'
+import { MemberId } from '@joystream/types/common'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 import * as path from 'path'
 import { getMemberDefaults, getVideoDefaults, getChannelDefaults } from './contentTemplates'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { BuyMembershipHappyCaseFixture } from '../membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../membership'
 import BN from 'bn.js'
 import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
 import { Worker, WorkerId } from '@joystream/types/working-group'
 import { createType } from '@joystream/types'
-import { singleBucketConfig } from '../../flows/storagev2/initStorage'
+import { singleBucketConfig } from '../../flows/storage/initStorage'
 import { IMember } from './createMembers'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
 export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
-  private paidTerms: PaidTermId
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private channelCount: number
   private videoCount: number
@@ -35,7 +32,6 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     api: Api,
     query: QueryNodeApi,
     cli: JoystreamCLI,
-    paidTerms: PaidTermId,
     channelCount: number,
     videoCount: number,
     channelCategoryId: number,
@@ -43,14 +39,12 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     author: IMember
   ) {
     super(api, query)
-    this.paidTerms = paidTerms
     this.cli = cli
     this.channelCount = channelCount
     this.videoCount = videoCount
     this.channelCategoryId = channelCategoryId
     this.videoCategoryId = videoCategoryId
     this.author = author
-    this.debug = extendDebug('fixture:CreateChannelsAndVideosFixture')
 
     this.createdItems = {
       channelIds: [],
@@ -89,7 +83,6 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     this.debug('Accepting content to storage bag')
     const allAssetIds = this.createdItems.videosData.map((item) => item.assetContentIds).flat()
     await this.api.acceptPendingDataObjects(
-      // storageGroupWorker.keyringPair.address,
       storageGroupWorkerAccount,
       storageGroupWorkerId,
       storageBucketId,

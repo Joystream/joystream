@@ -2,8 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
-import { ChannelInputParameters } from '@joystream/cli/src/Types'
-import { MemberId } from '@joystream/types/members'
+import { MemberId } from '@joystream/types/common'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 

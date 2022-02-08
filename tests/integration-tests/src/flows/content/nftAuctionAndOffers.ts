@@ -13,7 +13,6 @@ import {
   AuctionCancelationsFixture,
   IMember,
 } from '../../fixtures/content'
-import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
 
@@ -33,8 +32,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const auctionParticipantsCount = 3
   const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
-  const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
-
   // prepare content
 
   const createContentStructureFixture = new CreateContentStructureFixture(
@@ -49,13 +46,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos as well as auction participants
-  const createMembersFixture = new CreateMembersFixture(
-    api,
-    query,
-    paidTerms,
-    auctionParticipantsCount + 1,
-    sufficientTopupAmount
-  )
+  const createMembersFixture = new CreateMembersFixture(api, query, auctionParticipantsCount + 1, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
   const [author, ...auctionParticipants] = createMembersFixture.getCreatedItems()
 
@@ -63,7 +54,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
     api,
     query,
     joystreamCli,
-    paidTerms,
     channelCount,
     videoCount,
     channelCategoryIds[0],
@@ -85,7 +75,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
     api,
     query,
     joystreamCli,
-    paidTerms,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants
@@ -97,7 +86,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
     api,
     query,
     joystreamCli,
-    paidTerms,
     nextVideo().videoId,
     author,
     auctionParticipants

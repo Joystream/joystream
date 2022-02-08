@@ -26,6 +26,8 @@
     "cross-fetch": "^3.0.6",
     "dotenv": "^8.2.0",
     "fs": "^0.0.1-security",
+    "bmp-js": "^0.1.0",
+    "@types/bmp-js": "^0.1.0",
     "uuid": "^7.0.3"
   },
   "devDependencies": {

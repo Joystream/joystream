@@ -1,12 +1,10 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { JoystreamCLI } from '../../../cli/joystream'
-import { Debugger, extendDebug } from '../../../Debugger'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
-import { BuyMembershipHappyCaseFixture } from '../../membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../../membership'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
-import { PaidTermId } from '@joystream/types/members'
 import { assertNftOwner } from './utils'
 import BN from 'bn.js'
 
@@ -14,18 +12,15 @@ import BN from 'bn.js'
 const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private videoId: number
   private author: IMember
-  private paidTerms: PaidTermId
   private participants: IMember[]
 
   constructor(
     api: Api,
     query: QueryNodeApi,
     cli: JoystreamCLI,
-    paidTerms: PaidTermId,
     videoId: number,
     author: IMember,
     participants: IMember[]
@@ -34,9 +29,7 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     this.cli = cli
     this.videoId = videoId
     this.author = author
-    this.paidTerms = paidTerms
     this.participants = participants
-    this.debug = extendDebug('fixture:NftOpenAuctionFixture')
   }
 
   /*

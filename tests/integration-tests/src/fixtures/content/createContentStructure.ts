@@ -1,16 +1,14 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { JoystreamCLI } from '../../cli/joystream'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { PaidTermId, MemberId } from '@joystream/types/members'
-import { Debugger, extendDebug } from '../../Debugger'
+import { MemberId } from '@joystream/types/common'
 import { Api } from '../../Api'
-import { WorkingGroups } from '../../WorkingGroups'
+import { WorkingGroupModuleName } from '../../types'
 import { Worker, WorkerId } from '@joystream/types/working-group'
 import { getVideoCategoryDefaults, getChannelCategoryDefaults } from './contentTemplates'
 import BN from 'bn.js'
 
 export class CreateContentStructureFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private channelCategoryCount: number
   private videoCategoryCount: number
@@ -30,7 +28,6 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     this.cli = cli
     this.channelCategoryCount = channelCategoryCount
     this.videoCategoryCount = videoCategoryCount
-    this.debug = extendDebug('fixture:CreateContentStructureFixture')
 
     this.createdItems = {
       channelCategoryIds: [],
@@ -69,17 +66,17 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Retrieves information about accounts of group leads for content and storage working groups.
   */
   private async retrieveWorkingGroupLeaders(): Promise<{ contentLeader: Worker; storageLeader: Worker }> {
-    const retrieveGroupLeader = async (group: WorkingGroups) => {
-      const leader = await this.api.getGroupLead(group)
+    const retrieveGroupLeader = async (group: WorkingGroupModuleName) => {
+      const leader = await this.api.getLeader(group)
       if (!leader) {
         throw new Error(`Working group leader for "${group}" is missing!`)
       }
-      return leader
+      return leader[1]
     }
 
     return {
-      contentLeader: await retrieveGroupLeader(WorkingGroups.Content),
-      storageLeader: await retrieveGroupLeader(WorkingGroups.Storage),
+      contentLeader: await retrieveGroupLeader('contentWorkingGroup'),
+      storageLeader: await retrieveGroupLeader('storageWorkingGroup'),
     }
   }
 

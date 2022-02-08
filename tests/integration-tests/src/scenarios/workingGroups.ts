@@ -6,7 +6,7 @@ import workerActions from '../flows/working-groups/workerActions'
 import { scenario } from '../Scenario'
 import groupBudget from '../flows/working-groups/groupBudget'
 
-scenario(async ({ job }) => {
+scenario('Working groups', async ({ job }) => {
   const sudoHireLead = job('sudo lead opening', leadOpening)
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)

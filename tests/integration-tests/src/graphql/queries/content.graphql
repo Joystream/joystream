@@ -1,0 +1,51 @@
+fragment ChannelFields on Channel {
+  id
+  activeVideosCounter
+}
+
+fragment ChannelCategoryFields on ChannelCategory {
+  id
+  activeVideosCounter
+}
+
+fragment VideoCategoryFields on VideoCategory {
+  id
+  activeVideosCounter
+}
+
+fragment OwnedNftFields on OwnedNft {
+  id
+  video {
+    id
+  }
+  ownerMember {
+    id
+  }
+  metadata
+  # transactionalStatus TODO
+  creatorRoyalty
+}
+
+query getChannels {
+  channels {
+    ...ChannelFields
+  }
+}
+
+query getChannelCategories {
+  channelCategories {
+    ...ChannelCategoryFields
+  }
+}
+
+query getVideoCategories {
+  videoCategories {
+    ...VideoCategoryFields
+  }
+}
+
+query getOwnedNftByVideoId($videoId: ID!) {
+  ownedNfts(where: { video: { id_eq: $videoId } }) {
+    ...OwnedNftFields
+  }
+}

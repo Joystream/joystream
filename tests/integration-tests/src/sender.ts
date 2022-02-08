@@ -19,7 +19,7 @@ const nonceCacheByAccount = new Map<string, number>()
 
 export class Sender {
   private readonly api: ApiPromise
-  private static readonly asyncLock: AsyncLock = new AsyncLock()
+  static readonly asyncLock: AsyncLock = new AsyncLock()
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
   private logs: LogLevel = LogLevel.None

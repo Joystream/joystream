@@ -1,14 +1,11 @@
 import { assert } from 'chai'
 import { ApolloQueryResult } from '@apollo/client'
 import { Api } from '../../Api'
-import { WorkingGroups } from '../../WorkingGroups'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
-import { BuyMembershipHappyCaseFixture } from '../membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../membership'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Bytes } from '@polkadot/types'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { PaidTermId, MemberId } from '@joystream/types/members'
-import { Debugger, extendDebug } from '../../Debugger'
 import BN from 'bn.js'
 import { Worker, WorkerId } from '@joystream/types/working-group'
 
@@ -30,7 +27,6 @@ import * as path from 'path'
   `channelIds[0]`, `channelCategoryIds[0]`, and `videoCategoryIds[0]`.
 */
 export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private channelIds: number[]
   private videosData: ICreatedVideoData[]
@@ -52,7 +48,6 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     this.videosData = videosData
     this.channelCategoryIds = channelCategoryIds
     this.videoCategoryIds = videoCategoryIds
-    this.debug = extendDebug('fixture:ActiveVideoCountersFixture')
   }
 
   /*

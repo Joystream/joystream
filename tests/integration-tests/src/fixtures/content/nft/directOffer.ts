@@ -1,13 +1,11 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { JoystreamCLI } from '../../../cli/joystream'
-import { Debugger, extendDebug } from '../../../Debugger'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import { assertNftOwner } from './utils'
 
 export class NftDirectOfferFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private videoId: number
   private author: IMember
@@ -26,7 +24,6 @@ export class NftDirectOfferFixture extends BaseQueryNodeFixture {
     this.videoId = videoId
     this.author = author
     this.participant = participant
-    this.debug = extendDebug('fixture:NftDirectOfferFixture')
   }
 
   /*

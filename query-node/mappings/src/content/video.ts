@@ -12,7 +12,7 @@ import {
   videoRelationsForCountersBare,
   videoRelationsForCounters,
 } from './utils'
-import { Channel, ChannelCategory, Video, VideoCategory } from 'query-node/dist/model'
+import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'

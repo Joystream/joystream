@@ -25,7 +25,6 @@ import { getById, inconsistentState } from '../common'
 import {
   getVideoActiveStatus,
   updateVideoActiveCounters,
-  IVideoActiveStatus,
   videoRelationsForCounters,
   unsetAssetRelations,
 } from '../content/utils'
@@ -256,7 +255,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 
   // accept storage data objects
   await Promise.all(
-    dataObjects.map(async (dataObject, index) => {
+    dataObjects.map(async (dataObject) => {
       dataObject.isAccepted = true
       await store.save<StorageDataObject>(dataObject)
     })

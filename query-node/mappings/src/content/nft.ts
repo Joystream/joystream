@@ -1,7 +1,7 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { genericEventFields, inconsistentState, unexpectedData, logger } from '../common'
+import { genericEventFields, inconsistentState, logger } from '../common'
 import {
   // entities
   Auction,
@@ -295,7 +295,7 @@ async function createBid(
 
   await store.save<Auction>(auction)
 
-  return { member, video }
+  return { auction, member, video }
 }
 
 export async function contentNft_AuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -456,24 +456,8 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
 
   // specific event processing
 
-  // load member
-  const member = await getRequiredExistingEntity(
-    store,
-    Membership,
-    memberId.toString(),
-    'Non-existing member bid in auction'
-  )
-
-  // load video and auction
-  const { video, auction } = await getCurrentAuctionFromVideo(
-    store,
-    videoId.toString(),
-    'Non-existing video got bid',
-    'Non-existing auction got bid canceled'
-  )
-
   // create record for winning bid
-  await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
+  const { member, video } = await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
 
   // common event processing - second
 
@@ -797,7 +781,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
   // specific event processing
 
   // load NFT
-  const { video, nft } = await getNftFromVideo(
+  const { video } = await getNftFromVideo(
     store,
     videoId.toString(),
     'Non-existing video was bought',

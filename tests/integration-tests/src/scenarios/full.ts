@@ -28,7 +28,7 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job, env }) => {
+scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
