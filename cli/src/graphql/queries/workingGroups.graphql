@@ -1,14 +1,18 @@
+fragment WorkingGroupOpeningMetadataFields on WorkingGroupOpeningMetadata {
+  description
+  shortDescription
+  hiringLimit
+  expectedEnding
+  applicationDetails
+  applicationFormQuestions {
+    question
+    type
+  }
+}
+
 fragment WorkingGroupOpeningDetails on WorkingGroupOpening {
   metadata {
-    description
-    shortDescription
-    hiringLimit
-    expectedEnding
-    applicationDetails
-    applicationFormQuestions {
-      question
-      type
-    }
+    ...WorkingGroupOpeningMetadataFields
   }
 }
 
@@ -28,14 +32,7 @@ fragment UpcomingWorkingGroupOpeningDetails on UpcomingWorkingGroupOpening {
   stakeAmount
   rewardPerBlock
   metadata {
-    shortDescription
-    description
-    hiringLimit
-    expectedEnding
-    applicationDetails
-    applicationFormQuestions {
-      question
-    }
+    ...WorkingGroupOpeningMetadataFields
   }
 }
 
@@ -60,7 +57,7 @@ query upcomingWorkingGroupOpeningByEvent($blockNumber: Int!, $indexInBlock: Int!
 }
 
 query upcomingWorkingGroupOpeningsByGroup($workingGroupId: ID!) {
-  upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }) {
+  upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }, orderBy: createdAt_DESC) {
     ...UpcomingWorkingGroupOpeningDetails
   }
 }

@@ -2,7 +2,17 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { EventSection, EventMethod, EventType, EventDetails } from '../Types'
+import {
+  EventSection,
+  EventMethod,
+  EventType,
+  EventDetails,
+  ApiMethodArg,
+  ApiMethodNamedArgs,
+  ApiParamsOptions,
+  ApiParamOptions,
+  UnaugmentedApiPromise,
+} from '../Types'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
 import { Registry, Codec, TypeDef, TypeDefInfo, DetectCodec, ISubmittableResult } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
@@ -10,7 +20,6 @@ import { SubmittableResult, WsProvider, ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions, UnaugmentedApiPromise } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
 import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'

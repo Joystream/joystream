@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { Codec } from '@polkadot/types/types'
+import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -29,7 +29,6 @@ import {
   WorkingGroupApplicationDetailsFragment,
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
-import { IEvent } from '@polkadot/types/types'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.

@@ -52,16 +52,16 @@ export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
 
 export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
-export type WorkingGroupOpeningDetailsFragment = {
-  metadata: {
-    description?: Types.Maybe<string>
-    shortDescription?: Types.Maybe<string>
-    hiringLimit?: Types.Maybe<number>
-    expectedEnding?: Types.Maybe<any>
-    applicationDetails?: Types.Maybe<string>
-    applicationFormQuestions: Array<{ question?: Types.Maybe<string>; type: Types.ApplicationFormQuestionType }>
-  }
+export type WorkingGroupOpeningMetadataFieldsFragment = {
+  description?: Types.Maybe<string>
+  shortDescription?: Types.Maybe<string>
+  hiringLimit?: Types.Maybe<number>
+  expectedEnding?: Types.Maybe<any>
+  applicationDetails?: Types.Maybe<string>
+  applicationFormQuestions: Array<{ question?: Types.Maybe<string>; type: Types.ApplicationFormQuestionType }>
 }
+
+export type WorkingGroupOpeningDetailsFragment = { metadata: WorkingGroupOpeningMetadataFieldsFragment }
 
 export type WorkingGroupApplicationDetailsFragment = {
   answers: Array<{ answer: string; question: { question?: Types.Maybe<string> } }>
@@ -73,14 +73,7 @@ export type UpcomingWorkingGroupOpeningDetailsFragment = {
   expectedStart?: Types.Maybe<any>
   stakeAmount?: Types.Maybe<any>
   rewardPerBlock?: Types.Maybe<any>
-  metadata: {
-    shortDescription?: Types.Maybe<string>
-    description?: Types.Maybe<string>
-    hiringLimit?: Types.Maybe<number>
-    expectedEnding?: Types.Maybe<any>
-    applicationDetails?: Types.Maybe<string>
-    applicationFormQuestions: Array<{ question?: Types.Maybe<string> }>
-  }
+  metadata: WorkingGroupOpeningMetadataFieldsFragment
 }
 
 export type OpeningDetailsByIdQueryVariables = Types.Exact<{
@@ -178,20 +171,26 @@ export const DataObjectInfo = gql`
     }
   }
 `
+export const WorkingGroupOpeningMetadataFields = gql`
+  fragment WorkingGroupOpeningMetadataFields on WorkingGroupOpeningMetadata {
+    description
+    shortDescription
+    hiringLimit
+    expectedEnding
+    applicationDetails
+    applicationFormQuestions {
+      question
+      type
+    }
+  }
+`
 export const WorkingGroupOpeningDetails = gql`
   fragment WorkingGroupOpeningDetails on WorkingGroupOpening {
     metadata {
-      description
-      shortDescription
-      hiringLimit
-      expectedEnding
-      applicationDetails
-      applicationFormQuestions {
-        question
-        type
-      }
+      ...WorkingGroupOpeningMetadataFields
     }
   }
+  ${WorkingGroupOpeningMetadataFields}
 `
 export const WorkingGroupApplicationDetails = gql`
   fragment WorkingGroupApplicationDetails on WorkingGroupApplication {
@@ -211,16 +210,10 @@ export const UpcomingWorkingGroupOpeningDetails = gql`
     stakeAmount
     rewardPerBlock
     metadata {
-      shortDescription
-      description
-      hiringLimit
-      expectedEnding
-      applicationDetails
-      applicationFormQuestions {
-        question
-      }
+      ...WorkingGroupOpeningMetadataFields
     }
   }
+  ${WorkingGroupOpeningMetadataFields}
 `
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {
@@ -296,7 +289,7 @@ export const UpcomingWorkingGroupOpeningByEvent = gql`
 `
 export const UpcomingWorkingGroupOpeningsByGroup = gql`
   query upcomingWorkingGroupOpeningsByGroup($workingGroupId: ID!) {
-    upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }) {
+    upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }, orderBy: createdAt_DESC) {
       ...UpcomingWorkingGroupOpeningDetails
     }
   }

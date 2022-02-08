@@ -43,6 +43,9 @@ import {
   UpcomingWorkingGroupOpeningByIdQuery,
   UpcomingWorkingGroupOpeningByIdQueryVariables,
   UpcomingWorkingGroupOpeningById,
+  UpcomingWorkingGroupOpeningsByGroupQuery,
+  UpcomingWorkingGroupOpeningsByGroupQueryVariables,
+  UpcomingWorkingGroupOpeningsByGroup,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -193,5 +196,14 @@ export default class QueryNodeApi {
       { id },
       'upcomingWorkingGroupOpeningByUniqueInput'
     )
+  }
+
+  async upcomingWorkingGroupOpeningsByGroup(
+    group: WorkingGroups
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment[]> {
+    return this.multipleEntitiesQuery<
+      UpcomingWorkingGroupOpeningsByGroupQuery,
+      UpcomingWorkingGroupOpeningsByGroupQueryVariables
+    >(UpcomingWorkingGroupOpeningsByGroup, { workingGroupId: apiModuleByGroup[group] }, 'upcomingWorkingGroupOpenings')
   }
 }
