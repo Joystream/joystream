@@ -2753,24 +2753,10 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn can_create_dynamic_bag(
-        bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-    ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, &None).map(|_| ())
-    }
-
-    fn can_create_dynamic_bag_with_objects_constraints(
-        dynamic_bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
+        bag_deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
     ) -> DispatchResult {
-        let bag_change = Self::validate_create_dynamic_bag_params(
-            dynamic_bag_id,
-            deletion_prize,
-            &Some(params.clone()),
-        )?;
-
-        Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change).map(|_| ())
+        Self::validate_create_dynamic_bag_params(params, deletion_prize).map(|_| ())
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
@@ -2883,51 +2869,27 @@ impl<T: Trait> Module<T> {
 
     // Validates dynamic bag creation params and conditions.
     fn validate_create_dynamic_bag_params(
-        dynamic_bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-        upload_params: &Option<UploadParameters<T>>,
+        upload_params: &UploadParameters<T>,
+        bag_deletion_prize: &BalanceOf<T>,
     ) -> Result<Option<BagUpdate<BalanceOf<T>>>, DispatchError> {
-        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
         ensure!(
-            !<Bags<T>>::contains_key(bag_id.clone()),
+            !<Bags<T>>::contains_key(params.bag_id.clone()),
             Error::<T>::DynamicBagExists
         );
 
-        let bag_change = upload_params
-            .as_ref()
-            .map(|params| {
-                // ensure coherent account ids & bag ids
-                if let Some(deletion_prize) = deletion_prize {
-                    ensure!(
-                        params.deletion_prize_source_account_id == deletion_prize.account_id,
-                        Error::<T>::AccountsNotCoherent,
-                    );
-                }
-                ensure!(bag_id == params.bag_id, Error::<T>::BagsNotCoherent);
-
-                Self::validate_bag_change(params)
-            })
-            .transpose()?;
+        let bag_change = Self::validate_bag_change(params)?;
 
         // check that fees are sufficient
-        let total_upload_fee = deletion_prize
-            .as_ref()
-            .map_or(Zero::zero(), |del_prize| del_prize.prize)
-            .saturating_add(bag_change.as_ref().map_or(Zero::zero(), |bag_change| {
-                Self::compute_upload_fees(bag_change)
-            }));
+        let total_upload_fee = deletion_prize.saturating_add(
+            bag_change
+                .as_ref()
+                .map_or(Zero::zero(), Self::compute_upload_fees),
+        );
 
-        // either bag_prize account or objects_prize account used (provided they are the same)
-        let designated_account = deletion_prize
-            .as_ref()
-            .map(|dp| dp.account_id.clone())
-            .or_else(|| {
-                upload_params
-                    .as_ref()
-                    .map(|p| p.deletion_prize_source_account_id.clone())
-            });
-
-        Self::ensure_sufficient_balance_for_upload(designated_account, total_upload_fee)?;
+        Self::ensure_sufficient_balance_for_upload(
+            params.deletion_prize_source_account_id,
+            total_upload_fee,
+        )?;
 
         Ok(bag_change)
     }
@@ -3377,16 +3339,38 @@ impl<T: Trait> Module<T> {
     fn validate_bag_change(
         params: &UploadParameters<T>,
     ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        Self::check_global_uploading_block()?;
+        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
-        Self::ensure_objects_creation_list_validity(&params.object_creation_list)?;
+        ensure!(
+            !object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
 
-        let bag_change = Self::construct_bag_change(&params.object_creation_list)?;
+        // verify  MaxSize >= object size >0 and ipfs id not blacklisted
+        let _ = object_creation_list.iter().map(|obj| {
+            ensure!(
+                obj.size <= T::MaxDataObjectSize::get(),
+                Error::<T>::MaxDataObjectSizeExceeded,
+            );
+            ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
+            ensure!(
+                !Blacklist::contains_key(obj.ipfs_content_id),
+                Error::<T>::DataObjectBlacklisted,
+            );
+        })?;
 
         ensure!(
             params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
             Error::<T>::DataSizeFeeChanged
         );
+
+        let bag_change = object_creation_list
+            .iter()
+            .fold(BagUpdate::default(), |acc, obj| {
+                acc.clone()
+                    .add_object(obj.size, T::DataObjectDeletionPrize::get())
+            });
+
         Ok(bag_change)
     }
 
