@@ -7,6 +7,7 @@ import { OpeningDetails } from '../../Types'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
   static description = 'Shows detailed information about working group opening / upcoming opening by id'
@@ -44,7 +45,9 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     displayHeader('Upcoming opening details')
     displayCollapsedRow({
       'Upcoming Opening ID': upcomingOpening.id,
-      'Expected start': upcomingOpening.expectedStart ? moment(upcomingOpening.expectedStart).format('YYYY-mm-dd HH:ii:ss') : '?',
+      'Expected start': upcomingOpening.expectedStart
+        ? moment(upcomingOpening.expectedStart).format(DEFAULT_DATE_FORMAT)
+        : '?',
       'Reward per block': upcomingOpening.rewardPerBlock ? formatBalance(upcomingOpening.rewardPerBlock) : '?',
     })
   }
@@ -70,7 +73,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
             type,
           })),
           expectedEnding: metadata.expectedEnding
-            ? moment(metadata.expectedEnding).format('YYYY-MM-DD HH:mm:ss')
+            ? moment(metadata.expectedEnding).format(DEFAULT_DATE_FORMAT)
             : undefined,
         })
       )

@@ -3,6 +3,7 @@ import { flags } from '@oclif/command'
 import { displayTable } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
 import moment from 'moment'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class WorkingGroupsOpenings extends WorkingGroupsCommandBase {
   static description = 'Lists active/upcoming openings in a given working group'
@@ -21,7 +22,7 @@ export default class WorkingGroupsOpenings extends WorkingGroupsCommandBase {
       const upcomingOpenings = await this.getQNApi().upcomingWorkingGroupOpeningsByGroup(this.group)
       rows = upcomingOpenings.map((o) => ({
         'Upcoming opening ID': o.id,
-        'Starts at': o.expectedStart ? moment(o.expectedStart).format('YYYY-mm-dd HH:mm:ss') : '?',
+        'Starts at': o.expectedStart ? moment(o.expectedStart).format(DEFAULT_DATE_FORMAT) : '?',
         'Reward/block': o.rewardPerBlock ? formatBalance(o.rewardPerBlock) : '?',
         'Stake': o.stakeAmount ? formatBalance(o.stakeAmount) : '?',
       }))

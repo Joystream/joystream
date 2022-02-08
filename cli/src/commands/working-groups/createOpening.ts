@@ -9,7 +9,6 @@ import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
 import { AugmentedSubmittables } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import BN from 'bn.js'
 import { CLIError } from '@oclif/errors'
 import {
   IOpeningMetadata,
@@ -22,9 +21,7 @@ import { OpeningId } from '@joystream/types/working-group'
 import Long from 'long'
 import moment from 'moment'
 import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
-
-const OPENING_STAKE = new BN(2000)
-const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening / upcoming opening (requires lead access)'
@@ -59,7 +56,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }),
     startsAt: flags.string({
       required: false,
-      description: `If upcoming opening - the expected opening start date (${DATE_FORMAT})`,
+      description: `If upcoming opening - the expected opening start date (${DEFAULT_DATE_FORMAT})`,
       dependsOn: ['upcoming'],
     }),
     ...WorkingGroupsCommandBase.flags,
@@ -108,10 +105,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   }
 
   async promptForStakeTopUp(stakingAccount: string, fundsSource?: string): Promise<void> {
-    this.log(`You need to stake ${chalk.bold(formatBalance(OPENING_STAKE))} in order to create a new opening.`)
+    const requiredStake = this.getOriginalApi().consts[apiModuleByGroup[this.group]].leaderOpeningStake
+    this.log(`You need to stake ${chalk.bold(formatBalance(requiredStake))} in order to create a new opening.`)
 
     const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount])
-    const missingBalance = OPENING_STAKE.sub(balances.availableBalance)
+    const missingBalance = requiredStake.sub(balances.availableBalance)
     if (missingBalance.gtn(0)) {
       await this.requireConfirmation(
         `Do you wish to transfer remaining ${chalk.bold(
@@ -183,7 +181,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   }
 
   validateUpcomingOpeningStartDate(dateStr: string): string | true {
-    const momentObj = moment(dateStr, DATE_FORMAT)
+    const momentObj = moment(dateStr, DEFAULT_DATE_FORMAT)
     if (!momentObj.isValid()) {
       return `Unrecognized date format: ${dateStr}`
     }
@@ -204,7 +202,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
     }
     dateStr = await this.simplePrompt<string>({
-      message: `Expected upcoming opening start date (${DATE_FORMAT}):`,
+      message: `Expected upcoming opening start date (${DEFAULT_DATE_FORMAT}):`,
       validate: (dateStr) => this.validateUpcomingOpeningStartDate(dateStr),
     })
     return moment(dateStr).unix()
