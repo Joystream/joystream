@@ -19,8 +19,8 @@ export const AvailableGroups: readonly WorkingGroups[] = [
 export const workerRoleNameByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.ContentCurators]: 'Content Curator',
   [WorkingGroups.StorageProviders]: 'Storage Provider',
-  [WorkingGroups.OperationsAlpha]: 'Operations Group Alpha Worker',
-  [WorkingGroups.OperationsBeta]: 'Operations Group Beta Worker',
-  [WorkingGroups.OperationsGamma]: 'Operations Group Gamma Worker',
-  [WorkingGroups.Distribution]: 'Distribution'
+  [WorkingGroups.OperationsAlpha]: 'Builder',
+  [WorkingGroups.OperationsBeta]: 'HR Worker',
+  [WorkingGroups.OperationsGamma]: 'Marketer',
+  [WorkingGroups.Distribution]: 'Distributor'
 };

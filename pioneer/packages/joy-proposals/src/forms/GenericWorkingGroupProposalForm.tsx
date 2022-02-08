@@ -14,6 +14,8 @@ import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
+import styled from 'styled-components';
+import _ from 'lodash';
 
 export type FormValues = GenericFormValues & {
   workingGroup: WorkingGroupKey;
@@ -43,18 +45,34 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
+const OPERATIONS_GROUP_NAMES = { Alpha: 'Builders', Beta: 'Human Resources', Gamma: 'Marketing' };
+
+const OperationsGroupSubtext = styled('p')`
+  font-size: 11px !important;
+  margin-top: -12px !important;
+  color: rgba(0, 0, 0, 0.6) !important;
+`;
+
 const availableGroupsOptions = Object.keys(WorkingGroupDef)
   .filter((wgKey) => wgKey !== 'Gateway') // Gateway group not yet supported!
   .map((wgKey) => {
-    let text = `${wgKey} Working Group`;
+    let operationsGroupName;
+    let operationsGroupSubtext;
 
     if (wgKey.toLowerCase().includes('operations')) {
-      const workingGroupType = wgKey.slice('operations'.length);
+      const operationsGroupType = wgKey.slice('operations'.length) as 'Alpha' | 'Beta' | 'Gamma';
 
-      text = `Operations Working Group ${workingGroupType}`;
+      operationsGroupName = OPERATIONS_GROUP_NAMES[operationsGroupType];
+      operationsGroupSubtext = `Operations Working Group ${operationsGroupType}`;
     }
 
-    return { text, value: wgKey };
+    return { text: (
+      <>
+        <p>{operationsGroupName ?? `${wgKey} Working Group`}</p>
+        {operationsGroupName ? <OperationsGroupSubtext>{operationsGroupSubtext}</OperationsGroupSubtext> : null}
+      </>
+    ),
+    value: wgKey };
   });
 
 export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = (props) => {

@@ -76,6 +76,11 @@ const StyledTableRow = styled(Table.Row)`
   }
 `;
 
+const ExtraInfoText = styled('p')`
+  color: rgba(0,0,0,0.7) !important;
+  font-size: 11px !important;
+`;
+
 const SpendingAndStakeTableRow: React.FC<{
   role: string;
   numberOfActors?: string;
@@ -88,7 +93,8 @@ const SpendingAndStakeTableRow: React.FC<{
   color?: string;
   active?: boolean;
   helpContent?: string;
-}> = ({ role, numberOfActors, groupEarning, groupEarningDollar, earningShare, groupStake, groupStakeDollar, stakeShare, color, active, helpContent }) => {
+  extraInfo?: { full: string, short: string };
+}> = ({ role, numberOfActors, groupEarning, groupEarningDollar, earningShare, groupStake, groupStakeDollar, stakeShare, color, active, helpContent, extraInfo }) => {
   const parseData = (data: string | undefined): string | JSX.Element => {
     if (data && active) {
       return <em>{data}</em>;
@@ -102,12 +108,15 @@ const SpendingAndStakeTableRow: React.FC<{
   return (
     <StyledTableRow color={active && 'rgb(150, 150, 150)'}>
       <Table.Cell>
-        {active ? <strong>{role}</strong> : role}
-        {helpContent && <Popup
-          trigger={<Icon className='help-icon' name='help circle' color='grey'/>}
-          content={helpContent}
-          position='right center'
-        />}
+        <div>
+          {active ? <strong>{role}</strong> : role}
+          {helpContent && <Popup
+            trigger={<Icon className='help-icon' name='help circle' color='grey'/>}
+            content={helpContent}
+            position='right center'
+          />}
+          {extraInfo && <ExtraInfoText>{extraInfo.full}</ExtraInfoText>}
+        </div>
       </Table.Cell>
       <Table.Cell>{parseData(numberOfActors)}</Table.Cell>
       <Table.Cell>{parseData(groupEarning)}</Table.Cell>
@@ -182,7 +191,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
             />
           );
         })}
-        {WORKING_GROUPS.map(({ groupType, titleCutoff, shortTitle, title, helpText, color, lead }) => {
+        {WORKING_GROUPS.map(({ groupType, titleCutoff, shortTitle, title, helpText, color, lead, extraInfo }) => {
           return (
             <React.Fragment key={groupType}>
               <SpendingAndStakeTableRow
@@ -196,6 +205,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
                 groupStakeDollar={displayStatusData(groupType, 'totalStake')}
                 stakeShare={data && `${round(data[groupType].stakeShare * 100)}`}
                 color={color}
+                extraInfo={extraInfo}
               />
               <SpendingAndStakeTableRow
                 role={width <= lead.titleCutoff ? lead.shortTitle : lead.title}
@@ -208,6 +218,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
                 groupStakeDollar={displayStatusData(groupType, 'totalStake', true)}
                 stakeShare={data && `${round(data[groupType].lead.stakeShare * 100)}`}
                 color={lead.color}
+                extraInfo={extraInfo}
               />
             </React.Fragment>
           );

@@ -34,13 +34,13 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
         <ChartContainer>
           <StyledPieChart
             values={[
-              ...WORKING_GROUPS.map(({ color, title, groupType, lead }) => [{
+              ...WORKING_GROUPS.map(({ color, title, groupType, lead, extraInfo }) => [{
                 colors: [color],
-                label: title,
+                label: `${title}${extraInfo ? ` (${extraInfo.short})` : ''}`,
                 value: data[groupType].rewardsShare * 100
               }, {
                 colors: [lead.color],
-                label: lead.title,
+                label: `${lead.title}${extraInfo ? ` (${extraInfo.short})` : ''}`,
                 value: data[groupType].lead.rewardsShare * 100
               }]).flat(),
               ...NON_WORKING_GROUPS.map(({ color, shortTitle, groupType }) => ({
@@ -62,13 +62,13 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
         <ChartContainer>
           <StyledPieChart
             values={[
-              ...WORKING_GROUPS.map(({ color, title, groupType, lead }) => [{
+              ...WORKING_GROUPS.map(({ color, title, groupType, lead, extraInfo }) => [{
                 colors: [color],
-                label: title,
+                label: `${title}${extraInfo ? ` (${extraInfo.short})` : ''}`,
                 value: data[groupType].stakeShare * 100
               }, {
                 colors: [lead.color],
-                label: lead.title,
+                label: `${lead.title}${extraInfo ? ` (${extraInfo.short})` : ''}`,
                 value: data[groupType].lead.stakeShare * 100
               }]).flat(),
               ...NON_WORKING_GROUPS.map(({ color, shortTitle, groupType }) => ({
