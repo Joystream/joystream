@@ -77,7 +77,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -850,8 +850,6 @@ benchmarks! {
             proposal_details
         );
     }
-
-
 }
 
 #[cfg(test)]
@@ -1038,6 +1036,7 @@ mod tests {
             assert_ok!(test_benchmark_create_proposal_veto_bounty::<Test>());
         });
     }
+
     #[test]
     fn test_create_proposal_withdraw_bounty_funding() {
         initial_test_ext().execute_with(|| {
