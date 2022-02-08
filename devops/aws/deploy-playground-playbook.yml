@@ -51,12 +51,17 @@
       # Check for the status every 100s
       delay: 100
 
+    - name: Format proposal parameters input
+      set_fact:
+        proposal_parameters_json: '{{ proposal_parameters | from_json | to_json }}'
+      run_once: yes
+
     - name: Build Node image
       command: yarn build:node:docker
       args:
         chdir: '{{ remote_code_path }}'
       environment:
-        ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters | from_json | to_json }}'
+        ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters_json }}'
       async: 3600
       poll: 0
       register: node_build_result
