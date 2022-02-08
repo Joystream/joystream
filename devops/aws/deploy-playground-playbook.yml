@@ -55,6 +55,8 @@
       command: yarn build:node:docker
       args:
         chdir: '{{ remote_code_path }}'
+      environment:
+        ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters }}'
       async: 3600
       poll: 0
       register: node_build_result
@@ -119,6 +121,7 @@
           indexer: https://{{ nip_domain }}/query-node/indexer/graphql
           member_faucet: https://{{ nip_domain }}/member-faucet/register
           orion: https://{{ nip_domain }}/orion/graphql
+          config: https://{{ nip_domain }}/network/config.json
       run_once: yes
 
     - name: Print endpoints

@@ -27,6 +27,9 @@ on:
         description: 'Optionally skip running newChainSetup script (true or false)'
         required: true
         default: 'false'
+      proposalParameters:
+        description: 'Proposal Parameters (refer to runtime/src/proposals_configuration/sample_proposal_parameters.json for sample)'
+        required: false
       # TODO: customDomain instead of ip_address.nip.io
       # customDomain:
       #   description: 'DNS hostname to use for deployment'
@@ -88,7 +91,8 @@ jobs:
           options: |
             --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
                           branch_name=${{ github.event.inputs.branchName }} \
-                          skip_chain_setup=${{ github.event.inputs.skipChainSetup }}"
+                          skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
+                          proposal_parameters=${{ github.event.inputs.proposalParameters }}"
 
       - name: Save the endpoints file as an artifact
         uses: actions/upload-artifact@v2
@@ -97,8 +101,8 @@ jobs:
           path: devops/aws/endpoints.json
 
       - name: Delete CloudFormation Stack if any step failed
-        # Skip if stack already existed
-        if: failure() && steps.stack_exists.outcome != 'failure'
+        # Skip only if stack already existed or all steps passed successfully
+        if: ( failure() || cancelled() ) && steps.stack_exists.outcome != 'failure'
         run: |
           echo "Deleting ${{ env.STACK_NAME }} stack"
           aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
