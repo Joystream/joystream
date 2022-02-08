@@ -103,7 +103,7 @@ export class CreateUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
         Utils.assert(qUpcomingOpening)
         assert.equal(
           qUpcomingOpening.expectedStart
-            ? new Date(qUpcomingOpening.expectedStart).getTime()
+            ? moment(qUpcomingOpening.expectedStart).unix()
             : qUpcomingOpening.expectedStart,
           expectedMeta.expectedStart || null
         )

@@ -577,10 +577,6 @@ impl common::StorageOwnership for Runtime {
     type DataObjectTypeId = DataObjectTypeId;
 }
 
-impl memo::Trait for Runtime {
-    type Event = Event;
-}
-
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
@@ -1144,7 +1140,6 @@ construct_runtime!(
         // Joystream
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
-        Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},

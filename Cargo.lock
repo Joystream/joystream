@@ -2365,7 +2365,6 @@ dependencies = [
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
- "pallet-memo",
  "pallet-offences",
  "pallet-offences-benchmarking",
  "pallet-proposals-codex",
@@ -3955,18 +3954,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-memo"
-version = "5.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "sp-arithmetic",
  "sp-std",
 ]
 
