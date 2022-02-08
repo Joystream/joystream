@@ -109,4 +109,6 @@ jobs:
         run: yarn workspace integration-tests build
       # Bring up hydra query-node development instance, then run integration tests
       - name: Execute Tests
-        run: query-node/run-tests.sh
+        run: |
+          export JOYSTREAM_NODE_TAG=latest
+          query-node/run-tests.sh

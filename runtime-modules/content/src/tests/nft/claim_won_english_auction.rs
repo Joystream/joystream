@@ -24,9 +24,7 @@ fn claim_won_english_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -82,8 +80,8 @@ fn claim_won_english_auction() {
         // Ensure english auction successfully completed
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
+            Some(OwnedNft {
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
         ));
@@ -116,9 +114,7 @@ fn claim_won_english_auction_cannot_be_completed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -186,9 +182,7 @@ fn claim_won_english_auction_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {
@@ -287,7 +281,7 @@ fn claim_won_english_auction_nft_is_not_issued() {
         // Failure checked
         assert_err!(
             claim_won_english_auction_result,
-            Error::<Test>::NFTDoesNotExist
+            Error::<Test>::NftDoesNotExist
         );
     })
 }
@@ -309,9 +303,7 @@ fn claim_won_english_auction_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to claim won english auction for nft which is not in auction state
@@ -346,9 +338,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let bid_lock_duration = Content::min_bid_lock_duration();
@@ -415,9 +405,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         let auction_params = AuctionParams {

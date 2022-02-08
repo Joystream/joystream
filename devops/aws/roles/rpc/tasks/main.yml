@@ -22,10 +22,50 @@
     enabled: yes
   become: yes
 
+- name: Build required packages
+  shell: yarn build:packages
+  args:
+    chdir: '{{ remote_code_path }}'
+  # Run in async fashion for max duration of 1 hr
+  async: 3600
+  poll: 0
+  register: build_result
+
+- name: Check on build async task
+  async_status:
+    jid: '{{ build_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 36
+  # Check for the status every 100s
+  delay: 100
+
+- name: Run query node containers
+  command: yarn workspace query-node-root start:dev
+  environment:
+    JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
+  args:
+    chdir: '{{ remote_code_path }}'
+  async: 1800
+  poll: 0
+  register: compose_result
+
+- name: Check on yarn start task
+  async_status:
+    jid: '{{ compose_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 18
+  # Check for the status every 100s
+  delay: 100
+
 - name: Set websocket and http endpoint variables
   set_fact:
     ws_rpc: "{{ inventory_hostname }}.nip.io/ws-rpc"
     http_rpc: "{{ inventory_hostname }}.nip.io/http-rpc"
+    nip_domain: "{{ inventory_hostname }}.nip.io"
   run_once: yes
 
 - name: Install and configure Caddy

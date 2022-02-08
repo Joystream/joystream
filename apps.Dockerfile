@@ -3,8 +3,6 @@ FROM --platform=linux/x86-64 node:14 as builder
 WORKDIR /joystream
 COPY . /joystream
 
-RUN rm -fr /joystream/pioneer
-
 # Do not set NODE_ENV=production until after running yarn install
 # to ensure dev dependencies are installed.
 RUN yarn --frozen-lockfile

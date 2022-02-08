@@ -444,7 +444,6 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
     pub const MaxModerators: u64 = 5;    // TODO: update
     pub const CleanupMargin: u32 = 3;    // TODO: update
     pub const CleanupCost: u32 = 1; // TODO: update
@@ -457,14 +456,9 @@ parameter_types! {
 
 impl content::Trait for Runtime {
     type Event = Event;
-    type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type VideoCategoryId = VideoCategoryId;
-    type PlaylistId = PlaylistId;
-    type PersonId = PersonId;
-    type SeriesId = SeriesId;
-    type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
     type VideoPostId = VideoPostId;

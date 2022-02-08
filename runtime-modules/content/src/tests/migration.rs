@@ -8,6 +8,7 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
         assets: None,
         meta: None,
         enable_comments: true,
+        auto_issue_nft: None,
     };
 
     // attempt to create valid channel if result is ok, otherwise id does not matter
