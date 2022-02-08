@@ -84,7 +84,6 @@ async function sendExtrinsic(
   return new Promise((resolve, reject) => {
     let unsubscribe: () => void
     tx.signAndSend(account, { nonce }, (result) => {
-      // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
       if (!result || !result.status) {
         return
       }

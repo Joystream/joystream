@@ -481,7 +481,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(account, {}, (result) => {
-        // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
         if (!result || !result.status) {
           return
         }

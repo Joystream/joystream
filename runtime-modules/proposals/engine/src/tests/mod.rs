@@ -2179,12 +2179,12 @@ fn proposal_early_rejection_succeeds() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
-        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
 
         assert_eq!(
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
-            VoteKind::Abstain
+            VoteKind::Reject
         );
 
         run_to_block_and_finalize(1);
@@ -2530,6 +2530,7 @@ fn proposal_status_resolution_approval_quorum_works_correctly() {
         total_voters_count: 500,
         approvals: 3,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
@@ -2559,6 +2560,7 @@ fn proposal_status_resolution_slashing_quorum_works_correctly() {
         total_voters_count: 500,
         approvals: 3,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
@@ -2588,6 +2590,7 @@ fn proposal_status_resolution_approval_threshold_works_correctly() {
         total_voters_count: 600,
         approvals: 314,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
@@ -2617,6 +2620,7 @@ fn proposal_status_resolution_slashing_threshold_works_correctly() {
         total_voters_count: 600,
         approvals: 3,
         slashes: 314,
+        abstentions: 0,
     };
 
     assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
@@ -2665,6 +2669,7 @@ fn proposal_status_resolution_approval_achievable_works_correctly() {
         total_voters_count: 600,
         approvals: 1,
         slashes: 0,
+        abstentions: 0,
     };
 
     assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
@@ -2696,6 +2701,7 @@ fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
         total_voters_count: 600,
         approvals: 0,
         slashes: 1,
+        abstentions: 0,
     };
 
     assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
@@ -2708,4 +2714,124 @@ fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
 
     assert!(slashing_threshold_achievable_resolution.is_slashing_threshold_achievable());
     assert!(!slashing_threshold_achievable_resolution.is_rejection_imminent());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_threshold_works_correctly_with_abstentions() {
+    let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 3,
+        slashes: 314,
+        abstentions: 1,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
+
+    let slashing_threshold_proposal_status_resolution = ProposalStatusResolution {
+        abstentions: 2,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
+}
+
+#[test]
+fn proposal_status_resolution_approval_threshold_works_correctly_with_abstentions() {
+    let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 314,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
+
+    let approval_threshold_proposal_status_resolution = ProposalStatusResolution {
+        abstentions: 2,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_threshold_proposal_status_resolution.is_approval_threshold_reached());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_quorum_works_correctly_with_abstentions() {
+    let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_quorum_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_quorum_proposal,
+        now: 20,
+        votes_count: 315,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
+
+    let slashing_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 316,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_quorum_proposal_status_resolution.is_slashing_quorum_reached());
+}
+
+#[test]
+fn proposal_status_resolution_approval_quorum_works_correctly_with_abstentions() {
+    let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_quorum_proposal,
+        now: 20,
+        votes_count: 315,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
+
+    let approval_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 316,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_quorum_proposal_status_resolution.is_approval_quorum_reached());
 }
