@@ -152,9 +152,9 @@ impl<
             return Ok(());
         }
 
-        let usable_balance = <pallet_balances::Module<T>>::usable_balance(account_id);
+        let free_balance = <pallet_balances::Module<T>>::free_balance(account_id);
 
-        if new_stake > current_stake + usable_balance {
+        if new_stake > free_balance {
             return Err(DispatchError::Other("Not enough balance for a new stake."));
         }
 
@@ -175,7 +175,7 @@ impl<
         account_id: &<T as frame_system::Trait>::AccountId,
         amount: <T as pallet_balances::Trait>::Balance,
     ) -> bool {
-        <pallet_balances::Module<T>>::usable_balance(account_id) >= amount
+        <pallet_balances::Module<T>>::free_balance(account_id) >= amount
     }
 
     fn lock_id() -> LockIdentifier {
