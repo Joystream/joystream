@@ -22,6 +22,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       description: `Path to JSON file to use as input`,
     }),
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    ...UploadCommandBase.flags,
   }
 
   static args = [

@@ -114,7 +114,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async promptForApiUri(): Promise<string> {
-    let selectedNodeUri = await this.simplePrompt({
+    let selectedNodeUri = await this.simplePrompt<string>({
       type: 'list',
       message: 'Choose a node websocket api uri:',
       choices: [
@@ -502,6 +502,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async sendAndFollowTx(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+    this.log(
+      chalk.magentaBright(
+        `\nSending ${tx.method.section}.${tx.method.method} extrinsic from ${
+          account.meta.name ? account.meta.name : account.address
+        }...`
+      )
+    )
+    this.log('Tx params:', this.humanize(tx.args))
+
     // Calculate fee and ask for confirmation
     const fee = await this.getApi().estimateFee(account, tx)
 
@@ -548,12 +557,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: Method,
     params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : []
   ): Promise<SubmittableResult> {
-    this.log(
-      chalk.magentaBright(
-        `\nSending ${module}.${method} extrinsic from ${account.meta.name ? account.meta.name : account.address}...`
-      )
-    )
-    this.log('Tx params:', this.humanize(params))
+    // TODO: Replace all usages with "sendAndFollowTx"
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return this.sendAndFollowTx(account, tx)
   }
@@ -564,6 +568,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
   >(result: SubmittableResult, section: S, method: M): EventType | undefined {
     return result.findRecord(section, method)?.event as EventType | undefined
+  }
+
+  public getEvent<
+    S extends keyof AugmentedEvents<'promise'> & string,
+    M extends keyof AugmentedEvents<'promise'>[S] & string,
+    EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+  >(result: SubmittableResult, section: S, method: M): EventType {
+    const event = this.findEvent<S, M, EventType>(result, section, method)
+    if (!event) {
+      throw new Error(`Event ${section}.${method} not found in tx result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return event
   }
 
   async buildAndSendExtrinsic<
