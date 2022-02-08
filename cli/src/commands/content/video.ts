@@ -22,7 +22,6 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.in_channel.toString(),
-        'InSeries': aVideo.in_series.unwrapOr('NONE').toString(),
         'IsCensored': aVideo.is_censored.toString(),
         'CommentsEnabled': aVideo.enable_comments.toString(),
         'PostId': aVideo.video_post_id.toString(),

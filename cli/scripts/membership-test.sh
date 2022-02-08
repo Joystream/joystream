@@ -5,6 +5,9 @@ SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 export AUTO_CONFIRM=true
+export OCLIF_TS_NODE=0
+
+yarn workspace @joystream/cli build
 
 CLI=../bin/run
 
@@ -12,6 +15,7 @@ CLI=../bin/run
 ${CLI} account:forget --name test_alice_member_controller_1 || true
 ${CLI} account:forget --name test_alice_member_root_1 || true
 ${CLI} account:forget --name test_alice_member_controller_2 || true
+${CLI} account:forget --name test_alice_member_staking || true
 
 # Create membership (controller: //Alice//controller, root: //Alice//root, sender: //Alice)
 MEMBER_HANDLE="alice-$(date +%s)"
@@ -74,10 +78,16 @@ ${CLI} account:transferTokens\
   --from 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\
   --to 5E5JemkFX48JMRFraGZrjPwKL1HnhLkPrMQxaBvoSXPmzKab
 
-# Add staking account
+# Import //Alice//staking key
+${CLI} account:import\
+  --suri //Alice//staking\
+  --name test_alice_member_staking\
+  --password=""
+
+# Add staking account (//Alice//staking)
 ${CLI} membership:addStakingAccount\
   --useMemberId="$MEMBER_ID"\
-  --address="5EHDeBnBEyNB2aCFEhcxiEdcQLLnyP96t8ghoxBXUmK2itQp"\
+  --address="5EheygkSi4q4QCN12d2Vy65EnoEtdJy6yw6o7XZpPRcaVJCS"\
   --fundsSource="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"\
   --withBalance="10000"
 
@@ -85,3 +95,4 @@ ${CLI} membership:addStakingAccount\
 ${CLI} account:forget --name test_alice_member_controller_1
 ${CLI} account:forget --name test_alice_member_root_1
 ${CLI} account:forget --name test_alice_member_controller_2
+${CLI} account:forget --name test_alice_member_staking

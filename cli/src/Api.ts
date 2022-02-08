@@ -80,7 +80,6 @@ export default class Api {
     const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
     await api.isReadyOrError
 
-    // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
     const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
@@ -131,8 +130,6 @@ export default class Api {
   }
 
   // Working groups
-  // TODO: This is a lot of repeated logic from "/pioneer/joy-utils/transport"
-  // It will be refactored to "joystream-js" soon
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
     apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
   ): Promise<[IDType, ValueType][]> {

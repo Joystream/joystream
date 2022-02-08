@@ -9,34 +9,12 @@ Command Line Interface for Joystream community and governance activities
 [![License](https://img.shields.io/npm/l/@joystream/cli.svg)](https://github.com/Joystream/joystream/blob/master/cli/package.json)
 
 <!-- toc -->
-* [Development](#development)
 * [Usage](#usage)
+* [Development](#development)
 * [First steps](#first-steps)
+* [Useful environment settings](#useful-environment-settings)
 * [Commands](#commands)
-* [Environment variables](#environment-variables)
 <!-- tocstop -->
-
-# Development
-<!-- development -->
-To run a command in developemnt environment (without installing the package):
-
-1. Navigate into the CLI root directory
-1. Execute any command like this:
-
-    ```
-        $ ./bin/run COMMAND
-    ```
-
-Alternatively:
-
-1. Navigate into the CLI root directory
-1. Execute `yarn link` (if that doesn't work, consider `sudo yarn link`)
-1. Execute command from any location like this:
-
-    ```
-        $ joystream-cli COMMAND
-    ```
-<!-- developmentstop -->
 
 # Usage
 <!-- usage -->
@@ -45,7 +23,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.6.0 linux-x64 node-v14.18.0
+@joystream/cli/0.7.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -53,16 +31,42 @@ USAGE
 ```
 <!-- usagestop -->
 
+# Development
+<!-- development -->
+To run a command in developemnt environment (from the root of [Joystream monorepo](https://github.com/Joystream/joystream), without installing the package):
+
+```shell
+  $ yarn && yarn workspace @joystream/types build && yarn workspace @joystream/metadata-protobuf build
+  $ ./cli/bin/run COMMAND # OR:
+  $ yarn joystream-cli COMMAND
+```
+
+Alternatively:
+
+```shell
+  $ yarn workspace @joystream/cli link
+  $ joystream-cli COMMAND
+```
+<!-- developmentstop -->
+
+
 # First steps
 <!-- first-steps -->
 When using the CLI for the first time there are a few common steps you might want to take in order to configure the CLI:
 
-1. Set the correct node endpoint. You can do this by executing `api:setUri` or any command that requires an api connection. To verify the current endpoint you can execute `api:getUri`.
-1. In order to use the accounts/keys that you may already have access to within Pioneer, you need to dowload the backup json file(s) ([https://testnet.joystream.org/#/accounts](https://testnet.joystream.org/#/accounts)) and import them into the CLI by executing `account:import /path/to/backup.json`.
-1. By executing `account:choose` you can choose one of the imported accounts, that will then serve as context for the next commands (you can check currently selected account using `account:info`). If you just want to use the development _Alice_ or _Bob_ account, you can access them without importing by providing an additional flag: `account:choose --showSpecial`.
-1. The context should now be fully set up! Feel free to use the `--help` flag to investigate the available commands or take a look at the sections below.
-1. You may also find it useful to get the first part of the command (before the colon) autocompleted when you press `[Tab]` while typing the name in the console. Executing `autocomplete` command will provide the instructions on how to set this up (see documentation below).
+1. Set the correct Joystream node websocket endpoint. You can do this by executing [`api:setUri`](#joystream-cli-apiseturi-uri) and choosing one of the suggested endpoints of providing your own url. To verify the currently used Joystream node websocket endpoint you can execute [`api:getUri`](#joystream-cli-apigeturi).
+2. Set the Joystream query node endpoint. This is optional, but some commands (for example: [`content:createChannel`](#joystream-cli-contentcreatechannel)) will require a connection to the query node in order to fetch the data they need complete the requested operations (ie. [`content:createChannel`](#joystream-cli-contentcreatechannel) will need to fetch the available storage node endnpoints in order to upload the channel assets). In order to do that, execute [`api:setQueryNodeEndpoint`](#joystream-cli-apisetquerynodeendpoint-endpoint) and choose one of the suggested endpoints or provide your own url. You can use [`api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint) any time to verify the currently set endpoint.
+3. In order to use your existing keys within the CLI, you can import them using [`account:import`](#joystream-cli-accountimport) command. You can provide json backup files exported from Pioneer or Polkadot{.js} extension as an input. You can also use raw mnemonic or seed phrases. See the [`account:import` command documentation](#joystream-cli-accountimport) for the full list of supported inputs.
+  The key to sign the transaction(s) with will be determined based on the required permissions, depending on the command you execute. For example, if you execute [`working-groups:updateRewardAccount --group storageProviders`](#joystream-cli-working-groupsupdaterewardaccount-address), the CLI will look for a storage provider role key among your available keys. If multiple execution contexts are available, the CLI will prompt you to choose the desired one.
+4. **Optionally:** You may also find it useful to get the first part of the command (before the colon) autocompleted when you press `[Tab]` while typing the command name in the console. Executing [`autocomplete`](#joystream-cli-autocomplete-shell) command will provide you the instructions on how to set this up.
+5. That's it! The CLI is now be fully set up! Feel free to use the `--help` flag to investigate the available commands or take a look at the commands documentation below.
 <!-- first-steps -->
+
+# Useful environment settings
+<!-- env -->
+- `FORCE_COLOR=0` - disables output coloring. This will make the output easier to parse in case it's redirected to a file or used within a script.
+- `AUTO_CONFIRM=true` - this will make the CLI skip asking for any confirmations (can be useful when creating bash scripts).
+<!-- envstop -->
 
 # Commands
 <!-- commands -->
@@ -1766,9 +1770,3 @@ OPTIONS
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
 <!-- commandsstop -->
-
-# Environment variables
-<!-- env -->
-- `FORCE_COLOR` - can be set to `0` to disable output coloring
-- `AUTO_CONFIRM` - can be set to `1` or `true` to skip any required confirmations (can be useful for creating bash scripts)
-<!-- envstop -->
