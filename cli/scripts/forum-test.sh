@@ -4,9 +4,10 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-echo "{}" > ~/tmp/empty.json
-
 export AUTO_CONFIRM=true
+export OCLIF_TS_NODE=0
+
+yarn workspace @joystream/cli build
 
 CLI=../bin/run
 
