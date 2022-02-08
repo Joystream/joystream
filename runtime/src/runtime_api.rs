@@ -307,7 +307,7 @@ impl_runtime_apis! {
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
                         account_id.clone(),
-                        account_id.clone(),
+                        account_id,
                         <Runtime as council::Trait>::MinCandidateStake::get().into(),
                     ).expect(
                         "Should pass a valid member associated to the account and the account
