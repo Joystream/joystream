@@ -100,8 +100,6 @@ function SideBar ({ className = '', collapse, handleResize, isCollapsed, isMenuO
                   />
                 )
             ))}
-            <Menu.Divider hidden />
-            <SidebarBanner isSidebarCollapsed={isCollapsed}/>
           </div>
           <div className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}>
             <Button
