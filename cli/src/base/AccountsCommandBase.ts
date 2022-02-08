@@ -374,15 +374,22 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       }
     }
 
-    const requiredStakingAccountBalance = requiredStake.add(candidateTxFee).add(STAKING_ACCOUNT_CANDIDATE_STAKE)
+    const requiredStakingAccountBalance = !stakingStatus
+      ? requiredStake.add(candidateTxFee).add(STAKING_ACCOUNT_CANDIDATE_STAKE)
+      : requiredStake
     const missingStakingAccountBalance = requiredStakingAccountBalance.sub(balances.availableBalance)
     if (missingStakingAccountBalance.gtn(0)) {
       this.warn(
         `Not enough available staking account balance! Missing: ${chalk.cyanBright(
-          formatBalance(candidateTxFee.add(STAKING_ACCOUNT_CANDIDATE_STAKE))
-        )}. (includes ${chalk.cyanBright(formatBalance(candidateTxFee))} transaction fee and ${chalk.cyanBright(
-          formatBalance(STAKING_ACCOUNT_CANDIDATE_STAKE)
-        )} staking account candidate stake)`
+          formatBalance(missingStakingAccountBalance)
+        )}.` +
+          (!stakingStatus
+            ? ` (required balance includes ${chalk.cyanBright(
+                formatBalance(candidateTxFee)
+              )} transaction fee and ${chalk.cyanBright(
+                formatBalance(STAKING_ACCOUNT_CANDIDATE_STAKE)
+              )} staking account candidate stake)`
+            : '')
       )
       const transferTokens = await this.requestConfirmation(
         `Do you want to transfer ${chalk.cyan(formatBalance(missingStakingAccountBalance))} from another account?`
