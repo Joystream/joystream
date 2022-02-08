@@ -77,7 +77,14 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 ### Integration tests
 
 ```bash
-tests/integration-tests/run-full-tests.sh
+# Make sure yarn packages are built
+yarn build:packages
+
+# Build the test joystream-node
+TEST_NODE=true yarn build:node:docker
+
+# Run tests
+./query-node/run-tests.sh
 ```
 
 ### Contributing

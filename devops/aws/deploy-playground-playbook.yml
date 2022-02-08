@@ -55,6 +55,19 @@
       command: yarn build:node:docker
       args:
         chdir: '{{ remote_code_path }}'
+      async: 3600
+      poll: 0
+      register: node_build_result
+
+    - name: Check on build node image async task
+      async_status:
+        jid: '{{ node_build_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      # Max number of times to check for status
+      retries: 36
+      # Check for the status every 100s
+      delay: 100
 
     - name: Run docker-compose
       command: yarn start
@@ -64,6 +77,7 @@
         PERSIST: 'true'
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+        SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
       async: 1800
       poll: 0
       register: compose_result
@@ -93,16 +107,32 @@
         caddy_systemd_capabilities_enabled: true
         caddy_update: false
 
+    - name: Set endpoints
+      set_fact:
+        all_services: |
+          websocket_rpc: wss://{{ nip_domain }}/ws-rpc
+          http_rpc: https://{{ nip_domain }}/http-rpc
+          colossus: https://{{ nip_domain }}/colossus-1
+          distributor: https://{{ nip_domain }}/distributor-1
+          graphql_server: https://{{ nip_domain }}/query-node/server/graphql
+          graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
+          indexer: https://{{ nip_domain }}/query-node/indexer/graphql
+          member_faucet: https://{{ nip_domain }}/member-faucet/register
+          orion: https://{{ nip_domain }}/orion/graphql
+      run_once: yes
+
     - name: Print endpoints
       debug:
-        msg:
-          - 'The services should now be accesible at:'
-          - 'Pioneer: https://{{ nip_domain }}/'
-          - 'WebSocket RPC: wss://{{ nip_domain }}/ws-rpc'
-          - 'HTTP RPC: https://{{ nip_domain }}/http-rpc'
-          - 'Colossus: https://{{ nip_domain }}/colossus-1'
-          - 'Distributor: https://{{ nip_domain }}/distributor-1'
-          - 'GraphQL server: https://{{ nip_domain }}/query-node/server/graphql'
-          - 'Indexer: https://{{ nip_domain }}/query-node/indexer/graphql'
-          - 'Member Faucet: https://{{ nip_domain }}/member-faucet/register'
-          - 'Orion: https://{{ nip_domain }}/orion/graphql'
+        msg: '{{ all_services | from_yaml }}'
+      run_once: yes
+
+    - name: Create config.json to serve as Caddy endpoint
+      copy:
+        content: '{{ all_services | from_yaml | to_json }}'
+        dest: '/home/ubuntu/config.json'
+
+    - name: Save output as file on local
+      copy:
+        content: '{{ all_services | from_yaml | to_json }}'
+        dest: 'endpoints.json'
+      delegate_to: localhost
