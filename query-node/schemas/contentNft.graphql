@@ -1,0 +1,205 @@
+# TODO: add runtime ids to entities (`id: ID!`) where it's needed and possible
+
+# TODO: move `ContentActor*` to `content.graphql` after schema/mappings are finished
+#       keep it here for easier reviews
+type ContentActorCurator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  curator: Curator!
+}
+
+type ContentActorMember @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+type ContentActorLead @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+type ContentActorCollaborator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead | ContentActorCollaborator
+
+type CuratorGroup @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  "Curators belonging to this group"
+  curators: [Curator!]! @derivedFrom(field: "curatorGroups")
+
+  "Channels curated by this group"
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+}
+
+type Curator @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  curatorGroups: [CuratorGroup!]!
+}
+
+"Represents NFT details"
+type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+  "NFT's video"
+  video: Video! @derivedFrom(field: "nft")
+
+  "Auctions done for this NFT"
+  auctions: [Auction!]! @derivedFrom(field: "nft")
+
+  "Member owning the NFT (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the NFT (if any)"
+  ownerCuratorGroup: CuratorGroup
+
+  "NFT's metadata"
+  metadata: String!
+
+  "NFT transactional status"
+  transactionalStatus: TransactionalStatus!
+
+  "Creator royalty"
+  creatorRoyalty: Float
+}
+
+"NFT transactional state"
+union TransactionalStatus = TransactionalStatusIdle
+  | TransactionalStatusInitiatedOfferToMember
+  | TransactionalStatusAuction
+  | TransactionalStatusBuyNow
+
+"Represents TransactionalStatus Idle"
+type TransactionalStatusIdle @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+"Represents TransactionalStatus InitiatedOfferToMember"
+type TransactionalStatusInitiatedOfferToMember @variant {
+  "Member identifier"
+  memberId: Int!
+
+  "Whether member should pay to accept offer (optional)"
+  price: BigInt
+}
+
+"Represents TransactionalStatus Auction"
+type TransactionalStatusAuction @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  "Auction"
+  auction: Auction!
+}
+
+"Represents TransactionalStatus BuyNow"
+type TransactionalStatusBuyNow @variant {
+  price: BigInt!
+}
+
+"Represents various action types"
+union AuctionType = AuctionTypeEnglish | AuctionTypeOpen
+
+"Represents English auction details"
+type AuctionTypeEnglish @variant {
+  "English auction duration"
+  duration: Int!
+
+  "Auction extension time"
+  extensionPeriod: Int
+}
+
+"Represents Open auction details"
+type AuctionTypeOpen @variant {
+  "Auction bid lock duration"
+  bidLockingTime: Int!
+}
+
+"Represents NFT auction"
+type Auction @entity {
+  "Auctioned NFT"
+  nft: OwnedNft!
+
+  "Member starting NFT auction"
+  initialOwner: Membership!
+
+  "Member that won this auction"
+  winningMember: Membership
+
+  "Auction starting price"
+  startingPrice: BigInt!
+
+  "Whether auction can be completed instantly"
+  buyNowPrice: BigInt
+
+  # TODO: maybe there is a need to distinguish regular auction completion from buy now
+
+  "The type of auction"
+  auctionType: AuctionType!
+
+  "Minimal step between auction bids"
+  minimalBidStep: BigInt!
+
+  "Auction last bid (if exists)"
+  lastBid: Bid
+
+  bids: [Bid!]! @derivedFrom(field: "auction")
+
+  "Block when auction starts"
+  startsAtBlock: Int!
+
+  "Block when auction ended"
+  endedAtBlock: Int
+
+  "Block when auction is supposed to end"
+  plannedEndAtBlock: Int
+
+  "Is auction canceled"
+  isCanceled: Boolean!
+
+  "Is auction completed"
+  isCompleted: Boolean!
+
+  "Auction participants whitelist"
+  whitelistedMembers: [Membership!]! @derivedFrom(field: "whitelistedInAuctions")
+}
+
+"Represents bid in NFT auction"
+type Bid @entity {
+  "NFT's auction"
+  auction: Auction!
+
+  "Bidder membership"
+  bidder: Membership!
+
+  # TODO: probably remove that
+  #"Bidder account, used to pay for NFT"
+  #bidderAccount: String!
+
+  "Amount bidded"
+  amount: BigInt!
+
+  "Sign for canceled bid"
+  isCanceled: Boolean!
+
+  "Block in which the bid was placed"
+  createdInBlock: Int!
+}
+
+# TODO entity for (cancelable) offers; will be needed to see history of offers

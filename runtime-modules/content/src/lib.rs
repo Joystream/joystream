@@ -378,7 +378,7 @@ decl_module! {
 
             let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
                 prize: Zero::zero(), // put 0 for Giza release
-                account_id: sender,
+                account_id: sender.clone(),
             };
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
@@ -433,6 +433,8 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
+                // setting the channel owner account as the prize funds account
+                deletion_prize_source_account_id: sender,
             };
 
             // add channel to onchain state
@@ -527,8 +529,8 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
-
             let sender = ensure_signed(origin)?;
+
             // check that channel exists
             let channel = Self::ensure_channel_validity(&channel_id)?;
 
@@ -735,7 +737,6 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
-                /// Newly created video has no nft
                 nft_status,
             };
 
@@ -864,7 +865,7 @@ decl_module! {
 
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-                    sender,
+                    channel.deletion_prize_source_account_id,
                     Self::bag_id_for_channel(&channel_id),
                     assets_to_remove,
                 )?;
@@ -1313,6 +1314,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
         }
 
+        /// Issue NFT
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn issue_nft(
             origin,
@@ -1320,7 +1322,6 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) {
-
             let sender = ensure_signed(origin)?;
 
             // Ensure given video exists
@@ -2251,12 +2252,12 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
+        IsExtended = bool,
         VideoPost = VideoPost<T>,
         VideoPostId = <T as Trait>::VideoPostId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
-        IsExtended = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2332,7 +2333,7 @@ decl_event!(
             ContentActor,
             VideoId,
             Option<Royalty>,
-            Metadata,
+            NftMetadata,
             Option<MemberId>,
             InitTransactionalStatus,
         ),

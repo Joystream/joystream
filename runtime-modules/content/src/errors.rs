@@ -46,6 +46,9 @@ decl_error! {
         /// Operation cannot be perfomed with this Actor
         ActorNotAuthorized,
 
+        /// This content actor cannot own a channel
+        ActorCannotOwnChannel,
+
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
 
@@ -69,9 +72,6 @@ decl_error! {
 
         /// Video censorship status did not change
         VideoCensorshipStatusDidNotChange,
-
-        /// Actor cannot Own channel
-        ActorCannotOwnChannel,
 
         // Auction Errors
         // ---------------------
@@ -264,6 +264,5 @@ decl_error! {
 
         /// Reward account is none
         RewardAccountNotFoundInChannel,
-
     }
 }

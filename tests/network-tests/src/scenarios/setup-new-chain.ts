@@ -7,7 +7,7 @@ import initDistribution, { singleBucketConfig as defaultDistributionConfig } fro
 import { AllWorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Setup new chain', async ({ job }) => {
   const COUNCIL_SIZE = 1
   job('Create Council', assignCouncil(COUNCIL_SIZE))
 

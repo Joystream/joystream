@@ -1,7 +1,11 @@
 use super::*;
 
-/// Metadata for Nft issuance
-pub type Metadata = Vec<u8>;
+/// Metadata for NFT issuance
+pub type NftMetadata = Vec<u8>;
+
+pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
+pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
+pub type MemberId<T> = <T as common::MembershipTypes>::MemberId;
 
 /// Owner royalty
 pub type Royalty = Perbill;
@@ -515,7 +519,7 @@ pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     /// Roayalty used for the author
     pub royalty: Option<Royalty>,
     /// Metadata
-    pub nft_metadata: Metadata,
+    pub nft_metadata: NftMetadata,
     /// member id Nft will be issued to
     pub non_channel_owner: Option<MemberId>,
     /// Initial transactional status for the nft

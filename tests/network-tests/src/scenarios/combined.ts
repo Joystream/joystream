@@ -10,7 +10,7 @@ import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import { WorkingGroups } from '../WorkingGroups'
 
-scenario(async ({ job }) => {
+scenario('Combined', async ({ job }) => {
   // These tests assume:
   // - storage setup (including hired lead)
   // - existing council
@@ -41,9 +41,18 @@ scenario(async ({ job }) => {
     manageWorkerAsWorker.distribution,
   ]).requires(leadSetupJob)
 
+<<<<<<< HEAD
   // Run CLI tests after workerPayoutsJob as they may lock Sender for too long and cause FillOpeningInvalidNextPaymentBlock
   const createChannelJob = job('create channel via CLI', createChannel).after(workerPayoutsJob)
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
     createChannelJob
   )
+=======
+  const initBucketsJob = job('init storage and distribution buckets via CLI', [
+    initDistributionBucket,
+    initStorageBucket,
+  ]).requires(leadSetupJob)
+
+  const createChannelJob = job('create channel via CLI', createChannel).requires(initBucketsJob)
+>>>>>>> vnft_schema_mappings_second
 })

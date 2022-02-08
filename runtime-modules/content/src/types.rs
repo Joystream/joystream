@@ -1,7 +1,6 @@
 use crate::*;
 
-/// Specifies how a new asset will be provided on creating and updating
-/// Channels, Videos, Series and Person
+/// Data structure in order to keep track of the migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NewAsset<ContentParameters> {
@@ -81,6 +80,8 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub is_censored: bool,
     /// Reward account where revenue is sent if set.
     pub reward_account: Option<AccountId>,
+    /// Account for withdrawing deletion prize funds
+    pub deletion_prize_source_account_id: AccountId,
     /// collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// moderator set
@@ -139,7 +140,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: Ord> {
-    /// Assets referenced by metadata
+    /// Asset collection for the channel, referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
     pub meta: Option<Vec<u8>>,
@@ -181,6 +182,105 @@ pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     <T as common::MembershipTypes>::MemberId,
 >;
 
+/// Information about the video category being updated.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct VideoCategoryUpdateParameters {
+    // Because it is the only field it is not an Option
+    /// Metadata update for the video category.
+    pub new_meta: Vec<u8>,
+}
+
+/// Information regarding the content being uploaded
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct CreationUploadParameters<Balance> {
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
+}
+
+/// Information about the plyalist being created.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PlaylistCreationParameters {
+    /// Metadata about the playlist.
+    pub meta: Vec<u8>,
+}
+
+/// Information about the playlist being updated.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PlaylistUpdateParameters {
+    // It is the only field so its not an Option
+    /// Metadata update for the playlist.
+    pub new_meta: Vec<u8>,
+}
+
+/// A playlist is an ordered collection of videos.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Playlist<ChannelId> {
+    /// The channel the playlist belongs to.
+    in_channel: ChannelId,
+}
+
+/// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum PersonActor<MemberId, CuratorId> {
+    Member(MemberId),
+    Curator(CuratorId),
+}
+
+/// The authorized actor that may update or delete a Person.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum PersonController<MemberId> {
+    /// Member controls the person
+    Member(MemberId),
+    /// Any curator controls the person
+    Curators,
+}
+
+/// Default trait implemented only because its used in Person which needs to implement a Default trait
+/// since it is a StorageValue.
+impl<MemberId: Default> Default for PersonController<MemberId> {
+    fn default() -> Self {
+        PersonController::Member(MemberId::default())
+    }
+}
+
+/// Information for Person being created.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct PersonCreationParameters<StorageAssets> {
+    /// Assets referenced by metadata
+    pub assets: StorageAssets,
+    /// Metadata for person.
+    meta: Vec<u8>,
+}
+
+/// Information for Persion being updated.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PersonUpdateParameters<StorageAssets> {
+    /// Assets referenced by metadata
+    pub assets: Option<StorageAssets>,
+    /// Metadata to update person.
+    new_meta: Option<Vec<u8>>,
+}
+
+/// A Person represents a real person that may be associated with a video.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Person<MemberId> {
+    /// Who can update or delete this person.
+    pub controlled_by: PersonController<MemberId>,
+}
+
 /// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -194,15 +294,6 @@ pub struct VideoCategory {
 pub struct VideoCategoryCreationParameters {
     /// Metadata about the video category.
     meta: Vec<u8>,
-}
-
-/// Information about the video category being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCategoryUpdateParameters {
-    // Because it is the only field it is not an Option
-    /// Metadata update for the video category.
-    new_meta: Vec<u8>,
 }
 
 /// Information regarding the content being uploaded
@@ -254,6 +345,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+
 pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
     /// channel the video is in
     pub in_channel: ChannelId,

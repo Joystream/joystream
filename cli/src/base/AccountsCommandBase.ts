@@ -321,6 +321,12 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
+  async setSelectedMember(selectedMember: MemberDetails): Promise<void> {
+    this.selectedMember = selectedMember
+
+    await this.setPreservedState({ selectedMemberId: selectedMember.id.toString() })
+  }
+
   async getRequiredMemberContext(useSelected = false, allowedIds?: MemberId[]): Promise<MemberDetails> {
     if (
       useSelected &&
@@ -460,6 +466,20 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return stakingAccount
   }
 
+  private async initSelectedMember(): Promise<void> {
+    const memberIdString = this.getPreservedState().selectedMemberId
+
+    const memberId = this.createType('MemberId', memberIdString)
+    const members = await this.getApi().membersDetailsByIds([memberId])
+
+    // ensure selected member exists
+    if (!members.length) {
+      return
+    }
+
+    this.selectedMember = members[0]
+  }
+
   async init(): Promise<void> {
     await super.init()
     try {
@@ -468,5 +488,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       throw this.createDataDirInitError()
     }
     await this.initKeyring()
+
+    await this.initSelectedMember()
   }
 }

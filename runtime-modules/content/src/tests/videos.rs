@@ -1018,6 +1018,7 @@ fn successful_video_deletion_by_lead_with_curator_owned_channel() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .with_assets_to_remove(video_assets)
+            .with_deletion_prize_source_account_id(DEFAULT_CURATOR_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
