@@ -122,6 +122,7 @@
           member_faucet: https://{{ nip_domain }}/member-faucet/register
           orion: https://{{ nip_domain }}/orion/graphql
           config: https://{{ nip_domain }}/network/config.json
+          stack_name: {{ stack_name }}
       run_once: yes
 
     - name: Print endpoints
