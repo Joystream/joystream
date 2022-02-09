@@ -2252,12 +2252,12 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        IsExtended = bool,
         VideoPost = VideoPost<T>,
         VideoPostId = <T as Trait>::VideoPostId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        IsExtended = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
