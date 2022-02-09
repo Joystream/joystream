@@ -19,7 +19,6 @@ const OPENING_STAKE = new BN(2000)
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
   static flags = {
-    ...WorkingGroupsCommandBase.flags,
     input: IOFlags.input,
     output: flags.string({
       char: 'o',
@@ -40,6 +39,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         '(can be used to generate a "draft" which can be provided as input later)',
       dependsOn: ['output'],
     }),
+    ...WorkingGroupsCommandBase.flags,
   }
 
   createTxParams(

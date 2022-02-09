@@ -16,6 +16,10 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()
 

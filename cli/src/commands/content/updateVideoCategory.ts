@@ -17,6 +17,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [

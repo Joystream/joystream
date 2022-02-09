@@ -23,6 +23,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...UploadCommandBase.flags,
   }
 
   static args = [

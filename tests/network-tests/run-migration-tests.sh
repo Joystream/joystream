@@ -5,7 +5,7 @@ SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
-TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=latest}
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
 # The joystream/node docker image tag to start the chain with
 RUNTIME_TAG=${RUNTIME_TAG:=sumer}
 # Post migration assertions by means of typescript scenarios required

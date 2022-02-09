@@ -1,10 +1,14 @@
-import AccountsCommandBase from '../../base/AccountsCommandBase'
+//import AccountsCommandBase from '../../base/AccountsCommandBase'
+import MembershipsCommandBase from '../../base/MembershipsCommandBase'
 import { MemberDetails } from '../../Types'
 import chalk from 'chalk'
 import { flags } from '@oclif/command'
 import ExitCodes from '../../ExitCodes'
 
-export default class AccountChooseMember extends AccountsCommandBase {
+// TODO: remove this command - no longer needed when we have `useMemberId` flag in `MembershipsCommandBase`
+// TODO: remove methods from MembershipsCommandBase that are used exclusively by this command
+//export default class AccountChooseMember extends AccountsCommandBase {
+export default class AccountChooseMember extends MembershipsCommandBase {
   static description = 'Choose default member to use in the CLI'
   static flags = {
     memberId: flags.string({
@@ -12,6 +16,7 @@ export default class AccountChooseMember extends AccountsCommandBase {
       char: 'm',
       required: false,
     }),
+    ...MembershipsCommandBase.flags,
   }
 
   async run() {

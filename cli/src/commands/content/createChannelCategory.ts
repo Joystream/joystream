@@ -4,7 +4,7 @@ import { ChannelCategoryInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
-import { ChannelCategoryCreationParameters } from '@joystream/types/content'
+import { ChannelCategoryCreationParameters, ChannelCategoryId } from '@joystream/types/content'
 import { ChannelCategoryInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import { ChannelCategoryMetadata } from '@joystream/metadata-protobuf'
@@ -18,6 +18,7 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -44,10 +45,8 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
     )
 
     if (result) {
-      const event = this.findEvent(result, 'content', 'ChannelCategoryCreated')
-      this.log(
-        chalk.green(`ChannelCategory with id ${chalk.cyanBright(event?.data[0].toString())} successfully created!`)
-      )
+      const categoryId: ChannelCategoryId = this.getEvent(result, 'content', 'ChannelCategoryCreated').data[0]
+      this.log(chalk.green(`ChannelCategory with id ${chalk.cyanBright(categoryId.toString())} successfully created!`))
     }
   }
 }

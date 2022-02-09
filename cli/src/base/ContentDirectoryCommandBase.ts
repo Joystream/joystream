@@ -3,11 +3,11 @@ import { WorkingGroups } from '../Types'
 import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
-import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
 import { MemberId } from '@joystream/types/common'
 import { createType } from '@joystream/types'
+import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
@@ -20,7 +20,11 @@ type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 /**
  * Abstract base class for commands related to content directory
  */
-export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
+export default abstract class ContentDirectoryCommandBase extends WorkingGroupCommandBase {
+  static flags = {
+    ...WorkingGroupCommandBase.flags,
+  }
+
   static channelCreationContextFlag = flags.enum({
     required: false,
     description: `Actor context to execute the command in (${CHANNEL_CREATION_CONTEXTS.join('/')})`,
@@ -41,7 +45,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async init(): Promise<void> {
     await super.init()
-    this.group = WorkingGroups.Curators // override group for RolesCommandBase
+    this._group = WorkingGroups.Curators // override group for RolesCommandBase
   }
 
   async promptForChannelCreationContext(
@@ -213,7 +217,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.warn('No Curator Groups to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
-    const selectedId = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedId = await this.simplePrompt<number>({ message, type: 'list', choices })
 
     return selectedId
   }
@@ -223,7 +227,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     if (!choices.length) {
       return []
     }
-    const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
+    const selectedIds = await this.simplePrompt<number[]>({ message, type: 'checkbox', choices })
 
     return selectedIds
   }
@@ -242,7 +246,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedCuratorId = await this.simplePrompt({
+    const selectedCuratorId = await this.simplePrompt<number>({
       message,
       type: 'list',
       choices,

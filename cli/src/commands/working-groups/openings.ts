@@ -7,7 +7,7 @@ export default class WorkingGroupsOpenings extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const openings = await this.getApi().openingsByGroup(this.group)
 
     const openingsRows = openings.map((o) => ({

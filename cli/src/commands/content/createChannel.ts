@@ -9,6 +9,7 @@ import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import chalk from 'chalk'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId } from '@joystream/types/common'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -19,6 +20,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...UploadCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -76,8 +78,8 @@ export default class CreateChannelCommand extends UploadCommandBase {
       channelCreationParameters,
     ])
 
-    const channelCreatedEvent = this.findEvent(result, 'content', 'ChannelCreated')
-    const channelId = channelCreatedEvent!.data[1]
+    const channelCreatedEvent = this.getEvent(result, 'content', 'ChannelCreated')
+    const channelId: ChannelId = channelCreatedEvent.data[1]
     this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
 
     const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')

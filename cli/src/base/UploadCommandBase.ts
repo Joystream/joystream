@@ -35,6 +35,10 @@ ffmpeg.setFfprobePath(ffprobeInstaller.path)
  * Abstract base class for commands that require uploading functionality
  */
 export default abstract class UploadCommandBase extends ContentDirectoryCommandBase {
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   private fileSizeCache: Map<string, number> = new Map<string, number>()
   private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
