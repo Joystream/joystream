@@ -18,6 +18,7 @@ import { mnemonicGenerate } from '@polkadot/util-crypto'
 import { validateAddress } from '../helpers/validation'
 import slug from 'slug'
 import { Membership } from '@joystream/types/members'
+import { LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 
 const ACCOUNTS_DIRNAME = 'accounts'
@@ -333,7 +334,8 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     member: Membership,
     address?: string,
     requiredStake: BN = new BN(0),
-    fundsSource?: string
+    fundsSource?: string,
+    lockId?: LockIdentifier
   ): Promise<string> {
     if (fundsSource && !this.isKeyAvailable(fundsSource)) {
       throw new CLIError(`Key ${chalk.magentaBright(fundsSource)} is not available!`)
@@ -345,8 +347,10 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const { balances } = await this.getApi().getAccountSummary(address)
     const stakingStatus = await this.getApi().stakingAccountStatus(address)
 
-    if (balances.lockedBalance.gtn(0)) {
-      throw new CLIError('This account is already used for other staking purposes, choose a different account...')
+    if (lockId && !this.getApi().areAccountLocksCompatibleWith(address, lockId)) {
+      throw new CLIError(
+        'This account is already used for other, incompatible staking purposes. Choose a different account...'
+      )
     }
 
     if (stakingStatus && !stakingStatus.member_id.eq(memberId)) {
@@ -423,12 +427,17 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return address
   }
 
-  async promptForStakingAccount(requiredStake: BN, memberId: MemberId, member: Membership): Promise<string> {
+  async promptForStakingAccount(
+    requiredStake: BN,
+    memberId: MemberId,
+    member: Membership,
+    lockId?: LockIdentifier
+  ): Promise<string> {
     this.log(`Required stake: ${formatBalance(requiredStake)}`)
     while (true) {
       const stakingAccount = await this.promptForAnyAddress('Choose staking account')
       try {
-        await this.setupStakingAccount(memberId, member, stakingAccount.toString(), requiredStake)
+        await this.setupStakingAccount(memberId, member, stakingAccount.toString(), requiredStake, undefined, lockId)
         return stakingAccount
       } catch (e) {
         if (e instanceof CLIError) {

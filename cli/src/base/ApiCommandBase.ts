@@ -2,21 +2,32 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
+import {
+  EventSection,
+  EventMethod,
+  EventType,
+  EventDetails,
+  ApiMethodArg,
+  ApiMethodNamedArgs,
+  ApiParamsOptions,
+  ApiParamOptions,
+  UnaugmentedApiPromise,
+} from '../Types'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
-import { Registry, Codec, TypeDef, TypeDefInfo, IEvent, DetectCodec } from '@polkadot/types/types'
+import { Registry, Codec, TypeDef, TypeDefInfo, DetectCodec, ISubmittableResult } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { SubmittableResult, WsProvider, ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions, UnaugmentedApiPromise } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
-import { AugmentedSubmittables, SubmittableExtrinsic, AugmentedEvents, AugmentedEvent } from '@polkadot/api/types'
+import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import QueryNodeApi from '../QueryNodeApi'
 import { formatBalance } from '@polkadot/util'
+import cli from 'cli-ux'
 import BN from 'bn.js'
 import _ from 'lodash'
 
@@ -93,13 +104,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
         queryNodeUri = await this.promptForQueryNodeUri()
       }
-      this.queryNodeApi = queryNodeUri
-        ? new QueryNodeApi(queryNodeUri, (err) => {
-            this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
-          })
-        : null
+      if (queryNodeUri) {
+        cli.action.start(`Initializing the query node connection (${queryNodeUri})...`)
+        this.queryNodeApi = new QueryNodeApi(queryNodeUri, (err) => {
+          this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+        })
+        cli.action.stop()
+      } else {
+        this.queryNodeApi = null
+      }
 
       // Substrate api
+      cli.action.start(`Initializing the api connection (${apiUri})...`)
       const { metadataCache } = this.getPreservedState()
       this.api = await Api.create(apiUri, metadataCache, this.queryNodeApi || undefined)
 
@@ -110,6 +126,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
         await this.setPreservedState({ metadataCache })
       }
+      cli.action.stop()
     }
   }
 
@@ -562,24 +579,48 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.sendAndFollowTx(account, tx)
   }
 
-  public findEvent<
-    S extends keyof AugmentedEvents<'promise'> & string,
-    M extends keyof AugmentedEvents<'promise'>[S] & string,
-    EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
-  >(result: SubmittableResult, section: S, method: M): EventType | undefined {
-    return result.findRecord(section, method)?.event as EventType | undefined
+  public findEvent<S extends EventSection, M extends EventMethod<S>, E = EventType<S, M>>(
+    result: SubmittableResult,
+    section: S,
+    method: M
+  ): E | undefined {
+    return result.findRecord(section, method)?.event as E | undefined
   }
 
-  public getEvent<
-    S extends keyof AugmentedEvents<'promise'> & string,
-    M extends keyof AugmentedEvents<'promise'>[S] & string,
-    EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
-  >(result: SubmittableResult, section: S, method: M): EventType {
-    const event = this.findEvent<S, M, EventType>(result, section, method)
+  public getEvent<S extends EventSection, M extends EventMethod<S>, E = EventType<S, M>>(
+    result: SubmittableResult,
+    section: S,
+    method: M
+  ): E {
+    const event = this.findEvent<S, M, E>(result, section, method)
     if (!event) {
       throw new Error(`Event ${section}.${method} not found in tx result: ${JSON.stringify(result.toHuman())}`)
     }
     return event
+  }
+
+  async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult,
+    section: S,
+    method: M
+  ): Promise<EventDetails<EventType<S, M>>> {
+    const api = this.getOriginalApi()
+    const { status } = result
+    const event = this.getEvent(result, section, method)
+
+    const blockHash = (status.isInBlock ? status.asInBlock : status.asFinalized).toString()
+    const blockNumber = (await api.rpc.chain.getHeader(blockHash)).number.toNumber()
+    const blockTimestamp = (await api.query.timestamp.now.at(blockHash)).toNumber()
+    const blockEvents = await api.query.system.events.at(blockHash)
+    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) => blockEvent.hash.eq(event.hash))
+
+    return {
+      event,
+      blockNumber,
+      blockHash,
+      blockTimestamp,
+      indexInBlock,
+    }
   }
 
   async buildAndSendExtrinsic<

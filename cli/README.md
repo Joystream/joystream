@@ -132,19 +132,21 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
 * [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
-* [`joystream-cli working-groups:apply [OPENINGID]`](#joystream-cli-working-groupsapply-openingid)
+* [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
 * [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
 * [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
 * [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
 * [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
-* [`joystream-cli working-groups:fillOpening WGOPENINGID`](#joystream-cli-working-groupsfillopening-wgopeningid)
+* [`joystream-cli working-groups:fillOpening`](#joystream-cli-working-groupsfillopening)
 * [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
 * [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
-* [`joystream-cli working-groups:opening WGOPENINGID`](#joystream-cli-working-groupsopening-wgopeningid)
+* [`joystream-cli working-groups:opening`](#joystream-cli-working-groupsopening)
 * [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
 * [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
+* [`joystream-cli working-groups:removeUpcomingOpening`](#joystream-cli-working-groupsremoveupcomingopening)
 * [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
 * [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
+* [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
 * [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
 * [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
 * [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
@@ -911,7 +913,7 @@ _See code: [src/commands/forum/addPost.ts](https://github.com/Joystream/joystrea
 
 ## `joystream-cli forum:categories`
 
-List existing forum categories.
+List existing forum categories by parent id (root categories by default) or displays a category tree.
 
 ```
 USAGE
@@ -1283,16 +1285,13 @@ OPTIONS
 
 _See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
 
-## `joystream-cli working-groups:apply [OPENINGID]`
+## `joystream-cli working-groups:apply`
 
 Apply to a working group opening (requires a membership)
 
 ```
 USAGE
-  $ joystream-cli working-groups:apply [OPENINGID]
-
-ARGUMENTS
-  OPENINGID  Opening ID
+  $ joystream-cli working-groups:apply
 
 OPTIONS
   -g, 
@@ -1301,6 +1300,21 @@ OPTIONS
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
       operationsGamma, distributors.
+
+  --answers=answers
+      Answers for opening's application form questions (sorted by question index)
+
+  --openingId=openingId
+      (required) Opening ID
+
+  --rewardAccount=rewardAccount
+      Future worker reward account
+
+  --roleAccount=roleAccount
+      Future worker role account
+
+  --stakingAccount=stakingAccount
+      Account to hold applicant's / worker's stake
 
   --useMemberId=useMemberId
       Try using the specified member id as context whenever possible
@@ -1341,7 +1355,7 @@ _See code: [src/commands/working-groups/cancelOpening.ts](https://github.com/Joy
 
 ## `joystream-cli working-groups:createOpening`
 
-Create working group opening (requires lead access)
+Create working group opening / upcoming opening (requires lead access)
 
 ```
 USAGE
@@ -1367,6 +1381,15 @@ OPTIONS
   --dryRun
       If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be 
       provided as input later)
+
+  --stakeTopUpSource=stakeTopUpSource
+      If provided - this account (key) will be used as default funds source for lead stake top up (in case it's needed)
+
+  --startsAt=startsAt
+      If upcoming opening - the expected opening start date (YYYY-MM-DD HH:mm:ss)
+
+  --upcoming
+      Whether the opening should be an upcoming opening
 
   --useMemberId=useMemberId
       Try using the specified member id as context whenever possible
@@ -1440,16 +1463,13 @@ OPTIONS
 
 _See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
 
-## `joystream-cli working-groups:fillOpening WGOPENINGID`
+## `joystream-cli working-groups:fillOpening`
 
 Allows filling working group opening that's currently in review. Requires lead access.
 
 ```
 USAGE
-  $ joystream-cli working-groups:fillOpening WGOPENINGID
-
-ARGUMENTS
-  WGOPENINGID  Working Group Opening ID
+  $ joystream-cli working-groups:fillOpening
 
 OPTIONS
   -g, 
@@ -1458,6 +1478,12 @@ OPTIONS
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
       operationsGamma, distributors.
+
+  --applicationIds=applicationIds
+      Accepted application ids
+
+  --openingId=openingId
+      (required) Working Group Opening ID
 
   --useMemberId=useMemberId
       Try using the specified member id as context whenever possible
@@ -1523,16 +1549,13 @@ OPTIONS
 
 _See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
 
-## `joystream-cli working-groups:opening WGOPENINGID`
+## `joystream-cli working-groups:opening`
 
-Shows an overview of given working group opening by Working Group Opening ID
+Shows detailed information about working group opening / upcoming opening by id
 
 ```
 USAGE
-  $ joystream-cli working-groups:opening WGOPENINGID
-
-ARGUMENTS
-  WGOPENINGID  Working Group Opening ID
+  $ joystream-cli working-groups:opening
 
 OPTIONS
   -g, 
@@ -1541,6 +1564,12 @@ OPTIONS
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
       operationsGamma, distributors.
+
+  --id=id
+      (required) Opening / upcoming opening id (depending on --upcoming flag)
+
+  --upcoming
+      Whether the opening is an upcoming opening
 
   --useMemberId=useMemberId
       Try using the specified member id as context whenever possible
@@ -1553,7 +1582,7 @@ _See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream
 
 ## `joystream-cli working-groups:openings`
 
-Shows an overview of given working group openings
+Lists active/upcoming openings in a given working group
 
 ```
 USAGE
@@ -1566,6 +1595,9 @@ OPTIONS
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
       operationsGamma, distributors.
+
+  --upcoming
+      List upcoming openings (active openings are listed by default)
 
   --useMemberId=useMemberId
       Try using the specified member id as context whenever possible
@@ -1600,6 +1632,34 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
+
+## `joystream-cli working-groups:removeUpcomingOpening`
+
+Remove an existing upcoming opening by sending RemoveUpcomingOpening metadata signal (requires lead access)
+
+```
+USAGE
+  $ joystream-cli working-groups:removeUpcomingOpening
+
+OPTIONS
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  -i, --id=id
+      (required) Id of the upcoming opening to remove
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/working-groups/removeUpcomingOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/removeUpcomingOpening.ts)_
 
 ## `joystream-cli working-groups:setDefaultGroup`
 
@@ -1656,6 +1716,34 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
+
+## `joystream-cli working-groups:updateGroupMetadata`
+
+Update working group metadata (description, status etc.). The update will be atomic (just like video / channel metadata updates)
+
+```
+USAGE
+  $ joystream-cli working-groups:updateGroupMetadata
+
+OPTIONS
+  -g, 
+  --group=(storageProviders|curators|forum|membership|gateway|operationsAlpha|operationsBeta|operationsGamma|distributor
+  s)
+      The working group context in which the command should be executed
+      Available values are: storageProviders, curators, forum, membership, gateway, operationsAlpha, operationsBeta, 
+      operationsGamma, distributors.
+
+  -i, --input=input
+      (required) Path to JSON file to use as input
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/working-groups/updateGroupMetadata.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateGroupMetadata.ts)_
 
 ## `joystream-cli working-groups:updateRewardAccount [ADDRESS]`
 
