@@ -7,7 +7,9 @@ import { Tree } from 'cli-ux/lib/styled/tree'
 import { displayTable } from '../../helpers/display'
 
 export default class ForumCategoriesCommand extends ForumCommandBase {
-  static description = 'List existing forum categories.'
+  static description =
+    'List existing forum categories by parent id (root categories by default) or displays a category tree.'
+
   static flags = {
     parentCategoryId: flags.integer({
       char: 'p',

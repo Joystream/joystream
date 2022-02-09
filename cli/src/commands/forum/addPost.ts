@@ -35,13 +35,13 @@ export default class ForumAddPostCommand extends ForumCommandBase {
     await this.ensureCategoryMutable(categoryId)
     const member = await this.getRequiredMemberContext()
 
+    // Replies not supported atm
     const metadata: IForumPostMetadata = { text }
     this.jsonPrettyPrint(JSON.stringify({ categoryId, threadId, text, editable }))
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(member.membership.controller_account),
-      // Polls not supported atm
       api.tx.forum.addPost(member.id, categoryId, threadId, metadataToBytes(ForumPostMetadata, metadata), editable)
     )
 
