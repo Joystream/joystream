@@ -2825,8 +2825,11 @@ impl<T: Trait> Module<T> {
             Error::<T>::DynamicBagExists
         );
 
-        let bag_change =
-            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
+        let bag_change = if !&params.object_creation_list.is_empty() {
+            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?
+        } else {
+            BagUpdate::<BalanceOf<T>>::default()
+        };
 
         // check that fees are sufficient
         let total_upload_fee =
@@ -3269,6 +3272,12 @@ impl<T: Trait> Module<T> {
     fn validate_upload_data_objects_parameters(
         params: &UploadParameters<T>,
     ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
+        // do not allow upload operation with empty params list
+        ensure!(
+            !params.object_creation_list.is_empty(),
+            Error::<T>::DataObjectIdParamsAreEmpty
+        );
+
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
         Self::ensure_sufficient_balance_for_upload(
@@ -3287,16 +3296,11 @@ impl<T: Trait> Module<T> {
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
         ensure!(
-            !object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        ensure!(
             expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
             Error::<T>::DataSizeFeeChanged
         );
 
-        // verify  MaxSize >= object size >0 and ipfs id not blacklisted
+        // verify  MaxSize >= object size >0 and ipfs id not blacklisted and compute bag change
         object_creation_list
             .iter()
             .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |acc, obj| {
