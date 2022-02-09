@@ -23,7 +23,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  openingDetails(opening: OpeningDetails) {
+  openingDetails(opening: OpeningDetails): void {
     displayHeader('Opening details')
     displayCollapsedRow({
       'Opening ID': opening.openingId,
@@ -33,7 +33,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     })
   }
 
-  openingStakingPolicy(opening: OpeningDetails) {
+  openingStakingPolicy(opening: OpeningDetails): void {
     displayHeader('Staking policy')
     displayCollapsedRow({
       'Stake amount': formatBalance(opening.stake.value),
@@ -41,7 +41,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     })
   }
 
-  upcomingOpeningDetails(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment) {
+  upcomingOpeningDetails(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment): void {
     displayHeader('Upcoming opening details')
     displayCollapsedRow({
       'Upcoming Opening ID': upcomingOpening.id,
@@ -52,7 +52,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     })
   }
 
-  upcomingOpeningStakingPolicy(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment) {
+  upcomingOpeningStakingPolicy(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment): void {
     if (upcomingOpening.stakeAmount) {
       displayHeader('Staking policy')
       displayCollapsedRow({
@@ -61,17 +61,13 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     }
   }
 
-  openingMetadata(opening: OpeningDetails | UpcomingWorkingGroupOpeningDetailsFragment) {
+  openingMetadata(opening: OpeningDetails | UpcomingWorkingGroupOpeningDetailsFragment): void {
     const { metadata } = opening
     if (metadata) {
       displayHeader('Metadata')
       this.jsonPrettyPrint(
         JSON.stringify({
           ...metadata,
-          applicationFormQuestions: metadata.applicationFormQuestions.map(({ question, type }) => ({
-            question,
-            type,
-          })),
           expectedEnding: metadata.expectedEnding
             ? moment(metadata.expectedEnding).format(DEFAULT_DATE_FORMAT)
             : undefined,
@@ -80,7 +76,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     }
   }
 
-  openingApplications(opening: OpeningDetails) {
+  openingApplications(opening: OpeningDetails): void {
     displayHeader(`Applications (${opening.applications.length})`)
     const applicationsRows = opening.applications.map((a) => ({
       'ID': a.applicationId,
