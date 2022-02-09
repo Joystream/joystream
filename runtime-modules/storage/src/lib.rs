@@ -860,6 +860,11 @@ impl<Balance: Saturating + Copy> BagUpdate<Balance> {
 
         *self
     }
+
+    // A bag is considered empty when it has 0 size
+    fn is_empty(&self) -> bool {
+        self.voucher_update.objects_total_size == 0
+    }
 }
 
 /// Type alias for the DistributionBucketFamilyRecord.
@@ -2736,11 +2741,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
+    /// Ensure bag can be created successfully even with specified objects to upload
     fn can_create_dynamic_bag(
         params: DynBagCreationParameters<T>,
         deletion_prize: Option<BalanceOf<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(&params, deletion_prize).map(|_| ())
+        let bag_change = Self::validate_create_dynamic_bag_params(&params, deletion_prize)?;
+        if !bag_change.is_empty() {
+            let _ = Self::pick_buckets_for_bag(params.bag_id.into(), &bag_change)?;
+        }
+        Ok(())
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
@@ -2825,6 +2835,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::DynamicBagExists
         );
 
+        // bag change for given creation parameters
         let bag_change = if !&params.object_creation_list.is_empty() {
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?
         } else {
@@ -2843,6 +2854,7 @@ impl<T: Trait> Module<T> {
         Ok(bag_change)
     }
 
+    // check that usable balance in account_id is > required balance
     fn ensure_sufficient_balance_for_upload(
         account_id: T::AccountId,
         required_balance: BalanceOf<T>,
