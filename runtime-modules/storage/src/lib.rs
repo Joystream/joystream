@@ -207,13 +207,13 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Creates dynamic bag. BagId should provide the caller.
     fn create_dynamic_bag(
-        upload_parameters: DynBagCreationParameters<T>,
+        params: DynBagCreationParameters<T>,
         deletion_prize: Option<BalanceOf<T>>,
     ) -> DispatchResult;
 
     /// Validates `create_dynamic_bag` parameters and conditions.
     fn can_create_dynamic_bag(
-        upload_parameters: DynBagCreationParameters<T>,
+        params: DynBagCreationParameters<T>,
         deletion_prize: Option<BalanceOf<T>>,
     ) -> DispatchResult;
 
@@ -2551,7 +2551,42 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
         let bag_change = Self::validate_upload_data_objects_parameters(&params)?;
-        Self::upload_data_objects_inner(&params, &bag_change, &bag)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        <StorageTreasury<T>>::deposit(
+            &params.deletion_prize_source_account_id,
+            bag_change.total_deletion_prize,
+        )?;
+
+        Self::slash_data_size_fee(
+            &params.deletion_prize_source_account_id,
+            bag_change.voucher_update.objects_total_size,
+        );
+
+        // Save next object id.
+        <NextDataObjectId<T>>::put(data.next_data_object_id);
+
+        // Insert new objects.
+        for (data_object_id, data_object) in data.data_objects_map.iter() {
+            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
+        }
+
+        Self::change_storage_bucket_vouchers_for_bag(
+            &params.bag_id,
+            &bag,
+            &bag_change.voucher_update,
+            OperationType::Increase,
+        );
+
+        Self::deposit_event(RawEvent::DataObjectsUploaded(
+            data.data_objects_map.keys().cloned().collect(),
+            params.clone(),
+            T::DataObjectDeletionPrize::get(),
+        ));
+
         Ok(())
     }
 
@@ -2765,51 +2800,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    fn upload_data_objects_inner(
-        params: &UploadParameters<T>,
-        bag_change: &BagUpdate<BalanceOf<T>>,
-        bag: &Bag<T>,
-    ) -> DispatchResult {
-        let data = Self::create_data_objects(params.object_creation_list.clone());
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        <StorageTreasury<T>>::deposit(
-            &params.deletion_prize_source_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        Self::slash_data_size_fee(
-            &params.deletion_prize_source_account_id,
-            bag_change.voucher_update.objects_total_size,
-        );
-
-        // Save next object id.
-        <NextDataObjectId<T>>::put(data.next_data_object_id);
-
-        // Insert new objects.
-        for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
-        }
-
-        Self::change_storage_bucket_vouchers_for_bag(
-            &params.bag_id,
-            &bag,
-            &bag_change.voucher_update,
-            OperationType::Increase,
-        );
-
-        Self::deposit_event(RawEvent::DataObjectsUploaded(
-            data.data_objects_map.keys().cloned().collect(),
-            params.clone(),
-            T::DataObjectDeletionPrize::get(),
-        ));
-
-        Ok(())
-    }
-
     // Increment distribution family number in the storage.
     fn increment_distribution_family_number() {
         DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() + 1);
