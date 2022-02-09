@@ -34,9 +34,9 @@ export default class ForumModeratePostCommand extends ForumCommandBase {
     const api = await this.getOriginalApi()
     const { categoryId, threadId, postId, rationale, context } = this.parse(ForumModeratePostCommand).flags
 
-    // FIXME: Check if thread exists in category
-    // Currently the runtime does not check it (https://github.com/Joystream/joystream/issues/3111)
     await this.ensureCategoryExists(categoryId)
+    await this.ensureCategoryMutable(categoryId)
+    await this.ensureThreadExists(categoryId, threadId)
     const post = await this.getPost(threadId, postId)
     const [key, actor] = await this.getForumModerationContext([categoryId], context)
 
