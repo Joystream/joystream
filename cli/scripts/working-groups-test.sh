@@ -4,8 +4,6 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-echo "{}" > ~/tmp/empty.json
-
 export AUTO_CONFIRM=true
 export OCLIF_TS_NODE=0
 
@@ -58,6 +56,6 @@ ${CLI} working-groups:fillOpening \
   --group ${GROUP} \
   --openingId ${OPENING_ID} \
   --applicationIds ${APPLICATION_ID}
-# Forget test lead account
+# Forget test lead account and test worker staking account
 ${CLI} account:forget --name "Test wg lead key"
 ${CLI} account:forget --name "Test worker staking key"
