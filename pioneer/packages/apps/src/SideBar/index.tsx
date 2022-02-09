@@ -14,7 +14,6 @@ import NetworkModal from '../modals/Network';
 import { useTranslation } from '../translate';
 import ChainInfo from './ChainInfo';
 import Item from './Item';
-import SidebarBanner from '../SidebarBanner';
 
 interface Props {
   className?: string;
@@ -101,7 +100,6 @@ function SideBar ({ className = '', collapse, handleResize, isCollapsed, isMenuO
                 )
             ))}
             <Menu.Divider hidden />
-            <SidebarBanner isSidebarCollapsed={isCollapsed}/>
           </div>
           <div className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}>
             <Button
