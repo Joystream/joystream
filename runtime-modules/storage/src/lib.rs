@@ -2556,6 +2556,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
+        let data = Self::create_data_objects(params.object_creation_list.clone());
+
         <StorageTreasury<T>>::deposit(
             &params.deletion_prize_source_account_id,
             bag_change.total_deletion_prize,
@@ -2583,7 +2585,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
-            params.clone(),
+            params,
             T::DataObjectDeletionPrize::get(),
         ));
 
