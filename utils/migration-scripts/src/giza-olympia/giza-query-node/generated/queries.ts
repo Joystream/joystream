@@ -5,11 +5,12 @@ export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<strin
 
 export type ChannelCategoryFieldsFragment = { id: string; name?: Types.Maybe<string> }
 
-export type DataObjectFieldsFragment = {
+export type StorageDataObjectFieldsFragment = {
   id: string
-  joystreamContentId: string
-  size: number
-  liaisonJudgement: Types.LiaisonJudgement
+  ipfsHash: string
+  isAccepted: boolean
+  size: any
+  storageBagId: string
 }
 
 export type VideoFieldsFragment = {
@@ -24,25 +25,25 @@ export type VideoFieldsFragment = {
   isCensored: boolean
   isExplicit?: Types.Maybe<boolean>
   isFeatured: boolean
-  thumbnailPhotoDataObject?: Types.Maybe<DataObjectFieldsFragment>
+  thumbnailPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   license?: Types.Maybe<{
     code?: Types.Maybe<number>
     attribution?: Types.Maybe<string>
     customText?: Types.Maybe<string>
   }>
-  mediaDataObject?: Types.Maybe<DataObjectFieldsFragment>
+  media?: Types.Maybe<StorageDataObjectFieldsFragment>
   mediaMetadata?: Types.Maybe<{
     pixelWidth?: Types.Maybe<number>
     pixelHeight?: Types.Maybe<number>
-    size?: Types.Maybe<number>
+    size?: Types.Maybe<any>
     encoding?: Types.Maybe<{
       codecName?: Types.Maybe<string>
       container?: Types.Maybe<string>
       mimeMediaType?: Types.Maybe<string>
     }>
   }>
-  channel?: Types.Maybe<{ id: string; ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }> }>
+  channel: { id: string; ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }> }
 }
 
 export type ChannelFieldsFragment = {
@@ -54,13 +55,21 @@ export type ChannelFieldsFragment = {
   isPublic?: Types.Maybe<boolean>
   isCensored: boolean
   ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }>
-  coverPhotoDataObject?: Types.Maybe<DataObjectFieldsFragment>
-  avatarPhotoDataObject?: Types.Maybe<DataObjectFieldsFragment>
+  coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
+  avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   videos: Array<{ id: string }>
+  collaborators: Array<{ id: string }>
 }
 
-export type WorkerFieldsFragment = { id: string; metadata?: Types.Maybe<string> }
+export type DistributionBucketFieldsFragment = {
+  distributing: boolean
+  bags: Array<{ id: string }>
+  operators: Array<{
+    status: Types.DistributionBucketOperatorStatus
+    metadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
+  }>
+}
 
 export type GetChannelsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -82,9 +91,11 @@ export type GetChannelsCategoriesQueryVariables = Types.Exact<{ [key: string]: n
 
 export type GetChannelsCategoriesQuery = { channelCategories: Array<ChannelCategoryFieldsFragment> }
 
-export type GetStorageWorkersQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetDistributorsByBagIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
 
-export type GetStorageWorkersQuery = { workers: Array<WorkerFieldsFragment> }
+export type GetDistributorsByBagIdsQuery = { distributionBuckets: Array<DistributionBucketFieldsFragment> }
 
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
@@ -98,12 +109,13 @@ export const ChannelCategoryFields = gql`
     name
   }
 `
-export const DataObjectFields = gql`
-  fragment DataObjectFields on DataObject {
+export const StorageDataObjectFields = gql`
+  fragment StorageDataObjectFields on StorageDataObject {
     id
-    joystreamContentId
+    ipfsHash
+    isAccepted
     size
-    liaisonJudgement
+    storageBagId
   }
 `
 export const VideoFields = gql`
@@ -113,8 +125,8 @@ export const VideoFields = gql`
     title
     description
     duration
-    thumbnailPhotoDataObject {
-      ...DataObjectFields
+    thumbnailPhoto {
+      ...StorageDataObjectFields
     }
     language {
       iso
@@ -129,8 +141,8 @@ export const VideoFields = gql`
       attribution
       customText
     }
-    mediaDataObject {
-      ...DataObjectFields
+    media {
+      ...StorageDataObjectFields
     }
     mediaMetadata {
       encoding {
@@ -151,7 +163,7 @@ export const VideoFields = gql`
       }
     }
   }
-  ${DataObjectFields}
+  ${StorageDataObjectFields}
 `
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
@@ -164,11 +176,11 @@ export const ChannelFields = gql`
     rewardAccount
     title
     description
-    coverPhotoDataObject {
-      ...DataObjectFields
+    coverPhoto {
+      ...StorageDataObjectFields
     }
-    avatarPhotoDataObject {
-      ...DataObjectFields
+    avatarPhoto {
+      ...StorageDataObjectFields
     }
     isPublic
     isCensored
@@ -178,13 +190,24 @@ export const ChannelFields = gql`
     videos {
       id
     }
+    collaborators {
+      id
+    }
   }
-  ${DataObjectFields}
+  ${StorageDataObjectFields}
 `
-export const WorkerFields = gql`
-  fragment WorkerFields on Worker {
-    id
-    metadata
+export const DistributionBucketFields = gql`
+  fragment DistributionBucketFields on DistributionBucket {
+    distributing
+    bags {
+      id
+    }
+    operators {
+      status
+      metadata {
+        nodeEndpoint
+      }
+    }
   }
 `
 export const GetChannelsByIds = gql`
@@ -219,11 +242,11 @@ export const GetChannelsCategories = gql`
   }
   ${ChannelCategoryFields}
 `
-export const GetStorageWorkers = gql`
-  query getStorageWorkers {
-    workers(where: { type_eq: STORAGE }) {
-      ...WorkerFields
+export const GetDistributorsByBagIds = gql`
+  query getDistributorsByBagIds($ids: [ID!]) {
+    distributionBuckets(where: { bags_some: { id_in: $ids }, distributing_eq: true }) {
+      ...DistributionBucketFields
     }
   }
-  ${WorkerFields}
+  ${DistributionBucketFields}
 `

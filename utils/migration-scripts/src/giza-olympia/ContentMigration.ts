@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { QueryNodeApi } from './sumer-query-node/api'
+import { QueryNodeApi } from './giza-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { VideosMigration } from './VideosMigration'
 import { ChannelMigration } from './ChannelsMigration'

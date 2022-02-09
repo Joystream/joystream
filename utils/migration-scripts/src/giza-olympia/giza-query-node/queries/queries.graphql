@@ -8,11 +8,12 @@ fragment ChannelCategoryFields on ChannelCategory {
   name
 }
 
-fragment DataObjectFields on DataObject {
+fragment StorageDataObjectFields on StorageDataObject {
   id
-  joystreamContentId
+  ipfsHash
+  isAccepted
   size
-  liaisonJudgement
+  storageBagId
 }
 
 fragment VideoFields on Video {
@@ -21,8 +22,8 @@ fragment VideoFields on Video {
   title
   description
   duration
-  thumbnailPhotoDataObject {
-    ...DataObjectFields
+  thumbnailPhoto {
+    ...StorageDataObjectFields
   }
   language {
     iso
@@ -37,8 +38,8 @@ fragment VideoFields on Video {
     attribution
     customText
   }
-  mediaDataObject {
-    ...DataObjectFields
+  media {
+    ...StorageDataObjectFields
   }
   mediaMetadata {
     encoding {
@@ -70,11 +71,11 @@ fragment ChannelFields on Channel {
   rewardAccount
   title
   description
-  coverPhotoDataObject {
-    ...DataObjectFields
+  coverPhoto {
+    ...StorageDataObjectFields
   }
-  avatarPhotoDataObject {
-    ...DataObjectFields
+  avatarPhoto {
+    ...StorageDataObjectFields
   }
   isPublic
   isCensored
@@ -84,11 +85,22 @@ fragment ChannelFields on Channel {
   videos {
     id
   }
+  collaborators {
+    id
+  }
 }
 
-fragment WorkerFields on Worker {
-  id
-  metadata
+fragment DistributionBucketFields on DistributionBucket {
+  distributing
+  bags {
+    id
+  }
+  operators {
+    status
+    metadata {
+      nodeEndpoint
+    }
+  }
 }
 
 query getChannelsByIds($ids: [ID!]) {
@@ -115,8 +127,11 @@ query getChannelsCategories {
   }
 }
 
-query getStorageWorkers {
-  workers(where: { type_eq: STORAGE }) {
-    ...WorkerFields
+query getDistributorsByBagIds($ids: [ID!]) {
+  distributionBuckets(where: {
+    bags_some: { id_in: $ids },
+    distributing_eq: true,
+  }) {
+    ...DistributionBucketFields
   }
 }

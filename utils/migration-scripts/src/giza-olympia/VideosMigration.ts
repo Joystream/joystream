@@ -1,5 +1,5 @@
 import { VideoMetadata } from '@joystream/metadata-protobuf'
-import { VideoFieldsFragment } from './sumer-query-node/generated/queries'
+import { VideoFieldsFragment } from './giza-query-node/generated/queries'
 import _ from 'lodash'
 import { createType } from '@joystream/types'
 import Long from 'long'

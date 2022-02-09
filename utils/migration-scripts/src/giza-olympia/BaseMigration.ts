@@ -1,6 +1,6 @@
 import { SubmittableResult } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { QueryNodeApi } from './sumer-query-node/api'
+import { QueryNodeApi } from './giza-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { Keyring } from '@polkadot/keyring'
 import { Logger } from 'winston'

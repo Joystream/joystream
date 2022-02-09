@@ -1,6 +1,6 @@
 import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from './AssetsMigration'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
-import { ChannelFieldsFragment } from './sumer-query-node/generated/queries'
+import { ChannelFieldsFragment } from './giza-query-node/generated/queries'
 import { createType } from '@joystream/types'
 import Long from 'long'
 import { ChannelCreationParameters } from '@joystream/types/content'

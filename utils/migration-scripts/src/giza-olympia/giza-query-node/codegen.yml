@@ -4,7 +4,7 @@ overwrite: true
 schema: https://hydra.joystream.org/graphql
 
 documents:
-  - 'src/sumer-giza/sumer-query-node/queries/*.graphql'
+  - 'src/giza-olympia/giza-query-node/queries/*.graphql'
 
 config:
   scalars:
@@ -13,14 +13,14 @@ config:
   skipTypename: true # skip __typename field in typings unless it's part of the query
 
 generates:
-  src/sumer-giza/sumer-query-node/generated/schema.ts:
+  src/giza-olympia/giza-query-node/generated/schema.ts:
     hooks:
       afterOneFileWrite:
         - prettier --write
         - eslint --fix
     plugins:
       - typescript
-  src/sumer-giza/sumer-query-node/generated/queries.ts:
+  src/giza-olympia/giza-query-node/generated/queries.ts:
     preset: import-types
     presetConfig:
       typesPath: ./schema
