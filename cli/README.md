@@ -112,6 +112,20 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
 * [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 * [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+* [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
+* [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
+* [`joystream-cli forum:category`](#joystream-cli-forumcategory)
+* [`joystream-cli forum:createCategory`](#joystream-cli-forumcreatecategory)
+* [`joystream-cli forum:createThread`](#joystream-cli-forumcreatethread)
+* [`joystream-cli forum:deleteCategory`](#joystream-cli-forumdeletecategory)
+* [`joystream-cli forum:moderatePost`](#joystream-cli-forummoderatepost)
+* [`joystream-cli forum:moderateThread`](#joystream-cli-forummoderatethread)
+* [`joystream-cli forum:moveThread`](#joystream-cli-forummovethread)
+* [`joystream-cli forum:posts`](#joystream-cli-forumposts)
+* [`joystream-cli forum:setStickiedThreads`](#joystream-cli-forumsetstickiedthreads)
+* [`joystream-cli forum:threads`](#joystream-cli-forumthreads)
+* [`joystream-cli forum:updateCategoryArchivalStatus`](#joystream-cli-forumupdatecategoryarchivalstatus)
+* [`joystream-cli forum:updateCategoryModeratorStatus`](#joystream-cli-forumupdatecategorymoderatorstatus)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
 * [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
@@ -879,6 +893,256 @@ OPTIONS
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
 
+## `joystream-cli forum:addPost`
+
+Add forum post.
+
+```
+USAGE
+  $ joystream-cli forum:addPost
+
+OPTIONS
+  --categoryId=categoryId    (required) Id of the forum category of the parent thread
+  --editable                 Whether the post should be editable
+  --text=text                (required) Post content (md-formatted text)
+  --threadId=threadId        (required) Post's parent thread
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/addPost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/addPost.ts)_
+
+## `joystream-cli forum:categories`
+
+List existing forum categories.
+
+```
+USAGE
+  $ joystream-cli forum:categories
+
+OPTIONS
+  -c, --tree                               Display a category tree (with parentCategoryId as root, if specified)
+  -p, --parentCategoryId=parentCategoryId  Parent category id (only child categories will be listed)
+  --useMemberId=useMemberId                Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId                Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/categories.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/categories.ts)_
+
+## `joystream-cli forum:category`
+
+Display forum category details.
+
+```
+USAGE
+  $ joystream-cli forum:category
+
+OPTIONS
+  -c, --categoryId=categoryId  (required) Forum category id
+  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/category.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/category.ts)_
+
+## `joystream-cli forum:createCategory`
+
+Create forum category.
+
+```
+USAGE
+  $ joystream-cli forum:createCategory
+
+OPTIONS
+  -d, --description=description            (required) Category description
+  -p, --parentCategoryId=parentCategoryId  Parent category id (in case of creating a subcategory)
+  -t, --title=title                        (required) Category title
+  --useMemberId=useMemberId                Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId                Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/createCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/createCategory.ts)_
+
+## `joystream-cli forum:createThread`
+
+Create forum thread.
+
+```
+USAGE
+  $ joystream-cli forum:createThread
+
+OPTIONS
+  --categoryId=categoryId    (required) Id of the forum category the thread should be created in
+  --tags=tags                Space-separated tags to associate with the thread
+  --text=text                (required) Initial post text
+  --title=title              (required) Thread title
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/createThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/createThread.ts)_
+
+## `joystream-cli forum:deleteCategory`
+
+Delete forum category provided it has no existing subcategories and threads.
+
+```
+USAGE
+  $ joystream-cli forum:deleteCategory
+
+OPTIONS
+  -c, --categoryId=categoryId   (required) Id of the category to delete
+  --context=(Leader|Moderator)  Actor context to execute the command in (Leader/Moderator)
+  --useMemberId=useMemberId     Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId     Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/deleteCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/deleteCategory.ts)_
+
+## `joystream-cli forum:moderatePost`
+
+Moderate a forum post and slash the associated stake.
+
+```
+USAGE
+  $ joystream-cli forum:moderatePost
+
+OPTIONS
+  -c, --categoryId=categoryId   (required) Forum category id
+  -p, --postId=postId           (required) Forum post id
+  -r, --rationale=rationale     (required) Rationale behind the post moderation.
+  -t, --threadId=threadId       (required) Forum thread id
+  --context=(Leader|Moderator)  Actor context to execute the command in (Leader/Moderator)
+  --useMemberId=useMemberId     Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId     Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/moderatePost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/moderatePost.ts)_
+
+## `joystream-cli forum:moderateThread`
+
+Moderate a forum thread and slash the associated stake.
+
+```
+USAGE
+  $ joystream-cli forum:moderateThread
+
+OPTIONS
+  -c, --categoryId=categoryId   (required) Id of the forum category the thread is currently in
+  -r, --rationale=rationale     (required) Rationale behind the thread moderation.
+  -t, --threadId=threadId       (required) Forum thread id
+  --context=(Leader|Moderator)  Actor context to execute the command in (Leader/Moderator)
+  --useMemberId=useMemberId     Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId     Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/moderateThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/moderateThread.ts)_
+
+## `joystream-cli forum:moveThread`
+
+Move forum thread to a different category.
+
+```
+USAGE
+  $ joystream-cli forum:moveThread
+
+OPTIONS
+  -c, --categoryId=categoryId        (required) Thread's current category id
+  -n, --newCategoryId=newCategoryId  (required) Thread's new category id
+  -t, --threadId=threadId            (required) Forum thread id
+  --context=(Leader|Moderator)       Actor context to execute the command in (Leader/Moderator)
+  --useMemberId=useMemberId          Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId          Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/moveThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/moveThread.ts)_
+
+## `joystream-cli forum:posts`
+
+List existing forum posts in given thread.
+
+```
+USAGE
+  $ joystream-cli forum:posts
+
+OPTIONS
+  -t, --threadId=threadId    (required) Thread id (only posts in this thread will be listed)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/posts.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/posts.ts)_
+
+## `joystream-cli forum:setStickiedThreads`
+
+Set stickied threads in a given category.
+
+```
+USAGE
+  $ joystream-cli forum:setStickiedThreads
+
+OPTIONS
+  --categoryId=categoryId       (required) Forum category id
+  --context=(Leader|Moderator)  Actor context to execute the command in (Leader/Moderator)
+  --threadIds=threadIds         Space-separated thread ids
+  --useMemberId=useMemberId     Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId     Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/setStickiedThreads.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/setStickiedThreads.ts)_
+
+## `joystream-cli forum:threads`
+
+List existing forum threads in given category.
+
+```
+USAGE
+  $ joystream-cli forum:threads
+
+OPTIONS
+  -c, --categoryId=categoryId  (required) Category id (only threads in this category will be listed)
+  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/threads.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/threads.ts)_
+
+## `joystream-cli forum:updateCategoryArchivalStatus`
+
+Update archival status of a forum category.
+
+```
+USAGE
+  $ joystream-cli forum:updateCategoryArchivalStatus
+
+OPTIONS
+  -c, --categoryId=categoryId   (required) Forum category id
+  --archived=(yes|no)           (required) Whether the category should be archived
+  --context=(Leader|Moderator)  Actor context to execute the command in (Leader/Moderator)
+  --useMemberId=useMemberId     Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId     Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/updateCategoryArchivalStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/updateCategoryArchivalStatus.ts)_
+
+## `joystream-cli forum:updateCategoryModeratorStatus`
+
+Update moderator status of a worker in relation to a category.
+
+```
+USAGE
+  $ joystream-cli forum:updateCategoryModeratorStatus
+
+OPTIONS
+  -c, --categoryId=categoryId  (required) Forum category id
+  -w, --workerId=workerId      (required) Forum working group worker id
+  --status=(active|disabled)   (required) Status of the moderator membership in the category
+  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/forum/updateCategoryModeratorStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/forum/updateCategoryModeratorStatus.ts)_
+
 ## `joystream-cli help [COMMAND]`
 
 display help for joystream-cli
@@ -1595,9 +1859,3 @@ OPTIONS
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
 <!-- commandsstop -->
-
-# Environment variables
-<!-- env -->
-- `FORCE_COLOR` - can be set to `0` to disable output coloring
-- `AUTO_CONFIRM` - can be set to `1` or `true` to skip any required confirmations (can be useful for creating bash scripts)
-<!-- envstop -->

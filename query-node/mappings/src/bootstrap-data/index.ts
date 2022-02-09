@@ -1,4 +1,4 @@
-import { MemberJson, StorageSystemJson, WorkingGroupJson, MembershipSystemJson } from './types'
+import { StorageSystemJson, WorkingGroupJson, MembershipSystemJson, MemberJson } from './types'
 import storageSystemJson from './data/storageSystem.json'
 import membersJson from './data/members.json'
 import workingGroupsJson from './data/workingGroups.json'

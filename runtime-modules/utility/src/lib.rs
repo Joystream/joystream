@@ -24,16 +24,16 @@ pub(crate) mod tests;
 
 mod benchmarking;
 
-use common::{working_group::WorkingGroup, BalanceKind};
+use common::{working_group::WorkingGroup, AllowedLockCombinationProvider, BalanceKind};
 use council::Module as Council;
-use frame_support::traits::Currency;
-use frame_support::traits::Get;
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_event, decl_module, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -50,6 +50,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + council::Trait {
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Exposes allowed lock combinations from the runtime level.
+    type AllowedLockCombinationProvider: AllowedLockCombinationProvider;
 }
 
 /// Utility WeightInfo.
@@ -115,6 +118,10 @@ decl_module! {
 
         /// Predefined errors
         type Error = Error<T>;
+
+        /// Exposes allowed lock combinations from the runtime level.
+        const AllowedLockCombinations: BTreeSet<(LockIdentifier, LockIdentifier)> =
+            T::AllowedLockCombinationProvider::get_allowed_lock_combinations();
 
         /// Signal proposal extrinsic. Should be used as callable object to pass to the `engine` module.
         ///

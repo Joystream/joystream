@@ -120,6 +120,56 @@ async function createNewMemberFromParams(
   return member
 }
 
+export async function createNewMember(
+  store: DatabaseManager,
+  eventTime: Date,
+  memberId: string,
+  entryMethod: typeof MembershipEntryMethod,
+  rootAccount: string,
+  controllerAccount: string,
+  handle: string,
+  defaultInviteCount: number,
+  metadata: MembershipMetadata
+): Promise<Membership> {
+  const avatar = new AvatarUri()
+  avatar.avatarUri = metadata?.avatarUri ?? ''
+
+  const metadataEntity = new MemberMetadata({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    name: metadata?.name || undefined,
+    about: metadata?.about || undefined,
+    avatar,
+  })
+
+  const member = new Membership({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    id: memberId,
+    rootAccount: rootAccount.toString(),
+    controllerAccount: controllerAccount.toString(),
+    handle: handle.toString(),
+    metadata: metadataEntity,
+    entry: entryMethod,
+    referredBy: undefined,
+    isVerified: false,
+    inviteCount: defaultInviteCount,
+    boundAccounts: [],
+    invitees: [],
+    referredMembers: [],
+    invitedBy: undefined,
+    isFoundingMember: false,
+    isCouncilMember: false,
+    councilCandidacies: [],
+    councilMembers: [],
+  })
+
+  await store.save<MemberMetadata>(member.metadata)
+  await store.save<Membership>(member)
+
+  return member
+}
+
 export async function members_MembershipBought({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, buyMembershipParameters] = new Members.MembershipBoughtEvent(event).params
 

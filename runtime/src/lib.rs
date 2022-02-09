@@ -58,6 +58,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -71,6 +72,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::AllowedLockCombinationProvider;
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -575,10 +577,6 @@ impl common::StorageOwnership for Runtime {
     type DataObjectTypeId = DataObjectTypeId;
 }
 
-impl memo::Trait for Runtime {
-    type Event = Event;
-}
-
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
@@ -983,8 +981,17 @@ impl proposals_discussion::Trait for Runtime {
     type PostLifeTime = ForumPostLifeTime;
 }
 
+pub struct LockCombinationProvider;
+impl AllowedLockCombinationProvider for LockCombinationProvider {
+    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)> {
+        ALLOWED_LOCK_COMBINATIONS.clone()
+    }
+}
+
 impl joystream_utility::Trait for Runtime {
     type Event = Event;
+
+    type AllowedLockCombinationProvider = LockCombinationProvider;
 
     type WeightInfo = weights::joystream_utility::WeightInfo;
 
@@ -1133,7 +1140,6 @@ construct_runtime!(
         // Joystream
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
-        Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
