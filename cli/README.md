@@ -14,7 +14,6 @@ Command Line Interface for Joystream community and governance activities
 * [First steps](#first-steps)
 * [Useful environment settings](#useful-environment-settings)
 * [Commands](#commands)
-* [Environment variables](#environment-variables)
 <!-- tocstop -->
 
 # Usage
@@ -914,7 +913,7 @@ _See code: [src/commands/forum/addPost.ts](https://github.com/Joystream/joystrea
 
 ## `joystream-cli forum:categories`
 
-List existing forum categories.
+List existing forum categories by parent id (root categories by default) or displays a category tree.
 
 ```
 USAGE
