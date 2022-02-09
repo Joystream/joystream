@@ -126,6 +126,9 @@ pub trait Trait:
 
     /// Channel migrated in each block during migration
     type ChannelsMigrationsEachBlock: Get<u64>;
+
+    /// Deletion prize to be set when creating a dynamic bag
+    type BagDeletionPrize: Get<<Self as balances::Trait>::Balance>;
 }
 
 decl_storage! {
@@ -400,7 +403,7 @@ decl_module! {
             Self::validate_member_set(&params.moderators)?;
             Self::validate_member_set(&params.collaborators)?;
 
-            let upload_params = params.assets.as_ref().map(|assets| {
+            let bag_creation_params = params.assets.as_ref().map(|assets| {
                 Self::construct_upload_parameters(
                     assets,
                     &channel_id,
@@ -413,10 +416,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
-            if let Some(params) = upload_params.clone() {
-                Storage::<T>::upload_data_objects(params)?;
-            }
+            // create channel bag
+            Storage::<T>::create_dynamic_bag(
+                bag_creation_params,
+                T::BagDeletionPrize::get(),
+            );
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
