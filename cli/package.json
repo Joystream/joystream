@@ -122,6 +122,9 @@
       },
       "membership": {
         "description": "Membership management - buy a new membership, update membership, manage membership keys"
+      },
+      "forum": {
+        "description": "Forum working group activities (moderation, category management)"
       }
     }
   },
