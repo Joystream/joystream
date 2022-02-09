@@ -2365,7 +2365,6 @@ dependencies = [
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
- "pallet-memo",
  "pallet-offences",
  "pallet-offences-benchmarking",
  "pallet-proposals-codex",
@@ -2383,7 +2382,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility 1.0.0",
+ "pallet-utility 1.1.0",
  "pallet-utility 2.0.1",
  "pallet-working-group",
  "parity-scale-codec",
@@ -3959,18 +3958,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-memo"
-version = "5.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-offences"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate.git?rev=2cd20966cc09b059817c3ebe12fc130cdd850d62#2cd20966cc09b059817c3ebe12fc130cdd850d62"
@@ -4309,7 +4296,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-utility"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
