@@ -1,17 +1,18 @@
 {
-  "name": "@joystream/content",
+  "name": "@joystreamjs/content",
   "description": "Javascript library for interacting with content directory module - managing vidoes, channels, assets, categories and curator groups",
   "version": "0.7.0",
   "author": "Jsgenesis",
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
+    "@joystream/metadata-protobuf": "^2.0.0",
     "@joystream/types": "^0.18.0",
-    "@polkadot/api": "5.9.1"
+    "@polkadot/api": "5.9.1",
+    "axios": "^0.21.1",
+    "lodash": "4.17.15"
   },
   "devDependencies": {
-    "eslint": "^7.25.0",
-    "prettier": "^2.2.1",
-    "ts-node": "^10.2.1",
+    "@joystream/eslint-config": "^1.0.0",
     "typescript": "^4.4.3"
   },
   "engines": {
@@ -25,7 +26,7 @@
   "files": [
     "/lib"
   ],
-  "homepage": "https://github.com/Joystream/joystream/blob/master/joystream.js/packages/content",
+  "homepage": "https://github.com/Joystream/joystream/blob/master/joystreamjs/content",
   "keywords": [
     "content",
     "creator payout"
@@ -35,14 +36,13 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Joystream/joystream",
-    "directory": "joystream.js/packages/content"
+    "directory": "joystreamjs/content"
   },
   "scripts": {
     "build": "tsc --build tsconfig.json"
   },
   "types": "lib/index.d.ts",
   "volta": {
-    "node": "14.16.1",
-    "yarn": "1.22.15"
+    "extends": "../package.json"
   }
 }

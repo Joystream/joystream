@@ -27,7 +27,8 @@
     "query-node/mappings",
     "query-node/generated/graphql-server",
     "metadata-protobuf",
-    "joystream.js"
+    "joystreamjs",
+    "Joystreamjs/content"
   ],
   "resolutions": {
     "@polkadot/api": "5.9.1",
