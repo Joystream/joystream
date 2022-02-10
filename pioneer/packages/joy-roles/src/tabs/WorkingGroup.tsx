@@ -180,13 +180,13 @@ export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
 export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsBeta}
-    customGroupName='Human Resources'
+    customGroupName='Marketing'
     description={
       <>
         <OperationsGroupName>Operations Group Beta</OperationsGroupName>
         <span>
-          The Human Resources working group is responsible for the Human Resources tasks required
-          for the operation and growth of the platform and community.
+          The Marketing working group is responsible for developing and executing strategies to
+          promote the Joystream platform.
         </span>
       </>
     }
@@ -197,13 +197,13 @@ export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
 export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
   <OperationsGroup
     group={WorkingGroups.OperationsGamma}
-    customGroupName='Marketing'
+    customGroupName='Human Resources'
     description={
       <>
         <OperationsGroupName>Operations Group Gamma</OperationsGroupName>
         <span>
-          The Marketing working group is responsible for developing and executing strategies to
-          promote the Joystream platform.
+          The Human Resources working group is responsible for the Human Resources tasks required
+          for the operation and growth of the platform and community.
         </span>
       </>
     }

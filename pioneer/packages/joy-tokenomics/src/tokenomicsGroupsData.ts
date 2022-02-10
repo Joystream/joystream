@@ -72,9 +72,9 @@ export const WORKING_GROUPS = [
   {
     groupType: 'operationsBeta' as const,
     titleCutoff: 1050,
-    shortTitle: 'Human Res.',
-    title: 'Human Resources',
-    helpText: 'The current Human Resources (Operations Group Beta) Workers, and the sum of their projected rewards and stakes.',
+    shortTitle: 'Marketing',
+    title: 'Marketing',
+    helpText: 'The current Marketers (Operations Group Beta), and the sum of their projected rewards and stakes.',
     color: '#03a9f4',
     extraInfo: {
       full: 'Operations Working Group Beta',
@@ -82,18 +82,18 @@ export const WORKING_GROUPS = [
     },
     lead: {
       titleCutoff: 1015,
-      shortTitle: 'HR Lead',
-      title: 'Human Res. Lead',
-      helpText: 'Current Human Resources (Operations Group Beta) Lead, and their projected reward and stake.',
+      shortTitle: 'Marketing Lead',
+      title: 'Marketing Lead',
+      helpText: 'Current Marketing Lead (Operations Group Beta), and their projected reward and stake.',
       color: '#2196f3'
     }
   },
   {
     groupType: 'operationsGamma' as const,
     titleCutoff: 1050,
-    shortTitle: 'Marketing',
-    title: 'Marketing',
-    helpText: 'The current Marketers (Operations Group Gamma), and the sum of their projected rewards and stakes.',
+    shortTitle: 'Human Res.',
+    title: 'Human Resources',
+    helpText: 'The current Human Resources (Operations Group Gamma) Workers, and the sum of their projected rewards and stakes.',
     color: '#3f51b5',
     extraInfo: {
       full: 'Operations Working Group Gamma',
@@ -101,9 +101,9 @@ export const WORKING_GROUPS = [
     },
     lead: {
       titleCutoff: 1015,
-      shortTitle: 'Marketing Lead',
-      title: 'Marketing Lead',
-      helpText: 'Current Marketing Lead (Operations Group Gamma), and their projected reward and stake.',
+      shortTitle: 'HR Lead',
+      title: 'Human Res. Lead',
+      helpText: 'Current Human Resources (Operations Group Gamma) Lead, and their projected reward and stake.',
       color: '#673ab7'
     }
   },

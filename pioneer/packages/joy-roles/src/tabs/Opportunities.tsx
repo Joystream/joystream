@@ -490,11 +490,11 @@ const renderWorkingGroupName = (workingGroup: WorkingGroups) => {
   }
 
   if (workingGroup === WorkingGroups.OperationsBeta) {
-    return { text: 'Human Resources', subtext: 'Operations Working Group Beta' };
+    return { text: 'Marketing', subtext: 'Operations Working Group Beta' };
   }
 
   if (workingGroup === WorkingGroups.OperationsGamma) {
-    return { text: 'Marketing', subtext: 'Operations Working Group Gamma' };
+    return { text: 'Human Resources', subtext: 'Operations Working Group Gamma' };
   }
 
   return { text: workingGroup };

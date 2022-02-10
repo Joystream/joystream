@@ -45,7 +45,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const OPERATIONS_GROUP_NAMES = { Alpha: 'Builders', Beta: 'Human Resources', Gamma: 'Marketing' };
+const OPERATIONS_GROUP_NAMES = { Alpha: 'Builders', Beta: 'Marketing', Gamma: 'Human Resources' };
 
 const OperationsGroupSubtext = styled('p')`
   font-size: 11px !important;

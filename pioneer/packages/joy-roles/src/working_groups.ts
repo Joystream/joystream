@@ -20,7 +20,7 @@ export const workerRoleNameByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.ContentCurators]: 'Content Curator',
   [WorkingGroups.StorageProviders]: 'Storage Provider',
   [WorkingGroups.OperationsAlpha]: 'Builder',
-  [WorkingGroups.OperationsBeta]: 'HR Worker',
-  [WorkingGroups.OperationsGamma]: 'Marketer',
+  [WorkingGroups.OperationsBeta]: 'Marketer',
+  [WorkingGroups.OperationsGamma]: 'HR Worker',
   [WorkingGroups.Distribution]: 'Distributor'
 };
