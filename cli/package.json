@@ -75,7 +75,8 @@
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript-operations": "^1.17.16",
-    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11",
+    "@joystreamjs/content": "0.7.0"
   },
   "engines": {
     "node": ">=14.0.0",
