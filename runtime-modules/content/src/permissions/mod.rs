@@ -274,14 +274,12 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
 
         match actor {
             ContentActor::Lead => {
-                ensure_lead_auth_success::<T>(&sender)?;
                 if let ChannelOwner::CuratorGroup(_) = channel_owner {
                     return Ok(());
                 } else {
                     return Err(Error::<T>::ActorNotAuthorized.into());
                 }
             }
-
             ContentActor::Curator(curator_group_id, _) => {
                 // Ensure curator group is the channel owner.
                 ensure!(
