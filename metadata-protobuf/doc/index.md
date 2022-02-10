@@ -15,12 +15,14 @@
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
   
 - [proto/CreatorPayout.proto](#proto/CreatorPayout.proto)
-    - [CreatorPayout](#.CreatorPayout)
-    - [CreatorPayoutBody](#.CreatorPayoutBody)
-    - [CreatorPayoutByteOffset](#.CreatorPayoutByteOffset)
-    - [CreatorPayoutHeader](#.CreatorPayoutHeader)
-    - [NonLeafNodeMerkleBranch](#.NonLeafNodeMerkleBranch)
-    - [NonLeafNodeMerkleBranchByteOffset](#.NonLeafNodeMerkleBranchByteOffset)
+    - [CreatorPayoutPayload](#.CreatorPayoutPayload)
+    - [CreatorPayoutPayload.Body](#.CreatorPayoutPayload.Body)
+    - [CreatorPayoutPayload.Body.CreatorPayout](#.CreatorPayoutPayload.Body.CreatorPayout)
+    - [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#.CreatorPayoutPayload.Body.CreatorPayout.ProofElement)
+    - [CreatorPayoutPayload.Header](#.CreatorPayoutPayload.Header)
+    - [CreatorPayoutPayload.Header.CreatorPayoutByteOffset](#.CreatorPayoutPayload.Header.CreatorPayoutByteOffset)
+  
+    - [CreatorPayoutPayload.Body.CreatorPayout.Side](#.CreatorPayoutPayload.Body.CreatorPayout.Side)
   
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
@@ -222,9 +224,40 @@
 
 
 
-<a name=".CreatorPayout"></a>
+<a name=".CreatorPayoutPayload"></a>
 
-### CreatorPayout
+### CreatorPayoutPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| header | [CreatorPayoutPayload.Header](#CreatorPayoutPayload.Header) | required | Payload header |
+| body | [CreatorPayoutPayload.Body](#CreatorPayoutPayload.Body) | required | Payload body |
+
+
+
+
+
+
+<a name=".CreatorPayoutPayload.Body"></a>
+
+### CreatorPayoutPayload.Body
+Creator payout full body structure, it will not be downloaded by clients in full
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| creator_payouts | [CreatorPayoutPayload.Body.CreatorPayout](#CreatorPayoutPayload.Body.CreatorPayout) | repeated | List of creator payouts |
+
+
+
+
+
+
+<a name=".CreatorPayoutPayload.Body.CreatorPayout"></a>
+
+### CreatorPayoutPayload.Body.CreatorPayout
 
 
 
@@ -232,7 +265,7 @@
 | ----- | ---- | ----- | ----------- |
 | channel_id | [uint32](#uint32) | required | `c_i` |
 | cumulative_payout_owed | [float](#float) | required | `p_i` |
-| merkle_branch | [bytes](#bytes) | required | `proof_i` be the merkle branch for leaf `c_i||p_i||m_i`. where `m_i=hash(d_i)` |
+| merkle_branches | [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#CreatorPayoutPayload.Body.CreatorPayout.ProofElement) | repeated |  |
 | payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
 
 
@@ -240,25 +273,43 @@
 
 
 
-<a name=".CreatorPayoutBody"></a>
+<a name=".CreatorPayoutPayload.Body.CreatorPayout.ProofElement"></a>
 
-### CreatorPayoutBody
-Creator payout full body structure, it will not be downloaded by clients in full
+### CreatorPayoutPayload.Body.CreatorPayout.ProofElement
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| creator_payouts | [CreatorPayout](#CreatorPayout) | repeated | List of creator payouts |
-| merkle_branches_of_non_leaf_nodes | [NonLeafNodeMerkleBranch](#NonLeafNodeMerkleBranch) | repeated | Merkle branch of non-leaf nodes, for total number of channels `n` they will be `n-1` if `n` even otherwise `n` |
+| merkle_branch | [bytes](#bytes) | required |  |
+| side | [CreatorPayoutPayload.Body.CreatorPayout.Side](#CreatorPayoutPayload.Body.CreatorPayout.Side) | required |  |
 
 
 
 
 
 
-<a name=".CreatorPayoutByteOffset"></a>
+<a name=".CreatorPayoutPayload.Header"></a>
 
-### CreatorPayoutByteOffset
+### CreatorPayoutPayload.Header
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payload_length_in_bytes | [uint64](#uint64) | required | Length in bytes of entire payload |
+| header_length_in_bytes | [uint64](#uint64) | required | Length in bytes of payload header |
+| number_of_channels | [uint32](#uint32) | required | Number of channels |
+| creator_payout_byte_offsets | [CreatorPayoutPayload.Header.CreatorPayoutByteOffset](#CreatorPayoutPayload.Header.CreatorPayoutByteOffset) | repeated | List of byte offsets for all channels |
+
+
+
+
+
+
+<a name=".CreatorPayoutPayload.Header.CreatorPayoutByteOffset"></a>
+
+### CreatorPayoutPayload.Header.CreatorPayoutByteOffset
 
 
 
@@ -271,57 +322,19 @@ Creator payout full body structure, it will not be downloaded by clients in full
 
 
 
-
-<a name=".CreatorPayoutHeader"></a>
-
-### CreatorPayoutHeader
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| payload_length_in_bytes | [uint64](#uint64) | required | Length in bytes of entire payload |
-| header_length_in_bytes | [uint64](#uint64) | required | Length in bytes of payload header |
-| number_of_channels | [uint32](#uint32) | required | Number of channels |
-| creator_payout_byte_offsets | [CreatorPayoutByteOffset](#CreatorPayoutByteOffset) | repeated | List of byte offsets for all channels |
-| non_leaf_node_merkle_branch_byte_offsets | [NonLeafNodeMerkleBranchByteOffset](#NonLeafNodeMerkleBranchByteOffset) | repeated | List of byte offsets for all merkle branches |
-
-
-
-
-
-
-<a name=".NonLeafNodeMerkleBranch"></a>
-
-### NonLeafNodeMerkleBranch
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| merkle_branch | [bytes](#bytes) | required |  |
-
-
-
-
-
-
-<a name=".NonLeafNodeMerkleBranchByteOffset"></a>
-
-### NonLeafNodeMerkleBranchByteOffset
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| branch_id | [uint32](#uint32) | required | id of merkle branch of non-leaf nodes |
-| byte_offset | [uint64](#uint64) | required | Byte offset from start of payload where merkle branch for branch_id exists |
-
-
-
-
-
  
+
+
+<a name=".CreatorPayoutPayload.Body.CreatorPayout.Side"></a>
+
+### CreatorPayoutPayload.Body.CreatorPayout.Side
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| Left | 0 |  |
+| Right | 1 |  |
+
 
  
 
