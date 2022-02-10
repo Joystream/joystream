@@ -103,6 +103,9 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
 * [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 * [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+* [`joystream-cli content:updateCreatorPayoutCommitment COMMITMENT`](#joystream-cli-contentupdatecreatorpayoutcommitment-commitment)
+* [`joystream-cli content:creatorPayoutRecord [CHANNELID]`](#joystream-cli-contentcreatorpayoutrecord-channelid)
+* [`joystream-cli content:claimCreatorPayoutReward [CHANNELID]`](#joystream-cli-contentclaimcreatorpayoutreward-channelid)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 * [`joystream-cli working-groups:apply [OPENINGID]`](#joystream-cli-working-groupsapply-openingid)
@@ -711,6 +714,48 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
+
+## `joystream-cli content:updateCreatorPayoutCommitment COMMITMENT`
+
+Update creator payout payload commitment hash in the runtime storage.
+
+```
+USAGE
+  $ joystream-cli content:updateCreatorPayoutCommitment COMMITMENT
+
+ARGUMENTS
+  COMMITMENT  commitment hash/Merkle root of the creator payout payload
+```
+
+_See code: [src/commands/content/updateCreatorPayoutCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateCreatorPayoutCommitment.ts)_
+
+## `joystream-cli content:creatorPayoutRecord [CHANNELID]`
+
+Show payout information for creator given a channel id.
+
+```
+USAGE
+  $ joystream-cli content:creatorPayoutRecord [CHANNELID]
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+```
+
+_See code: [src/commands/content/creatorPayoutRecord.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/creatorPayoutRecord.ts)_
+
+## `joystream-cli content:claimCreatorPayoutReward [CHANNELID]`
+
+Claim creator payout reward for a given channel id.
+
+```
+USAGE
+  $ joystream-cli content:claimCreatorPayoutReward [CHANNELID]
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+```
+
+_See code: [src/commands/content/claimCreatorPayoutReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/claimCreatorPayoutReward.ts)_
 
 ## `joystream-cli help [COMMAND]`
 
