@@ -2557,16 +2557,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
         // balance check
-        let total_deletion_prize = bag_change.total_deletion_prize;
-
-        let storage_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
-
-        ensure!(
-            Balances::<T>::usable_balance(account_id)
-                > total_deletion_prize.saturating_add(storage_fee),
-            Error::<T>::InsufficientBalance
-        );
+        // balance check (balance must be usable and not simply free)
+        let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
+            &bag_change,
+            BalanceOf::<T>::zero(), // no bag deletion prize
+            &params.account_id,
+        )?;
 
         // storage bucket check
         Self::check_bag_for_bucket_overflow(&bag, &bag_change.voucher_update)?;
@@ -2575,16 +2571,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
-        // deposit deletion prize
-        <StorageTreasury<T>>::deposit(
-            &params.deletion_prize_source_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        // slash storage fee
-        if storage_fee != Zero::zero() {
-            let _ = Balances::<T>::slash(&params.account_id, storage_fee);
-        }
+        Self::perform_balance_accounting(total_deletion_prize, storage_fee, &params.account_id);
 
         // bag bookkeeping
         Self::perform_upload(&params.object_creation_list, &bag_change);
@@ -2748,54 +2735,38 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
-        // balance check (balance must be usable and not simply free)
-        let total_deletion_prize = deletion_prize
-            .unwrap_or_default()
-            .saturating_add(bag_change.total_deletion_prize);
-
-        let storage_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
-
-        ensure!(
-            Balances::<T>::usable_balance(account_id)
-                > total_deletion_prize.saturating_add(storage_fee),
-            Error::<T>::InsufficientBalance
-        );
-
         // storage bucket check
         let (storage_bucket_ids, distribution_bucket_ids) =
             Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?;
+
+        // balance check (balance must be usable and not simply free)
+        let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
+            &bag_change,
+            deletion_prize.unwrap_or_default(),
+            &params.account_id,
+        )?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        // deposit deletion prize
-        <StorageTreasury<T>>::deposit(
-            &params.deletion_prize_source_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        // slash storage fee
-        if storage_fee != Zero::zero() {
-            let _ = Balances::<T>::slash(&params.account_id, storage_fee);
-        }
+        Self::perform_balance_accounting(total_deletion_prize, storage_fee, &params.account_id);
 
         // create empty bag with appropriate buckets
-        let bag = Bag::<T> {
-            stored_by: storage_bucket_ids.clone(),
-            deletion_prize,
-            distributed_by: distribution_bucket_ids.clone(),
-            ..Default::default()
-        };
-
-        let bag_id: BagId<T> = params.bag_id.clone().into();
-
-        <Bags<T>>::insert(&bag_id, bag);
+        <Bags<T>>::insert(
+            &bag_id,
+            Bag::<T> {
+                stored_by: storage_bucket_ids.clone(),
+                deletion_prize,
+                distributed_by: distribution_bucket_ids.clone(),
+                ..Default::default()
+            },
+        );
 
         // fills the bag with voucher update
         Self::perform_upload(&params.object_creation_list, &bag_change);
 
+        // change bucket assignments
         Self::change_bag_assignments_for_distribution_buckets(
             &distribution_bucket_ids,
             &BTreeSet::new(),
@@ -3876,5 +3847,39 @@ impl<T: Trait> Module<T> {
             params,
             T::DataObjectDeletionPrize::get(),
         ));
+    }
+
+    fn ensure_perform_balance_accounting(
+        bag_change: &BagUpdate<BalanceOf<T>>,
+        extra_deletion_prize: BalanceOf<T>,
+        account_id: &T::AccountId,
+    ) -> Result<(BalanceOf<T>, BalanceOf<T>), DispatchError> {
+        let total_deletion_prize =
+            extra_deletion_prize.saturating_add(bag_change.total_deletion_prize);
+
+        let storage_fee =
+            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
+
+        ensure!(
+            Balances::<T>::usable_balance(account_id)
+                > total_deletion_prize.saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance
+        );
+
+        (total_deletion_prize, storage_fee)
+    }
+
+    fn perform_balance_accounting(
+        deletion_prize: BalanceOf<T>,
+        storage_fee: BalanceOf<T>,
+        account_id: &T::AccountId,
+    ) {
+        // deposit deletion prize
+        <StorageTreasury<T>>::deposit(account_id, deletion_prize)?;
+
+        // slash storage fee
+        if storage_fee != Zero::zero() {
+            let _ = Balances::<T>::slash(account_id, storage_fee);
+        }
     }
 }
