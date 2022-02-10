@@ -2556,7 +2556,17 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
-        // TODo: balance check
+        // balance check
+        let total_deletion_prize = bag_change.total_deletion_prize;
+
+        let storage_fee =
+            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
+
+        ensure!(
+            Balances::<T>::usable_balance(account_id)
+                > total_deletion_prize.saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance
+        );
 
         // storage bucket check
         Self::check_bag_for_bucket_overflow(&bag, &bag_change.voucher_update)?;
@@ -2565,16 +2575,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
+        // deposit deletion prize
         <StorageTreasury<T>>::deposit(
             &params.deletion_prize_source_account_id,
             bag_change.total_deletion_prize,
         )?;
 
-        Self::slash_data_size_fee(
-            &params.deletion_prize_source_account_id,
-            bag_change.voucher_update.objects_total_size,
-        );
+        // slash storage fee
+        if storage_fee != Zero::zero() {
+            let _ = Balances::<T>::slash(&params.account_id, storage_fee);
+        }
 
+        // bag bookkeeping
         Self::perform_upload(&params.object_creation_list, &bag_change);
 
         Ok(())
@@ -2724,17 +2736,31 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         params: DynBagCreationParameters<T>,
         deletion_prize: Option<BalanceOf<T>>,
     ) -> DispatchResult {
-        // validate params and get storage & distribution buckets
-        //    let bag_change = Self::validate_create_dynamic_bag_params(&params, deletion_prize)?;
-        let bag = Self::ensure_bag_exists(&params.bag_id)?;
+        // bag check
+        let bag_id: BagId<T> = params.bag_id.clone().into();
 
-        // there are objects to upload
+        ensure!(
+            !Bags::<T>::contain_key(bag_id),
+            Error::<T>::DynamicBagExists
+        );
 
         // validate bag change
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
-        // TODO: balance check
+        // balance check (balance must be usable and not simply free)
+        let total_deletion_prize = deletion_prize
+            .unwrap_or_default()
+            .saturating_add(bag_change.total_deletion_prize);
+
+        let storage_fee =
+            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
+
+        ensure!(
+            Balances::<T>::usable_balance(account_id)
+                > total_deletion_prize.saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance
+        );
 
         // storage bucket check
         let (storage_bucket_ids, distribution_bucket_ids) =
@@ -2744,16 +2770,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
+        // deposit deletion prize
         <StorageTreasury<T>>::deposit(
             &params.deletion_prize_source_account_id,
             bag_change.total_deletion_prize,
         )?;
 
-        Self::slash_data_size_fee(
-            &params.deletion_prize_source_account_id,
-            bag_change.voucher_update.objects_total_size,
-        );
+        // slash storage fee
+        if storage_fee != Zero::zero() {
+            let _ = Balances::<T>::slash(&params.account_id, storage_fee);
+        }
 
+        // create empty bag with appropriate buckets
         let bag = Bag::<T> {
             stored_by: storage_bucket_ids.clone(),
             deletion_prize,
@@ -2765,6 +2793,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <Bags<T>>::insert(&bag_id, bag);
 
+        // fills the bag with voucher update
         Self::perform_upload(&params.object_creation_list, &bag_change);
 
         Self::change_bag_assignments_for_distribution_buckets(
