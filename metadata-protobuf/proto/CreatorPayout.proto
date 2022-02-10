@@ -1,60 +1,55 @@
 syntax = "proto2";
 
-message CreatorPayoutHeader {
-  // Length in bytes of entire payload
-  required uint64 payload_length_in_bytes = 1;
+message CreatorPayoutPayload {
+  message Header {
+    // Length in bytes of entire payload
+    required uint64 payload_length_in_bytes = 1;
 
-  // Length in bytes of payload header
-  required uint64 header_length_in_bytes = 2; 
+    // Length in bytes of payload header
+    required uint64 header_length_in_bytes = 2; 
 
-  // Number of channels
-  required uint32 number_of_channels = 3; 
+    // Number of channels
+    required uint32 number_of_channels = 3; 
 
-  // List of byte offsets for all channels
-  repeated CreatorPayoutByteOffset creator_payout_byte_offsets = 4; 
+    message CreatorPayoutByteOffset {
+      // Channel id; `c_i`
+      required uint32 channel_id = 1; 
+    
+      // Byte offset from start of payload where payout record for channel `c_i` exists
+      required uint64 byte_offset = 2; 
+    }
 
-  // List of byte offsets for all merkle branches
-  repeated NonLeafNodeMerkleBranchByteOffset non_leaf_node_merkle_branch_byte_offsets = 5; 
-}
+    // List of byte offsets for all channels
+    repeated CreatorPayoutByteOffset creator_payout_byte_offsets = 4; 
+  }
 
-message CreatorPayoutByteOffset {
-  // Channel id; `c_i`
-  required uint32 channel_id = 1; 
+  // Creator payout full body structure, it will not be downloaded by clients in full
+  message Body {
+    message CreatorPayout {
+      required uint32 channel_id = 1; // `c_i`
+    
+      required float cumulative_payout_owed = 2; // `p_i`
+    
+      enum Side {
+        Left = 0;
+        Right = 1;
+      }
+    
+      message ProofElement {
+        required bytes merkle_branch = 1;
+        required Side side = 2;
+      }
+    
+      repeated ProofElement merkle_branches = 3; 
+    
+      // `d_i`; rationale for for reward or deduction for `c_i`;
+      required string payout_rationale = 4; 
+    }
+    
+    // List of creator payouts
+    repeated CreatorPayout creator_payouts = 1; 
+  }
 
-  // Byte offset from start of payload where payout record for channel `c_i` exists
-  required uint64 byte_offset = 2; 
-}
-
-message NonLeafNodeMerkleBranchByteOffset {
-  // id of merkle branch of non-leaf nodes
-  required uint32 branch_id = 1;   
-
-  // Byte offset from start of payload where merkle branch for branch_id exists
-  required uint64 byte_offset = 2; 
-}
-
-// Creator payout full body structure, it will not be downloaded by clients in full
-message CreatorPayoutBody {
-  // List of creator payouts
-  repeated CreatorPayout creator_payouts = 1; 
-
-  // Merkle branch of non-leaf nodes, for total number of channels `n` 
-  // they will be `n-1` if `n` even otherwise `n`
-  repeated NonLeafNodeMerkleBranch merkle_branches_of_non_leaf_nodes = 2; 
-}
-
-message CreatorPayout {
-  required uint32 channel_id = 1; // `c_i`
-
-  required float cumulative_payout_owed = 2; // `p_i`
-
-  // `proof_i` be the merkle branch for leaf `c_i||p_i||m_i`. where `m_i=hash(d_i)`
-  required bytes merkle_branch = 3; 
-
-  // `d_i`; rationale for for reward or deduction for `c_i`;
-  required string payout_rationale = 4; 
-}
-
-message NonLeafNodeMerkleBranch {
-  required bytes merkle_branch = 1;
+  required Header header = 1; // Payload header
+  required Body body = 2; // Payload body
 }
