@@ -39,6 +39,7 @@ jobs:
           echo ::set-output name=ec2AMI::$(echo $jsonInput | jq -r '.ec2AMI.value')
           echo ::set-output name=networkSuffix::$(echo $jsonInput | jq -r '.networkSuffix.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
+          echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
           if [ -z "$initialBalancesFile" ]
@@ -89,7 +90,8 @@ jobs:
             RPCEC2InstanceType=${{ steps.myoutputs.outputs.rpcInstanceType }},
             BuildEC2InstanceType=${{ steps.myoutputs.outputs.buildInstanceType }},
             EC2AMI=${{ steps.myoutputs.outputs.ec2AMI }},
-            NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }}
+            NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }},
+            VolumeSize=${{ steps.myoutputs.outputs.volumeSize }}
 
       - name: Prepare inventory for Ansible
         run: |
@@ -162,9 +164,11 @@ jobs:
           name: data-chainspec-auth
           path: devops/aws/chain-data.7z
 
-      - name: Print output URL's
-        run: |
-          echo -e "RPC: wss://${{ steps.deploy_stack.outputs.RPCPublicIp }}.nip.io/ws-rpc"
+      - name: Save the endpoints file as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: endpoints
+          path: devops/aws/endpoints.json
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip only if stack already existed or all steps passed succesfully

@@ -31,6 +31,10 @@
     "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
     "value": "ami-095792100b6e43a67"
   },
+  "volumeSize": {
+    "description": "Instance volume size in GB",
+    "value": "120"
+  },
   "networkSuffix": {
     "description": "Network suffix that will be added to the network name",
     "value": "8129"

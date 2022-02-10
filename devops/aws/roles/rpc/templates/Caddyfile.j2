@@ -1,8 +1,10 @@
-{{ ws_rpc }} {
+{{ nip_domain }}/ws-rpc* {
+    uri strip_prefix /ws-rpc
     reverse_proxy localhost:9944
 }
 
-{{ http_rpc }} {
+{{ nip_domain }}/http-rpc* {
+    uri strip_prefix /http-rpc
     reverse_proxy localhost:9933
 }
 
@@ -18,4 +20,15 @@
 {{ nip_domain }}/query-node/indexer* {
     uri strip_prefix /query-node/indexer
     reverse_proxy localhost:4000
+}
+
+{{ nip_domain }}/member-faucet* {
+    uri strip_prefix /member-faucet
+    reverse_proxy localhost:3002
+}
+
+{{ nip_domain }}/network/config.json {
+    root * /home/ubuntu
+    rewrite * /config.json
+    file_server
 }

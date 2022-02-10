@@ -11,8 +11,8 @@
     src: joystream-node.service.j2
     dest: /etc/systemd/system/joystream-node.service
   vars:
-    template_remote_chain_spec_path: "{{ remote_chain_spec_path }}"
-    boot_nodes: "{{ result.result.bootNodes }}"
+    template_remote_chain_spec_path: '{{ remote_chain_spec_path }}'
+    boot_nodes: '{{ result.result.bootNodes }}'
   become: yes
 
 - name: Start service joystream-node, if not started
@@ -63,9 +63,7 @@
 
 - name: Set websocket and http endpoint variables
   set_fact:
-    ws_rpc: "{{ inventory_hostname }}.nip.io/ws-rpc"
-    http_rpc: "{{ inventory_hostname }}.nip.io/http-rpc"
-    nip_domain: "{{ inventory_hostname }}.nip.io"
+    nip_domain: '{{ inventory_hostname }}.nip.io'
   run_once: yes
 
 - name: Install and configure Caddy
@@ -78,6 +76,32 @@
     caddy_systemd_capabilities_enabled: true
     caddy_update: false
 
-- name: Print RPC node DNS
+- name: Set endpoints
+  set_fact:
+    all_services: |
+      websocket_rpc: wss://{{ nip_domain }}/ws-rpc
+      http_rpc: https://{{ nip_domain }}/http-rpc
+      colossus: https://{{ nip_domain }}/colossus-1
+      distributor: https://{{ nip_domain }}/distributor-1
+      graphql_server: https://{{ nip_domain }}/query-node/server/graphql
+      graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
+      indexer: https://{{ nip_domain }}/query-node/indexer/graphql
+      member_faucet: https://{{ nip_domain }}/member-faucet/register
+      config: https://{{ nip_domain }}//network/config.json
+  run_once: yes
+
+- name: Print endpoints
   debug:
-    msg: "RPC Endpoint: wss://{{ ws_rpc }}"
+    msg: '{{ all_services | from_yaml }}'
+  run_once: yes
+
+- name: Create config.json to serve as Caddy endpoint
+  copy:
+    content: '{{ all_services | from_yaml | to_json }}'
+    dest: '/home/ubuntu/config.json'
+
+- name: Save output as file on local
+  copy:
+    content: '{{ all_services | from_yaml | to_json }}'
+    dest: 'endpoints.json'
+  delegate_to: localhost
