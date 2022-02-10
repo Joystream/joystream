@@ -981,17 +981,8 @@ impl proposals_discussion::Trait for Runtime {
     type PostLifeTime = ForumPostLifeTime;
 }
 
-pub struct LockCombinationProvider;
-impl AllowedLockCombinationProvider for LockCombinationProvider {
-    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)> {
-        ALLOWED_LOCK_COMBINATIONS.clone()
-    }
-}
-
 impl joystream_utility::Trait for Runtime {
     type Event = Event;
-
-    type AllowedLockCombinationProvider = LockCombinationProvider;
 
     type WeightInfo = weights::joystream_utility::WeightInfo;
 
