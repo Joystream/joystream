@@ -440,7 +440,6 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-
   async init(): Promise<void> {
     await super.init()
     try {

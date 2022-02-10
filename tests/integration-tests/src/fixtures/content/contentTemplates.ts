@@ -1,6 +1,9 @@
 // basic templates for content entities
 
 import { v4 as uuid } from 'uuid'
+import * as path from 'path'
+
+export const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
 export function getMemberDefaults(index: number) {
   return {
@@ -9,9 +12,9 @@ export function getMemberDefaults(index: number) {
   }
 }
 
-export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
+export function getVideoDefaults(index: number) {
   return {
-    title: 'Active video counters Testing channel',
+    title: `Active video counters Testing channel - ${index} - ${uuid().substring(0, 8)}`,
     description: 'Video for testing active video counters.',
     videoPath: cliExamplesFolderPath + '/video.mp4',
     thumbnailPhotoPath: cliExamplesFolderPath + '/avatar-photo-1.png',
@@ -29,13 +32,13 @@ export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
 
 export function getVideoCategoryDefaults(index: number) {
   return {
-    name: 'Active video counters Testing video category',
+    name: `Active video counters Testing video category - ${index}`,
   }
 }
 
 export function getChannelDefaults(index: number, rewardAccountAddress: string) {
   return {
-    title: 'Active video counters Testing channel',
+    title: `Active video counters Testing channel - ${index}`,
     description: 'Channel for testing active video counters.',
     isPublic: true,
     language: 'en',
@@ -45,6 +48,6 @@ export function getChannelDefaults(index: number, rewardAccountAddress: string) 
 
 export function getChannelCategoryDefaults(index: number) {
   return {
-    name: 'Active video counters Testing channel category',
+    name: `Active video counters Testing channel category - ${index}`,
   }
 }

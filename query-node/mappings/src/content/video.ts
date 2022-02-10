@@ -16,6 +16,7 @@ import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
+import { createNft } from './nft'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -104,7 +105,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   // load channel
   const channel = await store.get(Channel, {
     where: { id: channelId.toString() },
-    relations: ['category'],
+    relations: ['category', 'ownerMember'],
   })
 
   // ensure channel exists
@@ -129,6 +130,12 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
 
   // save video
   await store.save<Video>(video)
+
+  if (videoCreationParameters.auto_issue_nft.isSome) {
+    const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+
+    // TODO: await createNft(store, video, channel.ownerMember, )
+  }
 
   // update video active counters (if needed)
   const videoActiveStatus = getVideoActiveStatus(video)

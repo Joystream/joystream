@@ -760,35 +760,6 @@ mappings:
     - event: content.BuyNowCanceled
       handler: contentNft_BuyNowCanceled
 
-    # working groups
-    ## storage - workers
-    - event: storageWorkingGroup.WorkerStorageUpdated
-      handler: workingGroup_WorkerStorageUpdated
-    - event: storageWorkingGroup.OpeningFilled
-      handler: workingGroup_OpeningFilled
-    - event: storageWorkingGroup.TerminatedWorker
-      handler: workingGroup_TerminatedWorker
-    - event: storageWorkingGroup.WorkerExited
-      handler: workingGroup_WorkerExited
-
-    ## storage - leader
-    - event: storageWorkingGroup.TerminatedLeader
-      handler: workingGroup_TerminatedLeader
-
-    ## gateway - workers
-    - event: gatewayWorkingGroup.WorkerStorageUpdated
-      handler: workingGroup_WorkerStorageUpdated
-    - event: gatewayWorkingGroup.OpeningFilled
-      handler: workingGroup_OpeningFilled
-    - event: gatewayWorkingGroup.TerminatedWorker
-      handler: workingGroup_TerminatedWorker
-    - event: gatewayWorkingGroup.WorkerExited
-      handler: workingGroup_WorkerExited
-
-    ## gateway - leader
-    - event: gatewayWorkingGroup.TerminatedLeader
-      handler: workingGroup_TerminatedLeader
-
     # storage v2
     - event: storage.StorageBucketCreated
       handler: storage_StorageBucketCreated

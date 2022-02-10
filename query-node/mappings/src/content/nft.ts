@@ -12,6 +12,7 @@ import {
   Membership,
   OwnedNft,
   Video,
+  TransactionalStatus,
   TransactionalStatusInitiatedOfferToMember,
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
@@ -298,6 +299,53 @@ async function createBid(
   return { auction, member, video }
 }
 
+export async function createNft(
+  store: DatabaseManager,
+  video: Video,
+  ownerMember,
+  creatorRoyalty: number | undefined,
+  metadata: string,
+  transactionalStatus: typeof TransactionalStatus
+) {
+  // prepare nft record
+  const ownedNft = new OwnedNft({
+    id: video.id.toString(),
+    video: video,
+    ownerMember,
+    creatorRoyalty,
+    metadata: metadata,
+    transactionalStatus: new TransactionalStatusIdle(),
+  })
+
+  // save nft
+  await store.save<OwnedNft>(ownedNft)
+}
+
+function convertTransactionalStatus(
+  transactionalStatus: joystreamTypes.InitTransactionalStatus
+): typeof TransactionalStatus {
+  if (transactionalStatus.isIdle) {
+    return new TransactionalStatusIdle()
+  }
+
+  if (transactionalStatus.isInitiatedOfferToMember) {
+    const status = new TransactionalStatusInitiatedOfferToMember()
+    status.memberId = transactionalStatus.asInitiatedOfferToMember[0].toNumber()
+    if (transactionalStatus.asInitiatedOfferToMember[1].isSome) {
+      status.price = transactionalStatus.asInitiatedOfferToMember[1].unwrap().toBn()
+    }
+
+    return status
+  }
+
+  if (transactionalStatus.isAuction) {
+    // TODO: auction
+  }
+
+  logger.error('Not implemented TransactionalStatus type', { contentActor: transactionalStatus.toString() })
+  throw new Error('Not-implemented TransactionalStatus type used')
+}
+
 export async function contentNft_AuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
@@ -409,7 +457,9 @@ function createAuctionType(rawAuctionType: joystreamTypes.AuctionType): typeof A
 export async function contentNft_NftIssued({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [actor, videoId, royalty, metadata, mbNewOwnerId] = new Content.NftIssuedEvent(event).params
+  const [actor, videoId, royalty, metadata, mbNewOwnerId, initTransactionalStatus] = new Content.NftIssuedEvent(
+    event
+  ).params
 
   // specific event processing
 
@@ -420,7 +470,11 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
   const newOwner = await getExistingEntity(store, Membership, mbNewOwnerId.toString())
 
   const creatorRoyalty = royalty.isSome ? royalty.unwrap().toNumber() : undefined
+  const transactionalStatus = convertTransactionalStatus(initTransactionalStatus)
 
+  await createNft(store, video, newOwner, creatorRoyalty, metadata.toString(), transactionalStatus)
+
+  /*
   // prepare nft record
   const ownedNft = new OwnedNft({
     id: video.id.toString(),
@@ -433,7 +487,7 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 
   // save nft
   await store.save<OwnedNft>(ownedNft)
-
+*/
   // common event processing - second
 
   const announcingPeriodStartedEvent = new NftIssuedEvent({

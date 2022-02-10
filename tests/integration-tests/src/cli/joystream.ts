@@ -71,8 +71,8 @@ export class JoystreamCLI extends CLI {
   /**
     Parses `id` of newly created content entity from CLI's stdout.
   */
-  private parseCreatedIdFromStdout(stdout: string): number {
-    return parseInt((stdout.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
+  private parseCreatedIdFromOutput(text: string): number {
+    return parseInt((text.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
   }
 
   /**
@@ -95,7 +95,7 @@ export class JoystreamCLI extends CLI {
   async chooseMemberAccount(memberId: MemberId) {
     const { stderr } = await this.run('account:chooseMember', ['--memberId', memberId.toString()])
 
-    if (stderr) {
+    if (stderr && !stderr.match(/^\s*Member switched to id/)) {
       throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
     }
   }
@@ -118,7 +118,7 @@ export class JoystreamCLI extends CLI {
       throw new Error(`Unexpected CLI failure on creating channel: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
@@ -127,18 +127,18 @@ export class JoystreamCLI extends CLI {
   async createChannelCategory(channelCategory: unknown): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
 
-    const { stdout, stderr } = await this.run('content:createChannelCategory', [
+    const { stdout, stderr, exitCode } = await this.run('content:createChannelCategory', [
       '--input',
       jsonFile,
       '--context',
       'Lead',
     ])
 
-    if (stderr) {
+    if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating channel category: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
@@ -160,7 +160,7 @@ export class JoystreamCLI extends CLI {
       throw new Error(`Unexpected CLI failure on creating video: "${stderr}"`)
     }
 
-    const videoId = this.parseCreatedIdFromStdout(stdout)
+    const videoId = this.parseCreatedIdFromOutput(stderr)
     const assetContentIds = Array.from(stdout.matchAll(/ objectId: '([a-z0-9]+)'/g)).map((item) => item[1])
 
     return {
@@ -175,13 +175,18 @@ export class JoystreamCLI extends CLI {
   async createVideoCategory(videoCategory: unknown): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(videoCategory)
 
-    const { stdout, stderr } = await this.run('content:createVideoCategory', ['--input', jsonFile, '--context', 'Lead'])
+    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [
+      '--input',
+      jsonFile,
+      '--context',
+      'Lead',
+    ])
 
-    if (stderr) {
+    if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
@@ -190,9 +195,13 @@ export class JoystreamCLI extends CLI {
   async updateVideo(videoId: number, video: unknown): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
-    const { stdout, stderr } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
+    const { stdout, stderr, exitCode } = await this.run('content:updateVideo', [
+      '--input',
+      jsonFile,
+      videoId.toString(),
+    ])
 
-    if (stderr && !this.containsWarningNoStorage(stderr)) {
+    if (exitCode && !this.containsWarningNoStorage(stderr)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
@@ -204,9 +213,13 @@ export class JoystreamCLI extends CLI {
   async updateChannel(channelId: number, channel: unknown): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
-    const { stdout, stderr } = await this.run('content:updateChannel', ['--input', jsonFile, channelId.toString()])
+    const { stdout, stderr, exitCode } = await this.run('content:updateChannel', [
+      '--input',
+      jsonFile,
+      channelId.toString(),
+    ])
 
-    if (stderr && !this.containsWarningNoStorage(stderr)) {
+    if (exitCode && !this.containsWarningNoStorage(stderr)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }

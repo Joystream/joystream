@@ -114,6 +114,16 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     const setMaxVoucherLimitsTx = api.tx.storage.updateStorageBucketsVoucherMaxLimits(maxStorageLimit, maxObjectsLimit)
     const setBucketPerBagLimitTx = api.tx.storage.updateStorageBucketsPerBagLimit(Math.max(5, buckets.length))
 
+    // TODO: find a way how to remove this
+    debug('BUG WORKAROUND pretopup')
+    await api.treasuryTransferBalance(storageLeaderKey, new BN(100_000))
+
+    // extra topup for content leader
+    const [, contentLeader] = await api.getLeader('contentWorkingGroup')
+    const contentLeaderKey = contentLeader.role_account_id.toString()
+    await api.treasuryTransferBalance(contentLeaderKey, new BN(100_000))
+    /// ///////////////////////////////////
+
     await api.sendExtrinsicsAndGetResults(
       [...updateDynamicBagPolicyTxs, setMaxVoucherLimitsTx, setBucketPerBagLimitTx],
       storageLeaderKey

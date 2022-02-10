@@ -11,6 +11,7 @@ import {
   NftDirectOfferFixture,
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
+  NftCreateVideoWithAuctionFixture,
   IMember,
 } from '../../fixtures/content'
 import BN from 'bn.js'
@@ -30,7 +31,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const channelCount = 1
   const channelCategoryCount = 1
   const auctionParticipantsCount = 3
-  const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 
@@ -109,7 +110,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(nftDirectOfferFixture).run()
 
-  const auctionCancelations = new AuctionCancelationsFixture(
+  const auctionCancelationsFicture = new AuctionCancelationsFixture(
     api,
     query,
     joystreamCli,
@@ -118,7 +119,17 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
     auctionParticipants[0]
   )
 
-  await new FixtureRunner(auctionCancelations).run()
+  await new FixtureRunner(auctionCancelationsFicture).run()
+
+  const createVideoWithAuctionFixture = new NftCreateVideoWithAuctionFixture(
+    api,
+    query,
+    joystreamCli,
+    author as IMember,
+    channelIds[0]
+  )
+
+  await new FixtureRunner(createVideoWithAuctionFixture).run()
 
   debug('Done')
 }

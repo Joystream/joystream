@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, BTreeMap, BTreeSet } from '@polkadot/types'
 import { IEvent, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId, PostId, ThreadId } from '@joystream/types/common'
+import { AccountId, ChannelId, MemberId, PostId, ThreadId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
@@ -36,9 +36,11 @@ import {
   CategoryCreatedEventDetails,
   PostAddedEventDetails,
   ThreadCreatedEventDetails,
+  VideoCreatedEventDetails,
   ProposalsCodexEventName,
   ProposalDiscussionPostCreatedEventDetails,
   ProposalsDiscussionEventName,
+  ContentEventName,
 } from './types'
 import {
   ApplicationId,
@@ -49,7 +51,13 @@ import {
   Worker,
 } from '@joystream/types/working-group'
 import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
-import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/content'
+import {
+  AuctionParams,
+  ContentActor,
+  VideoId,
+  VideoCategoryId,
+  VideoCreationParameters,
+} from '@joystream/types/content'
 import { DeriveAllSections } from '@polkadot/api/util/decorate'
 import { ExactDerive } from '@polkadot/api-derive'
 import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
@@ -695,6 +703,17 @@ export class Api {
     }
   }
 
+  public async retrieveContentEventDetails(
+    result: ISubmittableResult,
+    eventName: ContentEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'content', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
   public async getMemberSigners(inputs: { asMember: MemberId }[]): Promise<string[]> {
     return await Promise.all(
       inputs.map(async ({ asMember }) => {
@@ -851,9 +870,9 @@ export class Api {
     // const encodedMetadata = this.api.createType('Bytes', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
     // const encodedMetadata = this.api.createType('Metadata', {})
     // const encodedMetadata = this.api.createType('Bytes', '0x') // error
-    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText')
-    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText').toU8a() // createType(NFTMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
-    const encodedMetadata = this.api.createType('NFTMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
+    // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText')
+    // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText').toU8a() // createType(NftMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
+    const encodedMetadata = this.api.createType('NftMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
     // try this later on // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a()
     // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a() // throws error in QN when decoding this (but mb QN error)
 
@@ -964,5 +983,40 @@ export class Api {
 
   async acceptIncomingOffer(accountFrom: string, videoId: number) {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
+  }
+
+  async createVideoWithNftAuction(
+    accountFrom: string,
+    ownerId: number,
+    channeld: number,
+    auctionParams: AuctionParams
+  ) {
+    const createParameters = this.createType('VideoCreationParameters', {
+      assets: null,
+      meta: null,
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: null,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.createVideo({ Member: ownerId }, channeld, createParameters),
+      accountFrom
+    )
+  }
+
+  public async retrieveVideoCreatedEventDetails(result: ISubmittableResult): Promise<VideoCreatedEventDetails> {
+    const details = await this.retrieveContentEventDetails(result, 'VideoCreated')
+    return {
+      ...details,
+      actor: details.event.data[0] as ContentActor,
+      channelId: details.event.data[1] as ChannelId,
+      videoId: details.event.data[2] as VideoId,
+      params: details.event.data[3] as VideoCreationParameters,
+    }
   }
 }

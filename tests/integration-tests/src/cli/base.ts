@@ -47,7 +47,8 @@ export abstract class CLI {
     command: string,
     customArgs: string[] = [],
     lockKeys: string[] = [],
-    requireSuccess = true
+    requireSuccess = true,
+    timeoutMs = 2 * 60 * 1000 // prevents infinite execution time
   ): Promise<CommandResult> {
     const defaultError = 1
 
@@ -82,7 +83,10 @@ export abstract class CLI {
             stderr: errorTyped.stderr || '',
           }
         }
-      }
+      },
+      {
+        maxOccupationTime: timeoutMs, // sets execution timeout
+      } as any // needs cast to any because type `maxOccupation` is missing in types for async-lock v1.1.3
     )
 
     return {

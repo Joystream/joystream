@@ -80,6 +80,10 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
 
     const { storageBucketId, storageGroupWorkerId, storageGroupWorkerAccount } = await this.retrieveBucket()
 
+    // TODO: remove this after "not enough balance" is solved for this worker
+    this.debug('Top-uping worker')
+    await this.api.treasuryTransferBalanceToAccounts([storageGroupWorkerAccount], new BN(1_000_000))
+
     this.debug('Accepting content to storage bag')
     const allAssetIds = this.createdItems.videosData.map((item) => item.assetContentIds).flat()
     await this.api.acceptPendingDataObjects(
@@ -151,7 +155,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private async createVideos(count: number, channelId: number, videoCategoryId: number): Promise<ICreatedVideoData[]> {
     const createVideo = async (index: number) => {
       return await this.cli.createVideo(channelId, {
-        ...getVideoDefaults(index, cliExamplesFolderPath),
+        ...getVideoDefaults(index),
         category: videoCategoryId,
       })
     }
