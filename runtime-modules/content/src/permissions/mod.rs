@@ -282,14 +282,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
                 }
             }
 
-            ContentActor::Curator(curator_group_id, curator_id) => {
-                // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    &sender,
-                )?;
-
+            ContentActor::Curator(curator_group_id, _) => {
                 // Ensure curator group is the channel owner.
                 ensure!(
                     channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),
@@ -297,8 +290,6 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
                 );
             }
             ContentActor::Member(member_id) => {
-                ensure_member_auth_success::<T>(&sender, member_id)?;
-
                 // Ensure the member is the channel owner.
                 ensure!(
                     channel_owner == ChannelOwner::Member(*member_id),

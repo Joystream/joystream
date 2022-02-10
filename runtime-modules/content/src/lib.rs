@@ -378,7 +378,7 @@ decl_module! {
 
             let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
                 prize: Zero::zero(), // put 0 for Giza release
-                account_id: sender.clone(),
+                account_id: sender,
             };
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
@@ -433,8 +433,6 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
-                // setting the channel owner account as the prize funds account
-                deletion_prize_source_account_id: sender,
             };
 
             // add channel to onchain state
@@ -865,7 +863,7 @@ decl_module! {
 
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-                    channel.deletion_prize_source_account_id,
+                    sender,
                     Self::bag_id_for_channel(&channel_id),
                     assets_to_remove,
                 )?;

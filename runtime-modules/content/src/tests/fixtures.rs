@@ -9,10 +9,6 @@ use sp_std::iter::{IntoIterator, Iterator};
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
-type CuratorId = super::mock::CuratorId;
-type CuratorGroupId = super::mock::CuratorGroupId;
-type MemberId = super::mock::MemberId;
-
 // fixtures
 pub struct CreateChannelFixture {
     sender: AccountId,
@@ -125,7 +121,6 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
-                        deletion_prize_source_account_id: self.sender.clone()
                     },
                     self.params.clone(),
                 ))
@@ -429,8 +424,6 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
-                            deletion_prize_source_account_id: channel_pre
-                                .deletion_prize_source_account_id
                         },
                         self.params.clone(),
                     ))
@@ -997,7 +990,6 @@ pub struct DeleteVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
-    deletion_prize_source_account_id: Option<AccountId>,
 }
 
 impl DeleteVideoFixture {
@@ -1007,7 +999,6 @@ impl DeleteVideoFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             assets_to_remove: BTreeSet::new(),
-            deletion_prize_source_account_id: None,
         }
     }
 
@@ -1030,24 +1021,9 @@ impl DeleteVideoFixture {
         Self { video_id, ..self }
     }
 
-    pub fn with_deletion_prize_source_account_id(
-        self,
-        deletion_prize_source_account_id: AccountId,
-    ) -> Self {
-        Self {
-            deletion_prize_source_account_id: Some(deletion_prize_source_account_id),
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let deletion_prize_source_account_id = match self.deletion_prize_source_account_id {
-            Some(account_id) => account_id,
-            None => self.sender.clone(),
-        };
-
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(deletion_prize_source_account_id);
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let video_pre = <VideoById<Test>>::get(&self.video_id);
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
         let deletion_prize =
@@ -1065,7 +1041,7 @@ impl DeleteVideoFixture {
             self.assets_to_remove.clone(),
         );
 
-        let balance_post = Balances::<Test>::usable_balance(deletion_prize_source_account_id);
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
 
         assert_eq!(actual_result, expected_result);
 
