@@ -8,7 +8,7 @@ set -a
 . ../../.env
 set +a
 
-export JOYSTREAM_NODE_TAG=$(TEST_NODE=true ../../scripts/runtime-code-shasum.sh)
+export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(TEST_NODE=true ../../scripts/runtime-code-shasum.sh)}
 
 # Fresh start
 docker-compose -f ../../docker-compose.yml down -v
