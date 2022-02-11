@@ -2552,6 +2552,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // bag check
         let bag = Self::ensure_bag_exists(&params.bag_id)?;
 
+        // size check
+        ensure!(
+            !params.object_creation_list.is_empty(),
+            Error::<T>::DataObjectIdParamsAreEmpty
+        );
+
         // validate bag change
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
@@ -2735,12 +2741,19 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         // validate bag change
-        let bag_change =
-            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
+        let bag_change = if !params.object_creation_list.is_empty() {
+            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?
+        } else {
+            BagUpdate::<BalanceOf<T>>::default()
+        };
 
         // buckets check
         let (storage_bucket_ids, distribution_bucket_ids) =
-            Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?;
+            if !params.object_creation_list.is_empty() {
+                Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?
+            } else {
+                Default::default()
+            };
 
         // balance check (balance must be usable and not simply free)
         let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
@@ -3316,12 +3329,6 @@ impl<T: Trait> Module<T> {
         ensure!(
             expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
             Error::<T>::DataSizeFeeChanged,
-        );
-
-        // there are objects to upload
-        ensure!(
-            !object_creation_list.is_empty(),
-            Error::<T>::DataObjectIdParamsAreEmpty
         );
 
         // verify  MaxSize >= object size >0 and ipfs id not blacklisted and compute bag change
