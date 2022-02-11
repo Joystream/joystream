@@ -24,8 +24,8 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, UploadParameters,
-    UploadParametersRecord,
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
+    DynamicBagIdType, UploadParameters,
 };
 
 pub use common::{
@@ -403,15 +403,13 @@ decl_module! {
             Self::validate_member_set(&params.moderators)?;
             Self::validate_member_set(&params.collaborators)?;
 
-            let bag_creation_params = params.assets.as_ref().map(|assets| {
-                Self::construct_upload_parameters(
-                    assets,
-                    &channel_id,
-                    &sender
-                )});
-
-            let channel_bag_id = Self::bag_id_for_channel(&channel_id);
-
+            let storage_assets = params.assets.clone().unwrap_or_default();
+            let bag_creation_params = DynBagCreationParameters::<T> {
+                bag_id: DynBagId::<T>::Channel(channel_id),
+                object_creation_list: storage_assets.object_creation_list,
+                deletion_prize_source_account_id: sender.clone(),
+                expected_data_size_fee: storage_assets.expected_data_size_fee,
+            };
             //
             // == MUTATION SAFE ==
             //
@@ -420,7 +418,7 @@ decl_module! {
             Storage::<T>::create_dynamic_bag(
                 bag_creation_params,
                 T::BagDeletionPrize::get(),
-            );
+            )?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
