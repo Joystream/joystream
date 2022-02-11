@@ -94,7 +94,14 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(openAuctionFixture).run()
 
-  const nftBuyNowFixture = new NftBuyNowFixture(api, query, joystreamCli, nextVideo().videoId, author as IMember, auctionParticipants[0])
+  const nftBuyNowFixture = new NftBuyNowFixture(
+    api,
+    query,
+    joystreamCli,
+    nextVideo().videoId,
+    author as IMember,
+    auctionParticipants[0]
+  )
 
   await new FixtureRunner(nftBuyNowFixture).run()
 
