@@ -1,6 +1,7 @@
 import electCouncil from '../flows/council/elect'
 import leaderSetup from '../flows/working-groups/leadOpening'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
+import initFaucet from '../flows/faucet/initFaucet'
 import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flows/storage/initStorage'
 import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storage/initDistribution'
 import { scenario } from '../Scenario'
@@ -13,6 +14,10 @@ scenario(async ({ job }) => {
   if (!process.env.SKIP_STORAGE_AND_DISTRIBUTION) {
     job('initialize storage system', initStorage(defaultStorageConfig)).requires(updateWorkerAccounts)
     job('initialize distribution system', initDistribution(defaultDistributionConfig)).requires(updateWorkerAccounts)
+  }
+
+  if (!process.env.SKIP_FAUCET_INIT) {
+    job('Initialize Faucet', initFaucet).requires(leads)
   }
 
   // TODO: Mock content
