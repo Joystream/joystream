@@ -1023,7 +1023,7 @@ decl_event! {
         <T as Trait>::StorageBucketId,
     WorkerId = WorkerId<T>,
     <T as Trait>::DataObjectId,
-    UploadParameters = UploadParameters<T>,
+    //UploadParameters = UploadParameters<T>,
     BagId = BagId<T>,
     DynamicBagId = DynamicBagId<T>,
     <T as frame_system::Trait>::AccountId,
@@ -1060,7 +1060,7 @@ decl_event! {
         /// - data objects IDs
         /// - initial uploading parameters
         /// - deletion prize for objects
-        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters, Balance),
+        DataObjectsUploaded(Vec<DataObjectId>, /*UploadParameters,*/ Balance),
 
         /// Emits on setting the storage operator metadata.
         /// Params
@@ -2556,25 +2556,28 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
-        // balance check
+        // bucket check
+        Self::check_buckets_for_overflow(&bag.stored_by, &bag_change.voucher_update)?;
+
         // balance check (balance must be usable and not simply free)
         let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
             &bag_change,
             BalanceOf::<T>::zero(), // no bag deletion prize
-            &params.account_id,
+            &params.deletion_prize_source_account_id,
         )?;
-
-        // storage bucket check
-        Self::check_bag_for_bucket_overflow(&bag, &bag_change.voucher_update)?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        Self::perform_balance_accounting(total_deletion_prize, storage_fee, &params.account_id);
+        Self::perform_balance_accounting(
+            total_deletion_prize,
+            storage_fee,
+            &params.deletion_prize_source_account_id,
+        );
 
         // bag bookkeeping
-        Self::perform_upload(&params.object_creation_list, &bag_change);
+        Self::perform_upload(&params.bag_id, &params.object_creation_list, &bag_change);
 
         Ok(())
     }
@@ -2727,7 +2730,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_id: BagId<T> = params.bag_id.clone().into();
 
         ensure!(
-            !Bags::<T>::contain_key(bag_id),
+            !Bags::<T>::contains_key(&bag_id),
             Error::<T>::DynamicBagExists
         );
 
@@ -2735,7 +2738,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_change =
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
 
-        // storage bucket check
+        // buckets check
         let (storage_bucket_ids, distribution_bucket_ids) =
             Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?;
 
@@ -2743,14 +2746,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
             &bag_change,
             deletion_prize.unwrap_or_default(),
-            &params.account_id,
+            &params.deletion_prize_source_account_id,
         )?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        Self::perform_balance_accounting(total_deletion_prize, storage_fee, &params.account_id);
+        Self::perform_balance_accounting(
+            total_deletion_prize,
+            storage_fee,
+            &params.deletion_prize_source_account_id,
+        );
 
         // create empty bag with appropriate buckets
         <Bags<T>>::insert(
@@ -2764,7 +2771,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         // fills the bag with voucher update
-        Self::perform_upload(&params.object_creation_list, &bag_change);
+        Self::perform_upload(&bag_id, &params.object_creation_list, &bag_change);
 
         // change bucket assignments
         Self::change_bag_assignments_for_distribution_buckets(
@@ -3305,9 +3312,15 @@ impl<T: Trait> Module<T> {
     ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
+        // ensure specified data fee == storage data fee
+        ensure!(
+            expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+            Error::<T>::DataSizeFeeChanged,
+        );
+
         // there are objects to upload
         ensure!(
-            !params.object_creation_list.is_empty(),
+            !object_creation_list.is_empty(),
             Error::<T>::DataObjectIdParamsAreEmpty
         );
 
@@ -3822,21 +3835,24 @@ impl<T: Trait> Module<T> {
 
     /// Perform actual upload and storage bookeepingn
     fn perform_upload(
-        object_creation_list: &[ObjectCreationParameters],
+        bag_id: &BagId<T>,
+        object_creation_list: &[DataObjectCreationParameters],
         bag_change: &BagUpdate<BalanceOf<T>>,
     ) {
-        let data = Self::create_data_objects(object_creation_list.clone());
+        let data = Self::create_data_objects(object_creation_list.to_vec());
+
+        let bag = Bags::<T>::get(bag_id);
 
         // Save next object id.
         <NextDataObjectId<T>>::put(data.next_data_object_id);
 
         // Insert new objects.
         for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
+            DataObjectsById::<T>::insert(bag_id, &data_object_id, data_object);
         }
 
         Self::change_storage_bucket_vouchers_for_bag(
-            &params.bag_id,
+            &bag_id,
             &bag,
             &bag_change.voucher_update,
             OperationType::Increase,
@@ -3844,12 +3860,12 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
-            params,
+            //     params,
             T::DataObjectDeletionPrize::get(),
         ));
     }
 
-    fn ensure_perform_balance_accounting(
+    fn ensure_can_perform_balance_accounting(
         bag_change: &BagUpdate<BalanceOf<T>>,
         extra_deletion_prize: BalanceOf<T>,
         account_id: &T::AccountId,
@@ -3858,7 +3874,7 @@ impl<T: Trait> Module<T> {
             extra_deletion_prize.saturating_add(bag_change.total_deletion_prize);
 
         let storage_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.object_total_size);
+            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
 
         ensure!(
             Balances::<T>::usable_balance(account_id)
@@ -3866,7 +3882,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::InsufficientBalance
         );
 
-        (total_deletion_prize, storage_fee)
+        Ok((total_deletion_prize, storage_fee))
     }
 
     fn perform_balance_accounting(
@@ -3875,7 +3891,7 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
     ) {
         // deposit deletion prize
-        <StorageTreasury<T>>::deposit(account_id, deletion_prize)?;
+        let _ = <StorageTreasury<T>>::deposit(account_id, deletion_prize);
 
         // slash storage fee
         if storage_fee != Zero::zero() {
