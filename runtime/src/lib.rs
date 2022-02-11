@@ -481,14 +481,14 @@ pub type CouncilModule = council::Module<Runtime>;
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
-    pub const VoteStageDuration: BlockNumber = 5;
-    pub const RevealStageDuration: BlockNumber = 7;
+    pub const VoteStageDuration: BlockNumber = 50;
+    pub const RevealStageDuration: BlockNumber = 50;
     pub const MinimumVotingStake: u64 = 10000;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
-    pub const AnnouncingPeriodDuration: BlockNumber = 15;
-    pub const IdlePeriodDuration: BlockNumber = 27;
+    pub const AnnouncingPeriodDuration: BlockNumber = 50;
+    pub const IdlePeriodDuration: BlockNumber = 500;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
