@@ -24,7 +24,6 @@
             "Membership"
         ]
     },
-    "MemoText": "Text",
     "BalanceKind": {
         "_enum": [
             "Positive",

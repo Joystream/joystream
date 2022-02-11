@@ -3,7 +3,7 @@ import { createType, types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Balance } from '@polkadot/types/interfaces'
+import { Balance, LockIdentifier } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, Observable } from '@polkadot/types/types'
 import { UInt } from '@polkadot/types'
@@ -16,12 +16,13 @@ import {
   OpeningDetails,
   UnaugmentedApiPromise,
   MemberDetails,
+  AvailableGroups,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
 import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
+import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
 import {
   Channel,
   Video,
@@ -35,6 +36,9 @@ import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
 import QueryNodeApi from './QueryNodeApi'
 import { MembershipFieldsFragment } from './graphql/generated/queries'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { Category, CategoryId, Post, Thread } from '@joystream/types/forum'
+import chalk from 'chalk'
+import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -156,7 +160,9 @@ export default class Api {
   }
 
   async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {
-    const membersQnData = await this._qnApi?.membersByIds(entries.map(([id]) => id))
+    const membersQnData: MembershipFieldsFragment[] | undefined = await this._qnApi?.membersByIds(
+      entries.map(([id]) => id)
+    )
     const memberQnDataById = new Map<string, MembershipFieldsFragment>()
     membersQnData?.forEach((m) => {
       memberQnDataById.set(m.id, m)
@@ -251,18 +257,11 @@ export default class Api {
     }
   }
 
-  async workerByWorkerId(group: WorkingGroups, workerId: number): Promise<Worker> {
-    const nextId = await this.workingGroupApiQuery(group).nextWorkerId()
-
-    // This is chain specfic, but if next id is still 0, it means no workers have been added yet
-    if (workerId < 0 || workerId >= nextId.toNumber()) {
-      throw new CLIError('Invalid worker id!')
-    }
-
+  async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
     const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
     if (worker.isEmpty) {
-      throw new CLIError('This worker is not active anymore')
+      throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
     }
 
     return worker
@@ -310,9 +309,11 @@ export default class Api {
   }
 
   protected async fetchApplicationDetails(
+    group: WorkingGroups,
     applicationId: number,
     application: Application
   ): Promise<ApplicationDetails> {
+    const qnData = await this._qnApi?.applicationDetailsById(group, applicationId)
     return {
       applicationId,
       member: await this.expectedMemberDetailsById(application.member_id),
@@ -321,12 +322,13 @@ export default class Api {
       stakingAccount: application.staking_account_id,
       descriptionHash: application.description_hash.toString(),
       openingId: application.opening_id.toNumber(),
+      answers: qnData?.answers,
     }
   }
 
   async groupApplication(group: WorkingGroups, applicationId: number): Promise<ApplicationDetails> {
     const application = await this.applicationById(group, applicationId)
-    return await this.fetchApplicationDetails(applicationId, application)
+    return await this.fetchApplicationDetails(group, applicationId, application)
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
@@ -337,7 +339,7 @@ export default class Api {
     return Promise.all(
       applicationEntries
         .filter(([, application]) => application.opening_id.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(id.toNumber(), application))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
     )
   }
 
@@ -358,6 +360,7 @@ export default class Api {
   }
 
   async fetchOpeningDetails(group: WorkingGroups, opening: Opening, openingId: number): Promise<OpeningDetails> {
+    const qnData = await this._qnApi?.openingDetailsById(group, openingId)
     const applications = await this.groupOpeningApplications(group, openingId)
     const type = opening.opening_type
     const stake = {
@@ -372,6 +375,7 @@ export default class Api {
       stake,
       createdAtBlock: opening.created.toNumber(),
       rewardPerBlock: opening.reward_per_block.unwrapOr(undefined),
+      metadata: qnData?.metadata || undefined,
     }
   }
 
@@ -458,5 +462,148 @@ export default class Api {
     const handleHash = blake2AsHex(handle)
     const existingMeber = await this._api.query.members.memberIdByHandleHash(handleHash)
     return !existingMeber.isEmpty
+  }
+
+  allowedLockCombinations(): { [lockId: string]: LockIdentifier[] } {
+    // TODO: Fetch from runtime once exposed
+    const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
+    const candidacyLockId = this._api.consts.council.candidacyLockId
+    const votingLockId = this._api.consts.referendum.stakingHandlerLockId
+    const councilorLockId = this._api.consts.council.councilorLockId
+    const stakingCandidateLockId = this._api.consts.members.stakingCandidateLockId
+    const proposalsLockId = this._api.consts.proposalsEngine.stakingHandlerLockId
+    const groupLockIds: { group: WorkingGroups; lockId: LockIdentifier }[] = AvailableGroups.map((group) => ({
+      group,
+      lockId: this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId,
+    }))
+    const bountyLockId = this._api.consts.bounty.bountyLockId
+
+    const lockCombinationsByWorkingGroupLockId: { [groupLockId: string]: LockIdentifier[] } = {}
+    groupLockIds.forEach(
+      ({ lockId }) =>
+        (lockCombinationsByWorkingGroupLockId[lockId.toString()] = [
+          invitedMemberLockId,
+          votingLockId,
+          stakingCandidateLockId,
+        ])
+    )
+
+    return {
+      [invitedMemberLockId.toString()]: [
+        votingLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        stakingCandidateLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [stakingCandidateLockId.toString()]: [
+        votingLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        invitedMemberLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [votingLockId.toString()]: [
+        invitedMemberLockId,
+        candidacyLockId,
+        councilorLockId,
+        // STAKING_LOCK_ID,
+        proposalsLockId,
+        stakingCandidateLockId,
+        ...groupLockIds.map(({ lockId }) => lockId),
+      ],
+      [candidacyLockId.toString()]: [invitedMemberLockId, votingLockId, councilorLockId, stakingCandidateLockId],
+      [councilorLockId.toString()]: [invitedMemberLockId, votingLockId, candidacyLockId, stakingCandidateLockId],
+      [proposalsLockId.toString()]: [invitedMemberLockId, votingLockId, stakingCandidateLockId],
+      ...lockCombinationsByWorkingGroupLockId,
+      [bountyLockId.toString()]: [votingLockId, stakingCandidateLockId],
+    }
+  }
+
+  async areAccountLocksCompatibleWith(account: AccountId | string, lockId: LockIdentifier): Promise<boolean> {
+    const accountLocks = await this._api.query.balances.locks(account)
+    const allowedLocks = this.allowedLockCombinations()[lockId.toString()]
+    return accountLocks.every((l) => allowedLocks.some((allowedLock) => allowedLock.eq(l.id)))
+  }
+
+  async forumCategoryExists(categoryId: CategoryId | number): Promise<boolean> {
+    const size = await this._api.query.forum.categoryById.size(categoryId)
+    return size.gtn(0)
+  }
+
+  async forumThreadExists(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<boolean> {
+    const size = await this._api.query.forum.threadById.size(categoryId, threadId)
+    return size.gtn(0)
+  }
+
+  async forumPostExists(threadId: ThreadId | number, postId: PostId | number): Promise<boolean> {
+    const size = await this._api.query.forum.postById.size(threadId, postId)
+    return size.gtn(0)
+  }
+
+  async forumCategoryAncestors(categoryId: CategoryId | number): Promise<[CategoryId, Category][]> {
+    const ancestors: [CategoryId, Category][] = []
+    let category = await this._api.query.forum.categoryById(categoryId)
+    while (category.parent_category_id.isSome) {
+      const parentCategoryId = category.parent_category_id.unwrap()
+      category = await this._api.query.forum.categoryById(parentCategoryId)
+      ancestors.push([parentCategoryId, category])
+    }
+    return ancestors
+  }
+
+  async forumCategoryModerators(categoryId: CategoryId | number): Promise<[CategoryId, WorkerId][]> {
+    const categoryAncestors = await this.forumCategoryAncestors(categoryId)
+
+    const moderatorIds = _.uniqWith(
+      _.flatten(
+        await Promise.all(
+          categoryAncestors
+            .map(([id]) => id as CategoryId | number)
+            .reverse()
+            .concat([categoryId])
+            .map(async (id) => {
+              const storageKeys = await this._api.query.forum.categoryByModerator.keys(id)
+              return storageKeys.map((k) => k.args)
+            })
+        )
+      ),
+      (a, b) => a[1].eq(b[1])
+    )
+
+    return moderatorIds
+  }
+
+  async getForumCategory(categoryId: CategoryId | number): Promise<Category> {
+    const category = await this._api.query.forum.categoryById(categoryId)
+    return category
+  }
+
+  async getForumThread(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<Thread> {
+    const thread = await this._api.query.forum.threadById(categoryId, threadId)
+    return thread
+  }
+
+  async getForumPost(threadId: ThreadId | number, postId: PostId | number): Promise<Post> {
+    const post = await this._api.query.forum.postById(threadId, postId)
+    return post
+  }
+
+  async forumCategories(): Promise<[CategoryId, Category][]> {
+    return this.entriesByIds(this._api.query.forum.categoryById)
+  }
+
+  async forumThreads(categoryId: CategoryId | number): Promise<[ThreadId, Thread][]> {
+    const entries = await this._api.query.forum.threadById.entries(categoryId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
+  }
+
+  async forumPosts(threadId: ThreadId | number): Promise<[PostId, Post][]> {
+    const entries = await this._api.query.forum.postById.entries(threadId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
   }
 }

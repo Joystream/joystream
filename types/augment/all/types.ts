@@ -591,9 +591,6 @@ export interface Membership extends Struct {
   readonly invites: u32;
 }
 
-/** @name MemoText */
-export interface MemoText extends Text {}
-
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 

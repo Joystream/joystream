@@ -64,7 +64,6 @@ hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
@@ -139,7 +138,6 @@ std = [
 
     # Joystream
     'common/std',
-    'memo/std',
     'forum/std',
     'membership/std',
     'council/std',

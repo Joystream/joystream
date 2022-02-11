@@ -122,6 +122,9 @@
       },
       "membership": {
         "description": "Membership management - buy a new membership, update membership, manage membership keys"
+      },
+      "forum": {
+        "description": "Forum working group activities (moderation, category management)"
       }
     }
   },
@@ -135,7 +138,7 @@
     "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
-    "build": "tsc --build tsconfig.json",
+    "build": "rm -rf lib && tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
