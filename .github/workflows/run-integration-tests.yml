@@ -169,5 +169,6 @@ jobs:
       # Bring up hydra query-node development instance, then run integration tests
       - name: Execute Tests
         run: |
+          export RUNTIME=latest
           export JOYSTREAM_NODE_TAG=latest
           CHAINSPEC_NODE=true ./tests/integration-tests/run-proposals-tests.sh
