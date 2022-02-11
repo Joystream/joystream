@@ -12,11 +12,11 @@ import {
   videoRelationsForCountersBare,
   videoRelationsForCounters,
 } from './utils'
-import { Channel, OwnedNft, Video, VideoCategory } from 'query-node/dist/model'
+import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
-import { createNft, convertTransactionalStatus } from './nft'
+import { createNft } from './nft'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data

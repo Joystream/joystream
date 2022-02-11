@@ -55,7 +55,8 @@ type Curator @entity {
 }
 
 "Represents NFT details"
-type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+type OwnedNft
+  @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
   "NFT's video"
   video: Video! @derivedFrom(field: "nft")
 
@@ -90,7 +91,8 @@ type TransactionalStatusUpdate @entity {
 }
 
 "NFT transactional state"
-union TransactionalStatus = TransactionalStatusIdle
+union TransactionalStatus =
+    TransactionalStatusIdle
   | TransactionalStatusInitiatedOfferToMember
   | TransactionalStatusAuction
   | TransactionalStatusBuyNow
