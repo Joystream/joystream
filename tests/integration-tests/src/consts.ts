@@ -3,6 +3,8 @@ import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
 
+export const debuggingCli = false // set to true to see CLI commands run
+
 // Dummy const type validation function (see: https://stackoverflow.com/questions/57069802/as-const-is-ignored-when-there-is-a-type-definition)
 export const validateType = <T>(obj: T) => obj
 

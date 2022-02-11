@@ -2,6 +2,7 @@ import path from 'path'
 import { execFile, ChildProcess, PromiseWithChild, ExecFileException, ExecException } from 'child_process'
 import { promisify } from 'util'
 import { Sender } from '../sender'
+import { debuggingCli } from '../consts'
 
 export type CommandResult = {
   exitCode: number
@@ -58,6 +59,14 @@ export abstract class CLI {
       lockKeys.map((k) => `nonce-${k}`),
 
       async () => {
+        if (debuggingCli) {
+          console.log(
+            'Running CLI command: ',
+            `AUTO_CONFIRM=true HOME="${env.HOME}"`,
+            this.binPath,
+            [command, ...this.getArgs(customArgs)].join(' ')
+          )
+        }
         try {
           // execute command and wait for std outputs (or error)
           const execOutputs = await pExecFile(this.binPath, [command, ...this.getArgs(customArgs)], {

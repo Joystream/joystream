@@ -486,7 +486,6 @@ export interface Channel extends Struct {
   readonly num_videos: u64;
   readonly is_censored: bool;
   readonly reward_account: Option<GenericAccountId>;
-  readonly deletion_prize_source_account_id: GenericAccountId;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;

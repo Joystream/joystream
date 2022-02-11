@@ -26,6 +26,9 @@ import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
+import initStorage, { singleBucketConfig as storageConfig } from '../flows/storage/initStorage'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import { scenario } from '../Scenario'
 
 scenario('Full', async ({ job, env }) => {
@@ -80,4 +83,9 @@ scenario('Full', async ({ job, env }) => {
   // Council
   const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
   job('council election failures', failToElect).requires(secondCouncilJob)
+
+  // Content directory
+  const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(sudoHireLead)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 })

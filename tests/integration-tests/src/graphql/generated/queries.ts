@@ -13,6 +13,11 @@ export type OwnedNftFieldsFragment = {
   creatorRoyalty?: Types.Maybe<number>
   video: { id: string }
   ownerMember?: Types.Maybe<{ id: string }>
+  transactionalStatus:
+    | { __typename: 'TransactionalStatusIdle' }
+    | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
+    | { __typename: 'TransactionalStatusAuction' }
+    | { __typename: 'TransactionalStatusBuyNow' }
 }
 
 export type GetChannelsQueryVariables = Types.Exact<{ [key: string]: never }>
@@ -1960,6 +1965,9 @@ export const OwnedNftFields = gql`
       id
     }
     metadata
+    transactionalStatus {
+      __typename
+    }
     creatorRoyalty
   }
 `

@@ -93,9 +93,9 @@ export class JoystreamCLI extends CLI {
     Selects active member for CLI commands.
   */
   async chooseMemberAccount(memberId: MemberId) {
-    const { stderr } = await this.run('membership:chooseMember', ['--memberId', memberId.toString()])
+    const { stderr, exitCode } = await this.run('membership:chooseMember', ['--memberId', memberId.toString()])
 
-    if (stderr && !stderr.match(/^\s*Member switched to id/)) {
+    if (exitCode && !stderr.match(/^\s*Member switched to id/)) {
       throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
     }
   }

@@ -121,7 +121,6 @@ export class Channel extends JoyStructDecorated({
   num_videos: u64,
   is_censored: bool,
   reward_account: Option.with(AccountId),
-  deletion_prize_source_account_id: AccountId,
   collaborators: BTreeSet.with(MemberId),
   moderators: BTreeSet.with(MemberId),
   cumulative_payout_earned: Balance,

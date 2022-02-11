@@ -94,11 +94,10 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(openAuctionFixture).run()
 
-  /* TODO: fix this - QN doesn't catch the events for buy-know from unkown reason
   const nftBuyNowFixture = new NftBuyNowFixture(api, query, joystreamCli, nextVideo().videoId, author as IMember, auctionParticipants[0])
 
   await new FixtureRunner(nftBuyNowFixture).run()
-*/
+
   const nftDirectOfferFixture = new NftDirectOfferFixture(
     api,
     query,

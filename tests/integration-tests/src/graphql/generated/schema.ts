@@ -655,8 +655,8 @@ export type Auction = BaseGraphQlObject & {
   version: Scalars['Int']
   nft: OwnedNft
   nftId: Scalars['String']
-  initialOwner: Membership
-  initialOwnerId: Scalars['String']
+  initialOwner?: Maybe<Membership>
+  initialOwnerId?: Maybe<Scalars['String']>
   winningMember?: Maybe<Membership>
   winningMemberId?: Maybe<Scalars['String']>
   /** Auction starting price */
@@ -1100,7 +1100,7 @@ export type AuctionConnection = {
 
 export type AuctionCreateInput = {
   nft: Scalars['ID']
-  initialOwner: Scalars['ID']
+  initialOwner?: Maybe<Scalars['ID']>
   winningMember?: Maybe<Scalars['ID']>
   startingPrice: Scalars['String']
   buyNowPrice?: Maybe<Scalars['String']>
@@ -4684,7 +4684,6 @@ export type CuratorGroup = BaseGraphQlObject & {
   isActive: Scalars['Boolean']
   curators: Array<Curator>
   channels: Array<Channel>
-  ownednftownerCuratorGroup?: Maybe<Array<OwnedNft>>
 }
 
 export type CuratorGroupConnection = {
@@ -4750,9 +4749,6 @@ export type CuratorGroupWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
-  ownednftownerCuratorGroup_none?: Maybe<OwnedNftWhereInput>
-  ownednftownerCuratorGroup_some?: Maybe<OwnedNftWhereInput>
-  ownednftownerCuratorGroup_every?: Maybe<OwnedNftWhereInput>
   AND?: Maybe<Array<CuratorGroupWhereInput>>
   OR?: Maybe<Array<CuratorGroupWhereInput>>
 }
@@ -12277,12 +12273,11 @@ export type OwnedNft = BaseGraphQlObject & {
   auctions: Array<Auction>
   ownerMember?: Maybe<Membership>
   ownerMemberId?: Maybe<Scalars['String']>
-  ownerCuratorGroup?: Maybe<CuratorGroup>
-  ownerCuratorGroupId?: Maybe<Scalars['String']>
   /** NFT's metadata */
   metadata: Scalars['String']
   /** NFT transactional status */
   transactionalStatus: TransactionalStatus
+  transactionalStatusUpdates: Array<TransactionalStatusUpdate>
   /** Creator royalty */
   creatorRoyalty?: Maybe<Scalars['Float']>
 }
@@ -12295,7 +12290,6 @@ export type OwnedNftConnection = {
 
 export type OwnedNftCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
   metadata: Scalars['String']
   transactionalStatus: Scalars['JSONObject']
   creatorRoyalty?: Maybe<Scalars['Float']>
@@ -12315,8 +12309,6 @@ export enum OwnedNftOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
   OwnerMemberDesc = 'ownerMember_DESC',
-  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
-  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   MetadataAsc = 'metadata_ASC',
   MetadataDesc = 'metadata_DESC',
   CreatorRoyaltyAsc = 'creatorRoyalty_ASC',
@@ -12325,7 +12317,6 @@ export enum OwnedNftOrderByInput {
 
 export type OwnedNftUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
   metadata?: Maybe<Scalars['String']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
   creatorRoyalty?: Maybe<Scalars['Float']>
@@ -12373,7 +12364,9 @@ export type OwnedNftWhereInput = {
   auctions_some?: Maybe<AuctionWhereInput>
   auctions_every?: Maybe<AuctionWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
-  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  transactionalStatusUpdates_none?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalStatusUpdates_some?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalStatusUpdates_every?: Maybe<TransactionalStatusUpdateWhereInput>
   AND?: Maybe<Array<OwnedNftWhereInput>>
   OR?: Maybe<Array<OwnedNftWhereInput>>
 }
@@ -15610,6 +15603,9 @@ export type Query = {
   threadMovedEvents: Array<ThreadMovedEvent>
   threadMovedEventByUniqueInput?: Maybe<ThreadMovedEvent>
   threadMovedEventsConnection: ThreadMovedEventConnection
+  transactionalStatusUpdates: Array<TransactionalStatusUpdate>
+  transactionalStatusUpdateByUniqueInput?: Maybe<TransactionalStatusUpdate>
+  transactionalStatusUpdatesConnection: TransactionalStatusUpdateConnection
   upcomingWorkingGroupOpenings: Array<UpcomingWorkingGroupOpening>
   upcomingWorkingGroupOpeningByUniqueInput?: Maybe<UpcomingWorkingGroupOpening>
   upcomingWorkingGroupOpeningsConnection: UpcomingWorkingGroupOpeningConnection
@@ -18527,6 +18523,26 @@ export type QueryThreadMovedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadMovedEventWhereInput>
   orderBy?: Maybe<Array<ThreadMovedEventOrderByInput>>
+}
+
+export type QueryTransactionalStatusUpdatesArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<TransactionalStatusUpdateWhereInput>
+  orderBy?: Maybe<Array<TransactionalStatusUpdateOrderByInput>>
+}
+
+export type QueryTransactionalStatusUpdateByUniqueInputArgs = {
+  where: TransactionalStatusUpdateWhereUniqueInput
+}
+
+export type QueryTransactionalStatusUpdatesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<TransactionalStatusUpdateWhereInput>
+  orderBy?: Maybe<Array<TransactionalStatusUpdateOrderByInput>>
 }
 
 export type QueryUpcomingWorkingGroupOpeningsArgs = {
@@ -23234,6 +23250,100 @@ export type TransactionalStatusInitiatedOfferToMember = {
   memberId: Scalars['Int']
   /** Whether member should pay to accept offer (optional) */
   price?: Maybe<Scalars['Float']>
+}
+
+export type TransactionalStatusUpdate = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  nft: OwnedNft
+  nftId: Scalars['String']
+  /** NFT transactional status */
+  transactionalStatus: TransactionalStatus
+  /** Block number at which change happened */
+  changedAt: Scalars['Int']
+}
+
+export type TransactionalStatusUpdateConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<TransactionalStatusUpdateEdge>
+  pageInfo: PageInfo
+}
+
+export type TransactionalStatusUpdateCreateInput = {
+  nft: Scalars['ID']
+  transactionalStatus: Scalars['JSONObject']
+  changedAt: Scalars['Float']
+}
+
+export type TransactionalStatusUpdateEdge = {
+  node: TransactionalStatusUpdate
+  cursor: Scalars['String']
+}
+
+export enum TransactionalStatusUpdateOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  NftAsc = 'nft_ASC',
+  NftDesc = 'nft_DESC',
+  ChangedAtAsc = 'changedAt_ASC',
+  ChangedAtDesc = 'changedAt_DESC',
+}
+
+export type TransactionalStatusUpdateUpdateInput = {
+  nft?: Maybe<Scalars['ID']>
+  transactionalStatus?: Maybe<Scalars['JSONObject']>
+  changedAt?: Maybe<Scalars['Float']>
+}
+
+export type TransactionalStatusUpdateWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  transactionalStatus_json?: Maybe<Scalars['JSONObject']>
+  changedAt_eq?: Maybe<Scalars['Int']>
+  changedAt_gt?: Maybe<Scalars['Int']>
+  changedAt_gte?: Maybe<Scalars['Int']>
+  changedAt_lt?: Maybe<Scalars['Int']>
+  changedAt_lte?: Maybe<Scalars['Int']>
+  changedAt_in?: Maybe<Array<Scalars['Int']>>
+  nft?: Maybe<OwnedNftWhereInput>
+  AND?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
+  OR?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
+}
+
+export type TransactionalStatusUpdateWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type UnlockBlogPostProposalDetails = {

@@ -948,40 +948,46 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
   }
 
-  async pickOpenAuctionWinner(accountFrom: string, memberId: number, videoId: number) {
+  async pickOpenAuctionWinner(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
       this.api.tx.content.pickOpenAuctionWinner({ Member: memberId }, videoId),
       accountFrom
     )
   }
 
-  async cancelOpenAuctionBid(accountFrom: string, participantId: number, videoId: number) {
+  async cancelOpenAuctionBid(accountFrom: string, participantId: number, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.cancelOpenAuctionBid(participantId, videoId), accountFrom)
   }
 
-  async cancelNftAuction(accountFrom: string, ownerId: number, videoId: number) {
+  async cancelNftAuction(accountFrom: string, ownerId: number, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
       this.api.tx.content.cancelNftAuction({ Member: ownerId }, videoId),
       accountFrom
     )
   }
 
-  async sellNft(accountFrom: string, videoId: number, ownerId: number, price: BN) {
+  async sellNft(accountFrom: string, videoId: number, ownerId: number, price: BN): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.sellNft(videoId, { Member: ownerId }, price), accountFrom)
   }
 
-  async buyNft(accountFrom: string, videoId: number, participantId: number) {
+  async buyNft(accountFrom: string, videoId: number, participantId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId), accountFrom)
   }
 
-  async offerNft(accountFrom: string, videoId: number, ownerId: number, toMemberId: number, price: BN | null = null) {
+  async offerNft(
+    accountFrom: string,
+    videoId: number,
+    ownerId: number,
+    toMemberId: number,
+    price: BN | null = null
+  ): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
       this.api.tx.content.offerNft(videoId, { Member: ownerId }, toMemberId, price),
       accountFrom
     )
   }
 
-  async acceptIncomingOffer(accountFrom: string, videoId: number) {
+  async acceptIncomingOffer(accountFrom: string, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
   }
 
@@ -990,7 +996,7 @@ export class Api {
     ownerId: number,
     channeld: number,
     auctionParams: AuctionParams
-  ) {
+  ): Promise<ISubmittableResult> {
     const createParameters = this.createType('VideoCreationParameters', {
       assets: null,
       meta: null,
@@ -998,7 +1004,7 @@ export class Api {
       auto_issue_nft: this.api.createType('NftIssuanceParameters', {
         royalty: null,
         nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: null,
+        non_channel_owner: ownerId,
         init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
       }),
     })

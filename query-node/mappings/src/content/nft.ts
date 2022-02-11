@@ -433,8 +433,12 @@ export async function convertTransactionalStatus(
 
   if (transactionalStatus.isAuction) {
     const auctionParams = transactionalStatus.asAuction
+
+    // create new auction
+    const auction = await createAuction(store, nft, auctionParams, blockNumber)
+
     const status = new TransactionalStatusAuction()
-    status.auction = await createAuction(store, nft, auctionParams, blockNumber)
+    status.auctionId = auction.id
 
     return status
   }
@@ -843,7 +847,7 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
 
   // update NFT transactional status
   const transactionalStatus = new TransactionalStatusBuyNow()
-  transactionalStatus.price = price
+  transactionalStatus.price = new BN(price.toString())
   await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
