@@ -14,7 +14,7 @@ import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/prop
 export default async function creatingProposals({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:creating-proposals')
   debug('Started')
-  api.enableDebugTxLogs()
+  api.enableVerboseTxLogs()
 
   debug('Creating test lead openings and applications...')
   const createLeadOpeningsFixture = new CreateOpeningsFixture(

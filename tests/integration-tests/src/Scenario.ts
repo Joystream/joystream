@@ -9,7 +9,7 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
-import fs, { readFileSync } from 'fs'
+import fs, { existsSync, readFileSync } from 'fs'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -64,7 +64,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   const reuseKeys = Boolean(env.REUSE_KEYS)
   let startKeyId: number
   let customKeys: string[] = []
-  if (reuseKeys) {
+  if (reuseKeys && existsSync(OUTPUT_FILE_PATH)) {
     const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom

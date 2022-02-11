@@ -83,6 +83,7 @@ export const doubleBucketConfig: InitStorageConfig = {
 export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageConfig) {
   return async function initDistribution({ api }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:initStorage')
+    api.enableDebugTxLogs()
     debug('Started')
 
     // Get working group leaders

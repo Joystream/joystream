@@ -19,7 +19,7 @@ const nonceCacheByAccount = new Map<string, number>()
 
 export class Sender {
   private readonly api: ApiPromise
-  private static readonly asyncLock: AsyncLock = new AsyncLock()
+  static readonly asyncLock: AsyncLock = new AsyncLock()
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
   private logs: LogLevel = LogLevel.None
@@ -128,7 +128,7 @@ export class Sender {
     // Instead use a single lock for all calls, to force all transactions to be submitted in same order
     // of call to signAndSend. Otherwise it raises chance of race conditions.
     // It happens in rare cases and has lead some tests to fail occasionally in the past
-    await Sender.asyncLock.acquire('tx-queue', async () => {
+    await Sender.asyncLock.acquire(['tx-queue', `nonce-${account.toString()}`], async () => {
       // The node sometimes returns invalid account nonce at the exact time a new block is produced
       // For a split second the node will then not take "pending" transactions into account,
       // that's why we must partialy rely on cached nonce

@@ -295,6 +295,10 @@ import {
   GetProposalDiscussionThreadsByIdsQuery,
   GetProposalDiscussionThreadsByIdsQueryVariables,
   GetProposalDiscussionThreadsByIds,
+  GetChannelById,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
+  ChannelFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1070,5 +1074,13 @@ export class QueryNodeApi {
       GetProposalDiscussionThreadsByIdsQuery,
       GetProposalDiscussionThreadsByIdsQueryVariables
     >(GetProposalDiscussionThreadsByIds, { ids: ids.map((id) => id.toString()) }, 'proposalDiscussionThreads')
+  }
+
+  public async channelById(id: string): Promise<Maybe<ChannelFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { id },
+      'channelByUniqueInput'
+    )
   }
 }

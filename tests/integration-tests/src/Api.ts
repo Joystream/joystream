@@ -230,6 +230,10 @@ export class Api {
     return this.sender.signAndSend(tx, sender)
   }
 
+  public getSuri(addr: AccountId | string): string {
+    return this.factory.getSuri(addr)
+  }
+
   public async sendExtrinsicsAndGetResults(
     // Extrinsics can be separated into batches in order to makes sure they are processed in specified order
     txs: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][],

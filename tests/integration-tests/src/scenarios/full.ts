@@ -51,6 +51,10 @@ scenario(async ({ job, env }) => {
   job('transferring invites', transferringInvites).after(membershipSystemJob)
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
+  // Council (should not interrupt proposalsJob!)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
     proposals,
@@ -59,10 +63,12 @@ scenario(async ({ job, env }) => {
     exactExecutionBlock,
     expireProposal,
     proposalsDiscussion,
-  ]).requires(membershipSystemJob)
+  ]).requires(councilFailuresJob)
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening).after(proposalsJob)
+  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+    proposalsJob
+  )
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
   job('group status', groupStatus).requires(sudoHireLead)
@@ -76,8 +82,4 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
-
-  // Council
-  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
-  job('council election failures', failToElect).requires(secondCouncilJob)
 })
