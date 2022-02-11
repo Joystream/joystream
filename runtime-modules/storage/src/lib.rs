@@ -3825,7 +3825,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             Balances::<T>::usable_balance(account_id)
-                > total_deletion_prize.saturating_add(storage_fee),
+                >= total_deletion_prize.saturating_add(storage_fee),
             Error::<T>::InsufficientBalance
         );
 

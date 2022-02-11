@@ -14,7 +14,7 @@ use crate::{Call, Module, StorageBucketById, Trait};
 benchmarks! {
     where_clause {
         where T: balances::Trait,
-              T: membership::Trait,
+//              T: membership::Trait,
               T: Trait,
     }
     _{ }
