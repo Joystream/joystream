@@ -1012,7 +1012,7 @@ decl_event! {
         <T as Trait>::StorageBucketId,
     WorkerId = WorkerId<T>,
     <T as Trait>::DataObjectId,
-    //UploadParameters = UploadParameters<T>,
+    UploadParameters = UploadParameters<T>,
     BagId = BagId<T>,
     DynamicBagId = DynamicBagId<T>,
     <T as frame_system::Trait>::AccountId,
@@ -1049,7 +1049,7 @@ decl_event! {
         /// - data objects IDs
         /// - initial uploading parameters
         /// - deletion prize for objects
-        DataObjectsUploaded(Vec<DataObjectId>, /*UploadParameters,*/ Balance),
+        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters, Balance),
 
         /// Emits on setting the storage operator metadata.
         /// Params
@@ -2572,7 +2572,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         // bag bookkeeping
-        Self::perform_upload(&params.bag_id, &params.object_creation_list, &bag_change);
+        Self::perform_upload(params, &bag_change);
 
         Ok(())
     }
@@ -2773,7 +2773,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         // fills the bag with voucher update
-        Self::perform_upload(&bag_id, &params.object_creation_list, &bag_change);
+        Self::perform_upload(
+            UploadParameters::<T> {
+                bag_id,
+                object_creation_list: params.object_creation_list,
+                deletion_prize_source_account_id: params.deletion_prize_source_account_id,
+                expected_data_size_fee: params.expected_data_size_fee,
+            },
+            &bag_change,
+        );
 
         // change bucket assignments
         Self::change_bag_assignments_for_distribution_buckets(
@@ -3777,25 +3785,21 @@ impl<T: Trait> Module<T> {
     }
 
     /// Perform actual upload and storage bookeepingn
-    fn perform_upload(
-        bag_id: &BagId<T>,
-        object_creation_list: &[DataObjectCreationParameters],
-        bag_change: &BagUpdate<BalanceOf<T>>,
-    ) {
-        let data = Self::create_data_objects(object_creation_list.to_vec());
+    fn perform_upload(params: UploadParameters<T>, bag_change: &BagUpdate<BalanceOf<T>>) {
+        let data = Self::create_data_objects(params.object_creation_list.to_vec());
 
-        let bag = Bags::<T>::get(bag_id);
+        let bag = Bags::<T>::get(params.bag_id.clone());
 
         // Save next object id.
         <NextDataObjectId<T>>::put(data.next_data_object_id);
 
         // Insert new objects.
         for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(bag_id, &data_object_id, data_object);
+            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
         }
 
         Self::change_storage_bucket_vouchers_for_bag(
-            &bag_id,
+            &params.bag_id,
             &bag,
             &bag_change.voucher_update,
             OperationType::Increase,
@@ -3803,7 +3807,7 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
-            //     params,
+            params,
             T::DataObjectDeletionPrize::get(),
         ));
     }

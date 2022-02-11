@@ -3390,7 +3390,7 @@ fn create_dynamic_bag_succeeded() {
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id,
-            Some(deletion_prize),
+            deletion_prize,
             BTreeSet::from_iter(bag.stored_by),
             BTreeSet::from_iter(bag.distributed_by),
         ));
