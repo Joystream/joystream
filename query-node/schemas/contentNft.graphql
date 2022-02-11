@@ -62,11 +62,8 @@ type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codeg
   "Auctions done for this NFT"
   auctions: [Auction!]! @derivedFrom(field: "nft")
 
-  "Member owning the NFT (if any)"
+  "Member owning the NFT. Channel owner owns the NFT if not set."
   ownerMember: Membership
-
-  "Curator group owning the NFT (if any)"
-  ownerCuratorGroup: CuratorGroup
 
   "NFT's metadata"
   metadata: String!
@@ -74,8 +71,22 @@ type OwnedNft @entity { # NFT in name can't be UPPERCASE because it causes codeg
   "NFT transactional status"
   transactionalStatus: TransactionalStatus!
 
+  "History of transacional status changes"
+  transactionalStatusUpdates: [TransactionalStatusUpdate!]! @derivedFrom(field: "nft")
+
   "Creator royalty"
   creatorRoyalty: Float
+}
+
+type TransactionalStatusUpdate @entity {
+  "Video NFT details"
+  nft: OwnedNft!
+
+  "NFT transactional status"
+  transactionalStatus: TransactionalStatus!
+
+  "Block number at which change happened"
+  changedAt: Int!
 }
 
 "NFT transactional state"
@@ -136,8 +147,8 @@ type Auction @entity {
   "Auctioned NFT"
   nft: OwnedNft!
 
-  "Member starting NFT auction"
-  initialOwner: Membership!
+  "Member starting NFT auction. If not set channel owner started auction"
+  initialOwner: Membership
 
   "Member that won this auction"
   winningMember: Membership

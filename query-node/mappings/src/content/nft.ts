@@ -17,9 +17,11 @@ import {
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
   TransactionalStatusAuction,
+  TransactionalStatusUpdate,
   ContentActor,
   ContentActorMember,
   ContentActorCurator,
+  ContentActorLead,
   Curator,
 
   // events
@@ -133,7 +135,8 @@ async function resetNftTransactionalStatusFromVideo(
   store: DatabaseManager,
   videoId: string,
   errorMessage: string,
-  newOwner?: Membership
+  blockNumber: number,
+  newOwner?: Membership,
 ) {
   // load NFT
   const nft = await store.get(OwnedNft, { where: { id: videoId.toString() } as FindConditions<OwnedNft> })
@@ -143,15 +146,13 @@ async function resetNftTransactionalStatusFromVideo(
     return inconsistentState(errorMessage, videoId.toString())
   }
 
-  // reset transactional status
-  nft.transactionalStatus = new TransactionalStatusIdle()
-
   if (newOwner) {
     nft.ownerMember = newOwner
   }
 
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  // reset transactional status
+  const transactionalStatus = new TransactionalStatusIdle()
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, blockNumber)
 }
 
 async function getRequiredExistingEntites<Type extends Video | Membership>(
@@ -215,13 +216,33 @@ async function convertContentActor(
     return result
   }
 
-  // contentActor.isLead not supported (not needed) now
+  if (contentActor.isLead) {
+    return new ContentActorLead()
+  }
 
   logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
   throw new Error('Not-implemented ContentActor type used')
 }
 
-async function finishAuction(store: DatabaseManager, videoId: number) {
+async function setNewNftTransactionalStatus(store: DatabaseManager, nft: OwnedNft, transactionalStatus: typeof TransactionalStatus, blockNumber: number) {
+  // update transactionalStatus
+  nft.transactionalStatus = transactionalStatus
+
+  // save NFT
+  await store.save<OwnedNft>(nft)
+
+  // create transactional status update record
+  const transactionalStatusUpdate = new TransactionalStatusUpdate({
+    nft,
+    transactionalStatus: nft.transactionalStatus,
+    changedAt: blockNumber,
+  })
+
+  // save update record
+  await store.save<TransactionalStatusUpdate>(transactionalStatusUpdate)
+}
+
+async function finishAuction(store: DatabaseManager, videoId: number, blockNumber: number) {
   // load video and auction
   const { video, auction } = await getCurrentAuctionFromVideo(
     store,
@@ -241,11 +262,12 @@ async function finishAuction(store: DatabaseManager, videoId: number) {
   )
 
   // update NFT's transactional status
-  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction completed`, winner)
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction completed`, blockNumber, winner)
 
   // update auction
   auction.isCompleted = true
   auction.winningMember = winner
+  auction.endedAtBlock = blockNumber
 
   // save auction
   await store.save<Auction>(auction)
@@ -302,28 +324,81 @@ async function createBid(
 export async function createNft(
   store: DatabaseManager,
   video: Video,
-  ownerMember,
-  creatorRoyalty: number | undefined,
-  metadata: string,
-  transactionalStatus: typeof TransactionalStatus
-) {
+  nftIssuanceParameters: joystreamTypes.NftIssuanceParameters,
+  blockNumber: number,
+): Promise<OwnedNft> {
+  // load owner
+  const ownerMember = nftIssuanceParameters.non_channel_owner.isSome
+    ? await getExistingEntity(store, Membership, nftIssuanceParameters.non_channel_owner.unwrap().toString())
+    : undefined
+
+  // calculate some values
+  const creatorRoyalty = nftIssuanceParameters.royalty.isSome ? nftIssuanceParameters.royalty.unwrap().toNumber() : undefined
+  const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
+
   // prepare nft record
-  const ownedNft = new OwnedNft({
+  const nft = new OwnedNft({
     id: video.id.toString(),
     video: video,
     ownerMember,
     creatorRoyalty,
-    metadata: metadata,
+    metadata: decodedMetadata,
+    // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
     transactionalStatus: new TransactionalStatusIdle(),
   })
 
   // save nft
-  await store.save<OwnedNft>(ownedNft)
+  await store.save<OwnedNft>(nft)
+
+  // update NFT transactional status
+  const transactionalStatus = await convertTransactionalStatus(nftIssuanceParameters.init_transactional_status, store, nft, blockNumber)
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, blockNumber)
+
+  return nft
 }
 
-function convertTransactionalStatus(
-  transactionalStatus: joystreamTypes.InitTransactionalStatus
-): typeof TransactionalStatus {
+async function createAuction(
+  store: DatabaseManager,
+  nft: OwnedNft, // expects `nft.ownerMember` to be available
+  auctionParams: joystreamTypes.AuctionParams,
+  blockNumber: number
+): Promise<Auction> {
+  const whitelistedMembers = await getRequiredExistingEntites(
+    store,
+    Membership,
+    Array.from(auctionParams.whitelist.values()).map((item) => item.toString()),
+    'Non-existing members whitelisted'
+  )
+
+  // prepare auction record
+  const auction = new Auction({
+    nft: nft,
+    initialOwner: nft.ownerMember,
+    startingPrice: auctionParams.starting_price,
+    buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
+    auctionType: createAuctionType(auctionParams.auction_type),
+    minimalBidStep: auctionParams.minimal_bid_step,
+    startsAtBlock: auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber,
+    plannedEndAtBlock: auctionParams.auction_type.isEnglish
+      ? blockNumber + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
+      : undefined,
+    isCanceled: false,
+    isCompleted: false,
+    whitelistedMembers,
+  })
+
+  // save auction
+  await store.save<Auction>(auction)
+
+  return auction
+}
+
+export async function convertTransactionalStatus(
+  transactionalStatus: joystreamTypes.InitTransactionalStatus,
+  store: DatabaseManager,
+  nft: OwnedNft,
+  blockNumber: number,
+): Promise<typeof TransactionalStatus> {
   if (transactionalStatus.isIdle) {
     return new TransactionalStatusIdle()
   }
@@ -339,7 +414,11 @@ function convertTransactionalStatus(
   }
 
   if (transactionalStatus.isAuction) {
-    // TODO: auction
+    const auctionParams = transactionalStatus.asAuction
+    const status = new TransactionalStatusAuction()
+    status.auction = await createAuction(store, nft, auctionParams, blockNumber)
+
+    return status
   }
 
   logger.error('Not implemented TransactionalStatus type', { contentActor: transactionalStatus.toString() })
@@ -349,7 +428,7 @@ function convertTransactionalStatus(
 export async function contentNft_AuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [ownerActor, videoId, auctionParams] = new Content.AuctionStartedEvent(event).params
+  const [contentActor, videoId, auctionParams] = new Content.AuctionStartedEvent(event).params
 
   // specific event processing
 
@@ -359,7 +438,7 @@ export async function contentNft_AuctionStarted({ event, store }: EventContext &
     Video,
     videoId.toString(),
     `Non-existing video's auction started`,
-    ['nft']
+    ['nft', 'nft.ownerMember']
   )
 
   // ensure NFT has been issued
@@ -367,64 +446,21 @@ export async function contentNft_AuctionStarted({ event, store }: EventContext &
     return inconsistentState('Non-existing NFT auctioned', video.id.toString())
   }
 
-  // member seems to be only actor that can own NFT right now
-  if (!ownerActor.isMember) {
-    throw new Error(`Not implemented NFT owner type "${ownerActor}"`)
-  }
-  const ownerId = ownerActor.asMember
+  const nft = video.nft
 
-  // load member
-  const member = await getRequiredExistingEntity(
-    store,
-    Membership,
-    ownerId.toString(),
-    'Non-existing member started video auction'
-  )
+  const auction = await createAuction(store, nft, auctionParams, event.blockNumber)
 
-  const whitelistedMembers = await getRequiredExistingEntites(
-    store,
-    Membership,
-    Array.from(auctionParams.whitelist.values()).map((item) => item.toString()),
-    'Non-existing members whitelisted'
-  )
-
-  // prepare auction record
-  const auction = new Auction({
-    nft: video.nft,
-    initialOwner: member,
-    startingPrice: auctionParams.starting_price,
-    buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
-    auctionType: createAuctionType(auctionParams.auction_type),
-    minimalBidStep: auctionParams.minimal_bid_step,
-    startsAtBlock: auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber,
-    plannedEndAtBlock: auctionParams.auction_type.isEnglish
-      ? event.blockNumber + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
-      : undefined,
-    isCanceled: false,
-    isCompleted: false,
-    whitelistedMembers,
-  })
-
-  // save auction
-  await store.save<Auction>(auction)
-
+  // update NFT transactional status
   const transactionalStatus = new TransactionalStatusAuction()
   transactionalStatus.auctionId = auction.id
-
-  video.nft.transactionalStatus = transactionalStatus
-
-  // save NFT
-  await store.save<OwnedNft>(video.nft)
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
-
-  const actor = new ContentActorMember()
-  actor.member = new Membership({ id: ownerId.toString() })
 
   const announcingPeriodStartedEvent = new AuctionStartedEvent({
     ...genericEventFields(event),
 
-    actor,
+    actor: await convertContentActor(store, contentActor),
     video,
     auction,
   })
@@ -457,7 +493,7 @@ function createAuctionType(rawAuctionType: joystreamTypes.AuctionType): typeof A
 export async function contentNft_NftIssued({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [actor, videoId, royalty, metadata, mbNewOwnerId, initTransactionalStatus] = new Content.NftIssuedEvent(
+  const [actor, videoId, nftIssuanceParameters] = new Content.NftIssuedEvent(
     event
   ).params
 
@@ -466,28 +502,9 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
   // load video
   const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed')
 
-  // load owner
-  const newOwner = await getExistingEntity(store, Membership, mbNewOwnerId.toString())
+  // prepare and save nft record
+  const nft = await createNft(store, video, nftIssuanceParameters, event.blockNumber)
 
-  const creatorRoyalty = royalty.isSome ? royalty.unwrap().toNumber() : undefined
-  const transactionalStatus = convertTransactionalStatus(initTransactionalStatus)
-
-  await createNft(store, video, newOwner, creatorRoyalty, metadata.toString(), transactionalStatus)
-
-  /*
-  // prepare nft record
-  const ownedNft = new OwnedNft({
-    id: video.id.toString(),
-    video,
-    ownerMember: newOwner,
-    creatorRoyalty,
-    metadata: metadata.toString(),
-    transactionalStatus: new TransactionalStatusIdle(),
-  })
-
-  // save nft
-  await store.save<OwnedNft>(ownedNft)
-*/
   // common event processing - second
 
   const announcingPeriodStartedEvent = new NftIssuedEvent({
@@ -495,9 +512,9 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 
     contentActor: await convertContentActor(store, actor),
     video,
-    royalty: creatorRoyalty,
-    metadata: metadata.toString(),
-    newOwner,
+    royalty: nft.creatorRoyalty,
+    metadata: nft.metadata,
+    newOwner: nft.ownerMember,
   })
 
   await store.save<NftIssuedEvent>(announcingPeriodStartedEvent)
@@ -587,7 +604,7 @@ export async function contentNft_AuctionCanceled({ event, store }: EventContext 
   )
 
   // update NFT's transactional status
-  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction canceled`)
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction canceled`, event.blockNumber)
 
   // mark auction as canceled
   auction.isCanceled = true
@@ -615,7 +632,7 @@ export async function contentNft_EnglishAuctionCompleted({ event, store }: Event
 
   // specific event processing
 
-  const { winner, video } = await finishAuction(store, videoId.toNumber())
+  const { winner, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
   // common event processing - second
 
@@ -644,7 +661,7 @@ export async function contentNft_BidMadeCompletingAuction({
   await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // winish auction and transfer ownership
-  const { winner: member, video } = await finishAuction(store, videoId.toNumber())
+  const { winner: member, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
   // common event processing - second
 
@@ -665,7 +682,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
 
   // specific event processing
 
-  const { video } = await finishAuction(store, videoId.toNumber())
+  const { video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
   // common event processing - second
 
@@ -694,16 +711,11 @@ export async function contentNft_OfferStarted({ event, store }: EventContext & S
     'Non-existing nft was offered'
   )
 
-  // create offer
+  // update NFT transactional status
   const transactionalStatus = new TransactionalStatusInitiatedOfferToMember()
   transactionalStatus.memberId = memberId.toNumber()
   transactionalStatus.price = price.unwrapOr(undefined)
-
-  // update NFT
-  nft.transactionalStatus = transactionalStatus
-
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
 
@@ -738,12 +750,8 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
   const memberId = (nft.transactionalStatus as TransactionalStatusInitiatedOfferToMember).memberId
   const member = new Membership({ id: memberId.toString() })
 
-  // update NFT
-  nft.transactionalStatus = new TransactionalStatusIdle()
-  nft.ownerMember = member
-
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  // update NFT's transactional status
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's offer accepted`, event.blockNumber, member)
 
   // common event processing - second
 
@@ -771,11 +779,8 @@ export async function contentNft_OfferCanceled({ event, store }: EventContext & 
     'Non-existing nft sell offer was canceled'
   )
 
-  // update NFT
-  nft.transactionalStatus = new TransactionalStatusIdle()
-
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  // update NFT's transactional status
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's offer canceled`, event.blockNumber)
 
   // common event processing - second
 
@@ -804,15 +809,10 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
     'Non-existing nft was offered'
   )
 
-  // create buy now offer
+  // update NFT transactional status
   const transactionalStatus = new TransactionalStatusBuyNow()
   transactionalStatus.price = price
-
-  // update NFT
-  nft.transactionalStatus = transactionalStatus
-
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
 
@@ -846,7 +846,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
   const winner = new Membership({ id: memberId.toString() })
 
   // update NFT's transactional status
-  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction completed`, winner)
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's auction completed`, event.blockNumber, winner)
 
   // common event processing - second
 
@@ -875,11 +875,7 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
     'Non-existing nft was bought'
   )
 
-  // update NFT
-  nft.transactionalStatus = new TransactionalStatusIdle()
-
-  // save NFT
-  await store.save<OwnedNft>(nft)
+  await resetNftTransactionalStatusFromVideo(store, videoId.toString(), `Non-existing NFT's buy-now canceled`, event.blockNumber)
 
   // common event processing - second
 

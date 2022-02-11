@@ -1351,10 +1351,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
                 video_id,
-                params.royalty,
-                params.nft_metadata,
-                params.non_channel_owner,
-                params.init_transactional_status
+                params,
             ));
         }
 
@@ -2243,7 +2240,7 @@ decl_event!(
             CurrencyOf<T>,
             <T as common::MembershipTypes>::MemberId,
         >,
-        InitTransactionalStatus = InitTransactionalStatus<T>,
+        NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
@@ -2327,14 +2324,7 @@ decl_event!(
         MinCashoutUpdated(Balance),
         // Nft auction
         AuctionStarted(ContentActor, VideoId, AuctionParams),
-        NftIssued(
-            ContentActor,
-            VideoId,
-            Option<Royalty>,
-            NftMetadata,
-            Option<MemberId>,
-            InitTransactionalStatus,
-        ),
+        NftIssued(ContentActor, VideoId, NftIssuanceParameters),
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),

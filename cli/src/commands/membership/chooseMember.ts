@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import { flags } from '@oclif/command'
 import ExitCodes from '../../ExitCodes'
 
-export default class AccountChooseMember extends MembershipsCommandBase {
+export default class MembershipChooseMember extends MembershipsCommandBase {
   static description = 'Choose default member to use in the CLI'
   static flags = {
     memberId: flags.string({
@@ -16,7 +16,7 @@ export default class AccountChooseMember extends MembershipsCommandBase {
   }
 
   async run() {
-    const { memberId } = this.parse(AccountChooseMember).flags
+    const { memberId } = this.parse(MembershipChooseMember).flags
 
     const selectedMember = memberId
       ? await this.selectKnownMember(memberId)
