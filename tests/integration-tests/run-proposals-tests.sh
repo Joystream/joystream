@@ -20,6 +20,12 @@ else
   docker-compose up -d joystream-node
 fi
 
+function cleanup() {
+    docker-compose -f ../../docker-compose.yml logs joystream-node --tail 200
+    docker-compose -f ../../docker-compose.yml down -v
+}
+trap cleanup EXIT
+
 sleep 3
 
 # Start a query-node
