@@ -139,6 +139,7 @@ jobs:
       # Bring up hydra query-node development instance, then run integration tests
       - name: Execute Tests
         run: |
+          export JOYSTREAM_NODE_TAG=latest
           ./tests/integration-tests/run-proposals-tests.sh
 
   proposals_custom_chain:
@@ -168,4 +169,5 @@ jobs:
       # Bring up hydra query-node development instance, then run integration tests
       - name: Execute Tests
         run: |
+          export JOYSTREAM_NODE_TAG=latest
           CHAINSPEC_NODE=true ./tests/integration-tests/run-proposals-tests.sh
