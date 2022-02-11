@@ -22,7 +22,9 @@ fragment OwnedNftFields on OwnedNft {
     id
   }
   metadata
-  transactionalStatus {__typename}
+  transactionalStatus {
+    __typename
+  }
   creatorRoyalty
 }
 
