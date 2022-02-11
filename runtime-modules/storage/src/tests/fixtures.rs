@@ -1129,6 +1129,7 @@ impl CreateDynamicBagFixture {
         Self {
             params: DynBagCreationParameters::<Test> {
                 bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
+                deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 ..Default::default()
             },
             deletion_prize: Default::default(),
@@ -1185,6 +1186,8 @@ impl CreateDynamicBagFixture {
         if actual_result.is_ok() {
             let bag_id: BagId<Test> = self.params.bag_id.clone().into();
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+            let bag = <crate::Bags<Test>>::get(&bag_id);
+            assert!(bag.stored_by.len() > 0);
         }
     }
 }

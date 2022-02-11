@@ -2544,7 +2544,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // size check
         ensure!(
             !params.object_creation_list.is_empty(),
-            Error::<T>::DataObjectIdParamsAreEmpty
+            Error::<T>::NoObjectsOnUpload
         );
 
         // validate bag change
@@ -2733,16 +2733,13 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         let bag_change = if !params.object_creation_list.is_empty() {
             Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?
         } else {
+            // return empty bag change if no uploads required
             BagUpdate::<BalanceOf<T>>::default()
         };
 
         // buckets check
         let (storage_bucket_ids, distribution_bucket_ids) =
-            if !params.object_creation_list.is_empty() {
-                Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?
-            } else {
-                Default::default()
-            };
+            Self::pick_buckets_for_bag(params.bag_id.clone().into(), &bag_change)?;
 
         // balance check (balance must be usable and not simply free)
         let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
@@ -3284,7 +3281,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
-        // verify  MaxSize >= object size >0 and ipfs id not blacklisted and compute bag change
+        // verify  MaxSize >= object size > 0 and ipfs id not blacklisted and compute bag change
         object_creation_list
             .iter()
             .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |acc, obj| {
@@ -3293,6 +3290,7 @@ impl<T: Trait> Module<T> {
                     Error::<T>::MaxDataObjectSizeExceeded,
                 );
                 ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
+                ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
                 ensure!(
                     !Blacklist::contains_key(obj.ipfs_content_id.clone()),
                     Error::<T>::DataObjectBlacklisted,
@@ -3414,10 +3412,8 @@ impl<T: Trait> Module<T> {
         dyn_bag_type: DynamicBagType,
         bag_change: &BagUpdate<BalanceOf<T>>,
     ) -> Result<BucketPair<T>, DispatchError> {
-        let storage_bucket_ids = Self::pick_storage_buckets_for_dynamic_bag(
-            dyn_bag_type,
-            Some(bag_change.voucher_update),
-        );
+        let storage_bucket_ids =
+            Self::pick_storage_buckets_for_dynamic_bag(dyn_bag_type, bag_change.voucher_update);
 
         let distribution_bucket_ids = Self::pick_distribution_buckets_for_dynamic_bag(dyn_bag_type);
 
@@ -3431,7 +3427,7 @@ impl<T: Trait> Module<T> {
     // Selects storage bucket ID sets to assign to the dynamic bag.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
-        voucher_update: Option<VoucherUpdate>,
+        voucher_update: VoucherUpdate,
     ) -> BTreeSet<T::StorageBucketId> {
         StorageBucketPicker::<T>::pick_storage_buckets(bag_type, voucher_update)
     }

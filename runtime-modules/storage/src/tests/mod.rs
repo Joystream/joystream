@@ -938,6 +938,7 @@ fn upload_succeeded_with_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
@@ -1850,12 +1851,15 @@ fn move_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
         let src_bag_id = BagId::<Test>::Dynamic(src_dynamic_bag_id.clone());
         create_dynamic_bag(&src_dynamic_bag_id);
 
         let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
         let dest_bag_id = BagId::<Test>::Dynamic(dest_dynamic_bag_id.clone());
+
         create_dynamic_bag(&dest_dynamic_bag_id);
 
         let initial_balance = 1000;
@@ -1931,6 +1935,7 @@ fn move_data_objects_fails_with_non_existing_dynamic_bags() {
             .with_data_object_ids(ids.clone())
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         create_dynamic_bag(&src_dynamic_bag_id);
 
         // Src bag exists, dest doesn't
@@ -2168,6 +2173,7 @@ fn delete_data_objects_succeeded() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
@@ -2606,7 +2612,11 @@ fn delete_dynamic_bags_succeeded() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        CreateDynamicBagFixture::default().call_and_assert(Ok(()));
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        CreateDynamicBagFixture::default()
+            .with_deletion_prize(deletion_prize_value)
+            .call_and_assert(Ok(()));
 
         // pre-check balances
         assert_eq!(
@@ -2767,6 +2777,8 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(deletion_prize_value)
@@ -3020,6 +3032,8 @@ fn storage_bucket_voucher_changed_event_fired() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         create_dynamic_bag(&dynamic_bag_id);
 
         let objects_limit = 1;
@@ -3366,6 +3380,8 @@ fn create_dynamic_bag_fails_with_insufficient_balance() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let deletion_prize_value = 100;
 
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_prize(deletion_prize_value)
@@ -3377,6 +3393,8 @@ fn create_dynamic_bag_fails_with_insufficient_balance() {
 fn create_dynamic_bag_failed_with_existing_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
@@ -3401,23 +3419,29 @@ fn test_storage_bucket_picking_for_bag_non_random() {
 
         let initial_buckets_number = InitialStorageBucketsNumberForDynamicBag::get();
         // No buckets
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
         assert_eq!(bucket_ids, BTreeSet::new());
 
         // Less then initial buckets number
         let buckets_number = initial_buckets_number - 1;
         let created_buckets = create_storage_buckets(buckets_number);
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         assert_eq!(bucket_ids, created_buckets);
 
         // More then initial buckets number
         let buckets_number = 5;
         create_storage_buckets(buckets_number);
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         assert_eq!(
             bucket_ids,
@@ -3428,8 +3452,10 @@ fn test_storage_bucket_picking_for_bag_non_random() {
         let removed_bucket_id = 1;
         <crate::StorageBucketById<Test>>::remove(removed_bucket_id);
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         let mut expected_ids =
             BTreeSet::from_iter((0u64..(initial_buckets_number + 1)).into_iter());
@@ -3443,8 +3469,10 @@ fn test_storage_bucket_picking_for_bag_non_random() {
             bucket.accepting_new_bags = false;
         });
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         let mut expected_ids =
             BTreeSet::from_iter((0u64..(initial_buckets_number + 2)).into_iter());
@@ -3459,8 +3487,10 @@ fn test_storage_bucket_picking_for_bag_non_random() {
             DynamicBagCreationPolicy::default(),
         );
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
         assert_eq!(bucket_ids, BTreeSet::new());
     });
 }
@@ -3474,23 +3504,29 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
 
         let initial_buckets_number = InitialStorageBucketsNumberForDynamicBag::get();
         // No buckets
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
         assert_eq!(bucket_ids, BTreeSet::new());
 
         // Less then initial buckets number
         let buckets_number = initial_buckets_number - 1;
         let created_buckets = create_storage_buckets(buckets_number);
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         assert_eq!(bucket_ids, created_buckets);
 
         // More then initial buckets number
         let buckets_number = 5;
         create_storage_buckets(buckets_number);
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         let sequential_random_ids = BTreeSet::from_iter((0u64..initial_buckets_number).into_iter());
 
@@ -3507,8 +3543,10 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
         let removed_bucket_id = bucket_ids.iter().next().unwrap();
         <crate::StorageBucketById<Test>>::remove(removed_bucket_id);
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
         // Check number of generated IDs
         assert_eq!(initial_buckets_number, bucket_ids.len() as u64);
         // Check that IDs are within possible range.
@@ -3524,8 +3562,10 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
             bucket.accepting_new_bags = false;
         });
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
 
         let mut expected_ids =
             BTreeSet::from_iter((0u64..(initial_buckets_number + 2)).into_iter());
@@ -3547,8 +3587,10 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
             DynamicBagCreationPolicy::default(),
         );
 
-        let bucket_ids =
-            Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member, None);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(
+            DynamicBagType::Member,
+            Default::default(),
+        );
         assert_eq!(bucket_ids, BTreeSet::new());
     });
 }
@@ -4572,8 +4614,6 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
         let picked_bucket_ids =
             Storage::pick_distribution_buckets_for_dynamic_bag(dynamic_bag_type);
 
-        println!("{:?}", picked_bucket_ids);
-
         assert_eq!(picked_bucket_ids.len(), (new_bucket_number * 2) as usize); // buckets from two families
 
         let total_ids1 = BTreeSet::from_iter(
@@ -5389,15 +5429,11 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let objects: Vec<DataObjectCreationParameters> = (1..2)
-            .map(|idx| DataObjectCreationParameters {
-                size: DEFAULT_STORAGE_BUCKET_SIZE_LIMIT + 1,
-                ipfs_content_id: vec![idx],
-            })
-            .collect();
-
         CreateDynamicBagFixture::default()
-            .with_objects(objects)
+            .with_objects(vec![DataObjectCreationParameters {
+                size: DEFAULT_STORAGE_BUCKET_SIZE_LIMIT + 1,
+                ipfs_content_id: vec![1],
+            }])
             .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
     })
 }
@@ -5445,16 +5481,12 @@ fn unsuccessful_dyn_bag_creation_with_empty_ipfs_ids() {
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_empty_objects_list() {
+fn successful_dyn_bag_creation_with_empty_objects_list() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-
-        CreateDynamicBagFixture::default()
-            .with_objects(vec![])
-            .call_and_assert(Err(Error::<Test>::NoObjectsOnUpload.into()));
+        CreateDynamicBagFixture::default().call_and_assert(Ok(()))
     })
 }
 
@@ -5467,6 +5499,7 @@ fn unsuccessful_dyn_bag_creation_with_invalid_expected_data_fee() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         CreateDynamicBagFixture::default()
+            .with_objects(create_single_data_object())
             .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee() + 100)
             .call_and_assert(Err(Error::<Test>::DataSizeFeeChanged.into()));
     })
@@ -5486,7 +5519,25 @@ fn unsuccessful_dyn_bag_creation_with_upload_blocking() {
             .call_and_assert(Ok(()));
 
         CreateDynamicBagFixture::default()
+            .with_objects(create_single_data_object())
             .call_and_assert(Err(Error::<Test>::UploadingBlocked.into()));
+    })
+}
+
+#[test]
+fn successful_empty_dyn_bag_creation_with_upload_blocking() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        UpdateUploadingBlockedStatusFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_new_status(true)
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagFixture::default().call_and_assert(Ok(()))
     })
 }
 
