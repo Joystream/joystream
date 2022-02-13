@@ -140,13 +140,14 @@ use frame_support::{
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, BaseArithmetic, One, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
+use sp_std::ops::{Add, Sub};
 use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
@@ -556,30 +557,6 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
             }
         }
     }
-
-    fn add_voucher(self, voucher: VoucherUpdate) -> Self {
-        Self {
-            objects_total_size: self
-                .objects_total_size
-                .saturating_add(voucher.objects_total_size),
-            objects_number: self
-                .objects_total_size
-                .saturating_add(voucher.objects_number),
-            ..self
-        }
-    }
-
-    fn sub_voucher(self, voucher: VoucherUpdate) -> Self {
-        Self {
-            objects_total_size: self
-                .objects_total_size
-                .saturating_sub(voucher.objects_total_size),
-            objects_number: self
-                .objects_total_size
-                .saturating_sub(voucher.objects_number),
-            ..self
-        }
-    }
 }
 
 /// Parameters for the data object creation.
@@ -844,19 +821,62 @@ impl VoucherUpdate {
 }
 
 // Helper-struct - defines voucher changes.
-#[derive(Clone, PartialEq, Eq, Debug)]
-enum NetDeletionPrize<Balance: Ord + Saturating> {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum NetDeletionPrizeTypes<Balance: AtLeast32BitUnsigned + Default> {
     /// Net Deletion Prize to be withdrawn
-    Withdraw(Balance),
+    Pos(Balance),
     /// Net Deletion Prize to be Deposited
-    Deposit(Balance),
+    Neg(Balance),
 }
 
-impl<Balance: Ord + Saturating + Default> Default for NetDeletionPrize<Balance> {
+impl<Balance: AtLeast32BitUnsigned + Default> Default for NetDeletionPrizeTypes<Balance> {
     fn default() -> Self {
-        Self::Withdraw(Balance::default())
+        Self::Neg(Balance::default())
     }
 }
+
+impl<Balance: AtLeast32BitUnsigned + Default> Add<Balance> for NetDeletionPrizeTypes<Balance> {
+    type Output = NetDeletionPrizeTypes<<Balance as Add>::Output>;
+    fn add(self, rhs: Balance) -> Self::Output {
+        match self {
+            Self::Pos(b) => Self::Pos(b + rhs),
+            Self::Neg(b) => {
+                if b > rhs {
+                    Self::Neg(b - rhs)
+                } else {
+                    Self::Pos(rhs - b)
+                }
+            }
+        }
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + Default> Sub<Balance> for NetDeletionPrizeTypes<Balance> {
+    type Output = NetDeletionPrizeTypes<<Balance as Sub>::Output>;
+    fn sub(self, rhs: Balance) -> Self::Output {
+        match self {
+            Self::Neg(b) => Self::Neg(b + rhs),
+            Self::Pos(b) => {
+                if b > rhs {
+                    Self::Pos(b - rhs)
+                } else {
+                    Self::Neg(rhs - b)
+                }
+            }
+        }
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
+    fn due(self) -> Balance {
+        match self {
+            Self::Pos(b) => b,
+            Self::Neg(b) => Balance::zero(),
+        }
+    }
+}
+
+type NetDeletionPrize<T> = NetDeletionPrizeTypes<BalanceOf<T>>;
 
 /// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -2804,9 +2824,36 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
+        let net_balance = NetDeletionPrize::<T>::default()
+            + params
+                .object_creation_list
+                .iter()
+                .fold(BalanceOf::<T>::zero(), |acc, _| {
+                    acc.saturating_add(T::DataObjectDeletionPrize::get())
+                })
+            - objects_remove_list
+                .iter()
+                .fold(BalanceOf::<T>::zero(), |acc, _| {
+                    acc.saturating_add(T::DataObjectDeletionPrize::get())
+                });
 
+        ensure!(
+            Balances::<T>::usable_balance(params.deletion_prize_source_account_id)
+                >= net_balance
+                    .due()
+                    .saturating_add(Self::calculate_data_storage_fee(
+                        new_voucher_update.objects_total_size
+                    )),
+            Error::<T>::InsufficientBalance
+        );
+        //
         // == MUTATION SAFE ==
         //
+
+        // update bucket vouchers
+        new_storage_buckets
+            .into_iter()
+            .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
 
         // <StorageTreasury<T>>::withdraw(
         //     &deletion_prize_account_id,
@@ -4020,20 +4067,29 @@ impl<T: Trait> Module<T> {
     fn update_storage_buckets(
         bucket_ids: BTreeSet<T::StorageBucketId>,
         new_voucher_update: VoucherUpdate,
-    ) -> Result<BTreeMap<T::StorageBucketId, Voucher>, Error<T>> {
+    ) -> Result<BTreeMap<T::StorageBucketId, StorageBucket<T>>, Error<T>> {
         bucket_ids
             .into_iter()
             .map(|id| {
                 Self::ensure_storage_bucket_exists(&id).and_then(|bucket| {
                     bucket
                         .voucher
+                        .clone()
                         .set_size(new_voucher_update.objects_total_size)
                         .map_err(|_| Error::<T>::StorageBucketObjectSizeLimitReached)
                         .and_then(|v| {
                             v.set_num(new_voucher_update.objects_number)
                                 .map_err(|_| Error::<T>::StorageBucketObjectNumberLimitReached)
                         })
-                        .map(|v| (id, v))
+                        .map(|v| {
+                            (
+                                id,
+                                StorageBucket::<T> {
+                                    voucher: v,
+                                    ..bucket
+                                },
+                            )
+                        })
                 })
             })
             .collect()
