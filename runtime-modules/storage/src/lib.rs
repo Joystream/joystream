@@ -2813,9 +2813,13 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         //     bag_change.total_deletion_prize,
         // )?;
 
+        // remove objects
         objects_to_remove.iter().for_each(|id| {
             DataObjectsById::<T>::remove(&bag_id, id);
         });
+
+        // add objects
+        Self::add_data_objects_to_state(&bag_id, params.object_creation_list);
 
         // Self::deposit_event(RawEvent::DataObjectsDeleted(
         //     deletion_prize_account_id,
@@ -3155,6 +3159,23 @@ impl<T: Trait> Module<T> {
                 Ok(())
             }
         }
+    }
+
+    fn add_data_objects_to_state(
+        bag_id: &BagId<T>,
+        object_creation_list: Vec<DataObjectCreationParameters>,
+    ) {
+        object_creation_list.into_iter().for_each(|obj| {
+            let next_id = NextDataObjectId::<T>::get().saturating_add(One::one());
+            let obj = DataObject {
+                accepted: false,
+                deletion_prize: T::DataObjectDeletionPrize::get(),
+                size: obj.size,
+                ipfs_content_id: obj.ipfs_content_id,
+            };
+            DataObjectsById::<T>::insert(bag_id, &next_id, obj);
+            NextDataObjectId::<T>::put(next_id);
+        })
     }
 
     // Create data objects from the creation data.
