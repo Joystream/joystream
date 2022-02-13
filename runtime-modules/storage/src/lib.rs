@@ -871,7 +871,7 @@ impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
     fn due(self) -> Balance {
         match self {
             Self::Pos(b) => b,
-            Self::Neg(b) => Balance::zero(),
+            Self::Neg(_) => Balance::zero(),
         }
     }
 }
@@ -2824,7 +2824,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
-        let net_balance = NetDeletionPrize::<T>::default()
+        let net_prize = NetDeletionPrize::<T>::default()
             + params
                 .object_creation_list
                 .iter()
@@ -2837,28 +2837,34 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
                     acc.saturating_add(T::DataObjectDeletionPrize::get())
                 });
 
+        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
         ensure!(
-            Balances::<T>::usable_balance(params.deletion_prize_source_account_id)
-                >= net_balance
-                    .due()
-                    .saturating_add(Self::calculate_data_storage_fee(
-                        new_voucher_update.objects_total_size
-                    )),
-            Error::<T>::InsufficientBalance
+            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id)
+                >= net_prize.due().saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance,
         );
+
         //
         // == MUTATION SAFE ==
         //
 
         // update bucket vouchers
         new_storage_buckets
-            .into_iter()
+            .iter()
             .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
 
-        // <StorageTreasury<T>>::withdraw(
-        //     &deletion_prize_account_id,
-        //     bag_change.total_deletion_prize,
-        // )?;
+        // pay storage fee
+        let _ = Balances::<T>::slash(&params.deletion_prize_source_account_id, storage_fee);
+
+        // refund or request deletion prize
+        match net_prize {
+            NetDeletionPrize::<T>::Neg(amnt) => {
+                <StorageTreasury<T>>::withdraw(&deletion_prize_account_id, amnt)?
+            }
+            NetDeletionPrize::<T>::Pos(amnt) => {
+                <StorageTreasury<T>>::deposit(&deletion_prize_account_id, amnt)?
+            }
+        }
 
         // remove objects
         objects_to_remove.iter().for_each(|id| {
@@ -2867,6 +2873,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         // add objects
         Self::add_data_objects_to_state(&bag_id, params.object_creation_list);
+
+        // update bag
+        Bags::<T>::insert(
+            &bag_id,
+            Bag::<T> {
+                stored_by: new_storage_buckets
+                    .iter()
+                    .map(|(id, _)| *id)
+                    .collect::<BTreeSet<_>>(),
+                distributed_by,
+                deletion_prize,
+                objects_total_size: new_voucher_update.objects_total_size,
+                objects_number: new_voucher_update.objects_number,
+            },
+        );
 
         // Self::deposit_event(RawEvent::DataObjectsDeleted(
         //     deletion_prize_account_id,
