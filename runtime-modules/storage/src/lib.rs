@@ -2803,7 +2803,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         .sub_objects_list(objects_remove_list.as_slice());
 
         // bucket check
-        //2
+        let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
+
         // == MUTATION SAFE ==
         //
 
@@ -2812,9 +2813,9 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         //     bag_change.total_deletion_prize,
         // )?;
 
-        // for data_object_id in objects.iter() {
-        //     DataObjectsById::<T>::remove(&bag_id, &data_object_id);
-        // }
+        objects_to_remove.iter().for_each(|id| {
+            DataObjectsById::<T>::remove(&bag_id, id);
+        });
 
         // Self::deposit_event(RawEvent::DataObjectsDeleted(
         //     deletion_prize_account_id,
@@ -3994,5 +3995,26 @@ impl<T: Trait> Module<T> {
         if storage_fee != Zero::zero() {
             let _ = Balances::<T>::slash(account_id, storage_fee);
         }
+    }
+    fn update_storage_buckets(
+        bucket_ids: BTreeSet<T::StorageBucketId>,
+        new_voucher_update: VoucherUpdate,
+    ) -> Result<BTreeMap<T::StorageBucketId, Voucher>, Error<T>> {
+        bucket_ids
+            .into_iter()
+            .map(|id| {
+                Self::ensure_storage_bucket_exists(&id).and_then(|bucket| {
+                    bucket
+                        .voucher
+                        .set_size(new_voucher_update.objects_total_size)
+                        .map_err(|_| Error::<T>::StorageBucketObjectSizeLimitReached)
+                        .and_then(|v| {
+                            v.set_num(new_voucher_update.objects_number)
+                                .map_err(|_| Error::<T>::StorageBucketObjectNumberLimitReached)
+                        })
+                        .map(|v| (id, v))
+                })
+            })
+            .collect()
     }
 }
