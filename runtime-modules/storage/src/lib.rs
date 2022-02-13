@@ -2791,6 +2791,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
+    // TODO: upload and delete = Upload | Delete data objects
     fn upload_and_delete_data_objects(
         deletion_prize_account_id: T::AccountId,
         bag_id: BagId<T>,
@@ -2805,16 +2806,35 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             objects_number,
         } = Self::ensure_bag_exists(&bag_id)?;
 
+        // TODO: refactor upload common
+        // size check:
+        ensure!(
+            !params.object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
+        // TODO: refactor upload common
+        // ensure specified data fee == storage data fee
+        ensure!(
+            params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+            Error::<T>::DataSizeFeeChanged,
+        );
+
+        // TODO: refactor upload common
+        // TODO: refactor & reuse
         params
             .object_creation_list
             .iter()
             .try_for_each(|obj| Self::upload_data_objects_checks(obj))?;
 
+        // TODO: refactor & reuse
         let objects_remove_list = objects_to_remove
             .iter()
             .map(|obj_id| Self::ensure_data_object_exists(&bag_id, obj_id))
             .collect::<Result<Vec<_>, DispatchError>>()?;
 
+        // TODO: refactor upload common
+        // TODO: refactor & reuse
         let new_voucher_update = VoucherUpdate {
             objects_total_size,
             objects_number,
@@ -2824,6 +2844,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
+        // TODO: implement iterator::Sum
         let net_prize = NetDeletionPrize::<T>::default()
             + params
                 .object_creation_list
