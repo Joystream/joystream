@@ -773,15 +773,6 @@ decl_module! {
                 &channel,
             )?;
 
-            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender
-                );
-                Storage::<T>::can_upload_data_objects(&params)?;
-            }
-
             if !params.assets_to_remove.is_empty() {
                 Storage::<T>::can_delete_data_objects(
                     &Self::bag_id_for_channel(&channel_id),

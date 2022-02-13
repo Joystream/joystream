@@ -216,6 +216,14 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Get all objects id in a bag, without checking its existence
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
+
+    /// Upload and delete objects at the same time
+    fn upload_and_delete_data_objects(
+        deletion_prize_account_id: T::AccountId,
+        bag_id: BagId<T>,
+        params: UploadParameters<T>,
+        objects_to_remove: BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -548,6 +556,30 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
             }
         }
     }
+
+    fn add_voucher(self, voucher: VoucherUpdate) -> Self {
+        Self {
+            objects_total_size: self
+                .objects_total_size
+                .saturating_add(voucher.objects_total_size),
+            objects_number: self
+                .objects_total_size
+                .saturating_add(voucher.objects_number),
+            ..self
+        }
+    }
+
+    fn sub_voucher(self, voucher: VoucherUpdate) -> Self {
+        Self {
+            objects_total_size: self
+                .objects_total_size
+                .saturating_sub(voucher.objects_total_size),
+            objects_number: self
+                .objects_total_size
+                .saturating_sub(voucher.objects_number),
+            ..self
+        }
+    }
 }
 
 /// Parameters for the data object creation.
@@ -720,6 +752,27 @@ pub struct Voucher {
     pub objects_used: u64,
 }
 
+impl Voucher {
+    fn set_num(self, objects_used: u64) -> Result<Self, ()> {
+        if objects_used <= self.objects_limit {
+            Ok(Self {
+                objects_used,
+                ..self
+            })
+        } else {
+            Err(())
+        }
+    }
+
+    fn set_size(self, size_used: u64) -> Result<Self, ()> {
+        if size_used <= self.size_limit {
+            Ok(Self { size_used, ..self })
+        } else {
+            Err(())
+        }
+    }
+}
+
 // Defines whether we should increase or decrease parameters during some operation.
 #[derive(Clone, PartialEq, Eq, Debug, Copy)]
 enum OperationType {
@@ -741,6 +794,20 @@ struct VoucherUpdate {
 }
 
 impl VoucherUpdate {
+    fn add_objects_list(self, list: &[DataObjectCreationParameters]) -> Self {
+        list.iter().fold(self, |mut acc, obj| {
+            acc = acc.add_object(obj.size);
+            acc
+        })
+    }
+
+    fn sub_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
+        list.iter().fold(self, |mut acc, obj| {
+            acc = acc.sub_object(obj.size);
+            acc
+        })
+    }
+
     fn get_updated_voucher(&self, voucher: &Voucher, voucher_operation: OperationType) -> Voucher {
         let (objects_used, size_used) = match voucher_operation {
             OperationType::Increase => (
@@ -761,9 +828,33 @@ impl VoucherUpdate {
     }
 
     // Adds a single object data to the voucher update (updates objects size and number).
-    fn add_object(&mut self, size: u64) {
-        self.objects_number = self.objects_number.saturating_add(1);
-        self.objects_total_size = self.objects_total_size.saturating_add(size);
+    fn add_object(self, size: u64) -> Self {
+        Self {
+            objects_number: self.objects_number.saturating_add(1),
+            objects_total_size: self.objects_total_size.saturating_add(size),
+        }
+    }
+
+    fn sub_object(self, size: u64) -> Self {
+        Self {
+            objects_number: self.objects_number.saturating_sub(1),
+            objects_total_size: self.objects_total_size.saturating_sub(size),
+        }
+    }
+}
+
+// Helper-struct - defines voucher changes.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum NetDeletionPrize<Balance: Ord + Saturating> {
+    /// Net Deletion Prize to be withdrawn
+    Withdraw(Balance),
+    /// Net Deletion Prize to be Deposited
+    Deposit(Balance),
+}
+
+impl<Balance: Ord + Saturating + Default> Default for NetDeletionPrize<Balance> {
+    fn default() -> Self {
+        Self::Withdraw(Balance::default())
     }
 }
 
@@ -2547,9 +2638,19 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::NoObjectsOnUpload
         );
 
-        // validate bag change
-        let bag_change =
-            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
+        // ensure specified data fee == storage data fee
+        ensure!(
+            params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+            Error::<T>::DataSizeFeeChanged,
+        );
+
+        let bag_change = params
+            .object_creation_list
+            .iter()
+            .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |mut acc, obj| {
+                Self::upload_data_objects_checks(obj)?;
+                Ok(acc.add_object(obj.size, T::DataObjectDeletionPrize::get()))
+            })?;
 
         // bucket check
         Self::check_buckets_for_overflow(&bag.stored_by, &bag_change.voucher_update)?;
@@ -2670,6 +2771,60 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
+    fn upload_and_delete_data_objects(
+        deletion_prize_account_id: T::AccountId,
+        bag_id: BagId<T>,
+        params: UploadParameters<T>,
+        objects_to_remove: BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult {
+        let Bag::<T> {
+            stored_by,
+            distributed_by,
+            deletion_prize,
+            objects_total_size,
+            objects_number,
+        } = Self::ensure_bag_exists(&bag_id)?;
+
+        params
+            .object_creation_list
+            .iter()
+            .try_for_each(|obj| Self::upload_data_objects_checks(obj))?;
+
+        let objects_remove_list = objects_to_remove
+            .iter()
+            .map(|obj_id| Self::ensure_data_object_exists(&bag_id, obj_id))
+            .collect::<Result<Vec<_>, DispatchError>>()?;
+
+        let new_voucher_update = VoucherUpdate {
+            objects_total_size,
+            objects_number,
+        }
+        .add_objects_list(&params.object_creation_list)
+        .sub_objects_list(objects_remove_list.as_slice());
+
+        // bucket check
+        //2
+        // == MUTATION SAFE ==
+        //
+
+        // <StorageTreasury<T>>::withdraw(
+        //     &deletion_prize_account_id,
+        //     bag_change.total_deletion_prize,
+        // )?;
+
+        // for data_object_id in objects.iter() {
+        //     DataObjectsById::<T>::remove(&bag_id, &data_object_id);
+        // }
+
+        // Self::deposit_event(RawEvent::DataObjectsDeleted(
+        //     deletion_prize_account_id,
+        //     bag_id,
+        //     objects,
+        // ));
+
+        Ok(())
+    }
+
     fn can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
         Self::validate_delete_dynamic_bag_params(dynamic_bag_id, false).map(|_| ())
     }
@@ -2684,7 +2839,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     ) -> DispatchResult {
         // make deletion always be performed on an empty bag
         let deletion_prize = Self::validate_delete_dynamic_bag_params(&dynamic_bag_id, false)?;
-
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
         let deleted_dynamic_bag = Self::dynamic_bag(&dynamic_bag_id);
@@ -3268,6 +3422,20 @@ impl<T: Trait> Module<T> {
         Ok(bag_change)
     }
 
+    fn upload_data_objects_checks(obj: &DataObjectCreationParameters) -> DispatchResult {
+        ensure!(
+            obj.size <= T::MaxDataObjectSize::get(),
+            Error::<T>::MaxDataObjectSizeExceeded,
+        );
+        ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
+        ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
+        ensure!(
+            !Blacklist::contains_key(obj.ipfs_content_id.clone()),
+            Error::<T>::DataObjectBlacklisted,
+        );
+        Ok(())
+    }
+
     // construct bag change after validating the inputs
     fn validate_bag_change(
         object_creation_list: &[DataObjectCreationParameters],
@@ -3281,25 +3449,11 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
-        // verify  MaxSize >= object size > 0 and ipfs id not blacklisted and compute bag change
         object_creation_list
             .iter()
-            .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |acc, obj| {
-                ensure!(
-                    obj.size <= T::MaxDataObjectSize::get(),
-                    Error::<T>::MaxDataObjectSizeExceeded,
-                );
-                ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
-                ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
-                ensure!(
-                    !Blacklist::contains_key(obj.ipfs_content_id.clone()),
-                    Error::<T>::DataObjectBlacklisted,
-                );
-                let bag_change = acc
-                    .clone()
-                    .add_object(obj.size, T::DataObjectDeletionPrize::get());
-
-                Ok(bag_change)
+            .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |mut acc, obj| {
+                Self::upload_data_objects_checks(obj)?;
+                Ok(acc.add_object(obj.size, T::DataObjectDeletionPrize::get()))
             })
     }
 
