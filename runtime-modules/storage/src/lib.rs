@@ -219,7 +219,7 @@ pub trait DataObjectStorage<T: Trait> {
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 
     /// Upload and delete objects at the same time
-    fn upload_and_delete_data_objects(
+    fn upload_and_delete(
         deletion_prize_account_id: T::AccountId,
         bag_id: BagId<T>,
         params: UploadParameters<T>,
@@ -1576,12 +1576,6 @@ decl_error! {
         /// Max data object size exceeded.
         MaxDataObjectSizeExceeded,
 
-        /// Different Accounts for dynamic bag deletion prize and upload fees
-        AccountsNotCoherent,
-
-        /// Different Accounts for dynamic bag id and parameters bag id
-        BagsNotCoherent,
-
         /// Invalid transactor account ID for this bucket.
         InvalidTransactorAccount,
     }
@@ -2649,10 +2643,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
-        // bag check
-        let bag = Self::ensure_bag_exists(&params.bag_id)?;
-
-        // size check
+        // size check:
         ensure!(
             !params.object_creation_list.is_empty(),
             Error::<T>::NoObjectsOnUpload
@@ -2664,36 +2655,57 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
-        let bag_change = params
-            .object_creation_list
-            .iter()
-            .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |mut acc, obj| {
-                Self::upload_data_objects_checks(obj)?;
-                Ok(acc.add_object(obj.size, T::DataObjectDeletionPrize::get()))
-            })?;
+        // // bag check
+        // let bag = Self::ensure_bag_exists(&params.bag_id)?;
 
-        // bucket check
-        Self::check_buckets_for_overflow(&bag.stored_by, &bag_change.voucher_update)?;
+        // // size check
+        // ensure!(
+        //     !params.object_creation_list.is_empty(),
+        //     Error::<T>::NoObjectsOnUpload
+        // );
 
-        // balance check (balance must be usable and not simply free)
-        let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
-            &bag_change,
-            BalanceOf::<T>::zero(), // no bag deletion prize
-            &params.deletion_prize_source_account_id,
-        )?;
+        // // ensure specified data fee == storage data fee
+        // ensure!(
+        //     params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+        //     Error::<T>::DataSizeFeeChanged,
+        // );
 
-        //
-        // == MUTATION SAFE ==
-        //
+        // let bag_change = params
+        //     .object_creation_list
+        //     .iter()
+        //     .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |mut acc, obj| {
+        //         Self::upload_data_objects_checks(obj)?;
+        //         Ok(acc.add_object(obj.size, T::DataObjectDeletionPrize::get()))
+        //     })?;
 
-        Self::perform_balance_accounting(
-            total_deletion_prize,
-            storage_fee,
-            &params.deletion_prize_source_account_id,
-        );
+        // // bucket check
+        // Self::check_buckets_for_overflow(&bag.stored_by, &bag_change.voucher_update)?;
 
-        // bag bookkeeping
-        Self::perform_upload(params, &bag_change);
+        // // balance check (balance must be usable and not simply free)
+        // let (total_deletion_prize, storage_fee) = Self::ensure_can_perform_balance_accounting(
+        //     &bag_change,
+        //     BalanceOf::<T>::zero(), // no bag deletion prize
+        //     &params.deletion_prize_source_account_id,
+        // )?;
+
+        // //
+        // // == MUTATION SAFE ==
+        // //
+
+        // Self::perform_balance_accounting(
+        //     total_deletion_prize,
+        //     storage_fee,
+        //     &params.deletion_prize_source_account_id,
+        // );
+
+        // // bag bookkeeping
+        // Self::perform_upload(params, &bag_change);
+
+        Self::deposit_event(RawEvent::DataObjectsUploaded(
+            data.data_objects_map.keys().cloned().collect(),
+            params,
+            T::DataObjectDeletionPrize::get(),
+        ));
 
         Ok(())
     }
@@ -2758,29 +2770,35 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         bag_id: BagId<T>,
         objects: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
-        let bag = Self::ensure_bag_exists(&bag_id)?;
-
-        let bag_change = Self::validate_delete_data_objects_params(&bag_id, &objects)?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        <StorageTreasury<T>>::withdraw(
-            &deletion_prize_account_id,
-            bag_change.total_deletion_prize,
-        )?;
-
-        for data_object_id in objects.iter() {
-            DataObjectsById::<T>::remove(&bag_id, &data_object_id);
-        }
-
-        Self::change_storage_bucket_vouchers_for_bag(
-            &bag_id,
-            &bag,
-            &bag_change.voucher_update,
-            OperationType::Decrease,
+        ensure!(
+            !objects.is_empty(),
+            Error::<T>::DataObjectIdCollectionIsEmpty
         );
+
+        // let bag = Self::ensure_bag_exists(&bag_id)?;
+
+        // let bag_change = Self::validate_delete_data_objects_params(&bag_id, &objects)?;
+
+        // //
+        // // == MUTATION SAFE ==
+        // //
+
+        // <StorageTreasury<T>>::withdraw(
+        //     &deletion_prize_account_id,
+        //     bag_change.total_deletion_prize,
+        // )?;
+
+        // for data_object_id in objects.iter() {
+        //     DataObjectsById::<T>::remove(&bag_id, &data_object_id);
+        // }
+
+        //     // decrease bag
+        // Self::change_storage_bucket_vouchers_for_bag(
+        //     &bag_id,
+        //     &bag,
+        //     &bag_change.voucher_update,
+        //     OperationType::Decrease,
+        // );
 
         Self::deposit_event(RawEvent::DataObjectsDeleted(
             deletion_prize_account_id,
@@ -2792,7 +2810,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     // TODO: upload and delete = Upload | Delete data objects
-    fn upload_and_delete_data_objects(
+    fn upload_and_delete(
         deletion_prize_account_id: T::AccountId,
         bag_id: BagId<T>,
         params: UploadParameters<T>,
@@ -2805,21 +2823,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             objects_total_size,
             objects_number,
         } = Self::ensure_bag_exists(&bag_id)?;
-
-        // TODO: refactor upload common
-        // size check:
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        // TODO: refactor upload common
-        // ensure specified data fee == storage data fee
-        ensure!(
-            params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
-            Error::<T>::DataSizeFeeChanged,
-        );
-
         // TODO: refactor upload common
         // TODO: refactor & reuse
         params
