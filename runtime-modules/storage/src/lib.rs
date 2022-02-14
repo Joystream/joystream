@@ -147,7 +147,6 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
-use sp_std::ops::{Add, Sub};
 use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
@@ -855,6 +854,7 @@ impl VoucherUpdate {
     }
 }
 
+/// Utility enum used for balance accounting
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum NetDeletionPrizeTypes<Balance: AtLeast32BitUnsigned + Default> {
     /// Net Deletion Prize to be withdrawn
@@ -870,10 +870,37 @@ impl<Balance: AtLeast32BitUnsigned + Default> Default for NetDeletionPrizeTypes<
 }
 
 impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
-    fn flip(self) -> Self {
+    fn add_balance(self, balance: Balance) -> Self {
         match self {
-            Self::Pos(x) => Self::Neg(x),
-            Self::Neg(x) => Self::Pos(x),
+            Self::Pos(b) => Self::Pos(b.saturating_add(balance)),
+            Self::Neg(b) => {
+                if b > balance {
+                    Self::Neg(b.saturating_sub(balance))
+                } else {
+                    Self::Pos(balance.saturating_sub(b))
+                }
+            }
+        }
+    }
+
+    fn sub_balance(self, balance: Balance) -> Self {
+        match self {
+            Self::Neg(b) => Self::Neg(b.saturating_add(balance)),
+            Self::Pos(b) => {
+                if b > balance {
+                    Self::Pos(b.saturating_sub(balance))
+                } else {
+                    Self::Neg(balance.saturating_sub(b))
+                }
+            }
+        }
+    }
+
+    // if positive: amount to deposit to storage treasury
+    fn to_fee(self) -> Balance {
+        match self {
+            Self::Pos(b) => b,
+            Self::Neg(_) => Balance::zero(),
         }
     }
 }
@@ -881,62 +908,6 @@ impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
 impl<Balance: AtLeast32BitUnsigned + Default> From<Balance> for NetDeletionPrizeTypes<Balance> {
     fn from(balance: Balance) -> Self {
         Self::Pos(balance)
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> Saturating for NetDeletionPrizeTypes<Balance> {
-    fn saturating_add(self, rhs: Self) -> Self {
-        match self {
-            Self::Pos(a) => match rhs {
-                Self::Pos(b) => Self::Pos(a.saturating_add(b)),
-                Self::Neg(b) => {
-                    if a > b {
-                        Self::Pos(a.saturating_sub(b))
-                    } else {
-                        Self::Neg(b.saturating_sub(a))
-                    }
-                }
-            },
-            Self::Neg(a) => match rhs {
-                Self::Neg(b) => Self::Neg(a.saturating_add(b)),
-                Self::Pos(b) => {
-                    if a > b {
-                        Self::Neg(a.saturating_sub(b))
-                    } else {
-                        Self::Pos(b.saturating_sub(a))
-                    }
-                }
-            },
-        }
-    }
-    fn saturating_sub(self, rhs: Self) -> Self {
-        self.saturating_add(rhs.flip())
-    }
-
-    fn saturating_mul(self, rhs: Self) -> Self {
-        match self {
-            Self::Pos(a) => match rhs {
-                Self::Pos(b) => Self::Pos(a.saturating_mul(b)),
-                Self::Neg(b) => Self::Neg(a.saturating_mul(b)),
-                Self::Neg(a) => match rhs {
-                    Self::Neg(b) => Self::Pos(a.saturating_mul(b)),
-                    Self::Pos(b) => Self::Neg(a.saturating_mul(b)),
-                },
-            },
-        }
-    }
-
-    fn saturating_pow(self, exp: usize) -> Self {
-        match self {
-            Self::Pos(b) => Self::Pos(b.saturating_pow(exp)),
-            Self::Neg(b) => {
-                if exp % 2 == 0 {
-                    Self::Pos(b.saturating_pow(exp))
-                } else {
-                    Self::Neg(b.saturating_pow(exp))
-                }
-            }
-        }
     }
 }
 
@@ -4119,21 +4090,22 @@ impl<T: Trait> Module<T> {
     }
 
     fn compute_net_prize(
-        obj_creation_list: &[DataObject<BalanceOf<T>>],
-        obj_removal_list: &[DataObject<BalanceOf<T>>],
+        init_value: NetDeletionPrize<T>,
+        num_obj_to_create: usize,
+        num_obj_to_delete: usize,
     ) -> NetDeletionPrize<T> {
-        // NetDeletionPrize::<T>::default()
-        //     + obj_creation_list
-        //         .iter()
-        //         .fold(BalanceOf::<T>::zero(), |acc, _| {
-        //             acc.saturating_add(T::DataObjectDeletionPrize::get())
-        //         })
-        //     - obj_removal_list
-        //         .iter()
-        //         .fold(BalanceOf::<T>::zero(), |acc, _| {
-        //             acc.saturating_add(T::DataObjectDeletionPrize::get())
-        //         })
-        Default::default()
+        let amnt = T::DataObjectDeletionPrize::get();
+        init_value
+            .add_balance(
+                iter::repeat(amnt)
+                    .take(num_obj_to_create)
+                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
+            )
+            .sub_balance(
+                iter::repeat(amnt)
+                    .take(num_obj_to_delete)
+                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
+            )
     }
 
     /// Utility function that checks existence for bag deletion / update &
@@ -4189,16 +4161,24 @@ impl<T: Trait> Module<T> {
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
+
         // deletion prize
+        let init_net_prize = deletion_prize.map_or(Default::default(), |dp| match &bag_op.params {
+            BagOperationParams::<T>::Delete => NetDeletionPrize::<T>::Neg(dp),
+            BagOperationParams::<T>::Create(..) => NetDeletionPrize::<T>::Pos(dp),
+            _ => Default::default(),
+        });
+
         let net_prize = Self::compute_net_prize(
-            object_creation_list.as_slice(),
-            objects_removal_list.as_slice(),
+            init_net_prize,
+            object_creation_list.len(),
+            objects_removal_list.len(),
         );
 
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
         ensure!(
-            NetDeletionPrize::<T>::Pos(Balances::<T>::usable_balance(&account_id))
-                >= net_prize.saturating_add(storage_fee.into()),
+            Balances::<T>::usable_balance(&account_id)
+                >= net_prize.add_balance(storage_fee).to_fee(),
             Error::<T>::InsufficientBalance,
         );
 
@@ -4206,27 +4186,38 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        // update bucket vouchers
+        // update storage buckets
         new_storage_buckets
             .iter()
             .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
 
-        // pay storage fee: no-op if storage_fee = 0
-        let _ = Balances::<T>::slash(&account_id, storage_fee);
-
-        // refund or request deletion prize
+        // refund or request deletion prize first
         match net_prize {
             NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
             NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
         }
 
-        // remove objects: no-op if collection is_empty()
-        // objects_removal_list.iter().for_each(|id| {
-        //     DataObjectsById::<T>::remove(&bag_op.bag_id, id);
-        // });
+        // then slash: no-op if storage_fee = 0
+        let _ = Balances::<T>::slash(&account_id, storage_fee);
 
-        // add objects: no-op if collection is_empty()
-        //        Self::add_data_objects_to_state(&bag_op.bag_id(), object_creation_list);
+        // remove objects: no-op if list.is_empty()
+        match &bag_op.params {
+            BagOperationParams::<T>::Delete => DataObjectsById::<T>::remove_prefix(&bag_op.bag_id),
+            BagOperationParams::<T>::Update(_, list) => list
+                .iter()
+                .for_each(|id| DataObjectsById::<T>::remove(&bag_op.bag_id, id)),
+            _ => (),
+        }
+
+        // add objects: no-op if list is_empty()
+        if let BagOperationParams::<T>::Delete = &bag_op.params {
+        } else {
+            object_creation_list.iter().for_each(|obj| {
+                let obj_id = NextDataObjectId::<T>::get();
+                DataObjectsById::<T>::insert(&bag_op.bag_id, obj_id, obj);
+                NextDataObjectId::<T>::put(obj_id.saturating_add(One::one()));
+            })
+        };
 
         // insert updated bag:
         if let BagOperationParams::<T>::Delete = &bag_op.params {
