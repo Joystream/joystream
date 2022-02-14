@@ -891,36 +891,80 @@ export class Api {
     )
   }
 
-  createAuctionParameters(
+  private async getAuctionParametersBoundaries() {
+    const boundaries = {
+      extensionPeriod: {
+        min: await this.api.query.content.minAuctionExtensionPeriod(),
+        max: await this.api.query.content.maxAuctionExtensionPeriod(),
+      },
+      auctionDuration: {
+        min: await this.api.query.content.minAuctionDuration(),
+        max: await this.api.query.content.maxAuctionDuration(),
+      },
+      bidLockDuration: {
+        min: await this.api.query.content.minBidLockDuration(),
+        max: await this.api.query.content.maxBidLockDuration(),
+      },
+      startingPrice: {
+        min: await this.api.query.content.minStartingPrice(),
+        max: await this.api.query.content.maxStartingPrice(),
+      },
+      bidStep: {
+        min: await this.api.query.content.minBidStep(),
+        max: await this.api.query.content.maxBidStep(),
+      },
+    }
+
+    return boundaries
+  }
+
+  async createAuctionParameters(
     auctionType: 'English' | 'Open',
-    startingPrice: BN,
-    minimalBidStep: BN,
-    buyNowPrice?: BN,
-    startInBlock?: BN,
     whitelist: string[] = []
-  ): AuctionParams {
+  ): Promise<{
+    auctionParams: AuctionParams
+    startingPrice: BN
+    minimalBidStep: BN
+    bidLockDuration: BN
+    extensionPeriod: BN
+    auctionDuration: BN
+  }> {
+    const boundaries = await this.getAuctionParametersBoundaries()
+
+    // auction duration must be larger than extension period (enforced in runtime)
+    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+
     const encodedAuctionType =
       auctionType === 'English'
         ? {
             English: {
-              extension_period: 5, // TODO - read min/max bounds from runtime and set min value here (?)
-              auction_duration: 5, // TODO - read min/max bounds from runtime and set min value here (?)
+              extension_period: boundaries.extensionPeriod.min,
+              auction_duration: auctionDuration,
             },
           }
         : {
             Open: {
-              bid_lock_duration: 2, // TODO - read min/max bounds from runtime and set min value here (?)
+              bid_lock_duration: boundaries.bidLockDuration.min,
             },
           }
 
-    return this.api.createType('AuctionParams', {
+    const auctionParams = this.api.createType('AuctionParams', {
       auction_type: this.api.createType('AuctionType', encodedAuctionType),
-      starting_price: this.api.createType('u128', startingPrice),
-      minimal_bid_step: this.api.createType('u128', minimalBidStep),
-      buy_now_price: this.api.createType('Option<BlockNumber>', buyNowPrice),
-      starts_at: this.api.createType('Option<BlockNumber>', startInBlock),
+      starting_price: this.api.createType('u128', boundaries.startingPrice.min),
+      minimal_bid_step: this.api.createType('u128', boundaries.bidStep.min),
+      buy_now_price: this.api.createType('Option<BlockNumber>', null),
+      starts_at: this.api.createType('Option<BlockNumber>', null),
       whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
     })
+
+    return {
+      auctionParams,
+      startingPrice: boundaries.startingPrice.min,
+      minimalBidStep: boundaries.bidStep.min,
+      bidLockDuration: boundaries.bidLockDuration.min,
+      extensionPeriod: boundaries.extensionPeriod.min,
+      auctionDuration: auctionDuration,
+    }
   }
 
   async startNftAuction(

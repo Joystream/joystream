@@ -40,9 +40,7 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
     this.debug('Start NFT auction')
-    const startingPrice = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const minimalBidStep = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const auctionParams = this.api.createAuctionParameters('Open', startingPrice, minimalBidStep)
+    const { auctionParams, startingPrice, minimalBidStep } = await this.api.createAuctionParameters('Open')
     await this.api.startNftAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),

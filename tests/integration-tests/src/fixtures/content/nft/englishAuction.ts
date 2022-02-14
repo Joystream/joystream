@@ -42,9 +42,13 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
     this.debug('Start NFT auction')
-    const startingPrice = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const minimalBidStep = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const auctionParams = this.api.createAuctionParameters('English', startingPrice, minimalBidStep)
+    const {
+      auctionParams,
+      startingPrice,
+      minimalBidStep,
+      auctionDuration,
+      extensionPeriod,
+    } = await this.api.createAuctionParameters('English')
     await this.api.startNftAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
@@ -66,10 +70,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(placeBidsFixture).run()
 
     this.debug('Wait for auction to end')
-    const auctionDuration = 5 // TODO: read from runtime
-    const extensionPeriod = 5 // TODO: read from runtime
-
-    const waitBlocks = Math.min(auctionDuration, extensionPeriod + this.participants.length) + 1
+    const waitBlocks = Math.min(auctionDuration.toNumber(), extensionPeriod.toNumber() + this.participants.length) + 1
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
 
     this.debug('Complete auction')

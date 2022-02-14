@@ -37,9 +37,9 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
     this.debug('Start NFT auction')
-    const startingPrice = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const minimalBidStep = new BN(10) // TODO - read min/max bounds from runtime (?)
-    const auctionParams = this.api.createAuctionParameters('Open', startingPrice, minimalBidStep)
+    const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } = await this.api.createAuctionParameters(
+      'Open'
+    )
     await this.api.startNftAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
@@ -59,9 +59,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(placeBidsFixture).run()
 
     this.debug('Wait for bid to be cancelable')
-    const bidLockDuration = 2 // TODO - read min/max bounds from runtime and set min value here (?)
 
-    const waitBlocks = bidLockDuration + 1
+    const waitBlocks = bidLockDuration.toNumber() + 1
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
 
     this.debug('Cancel bid')
