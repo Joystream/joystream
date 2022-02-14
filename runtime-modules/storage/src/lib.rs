@@ -806,7 +806,7 @@ struct VoucherUpdate {
 }
 
 impl VoucherUpdate {
-    fn add_objects_list(self, list: &[DataObjectCreationParameters]) -> Self {
+    fn add_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
         list.iter().fold(self, |mut acc, obj| {
             acc = acc.add_object(obj.size);
             acc
@@ -4089,7 +4089,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn compute_net_prize(
-        obj_creation_list: &[DataObjectCreationParameters],
+        obj_creation_list: &[DataObject<BalanceOf<T>>],
         obj_removal_list: &[DataObject<BalanceOf<T>>],
     ) -> NetDeletionPrize<T> {
         NetDeletionPrize::<T>::default()
@@ -4146,31 +4146,24 @@ impl<T: Trait> Module<T> {
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
         let object_creation_list = vec![];
-        let objects_removal_list = vec![]; // if let BagOperation::<T>::Delete(bag_id) = &bag_op {
-                                           //     DataObjectsById::<T>::iter_prefix(bag_id)
-                                           //         .map(|(_, obj)| obj)
-                                           //         .collect()
-                                           // } else {
-                                           //     objects_to_remove
-                                           //         .iter()
-                                           //         .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
-                                           //         .collect::<Result<Vec<_>, DispatchError>>()?
-                                           // };
+        let objects_removal_list = vec![];
 
         // new voucher
         let new_voucher_update = VoucherUpdate {
             objects_total_size,
             objects_number,
         }
-        .add_objects_list(&object_creation_list)
+        .add_objects_list(object_creation_list.as_slice())
         .sub_objects_list(objects_removal_list.as_slice());
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
 
         // deletion prize
-        let net_prize =
-            Self::compute_net_prize(&object_creation_list, objects_removal_list.as_slice());
+        let net_prize = Self::compute_net_prize(
+            object_creation_list.as_slice(),
+            objects_removal_list.as_slice(),
+        );
 
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
         ensure!(
@@ -4253,3 +4246,13 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 }
+// if let BagOperation::<T>::Delete(bag_id) = &bag_op {
+//     DataObjectsById::<T>::iter_prefix(bag_id)
+//         .map(|(_, obj)| obj)
+//         .collect()
+// } else {
+//     objects_to_remove
+//         .iter()
+//         .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
+//         .collect::<Result<Vec<_>, DispatchError>>()?
+// };
