@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CreatorPayoutPayload",
+  "items": {
+    "$ref": "#/definitions/CreatorPayout"
+  },
+  "type": "array",
+  "definitions": {
+    "CreatorPayout": {
+      "additionalProperties": false,
+      "properties": {
+        "channelId": {
+          "type": "number"
+        },
+        "cumulativePayoutOwed": {
+          "type": "number"
+        },
+        "merkleBranches": {
+          "items": {
+            "$ref": "#/definitions/ProofElement"
+          },
+          "type": "array"
+        },
+        "payoutRationale": {
+          "type": "string"
+        }
+      },
+      "required": ["channelId", "cumulativePayoutOwed", "merkleBranches", "payoutRationale"],
+      "type": "object"
+    },
+    "ProofElement": {
+      "additionalProperties": false,
+      "properties": {
+        "merkleBranch": {
+          "type": "string"
+        },
+        "side": {
+          "$ref": "#/definitions/Side"
+        }
+      },
+      "required": ["merkleBranch", "side"],
+      "type": "object"
+    },
+    "Side": {
+      "enum": [0, 1],
+      "type": "number"
+    }
+  }
+}
