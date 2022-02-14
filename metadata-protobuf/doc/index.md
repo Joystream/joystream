@@ -297,9 +297,9 @@ Creator payout full body structure, it will not be downloaded by clients in full
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| payload_length_in_bytes | [uint64](#uint64) | required | Length in bytes of entire payload |
-| header_length_in_bytes | [uint64](#uint64) | required | Length in bytes of payload header |
-| number_of_channels | [uint32](#uint32) | required | Number of channels |
+| payload_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of entire payload |
+| header_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of payload header |
+| number_of_channels | [fixed32](#fixed32) | required | Number of channels |
 | creator_payout_byte_offsets | [CreatorPayoutPayload.Header.CreatorPayoutByteOffset](#CreatorPayoutPayload.Header.CreatorPayoutByteOffset) | repeated | List of byte offsets for all channels |
 
 
@@ -315,8 +315,8 @@ Creator payout full body structure, it will not be downloaded by clients in full
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| channel_id | [uint32](#uint32) | required | Channel id; `c_i` |
-| byte_offset | [uint64](#uint64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
+| channel_id | [fixed32](#fixed32) | required | Channel id; `c_i` |
+| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
 
 
 
