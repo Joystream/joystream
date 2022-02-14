@@ -1,11 +1,12 @@
 {
   "name": "@joystreamjs/content",
   "description": "Javascript library for interacting with content directory module - managing vidoes, channels, assets, categories and curator groups",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "author": "Jsgenesis",
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
     "@joystream/metadata-protobuf": "^2.0.0",
+    "@joystreamjs/utils": "^1.0.0",
     "@joystream/types": "^0.18.0",
     "@polkadot/api": "5.9.1",
     "axios": "^0.21.1",
