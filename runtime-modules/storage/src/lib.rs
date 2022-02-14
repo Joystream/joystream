@@ -579,23 +579,20 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
 
 // Helper enum for performing bag operation: no default since it is non trivial
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum BagOperationTypes<BagId: Clone, Balance: Unsigned> {
-    Update(BagId),
-    Create(BagId, Balance),
-    Delete(BagId),
+enum BagOperationParamsTypes<Balance: Unsigned, ObjectId: Clone> {
+    Update(Vec<DataObjectCreationParameters>, Vec<ObjectId>),
+    Create(Balance),
+    Delete,
 }
 
-impl<BagId: Clone, Balance: Unsigned> BagOperationTypes<BagId, Balance> {
-    fn bag_id(&self) -> &BagId {
-        match self {
-            Self::Update(id) => id,
-            Self::Create(id, _) => id,
-            Self::Delete(id) => id,
-        }
-    }
+#[derive(Clone, PartialEq, Eq, Debug)]
+struct BagOperationRecord<BagId: Clone, OpParams> {
+    bag_id: BagId,
+    params: OpParams,
 }
 
-type BagOperation<T> = BagOperationTypes<BagId<T>, BalanceOf<T>>;
+type BagOperationParams<T> = BagOperationParamsTypes<BalanceOf<T>, <T as Trait>::DataObjectId>;
+type BagOperation<T> = BagOperationRecord<BagId<T>, BagOperationParams<T>>;
 
 /// Parameters for the data object creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -2697,12 +2694,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         // TODO:: avoid
-        Self::upload_and_delete(
-            params.deletion_prize_source_account_id.clone(),
-            BagOperation::<T>::Update(params.bag_id.clone()),
-            params.object_creation_list,
-            Default::default(),
-        )?;
+        // Self::upload_and_delete(
+        //     params.deletion_prize_source_account_id.clone(),
+        //     BagOperation::<T>::Update(params.bag_id.clone()),
+        //     params.object_creation_list,
+        //     Default::default(),
+        // )?;
 
         // // bag check
         // let bag = Self::ensure_bag_exists(&params.bag_id)?;
@@ -2824,12 +2821,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
-        Self::upload_and_delete(
-            deletion_prize_account_id.clone(),
-            BagOperation::<T>::Update(bag_id.clone()),
-            Default::default(),
-            objects.clone(),
-        )?;
+        // Self::upload_and_delete(
+        //     deletion_prize_account_id.clone(),
+        //     BagOperation::<T>::Update(bag_id.clone()),
+        //     Default::default(),
+        //     objects.clone(),
+        // )?;
 
         // let bag = Self::ensure_bag_exists(&bag_id)?;
 
@@ -4112,29 +4109,34 @@ impl<T: Trait> Module<T> {
     /// verifies that dynamic bag does not exists in case of bag creation
     /// returning a new one
     fn retrieve_dynamic_bag(bag_op: &BagOperation<T>) -> Result<Bag<T>, DispatchError> {
-        match bag_op {
-            BagOperation::<T>::Delete(bag_id) => Self::ensure_bag_exists(bag_id),
-            BagOperation::<T>::Update(bag_id) => Self::ensure_bag_exists(bag_id),
-            BagOperation::<T>::Create(bag_id, deletion_prize) => {
-                // map non existing dynamic bag to a new bag and existing bag into error
-                Self::ensure_bag_exists(bag_id).map_or_else(
-                    |_| {
-                        // TODO: Solution for storage buckets
-                        Ok(Bag::<T>::default().with_prize(*deletion_prize))
-                    },
-                    |_| Err(Error::<T>::DynamicBagExists.into()),
-                )
-            }
+        // TODO NOW: clean this up
+        let dyn_bag_id = if let BagId::<T>::Dynamic(id) = &bag_op.bag_id {
+            id.clone()
+        } else {
+            DynamicBagId::<T>::Channel(One::one())
+        };
+
+        if let BagOperationParams::<T>::Create(deletion_prize) = bag_op.params {
+            // map non existing dynamic bag to a new bag and existing bag into error
+            Self::ensure_bag_exists(&bag_op.bag_id).map_or_else(
+                |_| {
+                    Ok(Bag::<T>::default()
+                        .with_prize(deletion_prize.clone())
+                        .with_storage_buckets(StorageBucketPicker::<T>::pick_storage_buckets(
+                            dyn_bag_id.into(),
+                            Default::default(),
+                        )))
+                },
+                |_| Err(Error::<T>::DynamicBagExists.into()),
+            )
+        } else {
+            Self::ensure_bag_exists(&bag_op.bag_id)
         }
     }
 
     /// Utility function that does the bulk of bag / data objects operation
-    fn upload_and_delete(
-        account_id: T::AccountId,
-        bag_op: BagOperation<T>,
-        object_creation_list: Vec<DataObjectCreationParameters>,
-        objects_to_remove: BTreeSet<T::DataObjectId>,
-    ) -> DispatchResult {
+    // TODO NOW: find a better name
+    fn upload_and_delete(account_id: T::AccountId, bag_op: BagOperation<T>) -> DispatchResult {
         let Bag::<T> {
             stored_by,
             distributed_by,
@@ -4143,22 +4145,17 @@ impl<T: Trait> Module<T> {
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
-        // upload parameters check
-        object_creation_list
-            .iter()
-            .try_for_each(|obj| Self::upload_data_objects_checks(obj))?;
-
-        // objects to remove
-        let objects_removal_list = if let BagOperation::<T>::Delete(bag_id) = &bag_op {
-            DataObjectsById::<T>::iter_prefix(bag_id)
-                .map(|(_, obj)| obj)
-                .collect()
-        } else {
-            objects_to_remove
-                .iter()
-                .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
-                .collect::<Result<Vec<_>, DispatchError>>()?
-        };
+        let object_creation_list = vec![];
+        let objects_removal_list = vec![]; // if let BagOperation::<T>::Delete(bag_id) = &bag_op {
+                                           //     DataObjectsById::<T>::iter_prefix(bag_id)
+                                           //         .map(|(_, obj)| obj)
+                                           //         .collect()
+                                           // } else {
+                                           //     objects_to_remove
+                                           //         .iter()
+                                           //         .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
+                                           //         .collect::<Result<Vec<_>, DispatchError>>()?
+                                           // };
 
         // new voucher
         let new_voucher_update = VoucherUpdate {
@@ -4201,19 +4198,19 @@ impl<T: Trait> Module<T> {
         }
 
         // remove objects: no-op if collection is_empty()
-        objects_to_remove.iter().for_each(|id| {
-            DataObjectsById::<T>::remove(&bag_op.bag_id(), id);
-        });
+        // objects_removal_list.iter().for_each(|id| {
+        //     DataObjectsById::<T>::remove(&bag_op.bag_id, id);
+        // });
 
         // add objects: no-op if collection is_empty()
-        Self::add_data_objects_to_state(&bag_op.bag_id(), object_creation_list);
+        //        Self::add_data_objects_to_state(&bag_op.bag_id(), object_creation_list);
 
         // insert updated bag:
-        if let BagOperation::<T>::Delete(bag_id) = &bag_op {
-            Bags::<T>::remove(bag_id)
+        if let BagOperationParams::<T>::Delete = &bag_op.params {
+            Bags::<T>::remove(&bag_op.bag_id)
         } else {
             Bags::<T>::insert(
-                &bag_op.bag_id(),
+                &bag_op.bag_id,
                 Bag::<T> {
                     stored_by: new_storage_buckets
                         .iter()
@@ -4228,5 +4225,22 @@ impl<T: Trait> Module<T> {
         };
 
         Ok(())
+    }
+
+    fn construct_objects_to_upload(
+        list: &[DataObjectCreationParameters],
+    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+        list.iter()
+            .map(|param| {
+                Self::upload_data_objects_checks(param).and({
+                    Ok(DataObject {
+                        accepted: false,
+                        deletion_prize: T::DataObjectDeletionPrize::get(),
+                        size: param.size,
+                        ipfs_content_id: param.ipfs_content_id.clone(),
+                    })
+                })
+            })
+            .collect()
     }
 }
