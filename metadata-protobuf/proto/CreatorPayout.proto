@@ -3,20 +3,20 @@ syntax = "proto2";
 message CreatorPayoutPayload {
   message Header {
     // Length in bytes of entire payload
-    required uint64 payload_length_in_bytes = 1;
+    required fixed64 payload_length_in_bytes = 1;
 
     // Length in bytes of payload header
-    required uint64 header_length_in_bytes = 2; 
+    required fixed64 header_length_in_bytes = 2; 
 
     // Number of channels
-    required uint32 number_of_channels = 3; 
+    required fixed32 number_of_channels = 3; 
 
     message CreatorPayoutByteOffset {
       // Channel id; `c_i`
-      required uint32 channel_id = 1; 
+      required fixed32 channel_id = 1; 
     
       // Byte offset from start of payload where payout record for channel `c_i` exists
-      required uint64 byte_offset = 2; 
+      required fixed64 byte_offset = 2; 
     }
 
     // List of byte offsets for all channels
