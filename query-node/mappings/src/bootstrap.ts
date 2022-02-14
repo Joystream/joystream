@@ -7,6 +7,8 @@ import {
   ElectedCouncil,
   ElectionRound,
   MembershipEntryGenesis,
+  CouncilStageUpdate,
+  CouncilStageAnnouncing,
 } from 'query-node/dist/model'
 import { storageSystemData, membershipSystemData, workingGroupsData, membersData } from './bootstrap-data'
 import { createNewMember } from './membership'
@@ -84,6 +86,15 @@ async function initFirstElectionRound(store: DatabaseManager): Promise<void> {
     candidates: [],
   })
   await store.save<ElectionRound>(initialElectionRound)
+
+  const stage = new CouncilStageAnnouncing()
+  stage.candidatesCount = new BN(0)
+  const initialStageUpdate = new CouncilStageUpdate({
+    stage,
+    electedCouncil,
+    changedAt: new BN(0),
+  })
+  await store.save<CouncilStageUpdate>(initialStageUpdate)
 }
 
 async function initMembers(store: DatabaseManager) {
