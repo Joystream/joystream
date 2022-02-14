@@ -140,7 +140,7 @@ use frame_support::{
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, BaseArithmetic, One, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, BaseArithmetic, One, Unsigned, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
@@ -219,10 +219,9 @@ pub trait DataObjectStorage<T: Trait> {
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 
     /// Upload and delete objects at the same time
-    fn upload_and_delete(
+    fn upload_and_delete_data_objects(
         deletion_prize_account_id: T::AccountId,
-        bag_id: BagId<T>,
-        params: UploadParameters<T>,
+        params: Vec<DataObjectCreationParameters>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
 }
@@ -576,15 +575,27 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
             ..self
         }
     }
+}
 
-    fn with_voucher_update(self, update: VoucherUpdate) -> Self {
-        Self {
-            objects_total_size: update.voucher_total_size,
-            objects_number: update.objects_number,
-            ..self
+// Helper enum for performing bag operation: no default since it is non trivial
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum BagOperationTypes<BagId: Clone, Balance: Unsigned> {
+    Update(BagId),
+    Create(BagId, Balance),
+    Delete(BagId),
+}
+
+impl<BagId: Clone, Balance: Unsigned> BagOperationTypes<BagId, Balance> {
+    fn bag_id(&self) -> &BagId {
+        match self {
+            Self::Update(id) => id,
+            Self::Create(id, _) => id,
+            Self::Delete(id) => id,
         }
     }
 }
+
+type BagOperation<T> = BagOperationTypes<BagId<T>, BalanceOf<T>>;
 
 /// Parameters for the data object creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -847,7 +858,6 @@ impl VoucherUpdate {
     }
 }
 
-// Helper-struct - defines voucher changes.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum NetDeletionPrizeTypes<Balance: AtLeast32BitUnsigned + Default> {
     /// Net Deletion Prize to be withdrawn
@@ -1605,6 +1615,10 @@ decl_error! {
 
         /// Invalid transactor account ID for this bucket.
         InvalidTransactorAccount,
+
+        /// Cannot create static bag
+        CannotCreateStaticBag,
+
     }
 }
 
@@ -2685,8 +2699,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // TODO:: avoid
         Self::upload_and_delete(
             params.deletion_prize_source_account_id.clone(),
-            &params.bag_id,
-            params,
+            BagOperation::<T>::Update(params.bag_id.clone()),
+            params.object_creation_list,
             Default::default(),
         )?;
 
@@ -2811,10 +2825,10 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         Self::upload_and_delete(
-            deletion_prize_account_id,
-            bag_id,
+            deletion_prize_account_id.clone(),
+            BagOperation::<T>::Update(bag_id.clone()),
             Default::default(),
-            objects,
+            objects.clone(),
         )?;
 
         // let bag = Self::ensure_bag_exists(&bag_id)?;
@@ -2851,99 +2865,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
-    // TODO: upload and delete = Upload | Delete data objects
-    fn upload_and_delete(
-        deletion_prize_account_id: T::AccountId,
-        bag_id: BagId<T>,
-        object_creation_list: Vec<ObjectCreationParameters>,
+    fn upload_and_delete_data_objects(
+        account_id: T::AccountId,
+        object_creation_list: Vec<DataObjectCreationParameters>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
-        let Bag::<T> {
-            stored_by,
-            distributed_by,
-            deletion_prize,
-            objects_total_size,
-            objects_number,
-        } = Self::ensure_bag_exists(&bag_id)?;
-
-        // upload parameters check
-        object_creation_list
-            .iter()
-            .try_for_each(|obj| Self::upload_data_objects_checks(obj))?;
-
-        // objects to remove ids check
-        let objects_removal_list = objects_to_remove
-            .iter()
-            .map(|obj_id| Self::ensure_data_object_exists(&bag_id, obj_id))
-            .collect::<Result<Vec<_>, DispatchError>>()?;
-
-        // new voucher
-        let new_voucher_update = VoucherUpdate {
-            objects_total_size,
-            objects_number,
-        }
-        .add_objects_list(&object_creation_list)
-        .sub_objects_list(objects_removal_list.as_slice());
-
-        // bucket check
-        let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
-
-        // deletion prize
-        let net_prize =
-            Self::compute_net_prize(params.object_creation_list, objects_removal_list.as_slice());
-
-        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
-        ensure!(
-            Balances::<T>::usable_balance(&deletion_prize_source_account_id)
-                >= net_prize.due().saturating_add(storage_fee),
-            Error::<T>::InsufficientBalance,
-        );
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // update bucket vouchers
-        new_storage_buckets
-            .iter()
-            .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
-
-        // pay storage fee: no-op if storage_fee = 0
-        let _ = Balances::<T>::slash(&params.deletion_prize_source_account_id, storage_fee);
-
-        // refund or request deletion prize
-        match net_prize {
-            NetDeletionPrize::<T>::Neg(amnt) => {
-                <StorageTreasury<T>>::withdraw(&deletion_prize_account_id, amnt)?
-            }
-            NetDeletionPrize::<T>::Pos(amnt) => {
-                <StorageTreasury<T>>::deposit(&deletion_prize_account_id, amnt)?
-            }
-        }
-
-        // remove objects: no-op if collection is_empty()
-        objects_to_remove.iter().for_each(|id| {
-            DataObjectsById::<T>::remove(&bag_id, id);
-        });
-
-        // add objects: no-op if collection is_empty()
-        Self::add_data_objects_to_state(&bag_id, params.object_creation_list);
-
-        // insert updated bag:
-        Bags::<T>::insert(
-            &bag_id,
-            Bag::<T> {
-                stored_by: new_storage_buckets
-                    .iter()
-                    .map(|(id, _)| *id)
-                    .collect::<BTreeSet<_>>(),
-                distributed_by,
-                deletion_prize,
-                objects_total_size: new_voucher_update.objects_total_size,
-                objects_number: new_voucher_update.objects_number,
-            },
-        );
-
         Ok(())
     }
 
@@ -4165,12 +4091,12 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    fn compute_net_price(
-        obj_creation_list: &[ObjectCreationParameters],
+    fn compute_net_prize(
+        obj_creation_list: &[DataObjectCreationParameters],
         obj_removal_list: &[DataObject<BalanceOf<T>>],
     ) -> NetDeletionPrize<T> {
         NetDeletionPrize::<T>::default()
-            + objt_creation_list
+            + obj_creation_list
                 .iter()
                 .fold(BalanceOf::<T>::zero(), |acc, _| {
                     acc.saturating_add(T::DataObjectDeletionPrize::get())
@@ -4180,5 +4106,127 @@ impl<T: Trait> Module<T> {
                 .fold(BalanceOf::<T>::zero(), |acc, _| {
                     acc.saturating_add(T::DataObjectDeletionPrize::get())
                 })
+    }
+
+    /// Utility function that checks existence for bag deletion / update &
+    /// verifies that dynamic bag does not exists in case of bag creation
+    /// returning a new one
+    fn retrieve_dynamic_bag(bag_op: &BagOperation<T>) -> Result<Bag<T>, DispatchError> {
+        match bag_op {
+            BagOperation::<T>::Delete(bag_id) => Self::ensure_bag_exists(bag_id),
+            BagOperation::<T>::Update(bag_id) => Self::ensure_bag_exists(bag_id),
+            BagOperation::<T>::Create(bag_id, deletion_prize) => {
+                // map non existing dynamic bag to a new bag and existing bag into error
+                Self::ensure_bag_exists(bag_id).map_or_else(
+                    |_| {
+                        // TODO: Solution for storage buckets
+                        Ok(Bag::<T>::default().with_prize(*deletion_prize))
+                    },
+                    |_| Err(Error::<T>::DynamicBagExists.into()),
+                )
+            }
+        }
+    }
+
+    /// Utility function that does the bulk of bag / data objects operation
+    fn upload_and_delete(
+        account_id: T::AccountId,
+        bag_op: BagOperation<T>,
+        object_creation_list: Vec<DataObjectCreationParameters>,
+        objects_to_remove: BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult {
+        let Bag::<T> {
+            stored_by,
+            distributed_by,
+            deletion_prize,
+            objects_total_size,
+            objects_number,
+        } = Self::retrieve_dynamic_bag(&bag_op)?;
+
+        // upload parameters check
+        object_creation_list
+            .iter()
+            .try_for_each(|obj| Self::upload_data_objects_checks(obj))?;
+
+        // objects to remove
+        let objects_removal_list = if let BagOperation::<T>::Delete(bag_id) = &bag_op {
+            DataObjectsById::<T>::iter_prefix(bag_id)
+                .map(|(_, obj)| obj)
+                .collect()
+        } else {
+            objects_to_remove
+                .iter()
+                .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
+                .collect::<Result<Vec<_>, DispatchError>>()?
+        };
+
+        // new voucher
+        let new_voucher_update = VoucherUpdate {
+            objects_total_size,
+            objects_number,
+        }
+        .add_objects_list(&object_creation_list)
+        .sub_objects_list(objects_removal_list.as_slice());
+
+        // bucket check
+        let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
+
+        // deletion prize
+        let net_prize =
+            Self::compute_net_prize(&object_creation_list, objects_removal_list.as_slice());
+
+        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
+        ensure!(
+            Balances::<T>::usable_balance(&account_id)
+                >= net_prize.due().saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance,
+        );
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // update bucket vouchers
+        new_storage_buckets
+            .iter()
+            .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
+
+        // pay storage fee: no-op if storage_fee = 0
+        let _ = Balances::<T>::slash(&account_id, storage_fee);
+
+        // refund or request deletion prize
+        match net_prize {
+            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
+            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
+        }
+
+        // remove objects: no-op if collection is_empty()
+        objects_to_remove.iter().for_each(|id| {
+            DataObjectsById::<T>::remove(&bag_op.bag_id(), id);
+        });
+
+        // add objects: no-op if collection is_empty()
+        Self::add_data_objects_to_state(&bag_op.bag_id(), object_creation_list);
+
+        // insert updated bag:
+        if let BagOperation::<T>::Delete(bag_id) = &bag_op {
+            Bags::<T>::remove(bag_id)
+        } else {
+            Bags::<T>::insert(
+                &bag_op.bag_id(),
+                Bag::<T> {
+                    stored_by: new_storage_buckets
+                        .iter()
+                        .map(|(id, _)| *id)
+                        .collect::<BTreeSet<_>>(),
+                    distributed_by,
+                    deletion_prize,
+                    objects_total_size: new_voucher_update.objects_total_size,
+                    objects_number: new_voucher_update.objects_number,
+                },
+            )
+        };
+
+        Ok(())
     }
 }
