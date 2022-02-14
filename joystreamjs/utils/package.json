@@ -1,0 +1,50 @@
+{
+  "name": "@joystreamjs/utils",
+  "description": "common joystream utilities",
+  "version": "1.0.0",
+  "author": "Jsgenesis",
+  "bugs": "https://github.com/Joystream/joystream/issues",
+  "dependencies": {
+    "@joystream/metadata-protobuf": "^2.0.0",
+    "@joystream/types": "^0.18.0",
+    "@polkadot/api": "5.9.1"
+  },
+  "devDependencies": {
+    "@joystream/eslint-config": "^1.0.0",
+    "json-schema-to-typescript": "^10.1.4",
+    "typescript": "^4.4.3",
+    "prettier": "^2.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "yarn": "^1.22.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "files": [
+    "/lib"
+  ],
+  "homepage": "https://github.com/Joystream/joystream/blob/master/joystreamjs/content",
+  "keywords": [
+    "content",
+    "creator payout"
+  ],
+  "license": "GPL-3.0-only",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream",
+    "directory": "joystreamjs/content"
+  },
+  "scripts": {
+    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "format": "prettier ./ --write",
+    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./typings/ && yarn format"
+  },
+  "types": "lib/index.d.ts",
+  "volta": {
+    "extends": "../package.json"
+  }
+}
