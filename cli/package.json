@@ -52,7 +52,9 @@
     "blake3-wasm": "^2.1.5",
     "multihashes": "^4.0.3",
     "form-data": "^4.0.0",
-    "graphql": "^14.7.0"
+    "graphql": "^14.7.0",
+    "@joystreamjs/content": "^1.0.0",
+    "@joystreamjs/utils": "^1.0.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
@@ -75,8 +77,7 @@
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript-operations": "^1.17.16",
-    "@graphql-codegen/typescript-document-nodes": "^1.17.11",
-    "@joystreamjs/content": "0.7.0"
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
   },
   "engines": {
     "node": ">=14.0.0",

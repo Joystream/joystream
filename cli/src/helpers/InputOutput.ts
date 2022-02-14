@@ -76,6 +76,30 @@ export function saveOutputJsonToFile(outputFilePath: string, data: any): void {
   }
 }
 
+export function saveOutputToFile(outputFilePath: string, data: any): void {
+  try {
+    fs.writeFileSync(outputFilePath, data)
+    fs.createReadStream(outputFilePath, { start: 9 })
+  } catch (e) {
+    throw new CLIError(`Could not save the output to: ${outputFilePath}. Check permissions...`, {
+      exit: ExitCodes.FsOperationFailed,
+    })
+  }
+}
+
+export function getByteSequenceFromFile(inputFilePath: string, start: number, end: number): Promise<Uint8Array> {
+  try {
+    return new Promise((resolve) => {
+      const a = fs.createReadStream(inputFilePath, { start, end }).on('data', (data) => {
+        resolve(data)
+        a.close()
+      })
+    })
+  } catch (error) {
+    throw new CLIError(`Cannot access the input file at: ${inputFilePath}`, { exit: ExitCodes.FsOperationFailed })
+  }
+}
+
 export function ensureOutputFileIsWriteable(outputFilePath: string | undefined): void {
   if (outputFilePath === undefined) {
     return
