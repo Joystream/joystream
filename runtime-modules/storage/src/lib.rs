@@ -4243,4 +4243,13 @@ impl<T: Trait> Module<T> {
             })
             .collect()
     }
+
+    fn construct_objects_to_remove(
+        bag_id: &BagId<T>,
+        list: &[T::DataObjectId],
+    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+        list.iter()
+            .map(|id| Self::ensure_data_object_exists(bag_id, id))
+            .collect()
+    }
 }
