@@ -4145,8 +4145,8 @@ impl<T: Trait> Module<T> {
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
-        let object_creation_list = vec![];
-        let objects_removal_list = vec![];
+        let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
+        let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
 
         // new voucher
         let new_voucher_update = VoucherUpdate {
@@ -4158,7 +4158,6 @@ impl<T: Trait> Module<T> {
 
         // bucket check
         let new_storage_buckets = Self::update_storage_buckets(stored_by, new_voucher_update)?;
-
         // deletion prize
         let net_prize = Self::compute_net_prize(
             object_creation_list.as_slice(),
@@ -4263,14 +4262,3 @@ impl<T: Trait> Module<T> {
         }
     }
 }
-
-// if let BagOperation::<T>::Delete(bag_id) = &bag_op {
-//     DataObjectsById::<T>::iter_prefix(bag_id)
-//         .map(|(_, obj)| obj)
-//         .collect()
-// } else {
-//     objects_to_remove
-//         .iter()
-//         .map(|obj_id| Self::ensure_data_object_exists(&bag_op.bag_id(), obj_id))
-//         .collect::<Result<Vec<_>, DispatchError>>()?
-// };
