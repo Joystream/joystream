@@ -581,7 +581,7 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum BagOperationParamsTypes<Balance: Unsigned, ObjectId: Clone> {
     Update(Vec<DataObjectCreationParameters>, Vec<ObjectId>),
-    Create(Balance),
+    Create(Balance, Vec<DataObjectCreationParameters>),
     Delete,
 }
 
@@ -4116,7 +4116,7 @@ impl<T: Trait> Module<T> {
             DynamicBagId::<T>::Channel(One::one())
         };
 
-        if let BagOperationParams::<T>::Create(deletion_prize) = bag_op.params {
+        if let BagOperationParams::<T>::Create(deletion_prize, _) = bag_op.params {
             // map non existing dynamic bag to a new bag and existing bag into error
             Self::ensure_bag_exists(&bag_op.bag_id).map_or_else(
                 |_| {
@@ -4221,6 +4221,16 @@ impl<T: Trait> Module<T> {
     }
 
     fn construct_objects_to_upload(
+        op: &BagOperation<T>,
+    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+        match &op.params {
+            BagOperationParams::<T>::Delete => Ok(Default::default()),
+            BagOperationParams::<T>::Create(_, list) => Self::construct_objects_from_list(list),
+            BagOperationParams::<T>::Update(list, _) => Self::construct_objects_from_list(list),
+        }
+    }
+
+    fn construct_objects_from_list(
         list: &[DataObjectCreationParameters],
     ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
         list.iter()
@@ -4237,15 +4247,23 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
+    // TODO NOW: fix references
     fn construct_objects_to_remove(
-        bag_id: &BagId<T>,
-        list: &[T::DataObjectId],
+        op: &BagOperation<T>,
     ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
-        list.iter()
-            .map(|id| Self::ensure_data_object_exists(bag_id, id))
-            .collect()
+        match &op.params {
+            BagOperationParams::<T>::Delete => Ok(DataObjectsById::<T>::iter_prefix(&op.bag_id)
+                .map(|(_, obj)| obj)
+                .collect()),
+            BagOperationParams::<T>::Create(..) => Ok(Default::default()),
+            BagOperationParams::<T>::Update(_, list) => list
+                .iter()
+                .map(|id| Self::ensure_data_object_exists(&op.bag_id, id))
+                .collect(),
+        }
     }
 }
+
 // if let BagOperation::<T>::Delete(bag_id) = &bag_op {
 //     DataObjectsById::<T>::iter_prefix(bag_id)
 //         .map(|(_, obj)| obj)
