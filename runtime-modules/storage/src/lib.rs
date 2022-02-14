@@ -865,47 +865,77 @@ enum NetDeletionPrizeTypes<Balance: AtLeast32BitUnsigned + Default> {
 
 impl<Balance: AtLeast32BitUnsigned + Default> Default for NetDeletionPrizeTypes<Balance> {
     fn default() -> Self {
-        Self::Neg(Balance::default())
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> Add<Balance> for NetDeletionPrizeTypes<Balance> {
-    type Output = NetDeletionPrizeTypes<<Balance as Add>::Output>;
-    fn add(self, rhs: Balance) -> Self::Output {
-        match self {
-            Self::Pos(b) => Self::Pos(b + rhs),
-            Self::Neg(b) => {
-                if b > rhs {
-                    Self::Neg(b - rhs)
-                } else {
-                    Self::Pos(rhs - b)
-                }
-            }
-        }
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> Sub<Balance> for NetDeletionPrizeTypes<Balance> {
-    type Output = NetDeletionPrizeTypes<<Balance as Sub>::Output>;
-    fn sub(self, rhs: Balance) -> Self::Output {
-        match self {
-            Self::Neg(b) => Self::Neg(b + rhs),
-            Self::Pos(b) => {
-                if b > rhs {
-                    Self::Pos(b - rhs)
-                } else {
-                    Self::Neg(rhs - b)
-                }
-            }
-        }
+        Self::Pos(Balance::zero())
     }
 }
 
 impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
-    fn due(self) -> Balance {
+    fn flip(self) -> Self {
         match self {
-            Self::Pos(b) => b,
-            Self::Neg(_) => Balance::zero(),
+            Self::Pos(x) => Self::Neg(x),
+            Self::Neg(x) => Self::Pos(x),
+        }
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + Default> From<Balance> for NetDeletionPrizeTypes<Balance> {
+    fn from(balance: Balance) -> Self {
+        Self::Pos(balance)
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + Default> Saturating for NetDeletionPrizeTypes<Balance> {
+    fn saturating_add(self, rhs: Self) -> Self {
+        match self {
+            Self::Pos(a) => match rhs {
+                Self::Pos(b) => Self::Pos(a.saturating_add(b)),
+                Self::Neg(b) => {
+                    if a > b {
+                        Self::Pos(a.saturating_sub(b))
+                    } else {
+                        Self::Neg(b.saturating_sub(a))
+                    }
+                }
+            },
+            Self::Neg(a) => match rhs {
+                Self::Neg(b) => Self::Neg(a.saturating_add(b)),
+                Self::Pos(b) => {
+                    if a > b {
+                        Self::Neg(a.saturating_sub(b))
+                    } else {
+                        Self::Pos(b.saturating_sub(a))
+                    }
+                }
+            },
+        }
+    }
+    fn saturating_sub(self, rhs: Self) -> Self {
+        self.saturating_add(rhs.flip())
+    }
+
+    fn saturating_mul(self, rhs: Self) -> Self {
+        match self {
+            Self::Pos(a) => match rhs {
+                Self::Pos(b) => Self::Pos(a.saturating_mul(b)),
+                Self::Neg(b) => Self::Neg(a.saturating_mul(b)),
+                Self::Neg(a) => match rhs {
+                    Self::Neg(b) => Self::Pos(a.saturating_mul(b)),
+                    Self::Pos(b) => Self::Neg(a.saturating_mul(b)),
+                },
+            },
+        }
+    }
+
+    fn saturating_pow(self, exp: usize) -> Self {
+        match self {
+            Self::Pos(b) => Self::Pos(b.saturating_pow(exp)),
+            Self::Neg(b) => {
+                if exp % 2 == 0 {
+                    Self::Pos(b.saturating_pow(exp))
+                } else {
+                    Self::Neg(b.saturating_pow(exp))
+                }
+            }
         }
     }
 }
@@ -4092,17 +4122,18 @@ impl<T: Trait> Module<T> {
         obj_creation_list: &[DataObject<BalanceOf<T>>],
         obj_removal_list: &[DataObject<BalanceOf<T>>],
     ) -> NetDeletionPrize<T> {
-        NetDeletionPrize::<T>::default()
-            + obj_creation_list
-                .iter()
-                .fold(BalanceOf::<T>::zero(), |acc, _| {
-                    acc.saturating_add(T::DataObjectDeletionPrize::get())
-                })
-            - obj_removal_list
-                .iter()
-                .fold(BalanceOf::<T>::zero(), |acc, _| {
-                    acc.saturating_add(T::DataObjectDeletionPrize::get())
-                })
+        // NetDeletionPrize::<T>::default()
+        //     + obj_creation_list
+        //         .iter()
+        //         .fold(BalanceOf::<T>::zero(), |acc, _| {
+        //             acc.saturating_add(T::DataObjectDeletionPrize::get())
+        //         })
+        //     - obj_removal_list
+        //         .iter()
+        //         .fold(BalanceOf::<T>::zero(), |acc, _| {
+        //             acc.saturating_add(T::DataObjectDeletionPrize::get())
+        //         })
+        Default::default()
     }
 
     /// Utility function that checks existence for bag deletion / update &
@@ -4166,8 +4197,8 @@ impl<T: Trait> Module<T> {
 
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
         ensure!(
-            Balances::<T>::usable_balance(&account_id)
-                >= net_prize.due().saturating_add(storage_fee),
+            NetDeletionPrize::<T>::Pos(Balances::<T>::usable_balance(&account_id))
+                >= net_prize.saturating_add(storage_fee.into()),
             Error::<T>::InsufficientBalance,
         );
 
