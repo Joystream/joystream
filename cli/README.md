@@ -106,6 +106,10 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateCreatorPayoutCommitment COMMITMENT`](#joystream-cli-contentupdatecreatorpayoutcommitment-commitment)
 * [`joystream-cli content:creatorPayoutRecord [CHANNELID]`](#joystream-cli-contentcreatorpayoutrecord-channelid)
 * [`joystream-cli content:claimCreatorPayoutReward [CHANNELID]`](#joystream-cli-contentclaimcreatorpayoutreward-channelid)
+* [`joystream-cli content:creatorPayoutPayloadHeader`](#joystream-cli-contentcreatorpayoutpayloadheader)
+* [`joystream-cli content:creatorPayoutRecordAtByteOffset [BYTEOFFSET]`](#joystream-cli-contentcreatorpayoutrecordatbyteoffset-byteoffset)
+* [`joystream-cli content:generateCreatorPayoutPayload`](#joystream-cli-contentgeneratecreatorpayoutpayload)
+* [`joystream-cli content:generateCreatorPayoutMerkleRoot`](#joystream-cli-contentgeneratecreatorpayoutmerkleroot)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 * [`joystream-cli working-groups:apply [OPENINGID]`](#joystream-cli-working-groupsapply-openingid)
@@ -757,6 +761,65 @@ ARGUMENTS
 
 _See code: [src/commands/content/claimCreatorPayoutReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/claimCreatorPayoutReward.ts)_
 
+## `joystream-cli content:creatorPayoutPayloadHeader`
+
+Get header from serialized payload file.
+
+```
+USAGE
+  $ joystream-cli content:creatorPayoutPayloadHeader 
+
+OPTIONS
+  -i, --input=input    (required) Path to serialized payload file containing creator payouts
+```
+
+_See code: [src/commands/content/creatorPayoutPayloadHeader.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/creatorPayoutPayloadHeader.ts)_
+
+## `joystream-cli content:creatorPayoutRecordAtByteOffset [BYTEOFFSET]` 
+
+Get creator payout record from serialized payload file at given byte.
+
+```
+USAGE
+  $ joystream-cli content:creatorPayoutRecordAtByteOffset [BYTEOFFSET]
+
+ARGUMENTS
+  BYTEOFFSET           Byte offset of payout record from start of payload
+
+OPTIONS
+  -i, --input=input    (required) Path to serialized payload file containing creator payouts
+```
+
+_See code: [src/commands/content/creatorPayoutRecordAtByteOffset.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/creatorPayoutRecordAtByteOffset.ts)_
+
+## `joystream-cli content:generateCreatorPayoutPayload`
+
+Create serialized creator payout payload from JSON input.
+
+```
+USAGE
+  $ joystream-cli content:generateCreatorPayoutPayload 
+
+OPTIONS
+  -i, --input=input    (required) Path to JSON file containing creator payouts
+  -o, --out=out        (required) Path to file where serialized creator payout payload will be stored
+```
+
+_See code: [src/commands/content/generateCreatorPayoutPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateCreatorPayoutPayload.ts)_
+
+## `joystream-cli content:generateCreatorPayoutMerkleRoot`
+
+Generate merkle root for creator payout payload passed as JSON input.
+
+```
+USAGE
+  $ joystream-cli content:generateCreatorPayoutMerkleRoot 
+
+OPTIONS
+  -i, --input=input    (required) Path to JSON file containing creator payouts
+```
+
+_See code: [src/commands/content/generateCreatorPayoutMerkleRoot.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateCreatorPayoutMerkleRoot.ts)_
 ## `joystream-cli help [COMMAND]`
 
 display help for joystream-cli
