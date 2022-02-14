@@ -49,6 +49,9 @@ wss://{{ nip_domain }}/query-node/server* {
 }
 
 {{ nip_domain }}/network/config.json {
+    header /* {
+      Access-Control-Allow-Origin *
+    }
     root * /home/ubuntu
     rewrite * /config.json
     file_server
