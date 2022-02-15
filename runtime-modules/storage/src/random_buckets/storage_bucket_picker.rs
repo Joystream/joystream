@@ -5,7 +5,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 
 pub(crate) use super::{RandomBucketIdIterator, SequentialBucketIdIterator};
-use crate::{DynamicBagType, Module, Trait, VoucherUpdate};
+use crate::{DynamicBagType, Module, Trait};
 
 // Generates storage bucket IDs to assign to a new dynamic bag.
 pub(crate) struct StorageBucketPicker<T> {
@@ -19,10 +19,7 @@ impl<T: Trait> StorageBucketPicker<T> {
     // The function filters deleted buckets and disabled buckets (accepting_new_bags == false)
     // Total number of possible IDs is limited by the dynamic bag settings.
     // Returns an accumulated bucket ID set or an empty set.
-    pub(crate) fn pick_storage_buckets(
-        bag_type: DynamicBagType,
-        voucher_update: VoucherUpdate,
-    ) -> BTreeSet<T::StorageBucketId> {
+    pub(crate) fn pick_storage_buckets(bag_type: DynamicBagType) -> BTreeSet<T::StorageBucketId> {
         let creation_policy = Module::<T>::get_dynamic_bag_creation_policy(bag_type);
 
         if creation_policy.no_storage_buckets_required() {
@@ -39,7 +36,7 @@ impl<T: Trait> StorageBucketPicker<T> {
             .chain(SequentialBucketIdIterator::<T, T::StorageBucketId>::new(
                 next_storage_bucket_id,
             ))
-            .filter(|id| Self::check_storage_bucket_is_valid_for_bag_assigning(id, &voucher_update))
+            .filter(|id| Self::check_storage_bucket_is_valid_for_bag_assigning(id))
             .filter(|bucket_id| {
                 let bucket_ids = bucket_ids_cell.borrow();
 
@@ -59,30 +56,13 @@ impl<T: Trait> StorageBucketPicker<T> {
     // Verifies storage bucket ID (non-deleted and accepting new bags).
     pub(crate) fn check_storage_bucket_is_valid_for_bag_assigning(
         bucket_id: &T::StorageBucketId,
-        voucher_update: &VoucherUpdate,
     ) -> bool {
         // Check bucket for existence (return false if not). Check `accepting_new_bags`.
         let bucket = Module::<T>::ensure_storage_bucket_exists(bucket_id).ok();
 
         // check that bucket is accepting new bags
-        let accepting_bags = bucket
+        bucket
             .as_ref()
-            .map_or(false, |bucket| bucket.accepting_new_bags);
-
-        // check that buckets has enough room for objects and size
-        let limits_sufficient = bucket.as_ref().map_or(false, |bucket| {
-            let num_objects_enough = bucket.voucher.objects_limit
-                >= bucket
-                    .voucher
-                    .objects_used
-                    .saturating_add(voucher_update.objects_number);
-            let size_enough = bucket.voucher.size_limit
-                >= bucket
-                    .voucher
-                    .size_used
-                    .saturating_add(voucher_update.objects_total_size);
-            size_enough && num_objects_enough
-        });
-        accepting_bags && limits_sufficient
+            .map_or(false, |bucket| bucket.accepting_new_bags)
     }
 }

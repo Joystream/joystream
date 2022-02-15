@@ -18,8 +18,9 @@ use crate::tests::mocks::{
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
-    DistributionBucketId, DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent,
-    StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    DistributionBucketId, DistributionBucketPicker, DynBagCreationParameters, DynamicBagId,
+    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageBucketPicker,
+    UploadParameters, VoucherUpdate,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -806,28 +807,6 @@ impl DeleteDynamicBagFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
-
-        assert_eq!(actual_result, expected_result);
-    }
-}
-
-pub struct CanDeleteDynamicBagWithObjectsFixture {
-    bag_id: DynamicBagId<Test>,
-}
-
-impl CanDeleteDynamicBagWithObjectsFixture {
-    pub fn default() -> Self {
-        Self {
-            bag_id: Default::default(),
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::can_delete_dynamic_bag_with_objects(&self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
     }
@@ -2045,4 +2024,14 @@ impl CreateStorageBucketFixture {
         }
         bucket_ids
     }
+}
+
+pub fn pick_storage_buckets_for_dynamic_bag(dynamic_bag_type: DynamicBagType) -> BTreeSet<u64> {
+    StorageBucketPicker::<Test>::pick_storage_buckets(dynamic_bag_type)
+}
+
+pub fn pick_distribution_buckets_for_dynamic_bag(
+    dynamic_bag_type: DynamicBagType,
+) -> BTreeSet<DistributionBucketId<Test>> {
+    DistributionBucketPicker::<Test>::pick_distribution_buckets(dynamic_bag_type)
 }

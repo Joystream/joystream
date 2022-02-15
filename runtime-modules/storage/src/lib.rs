@@ -3748,7 +3748,6 @@ impl<T: Trait> Module<T> {
                         .with_prize(deletion_prize)
                         .with_storage_buckets(StorageBucketPicker::<T>::pick_storage_buckets(
                             dyn_bag_id.clone().into(),
-                            Default::default(),
                         ))
                         .with_distribution_buckets(
                             DistributionBucketPicker::<T>::pick_distribution_buckets(
