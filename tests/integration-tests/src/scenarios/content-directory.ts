@@ -7,12 +7,6 @@ import { scenario } from '../Scenario'
 
 scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('Set WorkingGroup Leads', leadOpening)
-  /*
-  const leadSetupJob = job('setup working group leads', [
-    leaderSetup(workingGroups.Content, true),
-    leaderSetup(workingGroups.Storage, true),
-  ])
-  */
 
   // TOOD: topup content and storage leaders
   // const [, storageLeader] = await api.getLeader('storageWorkingGroup')
@@ -21,7 +15,6 @@ scenario('Content directory', async ({ job }) => {
 
   const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(leadSetupJob)
 
-  // const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
-  // job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
-  job('nft auction and offers', nftAuctionAndOffers).requires(initStorageJob)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 })

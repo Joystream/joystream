@@ -127,14 +127,13 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
       | 'getVideoCategories'
     await this.query.tryQueryWithTimeout(
       () => this.query[getterName](),
-      (tmpEntity) => {
-        const entities = (tmpEntity as any).data[entityName]
+      (entities) => {
         assert(entities.length > 0) // some entities were loaded
 
         const entity = entities.find((item: any) => item.id === entityId.toString())
 
         // all videos created in this fixture should be active and belong to first entity
-        assert(entity.activeVideosCounter === expectedCount)
+        assert(entity && entity.activeVideosCounter === expectedCount)
       }
     )
   }
