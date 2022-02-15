@@ -52,6 +52,11 @@ export type VideoFieldsFragment = {
   channel: { id: string; ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }> }
 }
 
+export type VideoConnectionFieldsFragment = {
+  edges: Array<{ node: VideoFieldsFragment }>
+  pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+}
+
 export type ChannelFieldsFragment = {
   id: string
   categoryId?: Types.Maybe<string>
@@ -68,6 +73,11 @@ export type ChannelFieldsFragment = {
   collaborators: Array<{ id: string }>
 }
 
+export type ChannelConnectionFieldsFragment = {
+  edges: Array<{ node: ChannelFieldsFragment }>
+  pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+}
+
 export type DistributionBucketFieldsFragment = {
   distributing: boolean
   bags: Array<{ id: string }>
@@ -76,18 +86,6 @@ export type DistributionBucketFieldsFragment = {
     metadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
   }>
 }
-
-export type GetChannelsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
-
-export type GetVideosByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetVideosByIdsQuery = { videos: Array<VideoFieldsFragment> }
 
 export type GetVideoCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
 
@@ -110,6 +108,20 @@ export type GetDataObjectsPageQueryVariables = Types.Exact<{
 }>
 
 export type GetDataObjectsPageQuery = { storageDataObjectsConnection: StorageDataObjectConnectionFieldsFragment }
+
+export type GetChannelsPageQueryVariables = Types.Exact<{
+  limit: Types.Scalars['Int']
+  lastCursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetChannelsPageQuery = { channelsConnection: ChannelConnectionFieldsFragment }
+
+export type GetVideosPageQueryVariables = Types.Exact<{
+  limit: Types.Scalars['Int']
+  lastCursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetVideosPageQuery = { videosConnection: VideoConnectionFieldsFragment }
 
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
@@ -194,6 +206,20 @@ export const VideoFields = gql`
   }
   ${StorageDataObjectFields}
 `
+export const VideoConnectionFields = gql`
+  fragment VideoConnectionFields on VideoConnection {
+    edges {
+      node {
+        ...VideoFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  ${VideoFields}
+`
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
     id
@@ -225,6 +251,20 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
+export const ChannelConnectionFields = gql`
+  fragment ChannelConnectionFields on ChannelConnection {
+    edges {
+      node {
+        ...ChannelFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  ${ChannelFields}
+`
 export const DistributionBucketFields = gql`
   fragment DistributionBucketFields on DistributionBucket {
     distributing
@@ -238,22 +278,6 @@ export const DistributionBucketFields = gql`
       }
     }
   }
-`
-export const GetChannelsByIds = gql`
-  query getChannelsByIds($ids: [ID!]) {
-    channels(where: { id_in: $ids }, limit: 1000) {
-      ...ChannelFields
-    }
-  }
-  ${ChannelFields}
-`
-export const GetVideosByIds = gql`
-  query getVideosByIds($ids: [ID!]) {
-    videos(where: { id_in: $ids }, limit: 1000) {
-      ...VideoFields
-    }
-  }
-  ${VideoFields}
 `
 export const GetVideoCategories = gql`
   query getVideoCategories {
@@ -290,4 +314,20 @@ export const GetDataObjectsPage = gql`
     }
   }
   ${StorageDataObjectConnectionFields}
+`
+export const GetChannelsPage = gql`
+  query getChannelsPage($limit: Int!, $lastCursor: String) {
+    channelsConnection(first: $limit, after: $lastCursor) {
+      ...ChannelConnectionFields
+    }
+  }
+  ${ChannelConnectionFields}
+`
+export const GetVideosPage = gql`
+  query getVideosPage($limit: Int!, $lastCursor: String) {
+    videosConnection(first: $limit, after: $lastCursor) {
+      ...VideoConnectionFields
+    }
+  }
+  ${VideoConnectionFields}
 `

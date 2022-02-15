@@ -37,25 +37,25 @@ export class ChannelCategoriesMigration extends CategoryMigration {
       const newCategoryId = createdCategoryIds[newCategoryIndex++]
       this.idsMap.set(parseInt(c.id), newCategoryId.toNumber())
     })
-    console.log(`Channel categories map created!`, this.idsMap.entries())
+    this.logger.info(`Channel categories map created!`, this.idsMap.entries())
     if (this.failedMigrations.size) {
       throw new Error(`Failed to create some channel categories: ${Array.from(this.failedMigrations).join(', ')}`)
     }
-    console.log(`All channel categories succesfully migrated!`)
+    this.logger.info(`All channel categories succesfully migrated!`)
   }
 
   public async run(): Promise<MigrationResult> {
     await this.init()
     const { api } = this
-    const allCategories = await this.queryNodeApi.getChannelCategories()
+    const allCategories = this.snapshot.channelCategories
     const categoriesToMigrate = allCategories.filter((c) => !this.idsMap.has(parseInt(c.id)))
 
     if (!categoriesToMigrate.length) {
-      console.log('All channel categories already migrated, skipping...')
+      this.logger.info('All channel categories already migrated, skipping...')
       return this.getResult()
     }
 
-    console.log(`Migrating ${categoriesToMigrate.length} channel categories...`)
+    this.logger.info(`Migrating ${categoriesToMigrate.length} channel categories...`)
     const txs = categoriesToMigrate
       .sort((a, b) => parseInt(a.id) - parseInt(b.id))
       .map((c) => {

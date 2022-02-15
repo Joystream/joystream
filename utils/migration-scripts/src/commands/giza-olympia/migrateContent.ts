@@ -1,13 +1,13 @@
 import { Command, flags } from '@oclif/command'
 import path from 'path'
 import os from 'os'
-import { ContentMigration } from '../../sumer-giza/ContentMigration'
+import { ContentMigration } from '../../giza-olympia/ContentMigration'
 
 export class MigrateContentCommand extends Command {
   static flags = {
-    queryNodeUri: flags.string({
-      description: 'Query node uri (Giza)',
-      default: 'https://hydra.joystream.org/graphql',
+    snapshotFilePath: flags.string({
+      required: true,
+      description: 'Path to giza content directory snapshot (json)',
     }),
     wsProviderEndpointUri: flags.string({
       description: 'WS provider endpoint uri (Olympia)',
@@ -24,8 +24,8 @@ export class MigrateContentCommand extends Command {
       required: true,
     }),
     dataDir: flags.string({
+      required: true,
       description: 'Directory where data objects to upload are stored',
-      default: path.join(os.tmpdir(), 'joystream/giza-olympia-migration'),
     }),
     channelBatchSize: flags.integer({
       description: 'Channel batch size',

@@ -74,6 +74,18 @@ fragment VideoFields on Video {
   }
 }
 
+fragment VideoConnectionFields on VideoConnection {
+  edges {
+    node {
+      ...VideoFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
 fragment ChannelFields on Channel {
   id
   ownerMember {
@@ -103,6 +115,18 @@ fragment ChannelFields on Channel {
   }
 }
 
+fragment ChannelConnectionFields on ChannelConnection {
+  edges {
+    node {
+      ...ChannelFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
 fragment DistributionBucketFields on DistributionBucket {
   distributing
   bags {
@@ -113,18 +137,6 @@ fragment DistributionBucketFields on DistributionBucket {
     metadata {
       nodeEndpoint
     }
-  }
-}
-
-query getChannelsByIds($ids: [ID!]) {
-  channels(where: { id_in: $ids }, limit: 1000) {
-    ...ChannelFields
-  }
-}
-
-query getVideosByIds($ids: [ID!]) {
-  videos(where: { id_in: $ids }, limit: 1000) {
-    ...VideoFields
   }
 }
 
@@ -156,5 +168,23 @@ query getDataObjectsPage($updatedAfter: DateTime, $limit: Int!, $lastCursor: Str
     after: $lastCursor
   ) {
     ...StorageDataObjectConnectionFields
+  }
+}
+
+query getChannelsPage($limit: Int!, $lastCursor: String) {
+  channelsConnection(
+    first: $limit
+    after: $lastCursor
+  ) {
+    ...ChannelConnectionFields
+  }
+}
+
+query getVideosPage($limit: Int!, $lastCursor: String) {
+  videosConnection(
+    first: $limit
+    after: $lastCursor
+  ) {
+    ...VideoConnectionFields
   }
 }

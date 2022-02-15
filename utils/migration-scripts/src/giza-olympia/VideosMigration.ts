@@ -100,10 +100,8 @@ export class VideosMigration extends UploadMigration {
     }
     while (idsToMigrate.length) {
       const idsBatch = idsToMigrate.splice(0, videoBatchSize)
-      this.logger.info(`Fetching a batch of ${idsBatch.length} videos...`)
-      const videosBatch = (await this.queryNodeApi.getVideosByIds(idsBatch)).sort(
-        (a, b) => parseInt(a.id) - parseInt(b.id)
-      )
+      this.logger.info(`Preparing a batch of ${idsBatch.length} videos...`)
+      const videosBatch = this.snapshot.videos.filter((v) => idsBatch.includes(parseInt(v.id)))
       if (videosBatch.length < idsBatch.length) {
         this.logger.warn(
           `Some videos were not be found: ${_.difference(

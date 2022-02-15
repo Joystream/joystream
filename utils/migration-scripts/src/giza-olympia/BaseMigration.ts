@@ -1,6 +1,5 @@
 import { SubmittableResult } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { QueryNodeApi } from './giza-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { Keyring } from '@polkadot/keyring'
 import { Logger } from 'winston'
@@ -9,6 +8,7 @@ import nodeCleanup from 'node-cleanup'
 import _ from 'lodash'
 import fs from 'fs'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { ContentDirectorySnapshot } from './SnapshotManager'
 
 export type MigrationResult = {
   idsMap: Map<number, number>
@@ -27,27 +27,27 @@ export type BaseMigrationConfig = {
 
 export type BaseMigrationParams = {
   api: RuntimeApi
-  queryNodeApi: QueryNodeApi
+  snapshot: ContentDirectorySnapshot
   config: BaseMigrationConfig
 }
 
 export abstract class BaseMigration {
   abstract readonly name: string
   protected api: RuntimeApi
-  protected queryNodeApi: QueryNodeApi
   protected sudo!: KeyringPair
   protected config: BaseMigrationConfig
+  protected snapshot: ContentDirectorySnapshot
   protected failedMigrations: Set<number>
   protected idsMap: Map<number, number>
   protected pendingMigrationIteration: Promise<void> | undefined
   protected abstract logger: Logger
 
-  public constructor({ api, queryNodeApi, config }: BaseMigrationParams) {
+  public constructor({ api, config, snapshot }: BaseMigrationParams) {
     this.api = api
-    this.queryNodeApi = queryNodeApi
     this.config = config
     this.failedMigrations = new Set()
     this.idsMap = new Map()
+    this.snapshot = snapshot
     fs.mkdirSync(config.migrationStatePath, { recursive: true })
   }
 

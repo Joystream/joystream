@@ -98,10 +98,8 @@ export class ChannelMigration extends UploadMigration {
     const ids = channelIds.sort((a, b) => a - b)
     while (ids.length) {
       const idsBatch = ids.splice(0, channelBatchSize)
-      this.logger.info(`Fetching a batch of ${idsBatch.length} channels...`)
-      const channelsBatch = (await this.queryNodeApi.getChannelsByIds(idsBatch)).sort(
-        (a, b) => parseInt(a.id) - parseInt(b.id)
-      )
+      this.logger.info(`Preparing a batch of ${idsBatch.length} channels...`)
+      const channelsBatch = this.snapshot.channels.filter((c) => idsBatch.includes(parseInt(c.id)))
       if (channelsBatch.length < idsBatch.length) {
         this.logger.warn(
           `Some channels were not be found: ${_.difference(

@@ -37,25 +37,25 @@ export class VideoCategoriesMigration extends CategoryMigration {
       const newCategoryId = createdCategoryIds[newCategoryIndex++]
       this.idsMap.set(parseInt(c.id), newCategoryId.toNumber())
     })
-    console.log(`Video categories map created!`, this.idsMap.entries())
+    this.logger.info(`Video categories map created!`, this.idsMap.entries())
     if (this.failedMigrations.size) {
       throw new Error(`Failed to create some video categories: ${Array.from(this.failedMigrations).join(', ')}`)
     }
-    console.log(`All video categories succesfully migrated!`)
+    this.logger.info(`All video categories succesfully migrated!`)
   }
 
   public async run(): Promise<MigrationResult> {
     await this.init()
     const { api } = this
-    const allCategories = await this.queryNodeApi.getVideoCategories()
+    const allCategories = await this.snapshot.videoCategories
     const categoriesToMigrate = allCategories.filter((c) => !this.idsMap.has(parseInt(c.id)))
 
     if (!categoriesToMigrate.length) {
-      console.log('All video categories already migrated, skipping...')
+      this.logger.info('All video categories already migrated, skipping...')
       return this.getResult()
     }
 
-    console.log(`Migrating ${categoriesToMigrate.length} video categories...`)
+    this.logger.info(`Migrating ${categoriesToMigrate.length} video categories...`)
     const txs = categoriesToMigrate
       .sort((a, b) => parseInt(a.id) - parseInt(b.id))
       .map((c) => {

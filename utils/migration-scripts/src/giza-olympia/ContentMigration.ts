@@ -1,14 +1,14 @@
 import { WsProvider } from '@polkadot/api'
-import { QueryNodeApi } from './giza-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { VideosMigration } from './VideosMigration'
 import { ChannelMigration } from './ChannelsMigration'
 import { UploadManager } from './UploadManager'
 import { ChannelCategoriesMigration } from './ChannelCategoriesMigration'
 import { VideoCategoriesMigration } from './VideoCategoriesMigration'
+import { ContentDirectorySnapshot } from './SnapshotManager'
+import { readFileSync } from 'fs'
 
 export type ContentMigrationConfig = {
-  queryNodeUri: string
   wsProviderEndpointUri: string
   sudoUri: string
   channelIds: number[]
@@ -21,18 +21,17 @@ export type ContentMigrationConfig = {
   uploadSpEndpoint: string
   migrationStatePath: string
   excludeVideoIds: number[]
+  snapshotFilePath: string
 }
 
 export class ContentMigration {
   private api: RuntimeApi
-  private queryNodeApi: QueryNodeApi
   private config: ContentMigrationConfig
 
   constructor(config: ContentMigrationConfig) {
-    const { queryNodeUri, wsProviderEndpointUri } = config
+    const { wsProviderEndpointUri } = config
     const provider = new WsProvider(wsProviderEndpointUri)
     this.api = new RuntimeApi({ provider })
-    this.queryNodeApi = new QueryNodeApi(queryNodeUri)
     this.config = config
   }
 
@@ -51,11 +50,17 @@ export class ContentMigration {
     return undefined
   }
 
+  private loadSnapshot(): ContentDirectorySnapshot {
+    const snapshotJson = readFileSync(this.config.snapshotFilePath).toString()
+    return JSON.parse(snapshotJson) as ContentDirectorySnapshot
+  }
+
   public async run(): Promise<void> {
-    const { api, queryNodeApi, config } = this
+    const { api, config } = this
     await this.api.isReadyOrError
-    const { idsMap: channelCategoriesMap } = await new ChannelCategoriesMigration({ api, queryNodeApi, config }).run()
-    const { idsMap: videoCategoriesMap } = await new VideoCategoriesMigration({ api, queryNodeApi, config }).run()
+    const snapshot = this.loadSnapshot()
+    const { idsMap: channelCategoriesMap } = await new ChannelCategoriesMigration({ api, config, snapshot }).run()
+    const { idsMap: videoCategoriesMap } = await new VideoCategoriesMigration({ api, config, snapshot }).run()
     const forcedChannelOwner = await this.getForcedChannelOwner()
     const uploadManager = await UploadManager.create({
       api,
@@ -63,16 +68,16 @@ export class ContentMigration {
     })
     const { idsMap: channelsMap, videoIds } = await new ChannelMigration({
       api,
-      queryNodeApi,
       config,
+      snapshot,
       forcedChannelOwner,
       uploadManager,
       categoriesMap: channelCategoriesMap,
     }).run()
     await new VideosMigration({
       api,
-      queryNodeApi,
       config,
+      snapshot,
       channelsMap,
       videoIds,
       forcedChannelOwner,

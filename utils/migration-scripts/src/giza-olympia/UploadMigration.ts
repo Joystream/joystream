@@ -11,8 +11,8 @@ export abstract class UploadMigration extends BaseMigration {
   protected config: UploadMigrationConfig
   protected uploadManager: UploadManager
 
-  public constructor({ api, queryNodeApi, config, uploadManager }: UploadMigrationParams) {
-    super({ api, queryNodeApi, config })
+  public constructor({ api, snapshot, config, uploadManager }: UploadMigrationParams) {
+    super({ api, snapshot, config })
     this.config = config
     this.uploadManager = uploadManager
   }

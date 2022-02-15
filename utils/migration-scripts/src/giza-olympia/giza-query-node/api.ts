@@ -11,21 +11,13 @@ import { disableFragmentWarnings } from 'graphql-tag'
 import fetch from 'cross-fetch'
 import {
   ChannelCategoryFieldsFragment,
-  ChannelFieldsFragment,
-  GetChannelsByIds,
-  GetChannelsByIdsQuery,
-  GetChannelsByIdsQueryVariables,
   GetChannelsCategories,
   GetChannelsCategoriesQuery,
   GetChannelsCategoriesQueryVariables,
   GetVideoCategories,
   GetVideoCategoriesQuery,
   GetVideoCategoriesQueryVariables,
-  GetVideosByIds,
-  GetVideosByIdsQuery,
-  GetVideosByIdsQueryVariables,
   VideoCategoryFieldsFragment,
-  VideoFieldsFragment,
   GetDataObjectsPage,
   GetDataObjectsPageQuery,
   GetDataObjectsPageQueryVariables,
@@ -34,6 +26,14 @@ import {
   GetDistributorsByBagIdsQuery,
   GetDistributorsByBagIdsQueryVariables,
   GetDistributorsByBagIds,
+  ChannelConnectionFieldsFragment,
+  GetChannelsPageQuery,
+  GetChannelsPageQueryVariables,
+  GetChannelsPage,
+  VideoConnectionFieldsFragment,
+  GetVideosPageQuery,
+  GetVideosPageQueryVariables,
+  GetVideosPage,
 } from './generated/queries'
 import { Logger } from 'winston'
 import { createLogger } from '../../logging'
@@ -56,7 +56,7 @@ export class QueryNodeApi {
     this.retryIntervalMs = retryIntervalMs
     this.apolloClient = new ApolloClient({
       link: new HttpLink({ uri: endpoint, fetch }),
-      cache: new InMemoryCache(),
+      cache: new InMemoryCache({ addTypename: false }),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
     this.logger = createLogger('Query Node Api')
@@ -120,20 +120,42 @@ export class QueryNodeApi {
     )
   }
 
-  public getChannelsByIds(channelIds: string[] | number[]): Promise<ChannelFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetChannelsByIdsQuery, GetChannelsByIdsQueryVariables>(
-      GetChannelsByIds,
-      { ids: channelIds.map((id) => id.toString()) },
-      'channels'
+  public async getChannelsPage(
+    lastCursor?: string,
+    limit: number = MAX_RESULTS_PER_QUERY
+  ): Promise<ChannelConnectionFieldsFragment> {
+    const conn = await this.uniqueEntityQuery<GetChannelsPageQuery, GetChannelsPageQueryVariables>(
+      GetChannelsPage,
+      {
+        limit,
+        lastCursor,
+      },
+      'channelsConnection'
     )
+    if (!conn) {
+      throw new Error('Cannot get channelsConnection!')
+    }
+
+    return conn
   }
 
-  public getVideosByIds(videoIds: string[] | number[]): Promise<VideoFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
-      GetVideosByIds,
-      { ids: videoIds.map((id) => id.toString()) },
-      'videos'
+  public async getVideosPage(
+    lastCursor?: string,
+    limit: number = MAX_RESULTS_PER_QUERY
+  ): Promise<VideoConnectionFieldsFragment> {
+    const conn = await this.uniqueEntityQuery<GetVideosPageQuery, GetVideosPageQueryVariables>(
+      GetVideosPage,
+      {
+        limit,
+        lastCursor,
+      },
+      'videosConnection'
     )
+    if (!conn) {
+      throw new Error('Cannot get videosConnection!')
+    }
+
+    return conn
   }
 
   public async getStorageDataObjectsPage(
