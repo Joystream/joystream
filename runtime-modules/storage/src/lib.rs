@@ -4116,15 +4116,14 @@ impl<T: Trait> Module<T> {
     /// verifies that dynamic bag does not exists in case of bag creation
     /// returning a new one
     fn retrieve_dynamic_bag(bag_op: &BagOperation<T>) -> Result<Bag<T>, DispatchError> {
-        // TODO NOW: clean this up
-        let dyn_bag_id = if let BagId::<T>::Dynamic(id) = &bag_op.bag_id {
-            id.clone()
-        } else {
-            DynamicBagId::<T>::Channel(One::one())
-        };
-
         if let BagOperationParams::<T>::Create(deletion_prize, _) = bag_op.params {
             // map non existing dynamic bag to a new bag and existing bag into error
+            let dyn_bag_id = if let BagId::<T>::Dynamic(id) = &bag_op.bag_id {
+                Ok(id.clone())
+            } else {
+                Err(Error::<T>::CannotCreateStaticBag)
+            }?;
+
             Self::ensure_bag_exists(&bag_op.bag_id).map_or_else(
                 |_| {
                     Ok(Bag::<T>::default()
@@ -4278,7 +4277,6 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    // TODO NOW: fix references
     fn construct_objects_to_remove(
         op: &BagOperation<T>,
     ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
