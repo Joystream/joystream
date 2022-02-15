@@ -1,7 +1,7 @@
 ---
 # Run setup and build code
 
-- name: Creat bash profile file
+- name: Create bash profile file
   command: 'touch /home/ubuntu/.bash_profile'
 
 - name: Run setup script
