@@ -2371,7 +2371,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 fn delete_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
         DeleteDataObjectsFixture::default()
-            .call_and_assert(Err(Error::<Test>::DataObjectIdParamsAreEmpty.into()));
+            .call_and_assert(Err(Error::<Test>::DataObjectIdCollectionIsEmpty.into()));
     });
 }
 

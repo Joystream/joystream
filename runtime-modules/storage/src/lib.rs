@@ -878,14 +878,6 @@ impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
             }
         }
     }
-
-    // if positive: amount to deposit to storage treasury
-    fn as_fee(self) -> Balance {
-        match self {
-            Self::Pos(b) => b,
-            Self::Neg(_) => Balance::zero(),
-        }
-    }
 }
 
 impl<Balance: AtLeast32BitUnsigned + Default> From<Balance> for NetDeletionPrizeTypes<Balance> {
@@ -3240,6 +3232,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn upload_data_objects_checks(obj: &DataObjectCreationParameters) -> DispatchResult {
+        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
         ensure!(
             obj.size <= T::MaxDataObjectSize::get(),
             Error::<T>::MaxDataObjectSizeExceeded,
@@ -3814,12 +3807,18 @@ impl<T: Trait> Module<T> {
 
         // storage fee: zero if VoucherUpdate is default
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
-        ensure!(
-            Balances::<T>::usable_balance(&account_id)
-                >= net_prize.add_balance(storage_fee).as_fee(),
-            Error::<T>::InsufficientBalance,
-        );
-
+        match net_prize.add_balance(storage_fee) {
+            NetDeletionPrize::<T>::Pos(b) => ensure!(
+                Balances::<T>::usable_balance(&account_id) >= b,
+                Error::<T>::InsufficientBalance
+            ),
+            NetDeletionPrize::<T>::Neg(b) => {
+                ensure!(
+                    <StorageTreasury<T>>::usable_balance() >= b,
+                    Error::<T>::InsufficientTreasuryBalance
+                )
+            }
+        }
         //
         // == MUTATION SAFE ==
         //
