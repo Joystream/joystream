@@ -48,7 +48,7 @@ jobs:
           then
             echo ::set-output name=proposalParameters::''
           else
-            echo ::set-output name=proposalParameters::'$proposalParametersInput'
+            echo ::set-output name=proposalParameters::$proposalParametersInput
           fi
 
           if [ -z "$initialBalancesFile" ]
