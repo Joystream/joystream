@@ -87,7 +87,7 @@
       graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
       indexer: https://{{ nip_domain }}/query-node/indexer/graphql
       member_faucet: https://{{ nip_domain }}/member-faucet/register
-      config: https://{{ nip_domain }}//network/config.json
+      config: https://{{ nip_domain }}/network/config.json
   run_once: yes
 
 - name: Print endpoints

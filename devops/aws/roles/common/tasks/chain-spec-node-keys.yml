@@ -9,7 +9,7 @@
 - name: Copying initial members file to the server
   copy:
     src: '{{ initial_members_file }}'
-    dest: '{{ remote_code_path }}/initial-members.json'
+    dest: '{{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json'
   when: initial_members_file is defined and initial_members_file|length > 0
   run_once: true
 
@@ -27,7 +27,9 @@
     --endowed 1 --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
-    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-members-path {{ remote_code_path }}/initial-members.json{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}
+    --initial-members-path {{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json
+    {% endif %}
   register: chain_spec_output
   delegate_to: '{{ build_instance }}'
   run_once: true

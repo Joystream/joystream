@@ -69,12 +69,17 @@ if [ $? -eq 0 ]; then
 
   echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
-  if [ -z "$EC2_AMI_ID" ]
+  # Build binaries if AMI not specified or a custom proposals parameter is passed
+  if [ -z "$EC2_AMI_ID" ] || [ -n "$ALL_PROPOSALS_PARAMETERS_JSON" ]
   then
     echo -e "\n\n=========== Compile joystream-node on build server ==========="
     ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
-      --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE data_path=$DATA_PATH"
+      --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
+                    data_path=$DATA_PATH proposal_parameters=$ALL_PROPOSALS_PARAMETERS_JSON"
+  fi
 
+  if [ -z "$EC2_AMI_ID" ]
+  then
     echo -e "\n\n=========== Install additional utils on build server ==========="
     ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml
   fi

@@ -86,7 +86,6 @@ jobs:
           else
             echo "Stack does not exist"
           fi
-          echo ${{ steps.myoutputs.outputs.proposalParameters }}
 
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -126,6 +125,7 @@ jobs:
 
       - name: Run playbook to compile joystream-node on build server
         uses: dawidd6/action-ansible-playbook@v2
+        # Build binaries if AMI not specified or a custom proposals parameter is passed
         if: steps.myoutputs.outputs.ec2AMI == '' || steps.myoutputs.outputs.proposalParameters != ''
         with:
           playbook: build-code.yml
