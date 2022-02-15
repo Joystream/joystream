@@ -1,8 +1,9 @@
 import axios from 'axios'
 import stringify from 'fast-safe-stringify'
-import fs, { existsSync, statSync } from 'fs'
+import { createReadStream, existsSync, statSync, mkdirSync } from 'fs'
 import path from 'path'
 import { Readable } from 'stream'
+import { ContentHash } from './ContentHash'
 import { StorageDataObjectFieldsFragment } from './giza-query-node/generated/queries'
 
 export type AssetsBaseConfig = {
@@ -19,8 +20,8 @@ export abstract class AssetsBase {
   protected constructor(params: AssetsBaseParams) {
     const { config } = params
     this.config = config
-    fs.mkdirSync(this.tmpAssetPath(''), { recursive: true })
-    fs.mkdirSync(this.assetPath(''), { recursive: true })
+    mkdirSync(this.tmpAssetPath(''), { recursive: true })
+    mkdirSync(this.assetPath(''), { recursive: true })
   }
 
   protected tmpAssetPath(dataObjectId: string): string {
@@ -31,13 +32,24 @@ export abstract class AssetsBase {
     return path.join(this.config.dataDir, 'objects', dataObjectId)
   }
 
-  protected isAssetMissing(dataObject: StorageDataObjectFieldsFragment): boolean {
+  protected calcContentHash(assetPath: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const fReadStream = createReadStream(assetPath)
+      const hash = new ContentHash()
+      fReadStream.on('data', (chunk) => hash.update(chunk))
+      fReadStream.on('end', () => resolve(hash.digest()))
+      fReadStream.on('error', (err) => reject(err))
+    })
+  }
+
+  protected async isAssetMissing(dataObject: StorageDataObjectFieldsFragment): Promise<boolean> {
     const assetPath = this.assetPath(dataObject.id)
     if (!existsSync(assetPath)) {
       return true
     }
     const { size } = statSync(assetPath)
-    return size.toString() !== dataObject.size
+    const hash = await this.calcContentHash(assetPath)
+    return size.toString() !== dataObject.size || hash !== dataObject.ipfsHash
   }
 
   private streamToString(stream: Readable) {

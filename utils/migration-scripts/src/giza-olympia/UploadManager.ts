@@ -183,7 +183,7 @@ export class UploadManager extends AssetsBase {
   private async prepareAsset(
     dataObject: StorageDataObjectFieldsFragment
   ): Promise<DataObjectCreationParameters | undefined> {
-    if (this.isAssetMissing(dataObject)) {
+    if (await this.isAssetMissing(dataObject)) {
       this.logger.warn(`Data object ${dataObject.id} missing in the data directory! Skipping...`)
       return undefined
     }

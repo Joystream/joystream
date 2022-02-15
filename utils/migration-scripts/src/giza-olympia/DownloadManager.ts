@@ -49,6 +49,10 @@ export class DownloadManager extends AssetsBase {
     if (size !== parseInt(dataObject.size)) {
       throw new Error('Invalid file size')
     }
+    const hash = await this.calcContentHash(destPath)
+    if (hash !== dataObject.ipfsHash) {
+      throw new Error('Invalid file hash')
+    }
     renameSync(destPath, this.assetPath(dataObject.id))
   }
 
@@ -101,7 +105,7 @@ export class DownloadManager extends AssetsBase {
     dataObject: StorageDataObjectFieldsFragment,
     knownDistributors: Map<string, string[]>
   ): Promise<boolean> {
-    const missing = this.isAssetMissing(dataObject)
+    const missing = await this.isAssetMissing(dataObject)
     if (missing) {
       this.logger.debug(`Object ${dataObject.id} missing, fetching...`)
       await this.fetchAssetWithRetry(dataObject, knownDistributors)
