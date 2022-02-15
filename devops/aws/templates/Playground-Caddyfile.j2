@@ -48,7 +48,10 @@ wss://{{ nip_domain }}/query-node/server* {
     reverse_proxy localhost:3002
 }
 
-{{ nip_domain }}/config.json {
+{{ nip_domain }}/network/config.json {
+    header /* {
+      Access-Control-Allow-Origin *
+    }
     root * /home/ubuntu
     rewrite * /config.json
     file_server
