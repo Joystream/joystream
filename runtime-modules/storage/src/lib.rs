@@ -3668,7 +3668,13 @@ impl<T: Trait> Module<T> {
                 );
                 Ok(correct)
             }
-            BagOperationParams::<T>::Update(..) => tmp.collect(),
+            BagOperationParams::<T>::Update(..) => {
+                let ans = tmp
+                    .clone()
+                    .collect::<Result<BTreeMap<T::StorageBucketId, StorageBucket<T>>, Error<T>>>();
+                println!("TMP SIZE:\t{:?}", ans.unwrap_or_default());
+                tmp.collect()
+            }
             BagOperationParams::<T>::Delete => tmp
                 .map(|r| {
                     r.map(|(id, mut bk)| {
@@ -3819,6 +3825,7 @@ impl<T: Trait> Module<T> {
                 )
             }
         }
+
         //
         // == MUTATION SAFE ==
         //
