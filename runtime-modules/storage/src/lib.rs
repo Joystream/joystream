@@ -562,28 +562,8 @@ enum BagOperationParamsTypes<Balance: Unsigned, ObjectId: Clone> {
 }
 
 impl<Balance: Unsigned, ObjectId: Clone> BagOperationParamsTypes<Balance, ObjectId> {
-    fn is_update(&self) -> bool {
-        if let Self::Update(..) = &self {
-            true
-        } else {
-            false
-        }
-    }
-
-    fn is_create(&self) -> bool {
-        if let Self::Create(..) = &self {
-            true
-        } else {
-            false
-        }
-    }
-
     fn is_delete(&self) -> bool {
-        if let Self::Delete = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::Delete)
     }
 }
 
@@ -900,7 +880,7 @@ impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
     }
 
     // if positive: amount to deposit to storage treasury
-    fn to_fee(self) -> Balance {
+    fn as_fee(self) -> Balance {
         match self {
             Self::Pos(b) => b,
             Self::Neg(_) => Balance::zero(),
@@ -2914,56 +2894,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // check that usable balance in account_id is > required balance
-    fn ensure_sufficient_balance_for_upload(
-        account_id: T::AccountId,
-        required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
-        let usable_balance = Balances::<T>::usable_balance(account_id);
-        ensure!(
-            usable_balance >= required_balance,
-            Error::<T>::InsufficientBalance
-        );
-        Ok(())
-    }
-
-    // Validates dynamic bag deletion params and conditions. Returns bag's deletion prize.
-    fn validate_delete_dynamic_bag_params(
-        dynamic_bag_id: &DynamicBagId<T>,
-        with_objects: bool,
-    ) -> Result<Option<BalanceOf<T>>, DispatchError> {
-        Self::ensure_dynamic_bag_exists(dynamic_bag_id)?;
-
-        let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
-
-        // deletion prize = bag.deletion_prize + total_objects fees if any
-        let deletion_prize = if !with_objects {
-            ensure!(
-                dynamic_bag.objects_number == 0,
-                Error::<T>::CannotDeleteNonEmptyDynamicBag
-            );
-            dynamic_bag.deletion_prize.unwrap_or_else(Zero::zero)
-        } else {
-            let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-            let objects_del_prize = <DataObjectsById<T>>::iter_prefix(bag_id)
-                .fold(BalanceOf::<T>::zero(), |acc, (_, data_object)| {
-                    acc.saturating_add(data_object.deletion_prize)
-                });
-
-            dynamic_bag
-                .deletion_prize
-                .unwrap_or_else(Zero::zero)
-                .saturating_add(objects_del_prize)
-        };
-
-        ensure!(
-            <StorageTreasury<T>>::usable_balance() >= deletion_prize,
-            Error::<T>::InsufficientTreasuryBalance
-        );
-
-        Ok(dynamic_bag.deletion_prize)
-    }
-
     // Ensures the existence of the storage bucket.
     // Returns the StorageBucket object or error.
     fn ensure_storage_bucket_exists(
@@ -3091,53 +3021,6 @@ impl<T: Trait> Module<T> {
 
                 Ok(())
             }
-        }
-    }
-
-    fn add_data_objects_to_state(
-        bag_id: &BagId<T>,
-        object_creation_list: Vec<DataObjectCreationParameters>,
-    ) {
-        object_creation_list.into_iter().for_each(|obj| {
-            let next_id = NextDataObjectId::<T>::get().saturating_add(One::one());
-            let obj = DataObject {
-                accepted: false,
-                deletion_prize: T::DataObjectDeletionPrize::get(),
-                size: obj.size,
-                ipfs_content_id: obj.ipfs_content_id,
-            };
-            DataObjectsById::<T>::insert(bag_id, &next_id, obj);
-            NextDataObjectId::<T>::put(next_id);
-        })
-    }
-
-    // Create data objects from the creation data.
-    fn create_data_objects(
-        object_creation_list: Vec<DataObjectCreationParameters>,
-    ) -> DataObjectCandidates<T> {
-        let deletion_prize = T::DataObjectDeletionPrize::get();
-
-        let data_objects = object_creation_list.iter().cloned().map(|obj| DataObject {
-            accepted: false,
-            deletion_prize,
-            size: obj.size,
-            ipfs_content_id: obj.ipfs_content_id,
-        });
-
-        let mut next_data_object_id = Self::next_data_object_id();
-        let ids = iter::repeat_with(|| {
-            let id = next_data_object_id;
-            next_data_object_id += One::one();
-
-            id
-        })
-        .take(data_objects.len());
-
-        let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
-
-        DataObjectCandidates {
-            next_data_object_id,
-            data_objects_map,
         }
     }
 
@@ -3356,27 +3239,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Validates upload parameters and conditions (like global uploading block).
-    // Returns voucher update parameters for the storage buckets.
-    fn validate_upload_data_objects_parameters(
-        params: &UploadParameters<T>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        // do not allow upload operation with empty params list
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::DataObjectIdParamsAreEmpty
-        );
-
-        let bag_change =
-            Self::validate_bag_change(&params.object_creation_list, params.expected_data_size_fee)?;
-        Self::ensure_sufficient_balance_for_upload(
-            params.deletion_prize_source_account_id.clone(),
-            Self::compute_upload_fees(&bag_change),
-        )?;
-        Self::ensure_upload_bag_validity(&params.bag_id, &bag_change.voucher_update)?;
-        Ok(bag_change)
-    }
-
     fn upload_data_objects_checks(obj: &DataObjectCreationParameters) -> DispatchResult {
         ensure!(
             obj.size <= T::MaxDataObjectSize::get(),
@@ -3389,80 +3251,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectBlacklisted,
         );
         Ok(())
-    }
-
-    // construct bag change after validating the inputs
-    fn validate_bag_change(
-        object_creation_list: &[DataObjectCreationParameters],
-        expected_data_size_fee: BalanceOf<T>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
-
-        // ensure specified data fee == storage data fee
-        ensure!(
-            expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
-            Error::<T>::DataSizeFeeChanged,
-        );
-
-        object_creation_list
-            .iter()
-            .try_fold::<_, _, Result<_, DispatchError>>(BagUpdate::default(), |mut acc, obj| {
-                Self::upload_data_objects_checks(obj)?;
-                Ok(acc.add_object(obj.size, T::DataObjectDeletionPrize::get()))
-            })
-    }
-
-    // Validates `delete_data_objects` parameters.
-    // Returns voucher update for an affected bag.
-    fn validate_delete_data_objects_params(
-        bag_id: &BagId<T>,
-        data_object_ids: &BTreeSet<T::DataObjectId>,
-    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
-        ensure!(
-            !data_object_ids.is_empty(),
-            Error::<T>::DataObjectIdParamsAreEmpty
-        );
-
-        Self::ensure_bag_exists(bag_id)?;
-
-        let bag_change = data_object_ids
-            .iter()
-            .try_fold::<_, _, Result<_, DispatchError>>(
-                BagUpdate::default(),
-                |acc, data_object_id| {
-                    let data_object = Self::ensure_data_object_exists(bag_id, data_object_id)?;
-
-                    let bag_change = acc
-                        .clone()
-                        .add_object(data_object.size, data_object.deletion_prize);
-
-                    Ok(bag_change)
-                },
-            )?;
-
-        ensure!(
-            <StorageTreasury<T>>::usable_balance() >= bag_change.total_deletion_prize,
-            Error::<T>::InsufficientTreasuryBalance
-        );
-
-        Ok(bag_change)
-    }
-
-    fn ensure_upload_bag_validity(
-        bag_id: &BagId<T>,
-        voucher_update: &VoucherUpdate,
-    ) -> DispatchResult {
-        let bag = Self::ensure_bag_exists(bag_id)?;
-        // Check buckets.
-        Self::check_bag_for_buckets_overflow(&bag, voucher_update)?;
-        Ok(())
-    }
-
-    fn compute_upload_fees(bag_change: &BagUpdate<BalanceOf<T>>) -> BalanceOf<T> {
-        let size_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
-
-        bag_change.total_deletion_prize.saturating_add(size_fee)
     }
 
     // objects number and total objects size.
@@ -3516,38 +3304,6 @@ impl<T: Trait> Module<T> {
         mb_fee.saturating_mul(megabytes.saturated_into())
     }
 
-    // helper pick buckets for bag
-    fn pick_buckets_for_bag(
-        dyn_bag_type: DynamicBagType,
-        bag_change: &BagUpdate<BalanceOf<T>>,
-    ) -> Result<BucketPair<T>, DispatchError> {
-        let storage_bucket_ids =
-            Self::pick_storage_buckets_for_dynamic_bag(dyn_bag_type, bag_change.voucher_update);
-
-        let distribution_bucket_ids = Self::pick_distribution_buckets_for_dynamic_bag(dyn_bag_type);
-
-        ensure!(
-            !storage_bucket_ids.is_empty(),
-            Error::<T>::StorageBucketIdCollectionsAreEmpty
-        );
-        Ok((storage_bucket_ids, distribution_bucket_ids))
-    }
-
-    // Selects storage bucket ID sets to assign to the dynamic bag.
-    pub(crate) fn pick_storage_buckets_for_dynamic_bag(
-        bag_type: DynamicBagType,
-        voucher_update: VoucherUpdate,
-    ) -> BTreeSet<T::StorageBucketId> {
-        StorageBucketPicker::<T>::pick_storage_buckets(bag_type, voucher_update)
-    }
-
-    // Selects distributed bucket ID sets to assign to the dynamic bag.
-    pub(crate) fn pick_distribution_buckets_for_dynamic_bag(
-        bag_type: DynamicBagType,
-    ) -> BTreeSet<DistributionBucketId<T>> {
-        DistributionBucketPicker::<T>::pick_distribution_buckets(bag_type)
-    }
-
     // Get default dynamic bag policy by bag type.
     fn get_default_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
@@ -3590,22 +3346,6 @@ impl<T: Trait> Module<T> {
         let bag_id: BagId<T> = static_bag_id.clone().into();
 
         Self::bag(&bag_id)
-    }
-
-    // Returns the bag by the dynamic bag id.
-    pub(crate) fn dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> Bag<T> {
-        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
-        Self::bag(&bag_id)
-    }
-
-    // Check the dynamic bag existence.
-    fn ensure_dynamic_bag_exists(
-        dynamic_bag_id: &DynamicBagId<T>,
-    ) -> Result<Bag<T>, DispatchError> {
-        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
-        Self::ensure_bag_exists(&bag_id)
     }
 
     // Check the dynamic bag existence. Static bags always exist.
@@ -3889,70 +3629,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Perform actual upload and storage bookeepingn
-    fn perform_upload(params: UploadParameters<T>, bag_change: &BagUpdate<BalanceOf<T>>) {
-        let data = Self::create_data_objects(params.object_creation_list.to_vec());
-
-        let bag = Bags::<T>::get(params.bag_id.clone());
-
-        // Save next object id.
-        <NextDataObjectId<T>>::put(data.next_data_object_id);
-
-        // Insert new objects.
-        for (data_object_id, data_object) in data.data_objects_map.iter() {
-            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
-        }
-
-        Self::change_storage_bucket_vouchers_for_bag(
-            &params.bag_id,
-            &bag,
-            &bag_change.voucher_update,
-            OperationType::Increase,
-        );
-
-        Self::deposit_event(RawEvent::DataObjectsUploaded(
-            data.data_objects_map.keys().cloned().collect(),
-            params,
-            T::DataObjectDeletionPrize::get(),
-        ));
-    }
-
-    fn ensure_can_perform_balance_accounting(
-        bag_change: &BagUpdate<BalanceOf<T>>,
-        extra_deletion_prize: BalanceOf<T>,
-        account_id: &T::AccountId,
-    ) -> Result<(BalanceOf<T>, BalanceOf<T>), DispatchError> {
-        let total_deletion_prize =
-            extra_deletion_prize.saturating_add(bag_change.total_deletion_prize);
-
-        let storage_fee =
-            Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
-
-        ensure!(
-            Balances::<T>::usable_balance(account_id)
-                >= total_deletion_prize.saturating_add(storage_fee),
-            Error::<T>::InsufficientBalance
-        );
-
-        Ok((total_deletion_prize, storage_fee))
-    }
-
-    fn perform_balance_accounting(
-        deletion_prize: BalanceOf<T>,
-        storage_fee: BalanceOf<T>,
-        account_id: &T::AccountId,
-    ) {
-        // deposit deletion prize
-        let _ = <StorageTreasury<T>>::deposit(account_id, deletion_prize);
-
-        // slash storage fee
-        if storage_fee != Zero::zero() {
-            let _ = Balances::<T>::slash(account_id, storage_fee);
-        }
-    }
-
-    // TODO NOW:
-    // 2. add / remove bags to bucket
     fn generate_new_storage_buckets(
         bucket_ids: BTreeSet<T::StorageBucketId>,
         new_voucher_update: VoucherUpdate,
@@ -4141,7 +3817,7 @@ impl<T: Trait> Module<T> {
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
         ensure!(
             Balances::<T>::usable_balance(&account_id)
-                >= net_prize.add_balance(storage_fee).to_fee(),
+                >= net_prize.add_balance(storage_fee).as_fee(),
             Error::<T>::InsufficientBalance,
         );
 
