@@ -452,8 +452,6 @@ parameter_types! {
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
-    pub const VideosMigrationsEachBlock: u64 = 100;
-    pub const ChannelsMigrationsEachBlock: u64 = 25;
 }
 
 impl content::Trait for Runtime {
@@ -471,8 +469,6 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
-    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
-    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 // The referendum instance alias.

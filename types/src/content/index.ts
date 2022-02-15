@@ -195,15 +195,6 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   enable_comments: Option.with(bool),
 }) {}
 
-export class VideoMigrationConfig extends JoyStructDecorated({
-  current_id: VideoId,
-  final_id: VideoId,
-}) {}
-export class ChannelMigrationConfig extends JoyStructDecorated({
-  current_id: ChannelId,
-  final_id: ChannelId,
-}) {}
-
 export class VideoPostType extends JoyEnum({
   Description: Null,
   Comment: VideoPostId,
@@ -269,8 +260,6 @@ export const contentTypes = {
   VideoUpdateParameters,
   MaxNumber,
   IsCensored,
-  VideoMigrationConfig,
-  ChannelMigrationConfig,
   // Added in Olympia:
   VideoPostId,
   ReactionId,
