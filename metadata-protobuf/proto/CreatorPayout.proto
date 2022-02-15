@@ -1,6 +1,13 @@
 syntax = "proto2";
 
 message CreatorPayoutPayload {
+/**
+ Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
+ This allows first calculating and then setting the byte offset of each `CreatorPayout` accurately, e.g. 
+ `byte_offset` = `size(Header)` + `position_where_record_for_creator_exists_in_Body`
+ If varint encoding is used for header fields, then calculating the byte offset of `CreatorPayout` 
+ w.r.t the start of the payload would be improbable since the header size won't be known.
+**/
   message Header {
     // Length in bytes of entire payload
     required fixed64 payload_length_in_bytes = 1;
@@ -36,11 +43,11 @@ message CreatorPayoutPayload {
       }
     
       message ProofElement {
-        required bytes merkle_branch = 1;
+        required bytes hash = 1;
         required Side side = 2;
       }
     
-      repeated ProofElement merkle_branches = 3; 
+      repeated ProofElement merkle_branch = 3; 
     
       // `d_i`; rationale for for reward or deduction for `c_i`;
       required string payout_rationale = 4; 

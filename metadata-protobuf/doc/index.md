@@ -265,7 +265,7 @@ Creator payout full body structure, it will not be downloaded by clients in full
 | ----- | ---- | ----- | ----------- |
 | channel_id | [uint32](#uint32) | required | `c_i` |
 | cumulative_payout_owed | [float](#float) | required | `p_i` |
-| merkle_branches | [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#CreatorPayoutPayload.Body.CreatorPayout.ProofElement) | repeated |  |
+| merkle_branch | [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#CreatorPayoutPayload.Body.CreatorPayout.ProofElement) | repeated |  |
 | payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
 
 
@@ -281,7 +281,7 @@ Creator payout full body structure, it will not be downloaded by clients in full
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| merkle_branch | [bytes](#bytes) | required |  |
+| hash | [bytes](#bytes) | required |  |
 | side | [CreatorPayoutPayload.Body.CreatorPayout.Side](#CreatorPayoutPayload.Body.CreatorPayout.Side) | required |  |
 
 
@@ -292,7 +292,11 @@ Creator payout full body structure, it will not be downloaded by clients in full
 <a name=".CreatorPayoutPayload.Header"></a>
 
 ### CreatorPayoutPayload.Header
-
+Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
+This allows first calculating and then setting the byte offset of each `CreatorPayout` accurately, e.g. 
+`byte_offset` = `size(Header)` &#43; `position_where_record_for_creator_exists_in_Body`
+If varint encoding is used for header fields, then calculating the byte offset of `CreatorPayout` 
+w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
 
 
 | Field | Type | Label | Description |

@@ -15,7 +15,7 @@
         "cumulativePayoutOwed": {
           "type": "number"
         },
-        "merkleBranches": {
+        "merkleBranch": {
           "items": {
             "$ref": "#/definitions/ProofElement"
           },
@@ -25,20 +25,20 @@
           "type": "string"
         }
       },
-      "required": ["channelId", "cumulativePayoutOwed", "merkleBranches", "payoutRationale"],
+      "required": ["channelId", "cumulativePayoutOwed", "merkleBranch", "payoutRationale"],
       "type": "object"
     },
     "ProofElement": {
       "additionalProperties": false,
       "properties": {
-        "merkleBranch": {
+        "hash": {
           "type": "string"
         },
         "side": {
           "$ref": "#/definitions/Side"
         }
       },
-      "required": ["merkleBranch", "side"],
+      "required": ["hash", "side"],
       "type": "object"
     },
     "Side": {

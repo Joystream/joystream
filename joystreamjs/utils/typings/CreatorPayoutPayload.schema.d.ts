@@ -11,10 +11,10 @@ export type CreatorPayoutPayload = CreatorPayout[]
 export interface CreatorPayout {
   channelId: number
   cumulativePayoutOwed: number
-  merkleBranches: ProofElement[]
+  merkleBranch: ProofElement[]
   payoutRationale: string
 }
 export interface ProofElement {
-  merkleBranch: string
+  hash: string
   side: Side
 }

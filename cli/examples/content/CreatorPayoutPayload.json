@@ -2,17 +2,17 @@
   {
     "channelId": 0,
     "cumulativePayoutOwed": 20,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -21,17 +21,17 @@
   {
     "channelId": 1,
     "cumulativePayoutOwed": 50,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "occaecat enim",
+        "hash": "occaecat enim",
         "side": 0
       },
       {
-        "merkleBranch": "sit",
+        "hash": "sit",
         "side": 1
       },
       {
-        "merkleBranch": "nulla amet proident",
+        "hash": "nulla amet proident",
         "side": 1
       }
     ],
@@ -40,17 +40,17 @@
   {
     "channelId": 2,
     "cumulativePayoutOwed": 34,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -59,17 +59,17 @@
   {
     "channelId": 3,
     "cumulativePayoutOwed": 20,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -78,17 +78,17 @@
   {
     "channelId": 4,
     "cumulativePayoutOwed": 50,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "occaecat enim",
+        "hash": "occaecat enim",
         "side": 0
       },
       {
-        "merkleBranch": "sit",
+        "hash": "sit",
         "side": 1
       },
       {
-        "merkleBranch": "nulla amet proident",
+        "hash": "nulla amet proident",
         "side": 1
       }
     ],
@@ -97,17 +97,17 @@
   {
     "channelId": 5,
     "cumulativePayoutOwed": 34,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -116,17 +116,17 @@
   {
     "channelId": 6,
     "cumulativePayoutOwed": 20,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -135,17 +135,17 @@
   {
     "channelId": 7,
     "cumulativePayoutOwed": 50,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "occaecat enim",
+        "hash": "occaecat enim",
         "side": 0
       },
       {
-        "merkleBranch": "sit",
+        "hash": "sit",
         "side": 1
       },
       {
-        "merkleBranch": "nulla amet proident",
+        "hash": "nulla amet proident",
         "side": 1
       }
     ],
@@ -154,17 +154,17 @@
   {
     "channelId": 8,
     "cumulativePayoutOwed": 34,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -173,17 +173,17 @@
   {
     "channelId": 9,
     "cumulativePayoutOwed": 20,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "qui",
+        "hash": "qui",
         "side": 1
       },
       {
-        "merkleBranch": "id",
+        "hash": "id",
         "side": 0
       },
       {
-        "merkleBranch": "quis",
+        "hash": "quis",
         "side": 1
       }
     ],
@@ -192,17 +192,17 @@
   {
     "channelId": 10,
     "cumulativePayoutOwed": 50,
-    "merkleBranches": [
+    "merkleBranch": [
       {
-        "merkleBranch": "occaecat enim",
+        "hash": "occaecat enim",
         "side": 0
       },
       {
-        "merkleBranch": "sit",
+        "hash": "sit",
         "side": 1
       },
       {
-        "merkleBranch": "nulla amet proident",
+        "hash": "nulla amet proident",
         "side": 1
       }
     ],
