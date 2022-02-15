@@ -7,7 +7,7 @@
   "dependencies": {
     "@joystream/metadata-protobuf": "^2.0.0",
     "@joystream/types": "^0.18.0",
-    "@polkadot/api": "5.9.1"
+    "@polkadot/types": "5.9.1"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",
