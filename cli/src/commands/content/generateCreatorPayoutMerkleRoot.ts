@@ -1,25 +1,24 @@
 import { generateMerkleRoot } from '@joystreamjs/content'
-import { CreatorPayoutPayloadSchema } from '@joystreamjs/utils'
-import { CreatorPayoutPayload as CreatorPayoutPayloadJson } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
 import { Command, flags } from '@oclif/command'
 import chalk from 'chalk'
-import { getInputJson } from '../../helpers/InputOutput'
 
 export default class GenerateCreatorPayoutMerkleRoot extends Command {
-  static description = 'Generate merkle root for creator payout payload passed as JSON input.'
+  static description = 'Generate merkle root from creator payouts payload.'
   static flags = {
     input: flags.string({
       char: 'i',
       required: true,
-      description: `Path to JSON file containing creator payouts`,
+      description: `Path to serialized creator payouts payload file`,
     }),
   }
 
   async run(): Promise<void> {
     const { input } = this.parse(GenerateCreatorPayoutMerkleRoot).flags
-    const payloadBodyInput = await getInputJson<CreatorPayoutPayloadJson>(input, CreatorPayoutPayloadSchema)
-    const merkleRoot = generateMerkleRoot(payloadBodyInput)
-
-    this.log(chalk.green(`Creator Payout payload merkle root is ${chalk.cyanBright(merkleRoot)}!`))
+    try {
+      const merkleRoot = await generateMerkleRoot(input)
+      this.log(chalk.green(`Creator Payout payload merkle root is ${chalk.cyanBright(merkleRoot)}!`))
+    } catch (error) {
+      this.error(`Invalid serialized payload input ${error}`)
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { generateSerializedPayload } from '@joystreamjs/content'
 import { CreatorPayoutPayloadSchema } from '@joystreamjs/utils'
-import { CreatorPayoutPayload as CreatorPayoutPayloadJson } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
+import { CreatorPayoutPayload as CreatorPayoutPayloadInput } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
 import { Command, flags } from '@oclif/command'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'
@@ -8,7 +8,7 @@ import { displayCollapsedRow } from '../../helpers/display'
 import { getInputJson, saveOutputToFile } from '../../helpers/InputOutput'
 
 export default class GenerateCreatorPayoutPayload extends Command {
-  static description = 'Create serialized creator payout payload from JSON input.'
+  static description = 'Create serialized creator payouts payload from JSON input.'
   static flags = {
     input: flags.string({
       char: 'i',
@@ -18,13 +18,13 @@ export default class GenerateCreatorPayoutPayload extends Command {
     out: flags.string({
       char: 'o',
       required: true,
-      description: `Path to file where serialized creator payout payload will be stored`,
+      description: `Path to file where serialized creator payouts payload will be stored`,
     }),
   }
 
   async run(): Promise<void> {
     const { input, out } = this.parse(GenerateCreatorPayoutPayload).flags
-    const payloadBodyInput = await getInputJson<CreatorPayoutPayloadJson>(input, CreatorPayoutPayloadSchema)
+    const payloadBodyInput = await getInputJson<CreatorPayoutPayloadInput>(input, CreatorPayoutPayloadSchema)
     const serializedPayload = generateSerializedPayload(payloadBodyInput)
 
     displayCollapsedRow({

@@ -1,9 +1,9 @@
 import { CreatorPayoutPayload } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ProofElement, PullPayment, Side } from '@joystream/types/content'
-import { creatorPayoutRecord, generateProof } from '@joystreamjs/content'
+import { creatorPayoutRecord, generateMerkleRootFromCreatorPayout } from '@joystreamjs/content'
 import { Vec } from '@polkadot/types'
-import { blake2AsU8a } from '@polkadot/util-crypto'
+import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
@@ -34,7 +34,9 @@ export default class ClaimCreatorPayoutReward extends ContentDirectoryCommandBas
       this.error('Not sufficient Cashout Amount', { exit: ExitCodes.InvalidInput })
     }
 
-    if (generateProof(payoutRecord) !== this.getOriginalApi().consts.content.commitment.toU8a()) {
+    if (
+      generateMerkleRootFromCreatorPayout(payoutRecord) !== this.getOriginalApi().consts.content.commitment.toString()
+    ) {
       this.error('Not sufficient Cashout Amount', { exit: ExitCodes.InvalidInput })
     }
 
@@ -42,18 +44,18 @@ export default class ClaimCreatorPayoutReward extends ContentDirectoryCommandBas
     const pullPayment = createType<PullPayment, 'PullPayment'>('PullPayment', {
       channel_id: channelId,
       cumulative_payout_claimed: payoutRecord.cumulativePayoutOwed,
-      // TODO: double-check hash function to use: blake2AsU8a vs blake2AsHex
-      reason: blake2AsU8a(payoutRecord.payoutRationale),
+      // TODO: double-check which hash function to use: blake2AsU8a vs blake2AsHex
+      reason: blake2AsHex(payoutRecord.payoutRationale),
     })
 
     const merkleProof = [] as unknown as Vec<ProofElement>
-    payoutRecord.merkleBranches.forEach((m) => {
+    payoutRecord.merkleBranch.forEach((m) => {
       const side =
         m.side === CreatorPayoutPayload.Body.CreatorPayout.Side.Left
           ? createType<Side, 'Side'>('Side', { Left: null })
           : createType<Side, 'Side'>('Side', { Right: null })
-      const merkleBranch = createType<ProofElement, 'ProofElement'>('ProofElement', { hash: m.merkleBranch, side })
-      merkleProof.push(merkleBranch)
+      const proofElement = createType<ProofElement, 'ProofElement'>('ProofElement', { hash: m.hash, side })
+      merkleProof.push(proofElement)
     })
 
     this.jsonPrettyPrint(JSON.stringify({ channelId }))

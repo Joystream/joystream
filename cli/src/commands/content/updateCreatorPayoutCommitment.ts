@@ -4,12 +4,12 @@ import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class UpdateCreatorPayoutCommitment extends ContentDirectoryCommandBase {
-  static description = 'Update creator payout payload commitment hash in the runtime storage.'
+  static description = 'Update creator payouts payload commitment hash in the runtime storage.'
   static args = [
     {
       name: 'commitment',
       required: true,
-      description: 'commitment hash/Merkle root of the creator payout payload',
+      description: 'commitment hash/Merkle root of the creator payouts payload',
     },
   ]
 

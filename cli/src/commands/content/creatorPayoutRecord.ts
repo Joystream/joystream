@@ -20,7 +20,7 @@ export default class CreatorPayoutRecord extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'Channel Id': channelId,
         'Cumulative Payout Owed': payoutRecord.cumulativePayoutOwed,
-        'Merkle Proof Branches': payoutRecord.merkleBranches.toString(),
+        'Merkle Branch': JSON.stringify(payoutRecord.merkleBranch),
         'Payout Rationale': payoutRecord.payoutRationale,
       })
     } else {

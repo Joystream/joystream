@@ -30,7 +30,7 @@ export default class CreatorPayoutRecordAtByteOffset extends Command {
       displayCollapsedRow({
         'Channel Id': payoutRecord.channelId,
         'Cumulative Payout Owed': payoutRecord.cumulativePayoutOwed,
-        'Merkle Proof Branches': JSON.stringify(payoutRecord.merkleBranches),
+        'Merkle Proof Branches': JSON.stringify(payoutRecord.merkleBranch),
         'Payout Rationale': payoutRecord.payoutRationale,
       })
     } catch (error) {

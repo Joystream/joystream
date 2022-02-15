@@ -16,27 +16,27 @@ export default class CreatorPayoutPayloadHeader extends Command {
 
   async run(): Promise<void> {
     const { input } = this.parse(CreatorPayoutPayloadHeader).flags
-    const serializedzHeader = await serializedPayloadHeader(input)
+    const serializedHeader = await serializedPayloadHeader(input)
 
     try {
-      const payoutHeader = CreatorPayoutPayload.Header.decode(serializedzHeader)
+      const header = CreatorPayoutPayload.Header.decode(serializedHeader)
       this.log(
-        chalk.green(`Serialized payout header is ${chalk.cyanBright(Buffer.from(serializedzHeader).toString('hex'))}!`)
+        chalk.green(`Serialized payout header is ${chalk.cyanBright(Buffer.from(serializedHeader).toString('hex'))}!`)
       )
 
       displayCollapsedRow({
-        'Payload Size (in bytes)': payoutHeader.payloadLengthInBytes.toString(),
-        'Header Size (in bytes)': payoutHeader.headerLengthInBytes.toString(),
-        'Number of channels': payoutHeader.numberOfChannels,
+        'Payload Size (in bytes)': header.payloadLengthInBytes.toString(),
+        'Header Size (in bytes)': header.headerLengthInBytes.toString(),
+        'Number of channels': header.numberOfChannels,
       })
       displayTable(
-        payoutHeader.creatorPayoutByteOffsets.map(({ channelId, byteOffset }) => ({
+        header.creatorPayoutByteOffsets.map(({ channelId, byteOffset }) => ({
           'Channel Id': channelId.toString(),
           'Byte offset of channel record': byteOffset.toString(),
         }))
       )
     } catch (error) {
-      this.error(`Invalid byte offset for payout record ${error}`)
+      this.error(`Invalid serialized input for decoding header ${error}`)
     }
   }
 }
