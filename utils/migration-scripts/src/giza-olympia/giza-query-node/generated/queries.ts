@@ -7,10 +7,16 @@ export type ChannelCategoryFieldsFragment = { id: string; name?: Types.Maybe<str
 
 export type StorageDataObjectFieldsFragment = {
   id: string
+  updatedAt?: Types.Maybe<any>
   ipfsHash: string
   isAccepted: boolean
   size: any
   storageBagId: string
+}
+
+export type StorageDataObjectConnectionFieldsFragment = {
+  edges: Array<{ node: StorageDataObjectFieldsFragment }>
+  pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
 }
 
 export type VideoFieldsFragment = {
@@ -97,6 +103,14 @@ export type GetDistributorsByBagIdsQueryVariables = Types.Exact<{
 
 export type GetDistributorsByBagIdsQuery = { distributionBuckets: Array<DistributionBucketFieldsFragment> }
 
+export type GetDataObjectsPageQueryVariables = Types.Exact<{
+  updatedAfter?: Types.Maybe<Types.Scalars['DateTime']>
+  limit: Types.Scalars['Int']
+  lastCursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetDataObjectsPageQuery = { storageDataObjectsConnection: StorageDataObjectConnectionFieldsFragment }
+
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
     id
@@ -112,11 +126,26 @@ export const ChannelCategoryFields = gql`
 export const StorageDataObjectFields = gql`
   fragment StorageDataObjectFields on StorageDataObject {
     id
+    updatedAt
     ipfsHash
     isAccepted
     size
     storageBagId
   }
+`
+export const StorageDataObjectConnectionFields = gql`
+  fragment StorageDataObjectConnectionFields on StorageDataObjectConnection {
+    edges {
+      node {
+        ...StorageDataObjectFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  ${StorageDataObjectFields}
 `
 export const VideoFields = gql`
   fragment VideoFields on Video {
@@ -249,4 +278,16 @@ export const GetDistributorsByBagIds = gql`
     }
   }
   ${DistributionBucketFields}
+`
+export const GetDataObjectsPage = gql`
+  query getDataObjectsPage($updatedAfter: DateTime, $limit: Int!, $lastCursor: String) {
+    storageDataObjectsConnection(
+      where: { updatedAt_gt: $updatedAfter, isAccepted_eq: true }
+      first: $limit
+      after: $lastCursor
+    ) {
+      ...StorageDataObjectConnectionFields
+    }
+  }
+  ${StorageDataObjectConnectionFields}
 `

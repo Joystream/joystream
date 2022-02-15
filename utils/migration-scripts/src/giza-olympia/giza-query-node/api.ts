@@ -7,6 +7,7 @@ import {
   isApolloError,
   ApolloQueryResult,
 } from '@apollo/client/core'
+import { disableFragmentWarnings } from 'graphql-tag'
 import fetch from 'cross-fetch'
 import {
   ChannelCategoryFieldsFragment,
@@ -17,9 +18,6 @@ import {
   GetChannelsCategories,
   GetChannelsCategoriesQuery,
   GetChannelsCategoriesQueryVariables,
-  GetStorageWorkers,
-  GetStorageWorkersQuery,
-  GetStorageWorkersQueryVariables,
   GetVideoCategories,
   GetVideoCategoriesQuery,
   GetVideoCategoriesQueryVariables,
@@ -28,10 +26,22 @@ import {
   GetVideosByIdsQueryVariables,
   VideoCategoryFieldsFragment,
   VideoFieldsFragment,
-  WorkerFieldsFragment,
+  GetDataObjectsPage,
+  GetDataObjectsPageQuery,
+  GetDataObjectsPageQueryVariables,
+  StorageDataObjectConnectionFieldsFragment,
+  DistributionBucketFieldsFragment,
+  GetDistributorsByBagIdsQuery,
+  GetDistributorsByBagIdsQueryVariables,
+  GetDistributorsByBagIds,
 } from './generated/queries'
 import { Logger } from 'winston'
 import { createLogger } from '../../logging'
+import { Maybe } from '../../sumer-giza/sumer-query-node/generated/schema'
+
+disableFragmentWarnings()
+
+export const MAX_RESULTS_PER_QUERY = 1000
 
 export class QueryNodeApi {
   private endpoint: string
@@ -71,6 +81,18 @@ export class QueryNodeApi {
         }
       }
     }
+  }
+
+  // Get entity by unique input
+  protected async uniqueEntityQuery<
+    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<Required<QueryT>[keyof QueryT] | null> {
+    return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
   }
 
   // Query-node: get multiple entities
@@ -114,11 +136,32 @@ export class QueryNodeApi {
     )
   }
 
-  public getStorageWorkers(): Promise<WorkerFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetStorageWorkersQuery, GetStorageWorkersQueryVariables>(
-      GetStorageWorkers,
-      {},
-      'workers'
+  public async getStorageDataObjectsPage(
+    updatedAfter?: Date,
+    limit: number = MAX_RESULTS_PER_QUERY,
+    lastCursor?: string
+  ): Promise<StorageDataObjectConnectionFieldsFragment> {
+    const conn = await this.uniqueEntityQuery<GetDataObjectsPageQuery, GetDataObjectsPageQueryVariables>(
+      GetDataObjectsPage,
+      {
+        updatedAfter,
+        limit,
+        lastCursor,
+      },
+      'storageDataObjectsConnection'
+    )
+    if (!conn) {
+      throw new Error('Cannot get storageDataObjectsConnection!')
+    }
+
+    return conn
+  }
+
+  public async getDistributorsByBagIds(bagIds: string[]): Promise<DistributionBucketFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetDistributorsByBagIdsQuery, GetDistributorsByBagIdsQueryVariables>(
+      GetDistributorsByBagIds,
+      { ids: bagIds },
+      'distributionBuckets'
     )
   }
 }

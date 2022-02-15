@@ -10,10 +10,23 @@ fragment ChannelCategoryFields on ChannelCategory {
 
 fragment StorageDataObjectFields on StorageDataObject {
   id
+  updatedAt
   ipfsHash
   isAccepted
   size
   storageBagId
+}
+
+fragment StorageDataObjectConnectionFields on StorageDataObjectConnection {
+  edges {
+    node {
+      ...StorageDataObjectFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
 }
 
 fragment VideoFields on Video {
@@ -133,5 +146,15 @@ query getDistributorsByBagIds($ids: [ID!]) {
     distributing_eq: true,
   }) {
     ...DistributionBucketFields
+  }
+}
+
+query getDataObjectsPage($updatedAfter: DateTime, $limit: Int!, $lastCursor: String) {
+  storageDataObjectsConnection(
+    where: { updatedAt_gt: $updatedAfter, isAccepted_eq: true },
+    first: $limit
+    after: $lastCursor
+  ) {
+    ...StorageDataObjectConnectionFields
   }
 }
