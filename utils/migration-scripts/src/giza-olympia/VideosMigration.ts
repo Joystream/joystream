@@ -5,27 +5,28 @@ import { createType } from '@joystream/types'
 import Long from 'long'
 import { VideoCreationParameters, VideoId } from '@joystream/types/content'
 import moment from 'moment'
-import { VIDEO_THUMB_TARGET_SIZE } from './ImageResizer'
-import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from './AssetsMigration'
+import { UploadMigration, UploadMigrationConfig, UploadMigrationParams } from './UploadMigration'
 import { MigrationResult } from './BaseMigration'
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 
-export type VideosMigrationConfig = AssetsMigrationConfig & {
+export type VideosMigrationConfig = UploadMigrationConfig & {
   videoBatchSize: number
 }
 
-export type VideosMigrationParams = AssetsMigrationParams & {
+export type VideosMigrationParams = UploadMigrationParams & {
   config: VideosMigrationConfig
   videoIds: number[]
   channelsMap: Map<number, number>
   forcedChannelOwner: { id: string; controllerAccount: string } | undefined
+  categoriesMap: Map<number, number>
 }
 
-export class VideosMigration extends AssetsMigration {
+export class VideosMigration extends UploadMigration {
   name = 'Videos migration'
   protected config: VideosMigrationConfig
+  protected categoriesMap: Map<number, number>
   protected channelsMap: Map<number, number>
   protected videoIds: number[]
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
@@ -37,7 +38,16 @@ export class VideosMigration extends AssetsMigration {
     this.channelsMap = params.channelsMap
     this.videoIds = params.videoIds
     this.forcedChannelOwner = params.forcedChannelOwner
+    this.categoriesMap = params.categoriesMap
     this.logger = createLogger(this.name)
+  }
+
+  private getNewCategoryId(oldCategoryId: string | null | undefined): Long | undefined {
+    if (typeof oldCategoryId !== 'string') {
+      return undefined
+    }
+    const newCategoryId = this.categoriesMap.get(parseInt(oldCategoryId))
+    return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
   }
 
   private getNewChannelId(oldChannelId: number): number {
@@ -69,7 +79,7 @@ export class VideosMigration extends AssetsMigration {
     if (newVideoMapEntries.length) {
       this.logger.info('Video map entries added!', { newVideoMapEntries })
       const dataObjectsUploadedEvents = api.findEvents(result, 'storage', 'DataObjectsUploaded')
-      this.assetsManager.queueUploadsFromEvents(dataObjectsUploadedEvents)
+      this.uploadManager.queueUploadsFromEvents(dataObjectsUploadedEvents)
     }
   }
 
@@ -105,7 +115,7 @@ export class VideosMigration extends AssetsMigration {
       const calls = _.flatten(await Promise.all(videosBatch.map((v) => this.prepareVideo(v))))
       const batchTx = api.tx.utility.batch(calls)
       await this.executeBatchMigration(batchTx, videosBatch)
-      await this.assetsManager.processQueuedUploads()
+      await this.uploadManager.processQueuedUploads()
     }
     return this.getResult()
   }
@@ -141,10 +151,10 @@ export class VideosMigration extends AssetsMigration {
       isPublic,
       language,
       license,
-      mediaDataObject,
+      media,
       mediaMetadata,
       publishedBeforeJoystream,
-      thumbnailPhotoDataObject,
+      thumbnailPhoto,
       title,
       channel: { ownerMember, id: oldChannelId },
     } = this.getVideoData(video)
@@ -152,14 +162,14 @@ export class VideosMigration extends AssetsMigration {
     const channelId = this.getNewChannelId(parseInt(oldChannelId))
 
     const assetsToPrepare = {
-      thumbnail: { data: thumbnailPhotoDataObject || undefined, targetSize: VIDEO_THUMB_TARGET_SIZE },
-      video: { data: mediaDataObject || undefined },
+      thumbnail: thumbnailPhoto || undefined,
+      video: media || undefined,
     }
-    const preparedAssets = await this.assetsManager.prepareAssets(assetsToPrepare)
+    const preparedAssets = await this.uploadManager.prepareAssets(assetsToPrepare)
     const meta = new VideoMetadata({
       title,
       description,
-      category: categoryId ? Long.fromString(categoryId) : undefined,
+      category: this.getNewCategoryId(categoryId),
       duration,
       hasMarketing,
       isExplicit,
@@ -185,13 +195,13 @@ export class VideosMigration extends AssetsMigration {
         assets: assetsParams.length
           ? {
               object_creation_list: assetsParams,
-              expected_data_size_fee: this.assetsManager.dataObjectFeePerMB,
+              expected_data_size_fee: this.uploadManager.dataObjectFeePerMB,
             }
           : null,
         meta: `0x${Buffer.from(VideoMetadata.encode(meta).finish()).toString('hex')}`,
       }
     )
-    const feesToCover = this.assetsManager.calcDataObjectsFee(assetsParams)
+    const feesToCover = this.uploadManager.calcDataObjectsFee(assetsParams)
     return [
       api.tx.balances.transferKeepAlive(ownerMember.controllerAccount, feesToCover),
       api.tx.sudo.sudoAs(

@@ -1,8 +1,9 @@
 import axios from 'axios'
 import stringify from 'fast-safe-stringify'
-import fs from 'fs'
+import fs, { existsSync, statSync } from 'fs'
 import path from 'path'
 import { Readable } from 'stream'
+import { StorageDataObjectFieldsFragment } from './giza-query-node/generated/queries'
 
 export type AssetsBaseConfig = {
   dataDir: string
@@ -28,6 +29,15 @@ export abstract class AssetsBase {
 
   protected assetPath(dataObjectId: string): string {
     return path.join(this.config.dataDir, 'objects', dataObjectId)
+  }
+
+  protected isAssetMissing(dataObject: StorageDataObjectFieldsFragment): boolean {
+    const assetPath = this.assetPath(dataObject.id)
+    if (!existsSync(assetPath)) {
+      return true
+    }
+    const { size } = statSync(assetPath)
+    return size.toString() !== dataObject.size
   }
 
   private streamToString(stream: Readable) {

@@ -3,7 +3,9 @@ import { QueryNodeApi } from './giza-query-node/api'
 import { RuntimeApi } from '../RuntimeApi'
 import { VideosMigration } from './VideosMigration'
 import { ChannelMigration } from './ChannelsMigration'
-import { AssetsManager } from './AssetsManager'
+import { UploadManager } from './UploadManager'
+import { ChannelCategoriesMigration } from './ChannelCategoriesMigration'
+import { VideoCategoriesMigration } from './VideoCategoriesMigration'
 
 export type ContentMigrationConfig = {
   queryNodeUri: string
@@ -52,10 +54,11 @@ export class ContentMigration {
   public async run(): Promise<void> {
     const { api, queryNodeApi, config } = this
     await this.api.isReadyOrError
+    const { idsMap: channelCategoriesMap } = await new ChannelCategoriesMigration({ api, queryNodeApi, config }).run()
+    const { idsMap: videoCategoriesMap } = await new VideoCategoriesMigration({ api, queryNodeApi, config }).run()
     const forcedChannelOwner = await this.getForcedChannelOwner()
-    const assetsManager = await AssetsManager.create({
+    const uploadManager = await UploadManager.create({
       api,
-      queryNodeApi,
       config,
     })
     const { idsMap: channelsMap, videoIds } = await new ChannelMigration({
@@ -63,7 +66,8 @@ export class ContentMigration {
       queryNodeApi,
       config,
       forcedChannelOwner,
-      assetsManager,
+      uploadManager,
+      categoriesMap: channelCategoriesMap,
     }).run()
     await new VideosMigration({
       api,
@@ -72,7 +76,8 @@ export class ContentMigration {
       channelsMap,
       videoIds,
       forcedChannelOwner,
-      assetsManager,
+      uploadManager,
+      categoriesMap: videoCategoriesMap,
     }).run()
   }
 }

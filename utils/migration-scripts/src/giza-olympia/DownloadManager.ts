@@ -38,15 +38,6 @@ export class DownloadManager extends AssetsBase {
     this.logger = createLogger(this.name)
   }
 
-  private isAssetMissing(dataObject: StorageDataObjectFieldsFragment): boolean {
-    const assetPath = this.assetPath(dataObject.id)
-    if (!existsSync(assetPath)) {
-      return true
-    }
-    const { size } = statSync(assetPath)
-    return size.toString() !== dataObject.size
-  }
-
   private async fetchAsset(dataObject: StorageDataObjectFieldsFragment, endpoint: string): Promise<void> {
     const assetEndpoint = urljoin(endpoint, `api/v1/assets/${dataObject.id}`)
     const response = await axios.get<Readable>(assetEndpoint, { responseType: 'stream', timeout: 5000 })

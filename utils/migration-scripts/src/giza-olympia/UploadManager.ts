@@ -12,6 +12,8 @@ import { RuntimeApi } from '../RuntimeApi'
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { AssetsBase } from './AssetsBase'
+import { StorageDataObjectFieldsFragment } from './giza-query-node/generated/queries'
+import { createType } from '@joystream/types'
 
 export type UploadManagerConfig = {
   uploadSpBucketId: number
@@ -27,6 +29,15 @@ export type UploadManagerParams = {
 
 export type UploadManagerLoadableParams = {
   dataObjectFeePerMB: BN
+}
+
+export type AssetsToPrepare = {
+  [name: string]: StorageDataObjectFieldsFragment | undefined
+}
+
+export type PreparedAsset = {
+  params: DataObjectCreationParameters
+  index: number
 }
 
 export class UploadManager extends AssetsBase {
@@ -167,5 +178,38 @@ export class UploadManager extends AssetsBase {
       })
     })
     this.logger.info(`Added ${queuedUploads} new data object uploads to the upload queue`)
+  }
+
+  private async prepareAsset(
+    dataObject: StorageDataObjectFieldsFragment
+  ): Promise<DataObjectCreationParameters | undefined> {
+    if (this.isAssetMissing(dataObject)) {
+      this.logger.warn(`Data object ${dataObject.id} missing in the data directory! Skipping...`)
+      return undefined
+    }
+    return createType<DataObjectCreationParameters, 'DataObjectCreationParameters'>('DataObjectCreationParameters', {
+      ipfsContentId: dataObject.ipfsHash,
+      size: dataObject.size,
+    })
+  }
+
+  public async prepareAssets<T extends AssetsToPrepare>(
+    assetsToPrepare: T
+  ): Promise<{ [K in keyof T]?: PreparedAsset }> {
+    const preparedAssets: { [K in keyof T]?: PreparedAsset } = {}
+    let assetIndex = 0
+    await Promise.all(
+      Object.entries(assetsToPrepare).map(async ([assetName, dataObject]) => {
+        if (!dataObject) {
+          return
+        }
+        const params = await this.prepareAsset(dataObject)
+        if (!params) {
+          return
+        }
+        preparedAssets[assetName as keyof T] = { params, index: assetIndex++ }
+      })
+    )
+    return preparedAssets
   }
 }

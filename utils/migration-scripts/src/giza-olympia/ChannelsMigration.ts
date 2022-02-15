@@ -1,10 +1,9 @@
-import { AssetsMigration, AssetsMigrationConfig, AssetsMigrationParams } from './AssetsMigration'
+import { UploadMigration, UploadMigrationConfig, UploadMigrationParams } from './UploadMigration'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { ChannelFieldsFragment } from './giza-query-node/generated/queries'
 import { createType } from '@joystream/types'
 import Long from 'long'
 import { ChannelCreationParameters } from '@joystream/types/content'
-import { CHANNEL_AVATAR_TARGET_SIZE, CHANNEL_COVER_TARGET_SIZE } from './ImageResizer'
 import { ChannelId } from '@joystream/types/common'
 import _ from 'lodash'
 import { MigrationResult } from './BaseMigration'
@@ -12,25 +11,27 @@ import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 
-export type ChannelsMigrationConfig = AssetsMigrationConfig & {
+export type ChannelsMigrationConfig = UploadMigrationConfig & {
   channelIds: number[]
   channelBatchSize: number
   forceChannelOwnerMemberId: number | undefined
   excludeVideoIds: number[]
 }
 
-export type ChannelsMigrationParams = AssetsMigrationParams & {
+export type ChannelsMigrationParams = UploadMigrationParams & {
   config: ChannelsMigrationConfig
   forcedChannelOwner: { id: string; controllerAccount: string } | undefined
+  categoriesMap: Map<number, number>
 }
 
 export type ChannelsMigrationResult = MigrationResult & {
   videoIds: number[]
 }
 
-export class ChannelMigration extends AssetsMigration {
+export class ChannelMigration extends UploadMigration {
   name = 'Channels migration'
   protected config: ChannelsMigrationConfig
+  protected categoriesMap: Map<number, number>
   protected videoIds: number[] = []
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   protected logger: Logger
@@ -39,7 +40,16 @@ export class ChannelMigration extends AssetsMigration {
     super(params)
     this.config = params.config
     this.forcedChannelOwner = params.forcedChannelOwner
+    this.categoriesMap = params.categoriesMap
     this.logger = createLogger(this.name)
+  }
+
+  private getNewCategoryId(oldCategoryId: string | null | undefined): Long | undefined {
+    if (typeof oldCategoryId !== 'string') {
+      return undefined
+    }
+    const newCategoryId = this.categoriesMap.get(parseInt(oldCategoryId))
+    return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
   }
 
   private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment) {
@@ -75,7 +85,7 @@ export class ChannelMigration extends AssetsMigration {
     if (newChannelMapEntries.length) {
       this.logger.info('Channel map entries added!', { newChannelMapEntries })
       const dataObjectsUploadedEvents = this.api.findEvents(result, 'storage', 'DataObjectsUploaded')
-      this.assetsManager.queueUploadsFromEvents(dataObjectsUploadedEvents)
+      this.uploadManager.queueUploadsFromEvents(dataObjectsUploadedEvents)
     }
   }
 
@@ -111,7 +121,7 @@ export class ChannelMigration extends AssetsMigration {
         const calls = _.flatten(await Promise.all(channelsToMigrate.map((c) => this.prepareChannel(c))))
         const batchTx = api.tx.utility.batch(calls)
         await this.executeBatchMigration(batchTx, channelsToMigrate)
-        await this.assetsManager.processQueuedUploads()
+        await this.uploadManager.processQueuedUploads()
       }
       const videoIdsToMigrate: number[] = channelsBatch.reduce<number[]>(
         (res, { id, videos }) =>
@@ -133,19 +143,19 @@ export class ChannelMigration extends AssetsMigration {
 
   private async prepareChannel(channel: ChannelFieldsFragment) {
     const { api } = this
-    const { avatarPhotoDataObject, coverPhotoDataObject, title, description, categoryId, isPublic, language } = channel
+    const { avatarPhoto, coverPhoto, title, description, categoryId, isPublic, language, collaborators } = channel
 
     const ownerMember = this.getChannelOwnerMember(channel)
 
     const assetsToPrepare = {
-      avatar: { data: avatarPhotoDataObject || undefined, targetSize: CHANNEL_AVATAR_TARGET_SIZE },
-      coverPhoto: { data: coverPhotoDataObject || undefined, targetSize: CHANNEL_COVER_TARGET_SIZE },
+      avatar: avatarPhoto || undefined,
+      coverPhoto: coverPhoto || undefined,
     }
-    const preparedAssets = await this.assetsManager.prepareAssets(assetsToPrepare)
+    const preparedAssets = await this.uploadManager.prepareAssets(assetsToPrepare)
     const meta = new ChannelMetadata({
       title,
       description,
-      category: categoryId ? Long.fromString(categoryId) : undefined,
+      category: this.getNewCategoryId(categoryId),
       avatarPhoto: preparedAssets.avatar?.index,
       coverPhoto: preparedAssets.coverPhoto?.index,
       isPublic,
@@ -160,13 +170,15 @@ export class ChannelMigration extends AssetsMigration {
         assets: assetsParams.length
           ? {
               object_creation_list: assetsParams,
-              expected_data_size_fee: this.assetsManager.dataObjectFeePerMB,
+              expected_data_size_fee: this.uploadManager.dataObjectFeePerMB,
             }
           : null,
         meta: `0x${Buffer.from(ChannelMetadata.encode(meta).finish()).toString('hex')}`,
+        collaborators: collaborators.map(({ id }) => parseInt(id)),
+        reward_account: channel.rewardAccount,
       }
     )
-    const feesToCover = this.assetsManager.calcDataObjectsFee(assetsParams)
+    const feesToCover = this.uploadManager.calcDataObjectsFee(assetsParams)
     return [
       api.tx.balances.transferKeepAlive(ownerMember.controllerAccount, feesToCover),
       api.tx.sudo.sudoAs(
