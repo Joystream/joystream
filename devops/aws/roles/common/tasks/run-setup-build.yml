@@ -13,6 +13,8 @@
   shell: . ~/.bash_profile && yarn cargo-build
   args:
     chdir: '{{ remote_code_path }}'
+  environment:
+    ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters }}'
   # Run in async fashion for max duration of 1 hr
   async: 3600
   poll: 0

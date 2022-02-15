@@ -42,6 +42,15 @@ jobs:
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
+          proposalParametersInput=$(echo $jsonInput | jq -r '.proposalParameters.value')
+
+          if [ $proposalParametersInput = "{}" ]
+          then
+            echo ::set-output name=proposalParameters::''
+          else
+            echo ::set-output name=proposalParameters::'$proposalParametersInput'
+          fi
+
           if [ -z "$initialBalancesFile" ]
           then
             echo ::set-output name=initialBalancesFilePath::''
@@ -49,6 +58,7 @@ jobs:
             wget $initialBalancesFile -O initial-balances.json
             echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
           fi
+
           if [ -z "$initialMembersFile" ]
           then
             echo ::set-output name=initialMembersFilePath::''
@@ -76,6 +86,7 @@ jobs:
           else
             echo "Stack does not exist"
           fi
+          echo ${{ steps.myoutputs.outputs.proposalParameters }}
 
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -115,7 +126,7 @@ jobs:
 
       - name: Run playbook to compile joystream-node on build server
         uses: dawidd6/action-ansible-playbook@v2
-        if: steps.myoutputs.outputs.ec2AMI == ''
+        if: steps.myoutputs.outputs.ec2AMI == '' || steps.myoutputs.outputs.proposalParameters != ''
         with:
           playbook: build-code.yml
           directory: devops/aws
@@ -124,7 +135,8 @@ jobs:
           options: |
             --inventory inventory
             --extra-vars "branch_name=${{ steps.myoutputs.outputs.branchName }} \
-                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata"
+                          git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata \
+                          proposal_parameters=${{ steps.myoutputs.outputs.proposalParameters }}"
 
       - name: Run playbook to install additional utils on build server
         uses: dawidd6/action-ansible-playbook@v2
@@ -153,6 +165,12 @@ jobs:
                           branch_name=${{ steps.myoutputs.outputs.branchName }} \
                           initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
                           initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }}"
+
+      - name: Terminate Build instance
+        continue-on-error: true
+        run: |
+          echo "Deleting build instance with id ${{ steps.deploy_stack.outputs.BuildInstanceId }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.deploy_stack.outputs.BuildInstanceId }}
 
       - name: Encrpyt the artifacts
         run: |

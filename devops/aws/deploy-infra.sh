@@ -63,6 +63,8 @@ if [ $? -eq 0 ]; then
 
   BUILD_SERVER=$(get_aws_export $NEW_STACK_NAME "BuildPublicIp")
 
+  BUILD_INSTANCE_ID=$(get_aws_export $NEW_STACK_NAME "BuildInstanceId")
+
   mkdir -p $DATA_PATH
 
   echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
@@ -82,5 +84,9 @@ if [ $? -eq 0 ]; then
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
                   data_path=$DATA_PATH number_of_validators=$NUMBER_OF_VALIDATORS
                   deployment_type=$DEPLOYMENT_TYPE initial_balances_file=$INITIAL_BALANCES_PATH initial_members_file=$INITIAL_MEMBERS_PATH"
+
+  echo -e "\n\n=========== Delete Build instance ==========="
+  DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
+  echo $DELETE_RESULT
 
 fi
