@@ -196,6 +196,7 @@ pub trait DataObjectStorage<T: Trait> {
     /// Upload and delete objects at the same time
     fn upload_and_delete_data_objects(
         deletion_prize_account_id: T::AccountId,
+        bag_id: BagId<T>,
         params: Vec<DataObjectCreationParameters>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
@@ -2679,10 +2680,6 @@ decl_module! {
 
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
-    fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
-        Self::validate_upload_data_objects_parameters(params).map(|_| ())
-    }
-
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         // size check:
         ensure!(
@@ -2697,11 +2694,14 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         let start = NextDataObjectId::<T>::get();
-        Self::try_mutate_storage_state(
+        Self::try_mutating_storage_state(
             params.deletion_prize_source_account_id.clone(),
             BagOperation::<T> {
                 bag_id: params.bag_id.clone(),
-                params: BagOperationParams::<T>::Update(params.bag_id.clone(), Default::default()),
+                params: BagOperationParams::<T>::Update(
+                    params.object_creation_list.clone(),
+                    Default::default(),
+                ),
             },
         )?;
         let end = NextDataObjectId::<T>::get();
@@ -2773,7 +2773,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
-        Self::upload_and_delete(
+        Self::try_mutating_storage_state(
             deletion_prize_account_id.clone(),
             BagOperation::<T> {
                 bag_id: bag_id.clone(),
@@ -2817,49 +2817,31 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn upload_and_delete_data_objects(
         account_id: T::AccountId,
+        bag_id: BagId<T>,
         object_creation_list: Vec<DataObjectCreationParameters>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
-        Ok(())
-    }
-
-    fn can_delete_dynamic_bag(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
-        Self::validate_delete_dynamic_bag_params(dynamic_bag_id, false).map(|_| ())
-    }
-
-    fn can_delete_dynamic_bag_with_objects(dynamic_bag_id: &DynamicBagId<T>) -> DispatchResult {
-        Self::validate_delete_dynamic_bag_params(dynamic_bag_id, true).map(|_| ())
+        Self::try_mutating_storage_state(
+            account_id,
+            BagOperation::<T> {
+                bag_id,
+                params: BagOperationParams::<T>::Update(object_creation_list, objects_to_remove),
+            },
+        )
     }
 
     fn delete_dynamic_bag(
         deletion_prize_account_id: T::AccountId,
         dynamic_bag_id: DynamicBagId<T>,
     ) -> DispatchResult {
-        // make deletion always be performed on an empty bag
-        let deletion_prize = Self::validate_delete_dynamic_bag_params(&dynamic_bag_id, false)?;
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
-        let deleted_dynamic_bag = Self::dynamic_bag(&dynamic_bag_id);
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        if let Some(deletion_prize) = deletion_prize {
-            <StorageTreasury<T>>::withdraw(&deletion_prize_account_id, deletion_prize)?;
-        }
-
-        <Bags<T>>::remove(&bag_id);
-
-        Self::change_bag_assignments_for_distribution_buckets(
-            &BTreeSet::new(),
-            &deleted_dynamic_bag.distributed_by,
-        );
-
-        Self::change_bag_assignments_for_storage_buckets(
-            &BTreeSet::new(),
-            &deleted_dynamic_bag.stored_by,
-        );
+        Self::try_mutating_storage_state(
+            deletion_prize_account_id.clone(),
+            BagOperation::<T> {
+                bag_id,
+                params: BagOperationParams::<T>::Delete,
+            },
+        )?;
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(
             deletion_prize_account_id,
@@ -2873,16 +2855,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         params: DynBagCreationParameters<T>,
         deletion_prize: BalanceOf<T>,
     ) -> DispatchResult {
+        let bag_id: BagId<T> = params.bag_id.clone().into();
+
         // ensure specified data fee == storage data fee
         ensure!(
-            expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+            params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
             Error::<T>::DataSizeFeeChanged,
         );
 
-        Self::try_mutate_storage_state(
+        Self::try_mutating_storage_state(
             params.deletion_prize_source_account_id.clone(),
             BagOperation::<T> {
-                bag_id: params.bag_id.clone().into(),
+                bag_id: bag_id.clone(),
                 params: BagOperationParams::<T>::Create(
                     deletion_prize,
                     params.object_creation_list,
@@ -2891,16 +2875,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
 
         let Bag::<T> {
-            storage_bucket_ids,
-            distribution_bucket_ids,
+            stored_by,
+            distributed_by,
             ..
-        } = Bags::<T>::get(&params.bag_id);
+        } = Bags::<T>::get(&bag_id);
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
             params.bag_id,
             deletion_prize,
-            storage_bucket_ids,
-            distribution_bucket_ids,
+            stored_by,
+            distributed_by,
         ));
 
         Ok(())
@@ -3978,49 +3962,74 @@ impl<T: Trait> Module<T> {
         let tmp = bucket_ids
             .into_iter()
             // discard non existing bucket and build a (bucket_id, bucket) map
-            .filter_map(|id| ensure_storage_bucket_exists(&id).map(|bk| (id, bk)).ok())
+            .filter_map(|id| {
+                Self::ensure_storage_bucket_exists(&id)
+                    .map(|bk| (id, bk))
+                    .ok()
+            })
             // attempt to update bucket voucher
             .map(|(id, bk)| {
-                bk.voucher.update(new_voucher_update).map_or_else(
-                    |e| match e {
-                        "size" => Err(Error::<T>::StorageBucketObjectSizeLimitReached.into()),
-                        _ => Err(Error::<T>::StorageBucketObjectNumberLimitReached.into()),
-                    },
-                    |bk| (id, bk),
-                )
+                bk.voucher
+                    .clone()
+                    .update(new_voucher_update)
+                    .map_or_else(
+                        |e| match e {
+                            "size" => Err(Error::<T>::StorageBucketObjectSizeLimitReached),
+                            _ => Err(Error::<T>::StorageBucketObjectNumberLimitReached),
+                        },
+                        |voucher| Ok((id, voucher)),
+                    )
+                    .map(|(id, voucher)| (id, StorageBucket::<T> { voucher, ..bk }))
             });
+
         match op {
-            BagOperationParams::<T>::Create(..) => tmp
-                .map(|r| r.map(|(bk, id)| bk.register_bag_assignment()))
-                .scan(
-                    Error::<T>::StorageBucketIdCollectionsAreEmpty,
-                    |&mut state, r| {
-                        *state = state.or(r);
-                        Some(*state)
-                    },
-                )
-                .collect(),
+            BagOperationParams::<T>::Create(..) => {
+                let correct = tmp
+                    .filter_map(|r| {
+                        r.map(|(id, mut bk)| {
+                            bk.register_bag_assignment();
+                            (id, bk)
+                        })
+                        .ok()
+                    })
+                    .collect::<BTreeMap<_, _>>();
+                ensure!(
+                    !correct.is_empty(),
+                    Error::<T>::StorageBucketIdCollectionsAreEmpty
+                );
+                Ok(correct)
+            }
             BagOperationParams::<T>::Update(..) => tmp.collect(),
             BagOperationParams::<T>::Delete => tmp
-                .map(|r| r.map(|(bk, id)| bk.unregister_bag_assignment()))
+                .map(|r| {
+                    r.map(|(id, mut bk)| {
+                        bk.unregister_bag_assignment();
+                        (id, bk)
+                    })
+                })
                 .collect(),
         }
     }
 
     fn generate_new_distribution_buckets(
-        bucket_ids: &[T::DistributionBucketId],
+        bucket_ids: BTreeSet<DistributionBucketId<T>>,
         op: &BagOperationParams<T>,
-    ) -> BTreeMap<T::DistributionBucketId, DistributionBucket<T>> {
+    ) -> BTreeMap<DistributionBucketId<T>, DistributionBucket<T>> {
         bucket_ids
-            .iter()
+            .into_iter()
             .filter_map(|id| {
-                Self::ensure_distribution_bucket_exists(id)
-                    .map(|bk| match op {
-                        BagOperationParams::<T>::Create(..) => bk.register_bag_assignment(),
-                        BagOperationParams::<T>::Delete => bk.unregister_bag_assignment(),
-                        _ => bk, // no op in case of objects upload/delete operation
+                Self::ensure_distribution_bucket_exists(&id)
+                    .map(|mut bk| match op {
+                        BagOperationParams::<T>::Create(..) => {
+                            bk.register_bag_assignment();
+                            (id, bk)
+                        }
+                        BagOperationParams::<T>::Delete => {
+                            bk.unregister_bag_assignment();
+                            (id, bk)
+                        }
+                        _ => (id, bk), // no op in case of objects upload/delete operation
                     })
-                    .map(|bk| (*id, bk))
                     .ok()
             })
             .collect()
@@ -4062,9 +4071,14 @@ impl<T: Trait> Module<T> {
                     Ok(Bag::<T>::default()
                         .with_prize(deletion_prize)
                         .with_storage_buckets(StorageBucketPicker::<T>::pick_storage_buckets(
-                            dyn_bag_id.into(),
+                            dyn_bag_id.clone().into(),
                             Default::default(),
-                        )))
+                        ))
+                        .with_distribution_buckets(
+                            DistributionBucketPicker::<T>::pick_distribution_buckets(
+                                dyn_bag_id.into(),
+                            ),
+                        ))
                 },
                 |_| Err(Error::<T>::DynamicBagExists.into()),
             )
@@ -4141,9 +4155,13 @@ impl<T: Trait> Module<T> {
             .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
 
         // insert candidate distribution buckets
-        new_distribution_buckets
-            .iter()
-            .for_each(|(id, bucket)| DistributionBucketById::<T>::insert(&id, bucket));
+        new_distribution_buckets.iter().for_each(|(id, bucket)| {
+            DistributionBucketByFamilyIdById::<T>::insert(
+                &id.distribution_bucket_family_id,
+                &id.distribution_bucket_index,
+                bucket,
+            )
+        });
 
         // refund or request deletion prize first: no-op if amnt = 0
         match net_prize {
@@ -4182,12 +4200,12 @@ impl<T: Trait> Module<T> {
                 &bag_op.bag_id,
                 Bag::<T> {
                     stored_by: new_storage_buckets
-                        .iter()
-                        .map(|(id, _)| *id)
+                        .into_iter()
+                        .map(|(id, _)| id)
                         .collect::<BTreeSet<_>>(),
                     distributed_by: new_distribution_buckets
-                        .iter()
-                        .map(|(id, _)| *id)
+                        .into_iter()
+                        .map(|(id, _)| id)
                         .collect::<BTreeSet<_>>(),
                     deletion_prize,
                     objects_total_size: new_voucher_update.objects_total_size,
