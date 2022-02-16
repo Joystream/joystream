@@ -20,7 +20,7 @@ use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
     DistributionBucketId, DistributionBucketPicker, DynBagCreationParameters, DynamicBagId,
     DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageBucketPicker,
-    UploadParameters, VoucherUpdate,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -1135,9 +1135,9 @@ impl CreateDynamicBagFixture {
         }
     }
 
-    pub fn with_parameters(self, params: DynBagCreationParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
+    // pub fn with_parameters(self, params: DynBagCreationParameters<Test>) -> Self {
+    //     Self { params, ..self }
+    // }
 
     pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
         Self {

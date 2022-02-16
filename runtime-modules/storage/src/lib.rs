@@ -748,11 +748,6 @@ pub struct Voucher {
 
 impl Voucher {
     fn update(self, new_voucher: VoucherUpdate) -> Result<Self, &'static str> {
-        // no modification happens if candidate voucher is empty
-        if new_voucher.is_empty() {
-            return Ok(self);
-        };
-        // try upadet otherwise
         ensure!(new_voucher.objects_number <= self.objects_limit, "number");
         ensure!(new_voucher.objects_total_size <= self.size_limit, "size");
         Ok(Self {
@@ -785,17 +780,11 @@ struct VoucherUpdate {
 
 impl VoucherUpdate {
     fn add_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
-        list.iter().fold(self, |mut acc, obj| {
-            acc = acc.add_object(obj.size);
-            acc
-        })
+        list.iter().fold(self, |acc, obj| acc.add_object(obj.size))
     }
 
     fn sub_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
-        list.iter().fold(self, |mut acc, obj| {
-            acc = acc.sub_object(obj.size);
-            acc
-        })
+        list.iter().fold(self, |acc, obj| acc.sub_object(obj.size))
     }
 
     fn get_updated_voucher(&self, voucher: &Voucher, voucher_operation: OperationType) -> Voucher {
@@ -830,10 +819,6 @@ impl VoucherUpdate {
             objects_number: self.objects_number.saturating_sub(1),
             objects_total_size: self.objects_total_size.saturating_sub(size),
         }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.objects_number == 0
     }
 }
 
@@ -970,7 +955,7 @@ impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     // Adds a single object data to the voucher update (updates objects size, number)
     // and deletion prize.
     fn add_object(&mut self, size: u64, deletion_prize: Balance) -> Self {
-        self.voucher_update.add_object(size);
+        self.voucher_update = self.voucher_update.add_object(size);
         self.total_deletion_prize = self.total_deletion_prize.saturating_add(deletion_prize);
 
         *self
@@ -2753,31 +2738,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             },
         )?;
 
-        // let bag = Self::ensure_bag_exists(&bag_id)?;
-
-        // let bag_change = Self::validate_delete_data_objects_params(&bag_id, &objects)?;
-
-        // //
-        // // == MUTATION SAFE ==
-        // //
-
-        // <StorageTreasury<T>>::withdraw(
-        //     &deletion_prize_account_id,
-        //     bag_change.total_deletion_prize,
-        // )?;
-
-        // for data_object_id in objects.iter() {
-        //     DataObjectsById::<T>::remove(&bag_id, &data_object_id);
-        // }
-
-        //     // decrease bag
-        // Self::change_storage_bucket_vouchers_for_bag(
-        //     &bag_id,
-        //     &bag,
-        //     &bag_change.voucher_update,
-        //     OperationType::Decrease,
-        // );
-
         Self::deposit_event(RawEvent::DataObjectsDeleted(
             deletion_prize_account_id,
             bag_id,
@@ -3668,13 +3628,7 @@ impl<T: Trait> Module<T> {
                 );
                 Ok(correct)
             }
-            BagOperationParams::<T>::Update(..) => {
-                let ans = tmp
-                    .clone()
-                    .collect::<Result<BTreeMap<T::StorageBucketId, StorageBucket<T>>, Error<T>>>();
-                println!("TMP SIZE:\t{:?}", ans.unwrap_or_default());
-                tmp.collect()
-            }
+            BagOperationParams::<T>::Update(..) => tmp.collect(),
             BagOperationParams::<T>::Delete => tmp
                 .map(|r| {
                     r.map(|(id, mut bk)| {
@@ -3780,16 +3734,14 @@ impl<T: Trait> Module<T> {
         let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
 
         // new candidate voucher
-        let new_voucher_update = if !bag_op.params.is_delete() {
-            VoucherUpdate {
-                objects_total_size,
-                objects_number,
-            }
-            .add_objects_list(object_creation_list.as_slice())
-            .sub_objects_list(objects_removal_list.as_slice())
-        } else {
-            Default::default()
-        };
+        let new_voucher_update = VoucherUpdate {
+            objects_total_size,
+            objects_number,
+        }
+        .add_objects_list(object_creation_list.as_slice())
+        .sub_objects_list(objects_removal_list.as_slice());
+
+        println!("new voucher:\t{:?}", new_voucher_update.clone());
 
         // new candidate storage buckets
         let new_storage_buckets =
@@ -3831,9 +3783,10 @@ impl<T: Trait> Module<T> {
         //
 
         // insert candidate storage buckets
-        new_storage_buckets
-            .iter()
-            .for_each(|(id, bucket)| StorageBucketById::<T>::insert(&id, bucket));
+        new_storage_buckets.iter().for_each(|(id, bucket)| {
+            StorageBucketById::<T>::insert(&id, bucket.clone());
+            Self::deposit_event(RawEvent::VoucherChanged(id.clone(), bucket.voucher.clone()));
+        });
 
         // insert candidate distribution buckets
         new_distribution_buckets.iter().for_each(|(id, bucket)| {
@@ -3892,7 +3845,13 @@ impl<T: Trait> Module<T> {
                     objects_total_size: new_voucher_update.objects_total_size,
                     objects_number: new_voucher_update.objects_number,
                 },
-            )
+            );
+
+            Self::deposit_event(RawEvent::BagObjectsChanged(
+                bag_op.bag_id.clone(),
+                new_voucher_update.objects_total_size,
+                new_voucher_update.objects_number,
+            ));
         };
 
         Ok(())
