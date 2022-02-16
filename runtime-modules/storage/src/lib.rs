@@ -1398,6 +1398,15 @@ decl_event! {
             DistributionBucketFamilyId,
             Vec<u8>
         ),
+
+        /// Emits on storage assets being uploaded and deleted at the same time
+        /// Params
+        /// - UploadParameters
+        /// - Objects Id of assets to be removed
+        DataObjectsUpdated(
+            UploadParameters,
+            BTreeSet<DataObjectId>,
+        ),
     }
 }
 
@@ -2756,15 +2765,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             );
         }
         Self::try_mutating_storage_state(
-            upload_parameters.deletion_prize_source_account_id,
+            upload_parameters.deletion_prize_source_account_id.clone(),
             BagOperation::<T> {
-                bag_id: upload_parameters.bag_id,
+                bag_id: upload_parameters.bag_id.clone(),
                 params: BagOperationParams::<T>::Update(
-                    upload_parameters.object_creation_list,
-                    objects_to_remove,
+                    upload_parameters.object_creation_list.clone(),
+                    objects_to_remove.clone(),
                 ),
             },
-        )
+        )?;
+
+        Self::deposit_event(RawEvent::DataObjectsUpdated(
+            upload_parameters,
+            objects_to_remove,
+        ));
+        Ok(())
     }
 
     fn delete_dynamic_bag(
