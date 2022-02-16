@@ -5,6 +5,7 @@
 
 mod proposals_integration;
 mod fee_tests;
+mod locks;
 
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
@@ -43,21 +44,21 @@ fn get_account_membership(account: AccountId32, i: usize) -> u64 {
     member_id
 }
 
-pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
+// council = Vec<(ID - membership handle helper, ACCOUNT_ID)>
+pub(crate) fn elect_council(council: Vec<(u8, AccountId32)>, cycle_id: u64) {
     let mut voters = Vec::<AccountId32>::new();
 
     let councilor_stake: u128 = <Runtime as council::Trait>::MinCandidateStake::get().into();
     let extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
     let mut council_member_ids = Vec::new();
 
-    for (i, councilor) in council.iter().enumerate() {
+    for (i, councilor) in council.iter() {
         increase_total_balance_issuance_using_account_id(
             councilor.clone().into(),
             councilor_stake + 1,
         );
 
-        let member_id = get_account_membership(councilor.clone(), i);
-
+        let member_id = get_account_membership(councilor.clone(), *i as usize);
         Council::announce_candidacy(
             RawOrigin::Signed(councilor.clone()).into(),
             member_id,
@@ -69,13 +70,13 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
         // Make sure to use different voters in each election cycle to prevent problems with
         // staking
         voters.push(
-            [(council.len() as u8 + extra_candidates as u8) * (cycle_id as u8 + 1) + i as u8; 32]
-                .into(),
+            [(council.len() as u8 + extra_candidates as u8) * (cycle_id as u8 + 1) + *i; 32].into(),
         );
         council_member_ids.push(member_id);
     }
 
-    for i in council.len()..(council.len() + extra_candidates as usize) {
+    let council_index = (council.clone().last().unwrap().0 + 10) as usize;
+    for i in council_index..(council_index + extra_candidates as usize) {
         let extra_councilor: AccountId32 = [i as u8; 32].into();
 
         let member_id = get_account_membership(extra_councilor.clone(), i);
@@ -88,7 +89,6 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             extra_councilor.clone().into(),
             councilor_stake + 1,
         );
-
         Council::announce_candidacy(
             RawOrigin::Signed(extra_councilor.clone()).into(),
             member_id,

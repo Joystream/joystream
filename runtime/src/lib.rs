@@ -58,7 +58,6 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
-use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -72,7 +71,6 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
-use common::AllowedLockCombinationProvider;
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -502,7 +500,7 @@ parameter_types! {
 impl referendum::Trait<ReferendumInstance> for Runtime {
     type Event = Event;
     type MaxSaltLength = MaxSaltLength;
-    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
+    type StakingHandler = VotingStakingManager;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = Balance;
@@ -664,7 +662,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
-    type StakingCandidateStakingHandler = StakingCandidateStakingHandler;
+    type StakingCandidateStakingHandler = BoundStakingAccountStakingManager;
     type WorkingGroup = MembershipWorkingGroup;
     type WeightInfo = weights::membership::WeightInfo;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -716,9 +714,13 @@ impl forum::Trait for Runtime {
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
-        existing_locks
+        let other_locks_present = !existing_locks.is_empty();
+        let new_lock_is_rivalrous = !NON_RIVALROUS_LOCKS.contains(new_lock);
+        let existing_locks_contain_rivalrous_lock = existing_locks
             .iter()
-            .any(|lock| !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)))
+            .any(|lock_id| !NON_RIVALROUS_LOCKS.contains(lock_id));
+
+        other_locks_present && new_lock_is_rivalrous && existing_locks_contain_rivalrous_lock
     }
 }
 
@@ -747,6 +749,7 @@ parameter_types! {
 // Staking managers type aliases.
 pub type ForumWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ForumGroupLockId>;
+pub type VotingStakingManager = staking_handler::StakingManager<Runtime, VotingLockId>;
 pub type ContentWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
 pub type StorageWorkingGroupStakingManager =
@@ -755,8 +758,8 @@ pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
-pub type StakingCandidateStakingHandler =
-    staking_handler::StakingManager<Runtime, StakingCandidateLockId>;
+pub type BoundStakingAccountStakingManager =
+    staking_handler::StakingManager<Runtime, BoundStakingAccountLockId>;
 pub type GatewayWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
 pub type OperationsWorkingGroupAlphaStakingManager =
@@ -981,17 +984,8 @@ impl proposals_discussion::Trait for Runtime {
     type PostLifeTime = ForumPostLifeTime;
 }
 
-pub struct LockCombinationProvider;
-impl AllowedLockCombinationProvider for LockCombinationProvider {
-    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)> {
-        ALLOWED_LOCK_COMBINATIONS.clone()
-    }
-}
-
 impl joystream_utility::Trait for Runtime {
     type Event = Event;
-
-    type AllowedLockCombinationProvider = LockCombinationProvider;
 
     type WeightInfo = weights::joystream_utility::WeightInfo;
 
