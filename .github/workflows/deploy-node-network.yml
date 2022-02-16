@@ -102,7 +102,7 @@ jobs:
             BuildEC2InstanceType=${{ steps.myoutputs.outputs.buildInstanceType }},
             EC2AMI=${{ steps.myoutputs.outputs.ec2AMI }},
             NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }},
-            VolumeSize=${{ steps.myoutputs.outputs.volumeSize }}
+            VolumeSize=${{ steps.myoutputs.outputs.volumeSize }},
             RPCVolumeSize=${{ steps.myoutputs.outputs.rpcVolumeSize }}
 
       - name: Prepare inventory for Ansible
