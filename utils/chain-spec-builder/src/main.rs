@@ -19,7 +19,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
@@ -322,28 +321,25 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
 }
 
 fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: &str) {
-    let header = Style::new().bold().underline();
-    let entry = Style::new().bold();
-
-    println!("{}", header.paint("Authority seeds"));
+    println!("{}", "# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("{} //{}", entry.paint(format!("auth-{}:", n)), seed,);
+        println!("{}//{}", format!("auth_{}=", n), seed);
     }
 
     println!();
 
     if !endowed_seeds.is_empty() {
-        println!("{}", header.paint("Endowed seeds"));
+        println!("{}", "# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("{} //{}", entry.paint(format!("endowed-{}:", n)), seed,);
+            println!("{}//{}", format!("endowed_{}=", n), seed);
         }
 
         println!();
     }
 
-    println!("{}", header.paint("Sudo seed"));
-    println!("//{}", sudo_seed);
+    println!("{}", "# Sudo seed");
+    println!("sudo=//{}", sudo_seed);
 }
 
 fn main() -> Result<(), String> {
