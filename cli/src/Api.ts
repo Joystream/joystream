@@ -16,7 +16,6 @@ import {
   OpeningDetails,
   UnaugmentedApiPromise,
   MemberDetails,
-  AvailableGroups,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -464,70 +463,25 @@ export default class Api {
     return !existingMeber.isEmpty
   }
 
-  allowedLockCombinations(): { [lockId: string]: LockIdentifier[] } {
-    // TODO: Fetch from runtime once exposed
-    const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
-    const candidacyLockId = this._api.consts.council.candidacyLockId
+  nonRivalrousLocks(): LockIdentifier[] {
     const votingLockId = this._api.consts.referendum.stakingHandlerLockId
-    const councilorLockId = this._api.consts.council.councilorLockId
-    const stakingCandidateLockId = this._api.consts.members.stakingCandidateLockId
-    const proposalsLockId = this._api.consts.proposalsEngine.stakingHandlerLockId
-    const groupLockIds: { group: WorkingGroups; lockId: LockIdentifier }[] = AvailableGroups.map((group) => ({
-      group,
-      lockId: this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId,
-    }))
-    const bountyLockId = this._api.consts.bounty.bountyLockId
+    const boundStakingAccountLockId = this._api.consts.members.stakingCandidateLockId
+    const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
+    const vestigLockId = this._api.createType('LockIdentifier', 'vesting ')
 
-    const lockCombinationsByWorkingGroupLockId: { [groupLockId: string]: LockIdentifier[] } = {}
-    groupLockIds.forEach(
-      ({ lockId }) =>
-        (lockCombinationsByWorkingGroupLockId[lockId.toString()] = [
-          invitedMemberLockId,
-          votingLockId,
-          stakingCandidateLockId,
-        ])
-    )
+    return [votingLockId, boundStakingAccountLockId, invitedMemberLockId, vestigLockId]
+  }
 
-    return {
-      [invitedMemberLockId.toString()]: [
-        votingLockId,
-        candidacyLockId,
-        councilorLockId,
-        // STAKING_LOCK_ID,
-        proposalsLockId,
-        stakingCandidateLockId,
-        ...groupLockIds.map(({ lockId }) => lockId),
-      ],
-      [stakingCandidateLockId.toString()]: [
-        votingLockId,
-        candidacyLockId,
-        councilorLockId,
-        // STAKING_LOCK_ID,
-        proposalsLockId,
-        invitedMemberLockId,
-        ...groupLockIds.map(({ lockId }) => lockId),
-      ],
-      [votingLockId.toString()]: [
-        invitedMemberLockId,
-        candidacyLockId,
-        councilorLockId,
-        // STAKING_LOCK_ID,
-        proposalsLockId,
-        stakingCandidateLockId,
-        ...groupLockIds.map(({ lockId }) => lockId),
-      ],
-      [candidacyLockId.toString()]: [invitedMemberLockId, votingLockId, councilorLockId, stakingCandidateLockId],
-      [councilorLockId.toString()]: [invitedMemberLockId, votingLockId, candidacyLockId, stakingCandidateLockId],
-      [proposalsLockId.toString()]: [invitedMemberLockId, votingLockId, stakingCandidateLockId],
-      ...lockCombinationsByWorkingGroupLockId,
-      [bountyLockId.toString()]: [votingLockId, stakingCandidateLockId],
-    }
+  isLockRivalrous(lockId: LockIdentifier): boolean {
+    const nonRivalrousLocks = this.nonRivalrousLocks()
+    return !nonRivalrousLocks.some((nonRivalrousLockId) => nonRivalrousLockId.eq(lockId))
   }
 
   async areAccountLocksCompatibleWith(account: AccountId | string, lockId: LockIdentifier): Promise<boolean> {
     const accountLocks = await this._api.query.balances.locks(account)
-    const allowedLocks = this.allowedLockCombinations()[lockId.toString()]
-    return accountLocks.every((l) => allowedLocks.some((allowedLock) => allowedLock.eq(l.id)))
+    const accountHasRivalrousLock = accountLocks.some(({ id }) => this.isLockRivalrous(id))
+
+    return !this.isLockRivalrous(lockId) || !accountHasRivalrousLock
   }
 
   async forumCategoryExists(categoryId: CategoryId | number): Promise<boolean> {
