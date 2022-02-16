@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import { BagId, DataObjectCreationParameters, DataObjectId, UploadParameters } from '@joystream/types/storage'
 import { IEvent } from '@polkadot/types/types'
-import { Vec } from '@polkadot/types'
+import { Bytes, Vec } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import FormData from 'form-data'
 import { RuntimeApi } from '../RuntimeApi'
@@ -47,7 +47,7 @@ export class UploadManager extends AssetsBase {
   private queuedUploads: Set<string>
   private isQueueProcessing = false
   private queueFilePath: string
-  private logger: Logger
+  protected logger: Logger
 
   public get queueSize(): number {
     return this.queuedUploads.size
@@ -85,17 +85,13 @@ export class UploadManager extends AssetsBase {
     return totalStorageFee.add(totalDeletionPrize)
   }
 
-  private async uploadDataObject(bagId: string, dataObjectId: number): Promise<void> {
+  private async uploadDataObject(bagId: string, dataObjectId: number, contentHash: string): Promise<void> {
     const {
       config: { uploadSpBucketId, uploadSpEndpoint },
     } = this
-    const dataObject = await this.api.query.storage.dataObjectsById(
-      { Dynamic: { Channel: bagId.split(':')[2] } },
-      dataObjectId
-    )
-    const dataPath = this.assetPath(Buffer.from(dataObject.ipfsContentId.toHex().replace('0x', ''), 'hex').toString())
+    const dataPath = this.assetPath(contentHash)
     if (!fs.existsSync(dataPath)) {
-      throw new Error(`Cannot upload object: ${dataObjectId}: ${dataPath} not found`)
+      throw new Error(`Cannot upload object: ${dataObjectId} (${contentHash}): ${dataPath} not found`)
     }
 
     const fileStream = fs.createReadStream(dataPath)
@@ -120,11 +116,11 @@ export class UploadManager extends AssetsBase {
     } catch (e) {
       uploadSuccesful = false
       const msg = await this.reqErrorMessage(e)
-      this.logger.error(`Upload of object ${dataObjectId} to ${uploadSpEndpoint} failed: ${msg}`)
+      this.logger.error(`Upload of object ${dataObjectId} (${contentHash}) to ${uploadSpEndpoint} failed: ${msg}`)
     }
 
     if (uploadSuccesful) {
-      this.finalizeUpload(bagId, dataObjectId, dataPath)
+      this.finalizeUpload(bagId, dataObjectId, contentHash)
     }
   }
 
@@ -136,8 +132,8 @@ export class UploadManager extends AssetsBase {
     this.logger.info(`Uploading ${this.queueSize} data objects...`)
     await Promise.all(
       Array.from(this.queuedUploads).map((queuedUpload) => {
-        const [bagId, objectId] = queuedUpload.split('|')
-        return this.uploadDataObject(bagId, parseInt(objectId))
+        const [bagId, objectId, contentHash] = queuedUpload.split('|')
+        return this.uploadDataObject(bagId, parseInt(objectId), contentHash)
       })
     )
     this.isQueueProcessing = false
@@ -153,27 +149,23 @@ export class UploadManager extends AssetsBase {
     this.logger.debug(`${this.queueFilePath} updated`, { queueSize: this.queuedUploads.size })
   }
 
-  private queueUpload(bagId: BagId, objectId: DataObjectId): void {
+  private queueUpload(bagId: BagId, objectId: DataObjectId, contentHash: Bytes): void {
     const bagIdStr = `dynamic:channel:${bagId.asType('Dynamic').asType('Channel').toString()}`
-    this.queuedUploads.add(`${bagIdStr}|${objectId.toString()}`)
+    const contentHashStr = Buffer.from(contentHash.toU8a(true)).toString()
+    this.queuedUploads.add(`${bagIdStr}|${objectId.toString()}|${contentHashStr}`)
     this.saveQueue()
   }
 
-  private finalizeUpload(bagId: string, dataObjectId: number, dataPath: string) {
-    this.queuedUploads.delete(`${bagId}|${dataObjectId}`)
+  private finalizeUpload(bagId: string, dataObjectId: number, contentHash: string) {
+    this.queuedUploads.delete(`${bagId}|${dataObjectId}|${contentHash}`)
     this.saveQueue()
-    try {
-      fs.rmSync(dataPath)
-    } catch (e) {
-      this.logger.error(`Could not remove file "${dataPath}" after succesful upload...`)
-    }
   }
 
   public queueUploadsFromEvents(events: IEvent<[Vec<DataObjectId>, UploadParameters, Balance]>[]): void {
     let queuedUploads = 0
     events.map(({ data: [objectIds, uploadParams] }) => {
-      objectIds.forEach((objectId) => {
-        this.queueUpload(uploadParams.bagId, objectId)
+      objectIds.forEach((objectId, i) => {
+        this.queueUpload(uploadParams.bagId, objectId, uploadParams.objectCreationList[i].ipfsContentId)
         ++queuedUploads
       })
     })
@@ -184,7 +176,9 @@ export class UploadManager extends AssetsBase {
     dataObject: StorageDataObjectFieldsFragment
   ): Promise<DataObjectCreationParameters | undefined> {
     if (await this.isAssetMissing(dataObject)) {
-      this.logger.warn(`Data object ${dataObject.id} missing in the data directory! Skipping...`)
+      this.logger.warn(
+        `Data object ${dataObject.id} (${dataObject.ipfsHash}) missing in the data directory! Skipping...`
+      )
       return undefined
     }
     return createType<DataObjectCreationParameters, 'DataObjectCreationParameters'>('DataObjectCreationParameters', {

@@ -1,6 +1,5 @@
 import { Command, flags } from '@oclif/command'
 import path from 'path'
-import os from 'os'
 import { ContentMigration } from '../../giza-olympia/ContentMigration'
 
 export class MigrateContentCommand extends Command {

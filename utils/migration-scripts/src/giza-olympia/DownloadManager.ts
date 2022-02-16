@@ -1,7 +1,7 @@
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from './giza-query-node/api'
-import { createWriteStream, existsSync, renameSync, statSync } from 'fs'
+import { createWriteStream, renameSync, statSync } from 'fs'
 import axios from 'axios'
 import {
   StorageDataObjectConnectionFieldsFragment,
@@ -53,7 +53,7 @@ export class DownloadManager extends AssetsBase {
     if (hash !== dataObject.ipfsHash) {
       throw new Error('Invalid file hash')
     }
-    renameSync(destPath, this.assetPath(dataObject.id))
+    renameSync(destPath, this.assetPath(dataObject.ipfsHash))
   }
 
   private async fetchAssetWithRetry(
@@ -64,17 +64,19 @@ export class DownloadManager extends AssetsBase {
     let lastError: Error | undefined
     for (const endpoint of endpoints) {
       try {
-        this.logger.debug(`Trying to fetch data object ${dataObject.id} from ${endpoint}...`)
+        this.logger.debug(`Trying to fetch data object ${dataObject.id} (${dataObject.ipfsHash}) from ${endpoint}...`)
         await this.fetchAsset(dataObject, endpoint)
         return
       } catch (e) {
-        this.logger.debug(`Fetching ${dataObject.id} from ${endpoint} failed: ${(e as Error).message}`)
+        this.logger.debug(
+          `Fetching object ${dataObject.id} (${dataObject.ipfsHash}) from ${endpoint} failed: ${(e as Error).message}`
+        )
         lastError = e as Error
         continue
       }
     }
     this.logger.error(
-      `Could not fetch data object ${dataObject.id} from any distributor. Last error: ${
+      `Could not fetch data object ${dataObject.id} (${dataObject.ipfsHash}) from any distributor. Last error: ${
         lastError && (await this.reqErrorMessage(lastError))
       }`
     )
@@ -107,12 +109,12 @@ export class DownloadManager extends AssetsBase {
   ): Promise<boolean> {
     const missing = await this.isAssetMissing(dataObject)
     if (missing) {
-      this.logger.debug(`Object ${dataObject.id} missing, fetching...`)
+      this.logger.debug(`Object ${dataObject.ipfsHash} missing, fetching...`)
       await this.fetchAssetWithRetry(dataObject, knownDistributors)
       return true
     }
 
-    this.logger.debug(`Object ${dataObject.id} already exists, skipping...`)
+    this.logger.debug(`Object ${dataObject.ipfsHash} already exists, skipping...`)
     return false
   }
 

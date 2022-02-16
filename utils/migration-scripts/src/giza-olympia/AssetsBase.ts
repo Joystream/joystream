@@ -3,6 +3,8 @@ import stringify from 'fast-safe-stringify'
 import { createReadStream, existsSync, statSync, mkdirSync } from 'fs'
 import path from 'path'
 import { Readable } from 'stream'
+import { Logger } from 'winston'
+import { createLogger } from '../logging'
 import { ContentHash } from './ContentHash'
 import { StorageDataObjectFieldsFragment } from './giza-query-node/generated/queries'
 
@@ -16,10 +18,12 @@ export type AssetsBaseParams = {
 
 export abstract class AssetsBase {
   protected config: AssetsBaseConfig
+  protected logger: Logger
 
   protected constructor(params: AssetsBaseParams) {
     const { config } = params
     this.config = config
+    this.logger = createLogger('Assets Base')
     mkdirSync(this.tmpAssetPath(''), { recursive: true })
     mkdirSync(this.assetPath(''), { recursive: true })
   }
@@ -28,8 +32,8 @@ export abstract class AssetsBase {
     return path.join(this.config.dataDir, 'tmp', dataObjectId)
   }
 
-  protected assetPath(dataObjectId: string): string {
-    return path.join(this.config.dataDir, 'objects', dataObjectId)
+  protected assetPath(contentHash: string): string {
+    return path.join(this.config.dataDir, 'objects', contentHash)
   }
 
   protected calcContentHash(assetPath: string): Promise<string> {
@@ -43,13 +47,22 @@ export abstract class AssetsBase {
   }
 
   protected async isAssetMissing(dataObject: StorageDataObjectFieldsFragment): Promise<boolean> {
-    const assetPath = this.assetPath(dataObject.id)
+    const assetPath = this.assetPath(dataObject.ipfsHash)
     if (!existsSync(assetPath)) {
+      this.logger.debug(`isAssetMissing: ${assetPath} not found`)
       return true
     }
     const { size } = statSync(assetPath)
+    if (size.toString() !== dataObject.size) {
+      this.logger.debug(`isAssetMissing: Unexpected size (expected: ${dataObject.size}, got: ${size.toString()})`)
+      return true
+    }
     const hash = await this.calcContentHash(assetPath)
-    return size.toString() !== dataObject.size || hash !== dataObject.ipfsHash
+    if (hash !== dataObject.ipfsHash) {
+      this.logger.debug(`isAssetMissing: Unexpected hash (expected: ${dataObject.ipfsHash}, got: ${hash})`)
+      return true
+    }
+    return false
   }
 
   private streamToString(stream: Readable) {
