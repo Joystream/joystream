@@ -93,6 +93,7 @@
 //! - delete_data_objects
 //! - delete_dynamic_bag
 //! - create_dynamic_bag
+//! - upload_and_delete_data_objects
 
 //!
 //! ### Pallet constants
