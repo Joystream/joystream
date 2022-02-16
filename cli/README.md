@@ -721,14 +721,14 @@ _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystre
 
 ## `joystream-cli content:updateCreatorPayoutCommitment COMMITMENT`
 
-Update creator payout payload commitment hash in the runtime storage.
+Update creator payouts payload commitment hash in the runtime storage.
 
 ```
 USAGE
   $ joystream-cli content:updateCreatorPayoutCommitment COMMITMENT
 
 ARGUMENTS
-  COMMITMENT  commitment hash/Merkle root of the creator payout payload
+  COMMITMENT  commitment hash/Merkle root of the creator payouts payload
 ```
 
 _See code: [src/commands/content/updateCreatorPayoutCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateCreatorPayoutCommitment.ts)_
@@ -794,7 +794,7 @@ _See code: [src/commands/content/creatorPayoutRecordAtByteOffset.ts](https://git
 
 ## `joystream-cli content:generateCreatorPayoutPayload`
 
-Create serialized creator payout payload from JSON input.
+Create serialized creator payouts payload from JSON input.
 
 ```
 USAGE
@@ -802,21 +802,21 @@ USAGE
 
 OPTIONS
   -i, --input=input    (required) Path to JSON file containing creator payouts
-  -o, --out=out        (required) Path to file where serialized creator payout payload will be stored
+  -o, --out=out        (required) Path to file where serialized creator payouts payload will be stored
 ```
 
 _See code: [src/commands/content/generateCreatorPayoutPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateCreatorPayoutPayload.ts)_
 
 ## `joystream-cli content:generateCreatorPayoutMerkleRoot`
 
-Generate merkle root for creator payout payload passed as JSON input.
+Generate merkle root from creator payouts payload.
 
 ```
 USAGE
   $ joystream-cli content:generateCreatorPayoutMerkleRoot 
 
 OPTIONS
-  -i, --input=input    (required) Path to JSON file containing creator payouts
+  -i, --input=input    (required) Path to serialized creator payouts payload file
 ```
 
 _See code: [src/commands/content/generateCreatorPayoutMerkleRoot.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateCreatorPayoutMerkleRoot.ts)_

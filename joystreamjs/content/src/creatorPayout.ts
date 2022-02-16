@@ -1,7 +1,7 @@
 import { CreatorPayoutPayload, ICreatorPayoutPayload } from '@joystream/metadata-protobuf'
 import { asValidatedMetadata, getByteSequenceFromFile } from '@joystreamjs/utils'
 import { CreatorPayoutPayload as CreatorPayoutPayloadInput } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
-import { blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto'
+import { blake2AsHex } from '@polkadot/util-crypto'
 import axios from 'axios'
 import _ from 'lodash'
 import Long from 'long'
@@ -10,65 +10,115 @@ import { Writer, Reader } from 'protobufjs'
 const PAYLOAD_CONTEXT = ['Header', 'Body'] as const
 type PayloadContext = typeof PAYLOAD_CONTEXT[number]
 
-// get Payout Record for given channel Id
+/**
+ * Get Payout Record for given channel Id. It uses the `fetchCreatorPayout`
+ * function to retrieve the record from remote source
+ * @param channelId Id of the channel
+ * @returns payout record for given channel Id
+ */
 export async function creatorPayoutRecord(channelId: number): Promise<CreatorPayoutPayload.Body.CreatorPayout> {
   const header = (await fetchCreatorPayout('Header')) as CreatorPayoutPayload.Header
   if (!header.creatorPayoutByteOffsets.length) {
     throw new Error('No payout record exists')
   }
 
-  const channelRecordOffset = header.creatorPayoutByteOffsets.find(
+  const creatorPayoutRecordOffset = header.creatorPayoutByteOffsets.find(
     (payoutOffset) => payoutOffset.channelId === channelId
   )
-  if (!channelRecordOffset) {
+  if (!creatorPayoutRecordOffset) {
     throw new Error(`No payout record exists for channel with channel id ${channelId}`)
   }
 
   const creatorPayoutRecord = (await fetchCreatorPayout(
     'Body',
-    channelRecordOffset.byteOffset.toNumber()
+    creatorPayoutRecordOffset.byteOffset.toNumber()
   )) as CreatorPayoutPayload.Body.CreatorPayout
 
   return creatorPayoutRecord
 }
 
-export async function serializedPayloadHeader(inputFilePath: string): Promise<Uint8Array> {
-  // read arbitrary bytes from payload starting at offset
-  const arbitraryBytes = await getByteSequenceFromFile(inputFilePath, 1, 4)
-  const lengthOfSerializedHeader = Reader.create(arbitraryBytes).uint32()
+/**
+ * PROTOBUF MESSAGE STRUCTURE
+ *
+ * ----------------------------------------
+ * | Tag(key) | Size | Serialized Message |
+ * ----------------------------------------
+ * @tag Type info, and field number of message
+ * @size Size of the message encoded as varint
+ * @message Serialized message
+ */
 
-  const byteLengthOfVarintEncodedHeaderSize = Writer.create().uint32(lengthOfSerializedHeader).finish().byteLength
-  const serializedzHeader = await getByteSequenceFromFile(
-    inputFilePath,
-    1 + byteLengthOfVarintEncodedHeaderSize,
-    byteLengthOfVarintEncodedHeaderSize + lengthOfSerializedHeader
-  )
-
-  return serializedzHeader
+/**
+ * calculates byte length of message `size` - encoded as varint. Protobuf encodes the
+ * message as `varint_encoded_message_size||serialized_message` e.g., for serialized
+ * message of 10 bytes, protobuf encoded message would look like: `0a||0b0c0d0e0f1a1b1c1d1e`.
+ * Since `size` of example message is encoded in 1 byte so the function will return 1.
+ * @param serializedMessageLength length of serialized message in number of bytes
+ * @return length of varint encoded message size in number of bytes
+ */
+function lengthOfVarintEncodedMessageSize(serializedMessageLength: number): number {
+  return Writer.create().uint32(serializedMessageLength).finish().byteLength
 }
 
+/**
+ * We dont have any prior knowledge of how many bytes are used to encode the size information of the message,
+ * so we arbitrary read `n` bytes from the payload based on the assumption that the size of the header CAN BE
+ * encoded in `n` bytes. For reference, if serialized message is over 4 TB then its size information can be
+ * encoded in just 6 bytes
+ * @param inputFilePath path to protobuf serialized payload file
+ * @param messageOffset byte offset of message in serialized payload
+ * @returns length of serialized message in number of bytes
+ */
+async function lengthOfSerializedMessage(inputFilePath: string, messageOffset: number): Promise<number> {
+  // TODO: improve the implementation by reading size info byte by byte
+  // TODO: and checking most significant bit (msb) of each byte.
+  const arbitraryBytes = await getByteSequenceFromFile(inputFilePath, messageOffset, messageOffset + 6)
+  const lengthOfMessage = Reader.create(arbitraryBytes).uint32()
+  return lengthOfMessage
+}
+
+/**
+ * Get serialized payload header from a local file.
+ * @param inputFilePath path to protobuf serialized payload file
+ * @return bytes of payload header
+ **/
+export async function serializedPayloadHeader(inputFilePath: string): Promise<Uint8Array> {
+  // skip the first byte which is the Tag(key) of `Header` message
+  const lengthOfSerializedHeader = await lengthOfSerializedMessage(inputFilePath, 1)
+  const lengthOfVarintEncodedHeaderSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedHeader)
+  const serializedHeader = await getByteSequenceFromFile(
+    inputFilePath,
+    1 + lengthOfVarintEncodedHeaderSize,
+    lengthOfVarintEncodedHeaderSize + lengthOfSerializedHeader
+  )
+
+  return serializedHeader
+}
+
+/**
+ * Get creator payout record from local serialized payload file.
+ * @param inputFilePath path to protobuf serialized payload file
+ * @param byteOffset byte offset of creator payout record in serialized payload
+ * @return creator payout record
+ **/
 export async function creatorPayoutRecordAtByteOffset(
   inputFilePath: string,
   byteOffset: number
 ): Promise<CreatorPayoutPayload.Body.CreatorPayout> {
-  // read arbitrary bytes from payload starting at offset
-  const arbitraryBytes = await getByteSequenceFromFile(inputFilePath, byteOffset, byteOffset + 10)
-  const lengthOfSerializedPayoutRecord = Reader.create(arbitraryBytes).uint32()
-
-  const byteLengthOfVarintEncodedMessageSize = Writer.create()
-    .uint32(lengthOfSerializedPayoutRecord)
-    .finish().byteLength
-
+  const lengthOfSerializedRecord = await lengthOfSerializedMessage(inputFilePath, byteOffset)
+  const lengthOfVarintEncodedRecordSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedRecord)
   const serializedPayoutRecord = await getByteSequenceFromFile(
     inputFilePath,
-    byteOffset + byteLengthOfVarintEncodedMessageSize,
-    byteOffset + lengthOfSerializedPayoutRecord
+    byteOffset + lengthOfVarintEncodedRecordSize,
+    byteOffset + lengthOfSerializedRecord
   )
+
   return CreatorPayoutPayload.Body.CreatorPayout.decode(serializedPayoutRecord)
 }
 
-export function byteLengthOfHeader(numberOfChannels: number): Long {
-  // protobuf serializes fields in (key,value) pairs & Tag(key)
+// calculates byte length of the serialized payload header
+function lengthOfHeader(numberOfChannels: number): number {
+  // protobuf serializes fields in (key,value) pairs. Tag(key)
   // length will be one byte for all fields in this payload
   const byteLengthOfTag = 1
 
@@ -81,33 +131,36 @@ export function byteLengthOfHeader(numberOfChannels: number): Long {
   const numberOfChannelsFieldSize = 4
 
   const byteLengthOfByteOffsetsArray = numberOfChannels * (byteLengthOfTag + 4 + byteLengthOfTag + 8)
-
-  return Long.fromNumber(
+  return (
     payloadLengthFieldSize + payloadHeaderLengthFieldSize + numberOfChannelsFieldSize + byteLengthOfByteOffsetsArray
   )
 }
 
-// byte length of message size value, encoded as a varint
-function lengthOfVarintEncodedMessageSizeValue(serializedMessageLength: number): number {
-  return Writer.create().uint32(serializedMessageLength).finish().byteLength
-}
-
+/**
+ * Generate serialized payload from JSON encoded creator payouts.
+ * @param payloadBodyInput path to JSON file containing creator payouts
+ * @returns serialized creator payouts payload
+ */
 export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayloadInput): Uint8Array {
   if (payloadBodyInput.length === 0) throw new Error('payload is empty')
 
   const numberOfChannels = payloadBodyInput.length
-  const headerLengthInBytes = byteLengthOfHeader(numberOfChannels)
+  const headerLengthInBytes = Long.fromNumber(lengthOfHeader(numberOfChannels))
   const creatorPayoutByteOffsets: CreatorPayoutPayload.Header.ICreatorPayoutByteOffset[] = []
-
   const body = asValidatedMetadata(CreatorPayoutPayload.Body, { creatorPayouts: payloadBodyInput })
 
+  // Length of Header is known prior to serialization since its fields are fixed size, however the
+  // length of the COMPLETE payload can only be known after it has been serialized since Body fields
+  // are varint encoded.
+  // So we cant set payload length & byte offsets, to resolve this issue payload will be serialized
+  // with empty payload length & byte offsets, and once serialized both unknowns can be obtained
+  // from payload
   body.creatorPayouts?.forEach(({ channelId }) => {
     creatorPayoutByteOffsets.push({ channelId, byteOffset: Long.fromNumber(0) })
   })
-
   const payload: ICreatorPayoutPayload = {
     header: {
-      payloadLengthInBytes: Long.fromNumber(0), // cant know the length of the payload at this point. Will be known when the payload will be serialized once and hence it will be set then
+      payloadLengthInBytes: Long.fromNumber(0),
       headerLengthInBytes,
       numberOfChannels,
       creatorPayoutByteOffsets,
@@ -115,87 +168,67 @@ export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayload
     body,
   }
 
-  const serializedDummyPayload = Buffer.from(CreatorPayoutPayload.encode(payload).finish())
-  const payloadLengthInBytes = Long.fromNumber(serializedDummyPayload.byteLength)
+  const serializedPayloadWithEmptyHeaderFields = Buffer.from(CreatorPayoutPayload.encode(payload).finish())
+  const payloadLengthInBytes = Long.fromNumber(serializedPayloadWithEmptyHeaderFields.byteLength)
 
   for (let i = 0; i < numberOfChannels; i++) {
     const channelPayoutRecord = CreatorPayoutPayload.Body.CreatorPayout.encode(body.creatorPayouts![i]).finish()
-    const indexOfChannelPayoutRecord = serializedDummyPayload.indexOf(channelPayoutRecord)
+    const indexOfChannelPayoutRecord = serializedPayloadWithEmptyHeaderFields.indexOf(channelPayoutRecord)
+    // set correct byteOffsets
     payload.header.creatorPayoutByteOffsets![i].byteOffset = Long.fromNumber(
-      indexOfChannelPayoutRecord - lengthOfVarintEncodedMessageSizeValue(Buffer.from(channelPayoutRecord).byteLength)
+      indexOfChannelPayoutRecord - lengthOfVarintEncodedMessageSize(Buffer.from(channelPayoutRecord).byteLength)
     )
   }
 
+  // set correct payload length
   payload.header.payloadLengthInBytes = payloadLengthInBytes
+  // serialize payload again
   const serializedPayload = CreatorPayoutPayload.encode(payload).finish()
-
   return serializedPayload
 }
 
-// generate merkle proof
-export function generateProof(creatorPayout: CreatorPayoutPayload.Body.CreatorPayout): Uint8Array {
-  // item = hash(c_i||p_i||m_i)
-  const item = new Uint8Array([
-    ...new Uint8Array(creatorPayout.channelId),
-    ...new Uint8Array(creatorPayout.cumulativePayoutOwed),
-    ...blake2AsU8a(creatorPayout.payoutRationale),
-  ])
+/**
+ * Generate merkle root from the serialized payload
+ * @param inputFilePath path to protobuf serialized payload file
+ * @returns merkle root of the cashout vector
+ */
+export async function generateMerkleRoot(inputFilePath: string): Promise<string> {
+  const serializedHeader = await serializedPayloadHeader(inputFilePath)
+  const header = CreatorPayoutPayload.Header.decode(serializedHeader)
 
-  const merkleRoot = creatorPayout.merkleBranches.reduce((hashV, el) => {
+  // Any payout record can be used to generate the merkle root,
+  // here first record from creator payouts payload is used
+  const recordByteOffset = header.creatorPayoutByteOffsets.shift()!.byteOffset.toNumber()
+  const record = await creatorPayoutRecordAtByteOffset(inputFilePath, recordByteOffset)
+  return generateMerkleRootFromCreatorPayout(record)
+}
+
+/**
+ * Generate merkle root from branch of creator payout record
+ * @param creatorPayout create payout record
+ * @returns merkle root of the cashout vector
+ */
+export function generateMerkleRootFromCreatorPayout(creatorPayout: CreatorPayoutPayload.Body.CreatorPayout): string {
+  // item = c_i||p_i||m_i
+  const item =
+    creatorPayout.channelId.toString() +
+    creatorPayout.cumulativePayoutOwed.toString() +
+    blake2AsHex(creatorPayout.payoutRationale)
+
+  const merkleRoot = creatorPayout.merkleBranch.reduce((hashV, el) => {
     if (el.side === CreatorPayoutPayload.Body.CreatorPayout.Side.Right) {
-      return blake2AsU8a(new Uint8Array([...hashV, ...el.merkleBranch]))
-    } else return blake2AsU8a(new Uint8Array([...el.merkleBranch, ...hashV]))
-  }, blake2AsU8a(item))
+      return blake2AsHex(hashV + el.hash)
+    } else return blake2AsHex(el.hash + hashV)
+  }, blake2AsHex(item))
 
   return merkleRoot
 }
 
-// function to generate merkle root
-// code: https://github.com/Joystream/joystream/blob/runtime-modules/content/src/tests/fixtures.rs#L1578
-export function generateMerkleRoot(payloadBodyInput: CreatorPayoutPayloadInput): string {
-  // generates merkle root from the ordered sequence collection.
-  // The resulting vector is structured as follows: elements in range
-  // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-  // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-  // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-  if (payloadBodyInput.length === 0) throw new Error('payload is empty')
-  const out: string[] = []
-
-  payloadBodyInput.forEach((record) => {
-    // leafNode = c_i||p_i||m_i, where m_i = hash(d_i)
-    const leafNode =
-      record.channelId.toString() + record.cumulativePayoutOwed.toString() + blake2AsHex(record.payoutRationale)
-    out.push(blake2AsHex(leafNode))
-  })
-
-  let start = 0
-  let lastLen = out.length
-  let maxLen = Math.floor(lastLen / 2)
-  let rem = lastLen % 2
-
-  while (maxLen !== 0) {
-    lastLen = out.length
-    for (let i = 0; i < maxLen; i++) {
-      out.push(blake2AsHex(out[start + 2 * i] + out[start + 2 * i + 1]))
-    }
-    if (rem === 1) {
-      out.push(blake2AsHex(out[lastLen - 1] + out[lastLen - 1]))
-    }
-    const newLen = out.length - lastLen
-    rem = newLen % 2
-    maxLen = Math.floor(newLen / 2)
-    start = lastLen
-  }
-
-  const merkleRoot = out.pop()
-  if (merkleRoot) {
-    return merkleRoot
-  } else {
-    throw new Error('payload is empty')
-  }
-}
-
-// fetch creator payout payloaf  from remote source
+/**
+ * fetch creator payouts payload from remote source
+ * @param context `Header | Body` based on part to be fetch from remote source
+ * @param offset If `context` arg is `Body` then offset of payload record must be provided
+ **/
 async function fetchCreatorPayout(
   context: PayloadContext,
   offset?: number
@@ -203,7 +236,7 @@ async function fetchCreatorPayout(
   // HTTP Url of remote host where payload is stored
   let url = process.env.CREATOR_PAYOUT_DATA_URL as string
   if (_.isEmpty(url)) {
-    throw new Error('cannot fetch creator payout data, remote url does not exist')
+    throw new Error('cannot fetch creator payouts data, remote url does not exist')
   }
 
   if (context === 'Header') {

@@ -7,10 +7,12 @@
   "dependencies": {
     "@joystream/metadata-protobuf": "^2.0.0",
     "@joystreamjs/utils": "^1.0.0",
-    "@joystream/types": "^0.18.0",
-    "@polkadot/api": "5.9.1",
     "axios": "^0.21.1",
-    "lodash": "4.17.15"
+    "lodash": "4.17.15",
+    "protobufjs": "^6.11.2",
+    "long": "^4.0.0",
+    "@types/long": "^4.0.1",
+    "@polkadot/util-crypto": "^7.3.1"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",
