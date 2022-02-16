@@ -3,6 +3,7 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture, TransferInvitesHappyCaseFixture } from '../../fixtures/membership'
 import { SetBudgetFixture } from '../../fixtures/workingGroups/SetBudgetFixture'
+import { SetLeaderInvitationQuotaFixture } from '../../fixtures/workingGroups/SetLeaderInvitationQuotaFixture'
 import _ from 'lodash'
 import BN from 'bn.js'
 
@@ -15,7 +16,8 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   const [, membershipLeader] = await api.getLeader(membershipWorkingGroup)
 
   // Grant lead invitation quota
-  const proposalDetails = api.createType('ProposalDetails', { SetMembershipLeadInvitationQuota: 50 })
+  const setLeaderInvitationQuotaFixture = new SetLeaderInvitationQuotaFixture(api, query, membershipWorkingGroup, 50)
+  await new FixtureRunner(setLeaderInvitationQuotaFixture).runWithQueryNodeChecks()
 
   // The membership working group should have a budget allocated
   const budgets: BN[] = [new BN(1000000)]
@@ -23,7 +25,7 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   await new FixtureRunner(setGroupBudgetFixture).runWithQueryNodeChecks()
 
   // Create a membership account for faucet
-  const faucetAccounts = (await api.createKeyPairs(1)).map(({ key }) => key.address)
+  const faucetAccounts = [api.createCustomKeyPair(env.SCREENING_AUTHORITY_SEED || '//Faucet').address]
   const happyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, faucetAccounts)
   await new FixtureRunner(happyCaseFixture).runWithQueryNodeChecks()
   const [faucetMemberId] = happyCaseFixture.getCreatedMembers()
@@ -32,14 +34,14 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   await api.treasuryTransferBalanceToAccounts(faucetAccounts, new BN(200))
 
   // Use the above membershipLeader to give faucet account permission to invite other members
-  // const transferInvitesHappyCaseFixture = new TransferInvitesHappyCaseFixture(
-  //   api,
-  //   query,
-  //   { memberId: membershipLeader.member_id, account: membershipLeader.role_account_id.toString() },
-  //   { memberId: faucetMemberId, account: faucetAccounts[0] },
-  //   10
-  // )
-  // await new FixtureRunner(transferInvitesHappyCaseFixture).runWithQueryNodeChecks()
+  const transferInvitesHappyCaseFixture = new TransferInvitesHappyCaseFixture(
+    api,
+    query,
+    { memberId: membershipLeader.member_id, account: membershipLeader.role_account_id.toString() },
+    { memberId: faucetMemberId, account: faucetAccounts[0] },
+    10
+  )
+  await new FixtureRunner(transferInvitesHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
