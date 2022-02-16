@@ -474,44 +474,21 @@ decl_module! {
                 channel.collaborators = new_collabs.clone();
             }
 
-            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender
-                );
-
-                Storage::<T>::can_upload_data_objects(&params)?;
-            }
-
-            if !params.assets_to_remove.is_empty() {
-                Storage::<T>::can_delete_data_objects(
-                    &Self::bag_id_for_channel(&channel_id),
-                    &params.assets_to_remove
-                )?;
-            }
-
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender
-                );
-
-                Storage::<T>::upload_data_objects(params.clone())?;
-            }
-
-            if !params.assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    params.assets_to_remove.clone()
-                )?;
-            }
+            Storage::<T>::upload_and_delete_data_objects(
+                UploadParameters::<T> {
+                    bag_id: Self::bag_id_for_channel(&channel_id),
+                    object_creation_list: params.assets_to_upload.clone()
+                        .map_or(Default::default(), |assets| assets.object_creation_list),
+                    deletion_prize_source_account_id: sender.clone(),
+                    expected_data_size_fee: params.assets_to_upload.clone()
+                        .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+                },
+                params.assets_to_remove.clone(),
+            )?;
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -553,38 +530,11 @@ decl_module! {
                     Error::<T>::InvalidBagSizeSpecified
                 );
 
-                // construct collection of assets to be removed
-                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
-
-                if !assets_to_remove.is_empty() {
-                    Storage::<T>::can_delete_dynamic_bag_with_objects(
-                        &dyn_bag,
-                    )?;
-
-                    Storage::<T>::can_delete_data_objects(
-                        &bag_id,
-                        &assets_to_remove,
-                    )?;
-                } else {
-                    Storage::<T>::can_delete_dynamic_bag(
-                        &dyn_bag,
-                    )?;
-                }
-
                 //
                 // == MUTATION SAFE ==
                 //
 
-                // remove specified assets from storage
-                if !assets_to_remove.is_empty() {
-                    Storage::<T>::delete_data_objects(
-                        sender.clone(),
-                        Self::bag_id_for_channel(&channel_id),
-                        assets_to_remove.clone(),
-                    )?;
-                }
-
-                // delete channel dynamic bag
+                // delete channel dynamic bag or fail
                 Storage::<T>::delete_dynamic_bag(
                     sender,
                     dyn_bag,
@@ -773,33 +723,22 @@ decl_module! {
                 &channel,
             )?;
 
-            if !params.assets_to_remove.is_empty() {
-                Storage::<T>::can_delete_data_objects(
-                    &Self::bag_id_for_channel(&channel_id),
-                    &params.assets_to_remove,
-                )?;
-            }
-
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(upload_assets) = params.assets_to_upload.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender
-                );
-                Storage::<T>::upload_data_objects(params)?;
-            }
-
-            if !params.assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    params.assets_to_remove.clone(),
+            // upload/delete video assets from storage with commit or rollback semantics
+            Storage::<T>::upload_and_delete_data_objects(
+                UploadParameters::<T> {
+                    bag_id: Self::bag_id_for_channel(&channel_id),
+                    object_creation_list: params.assets_to_upload.clone()
+                        .map_or(Default::default(), |assets| assets.object_creation_list),
+                    deletion_prize_source_account_id: sender.clone(),
+                    expected_data_size_fee: params.assets_to_upload.clone()
+                        .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+                },
+                params.assets_to_remove.clone(),
                 )?;
-            }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
@@ -832,23 +771,6 @@ decl_module! {
             // Ensure nft for this video have not been issued
             video.ensure_nft_is_not_issued::<T>()?;
 
-            if !assets_to_remove.is_empty() {
-                Storage::<T>::can_delete_data_objects(
-                    &Self::bag_id_for_channel(&channel_id),
-                    &assets_to_remove,
-                )?;
-            }
-
-            // TODO: Solve #now
-            // If video is on storage, remove it
-            // if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
-            //     Storage::<T>::delete_data_objects(
-            //         channel.deletion_prize_source_account_id,
-            //         Self::bag_id_for_channel(&channel_id),
-            //         data_objects_id_set,
-            //     )?;
-            // }
-
             // bloat bond logic: channel owner is refunded
             video.video_post_id.as_ref().map(
                 |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
@@ -858,11 +780,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // delete assets from storage with upload and rollback semantics
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
                     sender,
                     Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone()
+                    assets_to_remove.clone(),
                 )?;
             }
 

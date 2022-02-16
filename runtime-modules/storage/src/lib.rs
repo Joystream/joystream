@@ -195,9 +195,7 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Upload and delete objects at the same time
     fn upload_and_delete_data_objects(
-        deletion_prize_account_id: T::AccountId,
-        bag_id: BagId<T>,
-        params: Vec<DataObjectCreationParameters>,
+        upload_parameters: UploadParameters<T>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
 }
@@ -2748,16 +2746,23 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn upload_and_delete_data_objects(
-        account_id: T::AccountId,
-        bag_id: BagId<T>,
-        object_creation_list: Vec<DataObjectCreationParameters>,
+        upload_parameters: UploadParameters<T>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
+        if !upload_parameters.object_creation_list.is_empty() {
+            ensure!(
+                upload_parameters.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+                Error::<T>::DataSizeFeeChanged,
+            );
+        }
         Self::try_mutating_storage_state(
-            account_id,
+            upload_parameters.deletion_prize_source_account_id,
             BagOperation::<T> {
-                bag_id,
-                params: BagOperationParams::<T>::Update(object_creation_list, objects_to_remove),
+                bag_id: upload_parameters.bag_id,
+                params: BagOperationParams::<T>::Update(
+                    upload_parameters.object_creation_list,
+                    objects_to_remove,
+                ),
             },
         )
     }
@@ -3741,8 +3746,6 @@ impl<T: Trait> Module<T> {
         .add_objects_list(object_creation_list.as_slice())
         .sub_objects_list(objects_removal_list.as_slice());
 
-        println!("new voucher:\t{:?}", new_voucher_update.clone());
-
         // new candidate storage buckets
         let new_storage_buckets =
             Self::generate_new_storage_buckets(stored_by, new_voucher_update, &bag_op.params)?;
@@ -3785,7 +3788,7 @@ impl<T: Trait> Module<T> {
         // insert candidate storage buckets
         new_storage_buckets.iter().for_each(|(id, bucket)| {
             StorageBucketById::<T>::insert(&id, bucket.clone());
-            Self::deposit_event(RawEvent::VoucherChanged(id.clone(), bucket.voucher.clone()));
+            Self::deposit_event(RawEvent::VoucherChanged(*id, bucket.voucher.clone()));
         });
 
         // insert candidate distribution buckets
@@ -3848,7 +3851,7 @@ impl<T: Trait> Module<T> {
             );
 
             Self::deposit_event(RawEvent::BagObjectsChanged(
-                bag_op.bag_id.clone(),
+                bag_op.bag_id,
                 new_voucher_update.objects_total_size,
                 new_voucher_update.objects_number,
             ));
