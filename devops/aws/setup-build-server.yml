@@ -5,4 +5,4 @@
   hosts: build
 
   roles:
-    - role: admin
+    - role: build-server

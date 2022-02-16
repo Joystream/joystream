@@ -35,7 +35,11 @@ Parameters:
     Type: Number
     Default: 2
   VolumeSize:
-    Description: Instance volume size in GB
+    Description: Validator and Build instance volume size in GB
+    Type: Number
+    Default: 120
+  RPCVolumeSize:
+    Description: RPC Instance volume size in GB
     Type: Number
     Default: 120
 
@@ -185,6 +189,10 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_rpc'

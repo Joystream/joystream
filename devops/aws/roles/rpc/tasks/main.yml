@@ -41,10 +41,13 @@
   # Check for the status every 100s
   delay: 100
 
-- name: Run query node containers
-  command: yarn workspace query-node-root start:dev
+- name: Run service containers
+  command: yarn start
   environment:
+    PERSIST: 'true'
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
+    COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
+    DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
   args:
     chdir: '{{ remote_code_path }}'
   async: 1800

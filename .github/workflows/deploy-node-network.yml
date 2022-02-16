@@ -40,6 +40,7 @@ jobs:
           echo ::set-output name=networkSuffix::$(echo $jsonInput | jq -r '.networkSuffix.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
+          echo ::set-output name=rpcVolumeSize::$(echo $jsonInput | jq -r '.rpcVolumeSize.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
           proposalParametersInput=$(echo $jsonInput | jq -r '.proposalParameters.value')
@@ -102,6 +103,7 @@ jobs:
             EC2AMI=${{ steps.myoutputs.outputs.ec2AMI }},
             NumberOfValidators=${{ steps.myoutputs.outputs.numberOfValidators }},
             VolumeSize=${{ steps.myoutputs.outputs.volumeSize }}
+            RPCVolumeSize=${{ steps.myoutputs.outputs.rpcVolumeSize }}
 
       - name: Prepare inventory for Ansible
         run: |
@@ -142,7 +144,7 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         if: steps.myoutputs.outputs.ec2AMI == ''
         with:
-          playbook: setup-admin.yml
+          playbook: setup-build-server.yml
           directory: devops/aws
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}

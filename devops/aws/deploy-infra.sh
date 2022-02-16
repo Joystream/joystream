@@ -81,7 +81,7 @@ if [ $? -eq 0 ]; then
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Install additional utils on build server ==========="
-    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml
+    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-build-server.yml
   fi
 
   echo -e "\n\n=========== Configure and start new validators and rpc node ==========="

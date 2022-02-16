@@ -32,7 +32,11 @@
     "value": "ami-095792100b6e43a67"
   },
   "volumeSize": {
-    "description": "Instance volume size in GB",
+    "description": "Validator and Build instance volume size in GB",
+    "value": "120"
+  },
+  "rpcVolumeSize": {
+    "description": "RPC Instance volume size in GB",
     "value": "120"
   },
   "networkSuffix": {
