@@ -3768,33 +3768,8 @@ impl<T: Trait> Module<T> {
         let new_distribution_buckets =
             Self::generate_new_distribution_buckets(distributed_by, &bag_op.params);
 
-        // init deletion prize is added[subtracted] in case of bag creation[deletion] or ignored
-        let init_net_prize = deletion_prize.map_or(Default::default(), |dp| match &bag_op.params {
-            BagOperationParams::<T>::Delete => NetDeletionPrize::<T>::Neg(dp),
-            BagOperationParams::<T>::Create(..) => NetDeletionPrize::<T>::Pos(dp),
-            _ => Default::default(),
-        });
-
-        let net_prize = Self::compute_net_prize(
-            init_net_prize,
-            object_creation_list.len(),
-            objects_removal_list.len(),
-        );
-
-        // storage fee: zero if VoucherUpdate is default
-        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
-        match net_prize.add_balance(storage_fee) {
-            NetDeletionPrize::<T>::Pos(b) => ensure!(
-                Balances::<T>::usable_balance(&account_id) >= b,
-                Error::<T>::InsufficientBalance
-            ),
-            NetDeletionPrize::<T>::Neg(b) => {
-                ensure!(
-                    <StorageTreasury<T>>::usable_balance() >= b,
-                    Error::<T>::InsufficientTreasuryBalance
-                )
-            }
-        }
+        let (net_prize, storage_fee) =
+            Self::check_balance(&bag_op, new_voucher_update, deletion_prize, &account_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -3915,5 +3890,48 @@ impl<T: Trait> Module<T> {
                 .map(|id| Self::ensure_data_object_exists(&op.bag_id, id))
                 .collect(),
         }
+    }
+
+    fn check_balance(
+        op: &BagOperation<T>,
+        new_voucher_update: VoucherUpdate,
+        deletion_prize: Option<BalanceOf<T>>,
+        account_id: &T::AccountId,
+    ) -> Result<(NetDeletionPrize<T>, BalanceOf<T>), DispatchError> {
+        let init_net_prize = deletion_prize.map_or(Default::default(), |dp| match &op.params {
+            BagOperationParams::<T>::Delete => NetDeletionPrize::<T>::Neg(dp),
+            BagOperationParams::<T>::Create(..) => NetDeletionPrize::<T>::Pos(dp),
+            _ => Default::default(),
+        });
+
+        let net_prize = match &op.params {
+            BagOperationParams::<T>::Create(_, list) => {
+                Self::compute_net_prize(init_net_prize, list.len(), 0)
+            }
+            BagOperationParams::<T>::Update(creation_list, removal_list) => {
+                Self::compute_net_prize(init_net_prize, creation_list.len(), removal_list.len())
+            }
+            BagOperationParams::<T>::Delete => Self::compute_net_prize(
+                init_net_prize,
+                0,
+                Bags::<T>::get(&op.bag_id).objects_number as usize,
+            ),
+        };
+
+        // storage fee: zero if VoucherUpdate is default
+        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
+        match net_prize.add_balance(storage_fee) {
+            NetDeletionPrize::<T>::Pos(b) => ensure!(
+                Balances::<T>::usable_balance(account_id) >= b,
+                Error::<T>::InsufficientBalance
+            ),
+            NetDeletionPrize::<T>::Neg(b) => {
+                ensure!(
+                    <StorageTreasury<T>>::usable_balance() >= b,
+                    Error::<T>::InsufficientTreasuryBalance
+                )
+            }
+        }
+        Ok((net_prize, storage_fee))
     }
 }
