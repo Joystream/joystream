@@ -321,7 +321,7 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
 }
 
 fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: &str) {
-    println!("{}", "# Authority seeds");
+    println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
         println!("{}//{}", format!("auth_{}=", n), seed);
@@ -330,7 +330,7 @@ fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: 
     println!();
 
     if !endowed_seeds.is_empty() {
-        println!("{}", "# Endowed seeds");
+        println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
             println!("{}//{}", format!("endowed_{}=", n), seed);
         }
@@ -338,7 +338,7 @@ fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: 
         println!();
     }
 
-    println!("{}", "# Sudo seed");
+    println!("# Sudo seed");
     println!("sudo=//{}", sudo_seed);
 }
 
