@@ -39,13 +39,12 @@ mod weights; // Runtime integration tests
 extern crate lazy_static; // for proposals_configuration module
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{
-    Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
-};
+use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
 };
+use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -263,8 +262,14 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1;
+    pub const TransactionByteFee: Balance = 0;
 }
+
+// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
+// TODO: Restore after the Olympia release
+// parameter_types! {
+//     pub const TransactionByteFee: Balance = 1;
+// }
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
@@ -274,29 +279,54 @@ impl OnUnbalanced<NegativeImbalance> for Author {
         Balances::resolve_creating(&Authorship::author(), amount);
     }
 }
+// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
+// TODO: Restore after the Olympia release
+// pub struct DealWithFees;
+// impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+//     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
+//         if let Some(fees) = fees_then_tips.next() {
+//             // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
+//             let mut split = fees.ration(80, 20);
+//             if let Some(tips) = fees_then_tips.next() {
+//                 // For tips %100 are for the author
+//                 tips.ration_merge_into(0, 100, &mut split);
+//             }
+//             Author::on_unbalanced(split.1);
+//         }
+//     }
+// }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
-    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
-        if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
-            if let Some(tips) = fees_then_tips.next() {
-                // For tips %100 are for the author
-                tips.ration_merge_into(0, 100, &mut split);
-            }
-            Author::on_unbalanced(split.1);
-        }
+/// Stub for zero transaction weights.
+pub struct NoWeights;
+impl WeightToFeePolynomial for NoWeights {
+    type Balance = Balance;
+
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        Default::default()
+    }
+
+    fn calc(_weight: &u64) -> Self::Balance {
+        Default::default()
     }
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
-    type OnTransactionPayment = DealWithFees;
+    type OnTransactionPayment = ();
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = constants::fees::WeightToFee;
-    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
+    type WeightToFee = NoWeights;
+    type FeeMultiplierUpdate = ();
 }
+
+// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
+// TODO: Restore after the Olympia release
+// impl pallet_transaction_payment::Trait for Runtime {
+//     type Currency = Balances;
+//     type OnTransactionPayment = DealWithFees;
+//     type TransactionByteFee = TransactionByteFee;
+//     type WeightToFee = constants::fees::WeightToFee;
+//     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
+// }
 
 impl pallet_sudo::Trait for Runtime {
     type Event = Event;
