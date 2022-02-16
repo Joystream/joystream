@@ -3603,17 +3603,17 @@ impl<T: Trait> Module<T> {
     }
 
     fn generate_new_storage_buckets(
-        bucket_ids: BTreeSet<T::StorageBucketId>,
+        bucket_ids: &BTreeSet<T::StorageBucketId>,
         new_voucher_update: VoucherUpdate,
         op: &BagOperationParams<T>,
     ) -> Result<BTreeMap<T::StorageBucketId, StorageBucket<T>>, Error<T>> {
         // create temporary iterator of bucket
         let tmp = bucket_ids
-            .into_iter()
+            .iter()
             // discard non existing bucket and build a (bucket_id, bucket) map
             .filter_map(|id| {
                 Self::ensure_storage_bucket_exists(&id)
-                    .map(|bk| (id, bk))
+                    .map(|bk| (*id, bk))
                     .ok()
             })
             // attempt to update bucket voucher
@@ -3661,23 +3661,23 @@ impl<T: Trait> Module<T> {
     }
 
     fn generate_new_distribution_buckets(
-        bucket_ids: BTreeSet<DistributionBucketId<T>>,
+        bucket_ids: &BTreeSet<DistributionBucketId<T>>,
         op: &BagOperationParams<T>,
     ) -> BTreeMap<DistributionBucketId<T>, DistributionBucket<T>> {
         bucket_ids
-            .into_iter()
+            .iter()
             .filter_map(|id| {
-                Self::ensure_distribution_bucket_exists(&id)
+                Self::ensure_distribution_bucket_exists(id)
                     .map(|mut bk| match op {
                         BagOperationParams::<T>::Create(..) => {
                             bk.register_bag_assignment();
-                            (id, bk)
+                            (id.clone(), bk)
                         }
                         BagOperationParams::<T>::Delete => {
                             bk.unregister_bag_assignment();
-                            (id, bk)
+                            (id.clone(), bk)
                         }
-                        _ => (id, bk), // no op in case of objects upload/delete operation
+                        _ => (id.clone(), bk), // no op in case of objects upload/delete operation
                     })
                     .ok()
             })
@@ -3763,13 +3763,17 @@ impl<T: Trait> Module<T> {
 
         // new candidate storage buckets
         let new_storage_buckets =
-            Self::generate_new_storage_buckets(stored_by, new_voucher_update, &bag_op.params)?;
+            Self::generate_new_storage_buckets(&stored_by, new_voucher_update, &bag_op.params)?;
         // new candidate distribution buckets
         let new_distribution_buckets =
-            Self::generate_new_distribution_buckets(distributed_by, &bag_op.params);
+            Self::generate_new_distribution_buckets(&distributed_by, &bag_op.params);
 
-        let (net_prize, storage_fee) =
-            Self::check_balance(&bag_op, new_voucher_update, deletion_prize, &account_id)?;
+        let (net_prize, storage_fee) = Self::ensure_sufficient_balance(
+            &bag_op,
+            new_voucher_update,
+            deletion_prize,
+            &account_id,
+        )?;
 
         //
         // == MUTATION SAFE ==
@@ -3892,7 +3896,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn check_balance(
+    fn ensure_sufficient_balance(
         op: &BagOperation<T>,
         new_voucher_update: VoucherUpdate,
         deletion_prize: Option<BalanceOf<T>>,
