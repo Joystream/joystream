@@ -4,8 +4,11 @@
 #[macro_use]
 
 mod proposals_integration;
-mod fee_tests;
 mod locks;
+
+// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
+// TODO: Restore after the Olympia release
+//mod fee_tests;
 
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
