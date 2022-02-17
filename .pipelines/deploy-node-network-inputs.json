@@ -62,5 +62,9 @@
   "proposalParameters": {
     "description": "Proposal Parameters",
     "value": {}
+  },
+  "skipChainSetup": {
+    "description": "Set to true to skip running setup new chain scenario",
+    "value": true
   }
 }
