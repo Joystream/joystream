@@ -14,12 +14,12 @@ export default async function creatingMemberships({ api, query, env }: FlowProps
   assert(N > 0)
 
   // Assert membership can be bought if sufficient funds are available
-  const nAccounts = (await api.createKeyPairs(N)).map((key) => key.address)
+  const nAccounts = (await api.createKeyPairs(N)).map(({ key }) => key.address)
   const happyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, nAccounts)
   await new FixtureRunner(happyCaseFixture).runWithQueryNodeChecks()
 
   // Assert account can not buy the membership with insufficient funds
-  const aAccount = (await api.createKeyPairs(1))[0].address
+  const aAccount = (await api.createKeyPairs(1))[0].key.address
   const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, aAccount)
   await new FixtureRunner(insufficientFundsFixture).run()
 

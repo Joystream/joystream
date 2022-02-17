@@ -25,7 +25,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
     { handle: 'Updated handle', name: 'Updated name', about: 'Updated about' },
   ]
 
-  const [account] = (await api.createKeyPairs(1)).map((key) => key.address)
+  const [account] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()

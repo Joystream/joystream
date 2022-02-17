@@ -30,7 +30,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
       args: { amount, workerId },
       flags: { rationale },
@@ -58,7 +58,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
       chalk.green(
         `${chalk.magentaBright(formatBalance(amount))} from worker ${chalk.magentaBright(
           workerId.toString()
-        )} stake has been succesfully slashed!`
+        )} stake has been successfully slashed!`
       )
     )
   }

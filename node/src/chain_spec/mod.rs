@@ -32,15 +32,13 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
-pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
@@ -135,7 +133,6 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
-                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -172,7 +169,6 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
-                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -214,7 +210,6 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
-    data_directory_config: DataDirectoryConfig,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
@@ -274,13 +269,6 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        data_directory: Some(data_directory_config),
-        data_object_type_registry: Some(DataObjectTypeRegistryConfig {
-            first_data_object_type_id: 1,
-        }),
-        data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
-            first_relationship_id: 1,
-        }),
         content: Some({
             ContentConfig {
                 next_curator_group_id: 1,
@@ -288,10 +276,24 @@ pub fn testnet_genesis(
                 next_channel_id: 1,
                 next_video_category_id: 1,
                 next_video_id: 1,
-                next_playlist_id: 1,
-                next_series_id: 1,
-                next_person_id: 1,
-                next_channel_transfer_request_id: 1,
+                next_video_post_id: 1,
+                max_reward_allowed: 1000,
+                min_cashout_allowed: 1,
+                min_auction_duration: 3,
+                max_auction_duration: 20,
+                min_auction_extension_period: 5,
+                max_auction_extension_period: 30,
+                min_bid_lock_duration: 2,
+                max_bid_lock_duration: 10,
+                min_starting_price: 10,
+                max_starting_price: 1000,
+                min_creator_royalty: Perbill::from_percent(1),
+                max_creator_royalty: Perbill::from_percent(5),
+                min_bid_step: 10,
+                max_bid_step: 100,
+                platform_fee_percentage: Perbill::from_percent(1),
+                auction_starts_at_max_delta: 90_000,
+                max_auction_whitelist_length: 100,
             }
         }),
     }
@@ -318,7 +320,6 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
-            content_config::empty_data_directory_config(),
         )
     }
 
@@ -351,7 +352,6 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
-            content_config::empty_data_directory_config(),
         )
     }
 

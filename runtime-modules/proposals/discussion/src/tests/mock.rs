@@ -223,6 +223,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
         unimplemented!();
     }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl crate::Trait for Test {

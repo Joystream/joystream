@@ -14,7 +14,7 @@ export default async function managingStakingAccounts({ api, query, env }: FlowP
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [account] = (await api.createKeyPairs(1)).map((key) => key.address)
+  const [account] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
@@ -22,7 +22,7 @@ export default async function managingStakingAccounts({ api, query, env }: FlowP
   const N: number = +env.STAKING_ACCOUNTS_ADD_N!
   assert(N > 0)
 
-  const stakingAccounts = (await api.createKeyPairs(N)).map((k) => k.address)
+  const stakingAccounts = (await api.createKeyPairs(N)).map(({ key }) => key.address)
   const addStakingAccountsHappyCaseFixture = new AddStakingAccountsHappyCaseFixture(
     api,
     query,

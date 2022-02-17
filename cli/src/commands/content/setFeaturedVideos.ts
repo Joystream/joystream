@@ -11,7 +11,11 @@ export default class SetFeaturedVideosCommand extends ContentDirectoryCommandBas
     },
   ]
 
-  async run() {
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
+  async run(): Promise<void> {
     const { featuredVideoIds } = this.parse(SetFeaturedVideosCommand).args
 
     const [actor, address] = await this.getContentActor('Lead')

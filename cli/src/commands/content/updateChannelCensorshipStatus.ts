@@ -11,6 +11,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
       required: false,
       description: 'rationale',
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [
@@ -26,7 +27,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let {
       args: { id, status },
       flags: { rationale },

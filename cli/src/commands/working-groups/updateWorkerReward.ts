@@ -29,7 +29,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     return reward ? formatBalance(reward.valuePerBlock) + ' / block' : 'NONE'
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {
       args: { workerId, newReward },
     } = this.parse(WorkingGroupsUpdateWorkerReward)
@@ -48,7 +48,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     this.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(lead.roleAccount.toString()),
+      await this.getDecodedPair(lead.roleAccount),
       apiModuleByGroup[this.group],
       'updateRewardAmount',
       [workerId, newReward]

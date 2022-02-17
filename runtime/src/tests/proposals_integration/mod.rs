@@ -49,11 +49,40 @@ fn setup_members(count: u8) {
 
 // Max Council size is 3
 fn setup_council(cycle_id: u64) {
-    let councilor0 = AccountId32::default();
-    let councilor1: [u8; 32] = [1; 32];
-    let councilor2: [u8; 32] = [2; 32];
+    let id0 = 0u8;
+    let id1 = 1u8;
+    let id2 = 2u8;
+
+    let councilor0: [u8; 32] = [id0; 32];
+    let councilor1: [u8; 32] = [id1; 32];
+    let councilor2: [u8; 32] = [id2; 32];
+
     elect_council(
-        vec![councilor0, councilor1.into(), councilor2.into()],
+        vec![
+            (id0, councilor0.into()),
+            (id1, councilor1.into()),
+            (id2, councilor2.into()),
+        ],
+        cycle_id,
+    );
+}
+
+// Max Council size is 3
+fn setup_different_council(cycle_id: u64) {
+    let id3 = 3u8;
+    let id4 = 4u8;
+    let id5 = 5u8;
+
+    let councilor3: [u8; 32] = [id3; 32];
+    let councilor4: [u8; 32] = [id4; 32];
+    let councilor5: [u8; 32] = [id5; 32];
+
+    elect_council(
+        vec![
+            (id3, councilor3.into()),
+            (id4, councilor4.into()),
+            (id5, councilor5.into()),
+        ],
         cycle_id,
     );
 }
@@ -322,8 +351,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
-        setup_members(4);
+        setup_members(30);
         setup_council(0);
+
         // create proposal
         let dummy_proposal = DummyProposalFixture::default().with_voting_period(100);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -367,7 +397,7 @@ fn proposal_reset_succeeds() {
         //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
 
         end_idle_period();
-        setup_council(1);
+        setup_different_council(1);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -573,7 +603,7 @@ fn funding_request_proposal_execution_succeeds() {
         let council_budget = 5_000_000;
         let funding = 5000;
 
-        let target_account_id: [u8; 32] = [12; 32];
+        let target_account_id: [u8; 32] = [111; 32];
         let target_account_id: AccountId32 = target_account_id.clone().into();
 
         assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
@@ -1122,7 +1152,7 @@ fn set_councilor_reward_proposal_succeds() {
 #[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
-        setup_members(5);
+        setup_members(25);
         setup_council(0);
 
         let starting_block = System::block_number();
@@ -1155,7 +1185,7 @@ fn proposal_reactivation_succeeds() {
         assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
 
         end_idle_period();
-        setup_council(1);
+        setup_different_council(1);
 
         run_to_block(10);
 

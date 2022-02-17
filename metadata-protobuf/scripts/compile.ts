@@ -5,6 +5,10 @@ import fs from 'fs'
 
 const OUT_DIR = path.resolve(__dirname, '../compiled')
 
+if (!fs.existsSync(OUT_DIR)) {
+  fs.mkdirSync(OUT_DIR)
+}
+
 pbjs(
   ['--target', 'static-module', '-w', 'commonjs', '-o', `${OUT_DIR}/index.js`, '--force-long', 'proto/*.proto'],
   function (err) {

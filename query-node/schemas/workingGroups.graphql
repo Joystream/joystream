@@ -83,9 +83,6 @@ type Worker @entity {
 
   "Forum categories managed by the worker (required for many-to-many relationship with ForumCategory)"
   managedForumCategories: [ForumCategory!] @derivedFrom(field: "moderators")
-
-  "Stored data objects (in case of storage worker)"
-  dataObjects: [DataObject!] @derivedFrom(field: "liaison")
 }
 
 type WorkingGroupMetadata @entity {

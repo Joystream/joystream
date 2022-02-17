@@ -1,22 +1,20 @@
 {
-  "title": "Storage node test",
-  "description": "Storage node test",
-  "thumbnailUrl": "",
+  "title": "Example Joystream Video",
+  "description": "This is an awesome example video!",
+  "videoPath": "./joystream.MOV",
+  "thumbnailPhotoPath": "./joystream.png",
+  "language": "en",
+  "hasMarketing": false,
   "isPublic": true,
-  "isExplicit": true,
-  "hasMarketing": true,
-  "language": { "existing": { "code": "EN" } },
-  "category": { "existing": { "name": "Entertainment" } },
+  "isExplicit": false,
+  "personsList": [],
+  "category": 1,
   "license": {
-    "new": {
-      "knownLicense": {
-        "existing": { "code": "CC_BY" }
-      }
-    }
+    "code": 1001,
+    "attribution": "by Joystream Contributors"
   },
-  "media": {
-    "new": {
-      "encoding": { "existing": { "name": "H.264_MP4" } }
-    }
+  "publishedBeforeJoystream": {
+    "isPublished": true,
+    "date": "2020-01-01"
   }
 }

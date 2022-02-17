@@ -13,14 +13,16 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
+  async run(): Promise<void> {
     const { channelId } = this.parse(VideosCommand).args
 
-    let videos: [VideoId, Video][]
+    let videos: [VideoId, Video][] = await this.getApi().availableVideos()
     if (channelId) {
-      videos = await this.getApi().videosByChannelId(channelId)
-    } else {
-      videos = await this.getApi().availableVideos()
+      videos = videos.filter(([, v]) => v.in_channel.eqn(parseInt(channelId)))
     }
 
     if (videos.length > 0) {
@@ -28,8 +30,9 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
         videos.map(([id, v]) => ({
           'ID': id.toString(),
           'InChannel': v.in_channel.toString(),
-          'InSeries': v.in_series.toString(),
           'IsCensored': v.is_censored.toString(),
+          'CommentsEnabled': v.enable_comments.toString(),
+          'PostId': v.video_post_id.toString(),
         })),
         3
       )

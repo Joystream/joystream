@@ -20,7 +20,7 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
 
     // create voters
     const voteStake = this.api.consts.referendum.minimumStake
-    const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map((kp) => kp.address)
+    const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
     await this.api.treasuryTransferBalanceToAccounts(
       votersStakingAccounts,
       voteStake.addn(MINIMUM_STAKING_ACCOUNT_BALANCE)
@@ -76,7 +76,10 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
       councilMemberIds.map((item) => item.toString()),
       councilMembersEnding.map((item) => item.membership_id.toString())
     )
+  }
 
+  public async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
     await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
   }
 }

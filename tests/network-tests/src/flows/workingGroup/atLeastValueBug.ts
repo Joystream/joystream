@@ -1,4 +1,4 @@
-import { WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../WorkingGroups'
 import { FlowProps } from '../../Flow'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
@@ -10,7 +10,6 @@ import { FixtureRunner } from '../../Fixture'
 export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:atLeastValueBug')
   debug('Started')
-  api.enableDebugTxLogs()
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
@@ -19,7 +18,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
 
   // Pre-conditions
   // A hired lead
-  const lead = await api.getGroupLead(WorkingGroups.StorageWorkingGroup)
+  const lead = await api.getGroupLead(WorkingGroups.Storage)
   assert.notEqual(lead, undefined)
 
   const addWorkerOpeningWithoutStakeFixture = new AddWorkerOpeningFixture(
@@ -28,7 +27,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
     new BN(0),
     openingActivationDelay,
     unstakingPeriod,
-    WorkingGroups.StorageWorkingGroup
+    WorkingGroups.Storage
   )
 
   // Add worker opening with 0 stake, expect failure!
@@ -46,7 +45,7 @@ export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Prom
     roleStake,
     openingActivationDelay,
     new BN(0),
-    WorkingGroups.StorageWorkingGroup
+    WorkingGroups.Storage
   )
 
   // Add worker opening with 0 unstaking period, expect failure!

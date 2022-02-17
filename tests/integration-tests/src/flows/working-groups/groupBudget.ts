@@ -18,7 +18,7 @@ export default async function groupBudget({ api, query }: FlowProps): Promise<vo
       const setGroupBudgetFixture = new SetBudgetFixture(api, query, group, budgets)
       await new FixtureRunner(setGroupBudgetFixture).runWithQueryNodeChecks()
 
-      const recievers = (await api.createKeyPairs(5)).map((kp) => kp.address)
+      const recievers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
       const amounts = recievers.map((reciever, i) => new BN(10000 * (i + 1)))
       const spendGroupBudgetFixture = new SpendBudgetFixture(api, query, group, recievers, amounts)
       await new FixtureRunner(spendGroupBudgetFixture).runWithQueryNodeChecks()

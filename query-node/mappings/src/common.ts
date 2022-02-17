@@ -1,20 +1,10 @@
-import {
-  DatabaseManager,
-  SubstrateEvent,
-  SubstrateExtrinsic,
-  ExtrinsicArg,
-  EventContext,
-  StoreContext,
-} from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup, WorkerId, ThreadId, ContentParameters } from '@joystream/types/augment/all'
-import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner } from 'query-node/dist/model'
+import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
+import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
-import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
-import { registry } from '@joystream/types'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 /*
@@ -73,37 +63,6 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 
   // log error
   logger.info(errorMessage, data)
-}
-
-export async function createDataObject(
-  { event, store }: EventContext & StoreContext,
-  contentParameters: ContentParameters,
-  owner: typeof DataObjectOwner
-): Promise<DataObject> {
-  const {
-    size_in_bytes: sizeInBytes,
-    type_id: typeId,
-    content_id: contentId,
-    ipfs_content_id: ipfsContentId,
-  } = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
-  const dataObjectId = contentId.encode()
-  const dataObject = new DataObject({
-    id: dataObjectId,
-    owner,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
-    createdInBlock: event.blockNumber,
-    typeId: typeId.toNumber(),
-    size: new BN(sizeInBytes.toString()),
-    liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
-    ipfsContentId: ipfsContentId.toUtf8(),
-    joystreamContentId: dataObjectId,
-    createdById: '1',
-    updatedById: '1',
-  })
-  await store.save<DataObject>(dataObject)
-
-  return dataObject
 }
 
 /// //////////////// Sudo extrinsic calls ///////////////////////////////////////
@@ -264,25 +223,34 @@ export function hasValuesForProperties<
 
 export type WorkingGroupModuleName =
   | 'storageWorkingGroup'
-  | 'contentDirectoryWorkingGroup'
+  | 'contentWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
-  | 'operationsWorkingGroup'
+  | 'operationsWorkingGroupAlpha'
   | 'gatewayWorkingGroup'
+  | 'distributionWorkingGroup'
+  | 'operationsWorkingGroupBeta'
+  | 'operationsWorkingGroupGamma'
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isContent) {
-    return 'contentDirectoryWorkingGroup'
+    return 'contentWorkingGroup'
   } else if (group.isMembership) {
     return 'membershipWorkingGroup'
   } else if (group.isForum) {
     return 'forumWorkingGroup'
   } else if (group.isStorage) {
     return 'storageWorkingGroup'
-  } else if (group.isOperations) {
-    return 'operationsWorkingGroup'
+  } else if (group.isOperationsAlpha) {
+    return 'operationsWorkingGroupAlpha'
   } else if (group.isGateway) {
     return 'gatewayWorkingGroup'
+  } else if (group.isDistribution) {
+    return 'distributionWorkingGroup'
+  } else if (group.isOperationsBeta) {
+    return 'operationsWorkingGroupBeta'
+  } else if (group.isOperationsGamma) {
+    return 'operationsWorkingGroupGamma'
   }
 
   unexpectedData('Unsupported working group encountered:', group.type)
@@ -300,4 +268,35 @@ export async function getWorker(
   }
 
   return worker
+}
+
+type EntityClass<T extends BaseModel> = {
+  new (): T
+  name: string
+}
+
+export type RelationsArr<T extends BaseModel> = Exclude<
+  keyof T & string,
+  { [K in keyof T]: T[K] extends BaseModel | undefined ? '' : T[K] extends BaseModel[] | undefined ? '' : K }[keyof T]
+>[]
+
+export async function getById<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  id: string,
+  relations?: RelationsArr<T>
+): Promise<T> {
+  const result = await store.get(entityClass, { where: { id }, relations })
+  if (!result) {
+    throw new Error(`Expected ${entityClass.name} not found by ID: ${id}`)
+  }
+
+  return result
+}
+
+export function deterministicEntityId(createdInEvent: SubstrateEvent, additionalIdentifier?: string | number): string {
+  return (
+    `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
+    (additionalIdentifier ? `-${additionalIdentifier}` : '')
+  )
 }

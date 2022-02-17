@@ -1,0 +1,39 @@
+---
+# Setup joystream code, build and Create AMI
+
+- name: Setup instance
+  hosts: all
+
+  tasks:
+    - name: Get code from git repo
+      include_role:
+        name: common
+        tasks_from: get-code-git
+
+    - name: Run setup and build
+      include_role:
+        name: common
+        tasks_from: run-setup-build
+
+    - name: Install subkey
+      include_role:
+        name: admin
+        tasks_from: main
+
+    - name: Basic AMI Creation
+      amazon.aws.ec2_ami:
+        instance_id: '{{ instance_id }}'
+        wait: yes
+        # How long before wait gives up, in seconds
+        wait_timeout: 3600
+        name: '{{ ami_name }}'
+        launch_permissions:
+          group_names: ['all']
+        tags:
+          Name: '{{ ami_name }}'
+      register: ami_data
+      delegate_to: localhost
+
+    - name: Print AMI ID
+      debug:
+        msg: 'AMI ID is: {{ ami_data.image_id }}'

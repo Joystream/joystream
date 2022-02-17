@@ -28,7 +28,7 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   )
 
   // Proposals to be "CancelledByRuntime"
-  const [memberAcc] = (await api.createKeyPairs(1)).map((kp) => kp.address)
+  const [memberAcc] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [memberAcc])
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()
