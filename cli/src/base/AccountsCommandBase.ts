@@ -359,9 +359,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const membersEntries = allowedIds
       ? await this.getApi().memberEntriesByIds(allowedIds)
       : await this.getApi().allMemberEntries()
-    const availableMemberships = await Promise.all(
-      membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
-    )
+    const availableMemberships = membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
 
     return availableMemberships
   }

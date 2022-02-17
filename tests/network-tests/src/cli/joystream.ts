@@ -2,10 +2,18 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
-import { ChannelInputParameters } from '@joystream/cli/src/Types'
+import {
+  VideoInputParameters,
+  ChannelInputParameters,
+  ChannelCategoryInputParameters,
+  VideoCategoryInputParameters,
+} from '@joystream/cli/src/Types'
+import ExitCodes from '@joystream/cli/src/ExitCodes'
 import { MemberId } from '@joystream/types/members'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
+
+type Modify<T, R> = Omit<T, keyof R> & R
 
 export interface ICreatedVideoData {
   videoId: number
@@ -76,27 +84,21 @@ export class JoystreamCLI extends CLI {
     return parseInt((stdout.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
   }
 
-  /**
-    Checks if CLI's stderr contains warning about no storage provider available.
+  /*
+    Decide if CLI error indicates that storage provider is not available.
   */
-  private containsWarningNoStorage(stderr: string): boolean {
-    return !!stderr.match(/^\s*\S\s*Warning: No storage provider is currently available!/m)
-  }
-
-  /**
-    Checks if CLI's stderr contains warning about no password used when importing account.
-  */
-  private containsWarningEmptyPassword(text: string): boolean {
-    return !!text.match(/^\s*\S\s*Warning: Using empty password is not recommended!/)
+  private isErrorDueToNoStorage(exitCode: number): boolean {
+    // TODO: remove `% 256` after https://github.com/Joystream/joystream/issues/3251 is fixed
+    return exitCode === ExitCodes.ActionCurrentlyUnavailable % 256
   }
 
   /**
     Selects active member for CLI commands.
   */
   async chooseMemberAccount(memberId: MemberId) {
-    const { stderr } = await this.run('account:chooseMember', ['--memberId', memberId.toString()])
+    const { stderr, exitCode } = await this.run('account:chooseMember', ['--memberId', memberId.toString()])
 
-    if (stderr) {
+    if (exitCode) {
       throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
     }
   }
@@ -104,7 +106,7 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new channel.
   */
-  async createChannel(channel: unknown): Promise<number> {
+  async createChannel(channel: Modify<ChannelInputParameters, { category?: number }>): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { stdout, stderr, exitCode } = await this.run('content:createChannel', [
@@ -114,8 +116,7 @@ export class JoystreamCLI extends CLI {
       'Member',
     ])
 
-    if (exitCode && !this.containsWarningNoStorage(stderr)) {
-      // ignore warnings
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       throw new Error(`Unexpected CLI failure on creating channel: "${stderr}"`)
     }
 
@@ -125,7 +126,7 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new channel category.
   */
-  async createChannelCategory(channelCategory: unknown): Promise<number> {
+  async createChannelCategory(channelCategory: ChannelInputParameters): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
 
     const { stdout, stderr } = await this.run('content:createChannelCategory', [
@@ -145,7 +146,11 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new video.
   */
-  async createVideo(channelId: number, video: unknown, canOmitUpload = true): Promise<ICreatedVideoData> {
+  async createVideo(
+    channelId: number,
+    video: Modify<VideoInputParameters, { category: number }>,
+    canOmitUpload = true
+  ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stdout, stderr, exitCode } = await this.run(
@@ -156,7 +161,7 @@ export class JoystreamCLI extends CLI {
     )
 
     // prevent error from CLI that create
-    if (canOmitUpload && exitCode && !this.containsWarningNoStorage(stderr)) {
+    if (canOmitUpload && exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video: "${stderr}"`)
     }
@@ -173,12 +178,17 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new video category.
   */
-  async createVideoCategory(videoCategory: unknown): Promise<number> {
+  async createVideoCategory(videoCategory: VideoCategoryInputParameters): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(videoCategory)
 
-    const { stdout, stderr } = await this.run('content:createVideoCategory', ['--input', jsonFile, '--context', 'Lead'])
+    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [
+      '--input',
+      jsonFile,
+      '--context',
+      'Lead',
+    ])
 
-    if (stderr) {
+    if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
 
@@ -188,12 +198,16 @@ export class JoystreamCLI extends CLI {
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: unknown): Promise<void> {
+  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: number }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
-    const { stdout, stderr } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
+    const { stdout, stderr, exitCode } = await this.run('content:updateVideo', [
+      '--input',
+      jsonFile,
+      videoId.toString(),
+    ])
 
-    if (stderr && !this.containsWarningNoStorage(stderr)) {
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
@@ -202,12 +216,16 @@ export class JoystreamCLI extends CLI {
   /**
     Updates a channel.
   */
-  async updateChannel(channelId: number, channel: unknown): Promise<void> {
+  async updateChannel(channelId: number, channel: Modify<ChannelInputParameters, { category: number }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
-    const { stdout, stderr } = await this.run('content:updateChannel', ['--input', jsonFile, channelId.toString()])
+    const { stdout, stderr, exitCode } = await this.run('content:updateChannel', [
+      '--input',
+      jsonFile,
+      channelId.toString(),
+    ])
 
-    if (stderr && !this.containsWarningNoStorage(stderr)) {
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }

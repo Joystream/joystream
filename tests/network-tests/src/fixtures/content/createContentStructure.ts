@@ -87,11 +87,11 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Creates a new channel category. Can only be executed as content group leader.
   */
   private async createChannelCategories(count: number): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannelCategory({
         ...getChannelCategoryDefaults(index),
       })
-    )) as number[]
+    )
 
     return createdIds
   }
@@ -100,11 +100,11 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Creates a new video category. Can only be executed as content group leader.
   */
   private async createVideoCategories(count: number): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createVideoCategory({
         ...getVideoCategoryDefaults(index),
       })
-    )) as number[]
+    )
 
     return createdIds
   }

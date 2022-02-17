@@ -18,7 +18,7 @@ export class TmpFileManager {
     )
     mkdirSync(this.tmpDataDir, { recursive: true })
     nodeCleanup(() => {
-      rmSync(this.tmpDataDir, { recursive: true, force: true })
+      //      rmSync(this.tmpDataDir, { recursive: true, force: true })
     })
   }
 

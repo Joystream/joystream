@@ -35,40 +35,8 @@ fragment StorageDataObjectFields on StorageDataObject {
   storageBagId
 }
 
-fragment ChannelFields on Channel {
-  title
-  description
-  isPublic
-  language {
-    iso
-  }
-  rewardAccount
-  isCensored
-  ownerMember {
-    id
-  }
-  ownerCuratorGroup {
-    id
-  }
-  category {
-    name
-  }
-  avatarPhoto {
-    ...StorageDataObjectFields
-  }
-  coverPhoto {
-    ...StorageDataObjectFields
-  }
-}
-
 query getDataObjectsByIds($ids: [ID!]) {
   storageDataObjects(where: { id_in: $ids }) {
     ...StorageDataObjectFields
-  }
-}
-
-query getChannelById($id: ID!) {
-  channelByUniqueInput(where: { id: $id }) {
-    ...ChannelFields
   }
 }

@@ -10,6 +10,14 @@ import {
   GetChannelById,
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
+  ChannelCategoryFieldsFragment,
+  GetChannelCategoryByIdQuery,
+  GetChannelCategoryByIdQueryVariables,
+  GetChannelCategoryById,
+  VideoCategoryFieldsFragment,
+  GetVideoCategoryByIdQuery,
+  GetVideoCategoryByIdQueryVariables,
+  GetVideoCategoryById,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -121,39 +129,19 @@ export class QueryNodeApi {
     )
   }
 
-  public async getChannels(): Promise<ApolloQueryResult<any>> {
-    const query = gql`
-      query {
-        channels {
-          id
-          activeVideosCounter
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query })
+  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
+      GetChannelCategoryById,
+      { id },
+      'channelCategoryByUniqueInput'
+    )
   }
 
-  public async getChannelCategories(): Promise<ApolloQueryResult<any>> {
-    const query = gql`
-      query {
-        channelCategories {
-          id
-          activeVideosCounter
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query })
-  }
-
-  public async getVideoCategories(): Promise<ApolloQueryResult<any>> {
-    const query = gql`
-      query {
-        videoCategories {
-          id
-          activeVideosCounter
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query })
+  public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
+      GetVideoCategoryById,
+      { id },
+      'videoCategoryByUniqueInput'
+    )
   }
 }

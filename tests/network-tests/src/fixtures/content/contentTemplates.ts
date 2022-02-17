@@ -44,7 +44,5 @@ export function getChannelDefaults(index: number, rewardAccountAddress: string) 
 }
 
 export function getChannelCategoryDefaults(index: number) {
-  return {
-    name: 'Active video counters Testing channel category',
-  }
+  return {}
 }

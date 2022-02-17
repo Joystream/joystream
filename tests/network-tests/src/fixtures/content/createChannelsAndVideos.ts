@@ -179,12 +179,12 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     Creates a new channel.
   */
   private async createChannels(count: number, channelCategoryId: number, authorAddress: string): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel({
         ...getChannelDefaults(index, authorAddress),
         category: channelCategoryId,
       })
-    )) as number[]
+    )
 
     return createdIds
   }
