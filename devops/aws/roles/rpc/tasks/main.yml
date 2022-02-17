@@ -48,6 +48,7 @@
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
     COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
     DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+    SKIP_NODE: 'true'
   args:
     chdir: '{{ remote_code_path }}'
   async: 1800
