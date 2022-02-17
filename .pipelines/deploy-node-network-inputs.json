@@ -31,6 +31,14 @@
     "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
     "value": "ami-095792100b6e43a67"
   },
+  "volumeSize": {
+    "description": "Validator and Build instance volume size in GB",
+    "value": "120"
+  },
+  "rpcVolumeSize": {
+    "description": "RPC Instance volume size in GB",
+    "value": "120"
+  },
   "networkSuffix": {
     "description": "Network suffix that will be added to the network name",
     "value": "8129"
@@ -50,5 +58,9 @@
   "encryptionKey": {
     "description": "Password to encrypt the artifacts",
     "value": "password"
+  },
+  "proposalParameters": {
+    "description": "Proposal Parameters",
+    "value": {}
   }
 }

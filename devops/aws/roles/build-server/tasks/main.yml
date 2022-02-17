@@ -1,5 +1,5 @@
 ---
-# Configure admin server to be able to create chain-spec file and subkey commands
+# Configure build server to be able to create chain-spec file and subkey commands
 
 - name: Copy bash_profile content
   shell: cat ~/.bash_profile
