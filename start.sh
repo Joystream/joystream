@@ -22,8 +22,11 @@ else
   trap down EXIT
 fi
 
-## Run a local development chain
-docker-compose up -d joystream-node
+if [ "${SKIP_NODE}" != true ]
+then
+  ## Run a local development chain
+  docker-compose up -d joystream-node
+fi
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
