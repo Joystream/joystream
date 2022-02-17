@@ -1,4 +1,4 @@
-import { extendDebug, Debugger } from './Debugger'
+import { Debugger, extendDebug } from './Debugger'
 import { EventEmitter } from 'events'
 import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
