@@ -1,28 +1,24 @@
-import creatingMemberships from '../flows/membership/creatingMemberships'
-import councilSetup from '../flows/council/setup'
-import electionParametersProposal from '../flows/proposals/electionParametersProposal'
-import manageLeaderRole from '../flows/proposals/manageLeaderRole'
-import spendingProposal from '../flows/proposals/spendingProposal'
-import textProposal from '../flows/proposals/textProposal'
-import validatorCountProposal from '../flows/proposals/validatorCountProposal'
-import wgMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
+import proposals from '../flows/proposals'
+import cancellingProposals from '../flows/proposals/cancellingProposal'
+import vetoProposal from '../flows/proposals/vetoProposal'
+import electCouncil from '../flows/council/elect'
+import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
+import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
+import expireProposal from '../flows/proposals/expireProposal'
+import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
-  job('creating members', creatingMemberships)
-
-  const councilJob = job('council setup', councilSetup)
-
-  job('proposals', [
-    electionParametersProposal,
-    spendingProposal,
-    textProposal,
-    validatorCountProposal,
-    wgMintCapacityProposal.storage,
-    wgMintCapacityProposal.content,
-    wgMintCapacityProposal.distribution,
-    manageLeaderRole.storage,
-    manageLeaderRole.content,
-    manageLeaderRole.distribution,
-  ]).requires(councilJob)
+scenario(async ({ job, env }) => {
+  const councilJob = job('electing council', electCouncil)
+  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
+    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+    : undefined
+  job('proposals & proposal discussion', [
+    proposals,
+    cancellingProposals,
+    vetoProposal,
+    exactExecutionBlock,
+    expireProposal,
+    proposalsDiscussion,
+  ]).requires(runtimeUpgradeProposalJob || councilJob)
 })

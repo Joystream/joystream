@@ -3,11 +3,11 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult, AnyJson } from '@polkadot/types/types/'
 import { AccountId, EventRecord } from '@polkadot/types/interfaces'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
-import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Debugger, extendDebug } from './Debugger'
+import { extendDebug, Debugger } from './Debugger'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
+import BN from 'bn.js'
 
 export enum LogLevel {
   None,
@@ -15,9 +15,11 @@ export enum LogLevel {
   Verbose,
 }
 
+const nonceCacheByAccount = new Map<string, number>()
+
 export class Sender {
   private readonly api: ApiPromise
-  static readonly asyncLock: AsyncLock = new AsyncLock({ maxPending: 2048 })
+  static readonly asyncLock: AsyncLock = new AsyncLock()
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
   private logs: LogLevel = LogLevel.None
@@ -26,7 +28,7 @@ export class Sender {
   constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
     this.keyring = keyring
-    this.debug = extendDebug(`sender:${Sender.instance++}:${label}`)
+    this.debug = extendDebug(`Sender:${Sender.instance++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
@@ -64,7 +66,7 @@ export class Sender {
         process.exit(-1)
       }
 
-      if (!result.status.isInBlock) {
+      if (!(result.status.isInBlock || result.status.isFinalized)) {
         return
       }
 
@@ -81,10 +83,17 @@ export class Sender {
           } = record
           const err = data[0] as DispatchError
           if (err.isModule) {
-            const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-            this.debug('Dispatch Error:', name, sentTx)
+            try {
+              const { name } = this.api.registry.findMetaError(err.asModule)
+              this.debug('Dispatch Error:', name, sentTx)
+            } catch (findmetaerror) {
+              // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
+              // Happens for dispatchable calls that don't explicitly use `-> DispatchResult` return value even
+              // if they return an error enum variant from the decl_error! macro
+              this.debug('Dispatch Error (error details not found):', err.asModule.toHuman(), sentTx)
+            }
           } else {
-            this.debug('Dispatch Error:', sentTx)
+            this.debug('Dispatch Error:', err.toHuman(), sentTx)
           }
         } else {
           assert(success)
@@ -95,10 +104,15 @@ export class Sender {
             if (dispatchResult.isError) {
               const err = dispatchResult.asError
               if (err.isModule) {
-                const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-                this.debug('Sudo Dispatch Failed', name, sentTx)
+                try {
+                  const { name } = this.api.registry.findMetaError(err.asModule)
+                  this.debug('Sudo Dispatch Failed', name, sentTx)
+                } catch (findmetaerror) {
+                  // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
+                  this.debug('Sudo Dispatch Failed (error details not found)', err.asModule.toHuman(), sentTx)
+                }
               } else {
-                this.debug('Sudo Dispatch Failed', sentTx)
+                this.debug('Sudo Dispatch Failed', err.toHuman(), sentTx)
               }
             }
           }
@@ -115,18 +129,29 @@ export class Sender {
     // of call to signAndSend. Otherwise it raises chance of race conditions.
     // It happens in rare cases and has lead some tests to fail occasionally in the past
     await Sender.asyncLock.acquire(['tx-queue', `nonce-${account.toString()}`], async () => {
-      const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
+      // The node sometimes returns invalid account nonce at the exact time a new block is produced
+      // For a split second the node will then not take "pending" transactions into account,
+      // that's why we must partialy rely on cached nonce
+      const nodeNonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
+      const cachedNonce = nonceCacheByAccount.get(senderKeyPair.address)
+      const nonce = BN.max(nodeNonce, new BN(cachedNonce || 0))
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
         await signedTx.send(handleEvents)
         if (this.logs === LogLevel.Verbose) {
-          this.debug('Submitted tx:', `${section}.${method}`)
+          this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce})`)
         }
+        nonceCacheByAccount.set(account.toString(), nonce.toNumber() + 1)
       } catch (err) {
-        if (this.logs === LogLevel.Debug) {
-          this.debug('Submitting tx failed:', sentTx, err)
+        if (this.logs === LogLevel.Debug || this.logs === LogLevel.Verbose) {
+          this.debug(
+            'Submitting tx failed:',
+            sentTx,
+            err,
+            signedTx.method.args.map((a) => a.toHuman())
+          )
         }
         throw err
       }

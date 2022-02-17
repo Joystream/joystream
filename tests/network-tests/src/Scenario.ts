@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory, Api, KeyGenInfo } from './Api'
+import { ApiFactory, Api } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -9,7 +9,8 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
-import fs, { readFileSync } from 'fs'
+import fs, { existsSync, readFileSync } from 'fs'
+import { KeyGenInfo } from './types'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -64,7 +65,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   const reuseKeys = Boolean(env.REUSE_KEYS)
   let startKeyId: number
   let customKeys: string[] = []
-  if (reuseKeys) {
+  if (reuseKeys && existsSync(OUTPUT_FILE_PATH)) {
     const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom
@@ -72,7 +73,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     startKeyId = parseInt(env.START_KEY_ID || '0')
   }
 
-  api.createKeyPairs(startKeyId)
+  await api.createKeyPairs(startKeyId, false)
   customKeys.forEach((k) => api.createCustomKeyPair(k))
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'

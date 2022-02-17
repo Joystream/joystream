@@ -14,7 +14,7 @@ import { StandardizedFixture } from '../../Fixture'
 import { ThreadId } from '@joystream/types/common'
 import _ from 'lodash'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
-import { isSet } from '../../../../../metadata-protobuf/lib/utils'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
 export type ThreadMetadataUpdate = {
   categoryId: CategoryId

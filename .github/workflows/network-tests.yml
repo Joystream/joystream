@@ -1,4 +1,4 @@
-name: integration-tests
+name: network-tests
 on: [pull_request, push]
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace @joystream/cli build
-        yarn workspace integration-tests checks --quiet
+        yarn workspace network-tests checks --quiet
 
   network_build_osx:
     name: MacOS Checks
@@ -40,4 +40,4 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace @joystream/cli build
-        yarn workspace integration-tests checks --quiet
+        yarn workspace network-tests checks --quiet

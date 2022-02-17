@@ -14,7 +14,7 @@
     "verify-chain-metadata": "./scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
-    "tests/integration-tests",
+    "tests/network-tests",
     "cli",
     "types",
     "storage-node",

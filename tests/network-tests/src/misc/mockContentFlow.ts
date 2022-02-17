@@ -2,15 +2,14 @@
 // import { registry } from '@joystream/types'
 import { CreateChannelsAsMemberFixture } from './createChannelsAsMemberFixture'
 import { CreateVideosAsMemberFixture } from './createVideosAsMemberFixture'
-import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membership'
 import { CreateMockCategories } from './createCategoriesFixture'
 
 import { FlowProps } from '../Flow'
 import { FixtureRunner } from '../Fixture'
 import { extendDebug } from '../Debugger'
-import BN from 'bn.js'
 
-export default async function mockContent({ api }: FlowProps): Promise<void> {
+export default async function mockContent({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
 
@@ -33,12 +32,8 @@ export default async function mockContent({ api }: FlowProps): Promise<void> {
     return
   }
 
-  const memberAccount = api.createKeyPairs(1)[0].key.address
-  const createMember: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-    api,
-    [memberAccount],
-    api.createPaidTermId(new BN(0))
-  )
+  const memberAccount = (await api.createKeyPairs(1))[0].key.address
+  const createMember: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [memberAccount])
   await new FixtureRunner(createMember).run()
 
   const memberId = createMember.getCreatedMembers()[0].toNumber()

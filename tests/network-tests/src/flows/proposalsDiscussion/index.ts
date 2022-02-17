@@ -14,7 +14,7 @@ import {
   UpdatePostsFixture,
 } from '../../fixtures/proposalsDiscussion'
 import { Resource } from '../../Resources'
-import { ThreadId } from '../../../../../types/common'
+import { ThreadId } from '@joystream/types/common'
 import { ALL_BYTES } from '../../consts'
 
 export default async function proposalsDiscussion({ api, query, lock }: FlowProps): Promise<void> {

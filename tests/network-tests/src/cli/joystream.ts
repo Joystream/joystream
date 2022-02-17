@@ -2,7 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
-import { ChannelInputParameters } from '@joystream/cli/src/Types'
+import { ChannelCreationInputParameters } from '@joystream/cli/src/Types'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
@@ -40,7 +40,7 @@ export class JoystreamCLI extends CLI {
     return super.run(command, customArgs, keyLocks || this.keys)
   }
 
-  async createChannel(inputData: ChannelInputParameters, args: string[]): Promise<CommandResult> {
+  async createChannel(inputData: ChannelCreationInputParameters, args: string[]): Promise<CommandResult> {
     const jsonFile = this.tmpFileManager.jsonFile(inputData)
     return this.run('content:createChannel', ['--input', jsonFile, ...args])
   }
