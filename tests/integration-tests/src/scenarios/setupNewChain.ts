@@ -1,5 +1,6 @@
 import electCouncil from '../flows/council/elect'
 import leaderSetup from '../flows/working-groups/leadOpening'
+import mockContentFlow from '../misc/mockContentFlow'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
 import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flows/storage/initStorage'
 import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storage/initDistribution'
@@ -15,7 +16,9 @@ scenario(async ({ job }) => {
     job('initialize distribution system', initDistribution(defaultDistributionConfig)).requires(updateWorkerAccounts)
   }
 
-  // TODO: Mock content
+  // Create some mock content in content directory - without assets or any real metadata
+  job('Create Mock Content', mockContentFlow).after(updateWorkerAccounts)
+
   // assign members known accounts?
   // assign council known accounts?
 })

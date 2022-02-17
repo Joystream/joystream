@@ -2,17 +2,11 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, BTreeMap } from '@polkadot/types'
 import { IEvent, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId, PostId, ThreadId } from '@joystream/types/common'
+import { AccountId, ChannelId, MemberId, PostId, ThreadId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import {
-  AugmentedEvent,
-  QueryableConsts,
-  QueryableStorage,
-  SubmittableExtrinsic,
-  SubmittableExtrinsics,
-} from '@polkadot/api/types'
+import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
@@ -48,8 +42,6 @@ import {
   ApplyOnOpeningParameters,
   Worker,
 } from '@joystream/types/working-group'
-import { DeriveAllSections } from '@polkadot/api/util/decorate'
-import { ExactDerive } from '@polkadot/api-derive'
 import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
 import {
   BLOCKTIME,
@@ -58,12 +50,8 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 import { CategoryId } from '@joystream/types/forum'
-
-export type KeyGenInfo = {
-  start: number
-  final: number
-  custom: string[]
-}
+import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { VideoCategoryId, VideoId } from '@joystream/types/content'
 
 type EventSection = keyof ApiPromise['events'] & string
 type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
@@ -71,6 +59,12 @@ type EventType<
   Section extends EventSection,
   Method extends EventMethod<Section>
 > = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+
+export type KeyGenInfo = {
+  start: number
+  final: number
+  custom: string[]
+}
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -203,19 +197,19 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
-  public get tx(): SubmittableExtrinsics<'promise'> {
-    return this.api.tx
-  }
-
-  public get query(): QueryableStorage<'promise'> {
+  public get query(): ApiPromise['query'] {
     return this.api.query
   }
 
-  public get consts(): QueryableConsts<'promise'> {
+  public get consts(): ApiPromise['consts'] {
     return this.api.consts
   }
 
-  public get derive(): DeriveAllSections<'promise', ExactDerive> {
+  public get tx(): ApiPromise['tx'] {
+    return this.api.tx
+  }
+
+  public get derive(): ApiPromise['derive'] {
     return this.api.derive
   }
 
@@ -230,8 +224,12 @@ export class Api {
     return this.sender.signAndSend(tx, sender)
   }
 
-  public getSuri(addr: AccountId | string): string {
-    return this.factory.getSuri(addr)
+  public getKeypair(address: string | AccountId): KeyringPair {
+    return this.factory.getKeypair(address)
+  }
+
+  public getSuri(address: string | AccountId): string {
+    return this.factory.getSuri(address)
   }
 
   public async sendExtrinsicsAndGetResults(
@@ -288,7 +286,7 @@ export class Api {
   }
 
   public getBlockDuration(): BN {
-    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
+    return this.api.consts.babe.expectedBlockTime
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {
@@ -371,7 +369,6 @@ export class Api {
     return this.api.query.members.membershipPrice()
   }
 
-  // This method does not take into account weights and the runtime weight to fees computation!
   public async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<Balance> {
     const paymentInfo = await tx.paymentInfo(account)
     return paymentInfo.partialFee
@@ -588,44 +585,6 @@ export class Api {
     })
   }
 
-  async assignWorkerRoleAccount(
-    group: WorkingGroupModuleName,
-    workerId: WorkerId,
-    account: string
-  ): Promise<ISubmittableResult> {
-    const worker = await this.api.query[group].workerById(workerId)
-    if (worker.isEmpty) {
-      throw new Error(`Worker not found by id: ${workerId}!`)
-    }
-
-    const memberController = await this.getControllerAccountOfMember(worker.member_id)
-    // there cannot be a worker associated with member that does not exist
-    if (!memberController) {
-      throw new Error('Member controller not found')
-    }
-
-    // Expect membercontroller key is already added to keyring
-    // Is is responsibility of caller to ensure this is the case!
-
-    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
-    await this.prepareAccountsForFeeExpenses(memberController, [updateRoleAccountCall])
-    return this.sender.signAndSend(updateRoleAccountCall, memberController)
-  }
-
-  async assignWorkerWellknownAccount(
-    group: WorkingGroupModuleName,
-    workerId: WorkerId,
-    initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
-  ): Promise<ISubmittableResult[]> {
-    // path to append to base SURI
-    const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
-    const account = this.createCustomKeyPair(uri).address
-    return Promise.all([
-      this.assignWorkerRoleAccount(group, workerId, account),
-      this.treasuryTransferBalance(account, initialBalance),
-    ])
-  }
-
   public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
     return (await this.getLeader(group))[1].role_account_id.toString()
   }
@@ -809,5 +768,137 @@ export class Api {
 
   lockIdByGroup(group: WorkingGroupModuleName): LockIdentifier {
     return this.api.consts[group].stakingHandlerLockId
+  }
+
+  async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
+    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  public async getNumberOfOutstandingVideos(): Promise<number> {
+    return (await this.api.query.content.videoById.entries<VideoId>()).length
+  }
+
+  public async getNumberOfOutstandingChannels(): Promise<number> {
+    return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
+    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
+  }
+
+  // Create a mock channel, throws on failure
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a channel without any assets
+    const tx = this.api.tx.content.createChannel(
+      { Member: memberId },
+      {
+        assets: null,
+        meta: null,
+        reward_account: null,
+      }
+    )
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'ChannelCreated')
+    return event.data[1]
+  }
+
+  // Create a mock video, throws on failure
+  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
+    }
+
+    // Create a video without any assets
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
+      assets: null,
+      meta: null,
+    })
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'VideoCreated')
+    return event.data[2]
+  }
+
+  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const [, lead] = await this.getLeader('contentWorkingGroup')
+
+    const account = lead.role_account_id
+    const meta = new ChannelCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createChannelCategory(
+        { Lead: null },
+        { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
+      ),
+      account?.toString()
+    )
+  }
+
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const [, lead] = await this.getLeader('contentWorkingGroup')
+
+    const account = lead.role_account_id
+    const meta = new VideoCategoryMetadata({
+      name,
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.createVideoCategory(
+        { Lead: null },
+        { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
+      ),
+      account?.toString()
+    )
+  }
+
+  async assignWorkerRoleAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
+    account: string
+  ): Promise<ISubmittableResult> {
+    const worker = await this.api.query[group].workerById(workerId)
+    if (worker.isEmpty) {
+      throw new Error(`Worker not found by id: ${workerId}!`)
+    }
+
+    const memberController = await this.getControllerAccountOfMember(worker.member_id)
+    // there cannot be a worker associated with member that does not exist
+    if (!memberController) {
+      throw new Error('Member controller not found')
+    }
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of caller to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    await this.prepareAccountsForFeeExpenses(memberController, [updateRoleAccountCall])
+    return this.sender.signAndSend(updateRoleAccountCall, memberController)
+  }
+
+  async assignWorkerWellknownAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
+    initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
+  ): Promise<ISubmittableResult[]> {
+    // path to append to base SURI
+    const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return Promise.all([
+      this.assignWorkerRoleAccount(group, workerId, account),
+      this.treasuryTransferBalance(account, initialBalance),
+    ])
   }
 }
