@@ -8,19 +8,31 @@ set -a
 . ../../.env
 set +a
 
-CONTAINER_ID=$(./run-test-node-docker.sh)
+# Clean start
+docker-compose -f ../../docker-compose.yml down -v
+
+if [ "${DEV_NODE}" == true ]
+then
+  docker-compose -f ../../docker-compose.yml up -d joystream-node
+  function cleanup() {
+      docker logs joystream-node --tail 15
+      docker-compose -f ../../docker-compose.yml down -v
+  }
+  trap cleanup EXIT
+
+else
+  CONTAINER_ID=$(./run-test-node-docker.sh)
+  function cleanup() {
+      docker logs ${CONTAINER_ID} --tail 15
+      docker-compose -f ../../docker-compose.yml down -v
+  }
+  trap cleanup EXIT
+fi
+
 # pass the scenario name without .ts extension
 SCENARIO=$1
 # default to "full" if scenario is not specified
 SCENARIO=${SCENARIO:=full}
-
-
-function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker-compose -f ../../docker-compose.yml down -v
-}
-
-trap cleanup EXIT
 
 sleep 3
 
