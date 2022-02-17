@@ -1457,42 +1457,6 @@ pub fn create_default_curator_owned_channel_with_video() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channels_with_videos() -> (u64, u64) {
-    for _ in 0..OUTSTANDING_CHANNELS {
-        create_default_member_owned_channel();
-    }
-
-    for i in 0..OUTSTANDING_VIDEOS {
-        CreateVideoFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_assets(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .with_channel_id(i % OUTSTANDING_CHANNELS + 1)
-            .call_and_assert(Ok(()));
-    }
-
-    // assert that the specified channels have been created
-    assert_eq!(VideoById::<Test>::iter().count() as u64, OUTSTANDING_VIDEOS);
-    assert_eq!(
-        ChannelById::<Test>::iter().count() as u64,
-        OUTSTANDING_CHANNELS
-    );
-
-    let channels_migrations_per_block = <Test as Trait>::ChannelsMigrationsEachBlock::get();
-    let videos_migrations_per_block = <Test as Trait>::VideosMigrationsEachBlock::get();
-
-    // return the number of blocks required for migration
-    let divide_with_ceiling =
-        |x: u64, y: u64| (x / y) + ((x.checked_rem(y).unwrap_or_default() > 0u64) as u64);
-    (
-        divide_with_ceiling(OUTSTANDING_CHANNELS, channels_migrations_per_block),
-        divide_with_ceiling(OUTSTANDING_VIDEOS, videos_migrations_per_block),
-    )
-}
-
 pub fn create_default_member_owned_channel_with_video_and_post() {
     create_default_member_owned_channel_with_video();
     CreatePostFixture::default().call_and_assert(Ok(()));

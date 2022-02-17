@@ -206,15 +206,6 @@ impl Trait for Test {
     fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
         call_wg!(working_group<Test>, set_budget, budget)
     }
-
-    type AllowedLockCombinationProvider = AllowedLockCombinationProvider;
-}
-
-pub struct AllowedLockCombinationProvider;
-impl common::AllowedLockCombinationProvider for AllowedLockCombinationProvider {
-    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)> {
-        Default::default()
-    }
 }
 
 impl WeightInfo for () {

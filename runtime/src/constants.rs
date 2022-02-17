@@ -2,7 +2,7 @@ use super::Balance;
 use crate::{BlockNumber, Moment};
 use frame_support::parameter_types;
 use frame_support::traits::LockIdentifier;
-use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec::Vec;
 
 /// Constants for Babe.
 
@@ -111,7 +111,7 @@ parameter_types! {
     pub const ForumGroupLockId: LockIdentifier = *b"wg-forum";
     pub const MembershipWorkingGroupLockId: LockIdentifier = *b"wg-membr";
     pub const InvitedMemberLockId: LockIdentifier = *b"invitemb";
-    pub const StakingCandidateLockId: LockIdentifier = *b"stakcand";
+    pub const BoundStakingAccountLockId: LockIdentifier = *b"boundsta";
     pub const BountyLockId: LockIdentifier = *b"bounty  ";
     pub const OperationsWorkingGroupAlphaLockId: LockIdentifier = *b"wg-opera";
     pub const GatewayWorkingGroupLockId: LockIdentifier = *b"wg-gatew";
@@ -122,142 +122,18 @@ parameter_types! {
 
 // Staking lock ID used by nomination and validation in the staking pallet.
 // This is a copye because the current Substrate staking lock ID is not exported.
-const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
+pub const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
+
+pub const VESTING_LOCK_ID: LockIdentifier = *b"vesting ";
 
 lazy_static! {
-    // pairs of allowed lock combinations
-    pub static ref ALLOWED_LOCK_COMBINATIONS: BTreeSet<(LockIdentifier, LockIdentifier)> = [
-        // format: `(lock_id, [all_compatible_lock_ids, ...])`
-        (InvitedMemberLockId::get(), [
-            VotingLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            STAKING_LOCK_ID,
-            ProposalsLockId::get(),
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            GatewayWorkingGroupLockId::get(),
-            OperationsWorkingGroupAlphaLockId::get(),
-            OperationsWorkingGroupBetaLockId::get(),
-            OperationsWorkingGroupGammaLockId::get(),
-            DistributionWorkingGroupLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (StakingCandidateLockId::get(), [
-            VotingLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            STAKING_LOCK_ID,
-            ProposalsLockId::get(),
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            GatewayWorkingGroupLockId::get(),
-            DistributionWorkingGroupLockId::get(),
-            OperationsWorkingGroupAlphaLockId::get(),
-            OperationsWorkingGroupBetaLockId::get(),
-            OperationsWorkingGroupGammaLockId::get(),
-            InvitedMemberLockId::get(),
-        ].to_vec()),
-        (VotingLockId::get(), [
-            InvitedMemberLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            STAKING_LOCK_ID,
-            ProposalsLockId::get(),
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            GatewayWorkingGroupLockId::get(),
-            DistributionWorkingGroupLockId::get(),
-            OperationsWorkingGroupAlphaLockId::get(),
-            OperationsWorkingGroupBetaLockId::get(),
-            OperationsWorkingGroupGammaLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (CandidacyLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            CouncilorLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (CouncilorLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            CandidacyLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        // Proposals
-        (ProposalsLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        // Working Groups
-        (ForumGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (ContentWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (StorageWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (MembershipWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (GatewayWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (DistributionWorkingGroupLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (OperationsWorkingGroupAlphaLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (OperationsWorkingGroupBetaLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        (OperationsWorkingGroupGammaLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
-        // Bounty
-        (BountyLockId::get(), [
-            InvitedMemberLockId::get(),
-            VotingLockId::get(),
-            StakingCandidateLockId::get(),
-        ].to_vec()),
+    pub static ref NON_RIVALROUS_LOCKS: Vec<LockIdentifier> = [
+        VotingLockId::get(),
+        VESTING_LOCK_ID,
+        InvitedMemberLockId::get(),
+        BoundStakingAccountLockId::get(),
     ]
-    .iter()
-    .fold(BTreeSet::new(), |mut acc, item| {
-        for lock_id in &item.1 {
-            acc.insert((item.0, *lock_id));
-        }
-
-        acc
-    });
+    .to_vec();
 }
 
 // Change it when changing the currency constants!

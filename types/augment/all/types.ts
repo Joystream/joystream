@@ -240,12 +240,6 @@ export interface ChannelCreationParameters extends Struct {
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
 
-/** @name ChannelMigrationConfig */
-export interface ChannelMigrationConfig extends Struct {
-  readonly current_id: ChannelId;
-  readonly final_id: ChannelId;
-}
-
 /** @name ChannelOwner */
 export interface ChannelOwner extends Enum {
   readonly isMember: boolean;
@@ -1103,12 +1097,6 @@ export interface VideoCreationParameters extends Struct {
 
 /** @name VideoId */
 export interface VideoId extends u64 {}
-
-/** @name VideoMigrationConfig */
-export interface VideoMigrationConfig extends Struct {
-  readonly current_id: VideoId;
-  readonly final_id: VideoId;
-}
 
 /** @name VideoPost */
 export interface VideoPost extends Struct {
