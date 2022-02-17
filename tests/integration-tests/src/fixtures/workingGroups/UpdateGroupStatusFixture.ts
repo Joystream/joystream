@@ -34,7 +34,7 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(r: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(r, this.group, 'StatusTextChanged')
+    return this.api.getEventDetails(r, this.group, 'StatusTextChanged')
   }
 
   protected getActionMetadataBytes(update: IWorkingGroupMetadata): Bytes {

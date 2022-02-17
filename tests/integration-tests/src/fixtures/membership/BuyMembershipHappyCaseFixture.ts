@@ -6,11 +6,13 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Membership } from '@joystream/types/members'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { MembershipBoughtEventDetails } from '../../types'
+import { EventDetails, EventType } from '../../types'
 import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { SubmittableResult } from '@polkadot/api'
+
+type MembershipBoughtEventDetails = EventDetails<EventType<'members', 'MembershipBought'>>
 
 export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
   protected accounts: string[]
@@ -32,11 +34,11 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: SubmittableResult): Promise<MembershipBoughtEventDetails> {
-    return this.api.retrieveMembershipBoughtEventDetails(result)
+    return this.api.getEventDetails(result, 'members', 'MembershipBought')
   }
 
   public getCreatedMembers(): MemberId[] {
-    return this.events.map((e) => e.memberId)
+    return this.events.map((e) => e.event.data[0])
   }
 
   protected assertQueriedMembersAreValid(
@@ -47,7 +49,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       const account = this.accounts[i]
       const params = generateParamsFromAccountId(account)
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
-      const qMember = qMembers.find((m) => m.id === e.memberId.toString())
+      const qMember = qMembers.find((m) => m.id === e.event.data[0].toString())
       Utils.assert(qMember, 'Query node: Membership not found!')
       const {
         handle,
@@ -73,10 +75,10 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: MembershipBoughtEventFieldsFragment, i: number): void {
     const account = this.accounts[i]
-    const event = this.events[i]
+    const eventDetails = this.events[i]
     const txParams = generateParamsFromAccountId(account)
     const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
-    assert.equal(qEvent.newMember.id, event.memberId.toString())
+    assert.equal(qEvent.newMember.id, eventDetails.event.data[0].toString())
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account)
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
@@ -100,7 +102,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       (r) => this.assertQueryNodeEventsAreValid(r)
     )
 
-    const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.memberId))
+    const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.event.data[0]))
     this.assertQueriedMembersAreValid(qMembers, qEvents)
   }
 }

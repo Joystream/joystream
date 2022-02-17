@@ -46,7 +46,7 @@ export class SetStickyThreadsFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'CategoryStickyThreadUpdate')
+    return this.api.getEventDetails(result, 'forum', 'CategoryStickyThreadUpdate')
   }
 
   protected assertQueriedCategoriesAreValid(qCategories: ForumCategoryFieldsFragment[]): void {

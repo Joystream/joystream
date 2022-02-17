@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { ProposalCreatedEventDetails, ProposalDetailsJsonByType, ProposalType } from '../../types'
+import { EventType, ProposalDetailsJsonByType, ProposalType } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -14,6 +14,7 @@ import { getWorkingGroupModuleName } from '../../consts'
 import { assertQueriedOpeningMetadataIsValid } from '../workingGroups/utils'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { EventDetails } from '@joystream/cli/src/Types'
 
 export type ProposalCreationParams<T extends ProposalType = ProposalType> = {
   asMember: MemberId
@@ -23,6 +24,8 @@ export type ProposalCreationParams<T extends ProposalType = ProposalType> = {
   type: T
   details: ProposalDetailsJsonByType<T>
 }
+
+type ProposalCreatedEventDetails = EventDetails<EventType<'proposalsCodex', 'ProposalCreated'>>
 
 export class CreateProposalsFixture extends StandardizedFixture {
   protected events: ProposalCreatedEventDetails[] = []
@@ -39,7 +42,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created opening ids before they were created!')
     }
-    return this.events.map((e) => e.proposalId)
+    return this.events.map((e) => e.event.data[0])
   }
 
   protected proposalParams(i: number): ProposalParameters {
@@ -90,7 +93,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<ProposalCreatedEventDetails> {
-    return this.api.retrieveProposalCreatedEventDetails(result)
+    return this.api.getEventDetails(result, 'proposalsCodex', 'ProposalCreated')
   }
 
   protected assertProposalDetailsAreValid(
@@ -306,7 +309,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
   protected assertQueriedProposalsAreValid(qProposals: ProposalFieldsFragment[]): void {
     this.events.map((e, i) => {
       const proposalParams = this.proposalsParams[i]
-      const qProposal = qProposals.find((p) => p.id === e.proposalId.toString())
+      const qProposal = qProposals.find((p) => p.id === e.event.data[0].toString())
       Utils.assert(qProposal, 'Query node: Proposal not found')
       assert.equal(qProposal.councilApprovals, 0)
       assert.equal(qProposal.creator.id, proposalParams.asMember.toString())
@@ -334,7 +337,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
 
     // Query the proposals
     await this.query.tryQueryWithTimeout(
-      () => this.query.getProposalsByIds(this.events.map((e) => e.proposalId)),
+      () => this.query.getProposalsByIds(this.events.map((e) => e.event.data[0])),
       (result) => this.assertQueriedProposalsAreValid(result)
     )
   }

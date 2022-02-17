@@ -40,7 +40,7 @@ export class VoteOnPollFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'VoteOnPoll')
+    return this.api.getEventDetails(result, 'forum', 'VoteOnPoll')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: VoteOnPollEventFieldsFragment, i: number): void {

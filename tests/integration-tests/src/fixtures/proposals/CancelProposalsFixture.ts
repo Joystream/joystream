@@ -29,7 +29,7 @@ export class CancelProposalsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveProposalsEngineEventDetails(result, 'ProposalCancelled')
+    return this.api.getEventDetails(result, 'proposalsEngine', 'ProposalCancelled')
   }
 
   protected assertQueriedProposalsAreValid(

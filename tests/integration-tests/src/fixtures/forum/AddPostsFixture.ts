@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { MetadataInput, PostAddedEventDetails } from '../../types'
+import { EventDetails, EventType, MetadataInput } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -20,6 +20,8 @@ export type PostParams = {
   metadata: MetadataInput<IForumPostMetadata> & { expectReplyFailure?: boolean }
 }
 
+type PostAddedEventDetails = EventDetails<EventType<'forum', 'PostAdded'>>
+
 export class AddPostsFixture extends StandardizedFixture {
   protected events: PostAddedEventDetails[] = []
 
@@ -34,7 +36,7 @@ export class AddPostsFixture extends StandardizedFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created posts ids before they were created!')
     }
-    return this.events.map((e) => e.postId)
+    return this.events.map(({ event }) => event.data[0])
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
@@ -65,7 +67,7 @@ export class AddPostsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<PostAddedEventDetails> {
-    return this.api.retrievePostAddedEventDetails(result)
+    return this.api.getEventDetails(result, 'forum', 'PostAdded')
   }
 
   protected getPostExpectedText({ metadata: inputMeta }: PostParams): string {
@@ -79,7 +81,7 @@ export class AddPostsFixture extends StandardizedFixture {
     qEvents: PostAddedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
-      const qPost = qPosts.find((p) => p.id === e.postId.toString())
+      const qPost = qPosts.find((p) => p.id === e.event.data[0].toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const postParams = this.postsParams[i]
       const expectedStatus =
@@ -103,7 +105,7 @@ export class AddPostsFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: PostAddedEventFieldsFragment, i: number): void {
     const params = this.postsParams[i]
-    assert.equal(qEvent.post.id, this.events[i].postId.toString())
+    assert.equal(qEvent.post.id, this.events[i].event.data[0].toString())
     assert.equal(qEvent.text, this.getPostExpectedText(params))
     assert.equal(qEvent.isEditable, params.editable === undefined || params.editable)
   }
@@ -117,7 +119,7 @@ export class AddPostsFixture extends StandardizedFixture {
     )
 
     // Query the posts
-    const qPosts = await this.query.getPostsByIds(this.events.map((e) => e.postId))
+    const qPosts = await this.query.getPostsByIds(this.events.map((e) => e.event.data[0]))
     this.assertQueriedPostsAreValid(qPosts, qEvents)
   }
 }

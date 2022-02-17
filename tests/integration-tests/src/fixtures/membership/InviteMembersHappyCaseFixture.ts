@@ -2,7 +2,7 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { MemberContext, MemberInvitedEventDetails } from '../../types'
+import { EventDetails, EventType, MemberContext } from '../../types'
 import { MemberInvitedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { MemberId } from '@joystream/types/common'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
@@ -10,6 +10,8 @@ import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { generateParamsFromAccountId } from './utils'
 import { SubmittableResult } from '@polkadot/api'
+
+type MemberInvitedEventDetails = EventDetails<EventType<'members', 'MemberInvited'>>
 
 export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   protected inviterContext: MemberContext
@@ -39,7 +41,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: SubmittableResult): Promise<MemberInvitedEventDetails> {
-    return this.api.retrieveMemberInvitedEventDetails(result)
+    return this.api.getEventDetails(result, 'members', 'MemberInvited')
   }
 
   protected assertQueriedInvitedMembersAreValid(
@@ -49,7 +51,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
     this.events.map((e, i) => {
       const account = this.accounts[i]
       const txParams = generateParamsFromAccountId(account)
-      const qMember = qMembers.find((m) => m.id === e.newMemberId.toString())
+      const qMember = qMembers.find((m) => m.id === e.event.data[0].toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qMember, 'Query node: Membership not found!')
       const {
@@ -79,10 +81,10 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: MemberInvitedEventFieldsFragment, i: number): void {
     const account = this.accounts[i]
-    const event = this.events[i]
+    const eventDetails = this.events[i]
     const txParams = generateParamsFromAccountId(account)
     const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
-    assert.equal(qEvent.newMember.id, event.newMemberId.toString())
+    assert.equal(qEvent.newMember.id, eventDetails.event.data[0].toString())
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account)
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
@@ -113,7 +115,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       (res) => this.assertQueryNodeEventsAreValid(res)
     )
 
-    const invitedMembersIds = this.events.map((e) => e.newMemberId)
+    const invitedMembersIds = this.events.map((e) => e.event.data[0])
     const qInvitedMembers = await this.query.getMembersByIds(invitedMembersIds)
     this.assertQueriedInvitedMembersAreValid(qInvitedMembers, qEvents)
 

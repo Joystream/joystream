@@ -40,7 +40,7 @@ export class ReactToPostsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'PostReacted')
+    return this.api.getEventDetails(result, 'forum', 'PostReacted')
   }
 
   protected getExpectedReaction(reactionId: number): PostReaction | null {

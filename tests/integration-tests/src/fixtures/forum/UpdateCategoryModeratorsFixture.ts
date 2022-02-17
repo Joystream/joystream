@@ -41,7 +41,7 @@ export class UpdateCategoryModeratorsFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'CategoryMembershipOfModeratorUpdated')
+    return this.api.getEventDetails(result, 'forum', 'CategoryMembershipOfModeratorUpdated')
   }
 
   protected assertQueriedCategoriesAreValid(qCategories: ForumCategoryFieldsFragment[]): void {

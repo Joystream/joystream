@@ -53,7 +53,7 @@ export class CreateUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
+    return this.api.getEventDetails(result, this.group, 'StatusTextChanged')
   }
 
   public getCreatedUpcomingOpeningIds(): string[] {

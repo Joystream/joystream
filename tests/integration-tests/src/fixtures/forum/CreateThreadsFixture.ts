@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { MetadataInput, ThreadCreatedEventDetails } from '../../types'
+import { EventType, MetadataInput } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -13,6 +13,7 @@ import { CreateInterface } from '@joystream/types'
 import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+import { EventDetails } from '@joystream/cli/src/Types'
 
 export type PollParams = {
   description: string
@@ -28,6 +29,8 @@ export type ThreadParams = {
   poll?: PollParams
 }
 
+type ThreadCreatedEventDetails = EventDetails<EventType<'forum', 'ThreadCreated'>>
+
 export class CreateThreadsFixture extends StandardizedFixture {
   protected events: ThreadCreatedEventDetails[] = []
 
@@ -42,7 +45,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created threads ids before they were created!')
     }
-    return this.events.map((e) => e.threadId)
+    return this.events.map((e) => e.event.data[1])
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
@@ -85,7 +88,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<ThreadCreatedEventDetails> {
-    return this.api.retrieveThreadCreatedEventDetails(result)
+    return this.api.getEventDetails(result, 'forum', 'ThreadCreated')
   }
 
   protected getExpectedThreadTitle({ metadata: inputMeta }: ThreadParams): string {
@@ -99,7 +102,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
     qEvents: ThreadCreatedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
-      const qThread = qThreads.find((t) => t.id === e.threadId.toString())
+      const qThread = qThreads.find((t) => t.id === e.event.data[1].toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const threadParams = this.threadsParams[i]
       const metadata = Utils.getDeserializedMetadataFormInput(ForumThreadMetadata, threadParams.metadata)
@@ -114,7 +117,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       assert.equal(qThread.createdInEvent.id, qEvent.id)
       const { initialPost } = qThread
       Utils.assert(initialPost, "Query node: Thread's initial post is empty!")
-      assert.equal(initialPost.id, e.postId.toString())
+      assert.equal(initialPost.id, e.event.data[2].toString())
       assert.equal(initialPost.text, threadParams.text)
       Utils.assert(initialPost.origin.__typename === 'PostOriginThreadInitial')
       // FIXME: Temporarly not working (https://github.com/Joystream/hydra/issues/396)
@@ -141,7 +144,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ThreadCreatedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.thread.id, this.events[i].threadId.toString())
+    assert.equal(qEvent.thread.id, this.events[i].event.data[1].toString())
     assert.equal(qEvent.title, this.getExpectedThreadTitle(this.threadsParams[i]))
     assert.equal(qEvent.text, this.threadsParams[i].text)
   }
@@ -155,7 +158,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.events.map((e) => e.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.events.map((e) => e.event.data[1]))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

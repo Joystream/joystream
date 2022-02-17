@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { OpeningAddedEventDetails, WorkingGroupModuleName } from '../../types'
+import { EventType, WorkingGroupModuleName } from '../../types'
 import { OpeningId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
@@ -16,6 +16,7 @@ import { createType } from '@joystream/types'
 import { Bytes } from '@polkadot/types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { assertQueriedOpeningMetadataIsValid } from './utils'
+import { EventDetails } from '@joystream/cli/src/Types'
 
 export type OpeningParams = {
   stake: BN
@@ -24,6 +25,9 @@ export type OpeningParams = {
   metadata: IOpeningMetadata | string
   expectMetadataFailure?: boolean
 }
+
+// 'contentWorkingGroup' used just as a reference group (all working-group events are the same)
+type OpeningAddedEventDetails = EventDetails<EventType<'contentWorkingGroup', 'OpeningAdded'>>
 
 export const DEFAULT_OPENING_PARAMS: Omit<OpeningParams, 'metadata'> & { metadata: IOpeningMetadata } = {
   stake: MIN_APPLICATION_STAKE,
@@ -64,7 +68,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created opening ids before they were created!')
     }
-    return this.events.map((e) => e.openingId)
+    return this.events.map((e) => e.event.data[0])
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -107,7 +111,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<OpeningAddedEventDetails> {
-    return this.api.retrieveOpeningAddedEventDetails(result, this.group)
+    return this.api.getEventDetails(result, this.group, 'OpeningAdded')
   }
 
   protected assertQueriedOpeningsAreValid(
@@ -115,11 +119,11 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
     qEvents: OpeningAddedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
-      const qOpening = qOpenings.find((o) => o.runtimeId === e.openingId.toNumber())
+      const qOpening = qOpenings.find((o) => o.runtimeId === e.event.data[0].toNumber())
       const openingParams = this.openingsParams[i]
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qOpening, 'Query node: Opening not found')
-      assert.equal(qOpening.runtimeId, e.openingId.toNumber())
+      assert.equal(qOpening.runtimeId, e.event.data[0].toNumber())
       assert.equal(qOpening.createdInEvent.id, qEvent.id)
       assert.equal(qOpening.group.name, this.group)
       assert.equal(qOpening.rewardPerBlock, openingParams.reward.toString())
@@ -134,7 +138,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: OpeningAddedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.opening.runtimeId, this.events[i].openingId.toNumber())
+    assert.equal(qEvent.opening.runtimeId, this.events[i].event.data[0].toNumber())
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -147,7 +151,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
 
     // Query the openings
     const qOpenings = await this.query.getOpeningsByIds(
-      this.events.map((e) => e.openingId),
+      this.events.map((e) => e.event.data[0]),
       this.group
     )
     this.assertQueriedOpeningsAreValid(qOpenings, qEvents)

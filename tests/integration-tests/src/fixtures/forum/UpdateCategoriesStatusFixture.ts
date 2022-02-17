@@ -48,7 +48,7 @@ export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'CategoryArchivalStatusUpdated')
+    return this.api.getEventDetails(result, 'forum', 'CategoryArchivalStatusUpdated')
   }
 
   protected assertQueriedCategoriesAreValid(

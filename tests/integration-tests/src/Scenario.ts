@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory, Api, KeyGenInfo } from './Api'
+import { ApiFactory, Api } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -10,6 +10,7 @@ import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
 import fs, { existsSync, readFileSync } from 'fs'
+import { KeyGenInfo } from './types'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv

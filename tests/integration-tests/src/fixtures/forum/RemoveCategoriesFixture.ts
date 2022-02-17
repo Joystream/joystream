@@ -34,7 +34,7 @@ export class RemoveCategoriesFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'CategoryDeleted')
+    return this.api.getEventDetails(result, 'forum', 'CategoryDeleted')
   }
 
   protected assertQueriedCategoriesAreValid(

@@ -46,7 +46,7 @@ export class IncreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StakeIncreased')
+    return this.api.getEventDetails(result, this.group, 'StakeIncreased')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StakeIncreasedEventFieldsFragment, i: number): void {

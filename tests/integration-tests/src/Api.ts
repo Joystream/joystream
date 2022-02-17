@@ -1,12 +1,12 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, BTreeMap } from '@polkadot/types'
-import { IEvent, ISubmittableResult } from '@polkadot/types/types'
+import { u32 } from '@polkadot/types'
+import { ISubmittableResult, Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, ChannelId, MemberId, PostId, ThreadId } from '@joystream/types/common'
+import { AccountId, ChannelId, MemberId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
@@ -15,56 +15,23 @@ import { extendDebug } from './Debugger'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import {
   EventDetails,
-  MemberInvitedEventDetails,
-  MembershipBoughtEventDetails,
-  MembershipEventName,
-  OpeningAddedEventDetails,
-  WorkingGroupsEventName,
+  EventSection,
+  EventMethod,
+  EventType,
+  KeyGenInfo,
   WorkingGroupModuleName,
-  AppliedOnOpeningEventDetails,
-  OpeningFilledEventDetails,
-  ProposalsEngineEventName,
-  ProposalCreatedEventDetails,
   ProposalType,
-  ForumEventName,
-  CategoryCreatedEventDetails,
-  PostAddedEventDetails,
-  ThreadCreatedEventDetails,
-  ProposalsCodexEventName,
-  ProposalDiscussionPostCreatedEventDetails,
-  ProposalsDiscussionEventName,
 } from './types'
-import {
-  ApplicationId,
-  Opening,
-  OpeningId,
-  WorkerId,
-  ApplyOnOpeningParameters,
-  Worker,
-} from '@joystream/types/working-group'
-import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
+import { Opening, OpeningId, WorkerId, Worker } from '@joystream/types/working-group'
+import { ProposalParameters } from '@joystream/types/proposals'
 import {
   BLOCKTIME,
   KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
   proposalTypeToProposalParamsKey,
   workingGroupNameByModuleName,
 } from './consts'
-import { CategoryId } from '@joystream/types/forum'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { VideoCategoryId, VideoId } from '@joystream/types/content'
-
-type EventSection = keyof ApiPromise['events'] & string
-type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
-type EventType<
-  Section extends EventSection,
-  Method extends EventMethod<Section>
-> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
-
-export type KeyGenInfo = {
-  start: number
-  final: number
-  custom: string[]
-}
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -426,108 +393,28 @@ export class Api {
     return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
-  // TODO: Augmentations comming with new @polkadot/typegen!
-
-  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
-    return events.find((record) => record.event.section === section && record.event.method === method)
-  }
-
-  public async retrieveEventDetails(
+  public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
     result: ISubmittableResult,
-    section: string,
-    method: string
-  ): Promise<EventDetails | undefined> {
-    const { status, events } = result
-    const record = this.findEventRecord(events, section, method)
-    if (!record) {
-      return
-    }
+    section: S,
+    method: M
+  ): Promise<EventDetails<EventType<S, M>>> {
+    const { status } = result
+    const event = this.getEvent(result, section, method)
 
     const blockHash = (status.isInBlock ? status.asInBlock : status.asFinalized).toString()
     const blockNumber = (await this.api.rpc.chain.getHeader(blockHash)).number.toNumber()
     const blockTimestamp = (await this.api.query.timestamp.now.at(blockHash)).toNumber()
     const blockEvents = await this.api.query.system.events.at(blockHash)
-    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) => blockEvent.hash.eq(record.event.hash))
+    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) =>
+      blockEvent.hash.eq((event as EventType<S, M> & Codec).hash)
+    )
 
     return {
-      event: record.event,
+      event,
       blockNumber,
       blockHash,
       blockTimestamp,
       indexInBlock,
-    }
-  }
-
-  public async retrieveMembershipEventDetails(
-    result: ISubmittableResult,
-    eventName: MembershipEventName
-  ): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, 'members', eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveWorkingGroupsEventDetails(
-    result: ISubmittableResult,
-    moduleName: WorkingGroupModuleName,
-    eventName: WorkingGroupsEventName
-  ): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, moduleName, eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveMembershipBoughtEventDetails(result: ISubmittableResult): Promise<MembershipBoughtEventDetails> {
-    const details = await this.retrieveMembershipEventDetails(result, 'MembershipBought')
-    return {
-      ...details,
-      memberId: details.event.data[0] as MemberId,
-    }
-  }
-
-  public async retrieveMemberInvitedEventDetails(result: ISubmittableResult): Promise<MemberInvitedEventDetails> {
-    const details = await this.retrieveMembershipEventDetails(result, 'MemberInvited')
-    return {
-      ...details,
-      newMemberId: details.event.data[0] as MemberId,
-    }
-  }
-
-  public async retrieveOpeningAddedEventDetails(
-    result: ISubmittableResult,
-    moduleName: WorkingGroupModuleName
-  ): Promise<OpeningAddedEventDetails> {
-    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'OpeningAdded')
-    return {
-      ...details,
-      openingId: details.event.data[0] as OpeningId,
-    }
-  }
-
-  public async retrieveAppliedOnOpeningEventDetails(
-    result: ISubmittableResult,
-    moduleName: WorkingGroupModuleName
-  ): Promise<AppliedOnOpeningEventDetails> {
-    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'AppliedOnOpening')
-    return {
-      ...details,
-      params: details.event.data[0] as ApplyOnOpeningParameters,
-      applicationId: details.event.data[1] as ApplicationId,
-    }
-  }
-
-  public async retrieveOpeningFilledEventDetails(
-    result: ISubmittableResult,
-    moduleName: WorkingGroupModuleName
-  ): Promise<OpeningFilledEventDetails> {
-    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'OpeningFilled')
-    return {
-      ...details,
-      applicationIdToWorkerIdMap: details.event.data[1] as BTreeMap<ApplicationId, WorkerId>,
     }
   }
 
@@ -591,65 +478,6 @@ export class Api {
 
   public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
     return (await this.getLeader(group))[1].staking_account_id.toString()
-  }
-
-  public async retrieveProposalsEngineEventDetails(
-    result: ISubmittableResult,
-    eventName: ProposalsEngineEventName
-  ): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, 'proposalsEngine', eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveProposalsCodexEventDetails(
-    result: ISubmittableResult,
-    eventName: ProposalsCodexEventName
-  ): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, 'proposalsCodex', eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveForumEventDetails(result: ISubmittableResult, eventName: ForumEventName): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, 'forum', eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveProposalCreatedEventDetails(result: ISubmittableResult): Promise<ProposalCreatedEventDetails> {
-    const details = await this.retrieveProposalsCodexEventDetails(result, 'ProposalCreated')
-    return {
-      ...details,
-      proposalId: details.event.data[0] as ProposalId,
-    }
-  }
-
-  public async retrieveProposalsDiscussionEventDetails(
-    result: ISubmittableResult,
-    eventName: ProposalsDiscussionEventName
-  ): Promise<EventDetails> {
-    const details = await this.retrieveEventDetails(result, 'proposalsDiscussion', eventName)
-    if (!details) {
-      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
-    }
-    return details
-  }
-
-  public async retrieveProposalDiscussionPostCreatedEventDetails(
-    result: ISubmittableResult
-  ): Promise<ProposalDiscussionPostCreatedEventDetails> {
-    const details = await this.retrieveProposalsDiscussionEventDetails(result, 'PostCreated')
-    return {
-      ...details,
-      postId: details.event.data[0] as PostId,
-    }
   }
 
   public async getMemberSigners(inputs: { asMember: MemberId }[]): Promise<string[]> {
@@ -739,31 +567,6 @@ export class Api {
 
   public proposalParametersByType(type: ProposalType): ProposalParameters {
     return this.api.consts.proposalsCodex[proposalTypeToProposalParamsKey[type]]
-  }
-
-  public async retrieveCategoryCreatedEventDetails(result: ISubmittableResult): Promise<CategoryCreatedEventDetails> {
-    const details = await this.retrieveForumEventDetails(result, 'CategoryCreated')
-    return {
-      ...details,
-      categoryId: details.event.data[0] as CategoryId,
-    }
-  }
-
-  public async retrieveThreadCreatedEventDetails(result: ISubmittableResult): Promise<ThreadCreatedEventDetails> {
-    const details = await this.retrieveForumEventDetails(result, 'ThreadCreated')
-    return {
-      ...details,
-      threadId: details.event.data[1] as ThreadId,
-      postId: details.event.data[2] as PostId,
-    }
-  }
-
-  public async retrievePostAddedEventDetails(result: ISubmittableResult): Promise<PostAddedEventDetails> {
-    const details = await this.retrieveForumEventDetails(result, 'PostAdded')
-    return {
-      ...details,
-      postId: details.event.data[0] as PostId,
-    }
   }
 
   lockIdByGroup(group: WorkingGroupModuleName): LockIdentifier {

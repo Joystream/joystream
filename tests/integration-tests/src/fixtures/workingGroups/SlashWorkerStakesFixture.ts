@@ -51,7 +51,7 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StakeSlashed')
+    return this.api.getEventDetails(result, this.group, 'StakeSlashed')
   }
 
   public async execute(): Promise<void> {

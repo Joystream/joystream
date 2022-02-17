@@ -2,20 +2,29 @@ import BN from 'bn.js'
 import { assert } from 'chai'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { EventDetails, OpeningFilledEventDetails, WorkingGroupModuleName } from '../../types'
+import { EventDetails, EventType, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
-import { Application, ApplicationId, Opening, OpeningId, WorkerId } from '@joystream/types/working-group'
+import {
+  Application,
+  ApplicationId,
+  ApplicationIdSet,
+  Opening,
+  OpeningId,
+  WorkerId,
+} from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { BTreeSet } from '@polkadot/types'
-import { registry } from '@joystream/types'
+import { createType } from '@joystream/types'
 import {
   LeaderSetEventFieldsFragment,
   OpeningFieldsFragment,
   OpeningFilledEventFieldsFragment,
   WorkerFieldsFragment,
 } from '../../graphql/generated/queries'
+
+// 'contentWorkingGroup' used just as a reference group (all working-group events are the same)
+type OpeningFilledEventDetails = EventDetails<EventType<'contentWorkingGroup', 'OpeningFilled'>>
 
 export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   protected events: OpeningFilledEventDetails[] = []
@@ -54,19 +63,17 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.openingIds.map((openingId, i) => {
-      const applicationsSet = new (BTreeSet.with(ApplicationId))(registry, this.acceptedApplicationsIdsArrays[i])
-      this.debug(
-        'Applications to accept:',
-        this.acceptedApplicationsIdsArrays[i].map((id) => id.toNumber())
+      const applicationsSet = createType<ApplicationIdSet, 'ApplicationIdSet'>(
+        'ApplicationIdSet',
+        this.acceptedApplicationsIdsArrays[i]
       )
-      this.debug('Encoded BTreeSet:', applicationsSet.toHex())
       return this.api.tx[this.group].fillOpening(openingId, applicationsSet)
     })
     return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<OpeningFilledEventDetails> {
-    return this.api.retrieveOpeningFilledEventDetails(result, this.group)
+    return this.api.getEventDetails(result, this.group, 'OpeningFilled')
   }
 
   protected async loadApplicationsData(): Promise<void> {
@@ -95,10 +102,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     await this.loadOpeningsData()
     await super.execute()
     this.events.forEach((e, i) => {
-      this.createdWorkerIdsByOpeningId.set(
-        this.openingIds[i].toNumber(),
-        Array.from(e.applicationIdToWorkerIdMap.values())
-      )
+      this.createdWorkerIdsByOpeningId.set(this.openingIds[i].toNumber(), Array.from(e.event.data[1].values()))
     })
   }
 
@@ -109,7 +113,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
       // Cannot use "applicationIdToWorkerIdMap.get" here,
       // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
       const [, workerId] =
-        Array.from(this.events[i].applicationIdToWorkerIdMap.entries()).find(([applicationId]) =>
+        Array.from(this.events[i].event.data[1].entries()).find(([applicationId]) =>
           applicationId.eq(acceptedApplId)
         ) || []
       Utils.assert(
@@ -231,7 +235,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
       Utils.assert(qGroup.leader, 'Query node: Working group leader not set!')
       assert.equal(qGroup.leader.runtimeId, leaderId)
 
-      const leaderSetEvent = await this.api.retrieveWorkingGroupsEventDetails(this.results[0], this.group, 'LeaderSet')
+      const leaderSetEvent = await this.api.getEventDetails(this.results[0], this.group, 'LeaderSet')
       const qEvent = await this.query.getLeaderSetEvent(leaderSetEvent)
       this.assertQueryNodeLeaderSetEventIsValid(leaderSetEvent, qEvent, leaderId)
     }

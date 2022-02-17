@@ -34,7 +34,7 @@ export class WithdrawApplicationsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'ApplicationWithdrawn')
+    return this.api.getEventDetails(result, this.group, 'ApplicationWithdrawn')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ApplicationWithdrawnEventFieldsFragment, i: number): void {

@@ -51,7 +51,7 @@ export class DecreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StakeDecreased')
+    return this.api.getEventDetails(result, this.group, 'StakeDecreased')
   }
 
   public async execute(): Promise<void> {

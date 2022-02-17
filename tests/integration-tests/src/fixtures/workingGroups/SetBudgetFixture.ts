@@ -27,7 +27,7 @@ export class SetBudgetFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'BudgetSet')
+    return this.api.getEventDetails(result, this.group, 'BudgetSet')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: BudgetSetEventFieldsFragment, i: number): void {

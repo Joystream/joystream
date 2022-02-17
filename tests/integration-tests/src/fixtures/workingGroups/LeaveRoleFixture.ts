@@ -33,7 +33,7 @@ export class LeaveRoleFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'WorkerStartedLeaving')
+    return this.api.getEventDetails(result, this.group, 'WorkerStartedLeaving')
   }
 
   protected getRationale(workerId: WorkerId): string {

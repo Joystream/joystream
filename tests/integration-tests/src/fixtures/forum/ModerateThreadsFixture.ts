@@ -44,7 +44,7 @@ export class ModerateThreadsFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'ThreadModerated')
+    return this.api.getEventDetails(result, 'forum', 'ThreadModerated')
   }
 
   protected assertQueriedThreadsAreValid(

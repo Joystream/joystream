@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { MetadataInput, ProposalDiscussionPostCreatedEventDetails } from '../../types'
+import { EventType, MetadataInput } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -13,6 +13,7 @@ import { StandardizedFixture } from '../../Fixture'
 import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import { PROPOSALS_POST_DEPOSIT } from '../../consts'
 import { ProposalsDiscussionPostMetadata, IProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
+import { EventDetails } from '@joystream/cli/src/Types'
 
 export type PostParams = {
   threadId: ThreadId | number
@@ -20,6 +21,8 @@ export type PostParams = {
   editable?: boolean // defaults to true
   metadata: MetadataInput<IProposalsDiscussionPostMetadata> & { expectReplyFailure?: boolean }
 }
+
+type ProposalDiscussionPostCreatedEventDetails = EventDetails<EventType<'proposalsDiscussion', 'PostCreated'>>
 
 export class CreatePostsFixture extends StandardizedFixture {
   protected events: ProposalDiscussionPostCreatedEventDetails[] = []
@@ -34,7 +37,7 @@ export class CreatePostsFixture extends StandardizedFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created posts ids before they were created!')
     }
-    return this.events.map((e) => e.postId)
+    return this.events.map((e) => e.event.data[0])
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
@@ -60,7 +63,7 @@ export class CreatePostsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<ProposalDiscussionPostCreatedEventDetails> {
-    return this.api.retrieveProposalDiscussionPostCreatedEventDetails(result)
+    return this.api.getEventDetails(result, 'proposalsDiscussion', 'PostCreated')
   }
 
   protected getPostExpectedText(postParams: PostParams): string {
@@ -77,7 +80,7 @@ export class CreatePostsFixture extends StandardizedFixture {
     qEvents: ProposalDiscussionPostCreatedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
-      const qPost = qPosts.find((p) => p.id === e.postId.toString())
+      const qPost = qPosts.find((p) => p.id === e.event.data[0].toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const postParams = this.postsParams[i]
       const expectedStatus =
@@ -104,7 +107,7 @@ export class CreatePostsFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: ProposalDiscussionPostCreatedEventFieldsFragment, i: number): void {
     const params = this.postsParams[i]
-    assert.equal(qEvent.post.id, this.events[i].postId.toString())
+    assert.equal(qEvent.post.id, this.events[i].event.data[0].toString())
     assert.equal(qEvent.text, this.getPostExpectedText(params))
   }
 
@@ -117,7 +120,7 @@ export class CreatePostsFixture extends StandardizedFixture {
     )
 
     // Query the posts
-    const qPosts = await this.query.getProposalDiscussionPostsByIds(this.events.map((e) => e.postId))
+    const qPosts = await this.query.getProposalDiscussionPostsByIds(this.events.map((e) => e.event.data[0]))
     this.assertQueriedPostsAreValid(qPosts, qEvents)
   }
 }

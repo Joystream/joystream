@@ -40,7 +40,7 @@ export class UpdatePostsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveProposalsDiscussionEventDetails(result, 'PostUpdated')
+    return this.api.getEventDetails(result, 'proposalsDiscussion', 'PostUpdated')
   }
 
   protected assertQueriedPostsAreValid(

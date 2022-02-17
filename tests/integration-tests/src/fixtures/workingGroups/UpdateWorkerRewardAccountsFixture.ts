@@ -44,7 +44,7 @@ export class UpdateWorkerRewardAccountsFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'WorkerRewardAccountUpdated')
+    return this.api.getEventDetails(result, this.group, 'WorkerRewardAccountUpdated')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: WorkerRewardAccountUpdatedEventFieldsFragment, i: number): void {

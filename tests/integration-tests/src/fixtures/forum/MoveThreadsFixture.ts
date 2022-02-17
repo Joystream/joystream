@@ -43,7 +43,7 @@ export class MoveThreadsFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'ThreadMoved')
+    return this.api.getEventDetails(result, 'forum', 'ThreadMoved')
   }
 
   protected assertQueriedThreadsAreValid(

@@ -4,7 +4,7 @@ import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { BaseQueryNodeFixture } from '../../Fixture'
-import { AnyQueryNodeEvent, EventDetails, MembershipEventName } from '../../types'
+import { AnyQueryNodeEvent, EventDetails } from '../../types'
 import { MembershipSystemSnapshotFieldsFragment } from '../../graphql/generated/queries'
 
 type MembershipSystemValues = {
@@ -14,11 +14,17 @@ type MembershipSystemValues = {
   invitedInitialBalance: BN
 }
 
+type MembershipSystemEventName =
+  | 'ReferralCutUpdated'
+  | 'MembershipPriceUpdated'
+  | 'InitialInvitationBalanceUpdated'
+  | 'InitialInvitationCountUpdated'
+
 export class SudoUpdateMembershipSystem extends BaseQueryNodeFixture {
   private newValues: Partial<MembershipSystemValues>
 
   private events: EventDetails[] = []
-  private eventNames: MembershipEventName[] = []
+  private eventNames: MembershipSystemEventName[] = []
   private extrinsics: SubmittableExtrinsic<'promise'>[] = []
 
   public constructor(api: Api, query: QueryNodeApi, newValues: Partial<MembershipSystemValues>) {
@@ -95,9 +101,7 @@ export class SudoUpdateMembershipSystem extends BaseQueryNodeFixture {
     // We don't use api.makeSudoCall, since we cannot(?) then access tx hashes
     const sudo = await this.api.query.sudo.key()
     const results = await Promise.all(this.extrinsics.map((tx) => this.api.signAndSend(tx, sudo)))
-    this.events = await Promise.all(
-      results.map((r, i) => this.api.retrieveMembershipEventDetails(r, this.eventNames[i]))
-    )
+    this.events = await Promise.all(results.map((r, i) => this.api.getEventDetails(r, 'members', this.eventNames[i])))
   }
 
   async runQueryNodeChecks(): Promise<void> {

@@ -45,7 +45,7 @@ export class VoteOnProposalsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveProposalsEngineEventDetails(result, 'Voted')
+    return this.api.getEventDetails(result, 'proposalsEngine', 'Voted')
   }
 
   protected assertQueriedProposalsAreValid(

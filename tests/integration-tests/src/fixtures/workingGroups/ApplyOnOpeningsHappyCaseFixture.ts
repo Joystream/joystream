@@ -3,7 +3,7 @@ import { assert } from 'chai'
 import { Api } from '../../Api'
 import { ApplicationFieldsFragment, AppliedOnOpeningEventFieldsFragment } from '../../graphql/generated/queries'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { AppliedOnOpeningEventDetails, WorkingGroupModuleName } from '../../types'
+import { EventDetails, EventType, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import _ from 'lodash'
 import { MemberId } from '@joystream/types/common'
@@ -30,6 +30,9 @@ export type OpeningApplicationsFlattened = {
   openingMetadata: IOpeningMetadata
   applicant: ApplicantDetails
 }[]
+
+// 'contentWorkingGroup' used just as a reference group (all working-group events are the same)
+type AppliedOnOpeningEventDetails = EventDetails<EventType<'contentWorkingGroup', 'AppliedOnOpening'>>
 
 export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
   protected applications: OpeningApplicationsFlattened
@@ -85,7 +88,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<AppliedOnOpeningEventDetails> {
-    return this.api.retrieveAppliedOnOpeningEventDetails(result, this.group)
+    return this.api.getEventDetails(result, this.group, 'AppliedOnOpening')
   }
 
   public async execute(): Promise<void> {
@@ -93,7 +96,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
     this.applications.map(({ openingId }, i) => {
       this.createdApplicationsByOpeningId.set(openingId.toNumber(), [
         ...(this.createdApplicationsByOpeningId.get(openingId.toNumber()) || []),
-        this.events[i].applicationId,
+        this.events[i].event.data[1],
       ])
     })
   }
@@ -120,10 +123,10 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
   ): void {
     this.events.map((e, i) => {
       const applicationDetails = this.applications[i]
-      const qApplication = qApplications.find((a) => a.runtimeId === e.applicationId.toNumber())
+      const qApplication = qApplications.find((a) => a.runtimeId === e.event.data[1].toNumber())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qApplication, 'Query node: Application not found!')
-      assert.equal(qApplication.runtimeId, e.applicationId.toNumber())
+      assert.equal(qApplication.runtimeId, e.event.data[1].toNumber())
       assert.equal(qApplication.createdInEvent.id, qEvent.id)
       assert.equal(qApplication.opening.runtimeId, applicationDetails.openingId.toNumber())
       assert.equal(qApplication.applicant.id, applicationDetails.applicant.memberId.toString())
@@ -131,7 +134,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       assert.equal(qApplication.rewardAccount, applicationDetails.applicant.rewardAccount)
       assert.equal(qApplication.stakingAccount, applicationDetails.applicant.stakingAccount)
       assert.equal(qApplication.status.__typename, 'ApplicationStatusPending')
-      assert.equal(qApplication.stake, e.params.stake_parameters.stake)
+      assert.equal(qApplication.stake, e.event.data[0].stake_parameters.stake)
 
       const applicationMetadata = this.getApplicationMetadata(applicationDetails.openingMetadata, i)
       assert.deepEqual(
@@ -148,7 +151,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
     const applicationDetails = this.applications[i]
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, applicationDetails.openingId.toNumber())
-    assert.equal(qEvent.application.runtimeId, this.events[i].applicationId.toNumber())
+    assert.equal(qEvent.application.runtimeId, this.events[i].event.data[1].toNumber())
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -160,7 +163,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
     )
     // Query the applications
     const qApplications = await this.query.getApplicationsByIds(
-      this.events.map((e) => e.applicationId),
+      this.events.map((e) => e.event.data[1]),
       this.group
     )
     this.assertQueriedApplicationsAreValid(qApplications, qEvents)

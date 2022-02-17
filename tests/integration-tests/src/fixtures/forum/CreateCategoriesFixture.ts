@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { CategoryCreatedEventDetails } from '../../types'
+import { EventDetails, EventType } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -14,6 +14,8 @@ export type CategoryParams = {
   description: string
   parentId?: CategoryId
 }
+
+type CategoryCreatedEventDetails = EventDetails<EventType<'forum', 'CategoryCreated'>>
 
 export class CreateCategoriesFixture extends StandardizedFixture {
   protected events: CategoryCreatedEventDetails[] = []
@@ -29,7 +31,7 @@ export class CreateCategoriesFixture extends StandardizedFixture {
     if (!this.events.length) {
       throw new Error('Trying to get created categories ids before they were created!')
     }
-    return this.events.map((e) => e.categoryId)
+    return this.events.map((e) => e.event.data[0])
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -43,12 +45,12 @@ export class CreateCategoriesFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<CategoryCreatedEventDetails> {
-    return this.api.retrieveCategoryCreatedEventDetails(result)
+    return this.api.getEventDetails(result, 'forum', 'CategoryCreated')
   }
 
   protected assertQueriedCategoriesAreValid(qCategories: ForumCategoryFieldsFragment[]): void {
     this.events.map((e, i) => {
-      const qCategory = qCategories.find((c) => c.id === e.categoryId.toString())
+      const qCategory = qCategories.find((c) => c.id === e.event.data[0].toString())
       const categoryParams = this.categoriesParams[i]
       Utils.assert(qCategory, 'Query node: Category not found')
       assert.equal(qCategory.description, categoryParams.description)
@@ -62,7 +64,7 @@ export class CreateCategoriesFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: CategoryCreatedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.category.id, this.events[i].categoryId.toString())
+    assert.equal(qEvent.category.id, this.events[i].event.data[0].toString())
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -74,7 +76,7 @@ export class CreateCategoriesFixture extends StandardizedFixture {
     )
 
     // Query the categories
-    const qCategories = await this.query.getCategoriesByIds(this.events.map((e) => e.categoryId))
+    const qCategories = await this.query.getCategoriesByIds(this.events.map((e) => e.event.data[0]))
     this.assertQueriedCategoriesAreValid(qCategories)
   }
 }

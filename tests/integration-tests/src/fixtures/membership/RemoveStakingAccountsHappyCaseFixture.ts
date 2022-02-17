@@ -40,9 +40,7 @@ export class RemoveStakingAccountsHappyCaseFixture extends BaseQueryNodeFixture 
     await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, removeStakingAccountFee)))
     // Remove staking accounts
     const results = await Promise.all(accounts.map((a, i) => this.api.signAndSend(this.extrinsics[i], a)))
-    this.events = await Promise.all(
-      results.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountRemoved'))
-    )
+    this.events = await Promise.all(results.map((r) => this.api.getEventDetails(r, 'members', 'StakingAccountRemoved')))
   }
 
   async runQueryNodeChecks(): Promise<void> {

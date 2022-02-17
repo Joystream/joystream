@@ -40,7 +40,7 @@ export class ChangeThreadsModeFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveProposalsDiscussionEventDetails(result, 'ThreadModeChanged')
+    return this.api.getEventDetails(result, 'proposalsDiscussion', 'ThreadModeChanged')
   }
 
   protected assertQueriedThreadsAreValid(

@@ -47,9 +47,9 @@ export class AddStakingAccountsHappyCaseFixture extends StandardizedFixture {
     let event
     // It's either of those, but since we can't be sure which one it is in this case, we use a try-catch workaround
     try {
-      event = await this.api.retrieveMembershipEventDetails(result, 'StakingAccountAdded')
+      event = await this.api.getEventDetails(result, 'members', 'StakingAccountAdded')
     } catch (e) {
-      event = await this.api.retrieveMembershipEventDetails(result, 'StakingAccountConfirmed')
+      event = await this.api.getEventDetails(result, 'members', 'StakingAccountConfirmed')
     }
 
     return event

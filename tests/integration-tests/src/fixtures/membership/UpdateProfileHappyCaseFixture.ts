@@ -92,7 +92,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     const txFee = await this.api.estimateTxFee(this.tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
     const txRes = await this.api.signAndSend(this.tx, this.memberContext.account)
-    this.event = await this.api.retrieveMembershipEventDetails(txRes, 'MemberProfileUpdated')
+    this.event = await this.api.getEventDetails(txRes, 'members', 'MemberProfileUpdated')
   }
 
   async runQueryNodeChecks(): Promise<void> {

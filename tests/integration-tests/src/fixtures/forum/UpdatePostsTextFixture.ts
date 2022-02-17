@@ -44,7 +44,7 @@ export class UpdatePostsTextFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'PostTextUpdated')
+    return this.api.getEventDetails(result, 'forum', 'PostTextUpdated')
   }
 
   public async execute(): Promise<void> {

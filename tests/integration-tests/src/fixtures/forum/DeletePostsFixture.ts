@@ -55,7 +55,7 @@ export class DeletePostsFixture extends StandardizedFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'PostDeleted')
+    return this.api.getEventDetails(result, 'forum', 'PostDeleted')
   }
 
   protected assertQueriedPostsAreValid(

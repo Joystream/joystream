@@ -30,7 +30,7 @@ export class CancelOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'OpeningCanceled')
+    return this.api.getEventDetails(result, this.group, 'OpeningCanceled')
   }
 
   protected assertQueriedOpeningsAreValid(

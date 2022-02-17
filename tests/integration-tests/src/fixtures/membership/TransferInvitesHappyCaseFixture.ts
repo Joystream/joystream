@@ -61,7 +61,7 @@ export class TransferInvitesHappyCaseFixture extends BaseQueryNodeFixture {
 
     // Send transfer invites extrinsic
     const txRes = await this.api.signAndSend(this.tx, fromContext.account)
-    this.event = await this.api.retrieveMembershipEventDetails(txRes, 'InvitesTransferred')
+    this.event = await this.api.getEventDetails(txRes, 'members', 'InvitesTransferred')
   }
 
   async runQueryNodeChecks(): Promise<void> {

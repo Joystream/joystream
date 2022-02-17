@@ -56,11 +56,7 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveWorkingGroupsEventDetails(
-      result,
-      this.group,
-      this.asSudo ? 'TerminatedLeader' : 'TerminatedWorker'
-    )
+    return this.api.getEventDetails(result, this.group, this.asSudo ? 'TerminatedLeader' : 'TerminatedWorker')
   }
 
   public async execute(): Promise<void> {
@@ -132,11 +128,7 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
 
     // If lead - check LeaderUnset event
     if (this.asSudo) {
-      const leaderUnsetEvent = await this.api.retrieveWorkingGroupsEventDetails(
-        this.results[0],
-        this.group,
-        'LeaderUnset'
-      )
+      const leaderUnsetEvent = await this.api.getEventDetails(this.results[0], this.group, 'LeaderUnset')
       const qEvent = await this.query.getLeaderUnsetEvent(leaderUnsetEvent)
       this.assertQueriedLeaderUnsetEventIsValid(leaderUnsetEvent, qEvent)
     }
