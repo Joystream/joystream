@@ -81,6 +81,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const channelCreatedEvent = this.getEvent(result, 'content', 'ChannelCreated')
     const channelId: ChannelId = channelCreatedEvent.data[1]
     this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
+    this.output(channelId.toString())
 
     const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
     if (dataObjectsUploadedEvent) {

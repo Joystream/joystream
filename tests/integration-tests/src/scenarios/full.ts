@@ -26,6 +26,9 @@ import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
+import initDistributionBucket from '../flows/clis/initDistributionBucket'
+import initStorageBucket from '../flows/clis/initStorageBucket'
+import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 
 scenario(async ({ job, env }) => {
@@ -82,4 +85,10 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
+
+  // CLIs:
+  const createChannelJob = job('create channel via CLI', createChannel).after(sudoHireLead)
+  job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
+    createChannelJob
+  )
 })

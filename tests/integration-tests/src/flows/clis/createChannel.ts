@@ -7,6 +7,7 @@ import { TmpFileManager } from '../../cli/utils'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { statSync } from 'fs'
+import BN from 'bn.js'
 
 export default async function createChannel({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
@@ -18,7 +19,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
   await new FixtureRunner(buyMembershipFixture).run()
 
   // Send some funds to pay the deletion_prize and fees
-  const channelOwnerBalance = api.consts.storage.dataObjectDeletionPrize.muln(2)
+  const channelOwnerBalance = new BN(10000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
   // Create Joystream CLI
@@ -41,13 +42,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     language: 'en',
     rewardAccount: channelOwnerKeypair.key.address,
   }
-  const { out: createChannelOut } = await joystreamCli.createChannel(channelInput, ['--context', 'Member'])
-
-  const channelIdMatch = /Channel with id ([0-9]+) successfully created/.exec(createChannelOut)
-  if (!channelIdMatch) {
-    throw new Error(`No channel id found in output:\n${createChannelOut}`)
-  }
-  const [, channelId] = channelIdMatch
+  const { out: channelId } = await joystreamCli.createChannel(channelInput, ['--context', 'Member'])
 
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId),
