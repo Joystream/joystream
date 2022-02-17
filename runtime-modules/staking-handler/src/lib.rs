@@ -7,6 +7,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::ensure;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
 use sp_std::marker::PhantomData;
@@ -152,11 +153,10 @@ impl<
             return Ok(());
         }
 
-        let free_balance = <pallet_balances::Module<T>>::free_balance(account_id);
-
-        if new_stake > free_balance {
-            return Err(DispatchError::Other("Not enough balance for a new stake."));
-        }
+        ensure!(
+            Self::is_enough_balance_for_stake(account_id, new_stake),
+            DispatchError::Other("Not enough balance for a new stake.")
+        );
 
         Self::lock(account_id, new_stake);
 

@@ -119,13 +119,13 @@ fn add_opening_fails_with_insufficient_balance() {
             .hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
-            stake_amount: <Test as Trait>::MinimumApplicationStake::get() + 1,
+            stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
             leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
         });
 
-        add_opening_fixture.call_and_assert(Err(DispatchError::Other(
-            "Not enough balance for a new stake.",
-        )));
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
     });
 }
 
