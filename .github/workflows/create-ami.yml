@@ -4,6 +4,10 @@ name: Create AWS AMI
 
 on:
   workflow_dispatch:
+    inputs:
+      proposalParameters:
+        description: 'Proposal Parameters (refer to runtime/src/proposals_configuration/sample_proposal_parameters.json for sample)'
+        required: false
 
 jobs:
   build:
@@ -58,7 +62,8 @@ jobs:
           options: |
             --extra-vars "git_repo=https://github.com/${{ github.repository }} \
                           branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
-                          ami_name=${{ env.ami_name }}"
+                          ami_name=${{ env.ami_name }}
+                          proposal_parameters='${{ github.event.inputs.proposalParameters }}' "
 
       - name: Delete CloudFormation Stack
         if: always()
