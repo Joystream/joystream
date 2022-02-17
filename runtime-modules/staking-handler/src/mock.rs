@@ -91,12 +91,14 @@ impl pallet_timestamp::Trait for Test {
 pub type Balances = pallet_balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type TestStakingManager = crate::StakingManager<Test, LockId>;
+pub type TestStakingManager2 = crate::StakingManager<Test, LockId2>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
     pub const LockId: [u8; 8] = [1; 8];
+    pub const LockId2: [u8; 8] = [2; 8];
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
