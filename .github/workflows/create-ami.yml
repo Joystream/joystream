@@ -63,7 +63,7 @@ jobs:
             --extra-vars "git_repo=https://github.com/${{ github.repository }} \
                           branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
                           ami_name=${{ env.ami_name }}
-                          proposal_parameters='${{ github.event.inputs.proposalParameters }}' "
+                          proposal_parameters=${{ github.event.inputs.proposalParameters }}"
 
       - name: Delete CloudFormation Stack
         if: always()
