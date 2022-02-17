@@ -1,4 +1,4 @@
-name: run-integration-tests
+name: run-network-tests
 on:
   pull_request:
     types: [opened, synchronize]
@@ -107,11 +107,11 @@ jobs:
           yarn workspace @joystream/metadata-protobuf build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
-        run: yarn workspace integration-tests build
+        run: yarn workspace network-tests build
       - name: Execute network tests
         run: |
           export RUNTIME=latest
-          tests/integration-tests/run-full-tests.sh
+          tests/network-tests/run-full-tests.sh
 
   new_chain_setup:
     name: Initialize new chain
@@ -139,10 +139,10 @@ jobs:
       - name: Ensure query-node builds
         run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
-        run: yarn workspace integration-tests build
+        run: yarn workspace network-tests build
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
         run: |
           export RUNTIME=latest
-          tests/integration-tests/test-setup-new-chain.sh
+          tests/network-tests/test-setup-new-chain.sh
