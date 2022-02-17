@@ -9,6 +9,10 @@ set -a
 set +a
 
 CONTAINER_ID=$(./run-test-node-docker.sh)
+# pass the scenario name without .ts extension
+SCENARIO=$1
+# default to "full" if scenario is not specified
+SCENARIO=${SCENARIO:=full}
 
 
 function cleanup() {
@@ -38,4 +42,4 @@ docker-compose -f ../../docker-compose.yml up -d colossus-1
 docker-compose -f ../../docker-compose.yml up -d distributor-1
 
 # Run full tests reusing the existing keys
-REUSE_KEYS=true IGNORE_HIRED_LEADS=true ./run-test-scenario.sh full
+REUSE_KEYS=true IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $SCENARIO
