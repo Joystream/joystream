@@ -49,6 +49,7 @@
     COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
     DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
     SKIP_NODE: 'true'
+    SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
   args:
     chdir: '{{ remote_code_path }}'
   async: 1800

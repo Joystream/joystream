@@ -41,6 +41,7 @@ jobs:
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           echo ::set-output name=rpcVolumeSize::$(echo $jsonInput | jq -r '.rpcVolumeSize.value')
+          echo ::set-output name=skipChainSetup::$(echo $jsonInput | jq -r '.skipChainSetup.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
           proposalParametersInput=$(echo $jsonInput | jq -r '.proposalParameters.value')
@@ -166,7 +167,8 @@ jobs:
                           deployment_type=${{ steps.myoutputs.outputs.deploymentType }} \
                           branch_name=${{ steps.myoutputs.outputs.branchName }} \
                           initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
-                          initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }}"
+                          initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }} \
+                          skip_chain_setup=${{ steps.myoutputs.outputs.skipChainSetup }}"
 
       - name: Terminate Build instance
         continue-on-error: true
