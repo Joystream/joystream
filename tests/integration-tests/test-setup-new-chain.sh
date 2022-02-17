@@ -22,6 +22,9 @@ trap cleanup EXIT
 
 sleep 3
 
+# Start the query node
+../../query-node/start.sh
+
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
