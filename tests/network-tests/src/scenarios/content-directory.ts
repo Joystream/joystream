@@ -8,10 +8,6 @@ import { scenario } from '../Scenario'
 scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('setup working group leads', [
     leaderSetup(WorkingGroups.Content, true),
-    leaderSetup(WorkingGroups.Storage, true),
   ])
-
-  const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(leadSetupJob)
-
-  job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  job('check active video counters', activeVideoCounters).requires(leadSetupJob)
 })

@@ -37,10 +37,10 @@ scenario('Combined', async ({ job }) => {
     manageWorkerAsWorker.distribution,
   ]).requires(leadSetupJob)
 
+  const createChannelJob = job('create channel via CLI', createChannel).requires(leadSetupJob)
+
   const initBucketsJob = job('init storage and distribution buckets via CLI', [
     initDistributionBucket,
     initStorageBucket,
-  ]).requires(leadSetupJob)
-
-  const createChannelJob = job('create channel via CLI', createChannel).requires(initBucketsJob)
+  ]).requires(createChannelJob)
 })

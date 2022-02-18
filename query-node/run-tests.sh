@@ -25,5 +25,7 @@ docker-compose up -d joystream-node
 
 ./start.sh
 
+../tests/network-tests/start-storage.sh
+
 # run content directory tests
-yarn workspace network-tests run-test-scenario content-directory
+REUSE_KEYS=true yarn workspace network-tests run-test-scenario content-directory
