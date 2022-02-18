@@ -192,11 +192,11 @@ jobs:
           name: endpoints
           path: devops/aws/endpoints.json
 
-      - name: Delete CloudFormation Stack if any step failed
-        # Skip only if stack already existed or all steps passed succesfully
-        if: ( failure() || cancelled() ) && steps.stack_exists.outcome != 'failure'
-        run: |
-          echo "Deleting ${{ env.STACK_NAME }} stack"
-          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
-          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
-          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
+      # - name: Delete CloudFormation Stack if any step failed
+      #   # Skip only if stack already existed or all steps passed succesfully
+      #   if: ( failure() || cancelled() ) && steps.stack_exists.outcome != 'failure'
+      #   run: |
+      #     echo "Deleting ${{ env.STACK_NAME }} stack"
+      #     aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+      #     echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+      #     aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
