@@ -34,6 +34,7 @@ operatorApi:
   hmacSecret: this-is-not-so-secret
 keys:
   - suri: //Alice
+  - suri: //testing//worker//Distribution//0
   # - mnemonic: "escape naive annual throw tragic achieve grunt verify cram note harvest problem"
   #   type: ed25519
   # - keyfile: "/path/to/keyfile.json"

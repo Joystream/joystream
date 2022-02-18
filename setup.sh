@@ -9,7 +9,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt-get update
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
     # docker
-    sudo apt-get install -y docker.io docker-compose containerd runc
+    sudo apt-get install -y docker.io containerd runc
+    # docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # install brew package manager
     if ! which brew >/dev/null 2>&1; then

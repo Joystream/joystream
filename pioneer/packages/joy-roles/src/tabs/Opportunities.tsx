@@ -484,6 +484,22 @@ const OpeningLabel = styled(Label)`
 
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
+const renderWorkingGroupName = (workingGroup: WorkingGroups) => {
+  if (workingGroup === WorkingGroups.OperationsAlpha) {
+    return { text: 'Builders', subtext: 'Operations Working Group Alpha' };
+  }
+
+  if (workingGroup === WorkingGroups.OperationsBeta) {
+    return { text: 'Human Resources', subtext: 'Operations Working Group Beta' };
+  }
+
+  if (workingGroup === WorkingGroups.OperationsGamma) {
+    return { text: 'Marketing', subtext: 'Operations Working Group Gamma' };
+  }
+
+  return { text: workingGroup };
+};
+
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   (props) => {
@@ -495,7 +511,7 @@ export const OpeningView = Loadable<OpeningViewProps>(
         <OpeningTitle>
           {text.job.title}
           <OpeningLabel>
-            { _.startCase(props.meta.group) }{ isLeadOpening ? ' Lead' : '' }
+            { _.startCase(renderWorkingGroupName(props.meta.group).text) }{ isLeadOpening ? ' Lead' : '' }
           </OpeningLabel>
         </OpeningTitle>
         <Card fluid className='container'>
@@ -531,6 +547,12 @@ const FilterOpportunitiesDropdown = styled(Dropdown)`
   width: 250px !important;
 `;
 
+const OperationsGroupSubtext = styled('p')`
+  font-size: 11px !important;
+  margin-top: -12px !important;
+  color: rgba(0, 0, 0, 0.6) !important;
+`;
+
 export type OpeningsViewProps = MemberIdProps & {
   openings?: Array<WorkingGroupOpening>;
   block_time_in_seconds?: number;
@@ -552,10 +574,21 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
       if (newPath !== location.pathname) { history.push(newPath as string); }
     };
 
-    const groupOption = (group: WorkingGroups | null, lead = false) => ({
-      value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
-      text: _.startCase(`${group || 'All opportunities'}`) + (lead ? ' (Lead)' : '')
-    });
+    const groupOption = (group: WorkingGroups | null, lead = false) => {
+      const subtext = group ? renderWorkingGroupName(group).subtext : null;
+      const text = (
+        <>
+          <p>{_.startCase(`${group ? renderWorkingGroupName(group).text : 'All opportunities'}`) + (lead ? ' (Lead)' : '')}</p>
+          {subtext ? <OperationsGroupSubtext>{subtext}</OperationsGroupSubtext> : null}
+        </>
+      );
+
+      return {
+        value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
+        text
+      };
+    };
+
     // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
     const filteredOpenings = props.openings!.filter((o) =>
       (!group || o.meta.group === group) &&

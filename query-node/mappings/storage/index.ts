@@ -84,6 +84,7 @@ export async function storage_StorageOperatorMetadataSet({ event, store }: Event
   const [bucketId, , metadataBytes] = new Storage.StorageOperatorMetadataSetEvent(event).params
   const storageBucket = await getStorageBucketWithOperatorMetadata(store, bucketId.toString())
   storageBucket.operatorMetadata = await processStorageOperatorMetadata(
+    event,
     store,
     storageBucket.operatorMetadata,
     metadataBytes
@@ -346,7 +347,7 @@ export async function storage_DistributionBucketFamilyMetadataSet({
   const [familyId, metadataBytes] = new Storage.DistributionBucketFamilyMetadataSetEvent(event).params
 
   const family = await getDistributionBucketFamilyWithMetadata(store, familyId.toString())
-  family.metadata = await processDistributionBucketFamilyMetadata(store, family.metadata, metadataBytes)
+  family.metadata = await processDistributionBucketFamilyMetadata(event, store, family.metadata, metadataBytes)
 
   await store.save<DistributionBucketFamily>(family)
 }
@@ -496,7 +497,7 @@ export async function storage_DistributionBucketMetadataSet({
   const [workerId, bucketId, metadataBytes] = new Storage.DistributionBucketMetadataSetEvent(event).params
 
   const operator = await getDistributionBucketOperatorWithMetadata(store, distributionOperatorId(bucketId, workerId))
-  operator.metadata = await processDistributionOperatorMetadata(store, operator.metadata, metadataBytes)
+  operator.metadata = await processDistributionOperatorMetadata(event, store, operator.metadata, metadataBytes)
 
   await store.save<DistributionBucketOperator>(operator)
 }

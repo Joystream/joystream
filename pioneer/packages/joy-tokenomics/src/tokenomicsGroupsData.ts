@@ -53,45 +53,57 @@ export const WORKING_GROUPS = [
   {
     groupType: 'operationsAlpha' as const,
     titleCutoff: 1050,
-    shortTitle: 'Operations A.',
-    title: 'Operations Alpha',
-    helpText: 'The current Operations Group Alpha members, and the sum of their projected rewards and stakes.',
+    shortTitle: 'Builders',
+    title: 'Builders',
+    helpText: 'The current Builders (Operations Group Alpha), and the sum of their projected rewards and stakes.',
     color: '#009688',
+    extraInfo: {
+      full: 'Operations Working Group Alpha',
+      short: 'OWG Alpha'
+    },
     lead: {
       titleCutoff: 1015,
-      shortTitle: 'Operations A. Lead',
-      title: 'Operations Alpha Lead',
-      helpText: 'Current Operations Group Alpha Lead, and their projected reward and stake.',
+      shortTitle: 'Builders Lead',
+      title: 'Builders Lead',
+      helpText: 'Current Builders (Operations Group Alpha) Lead, and their projected reward and stake.',
       color: '#00bcd4'
     }
   },
   {
     groupType: 'operationsBeta' as const,
     titleCutoff: 1050,
-    shortTitle: 'Operations B.',
-    title: 'Operations Beta',
-    helpText: 'The current Operations Group Beta members, and the sum of their projected rewards and stakes.',
+    shortTitle: 'Human Res.',
+    title: 'Human Resources',
+    helpText: 'The current Human Resources (Operations Group Beta) Workers, and the sum of their projected rewards and stakes.',
     color: '#03a9f4',
+    extraInfo: {
+      full: 'Operations Working Group Beta',
+      short: 'OWG Beta'
+    },
     lead: {
       titleCutoff: 1015,
-      shortTitle: 'Operations B. Lead',
-      title: 'Operations Beta Lead',
-      helpText: 'Current Operations Group Beta Lead, and their projected reward and stake.',
+      shortTitle: 'HR Lead',
+      title: 'Human Res. Lead',
+      helpText: 'Current Human Resources (Operations Group Beta) Lead, and their projected reward and stake.',
       color: '#2196f3'
     }
   },
   {
     groupType: 'operationsGamma' as const,
     titleCutoff: 1050,
-    shortTitle: 'Operations G.',
-    title: 'Operations Gamma',
-    helpText: 'The current Operations Group Gamma members, and the sum of their projected rewards and stakes.',
+    shortTitle: 'Marketing',
+    title: 'Marketing',
+    helpText: 'The current Marketers (Operations Group Gamma), and the sum of their projected rewards and stakes.',
     color: '#3f51b5',
+    extraInfo: {
+      full: 'Operations Working Group Gamma',
+      short: 'OWG Gamma'
+    },
     lead: {
       titleCutoff: 1015,
-      shortTitle: 'Operations G. Lead',
-      title: 'Operations Gamma Lead',
-      helpText: 'Current Operations Group Gamma Lead, and their projected reward and stake.',
+      shortTitle: 'Marketing Lead',
+      title: 'Marketing Lead',
+      helpText: 'Current Marketing Lead (Operations Group Gamma), and their projected reward and stake.',
       color: '#673ab7'
     }
   },

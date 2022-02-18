@@ -26,7 +26,11 @@ scenario('Combined', async ({ job }) => {
   job('at least value bug', atLeastValueBug).requires(leadSetupJob)
 
   // tests minting payouts (requires council to set mint capacity)
-  job('worker payouts', [workerPayout.storage, workerPayout.content, workerPayout.distribution]).requires(leadSetupJob)
+  const workerPayoutsJob = job('worker payouts', [
+    workerPayout.storage,
+    workerPayout.content,
+    workerPayout.distribution,
+  ]).requires(leadSetupJob)
 
   job('working group tests', [
     manageWorkerFlow(WorkingGroups.Storage),
@@ -37,10 +41,9 @@ scenario('Combined', async ({ job }) => {
     manageWorkerAsWorker.distribution,
   ]).requires(leadSetupJob)
 
-  const createChannelJob = job('create channel via CLI', createChannel).requires(leadSetupJob)
-
-  const initBucketsJob = job('init storage and distribution buckets via CLI', [
-    initDistributionBucket,
-    initStorageBucket,
-  ]).requires(createChannelJob)
+  // Run CLI tests after workerPayoutsJob as they may lock Sender for too long and cause FillOpeningInvalidNextPaymentBlock
+  const createChannelJob = job('create channel via CLI', createChannel).after(workerPayoutsJob)
+  job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
+    createChannelJob
+  )
 })

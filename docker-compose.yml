@@ -1,16 +1,9 @@
-# Compiles new joystream/node and joystream/apps images if local images not found
-# and runs a complete joystream development network
-# To prevent build of docker images run docker-compose with "--no-build" arg
+# Complete joystream development network
 version: '3.4'
 services:
   joystream-node:
     image: joystream/node:$JOYSTREAM_NODE_TAG
     restart: unless-stopped
-    build:
-      # context is relative to the compose file
-      context: .
-      # dockerfile is relative to the context
-      dockerfile: joystream-node.Dockerfile
     container_name: joystream-node
     volumes:
       - chain-data:/data
