@@ -45,11 +45,11 @@ pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
         ensure_origin_is_active_leader::<T, I>(origin)?;
         let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?);
 
+        let new_stake = T::LeaderOpeningStake::get()
+            + T::StakingHandler::current_stake(&lead.staking_account_id);
+
         ensure!(
-            T::StakingHandler::is_enough_balance_for_stake(
-                &lead.staking_account_id,
-                T::LeaderOpeningStake::get()
-            ),
+            T::StakingHandler::is_enough_balance_for_stake(&lead.staking_account_id, new_stake),
             Error::<T, I>::InsufficientBalanceToCoverStake
         );
     }

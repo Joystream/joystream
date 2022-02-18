@@ -381,7 +381,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const requiredStakingAccountBalance = !stakingStatus
       ? requiredStake.add(candidateTxFee).add(STAKING_ACCOUNT_CANDIDATE_STAKE)
       : requiredStake
-    const missingStakingAccountBalance = requiredStakingAccountBalance.sub(balances.availableBalance)
+    const missingStakingAccountBalance = requiredStakingAccountBalance.sub(balances.freeBalance)
     if (missingStakingAccountBalance.gtn(0)) {
       this.warn(
         `Not enough available staking account balance! Missing: ${chalk.cyanBright(

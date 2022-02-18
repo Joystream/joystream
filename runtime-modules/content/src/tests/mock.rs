@@ -57,18 +57,12 @@ pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
 
-// Storage module & migration parameters
-// # objects in a channel == # objects in a video is assumed, changing this will make tests fail
-
 pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10;
-pub const VIDEO_MIGRATIONS_PER_BLOCK: u64 = 2;
-pub const CHANNEL_MIGRATIONS_PER_BLOCK: u64 = 1;
-pub const MIGRATION_BLOCKS: u64 = 4;
 
-pub const OUTSTANDING_VIDEOS: u64 = MIGRATION_BLOCKS * VIDEO_MIGRATIONS_PER_BLOCK;
-pub const OUTSTANDING_CHANNELS: u64 = MIGRATION_BLOCKS * CHANNEL_MIGRATIONS_PER_BLOCK;
+pub const OUTSTANDING_VIDEOS: u64 = 5;
+pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
     DATA_OBJECTS_NUMBER * (OUTSTANDING_VIDEOS + OUTSTANDING_CHANNELS);
 pub const TOTAL_BALANCE_REQUIRED: u64 = TOTAL_OBJECTS_NUMBER * DATA_OBJECT_DELETION_PRIZE;
@@ -81,7 +75,6 @@ pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_
 pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
 pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
 
-pub const START_MIGRATION_AT_BLOCK: u64 = 1;
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
@@ -399,8 +392,6 @@ parameter_types! {
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
-    pub const VideosMigrationsEachBlock: u64 = VIDEO_MIGRATIONS_PER_BLOCK;
-    pub const ChannelsMigrationsEachBlock: u64 = CHANNEL_MIGRATIONS_PER_BLOCK;
 }
 
 impl Trait for Test {
@@ -445,10 +436,6 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
-
-    type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
-
-    type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
 }
 
 // #[derive (Default)]
@@ -459,8 +446,6 @@ pub struct ExtBuilder {
     next_video_id: u64,
     next_curator_group_id: u64,
     next_video_post_id: u64,
-    video_migration: VideoMigrationConfig<Test>,
-    channel_migration: ChannelMigrationConfig<Test>,
     max_reward_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
     min_auction_duration: u64,
@@ -490,14 +475,6 @@ impl Default for ExtBuilder {
             next_video_id: 1,
             next_curator_group_id: 1,
             next_video_post_id: 1,
-            video_migration: MigrationConfigRecord {
-                current_id: 1,
-                final_id: 1,
-            },
-            channel_migration: MigrationConfigRecord {
-                current_id: 1,
-                final_id: 1,
-            },
             max_reward_allowed: BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
             min_auction_duration: 5,
@@ -533,8 +510,6 @@ impl ExtBuilder {
             next_video_id: self.next_video_id,
             next_curator_group_id: self.next_curator_group_id,
             next_video_post_id: self.next_video_post_id,
-            video_migration: self.video_migration,
-            channel_migration: self.channel_migration,
             max_reward_allowed: self.max_reward_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
             min_auction_duration: self.min_auction_duration,
