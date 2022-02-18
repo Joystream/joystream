@@ -36,9 +36,12 @@ docker-compose up -d orion
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
-  set -a
-  . ./.env
-  set +a
+  if [ "${SKIP_NODE}" != true ]
+  then
+    set -a
+    . ./.env
+    set +a
+  fi
 
   export SKIP_MOCK_CONTENT=true
   export SKIP_QUERY_NODE_CHECKS=true

@@ -1,15 +1,15 @@
 {
   "gitRepo": {
     "description": "Code repository",
-    "value": "https://github.com/Joystream/joystream.git"
+    "value": "https://github.com/ahhda/joystream.git"
   },
   "branchName": {
     "description": "Branch to deploy",
-    "value": "master"
+    "value": "infra-fixes-testing"
   },
   "keyName": {
     "description": "SSH key pair on AWS",
-    "value": "joystream-github-action-key"
+    "value": "anuj-key"
   },
   "numberOfValidators": {
     "description": "Number of validators to deploy",
@@ -17,15 +17,15 @@
   },
   "validatorInstanceType": {
     "description": "AWS EC2 instance type for Validators (t2.micro, t2.large)",
-    "value": "t2.micro"
+    "value": "t2.medium"
   },
   "buildInstanceType": {
     "description": "AWS EC2 instance type for Build Instance (t2.micro, t2.large)",
-    "value": "t2.large"
+    "value": "t2.xlarge"
   },
   "rpcInstanceType": {
     "description": "AWS EC2 instance type for RPC (t2.micro, t2.large)",
-    "value": "t2.micro"
+    "value": "t2.xlarge"
   },
   "ec2AMI": {
     "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
@@ -41,7 +41,7 @@
   },
   "networkSuffix": {
     "description": "Network suffix that will be added to the network name",
-    "value": "8129"
+    "value": "8134"
   },
   "initialBalancesFile": {
     "description": "HTTP Link to the Initial Balances file",
@@ -65,6 +65,6 @@
   },
   "skipChainSetup": {
     "description": "Set to true to skip running setup new chain scenario",
-    "value": true
+    "value": false
   }
 }
