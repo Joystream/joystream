@@ -6,8 +6,6 @@ import { WorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
 scenario('Content directory', async ({ job }) => {
-  const leadSetupJob = job('setup working group leads', [
-    leaderSetup(WorkingGroups.Content, true),
-  ])
+  const leadSetupJob = job('setup working group leads', leaderSetup(WorkingGroups.Content, true))
   job('check active video counters', activeVideoCounters).requires(leadSetupJob)
 })
