@@ -5,7 +5,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryUpdateParameters } from '@joystream/types/content'
-import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
 import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
 export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandBase {
@@ -17,6 +17,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [
@@ -27,7 +28,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(UpdateVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(UpdateVideoCategoryCommand).args

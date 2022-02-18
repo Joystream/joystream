@@ -1,5 +1,5 @@
 version: '3.0'
-description: Joystream query-node manifest file for olympia
+description: Joystream query-node manifest file for Olympia
 repository: https://github.com/Joystream/joystream
 hydraVersion: "3"
 dataSource:
@@ -88,9 +88,6 @@ typegen:
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
     - content.ChannelCensorshipStatusUpdated
-    - content.ChannelOwnershipTransferRequested
-    - content.ChannelOwnershipTransferRequestWithdrawn
-    - content.ChannelOwnershipTransferred
     - content.ChannelCategoryCreated
     - content.ChannelCategoryUpdated
     - content.ChannelCategoryDeleted
@@ -102,12 +99,47 @@ typegen:
     - content.VideoDeleted
     - content.VideoCensorshipStatusUpdated
     - content.FeaturedVideosSet
+    - content.ChannelDeleted
     # Storage
-    - data_directory.ContentAdded
-    - data_directory.ContentRemoved
-    - data_directory.ContentAccepted
-    - data_directory.ContentRejected
-    - data_directory.ContentUploadingStatusUpdated
+    - storage.StorageBucketCreated
+    - storage.StorageBucketInvitationAccepted
+    - storage.StorageBucketsUpdatedForBag
+    - storage.DataObjectsUploaded
+    - storage.StorageOperatorMetadataSet
+    - storage.StorageBucketVoucherLimitsSet
+    - storage.PendingDataObjectsAccepted
+    - storage.StorageBucketInvitationCancelled
+    - storage.StorageBucketOperatorInvited
+    - storage.StorageBucketOperatorRemoved
+    - storage.UploadingBlockStatusUpdated
+    - storage.DataObjectPerMegabyteFeeUpdated
+    - storage.StorageBucketsPerBagLimitUpdated
+    - storage.StorageBucketsVoucherMaxLimitsUpdated
+    - storage.DataObjectsMoved
+    - storage.DataObjectsDeleted
+    - storage.StorageBucketStatusUpdated
+    - storage.UpdateBlacklist
+    - storage.DynamicBagDeleted
+    - storage.DynamicBagCreated
+    - storage.VoucherChanged
+    - storage.StorageBucketDeleted
+    - storage.DistributionBucketFamilyCreated
+    - storage.DistributionBucketFamilyDeleted
+    - storage.DistributionBucketCreated
+    - storage.DistributionBucketStatusUpdated
+    - storage.DistributionBucketDeleted
+    - storage.DistributionBucketsUpdatedForBag
+    - storage.DistributionBucketsPerBagLimitUpdated
+    - storage.DistributionBucketModeUpdated
+    - storage.DistributionBucketOperatorInvited
+    - storage.DistributionBucketInvitationCancelled
+    - storage.DistributionBucketInvitationAccepted
+    - storage.DistributionBucketMetadataSet
+    - storage.DistributionBucketOperatorRemoved
+    - storage.DistributionBucketFamilyMetadataSet
+    # Not required:
+    # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
+    # - storage.FamiliesInDynamicBagCreationPolicyUpdated
     # Council
     - council.AnnouncingPeriodStarted
     - council.NotEnoughCandidates
@@ -134,38 +166,6 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
   calls:
-    # Content directory
-    - content.create_curator_group
-    - content.set_curator_group_status
-    - content.add_curator_to_group
-    - content.remove_curator_from_group
-    - content.create_channel
-    - content.update_channel
-    - content.remove_channel_assets
-    - content.update_channel_censorship_status
-    - content.create_channel_category
-    - content.update_channel_category
-    - content.delete_channel_category
-    - content.request_channel_transfer
-    - content.cancel_channel_transfer_request
-    - content.accept_channel_transfer
-    - content.create_video
-    - content.update_video
-    - content.delete_video
-    - content.create_playlist
-    - content.update_playlist
-    - content.delete_playlist
-    - content.set_featured_videos
-    - content.create_video_category
-    - content.update_video_category
-    - content.delete_video_category
-    - content.remove_person_from_video
-    - content.update_video_censorship_status
-    # Storage
-    - data_directory.add_content
-    - data_directory.remove_content
-    - data_directory.accept_content
-    - data_directory.update_content_uploading_status
     # Proposals discussion
     - proposalsDiscussion.addPost
   outDir: ./mappings/generated/types
@@ -345,94 +345,229 @@ mappings:
     - event: membershipWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
     # Content directory working group
-    - event: contentDirectoryWorkingGroup.OpeningAdded
+    - event: contentWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
-    - event: contentDirectoryWorkingGroup.AppliedOnOpening
+    - event: contentWorkingGroup.AppliedOnOpening
       handler: workingGroups_AppliedOnOpening
-    - event: contentDirectoryWorkingGroup.OpeningFilled
+    - event: contentWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled
-    - event: contentDirectoryWorkingGroup.LeaderSet
+    - event: contentWorkingGroup.LeaderSet
       handler: workingGroups_LeaderSet
-    - event: contentDirectoryWorkingGroup.WorkerRoleAccountUpdated
+    - event: contentWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated
-    - event: contentDirectoryWorkingGroup.LeaderUnset
+    - event: contentWorkingGroup.LeaderUnset
       handler: workingGroups_LeaderUnset
-    - event: contentDirectoryWorkingGroup.WorkerExited
+    - event: contentWorkingGroup.WorkerExited
       handler: workingGroups_WorkerExited
-    - event: contentDirectoryWorkingGroup.TerminatedWorker
+    - event: contentWorkingGroup.TerminatedWorker
       handler: workingGroups_TerminatedWorker
-    - event: contentDirectoryWorkingGroup.TerminatedLeader
+    - event: contentWorkingGroup.TerminatedLeader
       handler: workingGroups_TerminatedLeader
-    - event: contentDirectoryWorkingGroup.StakeSlashed
+    - event: contentWorkingGroup.StakeSlashed
       handler: workingGroups_StakeSlashed
-    - event: contentDirectoryWorkingGroup.StakeDecreased
+    - event: contentWorkingGroup.StakeDecreased
       handler: workingGroups_StakeDecreased
-    - event: contentDirectoryWorkingGroup.StakeIncreased
+    - event: contentWorkingGroup.StakeIncreased
       handler: workingGroups_StakeIncreased
-    - event: contentDirectoryWorkingGroup.ApplicationWithdrawn
+    - event: contentWorkingGroup.ApplicationWithdrawn
       handler: workingGroups_ApplicationWithdrawn
-    - event: contentDirectoryWorkingGroup.OpeningCanceled
+    - event: contentWorkingGroup.OpeningCanceled
       handler: workingGroups_OpeningCanceled
-    - event: contentDirectoryWorkingGroup.BudgetSet
+    - event: contentWorkingGroup.BudgetSet
       handler: workingGroups_BudgetSet
-    - event: contentDirectoryWorkingGroup.WorkerRewardAccountUpdated
+    - event: contentWorkingGroup.WorkerRewardAccountUpdated
       handler: workingGroups_WorkerRewardAccountUpdated
-    - event: contentDirectoryWorkingGroup.WorkerRewardAmountUpdated
+    - event: contentWorkingGroup.WorkerRewardAmountUpdated
       handler: workingGroups_WorkerRewardAmountUpdated
-    - event: contentDirectoryWorkingGroup.StatusTextChanged
+    - event: contentWorkingGroup.StatusTextChanged
       handler: workingGroups_StatusTextChanged
-    - event: contentDirectoryWorkingGroup.BudgetSpending
+    - event: contentWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
-    - event: contentDirectoryWorkingGroup.RewardPaid
+    - event: contentWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
-    - event: contentDirectoryWorkingGroup.NewMissedRewardLevelReached
+    - event: contentWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached
-    - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
+    - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
-    # Operations working group
-    - event: operationsWorkingGroup.OpeningAdded
+    # Operations working group alpha
+    - event: operationsWorkingGroupAlpha.OpeningAdded
       handler: workingGroups_OpeningAdded
-    - event: operationsWorkingGroup.AppliedOnOpening
+    - event: operationsWorkingGroupAlpha.AppliedOnOpening
       handler: workingGroups_AppliedOnOpening
-    - event: operationsWorkingGroup.OpeningFilled
+    - event: operationsWorkingGroupAlpha.OpeningFilled
       handler: workingGroups_OpeningFilled
-    - event: operationsWorkingGroup.LeaderSet
+    - event: operationsWorkingGroupAlpha.LeaderSet
       handler: workingGroups_LeaderSet
-    - event: operationsWorkingGroup.WorkerRoleAccountUpdated
+    - event: operationsWorkingGroupAlpha.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated
-    - event: operationsWorkingGroup.LeaderUnset
+    - event: operationsWorkingGroupAlpha.LeaderUnset
       handler: workingGroups_LeaderUnset
-    - event: operationsWorkingGroup.WorkerExited
+    - event: operationsWorkingGroupAlpha.WorkerExited
       handler: workingGroups_WorkerExited
-    - event: operationsWorkingGroup.TerminatedWorker
+    - event: operationsWorkingGroupAlpha.TerminatedWorker
       handler: workingGroups_TerminatedWorker
-    - event: operationsWorkingGroup.TerminatedLeader
+    - event: operationsWorkingGroupAlpha.TerminatedLeader
       handler: workingGroups_TerminatedLeader
-    - event: operationsWorkingGroup.StakeSlashed
+    - event: operationsWorkingGroupAlpha.StakeSlashed
       handler: workingGroups_StakeSlashed
-    - event: operationsWorkingGroup.StakeDecreased
+    - event: operationsWorkingGroupAlpha.StakeDecreased
       handler: workingGroups_StakeDecreased
-    - event: operationsWorkingGroup.StakeIncreased
+    - event: operationsWorkingGroupAlpha.StakeIncreased
       handler: workingGroups_StakeIncreased
-    - event: operationsWorkingGroup.ApplicationWithdrawn
+    - event: operationsWorkingGroupAlpha.ApplicationWithdrawn
       handler: workingGroups_ApplicationWithdrawn
-    - event: operationsWorkingGroup.OpeningCanceled
+    - event: operationsWorkingGroupAlpha.OpeningCanceled
       handler: workingGroups_OpeningCanceled
-    - event: operationsWorkingGroup.BudgetSet
+    - event: operationsWorkingGroupAlpha.BudgetSet
       handler: workingGroups_BudgetSet
-    - event: operationsWorkingGroup.WorkerRewardAccountUpdated
+    - event: operationsWorkingGroupAlpha.WorkerRewardAccountUpdated
       handler: workingGroups_WorkerRewardAccountUpdated
-    - event: operationsWorkingGroup.WorkerRewardAmountUpdated
+    - event: operationsWorkingGroupAlpha.WorkerRewardAmountUpdated
       handler: workingGroups_WorkerRewardAmountUpdated
-    - event: operationsWorkingGroup.StatusTextChanged
+    - event: operationsWorkingGroupAlpha.StatusTextChanged
       handler: workingGroups_StatusTextChanged
-    - event: operationsWorkingGroup.BudgetSpending
+    - event: operationsWorkingGroupAlpha.BudgetSpending
       handler: workingGroups_BudgetSpending
-    - event: operationsWorkingGroup.RewardPaid
+    - event: operationsWorkingGroupAlpha.RewardPaid
       handler: workingGroups_RewardPaid
-    - event: operationsWorkingGroup.NewMissedRewardLevelReached
+    - event: operationsWorkingGroupAlpha.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached
-    - event: operationsWorkingGroup.WorkerStartedLeaving
+    - event: operationsWorkingGroupAlpha.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
+    # Operations working group beta
+    - event: operationsWorkingGroupBeta.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: operationsWorkingGroupBeta.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: operationsWorkingGroupBeta.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: operationsWorkingGroupBeta.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: operationsWorkingGroupBeta.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: operationsWorkingGroupBeta.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: operationsWorkingGroupBeta.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: operationsWorkingGroupBeta.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: operationsWorkingGroupBeta.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: operationsWorkingGroupBeta.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: operationsWorkingGroupBeta.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: operationsWorkingGroupBeta.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: operationsWorkingGroupBeta.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: operationsWorkingGroupBeta.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: operationsWorkingGroupBeta.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: operationsWorkingGroupBeta.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: operationsWorkingGroupBeta.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: operationsWorkingGroupBeta.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: operationsWorkingGroupBeta.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroupBeta.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: operationsWorkingGroupBeta.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: operationsWorkingGroupBeta.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
+    # Operations working group gamma
+    - event: operationsWorkingGroupGamma.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: operationsWorkingGroupGamma.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: operationsWorkingGroupGamma.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: operationsWorkingGroupGamma.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: operationsWorkingGroupGamma.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: operationsWorkingGroupGamma.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: operationsWorkingGroupGamma.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: operationsWorkingGroupGamma.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: operationsWorkingGroupGamma.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: operationsWorkingGroupGamma.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: operationsWorkingGroupGamma.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: operationsWorkingGroupGamma.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: operationsWorkingGroupGamma.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: operationsWorkingGroupGamma.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: operationsWorkingGroupGamma.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: operationsWorkingGroupGamma.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: operationsWorkingGroupGamma.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: operationsWorkingGroupGamma.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: operationsWorkingGroupGamma.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroupGamma.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: operationsWorkingGroupGamma.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: operationsWorkingGroupGamma.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
+    # Distribution working group
+    - event: distributionWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: distributionWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: distributionWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: distributionWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: distributionWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: distributionWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: distributionWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: distributionWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: distributionWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: distributionWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: distributionWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: distributionWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: distributionWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: distributionWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: distributionWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: distributionWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: distributionWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: distributionWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: distributionWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: distributionWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: distributionWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: distributionWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
     # Gateway working group
     - event: gatewayWorkingGroup.OpeningAdded
@@ -553,7 +688,7 @@ mappings:
       handler: content_ChannelAssetsRemoved
     - event: content.ChannelCensorshipStatusUpdated
       handler: content_ChannelCensorshipStatusUpdated
-    # these events are defined in runtime but never calles (at the time of writing)
+    # these events are defined in runtime but never emitted (at the time of writing)
     #- event: content.ChannelOwnershipTransferRequested
     #  handler: content_ChannelOwnershipTransferRequested
     #- event: content.ChannelOwnershipTransferRequestWithdrawn
@@ -582,16 +717,81 @@ mappings:
       handler: content_VideoCensorshipStatusUpdated
     - event: content.FeaturedVideosSet
       handler: content_FeaturedVideosSet
+    - event: content.ChannelDeleted
+      handler: content_ChannelDeleted
     # Storage
-    - event: dataDirectory.ContentAdded
-      handler: dataDirectory_ContentAdded
-    - event: dataDirectory.ContentRemoved
-      handler: dataDirectory_ContentRemoved
-    - event: dataDirectory.ContentAccepted
-      handler: dataDirectory_ContentAccepted
-    # not handled at the moment
-    #- event: dataDirectory.ContentUploadingStatusUpdated
-    #  handler: data_directory_ContentUploadingStatusUpdated
+    - event: storage.StorageBucketCreated
+      handler: storage_StorageBucketCreated
+    - event: storage.StorageBucketInvitationAccepted
+      handler: storage_StorageBucketInvitationAccepted
+    - event: storage.StorageBucketsUpdatedForBag
+      handler: storage_StorageBucketsUpdatedForBag
+    - event: storage.DataObjectsUploaded
+      handler: storage_DataObjectsUploaded
+    - event: storage.StorageOperatorMetadataSet
+      handler: storage_StorageOperatorMetadataSet
+    - event: storage.StorageBucketVoucherLimitsSet
+      handler: storage_StorageBucketVoucherLimitsSet
+    - event: storage.PendingDataObjectsAccepted
+      handler: storage_PendingDataObjectsAccepted
+    - event: storage.StorageBucketInvitationCancelled
+      handler: storage_StorageBucketInvitationCancelled
+    - event: storage.StorageBucketOperatorInvited
+      handler: storage_StorageBucketOperatorInvited
+    - event: storage.StorageBucketOperatorRemoved
+      handler: storage_StorageBucketOperatorRemoved
+    - event: storage.UploadingBlockStatusUpdated
+      handler: storage_UploadingBlockStatusUpdated
+    - event: storage.DataObjectPerMegabyteFeeUpdated
+      handler: storage_DataObjectPerMegabyteFeeUpdated
+    - event: storage.StorageBucketsPerBagLimitUpdated
+      handler: storage_StorageBucketsPerBagLimitUpdated
+    - event: storage.StorageBucketsVoucherMaxLimitsUpdated
+      handler: storage_StorageBucketsVoucherMaxLimitsUpdated
+    - event: storage.DataObjectsMoved
+      handler: storage_DataObjectsMoved
+    - event: storage.DataObjectsDeleted
+      handler: storage_DataObjectsDeleted
+    - event: storage.StorageBucketStatusUpdated
+      handler: storage_StorageBucketStatusUpdated
+    - event: storage.UpdateBlacklist
+      handler: storage_UpdateBlacklist
+    - event: storage.DynamicBagDeleted
+      handler: storage_DynamicBagDeleted
+    - event: storage.DynamicBagCreated
+      handler: storage_DynamicBagCreated
+    - event: storage.VoucherChanged
+      handler: storage_VoucherChanged
+    - event: storage.StorageBucketDeleted
+      handler: storage_StorageBucketDeleted
+    - event: storage.DistributionBucketFamilyCreated
+      handler: storage_DistributionBucketFamilyCreated
+    - event: storage.DistributionBucketFamilyDeleted
+      handler: storage_DistributionBucketFamilyDeleted
+    - event: storage.DistributionBucketCreated
+      handler: storage_DistributionBucketCreated
+    - event: storage.DistributionBucketStatusUpdated
+      handler: storage_DistributionBucketStatusUpdated
+    - event: storage.DistributionBucketDeleted
+      handler: storage_DistributionBucketDeleted
+    - event: storage.DistributionBucketsUpdatedForBag
+      handler: storage_DistributionBucketsUpdatedForBag
+    - event: storage.DistributionBucketsPerBagLimitUpdated
+      handler: storage_DistributionBucketsPerBagLimitUpdated
+    - event: storage.DistributionBucketModeUpdated
+      handler: storage_DistributionBucketModeUpdated
+    - event: storage.DistributionBucketOperatorInvited
+      handler: storage_DistributionBucketOperatorInvited
+    - event: storage.DistributionBucketInvitationCancelled
+      handler: storage_DistributionBucketInvitationCancelled
+    - event: storage.DistributionBucketInvitationAccepted
+      handler: storage_DistributionBucketInvitationAccepted
+    - event: storage.DistributionBucketMetadataSet
+      handler: storage_DistributionBucketMetadataSet
+    - event: storage.DistributionBucketOperatorRemoved
+      handler: storage_DistributionBucketOperatorRemoved
+    - event: storage.DistributionBucketFamilyMetadataSet
+      handler: storage_DistributionBucketFamilyMetadataSet
 
     # Council
     - event: council.AnnouncingPeriodStarted
@@ -647,7 +847,7 @@ mappings:
     #- extrinsic: Sudo.batchCall
     #  handler: handleSudoCall(DatabaseManager,SubstrateEvent)
   preBlockHooks:
-    - handler: loadGenesisData
+    - handler: bootstrapData
       filter:
         height: "[0,0]" # will be executed only at genesis
   postBlockHooks:

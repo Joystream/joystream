@@ -6,7 +6,8 @@ import {
   SudoFillLeaderOpeningFixture,
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
-import { Api, WorkingGroups } from '../Api'
+import { Api } from '../Api'
+import { WorkingGroups } from '../WorkingGroups'
 import { OpeningId } from '@joystream/types/hiring'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'

@@ -12,17 +12,29 @@ export default abstract class DefaultCommandBase extends Command {
   protected indentGroupsOpened = 0
   protected jsonPrettyIdent = ''
 
-  openIndentGroup() {
+  log(message?: unknown, ...args: unknown[]): void {
+    if (args.length) {
+      console.error(message, args)
+    } else {
+      console.error(message)
+    }
+  }
+
+  output(value: unknown): void {
+    console.log(value)
+  }
+
+  openIndentGroup(): void {
     console.group()
     ++this.indentGroupsOpened
   }
 
-  closeIndentGroup() {
+  closeIndentGroup(): void {
     console.groupEnd()
     --this.indentGroupsOpened
   }
 
-  async simplePrompt(question: DistinctQuestion) {
+  async simplePrompt<T = unknown>(question: DistinctQuestion): Promise<T> {
     const { result } = await inquirer.prompt([
       {
         ...question,
@@ -51,25 +63,36 @@ export default abstract class DefaultCommandBase extends Command {
     }
   }
 
-  private jsonPrettyIndented(line: string) {
+  async requestConfirmation(
+    message = 'Are you sure you want to execute this action?',
+    defaultVal = false
+  ): Promise<boolean> {
+    if (process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '')) {
+      return true
+    }
+    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
+    return confirmed
+  }
+
+  private jsonPrettyIndented(line: string): string {
     return `${this.jsonPrettyIdent}${line}`
   }
 
-  private jsonPrettyOpen(char: '{' | '[') {
+  private jsonPrettyOpen(char: '{' | '['): string {
     this.jsonPrettyIdent += '    '
     return chalk.gray(char) + '\n'
   }
 
-  private jsonPrettyClose(char: '}' | ']') {
+  private jsonPrettyClose(char: '}' | ']'): string {
     this.jsonPrettyIdent = this.jsonPrettyIdent.slice(0, -4)
     return this.jsonPrettyIndented(chalk.gray(char))
   }
 
-  private jsonPrettyKeyVal(key: string, val: any): string {
+  private jsonPrettyKeyVal(key: string, val: unknown): string {
     return this.jsonPrettyIndented(chalk.magentaBright(`${key}: ${this.jsonPrettyAny(val)}`))
   }
 
-  private jsonPrettyObj(obj: { [key: string]: any }): string {
+  private jsonPrettyObj(obj: Record<string, unknown>): string {
     return (
       this.jsonPrettyOpen('{') +
       Object.keys(obj)
@@ -80,7 +103,7 @@ export default abstract class DefaultCommandBase extends Command {
     )
   }
 
-  private jsonPrettyArr(arr: any[]): string {
+  private jsonPrettyArr(arr: unknown[]): string {
     return (
       this.jsonPrettyOpen('[') +
       arr.map((v) => this.jsonPrettyIndented(this.jsonPrettyAny(v))).join(',\n') +
@@ -89,11 +112,11 @@ export default abstract class DefaultCommandBase extends Command {
     )
   }
 
-  private jsonPrettyAny(val: any): string {
+  private jsonPrettyAny(val: unknown): string {
     if (Array.isArray(val)) {
       return this.jsonPrettyArr(val)
     } else if (typeof val === 'object' && val !== null) {
-      return this.jsonPrettyObj(val)
+      return this.jsonPrettyObj(val as Record<string, unknown>)
     } else if (typeof val === 'string') {
       return chalk.green(`"${val}"`)
     }
@@ -102,23 +125,26 @@ export default abstract class DefaultCommandBase extends Command {
     return chalk.cyan(val)
   }
 
-  jsonPrettyPrint(json: string) {
+  jsonPrettyPrint(json: string): void {
     try {
       const parsed = JSON.parse(json)
-      console.log(this.jsonPrettyAny(parsed))
+      this.log(this.jsonPrettyAny(parsed))
     } catch (e) {
-      console.log(this.jsonPrettyAny(json))
+      this.log(this.jsonPrettyAny(json))
     }
   }
 
-  async finally(err: any) {
+  async finally(err: Error): Promise<void> {
     // called after run and catch regardless of whether or not the command errored
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
     if (!err) this.exit(ExitCodes.OK)
+    if (err && process.env.DEBUG === 'true') {
+      this.log(err)
+    }
     super.finally(err)
   }
 
-  async init() {
+  async init(): Promise<void> {
     inquirer.registerPrompt('datetime', inquirerDatepicker)
   }
 }

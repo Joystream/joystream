@@ -11,8 +11,8 @@ fragment MembershipFields on Membership {
   }
 }
 
-query getMemberById($id: ID!) {
-  membershipByUniqueInput(where: { id: $id }) {
+query getMembersByIds($ids: [ID!]) {
+  memberships(where: { id_in: $ids }) {
     ...MembershipFields
   }
 }

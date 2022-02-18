@@ -10,8 +10,8 @@ export type AnyMetadataClass<T> = {
   decode(binary: Uint8Array): AnyMessage<T>
   encode(obj: T): { finish(): Uint8Array }
   toObject(obj: AnyMessage<T>, options?: IConversionOptions): Record<string, unknown>
-  verify(message: { [k: string]: any }): null | string
-  fromObject(object: { [k: string]: any }): AnyMessage<T>
+  verify(message: { [k: string]: unknown }): null | string
+  fromObject(object: { [k: string]: unknown }): AnyMessage<T>
 }
 
 export type DecodedMetadataObject<T> = {

@@ -13,7 +13,7 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     // Worker-only gate
     const worker = await this.getRequiredWorkerContext()
 
@@ -28,6 +28,6 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
       [worker.workerId, rationale || null]
     )
 
-    this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.magentaBright(worker.workerId.toString())})`))
+    this.log(chalk.green(`Successfully left the role! (worker id: ${chalk.magentaBright(worker.workerId.toString())})`))
   }
 }

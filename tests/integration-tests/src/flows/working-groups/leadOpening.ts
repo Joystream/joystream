@@ -25,7 +25,7 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
       const [openingId] = createOpeningFixture.getCreatedOpeningIds()
       const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
-      const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map((kp) => kp.address)
+      const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map(({ key }) => key.address)
       const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])
       await new FixtureRunner(buyMembershipFixture).run()
       const [memberId] = buyMembershipFixture.getCreatedMembers()

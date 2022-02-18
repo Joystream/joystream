@@ -13,12 +13,12 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
   const N: number = +env.MEMBERS_INVITE_N!
   assert(N > 0)
 
-  const [inviterAcc] = (await api.createKeyPairs(1)).map((key) => key.address)
+  const [inviterAcc] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [inviterAcc])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [inviterMemberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
 
-  const inviteesAccs = (await api.createKeyPairs(N)).map((key) => key.address)
+  const inviteesAccs = (await api.createKeyPairs(N)).map(({ key }) => key.address)
   const inviteMembersHappyCaseFixture = new InviteMembersHappyCaseFixture(
     api,
     query,

@@ -41,9 +41,9 @@ export class HireWorkersFixture extends BaseQueryNodeFixture {
     const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
     // Create the applications
-    const roleAccounts = (await this.api.createKeyPairs(this.workersN)).map((kp) => kp.address)
-    const stakingAccounts = (await this.api.createKeyPairs(this.workersN)).map((kp) => kp.address)
-    const rewardAccounts = (await this.api.createKeyPairs(this.workersN)).map((kp) => kp.address)
+    const roleAccounts = (await this.api.createKeyPairs(this.workersN)).map(({ key }) => key.address)
+    const stakingAccounts = (await this.api.createKeyPairs(this.workersN)).map(({ key }) => key.address)
+    const rewardAccounts = (await this.api.createKeyPairs(this.workersN)).map(({ key }) => key.address)
 
     const buyMembershipFixture = new BuyMembershipHappyCaseFixture(this.api, this.query, roleAccounts)
     await new FixtureRunner(buyMembershipFixture).run()

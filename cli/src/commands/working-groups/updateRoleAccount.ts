@@ -18,7 +18,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     let { address } = this.parse(WorkingGroupsUpdateRoleAccount).args
 
     const worker = await this.getRequiredWorkerContext('MemberController')
@@ -30,12 +30,12 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
     }
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(worker.profile.membership.controller_account.toString()),
+      await this.getDecodedPair(worker.profile.membership.controller_account),
       apiModuleByGroup[this.group],
       'updateRoleAccount',
       [worker.workerId, address]
     )
 
-    this.log(chalk.green(`Succesfully updated the role account to: ${chalk.magentaBright(address)})`))
+    this.log(chalk.green(`Successfully updated the role account to: ${chalk.magentaBright(address)})`))
   }
 }

@@ -11,10 +11,10 @@ export default async function failToElectCouncil({ api, query }: FlowProps): Pro
   api.enableDebugTxLogs()
 
   const notEnoughCandidatesFixture = new NotEnoughCandidatesFixture(api, query)
-  await new FixtureRunner(notEnoughCandidatesFixture).run()
+  await new FixtureRunner(notEnoughCandidatesFixture).runWithQueryNodeChecks()
 
   const notEnoughCandidatesWithVotesFixture = new NotEnoughCandidatesWithVotesFixture(api, query)
-  await new FixtureRunner(notEnoughCandidatesWithVotesFixture).run()
+  await new FixtureRunner(notEnoughCandidatesWithVotesFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
