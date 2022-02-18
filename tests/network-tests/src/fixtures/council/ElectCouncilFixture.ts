@@ -64,8 +64,11 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       const commitment = blake2AsHex(payload)
       return api.tx.referendum.vote(commitment, voteStake)
     })
-    await api.prepareAccountsForFeeExpenses(votersStakingAccounts, votingTxs)
-    await api.sendExtrinsicsAndGetResults(votingTxs, votersStakingAccounts)
+    // Due to the fact that we need the transactions to be processed in the expected order
+    // (which is not guaranteed by the nonce, because we're using different voter accounts),
+    // we'll be including a small, decremental tip (10 JOY * (votersStakingAccounts.length - 1 - accIndex))
+    await api.prepareAccountsForFeeExpenses(votersStakingAccounts, votingTxs, 10)
+    await api.sendExtrinsicsAndGetResults(votingTxs, votersStakingAccounts, 10)
 
     // Revealing stage
     await this.api.untilCouncilStage('Revealing')

@@ -201,8 +201,12 @@ export class Api {
 
   public async sendExtrinsicsAndGetResults(
     // Extrinsics can be separated into batches in order to makes sure they are processed in specified order
+    // (each batch will only be processed after the previous one has been fully executed)
     txs: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][],
-    sender: AccountId | string | AccountId[] | string[]
+    sender: AccountId | string | AccountId[] | string[],
+    // Including decremental tip allows ensuring that the submitted transactions within a batch are processed in the expected order
+    // even when we're using different accounts
+    decrementalTipAmount = 0
   ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
     const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
@@ -210,9 +214,14 @@ export class Api {
       const batch = batches[i]
       results = results.concat(
         await Promise.all(
-          batch.map((tx, j) =>
-            this.sender.signAndSend(tx, Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender)
-          )
+          batch.map((tx, j) => {
+            const tip = Array.isArray(sender) ? decrementalTipAmount * (batch.length - 1 - j) : 0
+            return this.sender.signAndSend(
+              tx,
+              Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender,
+              tip
+            )
+          })
         )
       )
     }
@@ -314,7 +323,10 @@ export class Api {
 
   public async prepareAccountsForFeeExpenses(
     accountOrAccounts: string | string[],
-    extrinsics: SubmittableExtrinsic<'promise'>[]
+    extrinsics: SubmittableExtrinsic<'promise'>[],
+    // Including decremental tip allows ensuring that the submitted transactions are processed in the expected order
+    // even when we're using different accounts
+    decrementalTipAmount = 0
   ): Promise<void> {
     const fees = await Promise.all(
       extrinsics.map((tx, i) =>
@@ -323,7 +335,14 @@ export class Api {
     )
 
     if (Array.isArray(accountOrAccounts)) {
-      await Promise.all(fees.map((fee, i) => this.treasuryTransferBalance(accountOrAccounts[i], fee)))
+      await Promise.all(
+        fees.map((fee, i) =>
+          this.treasuryTransferBalance(
+            accountOrAccounts[i],
+            fee.addn(decrementalTipAmount * (accountOrAccounts.length - 1 - i))
+          )
+        )
+      )
     } else {
       await this.treasuryTransferBalance(
         accountOrAccounts,

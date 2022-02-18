@@ -8,6 +8,7 @@ import { extendDebug, Debugger } from './Debugger'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
 import BN from 'bn.js'
+import { formatBalance } from '@polkadot/util'
 
 export enum LogLevel {
   None,
@@ -43,7 +44,8 @@ export class Sender {
 
   public async signAndSend(
     tx: SubmittableExtrinsic<'promise'>,
-    account: AccountId | string
+    account: AccountId | string,
+    tip?: BN | number
   ): Promise<ISubmittableResult> {
     const addr = this.keyring.encodeAddress(account)
     const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
@@ -135,13 +137,13 @@ export class Sender {
       const nodeNonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const cachedNonce = nonceCacheByAccount.get(senderKeyPair.address)
       const nonce = BN.max(nodeNonce, new BN(cachedNonce || 0))
-      const signedTx = tx.sign(senderKeyPair, { nonce })
+      const signedTx = tx.sign(senderKeyPair, { nonce, tip })
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
         await signedTx.send(handleEvents)
         if (this.logs === LogLevel.Verbose) {
-          this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce})`)
+          this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce}, tip: ${formatBalance(tip)})`)
         }
         nonceCacheByAccount.set(account.toString(), nonce.toNumber() + 1)
       } catch (err) {
