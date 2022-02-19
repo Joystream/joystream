@@ -1,17 +1,22 @@
-import { Null, u32, u128, bool, Option, Vec, BTreeMap } from '@polkadot/types'
+import { Null, u32, u64, u128, bool, Option, BTreeSet, BTreeMap } from '@polkadot/types'
 import { JoyEnum, JoyStructDecorated, MemberId, AccountId } from './common'
 
-export class BountyId extends u32 {}
-export class EntryId extends u32 {}
+export class BountyId extends u64 {}
+export class EntryId extends u64 {}
 
 export class BountyActor extends JoyEnum({
   Council: Null,
   Member: MemberId,
 }) {}
 
+// Unless we make this its own type we are getting error:
+// Error: Enum: AssuranceContractType: Unhandled nested "BTreeSet" type
+//    at /Users/mokhtar/joystream/joystream/node_modules/@polkadot/typegen/generate/tsDef.cjs:98:15
+export class AssuranceContractType_Closed extends BTreeSet.with(MemberId) {}
+
 export class AssuranceContractType extends JoyEnum({
   Open: Null,
-  Closed: Vec.with(MemberId), // FIXME: @polkadot/typegen Error: Enum: AssuranceContractType: Unhandled nested "BTreeSet"
+  Closed: AssuranceContractType_Closed,
 }) {}
 
 export class FundingType_Perpetual extends JoyStructDecorated({
@@ -63,6 +68,7 @@ export const bountyTypes = {
   BountyId,
   EntryId,
   BountyActor,
+  AssuranceContractType_Closed,
   AssuranceContractType,
   FundingType_Limited,
   FundingType_Perpetual,

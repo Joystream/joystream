@@ -565,18 +565,19 @@
     "ConstitutionInfo": {
         "text_hash": "Hash"
     },
-    "BountyId": "u32",
-    "EntryId": "u32",
+    "BountyId": "u64",
+    "EntryId": "u64",
     "BountyActor": {
         "_enum": {
             "Council": "Null",
             "Member": "MemberId"
         }
     },
+    "AssuranceContractType_Closed": "BTreeSet<MemberId>",
     "AssuranceContractType": {
         "_enum": {
             "Open": "Null",
-            "Closed": "Vec<MemberId>"
+            "Closed": "AssuranceContractType_Closed"
         }
     },
     "FundingType_Limited": {
