@@ -59,7 +59,7 @@
     SUDO_ACCOUNT_URI: '{{ sudo_key }}'
   args:
     chdir: '{{ remote_code_path }}'
-  async: 1800
+  async: 3600
   poll: 0
   register: compose_result
 
@@ -69,7 +69,7 @@
   register: job_result
   until: job_result.finished
   # Max number of times to check for status
-  retries: 18
+  retries: 36
   # Check for the status every 100s
   delay: 100
 
