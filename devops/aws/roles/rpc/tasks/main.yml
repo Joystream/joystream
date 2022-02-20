@@ -55,6 +55,8 @@
     COLOSSUS_1_TRANSACTOR_URI: '//Colossus1'
     SKIP_NODE: 'true'
     SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
+    TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
+    SUDO_ACCOUNT_URI: '{{ sudo_key }}'
   args:
     chdir: '{{ remote_code_path }}'
   async: 1800
