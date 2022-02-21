@@ -82,10 +82,6 @@ pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
-
-        // initialize content module
-        content::Module::<Runtime>::on_runtime_upgrade();
-
         10_000_000 // TODO: adjust weight
     }
 }

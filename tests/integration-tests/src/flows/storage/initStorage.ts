@@ -14,6 +14,7 @@ type StorageBucketConfig = {
   objectsLimit: number
   operatorId: number
   transactorKey: string
+  transactorUri: string
   transactorBalance: BN
 }
 
@@ -48,6 +49,7 @@ export const singleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
       transactorBalance: new BN(100_000),
     },
   ],
@@ -66,6 +68,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
       transactorBalance: new BN(100_000),
     },
     {
@@ -75,6 +78,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_2_TRANSACTOR_KEY || '5FbzYmQ3HogiEEDSXPYJe58yCcmSh3vsZLodTdBB6YuLDAj7', // //Colossus2
+      transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
       transactorBalance: new BN(100_000),
     },
   ],
@@ -109,6 +113,16 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     )
     const setMaxVoucherLimitsTx = api.tx.storage.updateStorageBucketsVoucherMaxLimits(maxStorageLimit, maxObjectsLimit)
     const setBucketPerBagLimitTx = api.tx.storage.updateStorageBucketsPerBagLimit(Math.max(5, buckets.length))
+
+    // TODO: find a way how to remove this
+    debug('BUG WORKAROUND pretopup')
+    await api.treasuryTransferBalance(storageLeaderKey, new BN(100_000))
+
+    // extra topup for content leader
+    const [, contentLeader] = await api.getLeader('contentWorkingGroup')
+    const contentLeaderKey = contentLeader.role_account_id.toString()
+    await api.treasuryTransferBalance(contentLeaderKey, new BN(100_000))
+    /// ///////////////////////////////////
 
     await api.sendExtrinsicsAndGetResults(
       [...updateDynamicBagPolicyTxs, setMaxVoucherLimitsTx, setBucketPerBagLimitTx],

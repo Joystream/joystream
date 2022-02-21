@@ -24,7 +24,6 @@
             "Membership"
         ]
     },
-    "MemoText": "Text",
     "BalanceKind": {
         "_enum": [
             "Positive",
@@ -566,18 +565,19 @@
     "ConstitutionInfo": {
         "text_hash": "Hash"
     },
-    "BountyId": "u32",
-    "EntryId": "u32",
+    "BountyId": "u64",
+    "EntryId": "u64",
     "BountyActor": {
         "_enum": {
             "Council": "Null",
             "Member": "MemberId"
         }
     },
+    "AssuranceContractType_Closed": "BTreeSet<MemberId>",
     "AssuranceContractType": {
         "_enum": {
             "Open": "Null",
-            "Closed": "Vec<MemberId>"
+            "Closed": "AssuranceContractType_Closed"
         }
     },
     "FundingType_Limited": {
@@ -705,14 +705,6 @@
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
-    "VideoMigrationConfig": {
-        "current_id": "VideoId",
-        "final_id": "VideoId"
-    },
-    "ChannelMigrationConfig": {
-        "current_id": "ChannelId",
-        "final_id": "ChannelId"
-    },
     "VideoPostId": "u64",
     "ReactionId": "u64",
     "VideoPostType": {
@@ -824,5 +816,26 @@
         "non_channel_owner": "Option<MemberId>",
         "init_transactional_status": "InitTransactionalStatus"
     },
+    "AuctionRecord": {
+        "starting_price": "u128",
+        "buy_now_price": "u128",
+        "auction_type": "AuctionType",
+        "minimal_bid_step": "u128",
+        "last_bid": "Option<Bid>",
+        "starts_at": "Option<u32>",
+        "whitelist": "BTreeSet<MemberId>"
+    },
+    "NFTOwner": {
+        "_enum": {
+            "ChannelOwner": "Null",
+            "Member": "MemberId"
+        }
+    },
+    "OwnedNFT": {
+        "owner": "NFTOwner",
+        "transactional_status": "TransactionalStatus",
+        "creator_royalty": "Option<Royalty>"
+    },
+    "NftMetadata": "Vec<u8>",
     "AccountInfo": "AccountInfoWithRefCount"
 }

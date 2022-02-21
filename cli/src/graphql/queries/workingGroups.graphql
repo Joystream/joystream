@@ -1,0 +1,69 @@
+fragment WorkingGroupOpeningMetadataFields on WorkingGroupOpeningMetadata {
+  description
+  shortDescription
+  hiringLimit
+  expectedEnding
+  applicationDetails
+  applicationFormQuestions {
+    question
+    type
+  }
+}
+
+fragment WorkingGroupOpeningDetails on WorkingGroupOpening {
+  metadata {
+    ...WorkingGroupOpeningMetadataFields
+  }
+}
+
+fragment WorkingGroupApplicationDetails on WorkingGroupApplication {
+  answers {
+    question {
+      question
+    }
+    answer
+  }
+}
+
+fragment UpcomingWorkingGroupOpeningDetails on UpcomingWorkingGroupOpening {
+  id
+  groupId
+  expectedStart
+  stakeAmount
+  rewardPerBlock
+  metadata {
+    ...WorkingGroupOpeningMetadataFields
+  }
+}
+
+query openingDetailsById($id: ID!) {
+  workingGroupOpeningByUniqueInput(where: { id: $id }) {
+    ...WorkingGroupOpeningDetails
+  }
+}
+
+query applicationDetailsById($id: ID!) {
+  workingGroupApplicationByUniqueInput(where: { id: $id }) {
+    ...WorkingGroupApplicationDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningByEvent($blockNumber: Int!, $indexInBlock: Int!) {
+  upcomingWorkingGroupOpenings(
+    where: { createdInEvent: { inBlock_eq: $blockNumber, indexInBlock_eq: $indexInBlock } }
+  ) {
+    ...UpcomingWorkingGroupOpeningDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningsByGroup($workingGroupId: ID!) {
+  upcomingWorkingGroupOpenings(where: { group: { id_eq: $workingGroupId } }, orderBy: createdAt_DESC) {
+    ...UpcomingWorkingGroupOpeningDetails
+  }
+}
+
+query upcomingWorkingGroupOpeningById($id: ID!) {
+  upcomingWorkingGroupOpeningByUniqueInput(where: { id: $id }) {
+    ...UpcomingWorkingGroupOpeningDetails
+  }
+}

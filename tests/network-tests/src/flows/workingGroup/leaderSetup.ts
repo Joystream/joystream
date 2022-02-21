@@ -8,6 +8,7 @@ import { assert } from 'chai'
 // import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
 import { extendDebug } from '../../Debugger'
+import { createJoystreamCli } from '../utils'
 
 export default function (group: WorkingGroups, canSkip = false) {
   return async function ({ api, env }: FlowProps): Promise<void> {

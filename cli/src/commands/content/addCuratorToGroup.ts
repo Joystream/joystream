@@ -16,6 +16,10 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()
 
