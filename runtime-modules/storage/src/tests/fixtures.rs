@@ -6,6 +6,9 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::IterableStorageDoubleMap;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
+
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -682,6 +685,25 @@ impl DeleteDataObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.deletion_prize_account_id);
+        let bag_pre = <crate::Bags<Test>>::get(&self.bag_id);
+        let buckets_pre = bag_pre
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = self.data_object_ids.iter().fold(0u64, |acc, id| {
+            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).deletion_prize)
+        });
+
+        let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
+            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).size)
+        });
+
+        let total_number_removed = self.data_object_ids.len() as u64;
+
         let actual_result = Storage::delete_data_objects(
             self.deletion_prize_account_id,
             self.bag_id.clone(),
@@ -689,6 +711,60 @@ impl DeleteDataObjectsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.deletion_prize_account_id.clone());
+        let bag_post = <crate::Bags<Test>>::get(&self.bag_id);
+        let buckets_post = bag_post
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        if actual_result.is_ok() {
+            // deletion prize is given back
+
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+            // objects are removed
+            assert!(self
+                .data_object_ids
+                .iter()
+                .all(|id| !<crate::DataObjectsById<Test>>::contains_key(&self.bag_id, id)));
+
+            // bag used capacity updated
+            assert_eq!(
+                bag_pre
+                    .objects_total_size
+                    .saturating_sub(bag_post.objects_total_size),
+                total_size_removed
+            );
+
+            assert_eq!(
+                bag_pre
+                    .objects_number
+                    .saturating_sub(bag_post.objects_number),
+                total_number_removed
+            );
+
+            // storage used capacity updated
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(
+                    |(lhs, rhs)| lhs.voucher.size_used.saturating_sub(rhs.voucher.size_used)
+                        == total_size_removed
+                ));
+
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(lhs, rhs)| lhs
+                    .voucher
+                    .objects_used
+                    .saturating_sub(rhs.voucher.objects_used)
+                    == total_number_removed));
+        }
     }
 }
 
@@ -805,10 +881,76 @@ impl DeleteDynamicBagFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let bag_id: BagId<Test> = self.bag_id.clone().into();
+        let balance_pre = Balances::usable_balance(self.deletion_account_id);
+        let bag = <crate::Bags<Test>>::get(&bag_id);
+        let s_buckets_pre = bag
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let d_buckets_pre = bag
+            .distributed_by
+            .iter()
+            .map(|id| {
+                <crate::DistributionBucketByFamilyIdById<Test>>::get(
+                    &id.distribution_bucket_family_id,
+                    &id.distribution_bucket_index,
+                )
+            })
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
+            .fold(bag.deletion_prize.unwrap_or_default(), |acc, (_, obj)| {
+                acc.saturating_add(obj.deletion_prize)
+            });
+
+        let total_size_removed = bag.objects_total_size;
+
+        let total_number_removed = bag.objects_number;
+
         let actual_result =
             Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.deletion_account_id.clone());
+        let s_buckets_post = bag
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let d_buckets_post = bag
+            .distributed_by
+            .iter()
+            .map(|id| {
+                <crate::DistributionBucketByFamilyIdById<Test>>::get(
+                    &id.distribution_bucket_family_id,
+                    &id.distribution_bucket_index,
+                )
+            })
+            .clone()
+            .collect::<Vec<_>>();
+
+        if actual_result.is_ok() {
+            assert!(!<crate::Bags<Test>>::contains_key(&bag_id));
+
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(|(pre, post)| pre.assigned_bags.saturating_sub(post.assigned_bags) == 1));
+            assert!(d_buckets_post
+                .iter()
+                .zip(d_buckets_pre.iter())
+                .all(|(pre, post)| pre.assigned_bags.saturating_sub(post.assigned_bags) == 1));
+        }
     }
 }
 

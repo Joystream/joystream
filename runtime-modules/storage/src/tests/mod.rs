@@ -2347,7 +2347,6 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.objects_used, 1);
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
 
-        println!("about to delete data objects");
         DeleteDataObjectsFixture::default()
             .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())

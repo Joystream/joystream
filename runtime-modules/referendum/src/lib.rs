@@ -285,7 +285,7 @@ decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
         pub Stage get(fn stage) config():
-            ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
+        ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
 
         /// Votes cast in the referendum. A new record is added to this map when a user casts a
         /// sealed vote.

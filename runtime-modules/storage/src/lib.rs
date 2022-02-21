@@ -3769,6 +3769,7 @@ impl<T: Trait> Module<T> {
         let new_distribution_buckets =
             Self::generate_new_distribution_buckets(&distributed_by, &bag_op.params);
 
+        // check that user or treasury account have enough balance
         let (net_prize, storage_fee) = Self::ensure_sufficient_balance(
             &bag_op,
             new_voucher_update,
@@ -3780,13 +3781,13 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        // insert candidate storage buckets
+        // insert candidate storage buckets: no op if new_storage_buckets is empty
         new_storage_buckets.iter().for_each(|(id, bucket)| {
             StorageBucketById::<T>::insert(&id, bucket.clone());
             Self::deposit_event(RawEvent::VoucherChanged(*id, bucket.voucher.clone()));
         });
 
-        // insert candidate distribution buckets
+        // insert candidate distribution buckets: no op if new_distribution_buckets is empty
         new_distribution_buckets.iter().for_each(|(id, bucket)| {
             DistributionBucketByFamilyIdById::<T>::insert(
                 &id.distribution_bucket_family_id,
@@ -3795,13 +3796,13 @@ impl<T: Trait> Module<T> {
             )
         });
 
-        // refund or request deletion prize first: no-op if amnt = 0
+        // FIRST refund or request deletion prize first: no-op if amnt = 0
         match net_prize {
             NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
             NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
         }
 
-        // then slash: no-op if storage_fee = 0
+        // THEN slash: no-op if storage_fee = 0
         let _ = Balances::<T>::slash(&account_id, storage_fee);
 
         // remove objects: no-op if list.is_empty() or during bag creation
