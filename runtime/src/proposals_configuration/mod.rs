@@ -109,12 +109,24 @@ lazy_static! {
 fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
     let json_str: Option<&'static str> = option_env!("ALL_PROPOSALS_PARAMETERS_JSON");
 
+    // Handle undefined variable (null) and variable set to empty string the same
+    // to work cross platform.
+    if json_str.is_none() || json_str.unwrap().is_empty() {
+        return default_parameters();
+    }
+
     json_str
         .map(lite_json::parse_json)
         .map(|res| match res {
             Ok(json) => Some(json),
             Err(_) => {
-                panic!("Invalid JSON with proposals parameters provided.");
+                if cfg!(test) {
+                    // Detect invalid JSON early while running tests
+                    panic!("Invalid JSON with proposals parameters provided.")
+                } else {
+                    // Fall back to default at runtime
+                    None
+                }
             }
         })
         .flatten()
@@ -289,9 +301,16 @@ fn extract_numeric_parameter(
             .iter()
             .find(|(name_vec, _)| name_vec.eq(&parameter_name.chars().collect::<Vec<_>>()))
             .map(|(_, value)| match value {
-                JsonValue::Number(number) => number.integer.saturated_into(),
-                _ => panic!("Incorrect JSON: not a number."),
+                JsonValue::Number(number) => Some(number.integer.saturated_into()),
+                _ => {
+                    if cfg!(test) {
+                        panic!("Incorrect JSON: not a number.")
+                    } else {
+                        None
+                    }
+                }
             })
+            .flatten()
             .unwrap_or(default),
         _ => default,
     }
