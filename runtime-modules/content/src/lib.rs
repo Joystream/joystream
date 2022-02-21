@@ -2221,7 +2221,7 @@ decl_event!(
             ContentActor,
             VideoId,
             Option<Royalty>,
-            Metadata,
+            Vec<u8>,
             Option<MemberId>,
             InitTransactionalStatus,
         ),

@@ -9,9 +9,6 @@ export class BountyActor extends JoyEnum({
   Member: MemberId,
 }) {}
 
-// Unless we make this its own type we are getting error:
-// Error: Enum: AssuranceContractType: Unhandled nested "BTreeSet" type
-//    at /Users/mokhtar/joystream/joystream/node_modules/@polkadot/typegen/generate/tsDef.cjs:98:15
 export class AssuranceContractType_Closed extends BTreeSet.with(MemberId) {}
 
 export class AssuranceContractType extends JoyEnum({

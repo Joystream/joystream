@@ -259,10 +259,11 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
 export async function getWorker(
   store: DatabaseManager,
   groupName: WorkingGroupModuleName,
-  runtimeId: WorkerId | number
+  runtimeId: WorkerId | number,
+  relations: string[] = []
 ): Promise<Worker> {
   const workerDbId = `${groupName}-${runtimeId}`
-  const worker = await store.get(Worker, { where: { id: workerDbId } })
+  const worker = await store.get(Worker, { where: { id: workerDbId }, relations })
   if (!worker) {
     inconsistentState(`Expected worker not found by id ${workerDbId}`)
   }
