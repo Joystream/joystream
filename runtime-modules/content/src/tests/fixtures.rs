@@ -477,6 +477,7 @@ impl UpdateVideoFixture {
                 assets_to_remove: BTreeSet::new(),
                 enable_comments: None,
                 new_meta: None,
+                auto_issue_nft: Default::default(),
             },
         }
     }

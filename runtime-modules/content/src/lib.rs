@@ -783,6 +783,18 @@ decl_module! {
                 )?;
             }
 
+
+            let nft_status = params.auto_issue_nft
+                .as_ref()
+                .map_or(
+                    Ok(None),
+                    |issuance_params| {
+                        ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                    }
+            )?;
+
+
             //
             // == MUTATION SAFE ==
             //
@@ -802,6 +814,10 @@ decl_module! {
                     Self::bag_id_for_channel(&channel_id),
                     params.assets_to_remove.clone(),
                 )?;
+            }
+
+            if nft_status.is_some() {
+                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
@@ -1990,6 +2006,9 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
                 TransactionalStatus::<T>::InitiatedOfferToMember(*member, *balance),
             ),
+            InitTransactionalStatus::<T>::BuyNow(balance) => {
+                Ok(TransactionalStatus::<T>::BuyNow(*balance))
+            }
             InitTransactionalStatus::<T>::Auction(params) => {
                 Self::validate_auction_params(&params)?;
                 let mut auction = AuctionRecord::new(params.clone());
