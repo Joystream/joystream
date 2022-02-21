@@ -660,7 +660,7 @@ benchmarks! {
             RawEvent::NewCandidate(
                 member_id,
                 account_id.clone(),
-                account_id.clone(),
+                account_id,
                 T::MinCandidateStake::get()
             ).into()
         );

@@ -173,6 +173,12 @@ impl WeightInfo for () {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -425,6 +431,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }
