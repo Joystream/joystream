@@ -72,6 +72,20 @@ export type GetChannelByIdQueryVariables = Types.Exact<{
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
 
+export type OwnedNftFieldsFragment = {
+  id: string
+  metadata: string
+  creatorRoyalty: number
+  video: { id: string }
+  ownerMember?: Types.Maybe<{ id: string }>
+}
+
+export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
+  videoId: Types.Scalars['ID']
+}>
+
+export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
+
 export const DataObjectTypeFields = gql`
   fragment DataObjectTypeFields on DataObjectType {
     __typename
@@ -140,6 +154,19 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
+export const OwnedNftFields = gql`
+  fragment OwnedNftFields on OwnedNft {
+    id
+    video {
+      id
+    }
+    ownerMember {
+      id
+    }
+    metadata
+    creatorRoyalty
+  }
+`
 export const GetDataObjectsByIds = gql`
   query getDataObjectsByIds($ids: [ID!]) {
     storageDataObjects(where: { id_in: $ids }) {
@@ -155,4 +182,12 @@ export const GetChannelById = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetOwnedNftByVideoId = gql`
+  query getOwnedNftByVideoId($videoId: ID!) {
+    ownedNfts(where: { video: { id_eq: $videoId } }) {
+      ...OwnedNftFields
+    }
+  }
+  ${OwnedNftFields}
 `

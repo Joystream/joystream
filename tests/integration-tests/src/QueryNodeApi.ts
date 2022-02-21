@@ -295,6 +295,22 @@ import {
   GetProposalDiscussionThreadsByIdsQuery,
   GetProposalDiscussionThreadsByIdsQueryVariables,
   GetProposalDiscussionThreadsByIds,
+  OwnedNftFieldsFragment,
+  ChannelFieldsFragment,
+  GetChannelsQuery,
+  GetChannelsQueryVariables,
+  GetChannels,
+  ChannelCategoryFieldsFragment,
+  GetChannelCategoriesQuery,
+  GetChannelCategoriesQueryVariables,
+  GetChannelCategories,
+  VideoCategoryFieldsFragment,
+  GetVideoCategoriesQuery,
+  GetVideoCategoriesQueryVariables,
+  GetVideoCategories,
+  GetOwnedNftByVideoId,
+  GetOwnedNftByVideoIdQuery,
+  GetOwnedNftByVideoIdQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1070,5 +1086,33 @@ export class QueryNodeApi {
       GetProposalDiscussionThreadsByIdsQuery,
       GetProposalDiscussionThreadsByIdsQueryVariables
     >(GetProposalDiscussionThreadsByIds, { ids: ids.map((id) => id.toString()) }, 'proposalDiscussionThreads')
+  }
+
+  public async getChannels(): Promise<ChannelFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelsQuery, GetChannelsQueryVariables>(GetChannels, {}, 'channels')
+  }
+
+  public async getChannelCategories(): Promise<ChannelCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelCategoriesQuery, GetChannelCategoriesQueryVariables>(
+      GetChannelCategories,
+      {},
+      'channelCategories'
+    )
+  }
+
+  public async getVideoCategories(): Promise<VideoCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideoCategoriesQuery, GetVideoCategoriesQueryVariables>(
+      GetVideoCategories,
+      {},
+      'videoCategories'
+    )
+  }
+
+  public async ownedNftByVideoId(videoId: string): Promise<Maybe<OwnedNftFieldsFragment>> {
+    return this.firstEntityQuery<GetOwnedNftByVideoIdQuery, GetOwnedNftByVideoIdQueryVariables>(
+      GetOwnedNftByVideoId,
+      { videoId },
+      'ownedNfts'
+    )
   }
 }

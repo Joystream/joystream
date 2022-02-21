@@ -1,7 +1,8 @@
 import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
-import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
+import { Bytes, BTreeSet, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { decodeAddress } from '@polkadot/keyring'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
@@ -12,6 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
+import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
@@ -28,10 +30,9 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-// import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
-import { VideoId, VideoCategoryId } from '@joystream/types/content'
+import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/content'
 import { ChannelId } from '@joystream/types/common'
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../../cli/lib/helpers/serialization'
@@ -137,18 +138,18 @@ export class ApiFactory {
     return keys
   }
 
-  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+  private createKeyPair(suriPath: string, isCustom = false, isFinalPath = false): KeyringPair {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    return this.createKeyPair(customPath, true)
+  public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
+    return this.createKeyPair(customPath, true, isFinalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -242,8 +243,8 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public createCustomKeyPair(path: string): KeyringPair {
-    return this.factory.createCustomKeyPair(path)
+  public createCustomKeyPair(path: string, finalPath = false): KeyringPair {
+    return this.factory.createCustomKeyPair(path, finalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -1931,5 +1932,205 @@ export class Api {
   async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
     const setCouncilCall = this.api.tx.council.setCouncil(accounts)
     return this.makeSudoCall(setCouncilCall)
+  }
+
+  // Storage
+
+  async createStorageBucket(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectsLimit: number,
+    workerId?: WorkerId
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(
+      this.api.tx.storage.createStorageBucket(workerId || null, true, sizeLimit, objectsLimit),
+      accountFrom
+    )
+  }
+
+  async acceptStorageBucketInvitation(accountFrom: string, workerId: WorkerId, storageBucketId: StorageBucketId) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, accountFrom),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsForBag(
+    accountFrom: string, // group leader
+    channelId: string,
+    addStorageBuckets: StorageBucketId[]
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsForBag(
+        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
+        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
+        this.api.createType('BTreeSet<StorageBucketId>', [])
+      ),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsPerBagLimit(
+    accountFrom: string, // group leader
+    limit: number
+  ) {
+    return this.sender.signAndSend(this.api.tx.storage.updateStorageBucketsPerBagLimit(limit), accountFrom)
+  }
+
+  async updateStorageBucketsVoucherMaxLimits(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectLimit: number
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsVoucherMaxLimits(sizeLimit, objectLimit),
+      accountFrom
+    )
+  }
+
+  async acceptPendingDataObjects(
+    accountFrom: string,
+    workerId: WorkerId,
+    storageBucketId: StorageBucketId,
+    channelId: string,
+    dataObjectIds: string[]
+  ): Promise<ISubmittableResult> {
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
+
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
+      accountFrom
+    )
+  }
+
+  async issueNft(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    metadata = '',
+    royaltyPercentage?: number,
+    toMemberId?: number | null
+  ): Promise<ISubmittableResult> {
+    const perbillOnePercent = 10 * 1000000
+
+    const royalty = this.api.createType(
+      'Option<Royalty>',
+      royaltyPercentage ? royaltyPercentage * perbillOnePercent : null
+    )
+    // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
+    // const encodedMetadata = this.api.createType('Metadata', metadata)
+    // const encodedMetadata = this.api.createType('Metadata', metadata).toU8a() // invalid type passed to Metadata constructor
+    // const encodedMetadata = this.api.createType('Vec<u8>', metadata)
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Bytes', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Metadata', {})
+    // const encodedMetadata = this.api.createType('Bytes', '0x') // error
+    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText')
+    // const encodedMetadata = this.api.createType('NFTMetadata', 'someNonEmptyText').toU8a() // createType(NFTMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
+    const encodedMetadata = this.api.createType('NFTMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
+    // try this later on // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a()
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a() // throws error in QN when decoding this (but mb QN error)
+
+    const encodedToAccount = this.api.createType('Option<MemberId>', toMemberId || memberId)
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.issueNft({ Member: memberId }, videoId, royalty, encodedMetadata, encodedToAccount),
+      accountFrom
+    )
+  }
+
+  createAuctionParameters(
+    auctionType: 'English' | 'Open',
+    startingPrice: BN,
+    minimalBidStep: BN,
+    buyNowPrice?: BN,
+    startInBlock?: BN,
+    whitelist: string[] = []
+  ): AuctionParams {
+    const encodedAuctionType =
+      auctionType === 'English'
+        ? {
+            English: {
+              extension_period: 5, // TODO - read min/max bounds from runtime and set min value here (?)
+              auction_duration: 5, // TODO - read min/max bounds from runtime and set min value here (?)
+            },
+          }
+        : {
+            Open: {
+              bid_lock_duration: 2, // TODO - read min/max bounds from runtime and set min value here (?)
+            },
+          }
+
+    return this.api.createType('AuctionParams', {
+      auction_type: this.api.createType('AuctionType', encodedAuctionType),
+      starting_price: this.api.createType('u128', startingPrice),
+      minimal_bid_step: this.api.createType('u128', minimalBidStep),
+      buy_now_price: this.api.createType('Option<BlockNumber>', buyNowPrice),
+      starts_at: this.api.createType('Option<BlockNumber>', startInBlock),
+      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+    })
+  }
+
+  async startNftAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    auctionParams: AuctionParams
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.startNftAuction({ Member: memberId }, videoId, auctionParams),
+      accountFrom
+    )
+  }
+
+  async bidInNftAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    bidAmount: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.makeBid(memberId, videoId, bidAmount), accountFrom)
+  }
+
+  async claimWonEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
+  }
+
+  async pickOpenAuctionWinner(accountFrom: string, memberId: number, videoId: number) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.pickOpenAuctionWinner({ Member: memberId }, videoId),
+      accountFrom
+    )
+  }
+
+  async cancelOpenAuctionBid(accountFrom: string, participantId: number, videoId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.cancelOpenAuctionBid(participantId, videoId), accountFrom)
+  }
+
+  async cancelNftAuction(accountFrom: string, ownerId: number, videoId: number) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.cancelNftAuction({ Member: ownerId }, videoId),
+      accountFrom
+    )
+  }
+
+  async sellNft(accountFrom: string, videoId: number, ownerId: number, price: BN) {
+    return await this.sender.signAndSend(this.api.tx.content.sellNft(videoId, { Member: ownerId }, price), accountFrom)
+  }
+
+  async buyNft(accountFrom: string, videoId: number, participantId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId), accountFrom)
+  }
+
+  async offerNft(accountFrom: string, videoId: number, ownerId: number, toMemberId: number, price: BN | null = null) {
+    return await this.sender.signAndSend(
+      this.api.tx.content.offerNft(videoId, { Member: ownerId }, toMemberId, price),
+      accountFrom
+    )
+  }
+
+  async acceptIncomingOffer(accountFrom: string, videoId: number) {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
   }
 }

@@ -6,7 +6,7 @@ import initStorage, { doubleBucketConfig as storageConfig } from '../flows/stora
 import { WorkingGroups } from '../WorkingGroups'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Giza issue reproduction setup', async ({ job }) => {
   job('Make Alice a member', makeAliceMember)
 
   const leads = job('Set Storage Lead', leaderSetup(WorkingGroups.Storage))
