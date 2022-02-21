@@ -544,6 +544,8 @@ export interface InitTransactionalStatus extends Enum {
   readonly isIdle: boolean;
   readonly isInitiatedOfferToMember: boolean;
   readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
+  readonly isBuyNow: boolean;
+  readonly asBuyNow: u128;
   readonly isAuction: boolean;
   readonly asAuction: AuctionParams;
 }

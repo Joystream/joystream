@@ -807,6 +807,7 @@
         "_enum": {
             "Idle": "Null",
             "InitiatedOfferToMember": "(MemberId,Option<u128>)",
+            "BuyNow": "u128",
             "Auction": "AuctionParams"
         }
     },
