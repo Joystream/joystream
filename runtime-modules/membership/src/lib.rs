@@ -94,6 +94,7 @@ pub trait WeightInfo {
     fn add_staking_account_candidate() -> Weight;
     fn confirm_staking_account() -> Weight;
     fn remove_staking_account() -> Weight;
+    fn member_remark() -> Weight;
 }
 
 pub trait Trait:
@@ -371,6 +372,7 @@ decl_event! {
         StakingAccountAdded(AccountId, MemberId),
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
+        MemberRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -987,6 +989,22 @@ decl_module! {
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(staking_account_id, member_id));
         }
+
+        /// Member makes a remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::member_remark()]
+        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
+        }
     }
 }
 
@@ -1263,6 +1281,9 @@ impl WeightInfo for () {
         0
     }
     fn remove_staking_account() -> Weight {
+        0
+    }
+    fn member_remark() -> Weight {
         0
     }
 }
