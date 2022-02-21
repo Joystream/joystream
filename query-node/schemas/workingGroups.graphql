@@ -52,6 +52,9 @@ type Worker @entity {
   "Whether the worker is also the working group lead"
   isLead: Boolean!
 
+  "Whether the worker is currently active"
+  isActive: Boolean!
+
   "Current role stake (in JOY)"
   stake: BigInt!
 
