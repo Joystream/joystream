@@ -26,9 +26,12 @@ import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
+import initStorage, { singleBucketConfig as storageConfig } from '../flows/storage/initStorage'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job, env }) => {
+scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
@@ -80,4 +83,9 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Content directory
+  const initStorageJob = job('initialize storage system', initStorage(storageConfig)).requires(sudoHireLead)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 })

@@ -7,7 +7,7 @@ import managingStakingAccounts from '../flows/membership/managingStakingAccounts
 import membershipSystem from '../flows/membership/membershipSystem'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Memberships', async ({ job }) => {
   const membershipSystemJob = job('membership system', membershipSystem)
   // All other job should be executed after, otherwise changing membershipPrice etc. may break them
   job('creating members', creatingMemberships).after(membershipSystemJob)

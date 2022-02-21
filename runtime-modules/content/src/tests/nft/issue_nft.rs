@@ -51,10 +51,7 @@ fn issue_nft() {
             MetaEvent::content(RawEvent::NftIssued(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
-                nft_issue_params.royalty,
-                nft_issue_params.nft_metadata,
-                nft_issue_params.non_channel_owner,
-                nft_issue_params.init_transactional_status,
+                nft_issue_params,
             )),
             number_of_events_before_call + 1,
         );

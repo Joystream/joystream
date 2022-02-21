@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { createType, types } from '@joystream/types/'
+import { createType, types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'

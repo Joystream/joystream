@@ -816,5 +816,26 @@
         "non_channel_owner": "Option<MemberId>",
         "init_transactional_status": "InitTransactionalStatus"
     },
+    "AuctionRecord": {
+        "starting_price": "u128",
+        "buy_now_price": "u128",
+        "auction_type": "AuctionType",
+        "minimal_bid_step": "u128",
+        "last_bid": "Option<Bid>",
+        "starts_at": "Option<u32>",
+        "whitelist": "BTreeSet<MemberId>"
+    },
+    "NFTOwner": {
+        "_enum": {
+            "ChannelOwner": "Null",
+            "Member": "MemberId"
+        }
+    },
+    "OwnedNFT": {
+        "owner": "NFTOwner",
+        "transactional_status": "TransactionalStatus",
+        "creator_royalty": "Option<Royalty>"
+    },
+    "NftMetadata": "Vec<u8>",
     "AccountInfo": "AccountInfoWithRefCount"
 }
