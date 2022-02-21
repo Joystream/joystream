@@ -1890,6 +1890,16 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
+
+        /// Buy Nft
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_auth_success::<T>(&sender, &actor)?;
+            ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?;
+            Self::deposit_event(RawEvent::ChannelOwnerRemarked(actor, channel_id, msg));
+        }
     }
 }
 
@@ -2246,5 +2256,8 @@ decl_event!(
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
+
+        /// Metaprotocols related event
+        ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
     }
 );
