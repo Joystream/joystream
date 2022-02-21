@@ -1459,12 +1459,6 @@ pub fn create_default_member_owned_channel_with_video() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_nft_issuance(NftIssuanceParameters::<Test> {
-            royalty: None,
-            nft_metadata: b"test_nft_metadata".to_vec(),
-            non_channel_owner: Some(SECOND_MEMBER_ID),
-            init_transactional_status: Default::default(),
-        })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
         .call_and_assert(Ok(()));
 }
