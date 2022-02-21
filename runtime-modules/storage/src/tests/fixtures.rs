@@ -909,7 +909,6 @@ impl DeleteDynamicBagFixture {
             });
 
         let total_size_removed = bag.objects_total_size;
-
         let total_number_removed = bag.objects_number;
 
         let actual_result =
@@ -950,6 +949,25 @@ impl DeleteDynamicBagFixture {
                 .iter()
                 .zip(d_buckets_pre.iter())
                 .all(|(pre, post)| post.assigned_bags.saturating_sub(pre.assigned_bags) == 1));
+
+            // every bucket has voucher.size_used decreased by total_size_removed
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(
+                    |(pre, post)| post.voucher.size_used.saturating_sub(pre.voucher.size_used)
+                        == total_size_removed
+                ));
+
+            // every bucket has voucher.objects_used decreased by total_number_removed
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(|(pre, post)| post
+                    .voucher
+                    .objects_used
+                    .saturating_sub(pre.voucher.objects_used)
+                    == total_number_removed));
         }
     }
 }
