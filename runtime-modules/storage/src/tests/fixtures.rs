@@ -945,11 +945,11 @@ impl DeleteDynamicBagFixture {
             assert!(s_buckets_post
                 .iter()
                 .zip(s_buckets_pre.iter())
-                .all(|(pre, post)| pre.assigned_bags.saturating_sub(post.assigned_bags) == 1));
+                .all(|(pre, post)| post.assigned_bags.saturating_sub(pre.assigned_bags) == 1));
             assert!(d_buckets_post
                 .iter()
                 .zip(d_buckets_pre.iter())
-                .all(|(pre, post)| pre.assigned_bags.saturating_sub(post.assigned_bags) == 1));
+                .all(|(pre, post)| post.assigned_bags.saturating_sub(pre.assigned_bags) == 1));
         }
     }
 }
