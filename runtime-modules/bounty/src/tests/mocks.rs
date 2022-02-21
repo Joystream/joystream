@@ -199,6 +199,19 @@ impl crate::WeightInfo for () {
     fn withdraw_work_entrant_funds() -> u64 {
         0
     }
+
+    fn bounty_contributor_remark() -> u64 {
+        0
+    }
+    fn bounty_oracle_remark() -> u64 {
+        0
+    }
+    fn bounty_entrant_remark() -> u64 {
+        0
+    }
+    fn bounty_creator_remark() -> u64 {
+        0
+    }
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -288,6 +301,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }

@@ -1329,7 +1329,7 @@ decl_module! {
             msg: Vec<u8>,
         ) {
 
-            let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
+            let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 oracle.clone(),
             )?;
