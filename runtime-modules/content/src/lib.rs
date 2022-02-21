@@ -1920,6 +1920,15 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
         }
 
+        /// NFT owner remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
+            let video = Self::ensure_video_exists(&video_id)?;
+            let nft = video.ensure_nft_is_issued::<T>()?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+            Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
+        }
+
     }
 }
 
@@ -2281,5 +2290,6 @@ decl_event!(
         ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
     }
 );
