@@ -511,7 +511,7 @@ pub struct OpenAuctionDetails<BlockNumber> {
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NftIssuanceParametersRecord<MemberId, TransactionalStatus> {
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     /// Roayalty used for the author
     pub royalty: Option<Royalty>,
     /// Metadata
@@ -519,7 +519,7 @@ pub struct NftIssuanceParametersRecord<MemberId, TransactionalStatus> {
     /// member id Nft will be issued to
     pub non_channel_owner: Option<MemberId>,
     /// Initial transactional status for the nft
-    pub init_transactional_status: TransactionalStatus,
+    pub init_transactional_status: InitTransactionalStatus,
 }
 
 pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
