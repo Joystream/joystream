@@ -1311,6 +1311,18 @@ decl_event! {
             DistributionBucketFamilyId,
             Vec<u8>
         ),
+
+        /// Emits on Storage Operator making a remark
+        /// Params
+        /// - storage bucket id
+        /// - operator's worker id
+        /// - remark message
+        StorageOperatorRemarked(
+            WorkerId,
+            StorageBucketId,
+            Vec<u8>,
+        ),
+
     }
 }
 
@@ -2544,6 +2556,19 @@ decl_module! {
             ensure_root(origin)?;
 
             Self::create_dynamic_bag(bag_id, deletion_prize)?;
+        }
+
+        /// Create a dynamic bag. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn storage_operator_remark(
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
+            msg: Vec<u8>,
+        ) {
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+            Self::deposit_event(RawEvent::StorageOperatorRemarked(worker_id, storage_bucket_id, msg));
         }
     }
 }
