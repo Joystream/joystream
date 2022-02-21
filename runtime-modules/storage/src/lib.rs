@@ -1314,14 +1314,26 @@ decl_event! {
 
         /// Emits on Storage Operator making a remark
         /// Params
-        /// - storage bucket id
         /// - operator's worker id
+        /// - storage bucket id
         /// - remark message
         StorageOperatorRemarked(
             WorkerId,
             StorageBucketId,
             Vec<u8>,
         ),
+
+        /// Emits on Distribution Operator making a remark
+        /// Params
+        /// - operator's worker id
+        /// - distribution bucket id
+        /// - remark message
+        DistributionOperatorRemarked(
+            WorkerId,
+            DistributionBucketId,
+            Vec<u8>,
+        ),
+
 
     }
 }
@@ -2570,6 +2582,24 @@ decl_module! {
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
             Self::deposit_event(RawEvent::StorageOperatorRemarked(worker_id, storage_bucket_id, msg));
         }
+
+        /// Create a dynamic bag. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn distribution_operator_remark(
+            origin,
+            worker_id: WorkerId<T>,
+            distribution_bucket_id: DistributionBucketId<T>,
+            msg: Vec<u8>,
+        ) {
+            let bucket = Self::ensure_distribution_bucket_exists(&distribution_bucket_id)?;
+            ensure!(
+                bucket.operators.contains(&worker_id),
+                Error::<T>::MustBeDistributionProviderOperatorForBucket
+            );
+
+            Self::deposit_event(RawEvent::DistributionOperatorRemarked(worker_id, distribution_bucket_id, msg));
+        }
+
     }
 }
 
