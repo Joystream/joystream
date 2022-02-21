@@ -104,12 +104,14 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     return getInputJson<WorkingGroupOpeningInputParameters>(filePath, WorkingGroupOpeningInputSchema)
   }
 
-  async promptForStakeTopUp(stakingAccount: string, fundsSource?: string): Promise<void> {
-    const requiredStake = this.getOriginalApi().consts[apiModuleByGroup[this.group]].leaderOpeningStake
-    this.log(`You need to stake ${chalk.bold(formatBalance(requiredStake))} in order to create a new opening.`)
+  async promptForStakeTopUp({ stake, stakingAccount }: GroupMember, fundsSource?: string): Promise<void> {
+    const newStake = this.getOriginalApi().consts[apiModuleByGroup[this.group]].leaderOpeningStake.add(stake)
+    this.log(
+      `You need to increase your lead stake to ${chalk.bold(formatBalance(newStake))} in order to create a new opening.`
+    )
 
-    const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount])
-    const missingBalance = requiredStake.sub(balances.availableBalance)
+    const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount.toString()])
+    const missingBalance = newStake.sub(balances.freeBalance)
     if (missingBalance.gtn(0)) {
       await this.requireConfirmation(
         `Do you wish to transfer remaining ${chalk.bold(
@@ -250,7 +252,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       rememberedInput = openingJson
 
       if (!upcoming) {
-        await this.promptForStakeTopUp(lead.stakingAccount.toString(), stakeTopUpSource)
+        await this.promptForStakeTopUp(lead, stakeTopUpSource)
       }
 
       const createUpcomingOpeningActionMeta = this.prepareCreateUpcomingOpeningMetadata(

@@ -34,6 +34,11 @@ type Worker @entity {
   "The group that the worker belongs to"
   group: WorkingGroup!
 
+  # This exposes internal Hydra value related to `group`. It will be internally set and updated by Hydra.
+  # See https://github.com/Joystream/joystream/pull/3043 for more info.
+  "The id the group that the worker belongs to"
+  groupId: ID!
+
   "Worker membership"
   membership: Membership!
 
@@ -51,6 +56,9 @@ type Worker @entity {
 
   "Whether the worker is also the working group lead"
   isLead: Boolean!
+
+  "Whether the worker is currently active"
+  isActive: Boolean!
 
   "Current role stake (in JOY)"
   stake: BigInt!

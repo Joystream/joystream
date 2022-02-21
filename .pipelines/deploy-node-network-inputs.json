@@ -28,8 +28,8 @@
     "value": "t2.micro"
   },
   "ec2AMI": {
-    "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
-    "value": "ami-095792100b6e43a67"
+    "description": "Pre-built AMI ID",
+    "value": "ami-0ce5f13e91397239a"
   },
   "volumeSize": {
     "description": "Validator and Build instance volume size in GB",
