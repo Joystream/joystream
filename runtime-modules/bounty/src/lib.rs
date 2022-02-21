@@ -605,8 +605,17 @@ decl_event! {
         /// Params:
         /// - entrant_id
         /// - bounty id
+        /// - entry id
         /// - message
         BountyEntrantRemarked(MemberId, BountyId, EntryId, Vec<u8>),
+
+        /// Bounty entrant made a message remark
+        /// Params:
+        /// - creator
+        /// - bounty id
+        /// - message
+        BountyCreatorRemarked(BountyActor<MemberId>, BountyId, Vec<u8>),
+
     }
 }
 
@@ -723,6 +732,10 @@ decl_error! {
 
         /// Member specified is not an entrant worker
         InvalidEntrantWorkerSpecified,
+
+        /// Invalid Creator Actor for Bounty specified
+        InvalidCreatorActorSpecified,
+
     }
 }
 
@@ -1371,6 +1384,38 @@ decl_module! {
 
             Self::deposit_event(RawEvent::BountyEntrantRemarked(entrant_id, bounty_id, entry_id, msg));
         }
+
+        /// Bounty Oracle made a remark
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::bounty_creator_remark()]
+        pub fn creator_remark(
+            origin,
+            creator: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+            msg: Vec<u8>,
+        ) {
+
+            let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                creator.clone(),
+            )?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            ensure!(
+                bounty.creation_params.creator == creator,
+                Error::<T>::InvalidCreatorActorSpecified,
+            );
+
+            Self::deposit_event(RawEvent::BountyCreatorRemarked(creator, bounty_id, msg));
+        }
+
     }
 }
 
