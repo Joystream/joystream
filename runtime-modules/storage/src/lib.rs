@@ -2578,6 +2578,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             msg: Vec<u8>,
         ) {
+            T::ensure_storage_worker_origin(origin, worker_id)?;
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
             Self::deposit_event(RawEvent::StorageOperatorRemarked(worker_id, storage_bucket_id, msg));
@@ -2591,6 +2592,7 @@ decl_module! {
             distribution_bucket_id: DistributionBucketId<T>,
             msg: Vec<u8>,
         ) {
+            T::ensure_distribution_worker_origin(origin, worker_id)?;
             let bucket = Self::ensure_distribution_bucket_exists(&distribution_bucket_id)?;
             ensure!(
                 bucket.operators.contains(&worker_id),
