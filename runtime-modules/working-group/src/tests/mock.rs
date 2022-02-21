@@ -157,6 +157,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl membership::Trait for Test {

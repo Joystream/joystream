@@ -169,6 +169,7 @@ pub trait WeightInfo {
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
     fn cancel_active_and_pending_proposals(i: u32) -> Weight;
+    fn proposer_remark() -> Weight;
 }
 
 type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
@@ -296,6 +297,12 @@ decl_event!(
         /// - Member Id of the proposer
         /// - Id of the proposal
         ProposalCancelled(MemberId, ProposalId),
+
+        /// Emits on proposer making a remark
+        /// - proposer id
+        /// - proposal id
+        /// - message
+        ProposerRemarked(MemberId, ProposalId, Vec<u8>),
     }
 );
 
@@ -550,6 +557,32 @@ decl_module! {
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
+        }
+
+        /// Proposer Remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::proposer_remark()]
+        pub fn proposer_remark(
+            origin,
+            proposal_id: T::ProposalId,
+            proposer_id: MemberId<T>,
+            msg: Vec<u8>,
+        ) {
+            T::ProposerOriginValidator::ensure_member_controller_account_origin(origin, proposer_id)?;
+
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
+            let proposal = Self::proposals(proposal_id);
+
+            ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
+
+            Self::deposit_event(RawEvent::ProposerRemarked(proposer_id, proposal_id, msg));
         }
     }
 }

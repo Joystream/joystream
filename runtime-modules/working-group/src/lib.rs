@@ -288,6 +288,17 @@ decl_event!(
         /// - Id of the worker.
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - message
+        LeadRemarked(Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - worker
+        /// - message
+        WorkerRemarked(WorkerId, Vec<u8>),
     }
 );
 
@@ -1167,6 +1178,21 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
+
+        /// Lead remark message
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn lead_remark(origin, msg: Vec<u8>) {
+            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+            Self::deposit_event(RawEvent::LeadRemarked(msg));
+        }
+
+        /// Lead remark message
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
+            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+            Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
+        }
+
     }
 }
 
