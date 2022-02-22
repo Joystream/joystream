@@ -264,7 +264,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn buy_now(
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        owner_account_id: Option<T::AccountId>,
+        owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
@@ -274,7 +274,7 @@ impl<T: Trait> Module<T> {
                 nft.creator_royalty,
                 *price,
                 new_owner_account_id,
-                owner_account_id,
+                Some(owner_account_id),
                 false,
             );
 
