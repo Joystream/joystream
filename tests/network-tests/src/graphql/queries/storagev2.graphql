@@ -72,3 +72,22 @@ query getChannelById($id: ID!) {
     ...ChannelFields
   }
 }
+
+fragment OwnedNftFields on OwnedNft {
+  id
+  video {
+    id
+  }
+  ownerMember {
+    id
+  }
+  metadata
+  # transactionalStatus TODO
+  creatorRoyalty
+}
+
+query getOwnedNftByVideoId($videoId: ID!) {
+  ownedNfts(where: { video: { id_eq: $videoId } }) {
+    ...OwnedNftFields
+  }
+}

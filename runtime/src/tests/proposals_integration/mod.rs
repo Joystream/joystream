@@ -47,15 +47,26 @@ fn setup_members(count: u8) {
     }
 }
 
-// Max Council size is 3
 fn setup_council(cycle_id: u64) {
-    let councilor0 = AccountId32::default();
-    let councilor1: [u8; 32] = [1; 32];
-    let councilor2: [u8; 32] = [2; 32];
-    elect_council(
-        vec![councilor0, councilor1.into(), councilor2.into()],
-        cycle_id,
-    );
+    let council_size = <Runtime as council::Trait>::CouncilSize::get() as u8;
+
+    let mut council = vec![];
+    for id in 0..council_size {
+        council.push((id, [id; 32].into()));
+    }
+
+    elect_council(council, cycle_id);
+}
+
+fn setup_different_council(cycle_id: u64) {
+    let council_size = <Runtime as council::Trait>::CouncilSize::get() as u8;
+
+    let mut council = vec![];
+    for id in council_size..(2 * council_size) {
+        council.push((id, [id; 32].into()));
+    }
+
+    elect_council(council, cycle_id);
 }
 
 struct VoteGenerator {
@@ -322,8 +333,10 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
-        setup_members(4);
+        setup_members(30);
         setup_council(0);
+        let council_size = <Runtime as council::Trait>::CouncilSize::get() as u32;
+
         // create proposal
         let dummy_proposal = DummyProposalFixture::default().with_voting_period(100);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -347,7 +360,10 @@ fn proposal_reset_succeeds() {
         );
 
         // Ensure council was elected
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
 
         // Check for votes.
         assert_eq!(
@@ -367,7 +383,7 @@ fn proposal_reset_succeeds() {
         //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
 
         end_idle_period();
-        setup_council(1);
+        setup_different_council(1);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -388,7 +404,10 @@ fn proposal_reset_succeeds() {
         );
 
         // Check council CouncilElected hook. It should set current council.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
     });
 }
 
@@ -528,11 +547,12 @@ where
 
         assert_eq!((self.successful_call)(), Ok(()));
 
-        // Council size is 3
+        // Approve Proposal
+        let council_size = <Runtime as council::Trait>::CouncilSize::get() as u32;
         let mut vote_generator = VoteGenerator::new(self.proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        for _i in 0..council_size {
+            vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        }
 
         run_to_block(System::block_number() + 1);
     }
@@ -573,7 +593,7 @@ fn funding_request_proposal_execution_succeeds() {
         let council_budget = 5_000_000;
         let funding = 5000;
 
-        let target_account_id: [u8; 32] = [12; 32];
+        let target_account_id: [u8; 32] = [111; 32];
         let target_account_id: AccountId32 = target_account_id.clone().into();
 
         assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
@@ -824,7 +844,7 @@ fn set_validator_count_proposal_execution_succeeds() {
         let new_validator_count = 8;
         assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
-        setup_members(15);
+        setup_members(100);
         setup_council(0);
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -1122,8 +1142,9 @@ fn set_councilor_reward_proposal_succeds() {
 #[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
-        setup_members(5);
+        setup_members(25);
         setup_council(0);
+        let council_size = <Runtime as council::Trait>::CouncilSize::get() as u32;
 
         let starting_block = System::block_number();
         // create proposal
@@ -1132,12 +1153,11 @@ fn proposal_reactivation_succeeds() {
             .with_constitutionality(2);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
-        // create some votes
-        // Council size is 3
+        // Approve Proposal
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        for _i in 0..council_size {
+            vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        }
 
         run_to_block(starting_block + 2);
 
@@ -1152,18 +1172,25 @@ fn proposal_reactivation_succeeds() {
         );
 
         // Ensure council was elected
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
 
         end_idle_period();
-        setup_council(1);
+        setup_different_council(1);
 
-        run_to_block(10);
+        // Why this jump to arbitrary blocknumber potentially in the past..?!
+        // run_to_block(10);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
         assert_eq!(updated_proposal.status, ProposalStatus::Active);
 
         // Check council CouncilElected hook. It should set current council. And we elected single councilor.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
     });
 }

@@ -277,14 +277,6 @@ pub fn testnet_genesis(
                 next_video_category_id: 1,
                 next_video_id: 1,
                 next_video_post_id: 1,
-                video_migration: node_runtime::content::MigrationConfigRecord {
-                    current_id: 1,
-                    final_id: 1,
-                },
-                channel_migration: node_runtime::content::MigrationConfigRecord {
-                    current_id: 1,
-                    final_id: 1,
-                },
                 max_reward_allowed: 1000,
                 min_cashout_allowed: 1,
                 min_auction_duration: 3,

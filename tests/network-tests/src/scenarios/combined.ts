@@ -10,7 +10,7 @@ import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import { WorkingGroups } from '../WorkingGroups'
 
-scenario(async ({ job }) => {
+scenario('Combined', async ({ job }) => {
   // These tests assume:
   // - storage setup (including hired lead)
   // - existing council
@@ -46,4 +46,13 @@ scenario(async ({ job }) => {
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
     createChannelJob
   )
+
+  /* TODO: delete this alternative from pre-olympia-merge NFT branch if not useful
+  const initBucketsJob = job('init storage and distribution buckets via CLI', [
+    initDistributionBucket,
+    initStorageBucket,
+  ]).requires(leadSetupJob)
+
+  const createChannelJob = job('create channel via CLI', createChannel).requires(initBucketsJob)
+  */
 })

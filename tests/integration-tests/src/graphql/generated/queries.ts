@@ -1,6 +1,43 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type ChannelFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type OwnedNftFieldsFragment = {
+  id: string
+  metadata: string
+  creatorRoyalty?: Types.Maybe<number>
+  video: { id: string }
+  ownerMember?: Types.Maybe<{ id: string }>
+  transactionalStatus:
+    | { __typename: 'TransactionalStatusIdle' }
+    | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
+    | { __typename: 'TransactionalStatusAuction' }
+    | { __typename: 'TransactionalStatusBuyNow' }
+}
+
+export type GetChannelsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelsQuery = { channels: Array<ChannelFieldsFragment> }
+
+export type GetChannelCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelCategoriesQuery = { channelCategories: Array<ChannelCategoryFieldsFragment> }
+
+export type GetVideoCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetVideoCategoriesQuery = { videoCategories: Array<VideoCategoryFieldsFragment> }
+
+export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
+  videoId: Types.Scalars['ID']
+}>
+
+export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
+
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
 export type ElectedCouncilFieldsFragment = { councilMembers: Array<CouncilMemberFieldsFragment> }
@@ -1900,6 +1937,40 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+  }
+`
+export const ChannelCategoryFields = gql`
+  fragment ChannelCategoryFields on ChannelCategory {
+    id
+    activeVideosCounter
+  }
+`
+export const VideoCategoryFields = gql`
+  fragment VideoCategoryFields on VideoCategory {
+    id
+    activeVideosCounter
+  }
+`
+export const OwnedNftFields = gql`
+  fragment OwnedNftFields on OwnedNft {
+    id
+    video {
+      id
+    }
+    ownerMember {
+      id
+    }
+    metadata
+    transactionalStatus {
+      __typename
+    }
+    creatorRoyalty
+  }
+`
 export const CouncilMemberFields = gql`
   fragment CouncilMemberFields on CouncilMember {
     id
@@ -3656,6 +3727,38 @@ export const BudgetSpendingEventFields = gql`
     amount
     rationale
   }
+`
+export const GetChannels = gql`
+  query getChannels {
+    channels {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
+export const GetChannelCategories = gql`
+  query getChannelCategories {
+    channelCategories {
+      ...ChannelCategoryFields
+    }
+  }
+  ${ChannelCategoryFields}
+`
+export const GetVideoCategories = gql`
+  query getVideoCategories {
+    videoCategories {
+      ...VideoCategoryFields
+    }
+  }
+  ${VideoCategoryFields}
+`
+export const GetOwnedNftByVideoId = gql`
+  query getOwnedNftByVideoId($videoId: ID!) {
+    ownedNfts(where: { video: { id_eq: $videoId } }) {
+      ...OwnedNftFields
+    }
+  }
+  ${OwnedNftFields}
 `
 export const GetCurrentCouncilMembers = gql`
   query getCurrentCouncilMembers {

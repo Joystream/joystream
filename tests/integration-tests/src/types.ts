@@ -1,10 +1,11 @@
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
+import { MemberId, PostId, ThreadId, ChannelId } from '@joystream/types/common'
 import { ApplicationId, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
 import { Event } from '@polkadot/types/interfaces/system'
 import { BTreeMap } from '@polkadot/types'
 import { CategoryId } from '@joystream/types/forum'
 import { MembershipBoughtEvent } from './graphql/generated/schema'
 import { ProposalDetails, ProposalId } from '@joystream/types/proposals'
+import { ContentActor, VideoId, VideoCreationParameters } from '@joystream/types/content'
 import { CreateInterface } from '@joystream/types'
 
 export type AnyQueryNodeEvent = Pick<
@@ -134,6 +135,18 @@ export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
 export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<
   InstanceType<ProposalDetails['typeDefinitions'][T]>
 >
+
+// Content
+
+export type ContentEventName = 'VideoCreated'
+
+export interface VideoCreatedEventDetails extends EventDetails {
+  actor: ContentActor
+  channelId: ChannelId
+  videoId: VideoId
+  params: VideoCreationParameters
+}
+
 // Forum
 
 export type ThreadPath = {

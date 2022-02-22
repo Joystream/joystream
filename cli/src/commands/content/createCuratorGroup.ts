@@ -4,6 +4,9 @@ import chalk from 'chalk'
 export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBase {
   static description = 'Create new Curator Group.'
   static aliases = ['createCuratorGroup']
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
 
   async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()

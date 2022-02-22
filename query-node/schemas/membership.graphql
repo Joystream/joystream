@@ -109,6 +109,12 @@ type Membership @entity {
 
   "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+
+  "Auctions in which is this user whitelisted to participate"
+  whitelistedInAuctions: [Auction!]! @derivedFrom(field: "whitelistedMembers")
+
+  "NFTs owned by this member"
+  ownedNfts: [OwnedNft!]! @derivedFrom(field: "ownerMember")
 }
 
 type MembershipSystemSnapshot @entity {

@@ -6,7 +6,7 @@ import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Olympia', async ({ job }) => {
   job('creating members', creatingMemberships)
   job('updating member profile', updatingMemberProfile)
   job('updating member accounts', updatingMemberAccounts)

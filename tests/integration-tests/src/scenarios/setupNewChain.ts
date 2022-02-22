@@ -6,7 +6,7 @@ import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flow
 import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storage/initDistribution'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Setup new chain', async ({ job }) => {
   job('Elect Council', electCouncil)
   const leads = job('Set WorkingGroup Leads', leaderSetup)
   const updateWorkerAccounts = job('Update worker accounts', updateAccountsFlow).after(leads)

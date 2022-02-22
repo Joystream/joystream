@@ -177,7 +177,7 @@ export async function createWorkingGroupOpeningMetadata(
     description: description || undefined,
     shortDescription: shortDescription || undefined,
     hiringLimit: hiringLimit || undefined,
-    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp) : undefined,
+    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp * 1000) : undefined,
     applicationFormQuestions: [],
   })
 
@@ -249,7 +249,7 @@ async function handleAddUpcomingOpeningAction(
     metadata: openingMeta,
     group,
     rewardPerBlock: isSet(rewardPerBlock) && parseInt(rewardPerBlock) ? new BN(rewardPerBlock) : undefined,
-    expectedStart: expectedStart ? new Date(expectedStart) : undefined,
+    expectedStart: expectedStart ? new Date(expectedStart * 1000) : undefined,
     stakeAmount: isSet(minApplicationStake) && parseInt(minApplicationStake) ? new BN(minApplicationStake) : undefined,
     createdInEvent: statusChangedEvent,
   })
@@ -338,7 +338,7 @@ async function handleWorkingGroupMetadataAction(
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
@@ -359,6 +359,7 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }
@@ -371,6 +372,14 @@ export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?
   }
 
   return leaderSetEvent
+}
+
+// expects `worker.application` to be available
+function isWorkerActive(worker: Worker): boolean {
+  return (
+    worker.application.status.isTypeOf === 'ApplicationStatusAccepted' &&
+    worker.status.isTypeOf === 'WorkerStatusActive'
+  )
 }
 
 // Mapping functions
@@ -536,6 +545,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
               entry: openingFilledEvent,
               rewardPerBlock: opening.rewardPerBlock,
             })
+            worker.isActive = isWorkerActive(worker)
             await store.save<Worker>(worker)
             return worker
           }
@@ -787,7 +797,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
 export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
@@ -807,6 +817,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
   worker.rewardPerBlock = new BN(0)
   worker.missingRewardAmount = undefined
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }
@@ -907,7 +918,7 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
 export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
@@ -923,6 +934,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
   status.workerStartedLeavingEventId = workerStartedLeavingEvent.id
   worker.status = status
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }
