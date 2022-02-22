@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       STACK_NAME: create-joystream-node-ami-ga-${{ github.run_number }}
-      KEY_NAME: joystream-github-action-key
+      KEY_NAME: joystream-github-action-key-new
     steps:
       - name: Extract branch name
         shell: bash

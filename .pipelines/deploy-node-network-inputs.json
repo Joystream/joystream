@@ -9,7 +9,7 @@
   },
   "keyName": {
     "description": "SSH key pair on AWS",
-    "value": "joystream-github-action-key"
+    "value": "joystream-github-action-key-new"
   },
   "numberOfValidators": {
     "description": "Number of validators to deploy",
