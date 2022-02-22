@@ -9,7 +9,7 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
-import fs, { readFileSync } from 'fs'
+import fs from 'fs'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -42,7 +42,7 @@ function writeOutput(api: Api, miniSecret: string) {
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
 
-export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
+export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables
   config()
   const env = process.env
@@ -65,7 +65,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   let startKeyId: number
   let customKeys: string[] = []
   if (reuseKeys) {
-    const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
+    const output = JSON.parse(fs.readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom
   } else {
@@ -86,6 +86,8 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   const query = new QueryNodeApi(queryNodeProvider)
 
   const debug = extendDebug('scenario')
+
+  debug(label)
 
   const jobs = new JobManager({ apiFactory, query, env })
 

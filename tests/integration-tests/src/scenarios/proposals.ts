@@ -8,7 +8,7 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job, env }) => {
+scenario('Proposals', async ({ job, env }) => {
   const councilJob = job('electing council', electCouncil)
   const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)

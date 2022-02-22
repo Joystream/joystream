@@ -15,6 +15,7 @@ type StorageBucketConfig = {
   objectsLimit: number
   operatorId: number
   transactorKey: string
+  transactorUri: string
 }
 
 type InitStorageConfig = {
@@ -48,6 +49,7 @@ export const singleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
     },
   ],
 }
@@ -65,6 +67,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
     },
     {
       metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
@@ -73,12 +76,13 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorKey: process.env.COLOSSUS_2_TRANSACTOR_KEY || '5FbzYmQ3HogiEEDSXPYJe58yCcmSh3vsZLodTdBB6YuLDAj7', // //Colossus2
+      transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
     },
   ],
 }
 
 export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageConfig) {
-  return async function initDistribution({ api }: FlowProps): Promise<void> {
+  return async function initStorage({ api }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:initStorage')
     debug('Started')
 

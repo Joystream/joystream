@@ -1,4 +1,5 @@
-import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
+import { BLOCKTIME } from './consts'
+import { gql, ApolloClient, ApolloQueryResult, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
 import { extendDebug, Debugger } from './Debugger'
 import {
   StorageDataObjectFieldsFragment,
@@ -9,6 +10,10 @@ import {
   GetChannelById,
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
+  OwnedNftFieldsFragment,
+  GetOwnedNftByVideoId,
+  GetOwnedNftByVideoIdQuery,
+  GetOwnedNftByVideoIdQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -30,7 +35,7 @@ export class QueryNodeApi {
   public async tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    retryTimeMs = 18000,
+    retryTimeMs = BLOCKTIME * 3,
     retries = 6
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
@@ -58,7 +63,7 @@ export class QueryNodeApi {
       try {
         assertResultIsValid(result)
       } catch (e) {
-        debug(`Unexpected query result${e instanceof Error ? ` (${e.message})` : ''}`)
+        debug(`Unexpected query result${e && (e as Error).message ? ` (${(e as Error).message})` : ''}`)
         await retry(e)
         continue
       }
@@ -117,6 +122,50 @@ export class QueryNodeApi {
       GetDataObjectsByIds,
       { ids },
       'storageDataObjects'
+    )
+  }
+
+  public async getChannels(): Promise<ApolloQueryResult<any>> {
+    const query = gql`
+      query {
+        channels {
+          id
+          activeVideosCounter
+        }
+      }
+    `
+    return await this.queryNodeProvider.query({ query })
+  }
+
+  public async getChannelCategories(): Promise<ApolloQueryResult<any>> {
+    const query = gql`
+      query {
+        channelCategories {
+          id
+          activeVideosCounter
+        }
+      }
+    `
+    return await this.queryNodeProvider.query({ query })
+  }
+
+  public async getVideoCategories(): Promise<ApolloQueryResult<any>> {
+    const query = gql`
+      query {
+        videoCategories {
+          id
+          activeVideosCounter
+        }
+      }
+    `
+    return await this.queryNodeProvider.query({ query })
+  }
+
+  public async ownedNftByVideoId(videoId: string): Promise<Maybe<OwnedNftFieldsFragment>> {
+    return this.firstEntityQuery<GetOwnedNftByVideoIdQuery, GetOwnedNftByVideoIdQueryVariables>(
+      GetOwnedNftByVideoId,
+      { videoId },
+      'ownedNfts'
     )
   }
 }
