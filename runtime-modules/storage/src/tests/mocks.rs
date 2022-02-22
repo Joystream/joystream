@@ -1,9 +1,7 @@
 #![cfg(test)]
 
-use frame_support::dispatch::{DispatchError, DispatchResult};
 pub use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -107,70 +105,8 @@ impl crate::Trait for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = u64;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers =
-            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
-
-        if !allowed_storage_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
-        ];
-
-        if !allowed_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
+    type StorageWorkingGroup = StorageWG;
+    type DistributionWorkingGroup = DistributionWG;
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;
@@ -244,3 +180,5 @@ pub type Storage = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+
+// working group integration

@@ -145,6 +145,7 @@ pub trait Trait:
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
+
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
 #[derive(Encode, PartialEq, Decode, Debug, Default)]
