@@ -1168,6 +1168,7 @@ export interface VideoUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly enable_comments: Option<bool>;
+  readonly auto_issue_nft: Option<NftIssuanceParameters>;
 }
 
 /** @name VoteKind */

@@ -375,24 +375,6 @@ export async function createNft(
   return nft
 }
 
-export async function updateNft(
-  store: DatabaseManager,
-  videoId: string,
-  nftIssuanceParameters: joystreamTypes.NftIssuanceParameters,
-  blockNumber: number,
-) {
-  const nft = await getNftFromVideo(store, videoId, 'Non-existing video NFT update requested', 'Non-existing NFT update requested')
-
-  // update NFT transactional status
-  const transactionalStatus = await convertTransactionalStatus(
-    nftIssuanceParameters.init_transactional_status,
-    store,
-    nft,
-    blockNumber
-  )
-  await setNewNftTransactionalStatus(store, nft, transactionalStatus, blockNumber)
-}
-
 async function createAuction(
   store: DatabaseManager,
   nft: OwnedNft, // expects `nft.ownerMember` to be available

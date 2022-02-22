@@ -181,10 +181,10 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // save video
   await store.save<Video>(video)
 
-  if (videoCreationParameters.auto_issue_nft.isSome) {
-    const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+  if (videoUpdateParameters.auto_issue_nft.isSome) {
+    const issuanceParameters = videoUpdateParameters.auto_issue_nft.unwrap()
 
-    await updateNft(store, video, issuanceParameters, event.blockNumber)
+    await createNft(store, video, issuanceParameters, event.blockNumber)
   }
 
   // update video active counters
