@@ -1872,7 +1872,7 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
             //
             // == MUTATION SAFE ==

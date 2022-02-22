@@ -295,6 +295,6 @@ fn buy_nft_reward_account_is_not_set() {
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::RewardAccountIsNotSet);
+        assert_ok!(buy_nft_result);
     })
 }
