@@ -514,8 +514,8 @@ decl_module! {
             channel_id: T::ChannelId,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
-
             let sender = ensure_signed(origin)?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -722,7 +722,6 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
-                /// Newly created video has no nft
                 nft_status,
             };
 
@@ -1294,6 +1293,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
         }
 
+        /// Issue NFT
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn issue_nft(
             origin,
@@ -1301,7 +1301,6 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) {
-
             let sender = ensure_signed(origin)?;
 
             // Ensure given video exists
@@ -1333,10 +1332,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
                 video_id,
-                params.royalty,
-                params.nft_metadata,
-                params.non_channel_owner,
-                params.init_transactional_status
+                params,
             ));
         }
 
@@ -2133,7 +2129,7 @@ decl_event!(
             CurrencyOf<T>,
             <T as common::MembershipTypes>::MemberId,
         >,
-        InitTransactionalStatus = InitTransactionalStatus<T>,
+        NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
@@ -2217,14 +2213,7 @@ decl_event!(
         MinCashoutUpdated(Balance),
         // Nft auction
         AuctionStarted(ContentActor, VideoId, AuctionParams),
-        NftIssued(
-            ContentActor,
-            VideoId,
-            Option<Royalty>,
-            Metadata,
-            Option<MemberId>,
-            InitTransactionalStatus,
-        ),
+        NftIssued(ContentActor, VideoId, NftIssuanceParameters),
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, IsExtended),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),

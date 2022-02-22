@@ -30,8 +30,10 @@ import initDistributionBucket from '../flows/clis/initDistributionBucket'
 import initStorageBucket from '../flows/clis/initStorageBucket'
 import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 
-scenario(async ({ job, env }) => {
+scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
@@ -85,6 +87,10 @@ scenario(async ({ job, env }) => {
   job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Content directory
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 
   // CLIs:
   const createChannelJob = job('create channel via CLI', createChannel).after(sudoHireLead)

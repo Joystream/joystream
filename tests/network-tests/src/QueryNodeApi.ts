@@ -299,6 +299,22 @@ import {
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
   ChannelFieldsFragment,
+  OwnedNftFieldsFragment,
+  GetOwnedNftByVideoId,
+  GetOwnedNftByVideoIdQuery,
+  GetOwnedNftByVideoIdQueryVariables,
+  GetChannelsVideoCountersQuery,
+  ChannelVideoCounterFragment,
+  GetChannelsVideoCountersQueryVariables,
+  GetChannelsVideoCounters,
+  ChannelCategoryVideoCounterFragment,
+  GetChannelCategoriesVideoCounterQuery,
+  GetChannelCategoriesVideoCounterQueryVariables,
+  GetChannelCategoriesVideoCounter,
+  VideoCategoryVideoCounterFragment,
+  GetVideoCategoriesVideoCounterQuery,
+  GetVideoCategoriesVideoCounterQueryVariables,
+  GetVideoCategoriesVideoCounter,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -350,7 +366,7 @@ export class QueryNodeApi {
       try {
         assertResultIsValid(result)
       } catch (e) {
-        debug(`Unexpected query result${e instanceof Error ? ` (${e.message})` : ''}`)
+        debug(`Unexpected query result${e && (e as Error).message ? ` (${(e as Error).message})` : ''}`)
         await retry(e)
         continue
       }
@@ -1081,6 +1097,36 @@ export class QueryNodeApi {
       GetChannelById,
       { id },
       'channelByUniqueInput'
+    )
+  }
+
+  public async getChannelsVideoCounters(): Promise<ChannelVideoCounterFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelsVideoCountersQuery, GetChannelsVideoCountersQueryVariables>(
+      GetChannelsVideoCounters,
+      {},
+      'channels'
+    )
+  }
+
+  public async getChannelCategoriesVideoCounters(): Promise<ChannelCategoryVideoCounterFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetChannelCategoriesVideoCounterQuery,
+      GetChannelCategoriesVideoCounterQueryVariables
+    >(GetChannelCategoriesVideoCounter, {}, 'channelCategories')
+  }
+
+  public async getVideoCategoriesVideoCounters(): Promise<VideoCategoryVideoCounterFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetVideoCategoriesVideoCounterQuery,
+      GetVideoCategoriesVideoCounterQueryVariables
+    >(GetVideoCategoriesVideoCounter, {}, 'videoCategories')
+  }
+
+  public async ownedNftByVideoId(videoId: string): Promise<Maybe<OwnedNftFieldsFragment>> {
+    return this.firstEntityQuery<GetOwnedNftByVideoIdQuery, GetOwnedNftByVideoIdQueryVariables>(
+      GetOwnedNftByVideoId,
+      { videoId },
+      'ownedNfts'
     )
   }
 }

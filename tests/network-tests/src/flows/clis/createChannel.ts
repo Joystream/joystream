@@ -1,13 +1,12 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { JoystreamCLI } from '../../cli/joystream'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership/BuyMembershipHappyCaseFixture'
 import { FixtureRunner } from '../../Fixture'
-import { TmpFileManager } from '../../cli/utils'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { statSync } from 'fs'
 import BN from 'bn.js'
+import { createJoystreamCli } from '../utils'
 
 export default async function createChannel({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
@@ -17,22 +16,22 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
   const [channelOwnerKeypair] = await api.createKeyPairs(1)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [channelOwnerKeypair.key.address])
   await new FixtureRunner(buyMembershipFixture).run()
+  const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
   // Send some funds to pay the deletion_prize and fees
   const channelOwnerBalance = new BN(10000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
-  // Create Joystream CLI
-  const tmpFileManager = new TmpFileManager()
-  const joystreamCli = new JoystreamCLI(tmpFileManager)
+  // Create and init Joystream CLI
+  const joystreamCli = await createJoystreamCli()
 
-  // Init CLI, import & select channel owner key
+  // Import & select channel owner key
   await joystreamCli.init()
-  await joystreamCli.importKey(channelOwnerKeypair.key)
+  await joystreamCli.importAccount(channelOwnerKeypair.key)
 
   // Create channel
-  const avatarPhotoPath = tmpFileManager.randomImgFile(300, 300)
-  const coverPhotoPath = tmpFileManager.randomImgFile(1920, 500)
+  const avatarPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(300, 300)
+  const coverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1920, 500)
   const channelInput = {
     title: 'Test channel',
     avatarPhotoPath,
@@ -42,10 +41,16 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     language: 'en',
     rewardAccount: channelOwnerKeypair.key.address,
   }
-  const { out: channelId } = await joystreamCli.createChannel(channelInput, ['--context', 'Member'])
+
+  const channelId = await joystreamCli.createChannel(channelInput, [
+    '--context',
+    'Member',
+    '--useMemberId',
+    memberId.toString(),
+  ])
 
   await query.tryQueryWithTimeout(
-    () => query.channelById(channelId),
+    () => query.channelById(channelId.toString()),
     (channel) => {
       Utils.assert(channel, 'Channel not found')
       assert.equal(channel.title, channelInput.title)

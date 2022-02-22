@@ -60,8 +60,11 @@ export interface Approved extends Enum {
 export interface AssuranceContractType extends Enum {
   readonly isOpen: boolean;
   readonly isClosed: boolean;
-  readonly asClosed: Vec<MemberId>;
+  readonly asClosed: AssuranceContractType_Closed;
 }
+
+/** @name AssuranceContractType_Closed */
+export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 
 /** @name Auction */
 export interface Auction extends Struct {
@@ -157,7 +160,7 @@ export interface BountyCreationParameters extends Struct {
 }
 
 /** @name BountyId */
-export interface BountyId extends u32 {}
+export interface BountyId extends u64 {}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
@@ -459,7 +462,7 @@ export interface Entry extends Struct {
 }
 
 /** @name EntryId */
-export interface EntryId extends u32 {}
+export interface EntryId extends u64 {}
 
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {

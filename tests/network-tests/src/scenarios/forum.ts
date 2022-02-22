@@ -7,7 +7,7 @@ import leadOpening from '../flows/working-groups/leadOpening'
 import threadTags from '../flows/forum/threadTags'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Forum', async ({ job }) => {
   const sudoHireLead = job('hiring working group leads', leadOpening())
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)

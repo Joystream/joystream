@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "5.0.0"
+version = "5.1.0"
 dependencies = [
  "ansi_term 0.12.1",
  "enum-utils",

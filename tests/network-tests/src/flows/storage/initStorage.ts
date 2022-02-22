@@ -13,7 +13,7 @@ type StorageBucketConfig = {
   storageLimit: BN
   objectsLimit: number
   operatorId: number
-  transactorKey: string
+  transactorUri: string
   transactorBalance: BN
 }
 
@@ -47,7 +47,7 @@ export const singleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
-      transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
       transactorBalance: new BN(100_000),
     },
   ],
@@ -65,7 +65,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
-      transactorKey: process.env.COLOSSUS_1_TRANSACTOR_KEY || '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU', // //Colossus1
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
       transactorBalance: new BN(100_000),
     },
     {
@@ -74,7 +74,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
-      transactorKey: process.env.COLOSSUS_2_TRANSACTOR_KEY || '5FbzYmQ3HogiEEDSXPYJe58yCcmSh3vsZLodTdBB6YuLDAj7', // //Colossus2
+      transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
       transactorBalance: new BN(100_000),
     },
   ],
@@ -128,9 +128,10 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     })
 
     // Accept invitations
-    const acceptInvitationTxs = Array.from(bucketById.entries()).map(([bucketId, bucketConfig], i) =>
-      api.tx.storage.acceptStorageBucketInvitation(operatorIds[i], bucketId, bucketConfig.transactorKey)
-    )
+    const acceptInvitationTxs = Array.from(bucketById.entries()).map(([bucketId, bucketConfig], i) => {
+      const transactorKey = api.createCustomKeyPair(bucketConfig.transactorUri, true).address
+      return api.tx.storage.acceptStorageBucketInvitation(operatorIds[i], bucketId, transactorKey)
+    })
     await api.sendExtrinsicsAndGetResults(acceptInvitationTxs, operatorKeys)
 
     // Bucket metadata, static bags, transactor balances
@@ -149,9 +150,10 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
           )
         })
         const updateBagsPromise = api.sendExtrinsicsAndGetResults(updateBagTxs, storageLeaderKey)
-        const setupTransactorBalancePromise = (async () => [
-          await api.treasuryTransferBalance(bucketConfig.transactorKey, bucketConfig.transactorBalance),
-        ])()
+        const setupTransactorBalancePromise = (async () => {
+          const transactorKey = api.getAddressFromSuri(bucketConfig.transactorUri)
+          return [await api.treasuryTransferBalance(transactorKey, bucketConfig.transactorBalance)]
+        })()
         return [updateBagsPromise, setMetaPromise, setupTransactorBalancePromise]
       })
     )

@@ -4,7 +4,7 @@ import initDistribution, { singleBucketConfig as defaultDistributionConfig } fro
 import { scenario } from '../Scenario'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
 
-scenario(async ({ job }) => {
+scenario('Init storage and distribution', async ({ job }) => {
   const setupLead = job('setup leads', leaderSetup(true, ['storageWorkingGroup', 'distributionWorkingGroup']))
   const updateWorkerAccounts = job('Update worker accounts', updateAccountsFlow).after(setupLead)
   job('initialize storage system', initStorage(defaultStorageConfig)).after(updateWorkerAccounts)
