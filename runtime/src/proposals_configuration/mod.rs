@@ -109,9 +109,8 @@ lazy_static! {
 fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
     let json_str: Option<&'static str> = option_env!("ALL_PROPOSALS_PARAMETERS_JSON");
 
-    // Handle undefined variable (null) and variable set to empty string the same
-    // to work cross platform.
-    if json_str.is_none() || json_str.unwrap().is_empty() {
+    // Handle undefined variable (null) and variable set to empty string the same to work cross platform.
+    if json_str.map_or(true, str::is_empty) {
         return default_parameters();
     }
 
