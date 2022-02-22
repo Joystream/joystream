@@ -182,3 +182,14 @@ pub type Balances = balances::Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 // working group integration
+impl common::working_group::WorkingGroupAuthenticator for StorageWG {
+    fn ensure_leader_origin(origin: Self::origin) {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+}
