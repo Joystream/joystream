@@ -350,7 +350,7 @@ impl UploadFixture {
         let total_number_added = self.params.object_creation_list.len() as u64;
         let upload_fee = Storage::calculate_data_storage_fee(total_size_added);
 
-        let old_next_data_object_id = Storage::next_data_object_id();
+        let start_id = Storage::next_data_object_id();
 
         let actual_result = Storage::upload_data_objects(self.params.clone());
 
@@ -362,6 +362,7 @@ impl UploadFixture {
             .map(|id| <crate::StorageBucketById<Test>>::get(id))
             .clone()
             .collect::<Vec<_>>();
+        let end_id = Storage::next_data_object_id();
 
         assert_eq!(actual_result, expected_result);
 
@@ -408,12 +409,32 @@ impl UploadFixture {
                     == total_number_added));
 
             // check next data object ID
-            assert_eq!(
-                Storage::next_data_object_id(),
-                old_next_data_object_id + self.params.object_creation_list.len() as u64
-            );
+            assert_eq!(end_id.saturating_sub(start_id), total_number_added);
+
+            // objects existing on storage
+            assert!((start_id..end_id)
+                .all(|id| <crate::DataObjectsById<Test>>::contains_key(&self.params.bag_id, id)));
         } else {
-            assert_eq!(Storage::next_data_object_id(), old_next_data_object_id);
+            assert_eq!(start_id, end_id);
+            assert_eq!(balance_pre, balance_post);
+
+            // bag size NOT increased
+            assert_eq!(bag_post.objects_total_size, bag_pre.objects_total_size);
+
+            // bag object number NOT increased
+            assert_eq!(bag_post.objects_number, bag_pre.objects_number);
+
+            // storage bucket vouchers do NOT have size increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post.voucher.size_used == pre.voucher.size_used));
+
+            // storage bucket vouchers do NOT have obj number increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post.voucher.objects_used == pre.voucher.objects_used));
         }
     }
 }
