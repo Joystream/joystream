@@ -287,7 +287,7 @@ impl_runtime_apis! {
             use crate::Constitution;
             use crate::Forum;
             use crate::Members;
-            use crate::ContentDirectoryWorkingGroup;
+            use crate::ContentWorkingGroup;
             use crate::Utility;
             use crate::Timestamp;
             use crate::ImOnline;
@@ -297,7 +297,7 @@ impl_runtime_apis! {
             use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
-            use crate::StorageV2;
+//            use crate::StorageV2;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -385,7 +385,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, membership, Members);
             add_benchmark!(params, batches, forum, Forum);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
-            add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
+            add_benchmark!(params, batches, working_group, ContentWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
             add_benchmark!(params, batches, bounty, Bounty);
