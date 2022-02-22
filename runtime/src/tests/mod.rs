@@ -1,10 +1,10 @@
 //! The Joystream Substrate Node runtime integration tests.
-
 #![cfg(test)]
-#[macro_use]
-// Fix broken tests, partial fix done in - https://github.com/Joystream/joystream/pull/3252
+// TODO: Fix broken tests, partial fix done in - https://github.com/Joystream/joystream/pull/3252
+// Remove allow dead_code directive when re-enabling these tests
+#![allow(dead_code)]
+// #[macro_use]
 // mod proposals_integration;
-// Remove all #[allow(dead_code)] when re-enabling these tests
 
 mod locks;
 
@@ -18,15 +18,10 @@ use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{AccountId32, BuildStorage};
 
-#[allow(dead_code)]
 type Membership = membership::Module<Runtime>;
-#[allow(dead_code)]
 type System = frame_system::Module<Runtime>;
-#[allow(dead_code)]
 type ProposalsEngine = proposals_engine::Module<Runtime>;
-#[allow(dead_code)]
 type Council = council::Module<Runtime>;
-#[allow(dead_code)]
 type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
 pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
@@ -44,7 +39,6 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-#[allow(dead_code)]
 fn get_account_membership(account: AccountId32, i: usize) -> u64 {
     let member_id = i as u64;
     if Membership::membership(member_id).controller_account != account {
@@ -56,7 +50,6 @@ fn get_account_membership(account: AccountId32, i: usize) -> u64 {
 }
 
 // council = Vec<(ID - membership handle helper, ACCOUNT_ID)>
-#[allow(dead_code)]
 pub(crate) fn elect_council(council: Vec<(u8, AccountId32)>, cycle_id: u64) {
     let mut voters = Vec::<AccountId32>::new();
 
@@ -165,7 +158,6 @@ pub(crate) fn elect_council(council: Vec<(u8, AccountId32)>, cycle_id: u64) {
     );
 }
 
-#[allow(dead_code)]
 pub(crate) fn insert_member(account_id: AccountId32) {
     increase_total_balance_issuance_using_account_id(
         account_id.clone(),
@@ -184,7 +176,6 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     Membership::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 }
 
-#[allow(dead_code)]
 pub(crate) fn set_staking_account(
     controller_account_id: AccountId32,
     staking_account_id: AccountId32,
@@ -223,7 +214,6 @@ pub(crate) fn set_staking_account(
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
-#[allow(dead_code)]
 pub(crate) fn run_to_block(n: BlockNumber) {
     while System::block_number() < n {
         <System as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
