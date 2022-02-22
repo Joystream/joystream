@@ -453,6 +453,7 @@ parameter_types! {
     pub const BloatBondCap: u32 = 1000;  // TODO: update
     pub const VideosMigrationsEachBlock: u64 = 100;
     pub const ChannelsMigrationsEachBlock: u64 = 25;
+    pub const BagDeletionPrize: Balance = 0; // TODO: update
 }
 
 impl content::Trait for Runtime {
@@ -477,6 +478,7 @@ impl content::Trait for Runtime {
     type ModuleId = ContentModuleId;
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
+    type BagDeletionPrize = BagDeletionPrize;
 }
 
 // The referendum instance alias.
