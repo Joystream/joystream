@@ -326,12 +326,87 @@ impl UploadFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let bag_pre = <crate::Bags<Test>>::get(&self.params.bag_id);
+        let buckets_pre = bag_pre
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = self
+            .params
+            .object_creation_list
+            .iter()
+            .fold(0u64, |acc, _| {
+                acc.saturating_add(<Test as crate::Trait>::DataObjectDeletionPrize::get())
+            });
+        let total_size_added = self
+            .params
+            .object_creation_list
+            .iter()
+            .fold(0u64, |acc, param| acc.saturating_add(param.size));
+        let total_number_added = self.params.object_creation_list.len() as u64;
+        let upload_fee = Storage::calculate_data_storage_fee(total_size_added);
+
         let old_next_data_object_id = Storage::next_data_object_id();
+
         let actual_result = Storage::upload_data_objects(self.params.clone());
+
+        let balance_post = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let bag_post = <crate::Bags<Test>>::get(&self.params.bag_id);
+        let buckets_post = bag_post
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
+            // balance check
+            assert_eq!(
+                balance_pre.saturating_sub(balance_post),
+                upload_fee.saturating_add(deletion_prize)
+            );
+
+            // bag size increased
+            assert_eq!(
+                bag_post
+                    .objects_total_size
+                    .saturating_sub(bag_pre.objects_total_size),
+                total_size_added
+            );
+
+            // bag object number increased
+            assert_eq!(
+                bag_post
+                    .objects_number
+                    .saturating_sub(bag_pre.objects_number),
+                total_number_added
+            );
+
+            // storage bucket vouchers have size increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(
+                    |(pre, post)| post.voucher.size_used.saturating_sub(pre.voucher.size_used)
+                        == total_size_added
+                ));
+
+            // storage bucket voucher have obj number increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post
+                    .voucher
+                    .objects_used
+                    .saturating_sub(pre.voucher.objects_used)
+                    == total_number_added));
+
             // check next data object ID
             assert_eq!(
                 Storage::next_data_object_id(),
