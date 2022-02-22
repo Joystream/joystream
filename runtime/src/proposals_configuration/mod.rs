@@ -118,15 +118,7 @@ fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
         .map(lite_json::parse_json)
         .map(|res| match res {
             Ok(json) => Some(json),
-            Err(_) => {
-                if cfg!(test) {
-                    // Detect invalid JSON early while running tests
-                    panic!("Invalid JSON with proposals parameters provided.")
-                } else {
-                    // Fall back to default at runtime
-                    None
-                }
-            }
+            Err(_) => panic!("Invalid JSON with proposals parameters provided."),
         })
         .flatten()
         .map(convert_json_object_to_proposal_parameters)
@@ -300,16 +292,9 @@ fn extract_numeric_parameter(
             .iter()
             .find(|(name_vec, _)| name_vec.eq(&parameter_name.chars().collect::<Vec<_>>()))
             .map(|(_, value)| match value {
-                JsonValue::Number(number) => Some(number.integer.saturated_into()),
-                _ => {
-                    if cfg!(test) {
-                        panic!("Incorrect JSON: not a number.")
-                    } else {
-                        None
-                    }
-                }
+                JsonValue::Number(number) => number.integer.saturated_into(),
+                _ => panic!("Incorrect JSON: not a number."),
             })
-            .flatten()
             .unwrap_or(default),
         _ => default,
     }
