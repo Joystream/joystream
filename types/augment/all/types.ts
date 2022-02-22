@@ -215,62 +215,6 @@ export interface Category extends Struct {
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
 
-/** @name Channel */
-export interface Channel extends Struct {
-  readonly owner: ChannelOwner;
-  readonly num_videos: u64;
-  readonly is_censored: bool;
-  readonly reward_account: Option<GenericAccountId>;
-  readonly collaborators: BTreeSet<MemberId>;
-  readonly moderators: BTreeSet<MemberId>;
-  readonly cumulative_payout_earned: u128;
-}
-
-/** @name ChannelCategory */
-export interface ChannelCategory extends Struct {}
-
-/** @name ChannelCategoryCreationParameters */
-export interface ChannelCategoryCreationParameters extends Struct {
-  readonly meta: Bytes;
-}
-
-/** @name ChannelCategoryId */
-export interface ChannelCategoryId extends u64 {}
-
-/** @name ChannelCategoryUpdateParameters */
-export interface ChannelCategoryUpdateParameters extends Struct {
-  readonly new_meta: Bytes;
-}
-
-/** @name ChannelCreationParameters */
-export interface ChannelCreationParameters extends Struct {
-  readonly assets: Option<StorageAssets>;
-  readonly meta: Option<Bytes>;
-  readonly reward_account: Option<GenericAccountId>;
-  readonly collaborators: BTreeSet<MemberId>;
-  readonly moderators: BTreeSet<MemberId>;
-}
-
-/** @name ChannelId */
-export interface ChannelId extends u64 {}
-
-/** @name ChannelOwner */
-export interface ChannelOwner extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isCurators: boolean;
-  readonly asCurators: CuratorGroupId;
-}
-
-/** @name ChannelUpdateParameters */
-export interface ChannelUpdateParameters extends Struct {
-  readonly assets_to_upload: Option<StorageAssets>;
-  readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<GenericAccountId>>;
-  readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly collaborators: Option<BTreeSet<MemberId>>;
-}
-
 /** @name Cid */
 export interface Cid extends Bytes {}
 
@@ -537,6 +481,62 @@ export interface GeneralProposalParameters extends Struct {
   readonly description: Text;
   readonly staking_account_id: Option<AccountId>;
   readonly exact_execution_block: Option<u32>;
+}
+
+/** @name Channel */
+export interface Channel extends Struct {
+  readonly owner: ChannelOwner;
+  readonly num_videos: u64;
+  readonly is_censored: bool;
+  readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
+  readonly moderators: BTreeSet<MemberId>;
+  readonly cumulative_payout_earned: u128;
+}
+
+/** @name ChannelCategory */
+export interface ChannelCategory extends Struct {}
+
+/** @name ChannelCategoryCreationParameters */
+export interface ChannelCategoryCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
+/** @name ChannelCategoryId */
+export interface ChannelCategoryId extends u64 {}
+
+/** @name ChannelCategoryUpdateParameters */
+export interface ChannelCategoryUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
+}
+
+/** @name ChannelCreationParameters */
+export interface ChannelCreationParameters extends Struct {
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
+  readonly reward_account: Option<GenericAccountId>;
+  readonly collaborators: BTreeSet<MemberId>;
+  readonly moderators: BTreeSet<MemberId>;
+}
+
+/** @name ChannelId */
+export interface ChannelId extends u64 {}
+
+/** @name ChannelOwner */
+export interface ChannelOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+  readonly asCurators: CuratorGroupId;
+}
+
+/** @name ChannelUpdateParameters */
+export interface ChannelUpdateParameters extends Struct {
+  readonly assets_to_upload: Option<StorageAssets>;
+  readonly new_meta: Option<Bytes>;
+  readonly reward_account: Option<Option<GenericAccountId>>;
+  readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
 }
 
 /** @name InitTransactionalStatus */

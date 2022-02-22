@@ -12,6 +12,8 @@ import {
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
   NftCreateVideoWithAuctionFixture,
+  NftCreateVideoWithBuyNowFixture,
+  NftUpdateVideoWithAuctionFixture,
   IMember,
 } from '../../fixtures/content'
 import BN from 'bn.js'
@@ -26,7 +28,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCount = 5 // should be equal to number of uses of `nextVideo()` below
+  const videoCount = 6 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
   const channelCategoryCount = 1
@@ -75,7 +77,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const nftAuctionFixture = new NftEnglishAuctionFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants
@@ -83,21 +84,13 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(nftAuctionFixture).run()
 
-  const openAuctionFixture = new NftOpenAuctionFixture(
-    api,
-    query,
-    joystreamCli,
-    nextVideo().videoId,
-    author,
-    auctionParticipants
-  )
+  const openAuctionFixture = new NftOpenAuctionFixture(api, query, nextVideo().videoId, author, auctionParticipants)
 
   await new FixtureRunner(openAuctionFixture).run()
 
   const nftBuyNowFixture = new NftBuyNowFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -108,7 +101,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const nftDirectOfferFixture = new NftDirectOfferFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -119,7 +111,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const auctionCancelationsFicture = new AuctionCancelationsFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -130,12 +121,24 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const createVideoWithAuctionFixture = new NftCreateVideoWithAuctionFixture(
     api,
     query,
-    joystreamCli,
     author as IMember,
     channelIds[0]
   )
 
   await new FixtureRunner(createVideoWithAuctionFixture).run()
+
+  const createVideoWithBuyNowFixture = new NftCreateVideoWithBuyNowFixture(api, query, author as IMember, channelIds[0])
+
+  await new FixtureRunner(createVideoWithBuyNowFixture).run()
+
+  const updateVideoWithAuctionFixture = new NftUpdateVideoWithAuctionFixture(
+    api,
+    query,
+    author as IMember,
+    nextVideo().videoId
+  )
+
+  await new FixtureRunner(updateVideoWithAuctionFixture).run()
 
   debug('Done')
 }
