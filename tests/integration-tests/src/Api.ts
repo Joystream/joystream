@@ -69,6 +69,11 @@ import {
 } from './consts'
 import { CategoryId } from '@joystream/types/forum'
 
+export type FaucetInfo = {
+  suri: string
+  memberId: number
+}
+
 export type KeyGenInfo = {
   start: number
   final: number
@@ -100,6 +105,8 @@ export class ApiFactory {
 
   // source of funds for all new accounts
   private readonly treasuryAccount: string
+
+  public faucetInfo: FaucetInfo
 
   public static async create(
     provider: WsProvider,
@@ -141,6 +148,7 @@ export class ApiFactory {
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
     this.keyId = 0
+    this.faucetInfo = { suri: '', memberId: 0 }
   }
 
   public getApi(label: string): Api {
@@ -196,6 +204,10 @@ export class ApiFactory {
       throw new Error(`Suri for address ${address} not available!`)
     }
     return suri
+  }
+
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.faucetInfo = info
   }
 }
 
@@ -1068,5 +1080,13 @@ export class Api {
       videoId: details.event.data[2] as VideoId,
       params: details.event.data[3] as VideoCreationParameters,
     }
+  }
+
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.factory.setFaucetInfo(info)
+  }
+
+  public getFaucetInfo(): FaucetInfo {
+    return this.factory.faucetInfo
   }
 }
