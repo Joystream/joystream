@@ -21,8 +21,10 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 # Start a query-node
 ../../query-node/start.sh
 
+./run-test-scenario.sh proposals
+
 # Start storage and distribution services
-./start-storage.sh
+REUSE_KEYS=true ./start-storage.sh
 
 # Run combined tests reusing the existing keys
 REUSE_KEYS=true ./run-test-scenario.sh combined

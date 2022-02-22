@@ -11,6 +11,7 @@ import { PaidTermId, MemberId } from '@joystream/types/members'
 import { Debugger, extendDebug } from '../../Debugger'
 import BN from 'bn.js'
 import { Worker, WorkerId } from '@joystream/types/working-group'
+import { Utils } from '../../utils'
 
 import {
   getMemberDefaults,
@@ -129,9 +130,8 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     const getterName = `${entityName}ById` as 'channelById' | 'channelCategoryById' | 'videoCategoryById'
     await this.query.tryQueryWithTimeout(
       () => this.query[getterName](entityId.toString()),
-      (tmpEntity) => {
-        assert(tmpEntity)
-        const entity = tmpEntity as Exclude<typeof tmpEntity, null>
+      (entity) => {
+        Utils.assert(entity)
 
         // all videos created in this fixture should be active and belong to first entity
         assert(entity.activeVideosCounter === expectedCount)
