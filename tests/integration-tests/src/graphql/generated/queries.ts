@@ -389,7 +389,7 @@ export type PostReactedEventFieldsFragment = {
   reactionResult:
     | { __typename: 'PostReactionResultCancel' }
     | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
-    | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+    | { __typename: 'PostReactionResultInvalid'; invalidReactionId: string }
   reactingMember: { id: string }
 }
 
@@ -2391,7 +2391,7 @@ export const PostReactedEventFields = gql`
         reactionId
       }
       ... on PostReactionResultInvalid {
-        reactionId
+        invalidReactionId: reactionId
       }
     }
     reactingMember {

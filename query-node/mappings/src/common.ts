@@ -5,8 +5,11 @@ import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+export const INT32MAX = 2147483647
 /*
   Simple logger enabling error and informational reporting.
 
@@ -301,4 +304,14 @@ export function deterministicEntityId(createdInEvent: SubstrateEvent, additional
     `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
     (additionalIdentifier ? `-${additionalIdentifier}` : '')
   )
+}
+
+// Convert a BN to number without throwing an error if > Number.MAX_SAFE_INTEGER
+// add with a custom limit to maxValue if needed
+export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number {
+  try {
+    return value.toNumber() > maxValue ? maxValue : value.toNumber()
+  } catch (e) {
+    return maxValue
+  }
 }
