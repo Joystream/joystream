@@ -316,8 +316,18 @@ export function deterministicEntityId(createdInEvent: SubstrateEvent, additional
 // add with a custom limit to maxValue if needed
 export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number {
   try {
-    return value.toNumber() > maxValue ? maxValue : value.toNumber()
+    if (value.toNumber() > maxValue) {
+      logger.info(`toNumber() Warning: Input value ${value.toNumber()} exceeds maxValue: ${maxValue}.`)
+      return maxValue
+    }
+
+    return value.toNumber()
   } catch (e) {
+    logger.info(
+      `toNumber() Warning: BN.toNumber() conversion error: ${
+        e instanceof Error ? e.message : e
+      }. Returning maxValue: ${maxValue}`
+    )
     return maxValue
   }
 }
