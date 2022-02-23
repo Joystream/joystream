@@ -1,9 +1,11 @@
 //! The Joystream Substrate Node runtime integration tests.
-
 #![cfg(test)]
-#[macro_use]
-// Fix broken tests, partial fix done in - https://github.com/Joystream/joystream/pull/3252
+// TODO: Fix broken tests, partial fix done in - https://github.com/Joystream/joystream/pull/3252
+// Remove allow dead_code directive when re-enabling these tests
+#![allow(dead_code)]
+// #[macro_use]
 // mod proposals_integration;
+
 mod locks;
 
 // Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
