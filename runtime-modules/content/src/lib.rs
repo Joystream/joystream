@@ -2138,7 +2138,7 @@ impl<T: Trait> Module<T> {
             match &channel.owner {
                 ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
                 ChannelOwner::Member(member_id) => {
-                    <T as Trait>::MemberInfoProvider::controller_account_id(member_id.clone())
+                    <T as Trait>::MemberInfoProvider::controller_account_id(*member_id)
                 }
             }
         }
