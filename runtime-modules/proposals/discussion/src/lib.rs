@@ -217,6 +217,15 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
+        /// Exports const - author list size limit for the Closed discussion.
+        const MaxWhiteListSize: u32 = T::MaxWhiteListSize::get();
+
+        /// Exports const - fee for creating a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
+
+        /// Exports const - maximum number of blocks before a post can be erased by anyone
+        const PostLifeTime: T::BlockNumber = T::PostLifeTime::get();
+
         /// Adds a post with author origin check.
         ///
         /// <weight>
