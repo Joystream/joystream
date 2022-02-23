@@ -2219,6 +2219,8 @@ impl<T: Trait> Module<T> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, &forum_user_id)?;
 
+        Self::ensure_category_exists(category_id)?;
+
         let category = Self::ensure_category_is_mutable(category_id)?;
 
         // The balance for creation of thread is the base cost plus the cost of a single post
