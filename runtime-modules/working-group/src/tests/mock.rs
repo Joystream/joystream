@@ -279,6 +279,12 @@ impl crate::WeightInfo for () {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
+        0
+    }
 }
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
