@@ -1,12 +1,13 @@
 #![cfg(test)]
 
 pub use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{ensure, impl_outer_event, impl_outer_origin, parameter_types};
+use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    ModuleId, Perbill,
+    DispatchError, DispatchResult, ModuleId, Perbill,
 };
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
