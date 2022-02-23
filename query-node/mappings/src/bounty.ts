@@ -240,7 +240,9 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
       return new BountyContractOpen()
     } else {
       const closedContract = new BountyContractClosed()
-      closedContract.whitelist = [...assuranceContract.asClosed.values()].map((id) => new Membership({ id: String(id) }))
+      closedContract.whitelist = [...assuranceContract.asClosed.values()].map(
+        (id) => new Membership({ id: String(id) })
+      )
       return closedContract
     }
   }
