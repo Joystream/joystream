@@ -38,10 +38,10 @@ benchmark() {
 # Substrate. This problem has been fixed in this PR: https://github.com/paritytech/substrate/pull/7233
 # So uncomment this when we move to a version that contains that PR.
 # See issue: #1979
-# benchmark frame_system
-# benchmark substrate_utility
-# benchmark pallet_session
-# benchmark pallet_timestamp
+benchmark frame_system
+benchmark substrate_utility
+benchmark pallet_session
+benchmark pallet_timestamp
 
 # Pallet staking benchmarking takes too long.
 # benchmark pallet_staking
@@ -56,16 +56,16 @@ benchmark() {
 # benchmark pallet_im_online
 
 # Joystrem benchmarks
-#benchmark proposals_discussion
+benchmark proposals_discussion
 benchmark proposals_engine
-#benchmark proposals_codex
-#benchmark pallet_constitution
+benchmark proposals_codex
+benchmark pallet_constitution
 benchmark working_group
 benchmark council
-#benchmark referendum
-#benchmark forum
+benchmark referendum
+benchmark forum
 benchmark membership
 benchmark bounty
-#benchmark blog
-#benchmark joystream_utility
-# benchmark storage
+benchmark blog
+benchmark joystream_utility
+#benchmark storage
