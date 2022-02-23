@@ -36,6 +36,8 @@ fragment StorageDataObjectFields on StorageDataObject {
 }
 
 fragment ChannelFields on Channel {
+  id
+  activeVideosCounter
   title
   description
   isPublic
@@ -61,17 +63,12 @@ fragment ChannelFields on Channel {
   }
 }
 
-fragment ChannelVideoCounter on Channel {
+fragment ChannelCategoryFields on ChannelCategory {
   id
   activeVideosCounter
 }
 
-fragment ChannelCategoryVideoCounter on ChannelCategory {
-  id
-  activeVideosCounter
-}
-
-fragment VideoCategoryVideoCounter on VideoCategory {
+fragment VideoCategoryFields on VideoCategory {
   id
   activeVideosCounter
 }
@@ -97,21 +94,15 @@ query getChannelById($id: ID!) {
   }
 }
 
-query getChannelsVideoCounters {
-  channels {
-    ...ChannelVideoCounter
+query getChannelCategoryById($id: ID!) {
+  channelCategoryByUniqueInput(where: { id: $id }) {
+    ...ChannelCategoryFields
   }
 }
 
-query getChannelCategoriesVideoCounter {
-  channelCategories {
-    ...ChannelCategoryVideoCounter
-  }
-}
-
-query getVideoCategoriesVideoCounter {
-  videoCategories {
-    ...VideoCategoryVideoCounter
+query getVideoCategoryById($id: ID!) {
+  videoCategoryByUniqueInput(where: { id: $id }) {
+    ...VideoCategoryFields
   }
 }
 

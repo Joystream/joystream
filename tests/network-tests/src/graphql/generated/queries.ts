@@ -47,6 +47,8 @@ export type StorageDataObjectFieldsFragment = {
 }
 
 export type ChannelFieldsFragment = {
+  id: string
+  activeVideosCounter: number
   title?: Types.Maybe<string>
   description?: Types.Maybe<string>
   isPublic?: Types.Maybe<boolean>
@@ -60,17 +62,9 @@ export type ChannelFieldsFragment = {
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
 }
 
-export type ChannelVideoCounterFragment = { id: string; activeVideosCounter: number }
+export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
-export type ChannelCategoryVideoCounterFragment = { id: string; activeVideosCounter: number }
-
-export type VideoCategoryVideoCounterFragment = { id: string; activeVideosCounter: number }
-
-export type GetChannelByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
-}>
-
-export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
 export type OwnedNftFieldsFragment = {
   id: string
@@ -85,17 +79,23 @@ export type OwnedNftFieldsFragment = {
     | { __typename: 'TransactionalStatusBuyNow' }
 }
 
-export type GetChannelsVideoCountersQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetChannelByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
 
-export type GetChannelsVideoCountersQuery = { channels: Array<ChannelVideoCounterFragment> }
+export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
 
-export type GetChannelCategoriesVideoCounterQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
 
-export type GetChannelCategoriesVideoCounterQuery = { channelCategories: Array<ChannelCategoryVideoCounterFragment> }
+export type GetChannelCategoryByIdQuery = { channelCategoryByUniqueInput?: Types.Maybe<ChannelCategoryFieldsFragment> }
 
-export type GetVideoCategoriesVideoCounterQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
 
-export type GetVideoCategoriesVideoCounterQuery = { videoCategories: Array<VideoCategoryVideoCounterFragment> }
+export type GetVideoCategoryByIdQuery = { videoCategoryByUniqueInput?: Types.Maybe<VideoCategoryFieldsFragment> }
 
 export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
   videoId: Types.Scalars['ID']
@@ -2044,6 +2044,8 @@ export const StorageDataObjectFields = gql`
 `
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
     title
     description
     isPublic
@@ -2070,20 +2072,14 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
-export const ChannelVideoCounter = gql`
-  fragment ChannelVideoCounter on Channel {
+export const ChannelCategoryFields = gql`
+  fragment ChannelCategoryFields on ChannelCategory {
     id
     activeVideosCounter
   }
 `
-export const ChannelCategoryVideoCounter = gql`
-  fragment ChannelCategoryVideoCounter on ChannelCategory {
-    id
-    activeVideosCounter
-  }
-`
-export const VideoCategoryVideoCounter = gql`
-  fragment VideoCategoryVideoCounter on VideoCategory {
+export const VideoCategoryFields = gql`
+  fragment VideoCategoryFields on VideoCategory {
     id
     activeVideosCounter
   }
@@ -3869,29 +3865,21 @@ export const GetChannelById = gql`
   }
   ${ChannelFields}
 `
-export const GetChannelsVideoCounters = gql`
-  query getChannelsVideoCounters {
-    channels {
-      ...ChannelVideoCounter
+export const GetChannelCategoryById = gql`
+  query getChannelCategoryById($id: ID!) {
+    channelCategoryByUniqueInput(where: { id: $id }) {
+      ...ChannelCategoryFields
     }
   }
-  ${ChannelVideoCounter}
+  ${ChannelCategoryFields}
 `
-export const GetChannelCategoriesVideoCounter = gql`
-  query getChannelCategoriesVideoCounter {
-    channelCategories {
-      ...ChannelCategoryVideoCounter
+export const GetVideoCategoryById = gql`
+  query getVideoCategoryById($id: ID!) {
+    videoCategoryByUniqueInput(where: { id: $id }) {
+      ...VideoCategoryFields
     }
   }
-  ${ChannelCategoryVideoCounter}
-`
-export const GetVideoCategoriesVideoCounter = gql`
-  query getVideoCategoriesVideoCounter {
-    videoCategories {
-      ...VideoCategoryVideoCounter
-    }
-  }
-  ${VideoCategoryVideoCounter}
+  ${VideoCategoryFields}
 `
 export const GetOwnedNftByVideoId = gql`
   query getOwnedNftByVideoId($videoId: ID!) {

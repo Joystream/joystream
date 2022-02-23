@@ -42,15 +42,8 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 # Start a query-node
 ../../query-node/start.sh
 
-# Setup storage & distribution
-HOST_IP=$(./get-host-ip.sh)
-export COLOSSUS_1_URL="http://${HOST_IP}:3333"
-export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
-./run-test-scenario.sh initStorageAndDistribution
-
-# Start colossus & argus
-docker-compose -f ../../docker-compose.yml up -d colossus-1
-docker-compose -f ../../docker-compose.yml up -d distributor-1
+# Start storage and distribution services
+REUSE_KEYS=true ./start-storage.sh
 
 # Run full tests reusing the existing keys
 REUSE_KEYS=true IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $SCENARIO

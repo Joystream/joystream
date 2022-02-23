@@ -1,12 +1,10 @@
-import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { JoystreamCLI } from '../../cli/joystream'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { MemberId } from '@joystream/types/common'
 import { Api } from '../../Api'
-import { WorkingGroupModuleName } from '../../types'
-import { Worker, WorkerId } from '@joystream/types/working-group'
+import { Worker } from '@joystream/types/working-group'
 import { getVideoCategoryDefaults, getChannelCategoryDefaults } from './contentTemplates'
-import BN from 'bn.js'
+import { WorkingGroupModuleName } from '../../types'
 
 export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
@@ -83,11 +81,11 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Creates a new channel category. Can only be executed as content group leader.
   */
   private async createChannelCategories(count: number): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index: number) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannelCategory({
         ...getChannelCategoryDefaults(index),
       })
-    )) as number[]
+    )
 
     return createdIds
   }
@@ -96,11 +94,11 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Creates a new video category. Can only be executed as content group leader.
   */
   private async createVideoCategories(count: number): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index: number) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createVideoCategory({
         ...getVideoCategoryDefaults(index),
       })
-    )) as number[]
+    )
 
     return createdIds
   }
@@ -109,7 +107,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Creates a bunch of content entities.
   */
   private async createCommonEntities<T>(count: number, createPromise: (index: number) => Promise<T>): Promise<T[]> {
-    const createdIds = await Array.from(Array(count).keys()).reduce(async (accPromise, index) => {
+    const createdIds = await Array.from(Array(count).keys()).reduce(async (accPromise, index: number) => {
       const acc = await accPromise
       const createdId = await createPromise(index)
 

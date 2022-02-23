@@ -816,5 +816,6 @@
         "non_channel_owner": "Option<MemberId>",
         "init_transactional_status": "InitTransactionalStatus"
     },
+    "NftMetadata": "Vec<u8>",
     "AccountInfo": "AccountInfoWithRefCount"
 }

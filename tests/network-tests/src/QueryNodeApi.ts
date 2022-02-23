@@ -299,22 +299,18 @@ import {
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
   ChannelFieldsFragment,
+  ChannelCategoryFieldsFragment,
+  GetChannelCategoryByIdQuery,
+  GetChannelCategoryByIdQueryVariables,
+  GetChannelCategoryById,
+  VideoCategoryFieldsFragment,
+  GetVideoCategoryByIdQuery,
+  GetVideoCategoryByIdQueryVariables,
+  GetVideoCategoryById,
   OwnedNftFieldsFragment,
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
-  GetChannelsVideoCountersQuery,
-  ChannelVideoCounterFragment,
-  GetChannelsVideoCountersQueryVariables,
-  GetChannelsVideoCounters,
-  ChannelCategoryVideoCounterFragment,
-  GetChannelCategoriesVideoCounterQuery,
-  GetChannelCategoriesVideoCounterQueryVariables,
-  GetChannelCategoriesVideoCounter,
-  VideoCategoryVideoCounterFragment,
-  GetVideoCategoriesVideoCounterQuery,
-  GetVideoCategoriesVideoCounterQueryVariables,
-  GetVideoCategoriesVideoCounter,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1100,26 +1096,20 @@ export class QueryNodeApi {
     )
   }
 
-  public async getChannelsVideoCounters(): Promise<ChannelVideoCounterFragment[]> {
-    return this.multipleEntitiesQuery<GetChannelsVideoCountersQuery, GetChannelsVideoCountersQueryVariables>(
-      GetChannelsVideoCounters,
-      {},
-      'channels'
+  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
+      GetChannelCategoryById,
+      { id },
+      'channelCategoryByUniqueInput'
     )
   }
 
-  public async getChannelCategoriesVideoCounters(): Promise<ChannelCategoryVideoCounterFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetChannelCategoriesVideoCounterQuery,
-      GetChannelCategoriesVideoCounterQueryVariables
-    >(GetChannelCategoriesVideoCounter, {}, 'channelCategories')
-  }
-
-  public async getVideoCategoriesVideoCounters(): Promise<VideoCategoryVideoCounterFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetVideoCategoriesVideoCounterQuery,
-      GetVideoCategoriesVideoCounterQueryVariables
-    >(GetVideoCategoriesVideoCounter, {}, 'videoCategories')
+  public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
+      GetVideoCategoryById,
+      { id },
+      'videoCategoryByUniqueInput'
+    )
   }
 
   public async ownedNftByVideoId(videoId: string): Promise<Maybe<OwnedNftFieldsFragment>> {

@@ -590,6 +590,9 @@ export interface NftIssuanceParameters extends Struct {
   readonly init_transactional_status: InitTransactionalStatus;
 }
 
+/** @name NftMetadata */
+export interface NftMetadata extends Bytes {}
+
 /** @name NftOwner */
 export interface NftOwner extends Enum {
   readonly isChannelOwner: boolean;
