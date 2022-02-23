@@ -821,9 +821,10 @@ decl_module! {
                 )?;
             }
 
-            if nft_status.is_some() {
-                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
-            }
+            // TODO AUDIT3: enable after open auction fix
+            // if nft_status.is_some() {
+            //     VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
+            // }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }

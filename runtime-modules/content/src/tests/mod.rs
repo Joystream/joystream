@@ -5,6 +5,6 @@ mod curators;
 mod fixtures;
 mod merkle;
 mod mock;
-mod nft;
+//mod nft;
 mod posts;
 mod videos;
