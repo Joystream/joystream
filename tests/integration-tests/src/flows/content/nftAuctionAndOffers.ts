@@ -24,6 +24,17 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   debug('Started')
   api.enableDebugTxLogs()
 
+  // TODO: delete this after buy-now issue is fixed
+  const createMembersFixtureTMP = new CreateMembersFixture(api, query, 1, new BN(1_000_000))
+  await new FixtureRunner(createMembersFixtureTMP).run()
+  const [authorTMP] = createMembersFixtureTMP.getCreatedItems()
+  const createVideoWithBuyNowFixtureTMP = new NftCreateVideoWithBuyNowFixture(api, query, authorTMP as IMember, 1)
+  await new FixtureRunner(createVideoWithBuyNowFixtureTMP).run()
+  // eslint-disable-next-line no-constant-condition
+  if (1) {
+    return
+  }
+
   // create Joystream CLI
   const joystreamCli = await createJoystreamCli()
 
@@ -73,7 +84,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   })()
 
   // test NFT features
-
+  /* TODO: uncomment this after buy-now issue is fixed
   const nftAuctionFixture = new NftEnglishAuctionFixture(
     api,
     query,
@@ -126,7 +137,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   )
 
   await new FixtureRunner(createVideoWithAuctionFixture).run()
-
+*/
   const createVideoWithBuyNowFixture = new NftCreateVideoWithBuyNowFixture(api, query, author as IMember, channelIds[0])
 
   await new FixtureRunner(createVideoWithBuyNowFixture).run()

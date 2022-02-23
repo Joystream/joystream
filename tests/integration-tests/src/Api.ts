@@ -1074,8 +1074,9 @@ export class Api {
         nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
         non_channel_owner: ownerId,
         init_transactional_status: this.api.createType('InitTransactionalStatus', {
-          BuyNow: this.api.createType('u128', price),
+          BuyNow: this.api.createType('Balance', price), // TODO: this causes error from unknown reason
         }),
+        // init_transactional_status: this.api.createType('InitTransactionalStatus', { Idle: null }) // this is ok, auction also ok
       }),
     })
 

@@ -6,6 +6,7 @@ import { workingGroups } from '../consts'
 import { scenario } from '../Scenario'
 
 scenario('Content directory', async ({ job }) => {
+  /* TODO: uncomment this after buy-now issue is fixed
   const leadSetupJob = job('Set WorkingGroup Leads', leadOpening)
 
   // TOOD: topup content and storage leaders
@@ -17,4 +18,7 @@ scenario('Content directory', async ({ job }) => {
 
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(initStorageJob)
   job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  */
+
+  job('nft auction and offers', nftAuctionAndOffers)
 })
