@@ -9,7 +9,13 @@ import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
+// Max value the database can store in Int column field
 export const INT32MAX = 2147483647
+
+// Max value we can use as argument for JavaScript `Date` constructor to create a valid Date object
+// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+export const TIMESTAMPMAX = 8640000000000000
+
 /*
   Simple logger enabling error and informational reporting.
 

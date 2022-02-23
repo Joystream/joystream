@@ -9,6 +9,7 @@ import {
   getWorker,
   inconsistentState,
   perpareString,
+  TIMESTAMPMAX,
   toNumber,
 } from './common'
 import {
@@ -309,7 +310,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
       createdAt: eventTime,
       updatedAt: eventTime,
       description: bytesToString(pollInput.unwrap().description),
-      endTime: new Date(toNumber(pollInput.unwrap().end_time, new Date('3000-01-01').getTime())),
+      endTime: new Date(toNumber(pollInput.unwrap().end_time, TIMESTAMPMAX)),
       thread,
     })
     await store.save<ForumPoll>(threadPoll)
