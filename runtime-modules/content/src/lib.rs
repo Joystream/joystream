@@ -710,14 +710,15 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
-            let nft_status = params.auto_issue_nft
-                .as_ref()
-                .map_or(
-                    Ok(None),
-                    |issuance_params| {
-                        Some(Self::construct_owned_nft(issuance_params)).transpose()
-                    }
-            )?;
+            // TODO AUDIT3: enable after open auction fix
+            // let nft_status = params.auto_issue_nft
+            //     .as_ref()
+            //     .map_or(
+            //         Ok(None),
+            //         |issuance_params| {
+            //             Some(Self::construct_owned_nft(issuance_params)).transpose()
+            //         }
+            // )?;
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -725,7 +726,7 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
-                nft_status,
+                nft_status: None,
             };
 
             //
@@ -787,15 +788,16 @@ decl_module! {
             }
 
 
-            let nft_status = params.auto_issue_nft
-                .as_ref()
-                .map_or(
-                    Ok(None),
-                    |issuance_params| {
-                        ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
-                        Some(Self::construct_owned_nft(issuance_params)).transpose()
-                    }
-            )?;
+            // TODO AUDIT3: enable after open auction fix
+            // let nft_status = params.auto_issue_nft
+            //     .as_ref()
+            //     .map_or(
+            //         Ok(None),
+            //         |issuance_params| {
+            //             ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
+            //             Some(Self::construct_owned_nft(issuance_params)).transpose()
+            //         }
+            // )?;
 
 
             //
@@ -1321,6 +1323,8 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) {
+            // TODO AUDIT3: remove after open auction fix
+            unimplemented!();
             let sender = ensure_signed(origin)?;
 
             // Ensure given video exists
