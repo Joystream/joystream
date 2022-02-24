@@ -83,7 +83,7 @@ export class ReactToPostsFixture extends StandardizedFixture {
         qEvent.reactionResult.__typename === 'PostReactionResultInvalid',
         'Query node: Invalid reaction result'
       )
-      assert.equal(qEvent.reactionResult.invalidReactionId, reactionId.toString())
+      assert.equal(qEvent.reactionResult.invalidReactionId, reactionId)
     } else if (!reactionId) {
       Utils.assert(
         qEvent.reactionResult.__typename === 'PostReactionResultCancel',

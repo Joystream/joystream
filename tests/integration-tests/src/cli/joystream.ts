@@ -217,7 +217,10 @@ export class JoystreamCLI extends CLI {
   /**
     Updates a channel.
   */
-  async updateChannel(channelId: number, channel: Modify<ChannelUpdateInputParameters, { category: number }>): Promise<void> {
+  async updateChannel(
+    channelId: number,
+    channel: Modify<ChannelUpdateInputParameters, { category: number }>
+  ): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { stdout, stderr, exitCode } = await this.run('content:updateChannel', [

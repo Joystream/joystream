@@ -2,6 +2,7 @@ module.exports = {
     env: {
         node: true,
     },
+    "ignorePatterns": ['/src/graphql/generated'],
   rules: {
       'no-async-promise-executor': 'off',
       'no-useless-return': 'off',
