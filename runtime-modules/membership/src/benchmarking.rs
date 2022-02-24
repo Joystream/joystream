@@ -677,6 +677,15 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::StakingAccountRemoved(account_id, member_id).into());
     }
+
+    member_remark{
+        let msg = b"test".to_vec();
+        let member_id = 0;
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
+        verify {
+            assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
+        }
 }
 
 #[cfg(test)]
@@ -811,6 +820,13 @@ mod tests {
     fn update_profile_verification() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_update_profile_verification::<Test>());
+        });
+    }
+
+    #[test]
+    fn member_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_member_remark::<Test>());
         });
     }
 }
