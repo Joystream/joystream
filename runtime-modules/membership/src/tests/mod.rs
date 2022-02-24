@@ -1051,3 +1051,54 @@ fn membership_info_provider_controller_account_id_succeeds() {
         assert_eq!(validation_result, Ok(ALICE_ACCOUNT_ID));
     });
 }
+
+#[test]
+fn unsuccessful_member_remark_with_non_existent_member_profile() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let msg = b"test".to_vec();
+        let validation_result =
+            Membership::member_remark(RawOrigin::Signed(BOB_ACCOUNT_ID).into(), BOB_MEMBER_ID, msg);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Test>::MemberProfileNotFound.into())
+        );
+    });
+}
+
+#[test]
+fn unsuccessful_member_remark_with_invalid_origin() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let msg = b"test".to_vec();
+        let validation_result = Membership::member_remark(
+            RawOrigin::Signed(BOB_ACCOUNT_ID).into(),
+            ALICE_MEMBER_ID,
+            msg,
+        );
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Test>::ControllerAccountRequired.into())
+        );
+    });
+}
+
+#[test]
+fn successful_member_remark() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let msg = b"test".to_vec();
+        let validation_result = Membership::member_remark(
+            RawOrigin::Signed(ALICE_ACCOUNT_ID).into(),
+            ALICE_MEMBER_ID,
+            msg,
+        );
+
+        assert_eq!(validation_result, Ok(()),);
+    });
+}
