@@ -1049,6 +1049,32 @@ fn edit_thread_metadata() {
     });
 }
 
+#[test]
+fn create_thread_fails_on_non_existing_category() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let initial_balance = 10_000_000;
+
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&forum_lead),
+            initial_balance
+        );
+        let invalid_category_id = 100;
+        create_thread_mock(
+            FORUM_LEAD_ORIGIN,
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_LEAD_ORIGIN_ID,
+            invalid_category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            None,
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
 /*
  ** update_category
  */

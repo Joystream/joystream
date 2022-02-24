@@ -5,8 +5,17 @@ import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+// Max value the database can store in Int column field
+export const INT32MAX = 2147483647
+
+// Max value we can use as argument for JavaScript `Date` constructor to create a valid Date object
+// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+export const TIMESTAMPMAX = 8640000000000000
+
 /*
   Simple logger enabling error and informational reporting.
 
@@ -301,4 +310,24 @@ export function deterministicEntityId(createdInEvent: SubstrateEvent, additional
     `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
     (additionalIdentifier ? `-${additionalIdentifier}` : '')
   )
+}
+
+// Convert a BN to number without throwing an error if > Number.MAX_SAFE_INTEGER
+// add with a custom limit to maxValue if needed
+export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number {
+  try {
+    if (value.toNumber() > maxValue) {
+      logger.info(`toNumber() Warning: Input value ${value.toNumber()} exceeds maxValue: ${maxValue}.`)
+      return maxValue
+    }
+
+    return value.toNumber()
+  } catch (e) {
+    logger.info(
+      `toNumber() Warning: BN.toNumber() conversion error: ${
+        e instanceof Error ? e.message : e
+      }. Returning maxValue: ${maxValue}`
+    )
+    return maxValue
+  }
 }
