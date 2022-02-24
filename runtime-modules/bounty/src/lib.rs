@@ -73,10 +73,10 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight;
     fn withdraw_work_entrant_funds() -> Weight;
-    fn bounty_contributor_remark() -> Weight;
-    fn bounty_oracle_remark() -> Weight;
-    fn bounty_entrant_remark() -> Weight;
-    fn bounty_creator_remark() -> Weight;
+    fn contributor_remark() -> Weight;
+    fn oracle_remark() -> Weight;
+    fn entrant_remark() -> Weight;
+    fn creator_remark() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -1309,8 +1309,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::bounty_contributor_remark()]
-        pub fn countributor_remark(
+        #[weight = WeightInfoBounty::<T>::contributor_remark()]
+        pub fn contributor_remark(
             origin,
             contributor: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
@@ -1338,7 +1338,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::bounty_oracle_remark()]
+        #[weight = WeightInfoBounty::<T>::oracle_remark()]
         pub fn oracle_remark(
             origin,
             oracle: BountyActor<MemberId<T>>,
@@ -1374,7 +1374,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::bounty_entrant_remark()]
+        #[weight = WeightInfoBounty::<T>::entrant_remark()]
         pub fn entrant_remark(
             origin,
             entrant_id: MemberId<T>,
@@ -1407,7 +1407,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::bounty_creator_remark()]
+        #[weight = WeightInfoBounty::<T>::creator_remark()]
         pub fn creator_remark(
             origin,
             creator: BountyActor<MemberId<T>>,

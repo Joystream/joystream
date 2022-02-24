@@ -199,17 +199,16 @@ impl crate::WeightInfo for () {
     fn withdraw_work_entrant_funds() -> u64 {
         0
     }
-
-    fn bounty_contributor_remark() -> u64 {
+    fn contributor_remark() -> u64 {
         0
     }
-    fn bounty_oracle_remark() -> u64 {
+    fn oracle_remark() -> u64 {
         0
     }
-    fn bounty_entrant_remark() -> u64 {
+    fn entrant_remark() -> u64 {
         0
     }
-    fn bounty_creator_remark() -> u64 {
+    fn creator_remark() -> u64 {
         0
     }
 }
@@ -475,6 +474,12 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }
