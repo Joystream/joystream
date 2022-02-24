@@ -77,72 +77,18 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
       this.createdItems.channelIds[0],
       this.videoCategoryId
     )
-
-    const { storageBucketId, storageGroupWorkerId, storageGroupWorkerAccount } = await this.retrieveBucket()
-
-    // TODO: remove this after "not enough balance" is solved for this worker
-    this.debug('Top-uping worker')
-    await this.api.treasuryTransferBalanceToAccounts([storageGroupWorkerAccount], new BN(1_000_000))
-
-    this.debug('Accepting content to storage bag')
-    const allAssetIds = this.createdItems.videosData.map((item) => item.assetContentIds).flat()
-    await this.api.acceptPendingDataObjects(
-      storageGroupWorkerAccount,
-      storageGroupWorkerId,
-      storageBucketId,
-      this.createdItems.channelIds[0].toString(),
-      allAssetIds
-    )
-  }
-
-  /**
-    Retrieves storage bucket info.
-  */
-  private async retrieveBucket(): Promise<{
-    storageBucketId: StorageBucketId
-    storageGroupWorkerId: WorkerId
-    storageGroupWorkerAccount: string
-  }> {
-    // read existing storage buckets from runtime
-    const bucketEntries = await this.api.query.storage.storageBucketById.entries()
-
-    // create WorkerId object
-    const storageGroupWorkerId = createType('WorkerId', singleBucketConfig.buckets[0].operatorId)
-
-    // find some bucket created by worker
-    const bucketTuple = bucketEntries.find(
-      ([, /* storageBucketId */ storageBucket]) =>
-        (storageBucket.operator_status as any).isStorageWorker &&
-        (storageBucket.operator_status as any).asStorageWorker[0].toString() === storageGroupWorkerId.toString()
-    )
-    if (!bucketTuple) {
-      throw new Error('Storage bucket not initialized')
-    }
-
-    // retrieve worker address
-    const storageGroupWorkerAccount = this.api.createCustomKeyPair(singleBucketConfig.buckets[0].transactorUri, true)
-      .address
-
-    // create StorageBucketId object
-    const storageBucketId = createType('StorageBucketId', bucketTuple[0].args[0])
-
-    return {
-      storageBucketId,
-      storageGroupWorkerId,
-      storageGroupWorkerAccount,
-    }
   }
 
   /**
     Creates a new channel.
   */
   private async createChannels(count: number, channelCategoryId: number, authorAddress: string): Promise<number[]> {
-    const createdIds = (await this.createCommonEntities(count, (index) =>
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel({
         ...getChannelDefaults(index, authorAddress),
         category: channelCategoryId,
       })
-    )) as number[]
+    )
 
     return createdIds
   }

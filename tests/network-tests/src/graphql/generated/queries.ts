@@ -1,6 +1,44 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type ChannelFieldsFragment = {
+  id: string
+  activeVideosCounter: number
+  title?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  isPublic?: Types.Maybe<boolean>
+  rewardAccount?: Types.Maybe<string>
+  isCensored: boolean
+  language?: Types.Maybe<{ iso: string }>
+  ownerMember?: Types.Maybe<{ id: string }>
+  ownerCuratorGroup?: Types.Maybe<{ id: string }>
+  category?: Types.Maybe<{ name?: Types.Maybe<string> }>
+  avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
+  coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
+}
+
+export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type GetChannelByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+
+export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetChannelCategoryByIdQuery = { channelCategoryByUniqueInput?: Types.Maybe<ChannelCategoryFieldsFragment> }
+
+export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetVideoCategoryByIdQuery = { videoCategoryByUniqueInput?: Types.Maybe<VideoCategoryFieldsFragment> }
+
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
   channel?: Types.Maybe<{ id: string }>
@@ -44,20 +82,6 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
-}
-
-export type ChannelFieldsFragment = {
-  title?: Types.Maybe<string>
-  description?: Types.Maybe<string>
-  isPublic?: Types.Maybe<boolean>
-  rewardAccount?: Types.Maybe<string>
-  isCensored: boolean
-  language?: Types.Maybe<{ iso: string }>
-  ownerMember?: Types.Maybe<{ id: string }>
-  ownerCuratorGroup?: Types.Maybe<{ id: string }>
-  category?: Types.Maybe<{ name?: Types.Maybe<string> }>
-  avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
-  coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
 }
 
 export type GetDataObjectsByIdsQueryVariables = Types.Exact<{
@@ -128,6 +152,8 @@ export const StorageDataObjectFields = gql`
 `
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
     title
     description
     isPublic
@@ -167,13 +193,17 @@ export const OwnedNftFields = gql`
     creatorRoyalty
   }
 `
-export const GetDataObjectsByIds = gql`
-  query getDataObjectsByIds($ids: [ID!]) {
-    storageDataObjects(where: { id_in: $ids }) {
-      ...StorageDataObjectFields
-    }
+export const ChannelCategoryFields = gql`
+  fragment ChannelCategoryFields on ChannelCategory {
+    id
+    activeVideosCounter
   }
-  ${StorageDataObjectFields}
+`
+export const VideoCategoryFields = gql`
+  fragment VideoCategoryFields on VideoCategory {
+    id
+    activeVideosCounter
+  }
 `
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
@@ -190,4 +220,21 @@ export const GetOwnedNftByVideoId = gql`
     }
   }
   ${OwnedNftFields}
+`
+
+export const GetChannelCategoryById = gql`
+  query getChannelCategoryById($id: ID!) {
+    channelCategoryByUniqueInput(where: { id: $id }) {
+      ...ChannelCategoryFields
+    }
+  }
+  ${ChannelCategoryFields}
+`
+export const GetVideoCategoryById = gql`
+  query getVideoCategoryById($id: ID!) {
+    videoCategoryByUniqueInput(where: { id: $id }) {
+      ...VideoCategoryFields
+    }
+  }
+  ${VideoCategoryFields}
 `

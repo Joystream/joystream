@@ -297,17 +297,17 @@ import {
   GetProposalDiscussionThreadsByIds,
   OwnedNftFieldsFragment,
   ChannelFieldsFragment,
-  GetChannelsQuery,
-  GetChannelsQueryVariables,
-  GetChannels,
+  GetChannelById,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
   ChannelCategoryFieldsFragment,
-  GetChannelCategoriesQuery,
-  GetChannelCategoriesQueryVariables,
-  GetChannelCategories,
+  GetChannelCategoryByIdQuery,
+  GetChannelCategoryByIdQueryVariables,
+  GetChannelCategoryById,
   VideoCategoryFieldsFragment,
-  GetVideoCategoriesQuery,
-  GetVideoCategoriesQueryVariables,
-  GetVideoCategories,
+  GetVideoCategoryByIdQuery,
+  GetVideoCategoryByIdQueryVariables,
+  GetVideoCategoryById,
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
@@ -1088,23 +1088,27 @@ export class QueryNodeApi {
     >(GetProposalDiscussionThreadsByIds, { ids: ids.map((id) => id.toString()) }, 'proposalDiscussionThreads')
   }
 
-  public async getChannels(): Promise<ChannelFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetChannelsQuery, GetChannelsQueryVariables>(GetChannels, {}, 'channels')
-  }
-
-  public async getChannelCategories(): Promise<ChannelCategoryFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetChannelCategoriesQuery, GetChannelCategoriesQueryVariables>(
-      GetChannelCategories,
-      {},
-      'channelCategories'
+  public async channelById(id: string): Promise<Maybe<ChannelFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { id },
+      'channelByUniqueInput'
     )
   }
 
-  public async getVideoCategories(): Promise<VideoCategoryFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetVideoCategoriesQuery, GetVideoCategoriesQueryVariables>(
-      GetVideoCategories,
-      {},
-      'videoCategories'
+  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
+      GetChannelCategoryById,
+      { id },
+      'channelCategoryByUniqueInput'
+    )
+  }
+
+  public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
+    return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
+      GetVideoCategoryById,
+      { id },
+      'videoCategoryByUniqueInput'
     )
   }
 

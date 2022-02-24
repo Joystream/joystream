@@ -1,6 +1,29 @@
 fragment ChannelFields on Channel {
   id
   activeVideosCounter
+  title
+  description
+  isPublic
+  language {
+    iso
+  }
+  rewardAccount
+  isCensored
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+  category {
+    name
+  }
+  avatarPhoto {
+    ...StorageDataObjectFields
+  }
+  coverPhoto {
+    ...StorageDataObjectFields
+  }
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
@@ -11,27 +34,6 @@ fragment ChannelCategoryFields on ChannelCategory {
 fragment VideoCategoryFields on VideoCategory {
   id
   activeVideosCounter
-}
-
-fragment OwnedNftFields on OwnedNft {
-  id
-  video {
-    id
-  }
-  ownerMember {
-    id
-  }
-  metadata
-  transactionalStatus {
-    __typename
-  }
-  creatorRoyalty
-}
-
-query getChannels {
-  channels {
-    ...ChannelFields
-  }
 }
 
 query getChannelById($id: ID!) {
@@ -49,11 +51,5 @@ query getChannelCategoryById($id: ID!) {
 query getVideoCategoryById($id: ID!) {
   videoCategoryByUniqueInput(where: { id: $id }) {
     ...VideoCategoryFields
-  }
-}
-
-query getOwnedNftByVideoId($videoId: ID!) {
-  ownedNfts(where: { video: { id_eq: $videoId } }) {
-    ...OwnedNftFields
   }
 }

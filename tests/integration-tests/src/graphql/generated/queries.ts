@@ -10,84 +10,113 @@ export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: num
 export type OwnedNftFieldsFragment = {
   id: string
   metadata: string
-  creatorRoyalty?: Types.Maybe<number>
+  creatorRoyalty?: number | null
   video: { id: string }
-  ownerMember?: Types.Maybe<{ id: string }>
+  ownerMember?: { id: string } | null
   transactionalStatus:
-    | { __typename: 'TransactionalStatusIdle' }
-    | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
     | { __typename: 'TransactionalStatusAuction' }
     | { __typename: 'TransactionalStatusBuyNow' }
+    | { __typename: 'TransactionalStatusIdle' }
+    | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
 }
 
 export type GetChannelsQueryVariables = Types.Exact<{ [key: string]: never }>
 
-export type GetChannelsQuery = { channels: Array<ChannelFieldsFragment> }
+export type GetChannelsQuery = { channels: Array<{ id: string; activeVideosCounter: number }> }
 
-export type GetChannelCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetChannelByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
 
-export type GetChannelCategoriesQuery = { channelCategories: Array<ChannelCategoryFieldsFragment> }
+export type GetChannelByIdQuery = { channelByUniqueInput?: { id: string; activeVideosCounter: number } | null }
 
-export type GetVideoCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
 
-export type GetVideoCategoriesQuery = { videoCategories: Array<VideoCategoryFieldsFragment> }
+export type GetChannelCategoryByIdQuery = {
+  channelCategoryByUniqueInput?: { id: string; activeVideosCounter: number } | null
+}
+
+export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetVideoCategoryByIdQuery = {
+  videoCategoryByUniqueInput?: { id: string; activeVideosCounter: number } | null
+}
 
 export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
   videoId: Types.Scalars['ID']
 }>
 
-export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
+export type GetOwnedNftByVideoIdQuery = {
+  ownedNfts: Array<{
+    id: string
+    metadata: string
+    creatorRoyalty?: number | null
+    video: { id: string }
+    ownerMember?: { id: string } | null
+    transactionalStatus:
+      | { __typename: 'TransactionalStatusAuction' }
+      | { __typename: 'TransactionalStatusBuyNow' }
+      | { __typename: 'TransactionalStatusIdle' }
+      | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
+  }>
+}
 
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
-export type ElectedCouncilFieldsFragment = { councilMembers: Array<CouncilMemberFieldsFragment> }
+export type ElectedCouncilFieldsFragment = { councilMembers: Array<{ id: string; member: { id: string } }> }
 
 export type CandidateFieldsFragment = { id: string; member: { id: string } }
 
 export type GetCurrentCouncilMembersQueryVariables = Types.Exact<{ [key: string]: never }>
 
-export type GetCurrentCouncilMembersQuery = { electedCouncils: Array<ElectedCouncilFieldsFragment> }
+export type GetCurrentCouncilMembersQuery = {
+  electedCouncils: Array<{ councilMembers: Array<{ id: string; member: { id: string } }> }>
+}
 
 export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{
   electionRoundCycleId: Types.Scalars['Int']
   councilSize: Types.Scalars['Int']
 }>
 
-export type GetReferendumIntermediateWinnersQuery = { candidates: Array<CandidateFieldsFragment> }
+export type GetReferendumIntermediateWinnersQuery = { candidates: Array<{ id: string; member: { id: string } }> }
 
 export type ForumCategoryFieldsFragment = {
   id: string
   createdAt: any
-  updatedAt?: Types.Maybe<any>
+  updatedAt?: any | null
   title: string
   description: string
-  parent?: Types.Maybe<{ id: string }>
+  parent?: { id: string } | null
   threads: Array<{ id: string; isSticky: boolean }>
   moderators: Array<{ id: string }>
   createdInEvent: { id: string }
   status:
     | { __typename: 'CategoryStatusActive' }
-    | { __typename: 'CategoryStatusArchived'; categoryArchivalStatusUpdatedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'CategoryStatusRemoved'; categoryDeletedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'CategoryStatusArchived'; categoryArchivalStatusUpdatedEvent?: { id: string } | null }
+    | { __typename: 'CategoryStatusRemoved'; categoryDeletedEvent?: { id: string } | null }
 }
 
 export type ForumPostFieldsFragment = {
   id: string
   createdAt: any
-  updatedAt?: Types.Maybe<any>
+  updatedAt?: any | null
   text: string
   isVisible: boolean
   author: { id: string }
   thread: { id: string }
-  repliesTo?: Types.Maybe<{ id: string }>
+  repliesTo?: { id: string } | null
   status:
     | { __typename: 'PostStatusActive' }
-    | { __typename: 'PostStatusLocked'; postDeletedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'PostStatusModerated'; postModeratedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'PostStatusRemoved'; postDeletedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'PostStatusLocked'; postDeletedEvent?: { id: string } | null }
+    | { __typename: 'PostStatusModerated'; postModeratedEvent?: { id: string } | null }
+    | { __typename: 'PostStatusRemoved'; postDeletedEvent?: { id: string } | null }
   origin:
-    | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'PostOriginThreadReply'; postAddedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: { id: string } | null }
+    | { __typename: 'PostOriginThreadReply'; postAddedEvent?: { id: string } | null }
   edits: Array<{ id: string }>
   reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
 }
@@ -95,63 +124,172 @@ export type ForumPostFieldsFragment = {
 export type ForumThreadWithInitialPostFragment = {
   id: string
   createdAt: any
-  updatedAt?: Types.Maybe<any>
+  updatedAt?: any | null
   title: string
   isSticky: boolean
   isVisible: boolean
   author: { id: string }
   category: { id: string }
-  initialPost?: Types.Maybe<ForumPostFieldsFragment>
-  poll?: Types.Maybe<{
+  initialPost?: {
+    id: string
+    createdAt: any
+    updatedAt?: any | null
+    text: string
+    isVisible: boolean
+    author: { id: string }
+    thread: { id: string }
+    repliesTo?: { id: string } | null
+    status:
+      | { __typename: 'PostStatusActive' }
+      | { __typename: 'PostStatusLocked'; postDeletedEvent?: { id: string } | null }
+      | { __typename: 'PostStatusModerated'; postModeratedEvent?: { id: string } | null }
+      | { __typename: 'PostStatusRemoved'; postDeletedEvent?: { id: string } | null }
+    origin:
+      | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: { id: string } | null }
+      | { __typename: 'PostOriginThreadReply'; postAddedEvent?: { id: string } | null }
+    edits: Array<{ id: string }>
+    reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
+  } | null
+  poll?: {
     description: string
     endTime: any
     pollAlternatives: Array<{ index: number; text: string; votes: Array<{ votingMember: { id: string } }> }>
-  }>
+  } | null
   createdInEvent: { id: string; title: string; text: string }
   status:
     | { __typename: 'ThreadStatusActive' }
-    | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: { id: string } | null }
+    | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: { id: string } | null }
+    | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: { id: string } | null }
   metadataUpdates: Array<{ id: string }>
   movedInEvents: Array<{ id: string }>
   tags: Array<{ id: string }>
 }
 
 export type GetCategoriesByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetCategoriesByIdsQuery = { forumCategories: Array<ForumCategoryFieldsFragment> }
+export type GetCategoriesByIdsQuery = {
+  forumCategories: Array<{
+    id: string
+    createdAt: any
+    updatedAt?: any | null
+    title: string
+    description: string
+    parent?: { id: string } | null
+    threads: Array<{ id: string; isSticky: boolean }>
+    moderators: Array<{ id: string }>
+    createdInEvent: { id: string }
+    status:
+      | { __typename: 'CategoryStatusActive' }
+      | { __typename: 'CategoryStatusArchived'; categoryArchivalStatusUpdatedEvent?: { id: string } | null }
+      | { __typename: 'CategoryStatusRemoved'; categoryDeletedEvent?: { id: string } | null }
+  }>
+}
 
 export type GetThreadsWithInitialPostsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadsWithInitialPostsByIdsQuery = { forumThreads: Array<ForumThreadWithInitialPostFragment> }
+export type GetThreadsWithInitialPostsByIdsQuery = {
+  forumThreads: Array<{
+    id: string
+    createdAt: any
+    updatedAt?: any | null
+    title: string
+    isSticky: boolean
+    isVisible: boolean
+    author: { id: string }
+    category: { id: string }
+    initialPost?: {
+      id: string
+      createdAt: any
+      updatedAt?: any | null
+      text: string
+      isVisible: boolean
+      author: { id: string }
+      thread: { id: string }
+      repliesTo?: { id: string } | null
+      status:
+        | { __typename: 'PostStatusActive' }
+        | { __typename: 'PostStatusLocked'; postDeletedEvent?: { id: string } | null }
+        | { __typename: 'PostStatusModerated'; postModeratedEvent?: { id: string } | null }
+        | { __typename: 'PostStatusRemoved'; postDeletedEvent?: { id: string } | null }
+      origin:
+        | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: { id: string } | null }
+        | { __typename: 'PostOriginThreadReply'; postAddedEvent?: { id: string } | null }
+      edits: Array<{ id: string }>
+      reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
+    } | null
+    poll?: {
+      description: string
+      endTime: any
+      pollAlternatives: Array<{ index: number; text: string; votes: Array<{ votingMember: { id: string } }> }>
+    } | null
+    createdInEvent: { id: string; title: string; text: string }
+    status:
+      | { __typename: 'ThreadStatusActive' }
+      | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: { id: string } | null }
+      | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: { id: string } | null }
+      | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: { id: string } | null }
+    metadataUpdates: Array<{ id: string }>
+    movedInEvents: Array<{ id: string }>
+    tags: Array<{ id: string }>
+  }>
+}
 
 export type GetPostsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetPostsByIdsQuery = { forumPosts: Array<ForumPostFieldsFragment> }
+export type GetPostsByIdsQuery = {
+  forumPosts: Array<{
+    id: string
+    createdAt: any
+    updatedAt?: any | null
+    text: string
+    isVisible: boolean
+    author: { id: string }
+    thread: { id: string }
+    repliesTo?: { id: string } | null
+    status:
+      | { __typename: 'PostStatusActive' }
+      | { __typename: 'PostStatusLocked'; postDeletedEvent?: { id: string } | null }
+      | { __typename: 'PostStatusModerated'; postModeratedEvent?: { id: string } | null }
+      | { __typename: 'PostStatusRemoved'; postDeletedEvent?: { id: string } | null }
+    origin:
+      | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: { id: string } | null }
+      | { __typename: 'PostOriginThreadReply'; postAddedEvent?: { id: string } | null }
+    edits: Array<{ id: string }>
+    reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
+  }>
+}
 
 export type CategoryCreatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   category: { id: string }
 }
 
 export type GetCategoryCreatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetCategoryCreatedEventsByEventIdsQuery = {
-  categoryCreatedEvents: Array<CategoryCreatedEventFieldsFragment>
+  categoryCreatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    category: { id: string }
+  }>
 }
 
 export type CategoryArchivalStatusUpdatedEventFieldsFragment = {
@@ -159,7 +297,7 @@ export type CategoryArchivalStatusUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newArchivalStatus: boolean
   category: { id: string }
@@ -167,11 +305,21 @@ export type CategoryArchivalStatusUpdatedEventFieldsFragment = {
 }
 
 export type GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery = {
-  categoryArchivalStatusUpdatedEvents: Array<CategoryArchivalStatusUpdatedEventFieldsFragment>
+  categoryArchivalStatusUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newArchivalStatus: boolean
+    category: { id: string }
+    actor: { id: string }
+  }>
 }
 
 export type CategoryDeletedEventFieldsFragment = {
@@ -179,18 +327,27 @@ export type CategoryDeletedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   category: { id: string }
   actor: { id: string }
 }
 
 export type GetCategoryDeletedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetCategoryDeletedEventsByEventIdsQuery = {
-  categoryDeletedEvents: Array<CategoryDeletedEventFieldsFragment>
+  categoryDeletedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    category: { id: string }
+    actor: { id: string }
+  }>
 }
 
 export type ThreadCreatedEventFieldsFragment = {
@@ -198,7 +355,7 @@ export type ThreadCreatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   title: string
   text: string
@@ -206,28 +363,49 @@ export type ThreadCreatedEventFieldsFragment = {
 }
 
 export type GetThreadCreatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadCreatedEventsByEventIdsQuery = { threadCreatedEvents: Array<ThreadCreatedEventFieldsFragment> }
+export type GetThreadCreatedEventsByEventIdsQuery = {
+  threadCreatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    title: string
+    text: string
+    thread: { id: string }
+  }>
+}
 
 export type ThreadMetadataUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  newTitle?: Types.Maybe<string>
+  newTitle?: string | null
   thread: { id: string }
 }
 
 export type GetThreadMetadataUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetThreadMetadataUpdatedEventsByEventIdsQuery = {
-  threadMetadataUpdatedEvents: Array<ThreadMetadataUpdatedEventFieldsFragment>
+  threadMetadataUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newTitle?: string | null
+    thread: { id: string }
+  }>
 }
 
 export type VoteOnPollEventFieldsFragment = {
@@ -235,58 +413,91 @@ export type VoteOnPollEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   pollAlternative: { id: string; index: number; text: string; poll: { thread: { id: string } } }
   votingMember: { id: string }
 }
 
 export type GetVoteOnPollEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetVoteOnPollEventsByEventIdsQuery = { voteOnPollEvents: Array<VoteOnPollEventFieldsFragment> }
+export type GetVoteOnPollEventsByEventIdsQuery = {
+  voteOnPollEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    pollAlternative: { id: string; index: number; text: string; poll: { thread: { id: string } } }
+    votingMember: { id: string }
+  }>
+}
 
 export type ThreadDeletedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   thread: { id: string }
 }
 
 export type GetThreadDeletedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadDeletedEventsByEventIdsQuery = { threadDeletedEvents: Array<ThreadDeletedEventFieldsFragment> }
+export type GetThreadDeletedEventsByEventIdsQuery = {
+  threadDeletedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    thread: { id: string }
+  }>
+}
 
 export type PostAddedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  isEditable?: Types.Maybe<boolean>
+  isEditable?: boolean | null
   text: string
   post: { id: string }
 }
 
 export type GetPostAddedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetPostAddedEventsByEventIdsQuery = { postAddedEvents: Array<PostAddedEventFieldsFragment> }
+export type GetPostAddedEventsByEventIdsQuery = {
+  postAddedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    isEditable?: boolean | null
+    text: string
+    post: { id: string }
+  }>
+}
 
 export type ThreadMovedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   thread: { id: string }
   oldCategory: { id: string }
@@ -295,17 +506,30 @@ export type ThreadMovedEventFieldsFragment = {
 }
 
 export type GetThreadMovedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadMovedEventsByEventIdsQuery = { threadMovedEvents: Array<ThreadMovedEventFieldsFragment> }
+export type GetThreadMovedEventsByEventIdsQuery = {
+  threadMovedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    thread: { id: string }
+    oldCategory: { id: string }
+    newCategory: { id: string }
+    actor: { id: string }
+  }>
+}
 
 export type CategoryStickyThreadUpdateEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   category: { id: string }
   newStickyThreads: Array<{ id: string }>
@@ -313,11 +537,21 @@ export type CategoryStickyThreadUpdateEventFieldsFragment = {
 }
 
 export type GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetCategoryStickyThreadUpdateEventsByEventIdsQuery = {
-  categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEventFieldsFragment>
+  categoryStickyThreadUpdateEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    category: { id: string }
+    newStickyThreads: Array<{ id: string }>
+    actor: { id: string }
+  }>
 }
 
 export type CategoryMembershipOfModeratorUpdatedEventFieldsFragment = {
@@ -325,7 +559,7 @@ export type CategoryMembershipOfModeratorUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newCanModerateValue: boolean
   category: { id: string }
@@ -333,11 +567,21 @@ export type CategoryMembershipOfModeratorUpdatedEventFieldsFragment = {
 }
 
 export type GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery = {
-  categoryMembershipOfModeratorUpdatedEvents: Array<CategoryMembershipOfModeratorUpdatedEventFieldsFragment>
+  categoryMembershipOfModeratorUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newCanModerateValue: boolean
+    category: { id: string }
+    moderator: { id: string }
+  }>
 }
 
 export type ThreadModeratedEventFieldsFragment = {
@@ -345,7 +589,7 @@ export type ThreadModeratedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   rationale: string
   thread: { id: string }
@@ -353,11 +597,21 @@ export type ThreadModeratedEventFieldsFragment = {
 }
 
 export type GetThreadModeratedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetThreadModeratedEventsByEventIdsQuery = {
-  threadModeratedEvents: Array<ThreadModeratedEventFieldsFragment>
+  threadModeratedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rationale: string
+    thread: { id: string }
+    actor: { id: string }
+  }>
 }
 
 export type PostModeratedEventFieldsFragment = {
@@ -365,7 +619,7 @@ export type PostModeratedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   rationale: string
   post: { id: string }
@@ -373,49 +627,85 @@ export type PostModeratedEventFieldsFragment = {
 }
 
 export type GetPostModeratedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetPostModeratedEventsByEventIdsQuery = { postModeratedEvents: Array<PostModeratedEventFieldsFragment> }
+export type GetPostModeratedEventsByEventIdsQuery = {
+  postModeratedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rationale: string
+    post: { id: string }
+    actor: { id: string }
+  }>
+}
 
 export type PostReactedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   post: { id: string }
   reactionResult:
     | { __typename: 'PostReactionResultCancel' }
-    | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
     | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+    | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
   reactingMember: { id: string }
 }
 
 export type GetPostReactedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetPostReactedEventsByEventIdsQuery = { postReactedEvents: Array<PostReactedEventFieldsFragment> }
+export type GetPostReactedEventsByEventIdsQuery = {
+  postReactedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    post: { id: string }
+    reactionResult:
+      | { __typename: 'PostReactionResultCancel' }
+      | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+      | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
+    reactingMember: { id: string }
+  }>
+}
 
 export type PostTextUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newText: string
   post: { id: string }
 }
 
 export type GetPostTextUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetPostTextUpdatedEventsByEventIdsQuery = {
-  postTextUpdatedEvents: Array<PostTextUpdatedEventFieldsFragment>
+  postTextUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newText: string
+    post: { id: string }
+  }>
 }
 
 export type PostDeletedEventFieldsFragment = {
@@ -423,7 +713,7 @@ export type PostDeletedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   rationale: string
   posts: Array<{ id: string }>
@@ -431,12 +721,24 @@ export type PostDeletedEventFieldsFragment = {
 }
 
 export type GetPostDeletedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetPostDeletedEventsByEventIdsQuery = { postDeletedEvents: Array<PostDeletedEventFieldsFragment> }
+export type GetPostDeletedEventsByEventIdsQuery = {
+  postDeletedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rationale: string
+    posts: Array<{ id: string }>
+    actor: { id: string }
+  }>
+}
 
-export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
+export type MemberMetadataFieldsFragment = { name?: string | null; about?: string | null }
 
 export type MembershipFieldsFragment = {
   id: string
@@ -446,12 +748,12 @@ export type MembershipFieldsFragment = {
   isVerified: boolean
   inviteCount: number
   boundAccounts: Array<string>
-  metadata: MemberMetadataFieldsFragment
+  metadata: { name?: string | null; about?: string | null }
   entry:
-    | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryGenesis' }
-  invitedBy?: Types.Maybe<{ id: string }>
+    | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: { id: string } | null }
+    | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: { id: string } | null }
+  invitedBy?: { id: string } | null
   invitees: Array<{ id: string }>
 }
 
@@ -459,13 +761,47 @@ export type GetMemberByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
 
-export type GetMemberByIdQuery = { membershipByUniqueInput?: Types.Maybe<MembershipFieldsFragment> }
+export type GetMemberByIdQuery = {
+  membershipByUniqueInput?: {
+    id: string
+    handle: string
+    controllerAccount: string
+    rootAccount: string
+    isVerified: boolean
+    inviteCount: number
+    boundAccounts: Array<string>
+    metadata: { name?: string | null; about?: string | null }
+    entry:
+      | { __typename: 'MembershipEntryGenesis' }
+      | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: { id: string } | null }
+      | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: { id: string } | null }
+    invitedBy?: { id: string } | null
+    invitees: Array<{ id: string }>
+  } | null
+}
 
 export type GetMembersByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
+export type GetMembersByIdsQuery = {
+  memberships: Array<{
+    id: string
+    handle: string
+    controllerAccount: string
+    rootAccount: string
+    isVerified: boolean
+    inviteCount: number
+    boundAccounts: Array<string>
+    metadata: { name?: string | null; about?: string | null }
+    entry:
+      | { __typename: 'MembershipEntryGenesis' }
+      | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: { id: string } | null }
+      | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: { id: string } | null }
+    invitedBy?: { id: string } | null
+    invitees: Array<{ id: string }>
+  }>
+}
 
 export type MembershipSystemSnapshotFieldsFragment = {
   createdAt: any
@@ -481,7 +817,14 @@ export type GetMembershipSystemSnapshotAtQueryVariables = Types.Exact<{
 }>
 
 export type GetMembershipSystemSnapshotAtQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
+  membershipSystemSnapshots: Array<{
+    createdAt: any
+    snapshotBlock: number
+    referralCut: number
+    invitedInitialBalance: any
+    defaultInviteCount: number
+    membershipPrice: any
+  }>
 }
 
 export type GetMembershipSystemSnapshotBeforeQueryVariables = Types.Exact<{
@@ -489,7 +832,14 @@ export type GetMembershipSystemSnapshotBeforeQueryVariables = Types.Exact<{
 }>
 
 export type GetMembershipSystemSnapshotBeforeQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
+  membershipSystemSnapshots: Array<{
+    createdAt: any
+    snapshotBlock: number
+    referralCut: number
+    invitedInitialBalance: any
+    defaultInviteCount: number
+    membershipPrice: any
+  }>
 }
 
 export type MembershipBoughtEventFieldsFragment = {
@@ -497,22 +847,35 @@ export type MembershipBoughtEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   rootAccount: string
   controllerAccount: string
   handle: string
   newMember: { id: string }
-  metadata: MemberMetadataFieldsFragment
-  referrer?: Types.Maybe<{ id: string }>
+  metadata: { name?: string | null; about?: string | null }
+  referrer?: { id: string } | null
 }
 
 export type GetMembershipBoughtEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetMembershipBoughtEventsByEventIdsQuery = {
-  membershipBoughtEvents: Array<MembershipBoughtEventFieldsFragment>
+  membershipBoughtEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rootAccount: string
+    controllerAccount: string
+    handle: string
+    newMember: { id: string }
+    metadata: { name?: string | null; about?: string | null }
+    referrer?: { id: string } | null
+  }>
 }
 
 export type MemberProfileUpdatedEventFieldsFragment = {
@@ -520,11 +883,11 @@ export type MemberProfileUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  newHandle?: Types.Maybe<string>
+  newHandle?: string | null
   member: { id: string }
-  newMetadata: { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
+  newMetadata: { name?: string | null; about?: string | null }
 }
 
 export type GetMemberProfileUpdatedEventsByMemberIdQueryVariables = Types.Exact<{
@@ -532,7 +895,17 @@ export type GetMemberProfileUpdatedEventsByMemberIdQueryVariables = Types.Exact<
 }>
 
 export type GetMemberProfileUpdatedEventsByMemberIdQuery = {
-  memberProfileUpdatedEvents: Array<MemberProfileUpdatedEventFieldsFragment>
+  memberProfileUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newHandle?: string | null
+    member: { id: string }
+    newMetadata: { name?: string | null; about?: string | null }
+  }>
 }
 
 export type MemberAccountsUpdatedEventFieldsFragment = {
@@ -540,10 +913,10 @@ export type MemberAccountsUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  newRootAccount?: Types.Maybe<string>
-  newControllerAccount?: Types.Maybe<string>
+  newRootAccount?: string | null
+  newControllerAccount?: string | null
   member: { id: string }
 }
 
@@ -552,7 +925,17 @@ export type GetMemberAccountsUpdatedEventsByMemberIdQueryVariables = Types.Exact
 }>
 
 export type GetMemberAccountsUpdatedEventsByMemberIdQuery = {
-  memberAccountsUpdatedEvents: Array<MemberAccountsUpdatedEventFieldsFragment>
+  memberAccountsUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newRootAccount?: string | null
+    newControllerAccount?: string | null
+    member: { id: string }
+  }>
 }
 
 export type MemberInvitedEventFieldsFragment = {
@@ -560,28 +943,43 @@ export type MemberInvitedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   rootAccount: string
   controllerAccount: string
   handle: string
   invitingMember: { id: string }
   newMember: { id: string }
-  metadata: MemberMetadataFieldsFragment
+  metadata: { name?: string | null; about?: string | null }
 }
 
 export type GetMemberInvitedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetMemberInvitedEventsByEventIdsQuery = { memberInvitedEvents: Array<MemberInvitedEventFieldsFragment> }
+export type GetMemberInvitedEventsByEventIdsQuery = {
+  memberInvitedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rootAccount: string
+    controllerAccount: string
+    handle: string
+    invitingMember: { id: string }
+    newMember: { id: string }
+    metadata: { name?: string | null; about?: string | null }
+  }>
+}
 
 export type InvitesTransferredEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   numberOfInvites: number
   sourceMember: { id: string }
@@ -593,7 +991,17 @@ export type GetInvitesTransferredEventsBySourceMemberIdQueryVariables = Types.Ex
 }>
 
 export type GetInvitesTransferredEventsBySourceMemberIdQuery = {
-  invitesTransferredEvents: Array<InvitesTransferredEventFieldsFragment>
+  invitesTransferredEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    numberOfInvites: number
+    sourceMember: { id: string }
+    targetMember: { id: string }
+  }>
 }
 
 export type StakingAccountAddedEventFieldsFragment = {
@@ -601,18 +1009,27 @@ export type StakingAccountAddedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   account: string
   member: { id: string }
 }
 
 export type GetStakingAccountAddedEventsByEventIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetStakingAccountAddedEventsByEventIdsQuery = {
-  stakingAccountAddedEvents: Array<StakingAccountAddedEventFieldsFragment>
+  stakingAccountAddedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    account: string
+    member: { id: string }
+  }>
 }
 
 export type StakingAccountConfirmedEventFieldsFragment = {
@@ -620,18 +1037,27 @@ export type StakingAccountConfirmedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   account: string
   member: { id: string }
 }
 
 export type GetStakingAccountConfirmedEventsByEventIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetStakingAccountConfirmedEventsByEventIdsQuery = {
-  stakingAccountConfirmedEvents: Array<StakingAccountConfirmedEventFieldsFragment>
+  stakingAccountConfirmedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    account: string
+    member: { id: string }
+  }>
 }
 
 export type StakingAccountRemovedEventFieldsFragment = {
@@ -639,7 +1065,7 @@ export type StakingAccountRemovedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   account: string
   member: { id: string }
@@ -650,7 +1076,16 @@ export type GetStakingAccountRemovedEventsByMemberIdQueryVariables = Types.Exact
 }>
 
 export type GetStakingAccountRemovedEventsByMemberIdQuery = {
-  stakingAccountRemovedEvents: Array<StakingAccountRemovedEventFieldsFragment>
+  stakingAccountRemovedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    account: string
+    member: { id: string }
+  }>
 }
 
 export type ReferralCutUpdatedEventFieldsFragment = {
@@ -658,7 +1093,7 @@ export type ReferralCutUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newValue: number
 }
@@ -668,7 +1103,15 @@ export type GetReferralCutUpdatedEventsByEventIdQueryVariables = Types.Exact<{
 }>
 
 export type GetReferralCutUpdatedEventsByEventIdQuery = {
-  referralCutUpdatedEvents: Array<ReferralCutUpdatedEventFieldsFragment>
+  referralCutUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newValue: number
+  }>
 }
 
 export type MembershipPriceUpdatedEventFieldsFragment = {
@@ -676,7 +1119,7 @@ export type MembershipPriceUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newPrice: any
 }
@@ -686,7 +1129,15 @@ export type GetMembershipPriceUpdatedEventsByEventIdQueryVariables = Types.Exact
 }>
 
 export type GetMembershipPriceUpdatedEventsByEventIdQuery = {
-  membershipPriceUpdatedEvents: Array<MembershipPriceUpdatedEventFieldsFragment>
+  membershipPriceUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newPrice: any
+  }>
 }
 
 export type InitialInvitationBalanceUpdatedEventFieldsFragment = {
@@ -694,7 +1145,7 @@ export type InitialInvitationBalanceUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newInitialBalance: any
 }
@@ -704,7 +1155,15 @@ export type GetInitialInvitationBalanceUpdatedEventsByEventIdQueryVariables = Ty
 }>
 
 export type GetInitialInvitationBalanceUpdatedEventsByEventIdQuery = {
-  initialInvitationBalanceUpdatedEvents: Array<InitialInvitationBalanceUpdatedEventFieldsFragment>
+  initialInvitationBalanceUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newInitialBalance: any
+  }>
 }
 
 export type InitialInvitationCountUpdatedEventFieldsFragment = {
@@ -712,7 +1171,7 @@ export type InitialInvitationCountUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newInitialInvitationCount: number
 }
@@ -722,218 +1181,164 @@ export type GetInitialInvitationCountUpdatedEventsByEventIdQueryVariables = Type
 }>
 
 export type GetInitialInvitationCountUpdatedEventsByEventIdQuery = {
-  initialInvitationCountUpdatedEvents: Array<InitialInvitationCountUpdatedEventFieldsFragment>
+  initialInvitationCountUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newInitialInvitationCount: number
+  }>
+}
+
+type ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment = {
+  __typename: 'ProposalStatusCanceledByRuntime'
+  proposalDecisionMadeEvent?: {
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  } | null
+}
+
+type ProposalStatusFields_ProposalStatusCancelled_Fragment = {
+  __typename: 'ProposalStatusCancelled'
+  cancelledInEvent?: { id: string } | null
 }
 
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
   __typename: 'ProposalStatusDeciding'
-  proposalStatusUpdatedEvent?: Types.Maybe<{
+  proposalStatusUpdatedEvent?: {
     id: string
     newStatus:
       | { __typename: 'ProposalStatusDeciding' }
-      | { __typename: 'ProposalStatusGracing' }
       | { __typename: 'ProposalStatusDormant' }
-  }>
-}
-
-type ProposalStatusFields_ProposalStatusGracing_Fragment = {
-  __typename: 'ProposalStatusGracing'
-  proposalStatusUpdatedEvent?: Types.Maybe<{
-    id: string
-    newStatus:
-      | { __typename: 'ProposalStatusDeciding' }
       | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusDormant' }
-  }>
+  } | null
 }
 
 type ProposalStatusFields_ProposalStatusDormant_Fragment = {
   __typename: 'ProposalStatusDormant'
-  proposalStatusUpdatedEvent?: Types.Maybe<{
+  proposalStatusUpdatedEvent?: {
     id: string
     newStatus:
       | { __typename: 'ProposalStatusDeciding' }
-      | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusDormant' }
-  }>
-}
-
-type ProposalStatusFields_ProposalStatusVetoed_Fragment = {
-  __typename: 'ProposalStatusVetoed'
-  proposalDecisionMadeEvent?: Types.Maybe<{
-    id: string
-    decisionStatus:
       | { __typename: 'ProposalStatusDormant' }
       | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusVetoed' }
-      | { __typename: 'ProposalStatusSlashed' }
-      | { __typename: 'ProposalStatusRejected' }
-      | { __typename: 'ProposalStatusExpired' }
-      | { __typename: 'ProposalStatusCancelled' }
-      | { __typename: 'ProposalStatusCanceledByRuntime' }
-  }>
+  } | null
 }
 
 type ProposalStatusFields_ProposalStatusExecuted_Fragment = {
   __typename: 'ProposalStatusExecuted'
-  proposalExecutedEvent?: Types.Maybe<{
+  proposalExecutedEvent?: {
     id: string
     executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
-  }>
+  } | null
 }
 
 type ProposalStatusFields_ProposalStatusExecutionFailed_Fragment = {
   __typename: 'ProposalStatusExecutionFailed'
   errorMessage: string
-  proposalExecutedEvent?: Types.Maybe<{
+  proposalExecutedEvent?: {
     id: string
     executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
-  }>
-}
-
-type ProposalStatusFields_ProposalStatusSlashed_Fragment = {
-  __typename: 'ProposalStatusSlashed'
-  proposalDecisionMadeEvent?: Types.Maybe<{
-    id: string
-    decisionStatus:
-      | { __typename: 'ProposalStatusDormant' }
-      | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusVetoed' }
-      | { __typename: 'ProposalStatusSlashed' }
-      | { __typename: 'ProposalStatusRejected' }
-      | { __typename: 'ProposalStatusExpired' }
-      | { __typename: 'ProposalStatusCancelled' }
-      | { __typename: 'ProposalStatusCanceledByRuntime' }
-  }>
-}
-
-type ProposalStatusFields_ProposalStatusRejected_Fragment = {
-  __typename: 'ProposalStatusRejected'
-  proposalDecisionMadeEvent?: Types.Maybe<{
-    id: string
-    decisionStatus:
-      | { __typename: 'ProposalStatusDormant' }
-      | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusVetoed' }
-      | { __typename: 'ProposalStatusSlashed' }
-      | { __typename: 'ProposalStatusRejected' }
-      | { __typename: 'ProposalStatusExpired' }
-      | { __typename: 'ProposalStatusCancelled' }
-      | { __typename: 'ProposalStatusCanceledByRuntime' }
-  }>
+  } | null
 }
 
 type ProposalStatusFields_ProposalStatusExpired_Fragment = {
   __typename: 'ProposalStatusExpired'
-  proposalDecisionMadeEvent?: Types.Maybe<{
+  proposalDecisionMadeEvent?: {
     id: string
     decisionStatus:
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  } | null
+}
+
+type ProposalStatusFields_ProposalStatusGracing_Fragment = {
+  __typename: 'ProposalStatusGracing'
+  proposalStatusUpdatedEvent?: {
+    id: string
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
       | { __typename: 'ProposalStatusDormant' }
       | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusVetoed' }
-      | { __typename: 'ProposalStatusSlashed' }
-      | { __typename: 'ProposalStatusRejected' }
-      | { __typename: 'ProposalStatusExpired' }
-      | { __typename: 'ProposalStatusCancelled' }
-      | { __typename: 'ProposalStatusCanceledByRuntime' }
-  }>
+  } | null
 }
 
-type ProposalStatusFields_ProposalStatusCancelled_Fragment = {
-  __typename: 'ProposalStatusCancelled'
-  cancelledInEvent?: Types.Maybe<{ id: string }>
-}
-
-type ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment = {
-  __typename: 'ProposalStatusCanceledByRuntime'
-  proposalDecisionMadeEvent?: Types.Maybe<{
+type ProposalStatusFields_ProposalStatusRejected_Fragment = {
+  __typename: 'ProposalStatusRejected'
+  proposalDecisionMadeEvent?: {
     id: string
     decisionStatus:
-      | { __typename: 'ProposalStatusDormant' }
-      | { __typename: 'ProposalStatusGracing' }
-      | { __typename: 'ProposalStatusVetoed' }
-      | { __typename: 'ProposalStatusSlashed' }
-      | { __typename: 'ProposalStatusRejected' }
-      | { __typename: 'ProposalStatusExpired' }
-      | { __typename: 'ProposalStatusCancelled' }
       | { __typename: 'ProposalStatusCanceledByRuntime' }
-  }>
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  } | null
+}
+
+type ProposalStatusFields_ProposalStatusSlashed_Fragment = {
+  __typename: 'ProposalStatusSlashed'
+  proposalDecisionMadeEvent?: {
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  } | null
+}
+
+type ProposalStatusFields_ProposalStatusVetoed_Fragment = {
+  __typename: 'ProposalStatusVetoed'
+  proposalDecisionMadeEvent?: {
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  } | null
 }
 
 export type ProposalStatusFieldsFragment =
+  | ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment
+  | ProposalStatusFields_ProposalStatusCancelled_Fragment
   | ProposalStatusFields_ProposalStatusDeciding_Fragment
-  | ProposalStatusFields_ProposalStatusGracing_Fragment
   | ProposalStatusFields_ProposalStatusDormant_Fragment
-  | ProposalStatusFields_ProposalStatusVetoed_Fragment
   | ProposalStatusFields_ProposalStatusExecuted_Fragment
   | ProposalStatusFields_ProposalStatusExecutionFailed_Fragment
-  | ProposalStatusFields_ProposalStatusSlashed_Fragment
-  | ProposalStatusFields_ProposalStatusRejected_Fragment
   | ProposalStatusFields_ProposalStatusExpired_Fragment
-  | ProposalStatusFields_ProposalStatusCancelled_Fragment
-  | ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment
-
-type ProposalDetailsFields_SignalProposalDetails_Fragment = { __typename: 'SignalProposalDetails'; text: string }
-
-type ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment = {
-  __typename: 'RuntimeUpgradeProposalDetails'
-  newRuntimeBytecode?: Types.Maybe<{ id: string; bytecode: any }>
-}
-
-type ProposalDetailsFields_FundingRequestProposalDetails_Fragment = {
-  __typename: 'FundingRequestProposalDetails'
-  destinationsList?: Types.Maybe<{ destinations: Array<{ amount: any; account: string }> }>
-}
-
-type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
-  __typename: 'SetMaxValidatorCountProposalDetails'
-  newMaxValidatorCount: number
-}
-
-type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
-  __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: number
-  unstakingPeriod: number
-  rewardPerBlock: number
-  metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
-  group?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment = {
-  __typename: 'FillWorkingGroupLeadOpeningProposalDetails'
-  opening?: Types.Maybe<{ id: string }>
-  application?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
-  __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: number
-  group?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
-  __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: number
-  lead?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
-  __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: number
-  lead?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
-  __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: number
-  lead?: Types.Maybe<{ id: string }>
-}
-
-type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
-  __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<number>
-  lead?: Types.Maybe<{ id: string }>
-}
+  | ProposalStatusFields_ProposalStatusGracing_Fragment
+  | ProposalStatusFields_ProposalStatusRejected_Fragment
+  | ProposalStatusFields_ProposalStatusSlashed_Fragment
+  | ProposalStatusFields_ProposalStatusVetoed_Fragment
 
 type ProposalDetailsFields_AmendConstitutionProposalDetails_Fragment = {
   __typename: 'AmendConstitutionProposalDetails'
@@ -942,12 +1347,67 @@ type ProposalDetailsFields_AmendConstitutionProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CancelWorkingGroupLeadOpeningProposalDetails'
-  opening?: Types.Maybe<{ id: string }>
+  opening?: { id: string } | null
 }
 
-type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
-  __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: number
+type ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment = {
+  __typename: 'CreateBlogPostProposalDetails'
+  title: string
+  body: string
+}
+
+type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
+  __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
+  stakeAmount: number
+  unstakingPeriod: number
+  rewardPerBlock: number
+  metadata?: {
+    shortDescription?: string | null
+    description?: string | null
+    hiringLimit?: number | null
+    expectedEnding?: any | null
+    applicationDetails?: string | null
+    applicationFormQuestions: Array<{
+      question?: string | null
+      type: Types.ApplicationFormQuestionType
+      index: number
+    }>
+  } | null
+  group?: { id: string } | null
+}
+
+type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
+  __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
+  amount: number
+  lead?: { id: string } | null
+}
+
+type ProposalDetailsFields_EditBlogPostProposalDetails_Fragment = {
+  __typename: 'EditBlogPostProposalDetails'
+  blogPost: string
+  newTitle?: string | null
+  newBody?: string | null
+}
+
+type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment = {
+  __typename: 'FillWorkingGroupLeadOpeningProposalDetails'
+  opening?: { id: string } | null
+  application?: { id: string } | null
+}
+
+type ProposalDetailsFields_FundingRequestProposalDetails_Fragment = {
+  __typename: 'FundingRequestProposalDetails'
+  destinationsList?: { destinations: Array<{ amount: any; account: string }> } | null
+}
+
+type ProposalDetailsFields_LockBlogPostProposalDetails_Fragment = {
+  __typename: 'LockBlogPostProposalDetails'
+  blogPost: string
+}
+
+type ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment = {
+  __typename: 'RuntimeUpgradeProposalDetails'
+  newRuntimeBytecode?: { id: string; bytecode: any } | null
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
@@ -970,9 +1430,19 @@ type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
   newInitialInvitationsCount: number
 }
 
+type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
+  __typename: 'SetMaxValidatorCountProposalDetails'
+  newMaxValidatorCount: number
+}
+
 type ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment = {
   __typename: 'SetMembershipLeadInvitationQuotaProposalDetails'
   newLeadInvitationQuota: number
+}
+
+type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
+  __typename: 'SetMembershipPriceProposalDetails'
+  newPrice: number
 }
 
 type ProposalDetailsFields_SetReferralCutProposalDetails_Fragment = {
@@ -980,22 +1450,24 @@ type ProposalDetailsFields_SetReferralCutProposalDetails_Fragment = {
   newReferralCut: number
 }
 
-type ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment = {
-  __typename: 'CreateBlogPostProposalDetails'
-  title: string
-  body: string
+type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
+  __typename: 'SetWorkingGroupLeadRewardProposalDetails'
+  newRewardPerBlock: number
+  lead?: { id: string } | null
 }
 
-type ProposalDetailsFields_EditBlogPostProposalDetails_Fragment = {
-  __typename: 'EditBlogPostProposalDetails'
-  blogPost: string
-  newTitle?: Types.Maybe<string>
-  newBody?: Types.Maybe<string>
+type ProposalDetailsFields_SignalProposalDetails_Fragment = { __typename: 'SignalProposalDetails'; text: string }
+
+type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
+  __typename: 'SlashWorkingGroupLeadProposalDetails'
+  amount: number
+  lead?: { id: string } | null
 }
 
-type ProposalDetailsFields_LockBlogPostProposalDetails_Fragment = {
-  __typename: 'LockBlogPostProposalDetails'
-  blogPost: string
+type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
+  __typename: 'TerminateWorkingGroupLeadProposalDetails'
+  slashingAmount?: number | null
+  lead?: { id: string } | null
 }
 
 type ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment = {
@@ -1003,123 +1475,487 @@ type ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment = {
   blogPost: string
 }
 
+type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
+  __typename: 'UpdateWorkingGroupBudgetProposalDetails'
+  amount: number
+  group?: { id: string } | null
+}
+
 type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   __typename: 'VetoProposalDetails'
-  proposal?: Types.Maybe<{ id: string }>
+  proposal?: { id: string } | null
 }
 
 export type ProposalDetailsFieldsFragment =
-  | ProposalDetailsFields_SignalProposalDetails_Fragment
-  | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
-  | ProposalDetailsFields_FundingRequestProposalDetails_Fragment
-  | ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment
-  | ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment
-  | ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment
-  | ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment
-  | ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment
-  | ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment
-  | ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment
-  | ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment
   | ProposalDetailsFields_AmendConstitutionProposalDetails_Fragment
   | ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
-  | ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment
+  | ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment
+  | ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment
+  | ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment
+  | ProposalDetailsFields_EditBlogPostProposalDetails_Fragment
+  | ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment
+  | ProposalDetailsFields_FundingRequestProposalDetails_Fragment
+  | ProposalDetailsFields_LockBlogPostProposalDetails_Fragment
+  | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
   | ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment
   | ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment
   | ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment
   | ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment
+  | ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment
   | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
+  | ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment
   | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
-  | ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment
-  | ProposalDetailsFields_EditBlogPostProposalDetails_Fragment
-  | ProposalDetailsFields_LockBlogPostProposalDetails_Fragment
+  | ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment
+  | ProposalDetailsFields_SignalProposalDetails_Fragment
+  | ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment
+  | ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment
   | ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment
+  | ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment
   | ProposalDetailsFields_VetoProposalDetails_Fragment
 
 export type ProposalFieldsFragment = {
   id: string
   title: string
   description: string
-  stakingAccount?: Types.Maybe<string>
-  exactExecutionBlock?: Types.Maybe<number>
+  stakingAccount?: string | null
+  exactExecutionBlock?: number | null
   councilApprovals: number
   statusSetAtBlock: number
   statusSetAtTime: any
-  isFinalized?: Types.Maybe<boolean>
+  isFinalized?: boolean | null
   details:
-    | ProposalDetailsFields_SignalProposalDetails_Fragment
-    | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
-    | ProposalDetailsFields_FundingRequestProposalDetails_Fragment
-    | ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment
-    | ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment
-    | ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment
-    | ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment
-    | ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment
-    | ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment
-    | ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment
-    | ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment
-    | ProposalDetailsFields_AmendConstitutionProposalDetails_Fragment
-    | ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
-    | ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment
-    | ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment
-    | ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment
-    | ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment
-    | ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment
-    | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
-    | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
-    | ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_EditBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_LockBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_VetoProposalDetails_Fragment
+    | { __typename: 'AmendConstitutionProposalDetails'; text: string }
+    | { __typename: 'CancelWorkingGroupLeadOpeningProposalDetails'; opening?: { id: string } | null }
+    | { __typename: 'CreateBlogPostProposalDetails'; title: string; body: string }
+    | {
+        __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
+        stakeAmount: number
+        unstakingPeriod: number
+        rewardPerBlock: number
+        metadata?: {
+          shortDescription?: string | null
+          description?: string | null
+          hiringLimit?: number | null
+          expectedEnding?: any | null
+          applicationDetails?: string | null
+          applicationFormQuestions: Array<{
+            question?: string | null
+            type: Types.ApplicationFormQuestionType
+            index: number
+          }>
+        } | null
+        group?: { id: string } | null
+      }
+    | { __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'; amount: number; lead?: { id: string } | null }
+    | { __typename: 'EditBlogPostProposalDetails'; blogPost: string; newTitle?: string | null; newBody?: string | null }
+    | {
+        __typename: 'FillWorkingGroupLeadOpeningProposalDetails'
+        opening?: { id: string } | null
+        application?: { id: string } | null
+      }
+    | {
+        __typename: 'FundingRequestProposalDetails'
+        destinationsList?: { destinations: Array<{ amount: any; account: string }> } | null
+      }
+    | { __typename: 'LockBlogPostProposalDetails'; blogPost: string }
+    | { __typename: 'RuntimeUpgradeProposalDetails'; newRuntimeBytecode?: { id: string; bytecode: any } | null }
+    | { __typename: 'SetCouncilBudgetIncrementProposalDetails'; newAmount: number }
+    | { __typename: 'SetCouncilorRewardProposalDetails'; newRewardPerBlock: number }
+    | { __typename: 'SetInitialInvitationBalanceProposalDetails'; newInitialInvitationBalance: number }
+    | { __typename: 'SetInitialInvitationCountProposalDetails'; newInitialInvitationsCount: number }
+    | { __typename: 'SetMaxValidatorCountProposalDetails'; newMaxValidatorCount: number }
+    | { __typename: 'SetMembershipLeadInvitationQuotaProposalDetails'; newLeadInvitationQuota: number }
+    | { __typename: 'SetMembershipPriceProposalDetails'; newPrice: number }
+    | { __typename: 'SetReferralCutProposalDetails'; newReferralCut: number }
+    | {
+        __typename: 'SetWorkingGroupLeadRewardProposalDetails'
+        newRewardPerBlock: number
+        lead?: { id: string } | null
+      }
+    | { __typename: 'SignalProposalDetails'; text: string }
+    | { __typename: 'SlashWorkingGroupLeadProposalDetails'; amount: number; lead?: { id: string } | null }
+    | {
+        __typename: 'TerminateWorkingGroupLeadProposalDetails'
+        slashingAmount?: number | null
+        lead?: { id: string } | null
+      }
+    | { __typename: 'UnlockBlogPostProposalDetails'; blogPost: string }
+    | { __typename: 'UpdateWorkingGroupBudgetProposalDetails'; amount: number; group?: { id: string } | null }
+    | { __typename: 'VetoProposalDetails'; proposal?: { id: string } | null }
   creator: { id: string }
   proposalStatusUpdates: Array<{
     id: string
     inBlock: number
     newStatus:
       | { __typename: 'ProposalStatusDeciding' }
-      | { __typename: 'ProposalStatusGracing' }
       | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
   }>
   votes: Array<{ id: string }>
   status:
-    | ProposalStatusFields_ProposalStatusDeciding_Fragment
-    | ProposalStatusFields_ProposalStatusGracing_Fragment
-    | ProposalStatusFields_ProposalStatusDormant_Fragment
-    | ProposalStatusFields_ProposalStatusVetoed_Fragment
-    | ProposalStatusFields_ProposalStatusExecuted_Fragment
-    | ProposalStatusFields_ProposalStatusExecutionFailed_Fragment
-    | ProposalStatusFields_ProposalStatusSlashed_Fragment
-    | ProposalStatusFields_ProposalStatusRejected_Fragment
-    | ProposalStatusFields_ProposalStatusExpired_Fragment
-    | ProposalStatusFields_ProposalStatusCancelled_Fragment
-    | ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment
-  createdInEvent: { id: string; inBlock: number; inExtrinsic?: Types.Maybe<string> }
+    | {
+        __typename: 'ProposalStatusCanceledByRuntime'
+        proposalDecisionMadeEvent?: {
+          id: string
+          decisionStatus:
+            | { __typename: 'ProposalStatusCanceledByRuntime' }
+            | { __typename: 'ProposalStatusCancelled' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusExpired' }
+            | { __typename: 'ProposalStatusGracing' }
+            | { __typename: 'ProposalStatusRejected' }
+            | { __typename: 'ProposalStatusSlashed' }
+            | { __typename: 'ProposalStatusVetoed' }
+        } | null
+      }
+    | { __typename: 'ProposalStatusCancelled'; cancelledInEvent?: { id: string } | null }
+    | {
+        __typename: 'ProposalStatusDeciding'
+        proposalStatusUpdatedEvent?: {
+          id: string
+          newStatus:
+            | { __typename: 'ProposalStatusDeciding' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusGracing' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusDormant'
+        proposalStatusUpdatedEvent?: {
+          id: string
+          newStatus:
+            | { __typename: 'ProposalStatusDeciding' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusGracing' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusExecuted'
+        proposalExecutedEvent?: {
+          id: string
+          executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusExecutionFailed'
+        errorMessage: string
+        proposalExecutedEvent?: {
+          id: string
+          executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusExpired'
+        proposalDecisionMadeEvent?: {
+          id: string
+          decisionStatus:
+            | { __typename: 'ProposalStatusCanceledByRuntime' }
+            | { __typename: 'ProposalStatusCancelled' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusExpired' }
+            | { __typename: 'ProposalStatusGracing' }
+            | { __typename: 'ProposalStatusRejected' }
+            | { __typename: 'ProposalStatusSlashed' }
+            | { __typename: 'ProposalStatusVetoed' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusGracing'
+        proposalStatusUpdatedEvent?: {
+          id: string
+          newStatus:
+            | { __typename: 'ProposalStatusDeciding' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusGracing' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusRejected'
+        proposalDecisionMadeEvent?: {
+          id: string
+          decisionStatus:
+            | { __typename: 'ProposalStatusCanceledByRuntime' }
+            | { __typename: 'ProposalStatusCancelled' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusExpired' }
+            | { __typename: 'ProposalStatusGracing' }
+            | { __typename: 'ProposalStatusRejected' }
+            | { __typename: 'ProposalStatusSlashed' }
+            | { __typename: 'ProposalStatusVetoed' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusSlashed'
+        proposalDecisionMadeEvent?: {
+          id: string
+          decisionStatus:
+            | { __typename: 'ProposalStatusCanceledByRuntime' }
+            | { __typename: 'ProposalStatusCancelled' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusExpired' }
+            | { __typename: 'ProposalStatusGracing' }
+            | { __typename: 'ProposalStatusRejected' }
+            | { __typename: 'ProposalStatusSlashed' }
+            | { __typename: 'ProposalStatusVetoed' }
+        } | null
+      }
+    | {
+        __typename: 'ProposalStatusVetoed'
+        proposalDecisionMadeEvent?: {
+          id: string
+          decisionStatus:
+            | { __typename: 'ProposalStatusCanceledByRuntime' }
+            | { __typename: 'ProposalStatusCancelled' }
+            | { __typename: 'ProposalStatusDormant' }
+            | { __typename: 'ProposalStatusExpired' }
+            | { __typename: 'ProposalStatusGracing' }
+            | { __typename: 'ProposalStatusRejected' }
+            | { __typename: 'ProposalStatusSlashed' }
+            | { __typename: 'ProposalStatusVetoed' }
+        } | null
+      }
+  createdInEvent: { id: string; inBlock: number; inExtrinsic?: string | null }
   discussionThread: {
     id: string
     mode:
-      | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
-      | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+      | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+      | { __typename: 'ProposalDiscussionThreadModeOpen' }
   }
 }
 
 export type GetProposalsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetProposalsByIdsQuery = { proposals: Array<ProposalFieldsFragment> }
+export type GetProposalsByIdsQuery = {
+  proposals: Array<{
+    id: string
+    title: string
+    description: string
+    stakingAccount?: string | null
+    exactExecutionBlock?: number | null
+    councilApprovals: number
+    statusSetAtBlock: number
+    statusSetAtTime: any
+    isFinalized?: boolean | null
+    details:
+      | { __typename: 'AmendConstitutionProposalDetails'; text: string }
+      | { __typename: 'CancelWorkingGroupLeadOpeningProposalDetails'; opening?: { id: string } | null }
+      | { __typename: 'CreateBlogPostProposalDetails'; title: string; body: string }
+      | {
+          __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
+          stakeAmount: number
+          unstakingPeriod: number
+          rewardPerBlock: number
+          metadata?: {
+            shortDescription?: string | null
+            description?: string | null
+            hiringLimit?: number | null
+            expectedEnding?: any | null
+            applicationDetails?: string | null
+            applicationFormQuestions: Array<{
+              question?: string | null
+              type: Types.ApplicationFormQuestionType
+              index: number
+            }>
+          } | null
+          group?: { id: string } | null
+        }
+      | { __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'; amount: number; lead?: { id: string } | null }
+      | {
+          __typename: 'EditBlogPostProposalDetails'
+          blogPost: string
+          newTitle?: string | null
+          newBody?: string | null
+        }
+      | {
+          __typename: 'FillWorkingGroupLeadOpeningProposalDetails'
+          opening?: { id: string } | null
+          application?: { id: string } | null
+        }
+      | {
+          __typename: 'FundingRequestProposalDetails'
+          destinationsList?: { destinations: Array<{ amount: any; account: string }> } | null
+        }
+      | { __typename: 'LockBlogPostProposalDetails'; blogPost: string }
+      | { __typename: 'RuntimeUpgradeProposalDetails'; newRuntimeBytecode?: { id: string; bytecode: any } | null }
+      | { __typename: 'SetCouncilBudgetIncrementProposalDetails'; newAmount: number }
+      | { __typename: 'SetCouncilorRewardProposalDetails'; newRewardPerBlock: number }
+      | { __typename: 'SetInitialInvitationBalanceProposalDetails'; newInitialInvitationBalance: number }
+      | { __typename: 'SetInitialInvitationCountProposalDetails'; newInitialInvitationsCount: number }
+      | { __typename: 'SetMaxValidatorCountProposalDetails'; newMaxValidatorCount: number }
+      | { __typename: 'SetMembershipLeadInvitationQuotaProposalDetails'; newLeadInvitationQuota: number }
+      | { __typename: 'SetMembershipPriceProposalDetails'; newPrice: number }
+      | { __typename: 'SetReferralCutProposalDetails'; newReferralCut: number }
+      | {
+          __typename: 'SetWorkingGroupLeadRewardProposalDetails'
+          newRewardPerBlock: number
+          lead?: { id: string } | null
+        }
+      | { __typename: 'SignalProposalDetails'; text: string }
+      | { __typename: 'SlashWorkingGroupLeadProposalDetails'; amount: number; lead?: { id: string } | null }
+      | {
+          __typename: 'TerminateWorkingGroupLeadProposalDetails'
+          slashingAmount?: number | null
+          lead?: { id: string } | null
+        }
+      | { __typename: 'UnlockBlogPostProposalDetails'; blogPost: string }
+      | { __typename: 'UpdateWorkingGroupBudgetProposalDetails'; amount: number; group?: { id: string } | null }
+      | { __typename: 'VetoProposalDetails'; proposal?: { id: string } | null }
+    creator: { id: string }
+    proposalStatusUpdates: Array<{
+      id: string
+      inBlock: number
+      newStatus:
+        | { __typename: 'ProposalStatusDeciding' }
+        | { __typename: 'ProposalStatusDormant' }
+        | { __typename: 'ProposalStatusGracing' }
+    }>
+    votes: Array<{ id: string }>
+    status:
+      | {
+          __typename: 'ProposalStatusCanceledByRuntime'
+          proposalDecisionMadeEvent?: {
+            id: string
+            decisionStatus:
+              | { __typename: 'ProposalStatusCanceledByRuntime' }
+              | { __typename: 'ProposalStatusCancelled' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusExpired' }
+              | { __typename: 'ProposalStatusGracing' }
+              | { __typename: 'ProposalStatusRejected' }
+              | { __typename: 'ProposalStatusSlashed' }
+              | { __typename: 'ProposalStatusVetoed' }
+          } | null
+        }
+      | { __typename: 'ProposalStatusCancelled'; cancelledInEvent?: { id: string } | null }
+      | {
+          __typename: 'ProposalStatusDeciding'
+          proposalStatusUpdatedEvent?: {
+            id: string
+            newStatus:
+              | { __typename: 'ProposalStatusDeciding' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusGracing' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusDormant'
+          proposalStatusUpdatedEvent?: {
+            id: string
+            newStatus:
+              | { __typename: 'ProposalStatusDeciding' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusGracing' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusExecuted'
+          proposalExecutedEvent?: {
+            id: string
+            executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusExecutionFailed'
+          errorMessage: string
+          proposalExecutedEvent?: {
+            id: string
+            executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusExpired'
+          proposalDecisionMadeEvent?: {
+            id: string
+            decisionStatus:
+              | { __typename: 'ProposalStatusCanceledByRuntime' }
+              | { __typename: 'ProposalStatusCancelled' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusExpired' }
+              | { __typename: 'ProposalStatusGracing' }
+              | { __typename: 'ProposalStatusRejected' }
+              | { __typename: 'ProposalStatusSlashed' }
+              | { __typename: 'ProposalStatusVetoed' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusGracing'
+          proposalStatusUpdatedEvent?: {
+            id: string
+            newStatus:
+              | { __typename: 'ProposalStatusDeciding' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusGracing' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusRejected'
+          proposalDecisionMadeEvent?: {
+            id: string
+            decisionStatus:
+              | { __typename: 'ProposalStatusCanceledByRuntime' }
+              | { __typename: 'ProposalStatusCancelled' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusExpired' }
+              | { __typename: 'ProposalStatusGracing' }
+              | { __typename: 'ProposalStatusRejected' }
+              | { __typename: 'ProposalStatusSlashed' }
+              | { __typename: 'ProposalStatusVetoed' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusSlashed'
+          proposalDecisionMadeEvent?: {
+            id: string
+            decisionStatus:
+              | { __typename: 'ProposalStatusCanceledByRuntime' }
+              | { __typename: 'ProposalStatusCancelled' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusExpired' }
+              | { __typename: 'ProposalStatusGracing' }
+              | { __typename: 'ProposalStatusRejected' }
+              | { __typename: 'ProposalStatusSlashed' }
+              | { __typename: 'ProposalStatusVetoed' }
+          } | null
+        }
+      | {
+          __typename: 'ProposalStatusVetoed'
+          proposalDecisionMadeEvent?: {
+            id: string
+            decisionStatus:
+              | { __typename: 'ProposalStatusCanceledByRuntime' }
+              | { __typename: 'ProposalStatusCancelled' }
+              | { __typename: 'ProposalStatusDormant' }
+              | { __typename: 'ProposalStatusExpired' }
+              | { __typename: 'ProposalStatusGracing' }
+              | { __typename: 'ProposalStatusRejected' }
+              | { __typename: 'ProposalStatusSlashed' }
+              | { __typename: 'ProposalStatusVetoed' }
+          } | null
+        }
+    createdInEvent: { id: string; inBlock: number; inExtrinsic?: string | null }
+    discussionThread: {
+      id: string
+      mode:
+        | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+        | { __typename: 'ProposalDiscussionThreadModeOpen' }
+    }
+  }>
+}
+
+type ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment = {
+  __typename: 'ProposalDiscussionThreadModeClosed'
+  whitelist?: { members: Array<{ id: string }> } | null
+}
 
 type ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment = {
   __typename: 'ProposalDiscussionThreadModeOpen'
 }
 
-type ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment = {
-  __typename: 'ProposalDiscussionThreadModeClosed'
-  whitelist?: Types.Maybe<{ members: Array<{ id: string }> }>
-}
-
 export type ProposalDiscussionThreadModeFieldsFragment =
-  | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
   | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+  | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
 
 type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragment = {
   __typename: 'ProposalDiscussionPostStatusActive'
@@ -1127,12 +1963,12 @@ type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragm
 
 type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusLocked_Fragment = {
   __typename: 'ProposalDiscussionPostStatusLocked'
-  deletedInEvent?: Types.Maybe<{ id: string }>
+  deletedInEvent?: { id: string } | null
 }
 
 type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusRemoved_Fragment = {
   __typename: 'ProposalDiscussionPostStatusRemoved'
-  deletedInEvent?: Types.Maybe<{ id: string }>
+  deletedInEvent?: { id: string } | null
 }
 
 export type ProposalDiscussionPostStatusFieldsFragment =
@@ -1145,17 +1981,25 @@ export type ProposalDiscussionThreadFieldsFragment = {
   proposal: { id: string }
   posts: Array<{ id: string }>
   mode:
-    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
-    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+    | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+    | { __typename: 'ProposalDiscussionThreadModeOpen' }
   modeChanges: Array<{ id: string }>
 }
 
 export type GetProposalDiscussionThreadsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionThreadsByIdsQuery = {
-  proposalDiscussionThreads: Array<ProposalDiscussionThreadFieldsFragment>
+  proposalDiscussionThreads: Array<{
+    id: string
+    proposal: { id: string }
+    posts: Array<{ id: string }>
+    mode:
+      | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+      | { __typename: 'ProposalDiscussionThreadModeOpen' }
+    modeChanges: Array<{ id: string }>
+  }>
 }
 
 export type ProposalDiscussionPostFieldsFragment = {
@@ -1165,26 +2009,39 @@ export type ProposalDiscussionPostFieldsFragment = {
   discussionThread: { id: string }
   author: { id: string }
   status:
-    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragment
-    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusLocked_Fragment
-    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusRemoved_Fragment
-  repliesTo?: Types.Maybe<{ id: string }>
+    | { __typename: 'ProposalDiscussionPostStatusActive' }
+    | { __typename: 'ProposalDiscussionPostStatusLocked'; deletedInEvent?: { id: string } | null }
+    | { __typename: 'ProposalDiscussionPostStatusRemoved'; deletedInEvent?: { id: string } | null }
+  repliesTo?: { id: string } | null
   updates: Array<{ id: string }>
   createdInEvent: { id: string }
 }
 
 export type GetProposalDiscussionPostsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  ids?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionPostsByIdsQuery = {
-  proposalDiscussionPosts: Array<ProposalDiscussionPostFieldsFragment>
+  proposalDiscussionPosts: Array<{
+    id: string
+    isVisible: boolean
+    text: string
+    discussionThread: { id: string }
+    author: { id: string }
+    status:
+      | { __typename: 'ProposalDiscussionPostStatusActive' }
+      | { __typename: 'ProposalDiscussionPostStatusLocked'; deletedInEvent?: { id: string } | null }
+      | { __typename: 'ProposalDiscussionPostStatusRemoved'; deletedInEvent?: { id: string } | null }
+    repliesTo?: { id: string } | null
+    updates: Array<{ id: string }>
+    createdInEvent: { id: string }
+  }>
 }
 
 export type ProposalDiscussionPostCreatedEventFieldsFragment = {
   id: string
   createdAt: any
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   inBlock: number
   network: Types.Network
   indexInBlock: number
@@ -1193,17 +2050,26 @@ export type ProposalDiscussionPostCreatedEventFieldsFragment = {
 }
 
 export type GetProposalDiscussionPostCreatedEventsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionPostCreatedEventsQuery = {
-  proposalDiscussionPostCreatedEvents: Array<ProposalDiscussionPostCreatedEventFieldsFragment>
+  proposalDiscussionPostCreatedEvents: Array<{
+    id: string
+    createdAt: any
+    inExtrinsic?: string | null
+    inBlock: number
+    network: Types.Network
+    indexInBlock: number
+    text: string
+    post: { id: string }
+  }>
 }
 
 export type ProposalDiscussionPostUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   inBlock: number
   network: Types.Network
   indexInBlock: number
@@ -1212,39 +2078,60 @@ export type ProposalDiscussionPostUpdatedEventFieldsFragment = {
 }
 
 export type GetProposalDiscussionPostUpdatedEventsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionPostUpdatedEventsQuery = {
-  proposalDiscussionPostUpdatedEvents: Array<ProposalDiscussionPostUpdatedEventFieldsFragment>
+  proposalDiscussionPostUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inExtrinsic?: string | null
+    inBlock: number
+    network: Types.Network
+    indexInBlock: number
+    text: string
+    post: { id: string }
+  }>
 }
 
 export type ProposalDiscussionThreadModeChangedEventFieldsFragment = {
   id: string
   createdAt: any
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   inBlock: number
   network: Types.Network
   indexInBlock: number
   thread: { id: string }
   newMode:
-    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
-    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+    | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+    | { __typename: 'ProposalDiscussionThreadModeOpen' }
   actor: { id: string }
 }
 
 export type GetProposalDiscussionThreadModeChangedEventsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionThreadModeChangedEventsQuery = {
-  proposalDiscussionThreadModeChangedEvents: Array<ProposalDiscussionThreadModeChangedEventFieldsFragment>
+  proposalDiscussionThreadModeChangedEvents: Array<{
+    id: string
+    createdAt: any
+    inExtrinsic?: string | null
+    inBlock: number
+    network: Types.Network
+    indexInBlock: number
+    thread: { id: string }
+    newMode:
+      | { __typename: 'ProposalDiscussionThreadModeClosed'; whitelist?: { members: Array<{ id: string }> } | null }
+      | { __typename: 'ProposalDiscussionThreadModeOpen' }
+    actor: { id: string }
+  }>
 }
 
 export type ProposalDiscussionPostDeletedEventFieldsFragment = {
   id: string
   createdAt: any
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   inBlock: number
   network: Types.Network
   indexInBlock: number
@@ -1253,11 +2140,20 @@ export type ProposalDiscussionPostDeletedEventFieldsFragment = {
 }
 
 export type GetProposalDiscussionPostDeletedEventsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDiscussionPostDeletedEventsQuery = {
-  proposalDiscussionPostDeletedEvents: Array<ProposalDiscussionPostDeletedEventFieldsFragment>
+  proposalDiscussionPostDeletedEvents: Array<{
+    id: string
+    createdAt: any
+    inExtrinsic?: string | null
+    inBlock: number
+    network: Types.Network
+    indexInBlock: number
+    post: { id: string }
+    actor: { id: string }
+  }>
 }
 
 export type ProposalCreatedEventFieldsFragment = {
@@ -1265,17 +2161,25 @@ export type ProposalCreatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   proposal: { id: string }
 }
 
 export type GetProposalCreatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalCreatedEventsByEventIdsQuery = {
-  proposalCreatedEvents: Array<ProposalCreatedEventFieldsFragment>
+  proposalCreatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    proposal: { id: string }
+  }>
 }
 
 export type ProposalStatusUpdatedEventFieldsFragment = {
@@ -1283,21 +2187,33 @@ export type ProposalStatusUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   proposal: { id: string }
   newStatus:
     | { __typename: 'ProposalStatusDeciding' }
-    | { __typename: 'ProposalStatusGracing' }
     | { __typename: 'ProposalStatusDormant' }
+    | { __typename: 'ProposalStatusGracing' }
 }
 
 export type GetProposalStatusUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalStatusUpdatedEventsByEventIdsQuery = {
-  proposalStatusUpdatedEvents: Array<ProposalStatusUpdatedEventFieldsFragment>
+  proposalStatusUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    proposal: { id: string }
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+  }>
 }
 
 export type ProposalDecisionMadeEventFieldsFragment = {
@@ -1305,26 +2221,43 @@ export type ProposalDecisionMadeEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   proposal: { id: string }
   decisionStatus:
-    | { __typename: 'ProposalStatusDormant' }
-    | { __typename: 'ProposalStatusGracing' }
-    | { __typename: 'ProposalStatusVetoed' }
-    | { __typename: 'ProposalStatusSlashed' }
-    | { __typename: 'ProposalStatusRejected' }
-    | { __typename: 'ProposalStatusExpired' }
-    | { __typename: 'ProposalStatusCancelled' }
     | { __typename: 'ProposalStatusCanceledByRuntime' }
+    | { __typename: 'ProposalStatusCancelled' }
+    | { __typename: 'ProposalStatusDormant' }
+    | { __typename: 'ProposalStatusExpired' }
+    | { __typename: 'ProposalStatusGracing' }
+    | { __typename: 'ProposalStatusRejected' }
+    | { __typename: 'ProposalStatusSlashed' }
+    | { __typename: 'ProposalStatusVetoed' }
 }
 
 export type GetProposalDecisionMadeEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalDecisionMadeEventsByEventIdsQuery = {
-  proposalDecisionMadeEvents: Array<ProposalDecisionMadeEventFieldsFragment>
+  proposalDecisionMadeEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    proposal: { id: string }
+    decisionStatus:
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusVetoed' }
+  }>
 }
 
 export type ProposalExecutedEventFieldsFragment = {
@@ -1332,18 +2265,27 @@ export type ProposalExecutedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   proposal: { id: string }
-  executionStatus: { errorMessage: string }
+  executionStatus: { errorMessage: string } | {}
 }
 
 export type GetProposalExecutedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalExecutedEventsByEventIdsQuery = {
-  proposalExecutedEvents: Array<ProposalExecutedEventFieldsFragment>
+  proposalExecutedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    proposal: { id: string }
+    executionStatus: { errorMessage: string } | {}
+  }>
 }
 
 export type ProposalVotedEventFieldsFragment = {
@@ -1351,7 +2293,7 @@ export type ProposalVotedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   voteKind: Types.ProposalVoteKind
   rationale: string
@@ -1361,70 +2303,92 @@ export type ProposalVotedEventFieldsFragment = {
 }
 
 export type GetProposalVotedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetProposalVotedEventsByEventIdsQuery = { proposalVotedEvents: Array<ProposalVotedEventFieldsFragment> }
+export type GetProposalVotedEventsByEventIdsQuery = {
+  proposalVotedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    voteKind: Types.ProposalVoteKind
+    rationale: string
+    votingRound: number
+    voter: { id: string }
+    proposal: { id: string }
+  }>
+}
 
 export type ProposalCancelledEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   proposal: { id: string }
 }
 
 export type GetProposalCancelledEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetProposalCancelledEventsByEventIdsQuery = {
-  proposalCancelledEvents: Array<ProposalCancelledEventFieldsFragment>
+  proposalCancelledEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    proposal: { id: string }
+  }>
 }
 
 export type ApplicationBasicFieldsFragment = {
   id: string
   runtimeId: number
   status:
+    | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+    | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
     | { __typename: 'ApplicationStatusPending' }
-    | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: Types.Maybe<{ id: string }> }
-}
-
-type OpeningStatusFields_OpeningStatusOpen_Fragment = { __typename: 'OpeningStatusOpen' }
-
-type OpeningStatusFields_OpeningStatusFilled_Fragment = {
-  __typename: 'OpeningStatusFilled'
-  openingFilledEvent?: Types.Maybe<{ id: string }>
+    | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
 }
 
 type OpeningStatusFields_OpeningStatusCancelled_Fragment = {
   __typename: 'OpeningStatusCancelled'
-  openingCanceledEvent?: Types.Maybe<{ id: string }>
+  openingCanceledEvent?: { id: string } | null
 }
 
+type OpeningStatusFields_OpeningStatusFilled_Fragment = {
+  __typename: 'OpeningStatusFilled'
+  openingFilledEvent?: { id: string } | null
+}
+
+type OpeningStatusFields_OpeningStatusOpen_Fragment = { __typename: 'OpeningStatusOpen' }
+
 export type OpeningStatusFieldsFragment =
-  | OpeningStatusFields_OpeningStatusOpen_Fragment
-  | OpeningStatusFields_OpeningStatusFilled_Fragment
   | OpeningStatusFields_OpeningStatusCancelled_Fragment
+  | OpeningStatusFields_OpeningStatusFilled_Fragment
+  | OpeningStatusFields_OpeningStatusOpen_Fragment
 
 export type ApplicationFormQuestionFieldsFragment = {
-  question?: Types.Maybe<string>
+  question?: string | null
   type: Types.ApplicationFormQuestionType
   index: number
 }
 
 export type OpeningMetadataFieldsFragment = {
-  shortDescription?: Types.Maybe<string>
-  description?: Types.Maybe<string>
-  hiringLimit?: Types.Maybe<number>
-  expectedEnding?: Types.Maybe<any>
-  applicationDetails?: Types.Maybe<string>
-  applicationFormQuestions: Array<ApplicationFormQuestionFieldsFragment>
+  shortDescription?: string | null
+  description?: string | null
+  hiringLimit?: number | null
+  expectedEnding?: any | null
+  applicationDetails?: string | null
+  applicationFormQuestions: Array<{ question?: string | null; type: Types.ApplicationFormQuestionType; index: number }>
 }
 
 export type WorkerFieldsFragment = {
@@ -1435,32 +2399,41 @@ export type WorkerFieldsFragment = {
   stakeAccount: string
   isLead: boolean
   stake: any
-  storage?: Types.Maybe<string>
+  storage?: string | null
   rewardPerBlock: any
-  missingRewardAmount?: Types.Maybe<any>
+  missingRewardAmount?: any | null
   group: { name: string }
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
-    | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: { id: string } | null }
     | {
         __typename: 'WorkerStatusLeft'
-        workerStartedLeavingEvent?: Types.Maybe<{ id: string }>
-        workerExitedEvent?: Types.Maybe<{ id: string }>
+        workerStartedLeavingEvent?: { id: string } | null
+        workerExitedEvent?: { id: string } | null
       }
-    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: { id: string } | null }
   payouts: Array<{ id: string }>
   slashes: Array<{ id: string }>
   entry: { id: string }
-  application: ApplicationBasicFieldsFragment
+  application: {
+    id: string
+    runtimeId: number
+    status:
+      | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusPending' }
+      | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+  }
 }
 
 export type WorkingGroupMetadataFieldsFragment = {
   id: string
-  status?: Types.Maybe<string>
-  statusMessage?: Types.Maybe<string>
-  about?: Types.Maybe<string>
-  description?: Types.Maybe<string>
+  status?: string | null
+  statusMessage?: string | null
+  about?: string | null
+  description?: string | null
   setInEvent: { id: string }
 }
 
@@ -1472,12 +2445,32 @@ export type OpeningFieldsFragment = {
   unstakingPeriod: number
   rewardPerBlock: any
   group: { name: string }
-  applications: Array<ApplicationBasicFieldsFragment>
+  applications: Array<{
+    id: string
+    runtimeId: number
+    status:
+      | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusPending' }
+      | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+  }>
   status:
-    | OpeningStatusFields_OpeningStatusOpen_Fragment
-    | OpeningStatusFields_OpeningStatusFilled_Fragment
-    | OpeningStatusFields_OpeningStatusCancelled_Fragment
-  metadata: OpeningMetadataFieldsFragment
+    | { __typename: 'OpeningStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+    | { __typename: 'OpeningStatusFilled'; openingFilledEvent?: { id: string } | null }
+    | { __typename: 'OpeningStatusOpen' }
+  metadata: {
+    shortDescription?: string | null
+    description?: string | null
+    hiringLimit?: number | null
+    expectedEnding?: any | null
+    applicationDetails?: string | null
+    applicationFormQuestions: Array<{
+      question?: string | null
+      type: Types.ApplicationFormQuestionType
+      index: number
+    }>
+  }
   createdInEvent: { id: string }
 }
 
@@ -1485,59 +2478,212 @@ export type GetOpeningByIdQueryVariables = Types.Exact<{
   openingId: Types.Scalars['ID']
 }>
 
-export type GetOpeningByIdQuery = { workingGroupOpeningByUniqueInput?: Types.Maybe<OpeningFieldsFragment> }
+export type GetOpeningByIdQuery = {
+  workingGroupOpeningByUniqueInput?: {
+    id: string
+    runtimeId: number
+    type: Types.WorkingGroupOpeningType
+    stakeAmount: any
+    unstakingPeriod: number
+    rewardPerBlock: any
+    group: { name: string }
+    applications: Array<{
+      id: string
+      runtimeId: number
+      status:
+        | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusPending' }
+        | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+    }>
+    status:
+      | { __typename: 'OpeningStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'OpeningStatusFilled'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'OpeningStatusOpen' }
+    metadata: {
+      shortDescription?: string | null
+      description?: string | null
+      hiringLimit?: number | null
+      expectedEnding?: any | null
+      applicationDetails?: string | null
+      applicationFormQuestions: Array<{
+        question?: string | null
+        type: Types.ApplicationFormQuestionType
+        index: number
+      }>
+    }
+    createdInEvent: { id: string }
+  } | null
+}
 
 export type GetOpeningsByIdsQueryVariables = Types.Exact<{
-  openingIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  openingIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningsByIdsQuery = { workingGroupOpenings: Array<OpeningFieldsFragment> }
+export type GetOpeningsByIdsQuery = {
+  workingGroupOpenings: Array<{
+    id: string
+    runtimeId: number
+    type: Types.WorkingGroupOpeningType
+    stakeAmount: any
+    unstakingPeriod: number
+    rewardPerBlock: any
+    group: { name: string }
+    applications: Array<{
+      id: string
+      runtimeId: number
+      status:
+        | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusPending' }
+        | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+    }>
+    status:
+      | { __typename: 'OpeningStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'OpeningStatusFilled'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'OpeningStatusOpen' }
+    metadata: {
+      shortDescription?: string | null
+      description?: string | null
+      hiringLimit?: number | null
+      expectedEnding?: any | null
+      applicationDetails?: string | null
+      applicationFormQuestions: Array<{
+        question?: string | null
+        type: Types.ApplicationFormQuestionType
+        index: number
+      }>
+    }
+    createdInEvent: { id: string }
+  }>
+}
 
 export type ApplicationFieldsFragment = {
   roleAccount: string
   rewardAccount: string
   stakingAccount: string
   stake: any
+  id: string
+  runtimeId: number
   createdInEvent: { id: string }
   opening: { id: string; runtimeId: number }
   applicant: { id: string }
-  answers: Array<{ answer: string; question: { question?: Types.Maybe<string> } }>
-} & ApplicationBasicFieldsFragment
+  answers: Array<{ answer: string; question: { question?: string | null } }>
+  status:
+    | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+    | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+    | { __typename: 'ApplicationStatusPending' }
+    | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+}
 
 export type GetApplicationByIdQueryVariables = Types.Exact<{
   applicationId: Types.Scalars['ID']
 }>
 
-export type GetApplicationByIdQuery = { workingGroupApplicationByUniqueInput?: Types.Maybe<ApplicationFieldsFragment> }
+export type GetApplicationByIdQuery = {
+  workingGroupApplicationByUniqueInput?: {
+    roleAccount: string
+    rewardAccount: string
+    stakingAccount: string
+    stake: any
+    id: string
+    runtimeId: number
+    createdInEvent: { id: string }
+    opening: { id: string; runtimeId: number }
+    applicant: { id: string }
+    answers: Array<{ answer: string; question: { question?: string | null } }>
+    status:
+      | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusPending' }
+      | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+  } | null
+}
 
 export type GetApplicationsByIdsQueryVariables = Types.Exact<{
-  applicationIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  applicationIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetApplicationsByIdsQuery = { workingGroupApplications: Array<ApplicationFieldsFragment> }
+export type GetApplicationsByIdsQuery = {
+  workingGroupApplications: Array<{
+    roleAccount: string
+    rewardAccount: string
+    stakingAccount: string
+    stake: any
+    id: string
+    runtimeId: number
+    createdInEvent: { id: string }
+    opening: { id: string; runtimeId: number }
+    applicant: { id: string }
+    answers: Array<{ answer: string; question: { question?: string | null } }>
+    status:
+      | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusPending' }
+      | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+      | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+  }>
+}
 
 export type WorkingGroupFieldsFragment = {
   id: string
   name: string
   budget: any
-  metadata?: Types.Maybe<WorkingGroupMetadataFieldsFragment>
-  leader?: Types.Maybe<{ id: string; runtimeId: number }>
+  metadata?: {
+    id: string
+    status?: string | null
+    statusMessage?: string | null
+    about?: string | null
+    description?: string | null
+    setInEvent: { id: string }
+  } | null
+  leader?: { id: string; runtimeId: number } | null
 }
 
 export type GetWorkingGroupByNameQueryVariables = Types.Exact<{
   name: Types.Scalars['String']
 }>
 
-export type GetWorkingGroupByNameQuery = { workingGroupByUniqueInput?: Types.Maybe<WorkingGroupFieldsFragment> }
+export type GetWorkingGroupByNameQuery = {
+  workingGroupByUniqueInput?: {
+    id: string
+    name: string
+    budget: any
+    metadata?: {
+      id: string
+      status?: string | null
+      statusMessage?: string | null
+      about?: string | null
+      description?: string | null
+      setInEvent: { id: string }
+    } | null
+    leader?: { id: string; runtimeId: number } | null
+  } | null
+}
 
 export type UpcomingOpeningFieldsFragment = {
   id: string
-  expectedStart?: Types.Maybe<any>
-  stakeAmount?: Types.Maybe<any>
-  rewardPerBlock?: Types.Maybe<any>
+  expectedStart?: any | null
+  stakeAmount?: any | null
+  rewardPerBlock?: any | null
   createdAt: any
   group: { name: string }
-  metadata: OpeningMetadataFieldsFragment
+  metadata: {
+    shortDescription?: string | null
+    description?: string | null
+    hiringLimit?: number | null
+    expectedEnding?: any | null
+    applicationDetails?: string | null
+    applicationFormQuestions: Array<{
+      question?: string | null
+      type: Types.ApplicationFormQuestionType
+      index: number
+    }>
+  }
   createdInEvent: { id: string }
 }
 
@@ -1546,15 +2692,55 @@ export type GetUpcomingOpeningByIdQueryVariables = Types.Exact<{
 }>
 
 export type GetUpcomingOpeningByIdQuery = {
-  upcomingWorkingGroupOpeningByUniqueInput?: Types.Maybe<UpcomingOpeningFieldsFragment>
+  upcomingWorkingGroupOpeningByUniqueInput?: {
+    id: string
+    expectedStart?: any | null
+    stakeAmount?: any | null
+    rewardPerBlock?: any | null
+    createdAt: any
+    group: { name: string }
+    metadata: {
+      shortDescription?: string | null
+      description?: string | null
+      hiringLimit?: number | null
+      expectedEnding?: any | null
+      applicationDetails?: string | null
+      applicationFormQuestions: Array<{
+        question?: string | null
+        type: Types.ApplicationFormQuestionType
+        index: number
+      }>
+    }
+    createdInEvent: { id: string }
+  } | null
 }
 
 export type GetUpcomingOpeningsByCreatedInEventIdsQueryVariables = Types.Exact<{
-  createdInEventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  createdInEventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetUpcomingOpeningsByCreatedInEventIdsQuery = {
-  upcomingWorkingGroupOpenings: Array<UpcomingOpeningFieldsFragment>
+  upcomingWorkingGroupOpenings: Array<{
+    id: string
+    expectedStart?: any | null
+    stakeAmount?: any | null
+    rewardPerBlock?: any | null
+    createdAt: any
+    group: { name: string }
+    metadata: {
+      shortDescription?: string | null
+      description?: string | null
+      hiringLimit?: number | null
+      expectedEnding?: any | null
+      applicationDetails?: string | null
+      applicationFormQuestions: Array<{
+        question?: string | null
+        type: Types.ApplicationFormQuestionType
+        index: number
+      }>
+    }
+    createdInEvent: { id: string }
+  }>
 }
 
 export type GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables = Types.Exact<{
@@ -1562,22 +2748,66 @@ export type GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables = Types.Exac
 }>
 
 export type GetWorkingGroupMetadataSnapshotsByTimeAscQuery = {
-  workingGroupMetadata: Array<WorkingGroupMetadataFieldsFragment>
+  workingGroupMetadata: Array<{
+    id: string
+    status?: string | null
+    statusMessage?: string | null
+    about?: string | null
+    description?: string | null
+    setInEvent: { id: string }
+  }>
 }
 
 export type GetWorkersByRuntimeIdsQueryVariables = Types.Exact<{
-  workerIds?: Types.Maybe<Array<Types.Scalars['Int']> | Types.Scalars['Int']>
+  workerIds?: Types.InputMaybe<Array<Types.Scalars['Int']> | Types.Scalars['Int']>
   groupId: Types.Scalars['ID']
 }>
 
-export type GetWorkersByRuntimeIdsQuery = { workers: Array<WorkerFieldsFragment> }
+export type GetWorkersByRuntimeIdsQuery = {
+  workers: Array<{
+    id: string
+    runtimeId: number
+    roleAccount: string
+    rewardAccount: string
+    stakeAccount: string
+    isLead: boolean
+    stake: any
+    storage?: string | null
+    rewardPerBlock: any
+    missingRewardAmount?: any | null
+    group: { name: string }
+    membership: { id: string }
+    status:
+      | { __typename: 'WorkerStatusActive' }
+      | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: { id: string } | null }
+      | {
+          __typename: 'WorkerStatusLeft'
+          workerStartedLeavingEvent?: { id: string } | null
+          workerExitedEvent?: { id: string } | null
+        }
+      | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: { id: string } | null }
+    payouts: Array<{ id: string }>
+    slashes: Array<{ id: string }>
+    entry: { id: string }
+    application: {
+      id: string
+      runtimeId: number
+      status:
+        | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusPending' }
+        | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+    }
+  }>
+}
 
 export type AppliedOnOpeningEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
@@ -1585,11 +2815,21 @@ export type AppliedOnOpeningEventFieldsFragment = {
 }
 
 export type GetAppliedOnOpeningEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetAppliedOnOpeningEventsByEventIdsQuery = {
-  appliedOnOpeningEvents: Array<AppliedOnOpeningEventFieldsFragment>
+  appliedOnOpeningEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    opening: { id: string; runtimeId: number }
+    application: { id: string; runtimeId: number }
+  }>
 }
 
 export type OpeningAddedEventFieldsFragment = {
@@ -1597,70 +2837,183 @@ export type OpeningAddedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
 }
 
 export type GetOpeningAddedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningAddedEventsByEventIdsQuery = { openingAddedEvents: Array<OpeningAddedEventFieldsFragment> }
+export type GetOpeningAddedEventsByEventIdsQuery = {
+  openingAddedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    opening: { id: string; runtimeId: number }
+  }>
+}
 
 export type LeaderSetEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
-  worker?: Types.Maybe<{ id: string; runtimeId: number }>
+  worker?: { id: string; runtimeId: number } | null
 }
 
 export type GetLeaderSetEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetLeaderSetEventsByEventIdsQuery = { leaderSetEvents: Array<LeaderSetEventFieldsFragment> }
+export type GetLeaderSetEventsByEventIdsQuery = {
+  leaderSetEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    worker?: { id: string; runtimeId: number } | null
+  }>
+}
 
 export type OpeningFilledEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
-  workersHired: Array<WorkerFieldsFragment>
+  workersHired: Array<{
+    id: string
+    runtimeId: number
+    roleAccount: string
+    rewardAccount: string
+    stakeAccount: string
+    isLead: boolean
+    stake: any
+    storage?: string | null
+    rewardPerBlock: any
+    missingRewardAmount?: any | null
+    group: { name: string }
+    membership: { id: string }
+    status:
+      | { __typename: 'WorkerStatusActive' }
+      | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: { id: string } | null }
+      | {
+          __typename: 'WorkerStatusLeft'
+          workerStartedLeavingEvent?: { id: string } | null
+          workerExitedEvent?: { id: string } | null
+        }
+      | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: { id: string } | null }
+    payouts: Array<{ id: string }>
+    slashes: Array<{ id: string }>
+    entry: { id: string }
+    application: {
+      id: string
+      runtimeId: number
+      status:
+        | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusPending' }
+        | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+        | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+    }
+  }>
 }
 
 export type GetOpeningFilledEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningFilledEventsByEventIdsQuery = { openingFilledEvents: Array<OpeningFilledEventFieldsFragment> }
+export type GetOpeningFilledEventsByEventIdsQuery = {
+  openingFilledEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    opening: { id: string; runtimeId: number }
+    workersHired: Array<{
+      id: string
+      runtimeId: number
+      roleAccount: string
+      rewardAccount: string
+      stakeAccount: string
+      isLead: boolean
+      stake: any
+      storage?: string | null
+      rewardPerBlock: any
+      missingRewardAmount?: any | null
+      group: { name: string }
+      membership: { id: string }
+      status:
+        | { __typename: 'WorkerStatusActive' }
+        | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: { id: string } | null }
+        | {
+            __typename: 'WorkerStatusLeft'
+            workerStartedLeavingEvent?: { id: string } | null
+            workerExitedEvent?: { id: string } | null
+          }
+        | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: { id: string } | null }
+      payouts: Array<{ id: string }>
+      slashes: Array<{ id: string }>
+      entry: { id: string }
+      application: {
+        id: string
+        runtimeId: number
+        status:
+          | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: { id: string } | null }
+          | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: { id: string } | null }
+          | { __typename: 'ApplicationStatusPending' }
+          | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: { id: string } | null }
+          | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: { id: string } | null }
+      }
+    }>
+  }>
+}
 
 export type ApplicationWithdrawnEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   application: { id: string; runtimeId: number }
 }
 
 export type GetApplicationWithdrawnEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetApplicationWithdrawnEventsByEventIdsQuery = {
-  applicationWithdrawnEvents: Array<ApplicationWithdrawnEventFieldsFragment>
+  applicationWithdrawnEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    application: { id: string; runtimeId: number }
+  }>
 }
 
 export type OpeningCanceledEventFieldsFragment = {
@@ -1668,18 +3021,27 @@ export type OpeningCanceledEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
 }
 
 export type GetOpeningCancelledEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetOpeningCancelledEventsByEventIdsQuery = {
-  openingCanceledEvents: Array<OpeningCanceledEventFieldsFragment>
+  openingCanceledEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    opening: { id: string; runtimeId: number }
+  }>
 }
 
 export type StatusTextChangedEventFieldsFragment = {
@@ -1687,23 +3049,37 @@ export type StatusTextChangedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  metadata?: Types.Maybe<string>
+  metadata?: string | null
   group: { name: string }
   result:
+    | { __typename: 'InvalidActionMetadata'; reason: string }
     | { __typename: 'UpcomingOpeningAdded'; upcomingOpeningId: string }
     | { __typename: 'UpcomingOpeningRemoved'; upcomingOpeningId: string }
-    | { __typename: 'WorkingGroupMetadataSet'; metadata?: Types.Maybe<{ id: string }> }
-    | { __typename: 'InvalidActionMetadata'; reason: string }
+    | { __typename: 'WorkingGroupMetadataSet'; metadata?: { id: string } | null }
 }
 
 export type GetStatusTextChangedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetStatusTextChangedEventsByEventIdsQuery = {
-  statusTextChangedEvents: Array<StatusTextChangedEventFieldsFragment>
+  statusTextChangedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    metadata?: string | null
+    group: { name: string }
+    result:
+      | { __typename: 'InvalidActionMetadata'; reason: string }
+      | { __typename: 'UpcomingOpeningAdded'; upcomingOpeningId: string }
+      | { __typename: 'UpcomingOpeningRemoved'; upcomingOpeningId: string }
+      | { __typename: 'WorkingGroupMetadataSet'; metadata?: { id: string } | null }
+  }>
 }
 
 export type WorkerRoleAccountUpdatedEventFieldsFragment = {
@@ -1711,7 +3087,7 @@ export type WorkerRoleAccountUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newRoleAccount: string
   group: { name: string }
@@ -1719,11 +3095,21 @@ export type WorkerRoleAccountUpdatedEventFieldsFragment = {
 }
 
 export type GetWorkerRoleAccountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetWorkerRoleAccountUpdatedEventsByEventIdsQuery = {
-  workerRoleAccountUpdatedEvents: Array<WorkerRoleAccountUpdatedEventFieldsFragment>
+  workerRoleAccountUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newRoleAccount: string
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type WorkerRewardAccountUpdatedEventFieldsFragment = {
@@ -1731,7 +3117,7 @@ export type WorkerRewardAccountUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newRewardAccount: string
   group: { name: string }
@@ -1739,11 +3125,21 @@ export type WorkerRewardAccountUpdatedEventFieldsFragment = {
 }
 
 export type GetWorkerRewardAccountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetWorkerRewardAccountUpdatedEventsByEventIdsQuery = {
-  workerRewardAccountUpdatedEvents: Array<WorkerRewardAccountUpdatedEventFieldsFragment>
+  workerRewardAccountUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newRewardAccount: string
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type StakeIncreasedEventFieldsFragment = {
@@ -1751,7 +3147,7 @@ export type StakeIncreasedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   amount: any
   group: { name: string }
@@ -1759,29 +3155,51 @@ export type StakeIncreasedEventFieldsFragment = {
 }
 
 export type GetStakeIncreasedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetStakeIncreasedEventsByEventIdsQuery = { stakeIncreasedEvents: Array<StakeIncreasedEventFieldsFragment> }
+export type GetStakeIncreasedEventsByEventIdsQuery = {
+  stakeIncreasedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    amount: any
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
+}
 
 export type WorkerStartedLeavingEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  rationale?: Types.Maybe<string>
+  rationale?: string | null
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
 
 export type GetWorkerStartedLeavingEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetWorkerStartedLeavingEventsByEventIdsQuery = {
-  workerStartedLeavingEvents: Array<WorkerStartedLeavingEventFieldsFragment>
+  workerStartedLeavingEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    rationale?: string | null
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type WorkerRewardAmountUpdatedEventFieldsFragment = {
@@ -1789,7 +3207,7 @@ export type WorkerRewardAmountUpdatedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newRewardPerBlock: any
   group: { name: string }
@@ -1797,11 +3215,21 @@ export type WorkerRewardAmountUpdatedEventFieldsFragment = {
 }
 
 export type GetWorkerRewardAmountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetWorkerRewardAmountUpdatedEventsByEventIdsQuery = {
-  workerRewardAmountUpdatedEvents: Array<WorkerRewardAmountUpdatedEventFieldsFragment>
+  workerRewardAmountUpdatedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newRewardPerBlock: any
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type StakeSlashedEventFieldsFragment = {
@@ -1809,27 +3237,41 @@ export type StakeSlashedEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   requestedAmount: any
   slashedAmount: any
-  rationale?: Types.Maybe<string>
+  rationale?: string | null
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
 
 export type GetStakeSlashedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetStakeSlashedEventsByEventIdsQuery = { stakeSlashedEvents: Array<StakeSlashedEventFieldsFragment> }
+export type GetStakeSlashedEventsByEventIdsQuery = {
+  stakeSlashedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    requestedAmount: any
+    slashedAmount: any
+    rationale?: string | null
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
+}
 
 export type StakeDecreasedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   amount: any
   group: { name: string }
@@ -1837,30 +3279,53 @@ export type StakeDecreasedEventFieldsFragment = {
 }
 
 export type GetStakeDecreasedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetStakeDecreasedEventsByEventIdsQuery = { stakeDecreasedEvents: Array<StakeDecreasedEventFieldsFragment> }
+export type GetStakeDecreasedEventsByEventIdsQuery = {
+  stakeDecreasedEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    amount: any
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
+}
 
 export type TerminatedWorkerEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  penalty?: Types.Maybe<any>
-  rationale?: Types.Maybe<string>
+  penalty?: any | null
+  rationale?: string | null
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
 
 export type GetTerminatedWorkerEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetTerminatedWorkerEventsByEventIdsQuery = {
-  terminatedWorkerEvents: Array<TerminatedWorkerEventFieldsFragment>
+  terminatedWorkerEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    penalty?: any | null
+    rationale?: string | null
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type TerminatedLeaderEventFieldsFragment = {
@@ -1868,20 +3333,31 @@ export type TerminatedLeaderEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
-  penalty?: Types.Maybe<any>
-  rationale?: Types.Maybe<string>
+  penalty?: any | null
+  rationale?: string | null
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
 
 export type GetTerminatedLeaderEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetTerminatedLeaderEventsByEventIdsQuery = {
-  terminatedLeaderEvents: Array<TerminatedLeaderEventFieldsFragment>
+  terminatedLeaderEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    penalty?: any | null
+    rationale?: string | null
+    group: { name: string }
+    worker: { id: string; runtimeId: number }
+  }>
 }
 
 export type LeaderUnsetEventFieldsFragment = {
@@ -1889,53 +3365,88 @@ export type LeaderUnsetEventFieldsFragment = {
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   group: { name: string }
   leader: { id: string; runtimeId: number }
 }
 
 export type GetLeaderUnsetEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetLeaderUnsetEventsByEventIdsQuery = { leaderUnsetEvents: Array<LeaderUnsetEventFieldsFragment> }
+export type GetLeaderUnsetEventsByEventIdsQuery = {
+  leaderUnsetEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    group: { name: string }
+    leader: { id: string; runtimeId: number }
+  }>
+}
 
 export type BudgetSetEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   newBudget: any
   group: { name: string }
 }
 
 export type GetBudgetSetEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetBudgetSetEventsByEventIdsQuery = { budgetSetEvents: Array<BudgetSetEventFieldsFragment> }
+export type GetBudgetSetEventsByEventIdsQuery = {
+  budgetSetEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    newBudget: any
+    group: { name: string }
+  }>
+}
 
 export type BudgetSpendingEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
+  inExtrinsic?: string | null
   indexInBlock: number
   reciever: string
   amount: any
-  rationale?: Types.Maybe<string>
+  rationale?: string | null
   group: { name: string }
 }
 
 export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+  eventIds?: Types.InputMaybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
+export type GetBudgetSpendingEventsByEventIdsQuery = {
+  budgetSpendingEvents: Array<{
+    id: string
+    createdAt: any
+    inBlock: number
+    network: Types.Network
+    inExtrinsic?: string | null
+    indexInBlock: number
+    reciever: string
+    amount: any
+    rationale?: string | null
+    group: { name: string }
+  }>
+}
 
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
@@ -3736,17 +5247,25 @@ export const GetChannels = gql`
   }
   ${ChannelFields}
 `
-export const GetChannelCategories = gql`
-  query getChannelCategories {
-    channelCategories {
+export const GetChannelById = gql`
+  query getChannelById($id: ID!) {
+    channelByUniqueInput(where: { id: $id }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
+export const GetChannelCategoryById = gql`
+  query getChannelCategoryById($id: ID!) {
+    channelCategoryByUniqueInput(where: { id: $id }) {
       ...ChannelCategoryFields
     }
   }
   ${ChannelCategoryFields}
 `
-export const GetVideoCategories = gql`
-  query getVideoCategories {
-    videoCategories {
+export const GetVideoCategoryById = gql`
+  query getVideoCategoryById($id: ID!) {
+    videoCategoryByUniqueInput(where: { id: $id }) {
       ...VideoCategoryFields
     }
   }

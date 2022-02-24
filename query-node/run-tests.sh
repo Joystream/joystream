@@ -25,12 +25,21 @@ trap cleanup EXIT
 # Clean start
 docker-compose down -v
 
+# start node
 docker-compose -f ../docker-compose.yml up -d joystream-node
+
+# start query node services
 ./start.sh
+
+# start storage & distribution services
+../tests/integration-tests/start-storage.sh
 
 # pass the scenario name without .ts extension
 SCENARIO=$1
 # fallback if scenario if not specified
-SCENARIO=${SCENARIO:=full}
+SCENARIO=${SCENARIO:="content-directory"}
 
-time yarn workspace integration-tests run-test-scenario ${SCENARIO}
+# run content directory tests
+# TODO: revisit if `REUSE_KEYS` is needed after all Giza `network-tests` are converted into Olympia `integration-tests`
+#REUSE_KEYS=true yarn workspace integration-tests run-test-scenario ${SCENARIO}
+yarn workspace integration-tests run-test-scenario ${SCENARIO}

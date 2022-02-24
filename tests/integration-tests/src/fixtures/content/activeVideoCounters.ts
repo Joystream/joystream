@@ -8,6 +8,7 @@ import { Bytes } from '@polkadot/types'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import BN from 'bn.js'
 import { Worker, WorkerId } from '@joystream/types/working-group'
+import { Utils } from '../../utils'
 
 import {
   getMemberDefaults,
@@ -62,13 +63,13 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     // check channel and categories con are counted as active
 
     this.debug('Checking channels active video counters')
-    await this.assertCounterMatch('channels', this.channelIds[0], videoCount)
+    await this.assertCounterMatch('channel', this.channelIds[0], videoCount)
 
     this.debug('Checking channel categories active video counters')
-    await this.assertCounterMatch('channelCategories', this.channelCategoryIds[0], videoCount)
+    await this.assertCounterMatch('channelCategory', this.channelCategoryIds[0], videoCount)
 
     this.debug('Checking video categories active video counters')
-    await this.assertCounterMatch('videoCategories', this.videoCategoryIds[0], videoCount)
+    await this.assertCounterMatch('videoCategory', this.videoCategoryIds[0], videoCount)
 
     // move channel to different channel category and video to different videoCategory
 
@@ -86,10 +87,10 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     // check counters of channel category and video category with newly moved in video/channel
 
     this.debug('Checking channel categories active video counters (2)')
-    await this.assertCounterMatch('channelCategories', this.channelCategoryIds[1], videoCount)
+    await this.assertCounterMatch('channelCategory', this.channelCategoryIds[1], videoCount)
 
     this.debug('Checking video categories active video counters (2)')
-    await this.assertCounterMatch('videoCategories', this.videoCategoryIds[1], oneMovedItemCount)
+    await this.assertCounterMatch('videoCategory', this.videoCategoryIds[1], oneMovedItemCount)
 
     /** Giza doesn't support changing channels - uncomment this on later releases where it's supported
 
@@ -103,8 +104,8 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     // check counter of channel with newly moved video
 
     this.debug('Checking channels active video counters (2)')
-    await this.assertCounterMatch('channels', channelIds[0], videoCount - oneMovedItemCount)
-    await this.assertCounterMatch('channels', channelIds[1], oneMovedItemCount)
+    await this.assertCounterMatch('channel', channelIds[0], videoCount - oneMovedItemCount)
+    await this.assertCounterMatch('channel', channelIds[1], oneMovedItemCount)
 
     // end
     */
@@ -117,20 +118,15 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     in Query node.
   */
   private async assertCounterMatch(
-    entityName: 'channels' | 'channelCategories' | 'videoCategories',
+    entityName: 'channel' | 'channelCategory' | 'videoCategory',
     entityId: number,
     expectedCount: number
   ) {
-    const getterName = `get${entityName[0].toUpperCase()}${entityName.slice(1)}` as
-      | 'getChannels'
-      | 'getChannelCategories'
-      | 'getVideoCategories'
+    const getterName = `${entityName}ById` as 'channelById' | 'channelCategoryById' | 'videoCategoryById'
     await this.query.tryQueryWithTimeout(
-      () => this.query[getterName](),
-      (entities) => {
-        assert(entities.length > 0) // some entities were loaded
-
-        const entity = entities.find((item: any) => item.id === entityId.toString())
+      () => this.query[getterName](entityId.toString()),
+      (entity) => {
+        Utils.assert(entity)
 
         // all videos created in this fixture should be active and belong to first entity
         assert(entity && entity.activeVideosCounter === expectedCount)

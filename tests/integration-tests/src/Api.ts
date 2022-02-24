@@ -832,22 +832,6 @@ export class Api {
     return this.api.consts[group].stakingHandlerLockId
   }
 
-  async acceptPendingDataObjects(
-    accountFrom: string,
-    workerId: WorkerId,
-    storageBucketId: StorageBucketId,
-    channelId: string,
-    dataObjectIds: string[]
-  ): Promise<ISubmittableResult> {
-    const bagId = { Dynamic: { Channel: channelId } }
-    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
-
-    return this.sender.signAndSend(
-      this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
-      accountFrom
-    )
-  }
-
   async issueNft(
     accountFrom: string,
     memberId: number,

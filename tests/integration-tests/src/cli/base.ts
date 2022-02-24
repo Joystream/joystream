@@ -79,8 +79,9 @@ export abstract class CLI {
             ...execOutputs,
             exitCode: 0,
           }
-        } catch (error) {
-          const errorTyped = error as ExecFileException & { stdout: string; stderr: string }
+        } catch (error: unknown) {
+          const errorTyped = error as ExecFileException & { stdout?: string; stderr?: string }
+
           // escape if command's success is required
           if (requireSuccess) {
             throw error
