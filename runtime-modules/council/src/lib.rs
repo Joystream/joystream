@@ -883,6 +883,11 @@ decl_module! {
             msg: Vec<u8>,
         ) {
             Self::ensure_member_consulate(origin, councilor_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::CouncilorRemarked(councilor_id, msg));
         }
 
@@ -906,6 +911,10 @@ decl_module! {
                 Self::is_valid_candidate_id(&candidate_id),
                 Error::<T>::CandidateDoesNotExist,
             );
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
         }

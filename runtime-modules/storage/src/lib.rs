@@ -2559,6 +2559,11 @@ decl_module! {
             <T as Trait>::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::StorageOperatorRemarked(worker_id, storage_bucket_id, msg));
         }
 
@@ -2576,6 +2581,10 @@ decl_module! {
                 bucket.operators.contains(&worker_id),
                 Error::<T>::MustBeDistributionProviderOperatorForBucket
             );
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::deposit_event(RawEvent::DistributionOperatorRemarked(worker_id, distribution_bucket_id, msg));
         }

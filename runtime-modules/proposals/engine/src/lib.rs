@@ -582,6 +582,10 @@ decl_module! {
 
             ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ProposerRemarked(proposer_id, proposal_id, msg));
         }
     }

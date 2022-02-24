@@ -1898,6 +1898,11 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_auth_success::<T>(&sender, &actor)?;
             ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ChannelOwnerRemarked(actor, channel_id, msg));
         }
 
@@ -1907,6 +1912,10 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
         }
 
@@ -1917,6 +1926,11 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_auth_success::<T>(&sender, &actor)?;
             ensure_actor_is_moderator::<T>(&actor, &channel.moderators)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
         }
 
@@ -1926,6 +1940,11 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 

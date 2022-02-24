@@ -1322,6 +1322,10 @@ decl_module! {
                 Error::<T>::InvalidContributorActorSpecified,
                 );
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::BountyContributorRemarked(contributor, bounty_id, msg));
         }
 
@@ -1353,6 +1357,11 @@ decl_module! {
                 Error::<T>::InvalidOracleActorSpecified,
             );
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+
             Self::deposit_event(RawEvent::BountyOracleRemarked(oracle, bounty_id, msg));
         }
 
@@ -1381,6 +1390,10 @@ decl_module! {
                 entry.member_id == entrant_id,
                 Error::<T>::InvalidEntrantWorkerSpecified,
             );
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::deposit_event(RawEvent::BountyEntrantRemarked(entrant_id, bounty_id, entry_id, msg));
         }
@@ -1412,6 +1425,10 @@ decl_module! {
                 bounty.creation_params.creator == creator,
                 Error::<T>::InvalidCreatorActorSpecified,
             );
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::deposit_event(RawEvent::BountyCreatorRemarked(creator, bounty_id, msg));
         }

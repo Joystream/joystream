@@ -1193,6 +1193,11 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
         pub fn lead_remark(origin, msg: Vec<u8>) {
             let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::LeadRemarked(msg));
         }
 
@@ -1208,6 +1213,11 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
         pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
             let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
         }
 

@@ -1004,6 +1004,11 @@ decl_module! {
         pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
         }
     }
