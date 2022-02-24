@@ -455,6 +455,16 @@ benchmarks! {
         );
     }
 
+    proposer_remark {
+        let msg = b"test".to_vec();
+        let (proposer_account_id, proposer_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
+    }: _ (RawOrigin::Signed(proposer_account_id.clone()), proposal_id, proposer_id, msg.clone())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::ProposerRemarked(proposer_id, proposal_id, msg).into()
+        );
+    }
+
     // We use that branches for decode failing, failing and passing are very similar
     // without any different DB access in each. To use the failing/passing branch
     // we need to include the EncodeProposal trait from codex which depends on engine
@@ -820,6 +830,13 @@ mod tests {
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_proposer_remark() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_proposer_remark::<Test>());
         });
     }
 }
