@@ -807,8 +807,8 @@
     "InitTransactionalStatus": {
         "_enum": {
             "Idle": "Null",
-            "InitiatedOfferToMember": "(MemberId,Option<u128>)",
             "BuyNow": "u128",
+            "InitiatedOfferToMember": "(MemberId,Option<u128>)",
             "Auction": "AuctionParams"
         }
     },
