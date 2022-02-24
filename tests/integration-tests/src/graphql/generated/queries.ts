@@ -654,7 +654,7 @@ export type PostReactedEventFieldsFragment = {
   post: { id: string }
   reactionResult:
     | { __typename: 'PostReactionResultCancel' }
-    | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+    | { __typename: 'PostReactionResultInvalid'; invalidReactionId: number }
     | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
   reactingMember: { id: string }
 }
@@ -674,7 +674,7 @@ export type GetPostReactedEventsByEventIdsQuery = {
     post: { id: string }
     reactionResult:
       | { __typename: 'PostReactionResultCancel' }
-      | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+      | { __typename: 'PostReactionResultInvalid'; invalidReactionId: number }
       | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
     reactingMember: { id: string }
   }>
@@ -3902,7 +3902,7 @@ export const PostReactedEventFields = gql`
         reactionId
       }
       ... on PostReactionResultInvalid {
-        reactionId
+        invalidReactionId: reactionId
       }
     }
     reactingMember {

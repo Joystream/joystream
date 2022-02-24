@@ -16,7 +16,15 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { deserializeMetadata, bytesToString, genericEventFields, getWorker, WorkingGroupModuleName } from './common'
+import {
+  deserializeMetadata,
+  bytesToString,
+  genericEventFields,
+  getWorker,
+  WorkingGroupModuleName,
+  toNumber,
+  INT32MAX,
+} from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -403,7 +411,7 @@ export async function workingGroups_OpeningAdded({ store, event }: EventContext 
     group,
     rewardPerBlock: optRewardPerBlock.unwrapOr(new BN(0)),
     stakeAmount: stakePolicy.stake_amount,
-    unstakingPeriod: stakePolicy.leaving_unstaking_period.toNumber(),
+    unstakingPeriod: toNumber(stakePolicy.leaving_unstaking_period, INT32MAX),
     status: new OpeningStatusOpen(),
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
