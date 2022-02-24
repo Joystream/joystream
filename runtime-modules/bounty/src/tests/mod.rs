@@ -3613,3 +3613,71 @@ fn oracle_remark_successful() {
         ));
     })
 }
+
+#[test]
+fn invalid_bounty_contributor_cannot_remark() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_contributor_id = contributor_id + 1;
+        assert_err!(
+            Bounty::contributor_remark(
+                to_origin!(invalid_contributor_id),
+                BountyActor::Member(invalid_contributor_id),
+                1,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidContributorActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn contributor_cannot_remark_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::contributor_remark(
+                to_origin!(contributor_id),
+                BountyActor::Member(contributor_id),
+                invalid_bounty_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidContributorActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn contributor_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_ok!(Bounty::contributor_remark(
+            to_origin!(contributor_id),
+            BountyActor::Member(contributor_id),
+            bounty_id,
+            b"test".to_vec(),
+        ));
+    })
+}
