@@ -12964,7 +12964,7 @@ export type PostReactionResultCancel = {
 }
 
 export type PostReactionResultInvalid = {
-  reactionId: Scalars['Int']
+  reactionId: Scalars['String']
 }
 
 export type PostReactionResultValid = {

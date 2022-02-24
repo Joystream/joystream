@@ -360,7 +360,7 @@ type PostReactionResultValid @variant {
 }
 
 type PostReactionResultInvalid @variant {
-  reactionId: Int!
+  reactionId: String!
 }
 
 union PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
