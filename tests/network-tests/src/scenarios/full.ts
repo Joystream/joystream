@@ -93,7 +93,7 @@ scenario('Full', async ({ job, env }) => {
   job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 
   // CLIs:
-  const createChannelJob = job('create channel via CLI', createChannel).after(sudoHireLead)
+  const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
     createChannelJob
   )

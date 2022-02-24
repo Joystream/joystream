@@ -112,9 +112,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
       () => this.query[getterName](entityId.toString()),
       (entity) => {
         Utils.assert(entity)
-
-        // all videos created in this fixture should be active and belong to first entity
-        assert(entity.activeVideosCounter === expectedCount)
+        assert.equal(entity.activeVideosCounter, expectedCount)
       }
     )
   }
