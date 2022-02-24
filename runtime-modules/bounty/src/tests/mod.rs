@@ -3681,3 +3681,107 @@ fn contributor_remark_successful() {
         ));
     })
 }
+
+#[test]
+fn entrant_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_ok!(Bounty::entrant_remark(
+            to_origin!(entrant_id),
+            entrant_id,
+            bounty_id,
+            entry_id,
+            b"test".to_vec(),
+        ));
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_entrant_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_entrant_id = entrant_id + 1;
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(invalid_entrant_id),
+                invalid_entrant_id,
+                bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidEntrantWorkerSpecified
+        );
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let entrant_id = entrant_id;
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(entrant_id),
+                entrant_id,
+                invalid_bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::WorkEntryDoesntExist,
+        );
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_entry_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let entrant_id = entrant_id;
+        let bounty_id = Bounty::bounty_count() as u64;
+        let invalid_entry_id = Bounty::entry_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(entrant_id),
+                entrant_id,
+                bounty_id,
+                invalid_entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::WorkEntryDoesntExist,
+        );
+    })
+}
