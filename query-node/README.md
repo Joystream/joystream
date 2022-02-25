@@ -58,7 +58,7 @@ The simplest way to run an indexer locally is to run `docker-compose-indexer.yml
 - Chain RPC endpoint: WS_PROVIDER_ENDPOINT_URI
 - If non-standard types are being used by the Substrate runtime, map type definitions in the json format as an external volume
 
-Follow the links for more information about the [indexer](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer/README.md) service and [indexer-api-gateway](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer-gateway/README.md).
+Follow the links for more information about the [indexer](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer) service and [indexer-api-gateway](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer-gateway).
 
 ## GraphQL Playground assets url
 Query node's user interface, GraphQL Playground, is expecting to be served at `/graphql`. 
