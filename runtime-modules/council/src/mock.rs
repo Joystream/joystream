@@ -684,6 +684,23 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
+pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
+    GenesisConfig::<Runtime> {
+        stage: CouncilStageUpdate::default(),
+        council_members: vec![CouncilMemberOf::<Runtime> {
+            membership_id: 1,
+            ..Default::default()
+        }],
+        candidates: vec![(2, Default::default())],
+        announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
+    }
+}
+
 pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
