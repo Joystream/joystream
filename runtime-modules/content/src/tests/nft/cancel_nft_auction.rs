@@ -17,7 +17,7 @@ fn cancel_nft_auction() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -99,7 +99,7 @@ fn cancel_nft_auction_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to cancel nft auction for nft which is not issued yet
         let cancel_nft_auction_result = Content::cancel_nft_auction(
@@ -123,7 +123,7 @@ fn cancel_nft_auction_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -163,7 +163,7 @@ fn cancel_nft_auction_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -203,7 +203,7 @@ fn cancel_nft_auction_not_in_auction_state() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -235,7 +235,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(

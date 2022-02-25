@@ -65,7 +65,7 @@ fn unsuccessful_reward_claim_with_member_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         ClaimChannelRewardFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -80,7 +80,7 @@ fn unsuccessful_reward_claim_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         ClaimChannelRewardFixture::default()
@@ -100,7 +100,7 @@ fn unsuccessful_reward_claim_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         ClaimChannelRewardFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -116,7 +116,7 @@ fn unsuccessful_reward_claim_by_unath_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         ClaimChannelRewardFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -132,7 +132,7 @@ fn unsuccessful_reward_claim_by_unauth_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         ClaimChannelRewardFixture::default()
@@ -152,7 +152,7 @@ fn unsuccessful_reward_claim_with_unsufficient_cashout() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -173,7 +173,7 @@ fn unsuccessful_reward_claim_with_reward_limit_exceeded() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -194,7 +194,7 @@ fn unsuccessful_reward_claim_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::zero(),
@@ -215,7 +215,7 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -235,7 +235,7 @@ fn unsuccessful_reward_claim_with_empty_proof() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -256,7 +256,7 @@ fn successful_reward_claim_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
@@ -273,7 +273,7 @@ fn successful_reward_claim_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
@@ -296,7 +296,7 @@ fn unsuccessful_reward_claim_with_no_reward_account_found() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
@@ -319,7 +319,7 @@ fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let payments = create_some_pull_payments_helper();
 
         ClaimChannelRewardFixture::default()
@@ -335,7 +335,7 @@ fn unsuccessful_reward_claim_with_successive_request() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 

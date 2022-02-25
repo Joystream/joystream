@@ -12,7 +12,7 @@ pub fn unsuccessful_post_creation_with_member_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -27,7 +27,7 @@ pub fn unsuccessful_post_creation_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreatePostFixture::default()
@@ -48,7 +48,7 @@ pub fn unsuccessful_post_creation_with_lead_auth_failed() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
@@ -64,7 +64,7 @@ pub fn unsuccessful_post_creation_with_insufficient_balance() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
 
         CreatePostFixture::default().call_and_assert(Err(Error::<Test>::UnsufficientBalance.into()))
@@ -78,7 +78,7 @@ pub fn unsuccessful_post_creation_by_member_not_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -94,7 +94,7 @@ pub fn unsuccessful_post_creation_by_curator_not_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -116,7 +116,7 @@ pub fn unsuccessful_post_creation_with_lead() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -132,7 +132,7 @@ pub fn unsuccessful_post_creation_with_invalid_video_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_params(VideoPostCreationParameters::<Test> {
@@ -149,7 +149,7 @@ pub fn unsuccessful_comment_creation_with_invalid_parent_id() {
         run_to_block(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_params(VideoPostCreationParameters::<Test> {
@@ -167,7 +167,7 @@ pub fn successful_post_creation_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default().call_and_assert(Ok(()))
     })
@@ -180,7 +180,7 @@ pub fn successful_post_creation_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
         let default_curator_group_id = Content::next_curator_group_id() - 1;
 
         CreatePostFixture::default()
@@ -203,7 +203,7 @@ pub fn successful_comment_creation_by_member() {
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         println!("POST CREATED");
         CreatePostFixture::default()
@@ -225,7 +225,7 @@ pub fn successful_comment_creation_by_curator() {
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreatePostFixture::default()
@@ -252,7 +252,7 @@ pub fn successful_comment_creation_by_lead() {
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
 
         // creating different post owner and comment owner
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -273,7 +273,7 @@ pub fn unsuccessful_post_update_with_member_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -288,7 +288,7 @@ pub fn unsuccessful_post_update_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
         EditPostTextFixture::default()
@@ -308,7 +308,7 @@ pub fn unsuccessful_post_update_with_lead_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
@@ -335,7 +335,7 @@ pub fn unsuccessful_post_update_with_invalid_post_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_post_id(VideoPostId::zero())
@@ -350,7 +350,7 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_video_id(VideoPostId::zero())
@@ -366,7 +366,7 @@ pub fn unsuccessful_post_update_by_member_not_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -382,7 +382,7 @@ pub fn unsuccessful_post_update_by_curator_not_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -403,7 +403,7 @@ pub fn unsuccessful_comment_update_by_member_not_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -421,7 +421,7 @@ pub fn unsuccessful_comment_update_by_curator_not_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -443,7 +443,7 @@ pub fn unsuccessful_comment_update_by_lead_not_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -460,7 +460,7 @@ pub fn successful_comment_update_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default()
             .with_post_id(VideoPostId::from(2u64))
@@ -475,7 +475,7 @@ pub fn successful_comment_update_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         EditPostTextFixture::default()
@@ -496,7 +496,7 @@ pub fn successful_comment_update_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
@@ -523,7 +523,7 @@ pub fn successful_post_update_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         EditPostTextFixture::default().call_and_assert(Ok(()))
     })
@@ -536,7 +536,7 @@ pub fn successful_post_update_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         EditPostTextFixture::default()
@@ -557,7 +557,7 @@ pub fn unsuccessful_post_deletion_with_member_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -572,7 +572,7 @@ pub fn unsuccessful_post_deletion_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -592,7 +592,7 @@ pub fn unsuccessful_post_deletion_with_lead_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         CreatePostFixture::default()
@@ -619,7 +619,7 @@ pub fn unsuccessful_post_deletion_with_invalid_post_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_post_id(VideoPostId::zero())
@@ -634,7 +634,7 @@ pub fn unsuccessful_post_deletion_with_invalid_video_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_post_id(VideoPostId::zero())
@@ -650,7 +650,7 @@ pub fn unsuccessful_post_deletion_by_member_not_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -666,7 +666,7 @@ pub fn unsuccessful_post_deletion_by_curator_not_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         EditPostTextFixture::default()
@@ -686,7 +686,7 @@ pub fn unsuccessful_post_deletion_with_invalid_witness() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .call_and_assert(Err(Error::<Test>::WitnessVerificationFailed.into()))
@@ -700,7 +700,7 @@ pub fn unsuccessful_post_deletion_with_no_witness() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_params(VideoPostDeletionParameters::<Test> {
@@ -718,7 +718,7 @@ pub fn unsuccessful_comment_update_with_not_authorized_memeber() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -735,7 +735,7 @@ pub fn unsuccessful_comment_deletion_by_not_authorized_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         DeletePostFixture::default()
@@ -757,7 +757,7 @@ pub fn unsuccessful_comment_deletion_with_lead_not_authorized() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -774,7 +774,7 @@ pub fn unsuccessful_comment_deletion_by_invalid_moderator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)
@@ -791,7 +791,7 @@ pub fn unsuccessful_comment_deletion_by_moderator_with_no_rationale() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
@@ -812,7 +812,7 @@ pub fn successful_post_deletion_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_params(VideoPostDeletionParameters::<Test> {
@@ -832,7 +832,7 @@ pub fn successful_post_deletion_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -858,7 +858,7 @@ pub fn successful_comment_deletion_by_member_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_post_id(VideoPostId::from(2u64))
@@ -879,7 +879,7 @@ pub fn successful_comment_deletion_by_curator_onwer() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_comment();
+        create_default_curator_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeletePostFixture::default()
@@ -907,7 +907,7 @@ pub fn successful_comment_deletion_by_member_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video_and_post();
+        create_default_curator_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_params(VideoPostCreationParameters::<Test> {
@@ -936,7 +936,7 @@ pub fn successful_comment_deletion_by_curator_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
@@ -977,7 +977,7 @@ pub fn successful_comment_deletion_by_lead_author() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_post();
+        create_default_member_owned_channel_with_video_and_post(DATA_OBJECT_DELETION_PRIZE);
 
         CreatePostFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1009,7 +1009,7 @@ pub fn successful_comment_deletion_by_moderator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_and_comment();
+        create_default_member_owned_channel_with_video_and_comment(DATA_OBJECT_DELETION_PRIZE);
 
         DeletePostFixture::default()
             .with_sender(DEFAULT_MODERATOR_ACCOUNT_ID)
@@ -1032,7 +1032,7 @@ pub fn unsuccessful_moderators_update_by_unauthorized_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -1048,7 +1048,7 @@ pub fn unsuccessful_moderators_update_by_unauthorized_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
         UpdateModeratorSetFixture::default()
@@ -1068,7 +1068,7 @@ pub fn unsuccessful_moderators_update_with_member_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
@@ -1083,7 +1083,7 @@ pub fn unsuccessful_moderators_update_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         UpdateModeratorSetFixture::default()
@@ -1103,7 +1103,7 @@ pub fn unsuccessful_moderators_update_with_invalid_members_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_moderators(vec![DEFAULT_MODERATOR_ID + 1].into_iter().collect())
@@ -1118,7 +1118,7 @@ pub fn successful_moderators_update_by_member_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default().call_and_assert(Ok(()));
     })
@@ -1131,7 +1131,7 @@ pub fn successful_moderators_update_by_curator_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         UpdateModeratorSetFixture::default()
@@ -1151,7 +1151,7 @@ pub fn unsuccessful_moderators_update_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_channel_id(ChannelId::zero())
@@ -1166,7 +1166,7 @@ pub fn unsuccessful_moderators_update_by_lead_with_member_owned_channel() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1182,7 +1182,7 @@ pub fn successful_moderators_update_by_lead_with_curator_owned_channel() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateModeratorSetFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)

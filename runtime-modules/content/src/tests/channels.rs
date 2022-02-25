@@ -255,8 +255,13 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize(data_object_deletion_prize);
+
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -273,9 +278,12 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
+        let data_object_deletion_prize = 10;
+
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
@@ -402,7 +410,7 @@ fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID + 100)
@@ -418,7 +426,7 @@ fn unsuccessful_channel_update_with_uncorresponding_curator_id_and_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
         UpdateChannelFixture::default()
@@ -438,7 +446,7 @@ fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin()
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID + 100)
@@ -454,7 +462,7 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -472,7 +480,7 @@ fn successful_channel_update_with_assets_uploaded_by_collaborator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -492,7 +500,7 @@ fn successful_channel_update_with_assets_removed_by_collaborator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -510,7 +518,7 @@ fn successful_channel_update_with_assets_uploaded_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -530,7 +538,7 @@ fn successful_channel_update_with_assets_removed_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -548,7 +556,7 @@ fn successful_channel_update_with_assets_uploaded_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateChannelFixture::default()
@@ -572,7 +580,7 @@ fn successful_channel_update_with_assets_removed_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateChannelFixture::default()
@@ -595,7 +603,7 @@ fn successful_curator_channel_update_with_assets_uploaded_by_lead() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -616,7 +624,7 @@ fn unsuccessful_curator_channel_update_with_assets_uploaded_by_invalid_lead_orig
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID + 100)
@@ -636,7 +644,7 @@ fn successful_channel_update_with_assets_removed_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -654,7 +662,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_invalid_lead_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID + 100)
@@ -676,7 +684,7 @@ fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_collaborator
             UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
             INITIAL_BALANCE,
         );
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -696,7 +704,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_collaborator(
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -715,7 +723,7 @@ fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_member() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -735,7 +743,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_unathorized_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -754,7 +762,7 @@ fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_curator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id =
             curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -779,7 +787,7 @@ fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id =
             curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -803,7 +811,7 @@ fn unsuccessful_member_channel_update_with_assets_uploaded_by_lead() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -823,7 +831,7 @@ fn unsuccessful_member_channel_update_with_assets_removed_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -841,7 +849,7 @@ fn successful_channel_update_with_collaborators_set_updated_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -858,7 +866,7 @@ fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_me
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -875,7 +883,7 @@ fn successful_channel_update_with_collaborators_set_updated_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateChannelFixture::default()
@@ -896,7 +904,7 @@ fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_cu
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id =
             curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -918,7 +926,7 @@ fn unsuccessful_channel_update_with_collaborators_set_updated_by_collaborator() 
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -935,7 +943,7 @@ fn unsuccessful_member_channel_update_with_collaborators_set_updated_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -952,7 +960,7 @@ fn successful_curator_channel_update_with_collaborators_set_updated_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -969,7 +977,7 @@ fn unsuccessful_curator_channel_update_with_collaborators_set_updated_by_invalid
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID + 100)
@@ -986,7 +994,7 @@ fn successful_channel_update_with_reward_account_updated_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1003,7 +1011,7 @@ fn unsuccessful_channel_update_with_reward_account_updated_by_unauthorized_membe
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -1020,7 +1028,7 @@ fn successful_channel_update_with_reward_account_updated_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateChannelFixture::default()
@@ -1041,7 +1049,7 @@ fn unsuccessful_channel_update_with_reward_account_updated_by_unauthorized_curat
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id =
             curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -1063,7 +1071,7 @@ fn unsuccessful_channel_update_with_reward_account_updated_by_collaborator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -1080,7 +1088,7 @@ fn unsuccessful_member_channel_update_with_reward_account_updated_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1097,7 +1105,7 @@ fn successful_curator_channel_update_with_reward_account_updated_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1114,7 +1122,7 @@ fn unsuccessful_curator_channel_update_with_reward_account_updated_by_invalid_le
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID + 100)
@@ -1131,7 +1139,7 @@ fn unsuccessful_channel_update_with_data_limits_exceeded() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1154,7 +1162,7 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1173,7 +1181,7 @@ fn unsuccessful_channel_update_with_invalid_collaborators_set() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1190,7 +1198,7 @@ fn unsuccessful_channel_update_with_invalid_expected_data_size_fee() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1211,11 +1219,15 @@ fn unsuccessful_channel_update_with_insufficient_balance() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
         slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize(data_object_deletion_prize);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -1232,7 +1244,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_size_limit(
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1263,7 +1275,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
                 + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
         );
 
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1291,7 +1303,7 @@ fn successful_curator_channel_deletion_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1307,7 +1319,7 @@ fn unsuccessful_curator_channel_deletion_by_invalid_lead_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID + 100)
@@ -1323,7 +1335,7 @@ fn unsuccessful_member_channel_deletion_by_lead() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1339,7 +1351,7 @@ fn unsuccessful_channel_deletion_by_collaborator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -1355,7 +1367,7 @@ fn successful_channel_deletion_by_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1371,7 +1383,7 @@ fn successful_channel_deletion_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeleteChannelFixture::default()
@@ -1391,7 +1403,7 @@ fn unsuccessful_channel_deletion_by_unauthorized_member() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -1407,7 +1419,7 @@ fn unsuccessful_channel_deletion_by_unauthorized_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let unauthorized_curator_group_id =
             curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
@@ -1428,7 +1440,7 @@ fn unsuccessful_channel_deletion_by_uncorresponding_member_id_and_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
@@ -1444,7 +1456,7 @@ fn unsuccessful_channel_deletion_by_uncorresponding_curator_id_and_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         DeleteChannelFixture::default()
@@ -1464,7 +1476,7 @@ fn unsuccessful_channel_deletion_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         DeleteChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1481,7 +1493,7 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         assert!(DATA_OBJECTS_NUMBER > 0);
 

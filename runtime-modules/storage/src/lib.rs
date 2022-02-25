@@ -316,9 +316,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
         + MaybeSerialize
         + PartialEq;
 
-    /// Defines a prize for a data object deletion.
-    type DataObjectDeletionPrize: Get<BalanceOf<Self>>;
-
     /// Defines maximum size of the "hash blacklist" collection.
     type BlacklistSizeLimit: Get<u64>;
 
@@ -994,6 +991,9 @@ decl_storage! {
         /// The deletion prize for the dynamic bags (helps preventing the state bloat).
         pub DynamicBagDeletionPrizeValue get (fn dynamic_bag_deletion_prize_value): BalanceOf<T>;
 
+        /// The deletion prize for the data objects (helps preventing the state bloat).
+        pub DataObjectDeletionPrizeValue get (fn data_object_deletion_prize_value): BalanceOf<T>;
+
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy):
             map hasher(blake2_128_concat) DynamicBagType =>
@@ -1320,7 +1320,12 @@ decl_event! {
         /// Emits on updating the dynamic bag deletion prize.
         /// Params
         /// - deletion prize value
-        DynamicBagDeletionPrizeValueUpdated(Balance,),
+        DynamicBagDeletionPrizeValueUpdated(Balance),
+
+        /// Emits on updating the data object deletion prize.
+        /// Params
+        /// - deletion prize value
+        DataObjectDeletionPrizeValueUpdated(Balance),
     }
 }
 
@@ -1512,9 +1517,6 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
-        /// Exports const - a prize for a data object deletion.
-        const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
-
         /// Exports const - maximum size of the "hash blacklist" collection.
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
 
@@ -1662,6 +1664,25 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::DynamicBagDeletionPrizeValueUpdated(deletion_prize)
+            );
+        }
+
+        /// Updates data object deletion prize value.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_data_object_deletion_prize(
+            origin,
+            deletion_prize: BalanceOf<T>,
+        ) {
+            T::ensure_storage_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DataObjectDeletionPrizeValue::<T>::put(deletion_prize);
+
+            Self::deposit_event(
+                RawEvent::DataObjectDeletionPrizeValueUpdated(deletion_prize)
             );
         }
 
@@ -2925,7 +2946,7 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
             params.clone(),
-            T::DataObjectDeletionPrize::get(),
+            Self::data_object_deletion_prize_value(),
         ));
 
         Ok(())
@@ -3180,7 +3201,7 @@ impl<T: Trait> Module<T> {
     fn create_data_objects(
         object_creation_list: Vec<DataObjectCreationParameters>,
     ) -> DataObjectCandidates<T> {
-        let deletion_prize = T::DataObjectDeletionPrize::get();
+        let deletion_prize = Self::data_object_deletion_prize_value();
 
         let data_objects = object_creation_list.iter().cloned().map(|obj| DataObject {
             accepted: false,
@@ -3535,7 +3556,7 @@ impl<T: Trait> Module<T> {
 
                     let bag_change = acc
                         .clone()
-                        .add_object(object_params.size, T::DataObjectDeletionPrize::get());
+                        .add_object(object_params.size, Self::data_object_deletion_prize_value());
 
                     Ok(bag_change)
                 },

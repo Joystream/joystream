@@ -2198,3 +2198,51 @@ impl UpdateDynamicBagDeletionPrizeValueFixture {
         }
     }
 }
+
+pub struct UpdateDataObjectDeletionPrizeValueFixture {
+    origin: RawOrigin<u64>,
+    deletion_prize: u64,
+}
+
+impl UpdateDataObjectDeletionPrizeValueFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+        Self {
+            deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_deletion_prize = Storage::data_object_deletion_prize_value();
+
+        let actual_result = Storage::update_data_object_deletion_prize(
+            self.origin.clone().into(),
+            self.deletion_prize,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                self.deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        } else {
+            assert_eq!(
+                old_deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        }
+    }
+}
