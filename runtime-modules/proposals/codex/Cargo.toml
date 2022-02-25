@@ -21,6 +21,7 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 blog = { package = 'pallet-blog', default-features = false, path = '../../blog'}
+bounty = { package = 'pallet-bounty', default-features = false, path = '../../bounty'}    
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
@@ -58,4 +59,5 @@ std = [
     'constitution/std',
     'membership/std',
     'blog/std',
+    'bounty/std',    
 ]

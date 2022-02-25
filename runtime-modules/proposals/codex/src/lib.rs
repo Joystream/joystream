@@ -115,6 +115,7 @@ pub trait Trait:
     + common::membership::MembershipTypes
     + staking::Trait
     + proposals_engine::Trait
+    + bounty::Trait
 {
     /// Proposal Codex module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -136,9 +137,6 @@ pub trait Trait:
     type SetMaxValidatorCountProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
-
-    /// Bounty Id type (mirroring bounty::Trait::BountyId)
-    type BountyId: From<u32> + Parameter + Default + Copy;
 
     /// 'Runtime Upgrade' proposal parameters.
     type RuntimeUpgradeProposalParameters: Get<
