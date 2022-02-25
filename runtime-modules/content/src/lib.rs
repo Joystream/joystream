@@ -363,22 +363,17 @@ decl_module! {
 
             let channel_bag_id = Self::bag_id_for_channel(&channel_id);
 
-            let deletion_prize = storage::DynamicBagDeletionPrize::<T> {
-                prize: Zero::zero(), // put 0 for Giza release
-                account_id: sender,
-            };
-
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
                 if let Some(params) = upload_params.clone() {
                     Storage::<T>::can_create_dynamic_bag_with_objects_constraints(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
-                        &Some(deletion_prize.clone()),
+                        &sender,
                         &params
                     )?;
                 } else {
                     Storage::<T>::can_create_dynamic_bag(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
-                        &Some(deletion_prize.clone()),
+                        &sender,
                     )?;
                 }
             }
@@ -391,14 +386,14 @@ decl_module! {
                 if let Some(params) = upload_params.clone() {
                     Storage::<T>::create_dynamic_bag_with_objects_constraints(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
-                        Some(deletion_prize),
+                        sender,
                         params,
                     )?;
                     // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
                 } else {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
-                        Some(deletion_prize),
+                        sender,
                     )?;
                 }
             }

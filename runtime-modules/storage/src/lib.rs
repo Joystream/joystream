@@ -41,6 +41,8 @@
 //! updates whether new bags are being accepted for storage.
 //! - [set_storage_bucket_voucher_limits](./struct.Module.html#method.set_storage_bucket_voucher_limits) -
 //! sets storage bucket voucher limits.
+//! - [update_dynamic_bag_deletion_prize](./struct.Module.html#method.update_dynamic_bag_deletion_prize) -
+//! updates dynamic bag deletion prize value
 //!
 //!
 //! #### Storage provider extrinsics
@@ -208,26 +210,26 @@ pub trait DataObjectStorage<T: Trait> {
     /// Creates dynamic bag. BagId should provide the caller.
     fn create_dynamic_bag(
         bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_accont_id: T::AccountId,
     ) -> DispatchResult;
 
     /// Validates `create_dynamic_bag` parameters and conditions.
     fn can_create_dynamic_bag(
         bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: &T::AccountId,
     ) -> DispatchResult;
 
     /// Same as create_dynamic_bag but with caller provided objects/data
     fn create_dynamic_bag_with_objects_constraints(
         bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: T::AccountId,
         params: UploadParameters<T>,
     ) -> DispatchResult;
 
     /// Same as can_create_dynamic_bag but with caller provided objects/data
     fn can_create_dynamic_bag_with_objects_constraints(
         bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: &T::AccountId,
         params: &UploadParameters<T>,
     ) -> DispatchResult;
 
@@ -989,6 +991,9 @@ decl_storage! {
         /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
+        /// The deletion prize for the dynamic bags (helps preventing the state bloat).
+        pub DynamicBagDeletionPrizeValue get (fn dynamic_bag_deletion_prize_value): BalanceOf<T>;
+
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy):
             map hasher(blake2_128_concat) DynamicBagType =>
@@ -1311,6 +1316,11 @@ decl_event! {
             DistributionBucketFamilyId,
             Vec<u8>
         ),
+
+        /// Emits on updating the dynamic bag deletion prize.
+        /// Params
+        /// - deletion prize value
+        DynamicBagDeletionPrizeValueUpdated(Balance,),
     }
 }
 
@@ -1633,6 +1643,25 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_objects_size, new_objects_number)
+            );
+        }
+
+        /// Updates dynamic bag deletion prize value.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_dynamic_bag_deletion_prize(
+            origin,
+            deletion_prize: BalanceOf<T>,
+        ) {
+            T::ensure_storage_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DynamicBagDeletionPrizeValue::<T>::put(deletion_prize);
+
+            Self::deposit_event(
+                RawEvent::DynamicBagDeletionPrizeValueUpdated(deletion_prize)
             );
         }
 
@@ -2531,6 +2560,10 @@ decl_module! {
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
             ensure_root(origin)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::upload_data_objects(params)?;
         }
 
@@ -2539,11 +2572,15 @@ decl_module! {
         pub fn sudo_create_dynamic_bag(
             origin,
             bag_id: DynamicBagId<T>,
-            deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+            deletion_prize_account_id: T::AccountId,
         ) {
             ensure_root(origin)?;
 
-            Self::create_dynamic_bag(bag_id, deletion_prize)?;
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::create_dynamic_bag(bag_id, deletion_prize_account_id)?;
         }
     }
 }
@@ -2703,8 +2740,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn create_dynamic_bag(
         dynamic_bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: T::AccountId,
     ) -> DispatchResult {
+        let deletion_prize =
+            Self::create_dynamic_bag_deletion_prize_record(deletion_prize_account_id);
+
         // validate params and get storage & distribution buckets
         let bag_change =
             Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize, &None)?;
@@ -2727,9 +2767,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn create_dynamic_bag_with_objects_constraints(
         dynamic_bag_id: DynamicBagId<T>,
-        deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: T::AccountId,
         params: UploadParameters<T>,
     ) -> DispatchResult {
+        let deletion_prize =
+            Self::create_dynamic_bag_deletion_prize_record(deletion_prize_account_id);
+
         let bag_change = Self::validate_create_dynamic_bag_params(
             &dynamic_bag_id,
             &deletion_prize,
@@ -2754,19 +2797,25 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
     fn can_create_dynamic_bag(
         bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: &T::AccountId,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, &None).map(|_| ())
+        let deletion_prize =
+            Self::create_dynamic_bag_deletion_prize_record(deletion_prize_account_id.clone());
+
+        Self::validate_create_dynamic_bag_params(bag_id, &deletion_prize, &None).map(|_| ())
     }
 
     fn can_create_dynamic_bag_with_objects_constraints(
         dynamic_bag_id: &DynamicBagId<T>,
-        deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        deletion_prize_account_id: &T::AccountId,
         params: &UploadParameters<T>,
     ) -> DispatchResult {
+        let deletion_prize =
+            Self::create_dynamic_bag_deletion_prize_record(deletion_prize_account_id.clone());
+
         let bag_change = Self::validate_create_dynamic_bag_params(
             dynamic_bag_id,
-            deletion_prize,
+            &deletion_prize,
             &Some(params.clone()),
         )?;
 
@@ -2785,6 +2834,19 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // Creates optional DynamicBagDeletionPrize. Return None when the deletion prize is zero.
+    fn create_dynamic_bag_deletion_prize_record(
+        account_id: T::AccountId,
+    ) -> Option<DynamicBagDeletionPrize<T>> {
+        let prize = Self::dynamic_bag_deletion_prize_value();
+
+        if prize == Zero::zero() {
+            None
+        } else {
+            Some(DynamicBagDeletionPrize::<T> { account_id, prize })
+        }
+    }
+
     // dynamic bag creation logic
     fn create_dynamic_bag_inner(
         dynamic_bag_id: &DynamicBagId<T>,
