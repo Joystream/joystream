@@ -26,7 +26,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
     blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
-    <T as crate::Trait>::BountyId,
+    <T as bounty::Trait>::BountyId,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.

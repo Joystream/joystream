@@ -4002,6 +4002,7 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-blog",
+ "pallet-bounty",
  "pallet-common",
  "pallet-constitution",
  "pallet-council",

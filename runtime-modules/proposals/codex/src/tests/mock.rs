@@ -2,6 +2,7 @@
 // Internal substrate warning.
 #![allow(non_fmt_panic)]
 
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{
     impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, weights::Weight,
@@ -62,6 +63,7 @@ impl_outer_event! {
         working_group Instance2 <T>,
         working_group Instance3 <T>,
         working_group Instance4 <T>,
+        bounty<T>,
     }
 }
 
@@ -596,7 +598,6 @@ impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
-    type BountyId = u64;
     type SetMaxValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
     type SignalProposalParameters = DefaultProposalParameters;
@@ -963,6 +964,115 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     });
 
     result
+}
+
+// bounty trait
+parameter_types! {
+    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+    pub const BountyLockId: [u8; 8] = [12; 8];
+    pub const ClosedContractSizeLimit: u32 = 3;
+    pub const MinCherryLimit: u64 = 10;
+    pub const MinFundingLimit: u64 = 50;
+    pub const MinWorkEntrantStake: u64 = 10;
+}
+
+impl bounty::Trait for Test {
+    type Event = TestEvent;
+    type ModuleId = BountyModuleId;
+    type BountyId = u64;
+    type Membership = ();
+    type WeightInfo = Weights;
+    type CouncilBudgetManager = CouncilBudgetManager;
+    type StakingHandler = StakingManager<Test, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+}
+
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub struct CouncilBudgetManager;
+impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+    fn get_budget() -> u64 {
+        Balances::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+    }
+
+    fn set_budget(budget: u64) {
+        let old_budget = Self::get_budget();
+
+        if budget > old_budget {
+            let _ = Balances::deposit_creating(&COUNCIL_BUDGET_ACCOUNT_ID, budget - old_budget);
+        }
+
+        if budget < old_budget {
+            let _ = Balances::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
+        }
+    }
+}
+
+impl common::membership::MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u64, DispatchError> {
+        if member_id < 10 {
+            return Ok(member_id); // similar account_id
+        }
+
+        Err(membership::Error::<Test>::MemberProfileNotFound.into())
+    }
+}
+
+impl bounty::WeightInfo for Weights {
+    fn create_bounty_by_council(_i: u32, _j: u32) -> u64 {
+        0
+    }
+    fn create_bounty_by_member(_i: u32, _j: u32) -> u64 {
+        0
+    }
+    fn cancel_bounty_by_member() -> u64 {
+        0
+    }
+    fn cancel_bounty_by_council() -> u64 {
+        0
+    }
+    fn veto_bounty() -> u64 {
+        0
+    }
+    fn fund_bounty_by_member() -> u64 {
+        0
+    }
+    fn fund_bounty_by_council() -> u64 {
+        0
+    }
+    fn withdraw_funding_by_member() -> u64 {
+        0
+    }
+    fn withdraw_funding_by_council() -> u64 {
+        0
+    }
+    fn announce_work_entry(_i: u32) -> u64 {
+        0
+    }
+    fn withdraw_work_entry() -> u64 {
+        0
+    }
+    fn submit_work(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_council_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_council_all_rejected(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
+        0
+    }
+    fn withdraw_work_entrant_funds() -> u64 {
+        0
+    }
 }
 
 pub type Staking = staking::Module<Test>;
