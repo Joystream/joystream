@@ -21,7 +21,7 @@ import {
   Video,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, inconsistentState } from '../common'
+import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
 import {
   getVideoActiveStatus,
   updateVideoActiveCounters,
@@ -541,7 +541,7 @@ export async function storage_DistributionBucketsPerBagLimitUpdated({
   const [newLimit] = new Storage.DistributionBucketsPerBagLimitUpdatedEvent(event).params
   const storageSystem = await getStorageSystem(store)
 
-  storageSystem.distributionBucketsPerBagLimit = newLimit.toNumber()
+  storageSystem.distributionBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
 
   await store.save<StorageSystemParameters>(storageSystem)
 }
@@ -553,7 +553,7 @@ export async function storage_StorageBucketsPerBagLimitUpdated({
   const [newLimit] = new Storage.StorageBucketsPerBagLimitUpdatedEvent(event).params
   const storageSystem = await getStorageSystem(store)
 
-  storageSystem.storageBucketsPerBagLimit = newLimit.toNumber()
+  storageSystem.storageBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
 
   await store.save<StorageSystemParameters>(storageSystem)
 }

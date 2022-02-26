@@ -100,7 +100,7 @@ fragment ProposalVotedEventFields on ProposalVotedEvent {
 }
 
 query getProposalVotedEventsByEventIds($eventIds: [ID!]) {
-  proposalVotedEvents(where: { id_in: $eventIds }) {
+  proposalVotedEvents(where: { id_in: $eventIds }, limit: 200) {
     ...ProposalVotedEventFields
   }
 }
