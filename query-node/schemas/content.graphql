@@ -72,6 +72,9 @@ type Channel @entity {
 
   "List of channel collaborators (members)"
   collaborators: [Membership!]
+
+  "Is comment section enabled (true if enabled)"
+  isCommentSectionEnabled: Boolean!
 }
 
 type VideoCategory @entity {
@@ -149,6 +152,20 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+
+  ##########################
+
+  "Is comment section enabled (true if enabled)"
+  isCommentSectionEnabled: Boolean!
+
+  "channel owner pinned comment"
+  pinnedComment: Comment @derivedFrom(field: "video")
+
+  "List of all video comments"
+  comments: [Comment!] @derivedFrom(field: "video")
+
+  "List of all video reactions"
+  reactions: [VideoReaction!] @derivedFrom(field: "video")
 }
 
 type VideoMediaMetadata @entity {
@@ -195,4 +212,67 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
+}
+
+enum ReactionOptions {
+  CANCEL
+  LIKE
+  UNLIKE
+}
+
+type VideoReaction @entity {
+  "Unique identifier"
+  id: ID!
+
+  "The Reaction"
+  reaction: ReactionOptions!
+
+  "The member that reacted"
+  member: Membership!
+
+  "The video that has been reacted to"
+  video: Video!
+}
+
+type CommentReaction @entity {
+  "Unique identifier"
+  id: ID!
+
+  "The Reaction"
+  reaction: ReactionOptions!
+
+  "The member that reacted"
+  member: Membership!
+
+  "The comment that has been reacted to"
+  comment: Comment!
+}
+
+type Comment @entity {
+  "Unique identifier"
+  id: ID!
+
+  "Author of the video comment"
+  author: Membership!
+
+  "Comment text"
+  text: String @fulltext(query: "commentText")
+
+  "Video the comment was added to"
+  video: Video!
+
+  "True if the comment is visible; moderators can set this flag"
+  isVisible: Boolean!
+
+  "List of all reactions to the comment"
+  reactions: [CommentReaction!] @derivedFrom(field: "comment")
+
+  "A (parent) comment that this comment replies to (if any)"
+  repliesTo: Comment
+
+  "List of all text update events (edits)"
+  edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
+
+  "The event the post was deleted in (if any)"
+  deletedInEvent: CommentDeletedEvent
 }
