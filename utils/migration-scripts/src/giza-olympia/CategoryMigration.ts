@@ -1,6 +1,7 @@
 import { BaseMigration } from './BaseMigration'
+import { ContentDirectorySnapshot } from './SnapshotManager'
 
-export abstract class CategoryMigration extends BaseMigration {
+export abstract class CategoryMigration extends BaseMigration<ContentDirectorySnapshot> {
   protected contentLeadKey!: string
 
   public async init(): Promise<void> {

@@ -140,6 +140,27 @@ fragment DistributionBucketFields on DistributionBucket {
   }
 }
 
+fragment MembershipFields on Membership {
+  id
+  handle
+  avatarUri
+  about
+  controllerAccount
+  rootAccount
+}
+
+fragment MembershipConnectionFields on MembershipConnection {
+  edges {
+    node {
+      ...MembershipFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
 query getVideoCategories {
   videoCategories {
     ...VideoCategoryFields
@@ -186,5 +207,14 @@ query getVideosPage($limit: Int!, $lastCursor: String) {
     after: $lastCursor
   ) {
     ...VideoConnectionFields
+  }
+}
+
+query getMembershipsPage($limit: Int!, $lastCursor: String) {
+  membershipsConnection(
+    first: $limit
+    after: $lastCursor
+  ) {
+    ...MembershipConnectionFields
   }
 }

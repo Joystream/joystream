@@ -87,6 +87,20 @@ export type DistributionBucketFieldsFragment = {
   }>
 }
 
+export type MembershipFieldsFragment = {
+  id: string
+  handle: string
+  avatarUri?: Types.Maybe<string>
+  about?: Types.Maybe<string>
+  controllerAccount: string
+  rootAccount: string
+}
+
+export type MembershipConnectionFieldsFragment = {
+  edges: Array<{ node: MembershipFieldsFragment }>
+  pageInfo: { hasNextPage: boolean; endCursor?: Types.Maybe<string> }
+}
+
 export type GetVideoCategoriesQueryVariables = Types.Exact<{ [key: string]: never }>
 
 export type GetVideoCategoriesQuery = { videoCategories: Array<VideoCategoryFieldsFragment> }
@@ -122,6 +136,13 @@ export type GetVideosPageQueryVariables = Types.Exact<{
 }>
 
 export type GetVideosPageQuery = { videosConnection: VideoConnectionFieldsFragment }
+
+export type GetMembershipsPageQueryVariables = Types.Exact<{
+  limit: Types.Scalars['Int']
+  lastCursor?: Types.Maybe<Types.Scalars['String']>
+}>
+
+export type GetMembershipsPageQuery = { membershipsConnection: MembershipConnectionFieldsFragment }
 
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
@@ -279,6 +300,30 @@ export const DistributionBucketFields = gql`
     }
   }
 `
+export const MembershipFields = gql`
+  fragment MembershipFields on Membership {
+    id
+    handle
+    avatarUri
+    about
+    controllerAccount
+    rootAccount
+  }
+`
+export const MembershipConnectionFields = gql`
+  fragment MembershipConnectionFields on MembershipConnection {
+    edges {
+      node {
+        ...MembershipFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  ${MembershipFields}
+`
 export const GetVideoCategories = gql`
   query getVideoCategories {
     videoCategories {
@@ -330,4 +375,12 @@ export const GetVideosPage = gql`
     }
   }
   ${VideoConnectionFields}
+`
+export const GetMembershipsPage = gql`
+  query getMembershipsPage($limit: Int!, $lastCursor: String) {
+    membershipsConnection(first: $limit, after: $lastCursor) {
+      ...MembershipConnectionFields
+    }
+  }
+  ${MembershipConnectionFields}
 `

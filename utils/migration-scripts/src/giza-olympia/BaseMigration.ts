@@ -8,7 +8,6 @@ import nodeCleanup from 'node-cleanup'
 import _ from 'lodash'
 import fs from 'fs'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { ContentDirectorySnapshot } from './SnapshotManager'
 
 export type MigrationResult = {
   idsMap: Map<number, number>
@@ -25,24 +24,24 @@ export type BaseMigrationConfig = {
   sudoUri: string
 }
 
-export type BaseMigrationParams = {
+export type BaseMigrationParams<T> = {
   api: RuntimeApi
-  snapshot: ContentDirectorySnapshot
+  snapshot: T
   config: BaseMigrationConfig
 }
 
-export abstract class BaseMigration {
+export abstract class BaseMigration<T> {
   abstract readonly name: string
   protected api: RuntimeApi
   protected sudo!: KeyringPair
   protected config: BaseMigrationConfig
-  protected snapshot: ContentDirectorySnapshot
+  protected snapshot: T
   protected failedMigrations: Set<number>
   protected idsMap: Map<number, number>
   protected pendingMigrationIteration: Promise<void> | undefined
   protected abstract logger: Logger
 
-  public constructor({ api, config, snapshot }: BaseMigrationParams) {
+  public constructor({ api, config, snapshot }: BaseMigrationParams<T>) {
     this.api = api
     this.config = config
     this.failedMigrations = new Set()
@@ -133,37 +132,40 @@ export abstract class BaseMigration {
    * Assumptions:
    * - Each entity is migrated with a constant number of calls (2 by default: balnces.transferKeepAlive and sudo.sudoAs)
    * - Ordering of the entities in the `batch` array matches the ordering of the batched calls through which they are migrated
-   * - Last call for each entity is always sudo.sudoAs
-   * - There is only one sudo.sudoAs call per entity
+   * - If `usesSudoAs===true`: Last call for each entity is always sudo.sudoAs
+   * - If `usesSudoAs===true`: There is only one sudo.sudoAs call per entity
    *
-   * Entity migration is considered failed if sudo.sudoAs call failed or was not executed at all, regardless of
+   * Entity migration is considered failed if the last call (per entity) failed or was not executed at all, regardless of
    * the result of any of the previous calls associated with that entity migration.
-   * (This means that regardless of whether balnces.transferKeepAlive failed and interrupted the batch or balnces.transferKeepAlive
+   * (This means, for example, that regardless of whether balnces.transferKeepAlive failed and interrupted the batch or balnces.transferKeepAlive
    * succeeded, but sudo.sudoAs failed - in both cases the migration is considered failed and should be fully re-executed on
    * the next script run)
    */
   protected extractFailedMigrations<T extends { id: string }>(
     result: SubmittableResult,
     batch: T[],
-    callsPerEntity = 2
+    callsPerEntity = 2,
+    usesSudoAs = true
   ): void {
     const { api } = this
     const batchInterruptedEvent = api.findEvent(result, 'utility', 'BatchInterrupted')
-    const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
     const numberOfSuccesfulCalls = batchInterruptedEvent
       ? batchInterruptedEvent.data[0].toNumber()
       : callsPerEntity * batch.length
     const numberOfMigratedEntites = Math.floor(numberOfSuccesfulCalls / callsPerEntity)
-    if (sudoAsDoneEvents.length !== numberOfMigratedEntites) {
+
+    const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
+    if (usesSudoAs && sudoAsDoneEvents.length !== numberOfMigratedEntites) {
       throw new Error(
         `Unexpected number of SudoAsDone events (expected: ${numberOfMigratedEntites}, got: ${sudoAsDoneEvents.length})! ` +
           `Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`
       )
     }
+
     const failedIds: number[] = []
     batch.forEach((entity, i) => {
       const entityId = parseInt(entity.id)
-      if (i >= numberOfMigratedEntites || sudoAsDoneEvents[i].data[0].isFalse) {
+      if (i >= numberOfMigratedEntites || (usesSudoAs && sudoAsDoneEvents[i].data[0].isFalse)) {
         failedIds.push(entityId)
         this.failedMigrations.add(entityId)
       }

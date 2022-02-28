@@ -3,7 +3,7 @@ import { writeFileSync } from 'fs'
 import { QueryNodeApi } from '../../giza-olympia/giza-query-node/api'
 import { SnapshotManager } from '../../giza-olympia/SnapshotManager'
 
-export class CreateContentDirectorySnapshotCommand extends Command {
+export class CreateMembershipsSnapshotCommand extends Command {
   static flags = {
     queryNodeUri: flags.string({
       description: 'Giza query node uri',
@@ -17,11 +17,11 @@ export class CreateContentDirectorySnapshotCommand extends Command {
   }
 
   async run(): Promise<void> {
-    const { queryNodeUri, output } = this.parse(CreateContentDirectorySnapshotCommand).flags
+    const { queryNodeUri, output } = this.parse(CreateMembershipsSnapshotCommand).flags
     const queryNodeApi = new QueryNodeApi(queryNodeUri)
 
     const snapshotManager = new SnapshotManager({ queryNodeApi })
-    const snapshot = await snapshotManager.createContentDirectorySnapshot()
+    const snapshot = await snapshotManager.createMembershipsSnapshot()
     if (output) {
       writeFileSync(output, JSON.stringify(snapshot, null, 2))
     } else {

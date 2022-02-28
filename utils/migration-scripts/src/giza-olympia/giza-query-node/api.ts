@@ -34,6 +34,10 @@ import {
   GetVideosPageQuery,
   GetVideosPageQueryVariables,
   GetVideosPage,
+  MembershipConnectionFieldsFragment,
+  GetMembershipsPageQuery,
+  GetMembershipsPageQueryVariables,
+  GetMembershipsPage,
 } from './generated/queries'
 import { Logger } from 'winston'
 import { createLogger } from '../../logging'
@@ -185,5 +189,24 @@ export class QueryNodeApi {
       { ids: bagIds },
       'distributionBuckets'
     )
+  }
+
+  public async getMembershipsPage(
+    lastCursor?: string,
+    limit: number = MAX_RESULTS_PER_QUERY
+  ): Promise<MembershipConnectionFieldsFragment> {
+    const conn = await this.uniqueEntityQuery<GetMembershipsPageQuery, GetMembershipsPageQueryVariables>(
+      GetMembershipsPage,
+      {
+        limit,
+        lastCursor,
+      },
+      'membershipsConnection'
+    )
+    if (!conn) {
+      throw new Error('Cannot get membershipsConnection!')
+    }
+
+    return conn
   }
 }

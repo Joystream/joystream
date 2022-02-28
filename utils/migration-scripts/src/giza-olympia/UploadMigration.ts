@@ -1,13 +1,14 @@
 import { BaseMigration, BaseMigrationConfig, BaseMigrationParams } from './BaseMigration'
 import { UploadManager } from './UploadManager'
+import { ContentDirectorySnapshot } from './SnapshotManager'
 
 export type UploadMigrationConfig = BaseMigrationConfig
 
-export type UploadMigrationParams = BaseMigrationParams & {
+export type UploadMigrationParams = BaseMigrationParams<ContentDirectorySnapshot> & {
   uploadManager: UploadManager
 }
 
-export abstract class UploadMigration extends BaseMigration {
+export abstract class UploadMigration extends BaseMigration<ContentDirectorySnapshot> {
   protected config: UploadMigrationConfig
   protected uploadManager: UploadManager
 

@@ -6,12 +6,13 @@ import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { BaseMigrationParams, MigrationResult } from './BaseMigration'
 import { CategoryMigration } from './CategoryMigration'
+import { ContentDirectorySnapshot } from './SnapshotManager'
 
 export class VideoCategoriesMigration extends CategoryMigration {
   name = 'Video categories migration'
   protected logger: Logger
 
-  public constructor(params: BaseMigrationParams) {
+  public constructor(params: BaseMigrationParams<ContentDirectorySnapshot>) {
     super(params)
     this.logger = createLogger(this.name)
   }
