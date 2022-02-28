@@ -219,7 +219,7 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
 pub(crate) fn set_councilor_reward_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 200,
-        grace_period: 201600, // A council term
+        grace_period: 100, // A council term
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -249,8 +249,8 @@ pub(crate) fn set_initial_invitation_balance_proposal() -> ProposalParameters<Bl
 pub(crate) fn set_membership_lead_invitation_quota_proposal(
 ) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: 72000,
-        grace_period: 43200,
+        voting_period: 200,
+        grace_period: 100,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
