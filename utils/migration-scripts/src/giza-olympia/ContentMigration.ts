@@ -7,6 +7,7 @@ import { ChannelCategoriesMigration } from './ChannelCategoriesMigration'
 import { VideoCategoriesMigration } from './VideoCategoriesMigration'
 import { ContentDirectorySnapshot } from './SnapshotManager'
 import { readFileSync } from 'fs'
+import { MigrationStateJson } from './BaseMigration'
 
 export type ContentMigrationConfig = {
   wsProviderEndpointUri: string
@@ -22,6 +23,7 @@ export type ContentMigrationConfig = {
   migrationStatePath: string
   excludeVideoIds: number[]
   snapshotFilePath: string
+  membershipsMigrationResultPath: string
 }
 
 export class ContentMigration {
@@ -55,10 +57,17 @@ export class ContentMigration {
     return JSON.parse(snapshotJson) as ContentDirectorySnapshot
   }
 
+  private loadMembershipsMap(): Map<number, number> {
+    const resultJson = readFileSync(this.config.membershipsMigrationResultPath).toString()
+    const mapEntries = (JSON.parse(resultJson) as MigrationStateJson).idsMapEntries
+    return new Map<number, number>(mapEntries)
+  }
+
   public async run(): Promise<void> {
     const { api, config } = this
     await this.api.isReadyOrError
     const snapshot = this.loadSnapshot()
+    const membershipsMap = this.loadMembershipsMap()
     const { idsMap: channelCategoriesMap } = await new ChannelCategoriesMigration({ api, config, snapshot }).run()
     const { idsMap: videoCategoriesMap } = await new VideoCategoriesMigration({ api, config, snapshot }).run()
     const forcedChannelOwner = await this.getForcedChannelOwner()
@@ -73,6 +82,7 @@ export class ContentMigration {
       forcedChannelOwner,
       uploadManager,
       categoriesMap: channelCategoriesMap,
+      membershipsMap,
     }).run()
     await new VideosMigration({
       api,
@@ -83,6 +93,7 @@ export class ContentMigration {
       forcedChannelOwner,
       uploadManager,
       categoriesMap: videoCategoriesMap,
+      membershipsMap,
     }).run()
   }
 }

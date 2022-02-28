@@ -22,6 +22,7 @@ export type ChannelsMigrationParams = UploadMigrationParams & {
   config: ChannelsMigrationConfig
   forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   categoriesMap: Map<number, number>
+  membershipsMap: Map<number, number>
 }
 
 export type ChannelsMigrationResult = MigrationResult & {
@@ -32,6 +33,7 @@ export class ChannelMigration extends UploadMigration {
   name = 'Channels migration'
   protected config: ChannelsMigrationConfig
   protected categoriesMap: Map<number, number>
+  protected membershipsMap: Map<number, number>
   protected videoIds: number[] = []
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   protected logger: Logger
@@ -41,6 +43,7 @@ export class ChannelMigration extends UploadMigration {
     this.config = params.config
     this.forcedChannelOwner = params.forcedChannelOwner
     this.categoriesMap = params.categoriesMap
+    this.membershipsMap = params.membershipsMap
     this.logger = createLogger(this.name)
   }
 
@@ -52,7 +55,10 @@ export class ChannelMigration extends UploadMigration {
     return newCategoryId ? Long.fromNumber(newCategoryId) : undefined
   }
 
-  private getChannelOwnerMember({ id, ownerMember }: ChannelFieldsFragment) {
+  private getChannelOwnerMember({
+    id,
+    ownerMember,
+  }: ChannelFieldsFragment): Exclude<ChannelFieldsFragment['ownerMember'], null | undefined> {
     if (!ownerMember) {
       throw new Error(`Chanel ownerMember missing: ${id}. Only member-owned channels are supported!`)
     }
@@ -61,7 +67,12 @@ export class ChannelMigration extends UploadMigration {
       return this.forcedChannelOwner
     }
 
-    return ownerMember
+    const newMemberId = this.membershipsMap.get(parseInt(ownerMember.id))
+    if (newMemberId === undefined) {
+      throw new Error(`Missing member ${ownerMember.id} (owner of channel ${id}) in the memberships map!`)
+    }
+
+    return { ...ownerMember, id: newMemberId.toString() }
   }
 
   protected async migrateBatch(tx: SubmittableExtrinsic<'promise'>, channels: ChannelFieldsFragment[]): Promise<void> {

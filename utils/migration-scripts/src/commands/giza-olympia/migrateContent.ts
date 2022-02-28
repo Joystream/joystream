@@ -8,6 +8,10 @@ export class MigrateContentCommand extends Command {
       required: true,
       description: 'Path to giza content directory snapshot (json)',
     }),
+    membershipsMigrationResultPath: flags.string({
+      required: true,
+      description: 'JSON artifact produced by membership migration',
+    }),
     wsProviderEndpointUri: flags.string({
       description: 'WS provider endpoint uri (Olympia)',
       default: 'ws://localhost:9944',

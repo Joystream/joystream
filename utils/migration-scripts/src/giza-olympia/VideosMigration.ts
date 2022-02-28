@@ -21,6 +21,7 @@ export type VideosMigrationParams = UploadMigrationParams & {
   channelsMap: Map<number, number>
   forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   categoriesMap: Map<number, number>
+  membershipsMap: Map<number, number>
 }
 
 export class VideosMigration extends UploadMigration {
@@ -28,6 +29,7 @@ export class VideosMigration extends UploadMigration {
   protected config: VideosMigrationConfig
   protected categoriesMap: Map<number, number>
   protected channelsMap: Map<number, number>
+  protected membershipsMap: Map<number, number>
   protected videoIds: number[]
   protected forcedChannelOwner: { id: string; controllerAccount: string } | undefined
   protected logger: Logger
@@ -39,6 +41,7 @@ export class VideosMigration extends UploadMigration {
     this.videoIds = params.videoIds
     this.forcedChannelOwner = params.forcedChannelOwner
     this.categoriesMap = params.categoriesMap
+    this.membershipsMap = params.membershipsMap
     this.logger = createLogger(this.name)
   }
 
@@ -118,6 +121,26 @@ export class VideosMigration extends UploadMigration {
     return this.getResult()
   }
 
+  private getChannelOwner({
+    id,
+    ownerMember,
+  }: VideoFieldsFragment['channel']): Exclude<VideoFieldsFragment['channel']['ownerMember'], null | undefined> {
+    if (!ownerMember) {
+      throw new Error(`Channel ownerMember missing for channel ${id}`)
+    }
+
+    if (this.forcedChannelOwner) {
+      return this.forcedChannelOwner
+    }
+
+    const newMemberId = this.membershipsMap.get(parseInt(ownerMember.id))
+    if (newMemberId === undefined) {
+      throw new Error(`Missing member ${ownerMember.id} (owner of channel ${id}) in the memberships map!`)
+    }
+
+    return { ...ownerMember, id: newMemberId.toString() }
+  }
+
   private getVideoData(video: VideoFieldsFragment) {
     const { id, channel } = video
 
@@ -125,16 +148,7 @@ export class VideosMigration extends UploadMigration {
       throw new Error(`Channel data missing for video: ${id}`)
     }
 
-    if (!channel.ownerMember) {
-      throw new Error(`Channel ownerMember missing for video ${id}`)
-    }
-
-    let { ownerMember } = channel
-    if (this.forcedChannelOwner) {
-      ownerMember = this.forcedChannelOwner
-    }
-
-    return { ...video, channel: { ...channel, ownerMember } }
+    return { ...video, channel: { ...channel, ownerMember: this.getChannelOwner(channel) } }
   }
 
   private async prepareVideo(video: VideoFieldsFragment) {
