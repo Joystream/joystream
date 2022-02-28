@@ -621,6 +621,33 @@
         "work_submitted": "bool",
         "oracle_judgment_result": "Option<OracleJudgment>"
     },
+    "BountyMilestone_Created": {
+        "created_at": "u32",
+        "has_contributions": "bool"
+    },
+    "BountyMilestone_BountyMaxFundingReached": {
+        "max_funding_reached_at": "u32"
+    },
+    "BountyMilestone_WorkSubmitted": {
+        "work_period_started_at": "u32"
+    },
+    "BountyMilestone_JudgmentSubmitted": {
+        "successful_bounty": "bool"
+    },
+    "BountyMilestone": {
+        "_enum": {
+            "Created": "BountyMilestone_Created",
+            "BountyMaxFundingReached": "BountyMilestone_BountyMaxFundingReached",
+            "WorkSubmitted": "BountyMilestone_WorkSubmitted",
+            "JudgmentSubmitted": "BountyMilestone_JudgmentSubmitted"
+        }
+    },
+    "Bounty": {
+        "creation_params": "BountyCreationParameters",
+        "total_funding": "u128",
+        "milestone": "BountyMilestone",
+        "active_work_entry_count": "u32"
+    },
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
     "CuratorGroup": {
