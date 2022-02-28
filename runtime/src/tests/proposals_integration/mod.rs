@@ -4,7 +4,9 @@
 
 mod working_group_proposals;
 
-use crate::tests::{account_from_member_id, create_new_members, run_to_block, setup_new_council};
+use crate::tests::{
+    account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
+};
 use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
@@ -485,16 +487,18 @@ where
             if self.set_member_lead {
                 let lead_account_id = account_from_member_id(self.lead_id);
 
+                let min_stake = <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get();
+
                 increase_total_balance_issuance_using_account_id(
                     lead_account_id.clone(),
-                    1_500_000,
+                    min_stake * 2,
                 );
 
                 set_membership_leader(lead_account_id, self.lead_id);
             }
         }
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), max_proposal_stake());
 
         assert_eq!((self.successful_call)(), Ok(()));
 

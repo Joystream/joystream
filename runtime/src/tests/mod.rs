@@ -255,3 +255,57 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
+
+pub(crate) fn max_proposal_stake() -> u128 {
+    let mut stakes = vec![];
+    stakes.push(<Runtime as proposals_codex::Trait>::SetMaxValidatorCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::RuntimeUpgradeProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::SignalProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::FundingRequestProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::FillWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::UpdateWorkingGroupBudgetProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
+    );
+    stakes
+        .push(<Runtime as proposals_codex::Trait>::SlashWorkingGroupLeadProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::SetWorkingGroupLeadRewardProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::TerminateWorkingGroupLeadProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Trait>::AmendConstitutionProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Trait>::SetMembershipPriceProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::SetCouncilBudgetIncrementProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Trait>::SetCouncilorRewardProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Trait>::SetInitialInvitationBalanceProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Trait>::SetInvitationCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::SetReferralCutProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::CreateBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::EditBlogPostProoposalParamters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::VetoProposalProposalParameters::get());
+
+    stakes
+        .iter()
+        .map(|p| p.required_stake.unwrap_or(0))
+        .max_by(|s1, s2| s1.cmp(s2))
+        .unwrap()
+}
