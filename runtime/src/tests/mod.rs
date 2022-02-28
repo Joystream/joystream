@@ -97,12 +97,6 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     for member_id in extra_candidate_ids.clone() {
         let extra_councilor = account_from_member_id(member_id);
 
-        // new members so we don't need to release any stake?
-        // Council::release_candidacy_stake(
-        //     RawOrigin::Signed(extra_councilor.clone()).into(),
-        //     member_id,
-        // )
-        // .unwrap_or_else(|err| assert_eq!(err, council::Error::NoStake));
         increase_total_balance_issuance_using_account_id(
             extra_councilor.clone(),
             councilor_stake + 1,
