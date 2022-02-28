@@ -36,25 +36,14 @@ export class SetLeaderInvitationQuotaFixture extends BaseWorkingGroupFixture {
     return await this.api.retrieveMembershipEventDetails(result, 'LeaderInvitationQuotaUpdated')
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: BudgetSetEventFieldsFragment, i: number): void {
-    assert.equal('1', '1')
-  }
-
-  protected assertQueriedGroupIsValid(qGroup: WorkingGroupFieldsFragment | null): void {
-    Utils.assert(qGroup, 'Query node: Working group not found!')
+  protected assertQueryNodeEventIsValid(qEvent: unknown, i: number): void {
+    // TODO: implement
   }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
 
     // Query and check the events
-    await this.query.tryQueryWithTimeout(
-      () => this.query.getBudgetSetEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    )
-
-    // Check the group
-    const qGroup = await this.query.getWorkingGroup(this.group)
-    this.assertQueriedGroupIsValid(qGroup)
+    // TODO: implement
   }
 }
