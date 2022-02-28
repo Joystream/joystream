@@ -56,13 +56,13 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   })
 
   // Run fixtures
-  const moderateThreadsFixture = new ModerateThreadsFixture(api, query, threadModerations)
-  const moderateThreadsRunner = new FixtureRunner(moderateThreadsFixture)
-  await moderateThreadsRunner.run()
-
   const moderatePostsFixture = new ModeratePostsFixture(api, query, postModerations)
   const moderatePostsRunner = new FixtureRunner(moderatePostsFixture)
   await moderatePostsRunner.run()
+
+  const moderateThreadsFixture = new ModerateThreadsFixture(api, query, threadModerations)
+  const moderateThreadsRunner = new FixtureRunner(moderateThreadsFixture)
+  await moderateThreadsRunner.run()
 
   // Run query-node checks
   await Promise.all([moderateThreadsFixture.runQueryNodeChecks(), moderatePostsFixture.runQueryNodeChecks()])
