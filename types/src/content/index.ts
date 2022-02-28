@@ -83,6 +83,7 @@ export class AuctionParams extends JoyStructDecorated({
 export class InitTransactionalStatus extends JoyEnum({
   Idle: Null,
   InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
+  BuyNow: Balance,
   Auction: AuctionParams,
 }) {}
 

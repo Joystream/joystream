@@ -536,6 +536,7 @@ pub enum InitTransactionalStatusRecord<
     Balance: Default + Clone + BaseArithmetic,
 > {
     Idle,
+    BuyNow(Balance),
     InitiatedOfferToMember(MemberId, Option<Balance>),
     Auction(AuctionParams<BlockNumber, Balance, MemberId>),
 }

@@ -29,8 +29,8 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, working_group::WorkingGroup, MembershipTypes, StorageOwnership,
-    Url,
+    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -104,6 +104,9 @@ pub trait Trait:
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
+
+    /// Type in order to retrieve controller account from channel member owner
+    type MemberInfoProvider: MembershipInfoProvider<Self>;
 }
 
 decl_storage! {
@@ -783,6 +786,18 @@ decl_module! {
                 )?;
             }
 
+
+            let nft_status = params.auto_issue_nft
+                .as_ref()
+                .map_or(
+                    Ok(None),
+                    |issuance_params| {
+                        ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                    }
+            )?;
+
+
             //
             // == MUTATION SAFE ==
             //
@@ -802,6 +817,10 @@ decl_module! {
                     Self::bag_id_for_channel(&channel_id),
                     params.assets_to_remove.clone(),
                 )?;
+            }
+
+            if nft_status.is_some() {
+                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
@@ -1251,7 +1270,8 @@ decl_module! {
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&item.channel_id)?;
 
-            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountIsNotSet);
+            let reward_account = Self::ensure_reward_account(&channel)?;
+
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = item
@@ -1265,7 +1285,7 @@ decl_module! {
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
             Self::verify_proof(&proof, &item)?;
 
-            ContentTreasury::<T>::transfer_reward( &channel.reward_account.unwrap(), cashout);
+            ContentTreasury::<T>::transfer_reward(&reward_account, cashout);
             ChannelById::<T>::mutate(
                 &item.channel_id,
                 |channel| channel.cumulative_payout_earned =
@@ -1856,7 +1876,8 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let channel = Self::channel_by_id(&video.in_channel);
+            let owner_account_id =  Self::ensure_reward_account(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1990,6 +2011,9 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::InitiatedOfferToMember(member, balance) => Ok(
                 TransactionalStatus::<T>::InitiatedOfferToMember(*member, *balance),
             ),
+            InitTransactionalStatus::<T>::BuyNow(balance) => {
+                Ok(TransactionalStatus::<T>::BuyNow(*balance))
+            }
             InitTransactionalStatus::<T>::Auction(params) => {
                 Self::validate_auction_params(&params)?;
                 let mut auction = AuctionRecord::new(params.clone());
@@ -2103,6 +2127,21 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    pub(crate) fn ensure_reward_account(
+        channel: &Channel<T>,
+    ) -> Result<T::AccountId, DispatchError> {
+        if let Some(reward_account) = &channel.reward_account {
+            Ok(reward_account.clone())
+        } else {
+            match &channel.owner {
+                ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
+                ChannelOwner::Member(member_id) => {
+                    <T as Trait>::MemberInfoProvider::controller_account_id(*member_id)
+                }
+            }
+        }
     }
 }
 

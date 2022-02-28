@@ -436,6 +436,9 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
+
+    /// membership info provider
+    type MemberInfoProvider = MemberInfoProvider;
 }
 
 // #[derive (Default)]
@@ -669,6 +672,24 @@ impl LockComparator<u64> for Test {
             existing_locks.contains(new_lock)
         } else {
             false
+        }
+    }
+}
+
+pub struct MemberInfoProvider {}
+impl MembershipInfoProvider<Test> for MemberInfoProvider {
+    fn controller_account_id(
+        member_id: common::MemberId<Test>,
+    ) -> Result<AccountId, DispatchError> {
+        match member_id {
+            DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
+            DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
+            _ => Err(DispatchError::Other("no account found")),
         }
     }
 }
