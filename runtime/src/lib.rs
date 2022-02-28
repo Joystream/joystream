@@ -1065,7 +1065,6 @@ impl proposals_codex::Trait for Runtime {
     type VetoBountyProposalParameters = VetoBountyProposalParameters;
     type WithdrawBountyFundingProposalParameters = WithdrawBountyFundingProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
-    type BountyId = u64;
 }
 
 impl pallet_constitution::Trait for Runtime {
