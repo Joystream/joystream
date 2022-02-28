@@ -73,6 +73,9 @@ type Channel @entity {
   "List of channel collaborators (members)"
   collaborators: [Membership!]
 
+  "List of members blocked from from participating on any video of the channel."
+  bannedMembers: [Membership!]
+
   "Is comment section enabled (true if enabled)"
   isCommentSectionEnabled: Boolean!
 }
@@ -268,7 +271,7 @@ type Comment @entity {
   reactions: [CommentReaction!] @derivedFrom(field: "comment")
 
   "A (parent) comment that this comment replies to (if any)"
-  repliesTo: Comment
+  parentCommentId: Comment
 
   "List of all text update events (edits)"
   edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")

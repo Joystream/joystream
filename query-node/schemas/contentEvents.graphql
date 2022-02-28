@@ -195,3 +195,32 @@ type CommentPinnedEvent implements Event @entity {
 
   # Only channel owner can pin the comment, so no actor context required
 }
+
+type MemberBannedFromChannelEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The chanel user is blocked from"
+  channel: Channel!
+
+  "The member being blocked from channel"
+  blockedMember: Membership!
+
+  # Only channel owner can pin the comment, so no actor context required
+}
