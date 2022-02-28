@@ -174,17 +174,14 @@ query getChannelsCategories {
 }
 
 query getDistributorsByBagIds($ids: [ID!]) {
-  distributionBuckets(where: {
-    bags_some: { id_in: $ids },
-    distributing_eq: true,
-  }) {
+  distributionBuckets(where: { bags_some: { id_in: $ids }, distributing_eq: true }) {
     ...DistributionBucketFields
   }
 }
 
 query getDataObjectsPage($updatedAfter: DateTime, $limit: Int!, $lastCursor: String) {
   storageDataObjectsConnection(
-    where: { updatedAt_gt: $updatedAfter, isAccepted_eq: true },
+    where: { updatedAt_gt: $updatedAfter, isAccepted_eq: true }
     first: $limit
     after: $lastCursor
   ) {
@@ -193,28 +190,19 @@ query getDataObjectsPage($updatedAfter: DateTime, $limit: Int!, $lastCursor: Str
 }
 
 query getChannelsPage($limit: Int!, $lastCursor: String) {
-  channelsConnection(
-    first: $limit
-    after: $lastCursor
-  ) {
+  channelsConnection(first: $limit, after: $lastCursor) {
     ...ChannelConnectionFields
   }
 }
 
 query getVideosPage($limit: Int!, $lastCursor: String) {
-  videosConnection(
-    first: $limit
-    after: $lastCursor
-  ) {
+  videosConnection(first: $limit, after: $lastCursor) {
     ...VideoConnectionFields
   }
 }
 
 query getMembershipsPage($limit: Int!, $lastCursor: String) {
-  membershipsConnection(
-    first: $limit
-    after: $lastCursor
-  ) {
+  membershipsConnection(first: $limit, after: $lastCursor) {
     ...MembershipConnectionFields
   }
 }
