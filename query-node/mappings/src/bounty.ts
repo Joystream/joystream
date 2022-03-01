@@ -222,6 +222,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     stage: BountyStage.Funding,
     totalFunding: new BN(0),
     discussionThread,
+    isTerminated: false,
   })
   await store.save<Bounty>(bounty)
 
@@ -360,7 +361,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   // Terminate the bounty
   const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], (bounty) => ({
     deletedAt: bounty.updatedAt,
-    stage: BountyStage.Terminated,
+    isTerminated: true,
   }))
 
   // Record the event

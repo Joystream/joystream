@@ -33,7 +33,6 @@ enum BountyStage {
   Judgment
   Successful
   Failed
-  Terminated
 }
 
 type Bounty @entity {
@@ -89,6 +88,9 @@ type Bounty @entity {
 
   "The work entries announce on the bounty"
   entries: [BountyEntry] @derivedFrom(field: "bounty")
+
+  "If true the bounty lifecycle ended and its state will not change anymore"
+  isTerminated: Boolean!
 
   # Events:
   "The event the bounty was created in"
