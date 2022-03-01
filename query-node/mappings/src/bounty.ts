@@ -34,7 +34,7 @@ import {
   WorkSubmittedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
-import { deserializeMetadata, genericEventFields } from './common'
+import { asBN, asInt32, deserializeMetadata, genericEventFields } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
@@ -205,9 +205,8 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     creator: bountyActorToMembership(bountyParams.creator),
     oracle: bountyActorToMembership(bountyParams.oracle),
     fundingType: asFundingType(bountyParams.funding_type),
-    contractType: asContractType(bountyParams.contract_type),
-    workPeriod: bountyParams.work_period.toNumber(),
-    judgingPeriod: bountyParams.judging_period.toNumber(),
+    workPeriod: asInt32(bountyParams.work_period),
+    judgingPeriod: asInt32(bountyParams.judging_period),
 
     stage: BountyStage.Funding,
     totalFunding: bountyParams.cherry,
@@ -224,13 +223,13 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   function asFundingType(funding: FundingType) {
     if (funding.isPerpetual) {
       const perpetualFunding = new BountyFundingPerpetual()
-      perpetualFunding.target = funding.asPerpetual.target
+      perpetualFunding.target = asBN(funding.asPerpetual.target)
       return perpetualFunding
     } else {
       const limitedFunding = new BountyFundingLimited()
-      limitedFunding.maxFundingAmount = funding.asLimited.max_funding_amount
-      limitedFunding.minFundingAmount = funding.asLimited.min_funding_amount
-      limitedFunding.fundingPeriod = funding.asLimited.funding_period.toNumber()
+      limitedFunding.maxFundingAmount = asBN(funding.asLimited.max_funding_amount)
+      limitedFunding.minFundingAmount = asBN(funding.asLimited.min_funding_amount)
+      limitedFunding.fundingPeriod = asInt32(funding.asLimited.funding_period)
       return limitedFunding
     }
   }
@@ -449,7 +448,7 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
         entry.status = new BountyEntryStatusPassed()
       } else if (judgement?.isWinner) {
         const status = new BountyEntryStatusWinner()
-        status.reward = judgement.asWinner.reward
+        status.reward = asBN(judgment.asWinner.reward)
         entry.status = status
       } else {
         entry.status = new BountyEntryStatusRejected()
