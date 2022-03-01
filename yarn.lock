@@ -2401,7 +2401,7 @@
     "@polkadot/util-crypto" "^7.3.1"
     rxjs "^7.3.0"
 
-"@polkadot/api@5.3.2", "@polkadot/api@5.9.1":
+"@polkadot/api@5.9.1":
   version "5.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-5.9.1.tgz#ce314cc34f0a47098d039db7b9036bb491c2898c"
   integrity sha512-POpIXn/Ao+NLB0uMldXdXU44dVbRr6+6Ax77Z0R285M8Z2EiF5jl2K3SPvlowLo4SntxiCSaHQxCekYhUcJKlw==
@@ -2418,7 +2418,7 @@
     eventemitter3 "^4.0.7"
     rxjs "^7.3.0"
 
-"@polkadot/keyring@7.3.1", "@polkadot/keyring@^7.1.1", "@polkadot/keyring@^7.3.1":
+"@polkadot/keyring@7.3.1", "@polkadot/keyring@^7.3.1":
   version "7.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-7.3.1.tgz#bf36115cfb395567bec9cf13c8e3fc0fb39c802a"
   integrity sha512-3lbwIjUql8yjs6AR2fMdCgmTc5D9ne7+y2jqHmGjyzVQFz1w1jiHb+N38L0pwl9/23UxmzC3aVvHLfl3gEGSIQ==
@@ -2469,13 +2469,6 @@
     "@polkadot/x-global" "^7.3.1"
     "@polkadot/x-ws" "^7.3.1"
     eventemitter3 "^4.0.7"
-
-"@polkadot/ts@^0.4.4":
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/@polkadot/ts/-/ts-0.4.4.tgz#e86aa47c2bcbc70ac8385b31014c81927c4b0a88"
-  integrity sha512-lzB8lg8GfdJlA7RdeoOJVFopecN4i++JndbUs6jW7AgRz+joeXQIIRomVgCNE52nW1uWpXMELnlvEP812v7sVw==
-  dependencies:
-    "@types/chrome" "^0.0.145"
 
 "@polkadot/ts@^0.4.8":
   version "0.4.8"
@@ -2964,14 +2957,6 @@
   version "4.2.21"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.21.tgz#9f35a5643129df132cf3b5c1ec64046ea1af0650"
   integrity sha512-yd+9qKmJxm496BOV9CMNaey8TWsikaZOwMRwPHQIjcOJM9oV+fi9ZMNw3JsVnbEEbo2gRTDnGEBv8pjyn67hNg==
-
-"@types/chrome@^0.0.145":
-  version "0.0.145"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.145.tgz#6c53ae0af5f25350b07bfd24cf459b5fe65cd9b8"
-  integrity sha512-vLvTMmfc8mvwOZzkmn2UwlWSNu0t0txBkyuIv8NgihRkvFCe6XJX65YZAgAP/RdBit3enhU2GTxCr+prn4uZmA==
-  dependencies:
-    "@types/filesystem" "*"
-    "@types/har-format" "*"
 
 "@types/chrome@^0.0.157":
   version "0.0.157"
@@ -4729,9 +4714,9 @@ aws-credstash@^3.0.0:
     debug "^4.3.1"
 
 aws-sdk@^2.567.0:
-  version "2.1074.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1074.0.tgz#be3283f781b3060cd67d5abef50d1edacefede70"
-  integrity sha512-tD478mkukglutjs+mq5FQmYFzz+l/wddl5u3tTMWTNa+j1eSL+AqaHPFM1rC3O9h98QqpKKzeKbLrPhGDvYaRg==
+  version "2.1078.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1078.0.tgz#5871750b38045f05e141e5217521f8ff8bf73a26"
+  integrity sha512-eJuiiCE4tomYzsxqfsjERmQ1WQkNAe5RUhOXUwJbGTEfwmbiQqq/HgVYrwcMswOHoURbtKpB5SSrTLNOBuyurA==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -4773,11 +4758,6 @@ axios@^0.24.0:
   integrity sha512-Q6cWsys88HoPgAaFAVUb0WpPk0O8iTeisR9IMqy9G8AbO4NlpVknrnQS03zzF9PGAWgO3cgletO3VjV/P7VztA==
   dependencies:
     follow-redirects "^1.14.4"
-
-babel-core@^7.0.0-bridge.0:
-  version "7.0.0-bridge.0"
-  resolved "https://registry.yarnpkg.com/babel-core/-/babel-core-7.0.0-bridge.0.tgz#95a492ddd90f9b4e9a4a1da14eb335b87b634ece"
-  integrity sha512-poPX9mZH/5CSanm50Q+1toVci6pv5KSRv/5TWCwtzQS5XEwn40BcCrgIeMFWP9CKKIniKXNxoIOnOq4VVlGXhg==
 
 babel-jest@^24.9.0:
   version "24.9.0"
@@ -18002,7 +17982,7 @@ ts-node@^7.0.1:
     source-map-support "^0.5.6"
     yn "^2.0.0"
 
-ts-node@^8, ts-node@^8.10, ts-node@^8.8.1:
+ts-node@^8, ts-node@^8.10:
   version "8.10.2"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-8.10.2.tgz#eee03764633b1234ddd37f8db9ec10b75ec7fb8d"
   integrity sha512-ISJJGgkIpDdBhWVu3jufsWpK3Rzo7bdiIXJjQc0ynKxVOVcg2oIrf2H2cejminGrptVc6q6/uynAHNCuWGbpVA==
@@ -18261,7 +18241,7 @@ typescript-tuple@^2.2.1:
   dependencies:
     typescript-compare "^0.0.2"
 
-typescript@2.2.2, typescript@^3.0.3, typescript@^3.3, typescript@^3.8.3, typescript@^3.9.5, typescript@^3.9.7, typescript@^4.3.5, typescript@^4.4, typescript@^4.4.3:
+typescript@2.2.2, typescript@^3.0.3, typescript@^3.3, typescript@^3.8.3, typescript@^3.9.5, typescript@^3.9.7, typescript@^4.4, typescript@^4.4.3:
   version "4.4.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.4.3.tgz#bdc5407caa2b109efd4f82fe130656f977a29324"
   integrity sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA==

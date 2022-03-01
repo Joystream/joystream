@@ -33,4 +33,4 @@ SCENARIO=$1
 # fallback if scenario if not specified
 SCENARIO=${SCENARIO:=full}
 
-time yarn workspace integration-tests run-test-scenario ${SCENARIO}
+time yarn workspace network-tests run-test-scenario ${SCENARIO}

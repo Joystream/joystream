@@ -83,30 +83,4 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
 
     return availableMemberships[memberIndex]
   }
-
-  async setSelectedMember(selectedMember: MemberDetails): Promise<void> {
-    this.selectedMember = selectedMember
-
-    await this.setPreservedState({ selectedMemberId: selectedMember.id.toString() })
-  }
-
-  private async initSelectedMember(): Promise<void> {
-    const memberIdString = this.getPreservedState().selectedMemberId
-
-    const memberId = this.createType('MemberId', memberIdString)
-    const members = await this.getApi().membersDetailsByIds([memberId])
-
-    // ensure selected member exists
-    if (!members.length) {
-      return
-    }
-
-    this.selectedMember = members[0]
-  }
-
-  async init(): Promise<void> {
-    await super.init()
-
-    await this.initSelectedMember()
-  }
 }
