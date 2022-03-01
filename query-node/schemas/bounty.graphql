@@ -87,7 +87,7 @@ type Bounty @entity {
   "Current bounty stage"
   stage: BountyStage!
 
-  "Total amount currently available for the reward"
+  "Total amount once contributed to the bounty (excluding the cherry)"
   totalFunding: BigInt!
 
   "Bounty discussion thread"

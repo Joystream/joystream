@@ -1,6 +1,7 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
+import { BN } from '@polkadot/util'
 import {
   Bounty,
   BountyCanceledEvent,
@@ -128,7 +129,7 @@ export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty)
   const fundingPeriodEnd = bounty.createdInEvent.inBlock + fundingType.fundingPeriod
   scheduleAtBlock(fundingPeriodEnd, () => {
     if (bounty.stage === BountyStage.Funding) {
-      const isFunded = bounty.totalFunding >= fundingType.minFundingAmount
+      const isFunded = bounty.totalFunding.gte(bounty.fundingType.minFundingAmount)
       endFundingPeriod(store, bounty, isFunded)
     }
   })
@@ -164,7 +165,7 @@ function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = tru
     bounty.stage = BountyStage.WorkSubmission
     bountyScheduleWorkSubmissionEnd(store, bounty)
   } else {
-    bounty.stage = BountyStage[bounty.contributions?.length ? 'Failed' : 'Expired']
+    bounty.stage = BountyStage[bounty.totalFunding.gtn(0) ? 'Failed' : 'Expired']
   }
   return store.save<Bounty>(bounty)
 }
@@ -209,7 +210,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     judgingPeriod: asInt32(bountyParams.judging_period),
 
     stage: BountyStage.Funding,
-    totalFunding: bountyParams.cherry,
+    totalFunding: new BN(0),
     discussionThread: whenDef(metadata?.discussionThread, (id) => new ForumThread({ id })),
   })
   await store.save<Bounty>(bounty)
@@ -326,30 +327,22 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
-  // Update the bounty totalFunding
-  await updateBounty(store, event, bountyId, (bounty) => ({
-    totalFunding: bounty.totalFunding.sub(contribution.amount),
-  }))
-
   // Record the event
   const withdrawnInEvent = new BountyFundingWithdrawalEvent({ ...genericEventFields(event), contribution })
   await store.save<BountyFundingWithdrawalEvent>(withdrawnInEvent)
 }
 
-// Remove the cherries amount from their bounty totalFunding
+// Store bounties cherry withdrawal events
 export async function bounty_BountyCreatorCherryWithdrawal({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
   const cherryWithdrawalEvent = new BountyEvents.BountyCreatorCherryWithdrawalEvent(event)
+  const [bountyId] = cherryWithdrawalEvent.params
 
-  // Update the bounty totalFunding
-  const bounty = await updateBounty(store, event, cherryWithdrawalEvent.params[0], (bounty) => ({
-    totalFunding: bounty.totalFunding.sub(bounty.cherry),
-  }))
-
-  // Record the event
+  const bounty = new Bounty({ id: String(bountyId) })
   const withdrawnInEvent = new BountyCreatorCherryWithdrawalEvent({ ...genericEventFields(event), bounty })
+
   await store.save<BountyCreatorCherryWithdrawalEvent>(withdrawnInEvent)
 }
 
