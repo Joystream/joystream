@@ -116,7 +116,7 @@ type Bounty @entity {
   removedInEvent: BountyRemovedEvent @derivedFrom(field: "bounty")
 
   "Event emitted if the oracle judged the bounty work entries"
-  judgement: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
+  judgment: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
 }
 
 "Initial status during creation in Working Period."
@@ -133,19 +133,19 @@ type BountyEntryStatusWithdrawn @variant {
   dummy: Int
 }
 
-"Selected as winner during Judgement Period , and therefore is due an outstanding share of the bounty funds, called reward."
+"Selected as winner during Judgment Period , and therefore is due an outstanding share of the bounty funds, called reward."
 type BountyEntryStatusWinner @variant {
   reward: BigInt!
 }
 
-"Not referenced by oracle in Judgement Period judgement, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
+"Not referenced by oracle in Judgment Period judgment, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
 type BountyEntryStatusPassed @variant {
   # no properties
   # TODO: remove me - variant needs to have at least 1 property now
   dummy: Int
 }
 
-"Rejected by oracle in Judgement Period as a malicious entry, and thus has had stake slashed."
+"Rejected by oracle in Judgment Period as a malicious entry, and thus has had stake slashed."
 type BountyEntryStatusRejected @variant {
   # no properties
   # TODO: remove me - variant needs to have at least 1 property now

@@ -80,7 +80,7 @@ async function updateBounty(
   bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
-  await store.save<BountyEntry>(bounty)
+  await store.save<Bounty>(bounty)
 
   return bounty
 }
@@ -89,7 +89,7 @@ async function updateEntry(
   store: DatabaseManager,
   event: SubstrateEvent,
   entryId: EntryId,
-  changes: (bounty: BountyEntry) => Partial<BountyEntry>
+  changes: (entry: BountyEntry) => Partial<BountyEntry>
 ) {
   const entry = await getEntry(store, entryId)
   entry.updatedAt = new Date(event.blockTimestamp)
@@ -173,7 +173,7 @@ function endWorkingPeriod(store: DatabaseManager, bounty: Bounty): Promise<void>
   bounty.updatedAt = new Date()
   if (bounty.entries?.length) {
     bounty.stage = BountyStage.Judgment
-    bountyScheduleJudgementEnd(store, bounty)
+    bountyScheduleJudgmentEnd(store, bounty)
   } else {
     bounty.stage = BountyStage.Failed
   }
@@ -414,7 +414,7 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const entrySlashedEvent = new BountyEvents.WorkEntrySlashedEvent(event)
+  const entrySlashedEvent = new BountyEvents.WorkSubmittedEvent(event)
 
   // Update the entry status
   const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
@@ -442,11 +442,11 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   // Update winner entries status
   await Promise.all(
     bounty.entries?.map((entry) => {
-      const judgement = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
+      const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
 
-      if (!judgement) {
+      if (!judgment) {
         entry.status = new BountyEntryStatusPassed()
-      } else if (judgement?.isWinner) {
+      } else if (judgment?.isWinner) {
         const status = new BountyEntryStatusWinner()
         status.reward = asBN(judgment.asWinner.reward)
         entry.status = status
