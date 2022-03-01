@@ -192,6 +192,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   const eventTime = new Date(event.blockTimestamp)
 
   const metadata = deserializeMetadata(BountyMetadata, metadataBytes)
+  const discussionThread = await whenDef(metadata?.discussionThread, (id) => store.get(ForumThread, { where: { id } }))
 
   // Create the bounty
   const bounty = new Bounty({
@@ -211,7 +212,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
 
     stage: BountyStage.Funding,
     totalFunding: new BN(0),
-    discussionThread: whenDef(metadata?.discussionThread, (id) => new ForumThread({ id })),
+    discussionThread,
   })
   await store.save<Bounty>(bounty)
 
