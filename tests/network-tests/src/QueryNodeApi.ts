@@ -311,6 +311,10 @@ import {
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
+  MemberVerificationStatusUpdatedEventFieldsFragment,
+  GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
+  GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
+  GetMemberVerificationStatusUpdatedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1118,5 +1122,15 @@ export class QueryNodeApi {
       { videoId },
       'ownedNfts'
     )
+  }
+
+  public async getMembershipVerificationStatusUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<MemberVerificationStatusUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
+      GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
+    >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
   }
 }

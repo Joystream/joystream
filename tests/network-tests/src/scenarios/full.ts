@@ -32,6 +32,7 @@ import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
+import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
@@ -79,6 +80,9 @@ scenario('Full', async ({ job, env }) => {
   job('group status', groupStatus).requires(sudoHireLead)
   job('worker actions', workerActions).requires(sudoHireLead)
   job('group budget', groupBudget).requires(sudoHireLead)
+
+  // Memberships (depending on hired lead)
+  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
 
   // Forum:
   job('forum categories', categories).requires(sudoHireLead)

@@ -790,6 +790,25 @@ export type GetInitialInvitationCountUpdatedEventsByEventIdQuery = {
   initialInvitationCountUpdatedEvents: Array<InitialInvitationCountUpdatedEventFieldsFragment>
 }
 
+export type MemberVerificationStatusUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  isVerified: boolean
+  worker: { id: string }
+}
+
+export type GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds: Array<Types.Scalars['ID']> | Types.Scalars['ID']
+}>
+
+export type GetMemberVerificationStatusUpdatedEventsByEventIdsQuery = {
+  memberVerificationStatusUpdatedEvents: Array<MemberVerificationStatusUpdatedEventFieldsFragment>
+}
+
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
   __typename: 'ProposalStatusDeciding'
   proposalStatusUpdatedEvent?: Types.Maybe<{
@@ -2791,6 +2810,20 @@ export const InitialInvitationCountUpdatedEventFields = gql`
     newInitialInvitationCount
   }
 `
+export const MemberVerificationStatusUpdatedEventFields = gql`
+  fragment MemberVerificationStatusUpdatedEventFields on MemberVerificationStatusUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    worker {
+      id
+    }
+    isVerified
+  }
+`
 export const ApplicationFormQuestionFields = gql`
   fragment ApplicationFormQuestionFields on ApplicationFormQuestion {
     question
@@ -4188,6 +4221,14 @@ export const GetInitialInvitationCountUpdatedEventsByEventId = gql`
     }
   }
   ${InitialInvitationCountUpdatedEventFields}
+`
+export const GetMemberVerificationStatusUpdatedEventsByEventIds = gql`
+  query getMemberVerificationStatusUpdatedEventsByEventIds($eventIds: [ID!]!) {
+    memberVerificationStatusUpdatedEvents(where: { id_in: $eventIds }) {
+      ...MemberVerificationStatusUpdatedEventFields
+    }
+  }
+  ${MemberVerificationStatusUpdatedEventFields}
 `
 export const GetProposalsByIds = gql`
   query getProposalsByIds($ids: [ID!]) {

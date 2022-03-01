@@ -238,3 +238,22 @@ query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
     ...InitialInvitationCountUpdatedEventFields
   }
 }
+
+fragment MemberVerificationStatusUpdatedEventFields on MemberVerificationStatusUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  worker {
+    id
+  }
+  isVerified
+}
+
+query getMemberVerificationStatusUpdatedEventsByEventIds($eventIds: [ID!]!) {
+  memberVerificationStatusUpdatedEvents(where: { id_in: $eventIds }) {
+    ...MemberVerificationStatusUpdatedEventFields
+  }
+}

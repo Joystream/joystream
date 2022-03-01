@@ -5,7 +5,7 @@ import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@jo
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { bytesToString, deserializeMetadata, genericEventFields } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
 import {
   Membership,
   MembershipEntryMethod,
@@ -265,12 +265,13 @@ export async function members_MemberAccountsUpdated({ store, event }: EventConte
   await store.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
 }
 
-export async function members_MemberVerificationStatusUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
-  const [memberId, verificationStatus] = new Members.MemberVerificationStatusUpdatedEvent(event).params
+export async function members_MemberVerificationStatusUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [memberId, verificationStatus, workerId] = new Members.MemberVerificationStatusUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
+  const worker = await getWorker(store, 'membershipWorkingGroup', workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   member.isVerified = verificationStatus.valueOf()
@@ -282,6 +283,7 @@ export async function members_MemberVerificationStatusUpdated(
     ...genericEventFields(event),
     member: member,
     isVerified: member.isVerified,
+    worker,
   })
 
   await store.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
