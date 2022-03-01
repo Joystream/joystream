@@ -87,17 +87,6 @@ export interface AuctionParams extends Struct {
   readonly whitelist: BTreeSet<MemberId>;
 }
 
-/** @name AuctionRecord */
-export interface AuctionRecord extends Struct {
-  readonly starting_price: u128;
-  readonly buy_now_price: u128;
-  readonly auction_type: AuctionType;
-  readonly minimal_bid_step: u128;
-  readonly last_bid: Option<Bid>;
-  readonly starts_at: Option<u32>;
-  readonly whitelist: BTreeSet<MemberId>;
-}
-
 /** @name AuctionType */
 export interface AuctionType extends Enum {
   readonly isEnglish: boolean;
@@ -611,13 +600,6 @@ export interface NftOwner extends Enum {
   readonly asMember: MemberId;
 }
 
-/** @name NFTOwner */
-export interface NFTOwner extends Enum {
-  readonly isChannelOwner: boolean;
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-}
-
 /** @name OpenAuctionDetails */
 export interface OpenAuctionDetails extends Struct {
   readonly bid_lock_duration: u32;
@@ -666,13 +648,6 @@ export interface OracleWorkEntryJudgment_Winner extends Struct {
 /** @name OwnedNft */
 export interface OwnedNft extends Struct {
   readonly owner: NftOwner;
-  readonly transactional_status: TransactionalStatus;
-  readonly creator_royalty: Option<Royalty>;
-}
-
-/** @name OwnedNFT */
-export interface OwnedNFT extends Struct {
-  readonly owner: NFTOwner;
   readonly transactional_status: TransactionalStatus;
   readonly creator_royalty: Option<Royalty>;
 }

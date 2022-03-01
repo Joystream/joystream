@@ -10,4 +10,4 @@ SCENARIO=$1
 SCENARIO=${SCENARIO:=full}
 
 # Execute the tests
-time DEBUG=integration-tests*,-integration-tests:query-node-api:* yarn workspace network-tests node-ts-strict src/scenarios/${SCENARIO}.ts
+time DEBUG=integration-tests:* yarn workspace network-tests node-ts-strict src/scenarios/${SCENARIO}.ts
