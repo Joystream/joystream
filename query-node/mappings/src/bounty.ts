@@ -42,8 +42,8 @@ import { scheduleAtBlock } from './scheduler'
  * Common helpers
  */
 
-async function getBounty(store: DatabaseManager, bountyId: BountyId): Promise<Bounty> {
-  const bounty = await store.get(Bounty, { where: { id: bountyId } })
+async function getBounty(store: DatabaseManager, bountyId: BountyId | string, relations?: string[]): Promise<Bounty> {
+  const bounty = await store.get(Bounty, { where: { id: bountyId }, relations })
   if (!bounty) {
     throw new Error(`Bounty not found by id: ${bountyId}`)
   }
@@ -53,7 +53,7 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId): Promise<Bo
 async function getContribution(
   store: DatabaseManager,
   bountyId: BountyId,
-  contributor?: string
+  contributor: string | undefined
 ): Promise<BountyContribution> {
   const contribution = await store.get(BountyContribution, { where: { bountyId, contributor } })
   if (!contribution) {
@@ -107,11 +107,30 @@ function bountyActorToMembership(actor: BountyActor): Membership | undefined {
   }
 }
 
-function fundingPeriodEnd(bounty: Bounty): number {
-  return (
-    bounty.maxFundingReachedEvent?.inBlock ??
-    bounty.createdInEvent.inBlock + (bounty.fundingType as BountyFundingLimited).fundingPeriod
-  )
+export function scheduledFundingEnd(bounty: Bounty, creationBlock: number): number | undefined {
+  if ('fundingPeriod' in bounty.fundingType) {
+    return creationBlock + bounty.fundingType.fundingPeriod
+  }
+}
+
+function scheduleBountyStageEnd(
+  stage: BountyStage,
+  endStage: (store: DatabaseManager, bounty: Bounty, blockNumber: number) => Promise<void>,
+  relations: string[] = []
+): (store: DatabaseManager, bounty: Bounty, blockNumber: number | undefined) => void {
+  return (store, bounty, blockNumber) => {
+    if (bounty.stage === stage && typeof blockNumber !== 'undefined') {
+      const bountyId = bounty.id
+
+      scheduleAtBlock(blockNumber, async () => {
+        const bounty = await getBounty(store, bountyId, relations)
+
+        if (bounty.stage === stage) {
+          await endStage(store, bounty, blockNumber)
+        }
+      })
+    }
+  }
 }
 
 function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | undefined {
@@ -122,59 +141,48 @@ function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | un
  * Schedule Periods changes
  */
 
-export function bountyScheduleFundingEnd(store: DatabaseManager, bounty: Bounty): void {
-  const { fundingType } = bounty
-  if (bounty.stage !== BountyStage.Funding || !('fundingPeriod' in fundingType)) return
-
-  const fundingPeriodEnd = bounty.createdInEvent.inBlock + fundingType.fundingPeriod
-  scheduleAtBlock(fundingPeriodEnd, () => {
-    if (bounty.stage === BountyStage.Funding) {
+export const bountyScheduleFundingEnd = scheduleBountyStageEnd(
+  BountyStage.Funding,
+  async (store, bounty, fundingPeriodEnd) => {
+    if ('minFundingAmount' in bounty.fundingType) {
       const isFunded = bounty.totalFunding.gte(bounty.fundingType.minFundingAmount)
-      endFundingPeriod(store, bounty, isFunded)
+      await endFundingPeriod(store, bounty, fundingPeriodEnd, isFunded)
     }
-  })
-}
+  }
+)
 
-export function bountyScheduleWorkSubmissionEnd(store: DatabaseManager, bounty: Bounty): void {
-  if (bounty.stage !== BountyStage.WorkSubmission) return
+export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStage.WorkSubmission, endWorkingPeriod, [
+  'entries',
+])
 
-  const workingPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod
-  scheduleAtBlock(workingPeriodEnd, () => {
-    if (bounty.stage === BountyStage.WorkSubmission) {
-      endWorkingPeriod(store, bounty)
-    }
-  })
-}
-
-export function bountyScheduleJudgementEnd(store: DatabaseManager, bounty: Bounty): void {
-  if (bounty.stage !== BountyStage.Judgment) return
-
-  const judgementPeriodEnd = fundingPeriodEnd(bounty) + bounty.workPeriod + bounty.judgingPeriod
-  scheduleAtBlock(judgementPeriodEnd, () => {
-    if (bounty.stage === BountyStage.Funding) {
-      bounty.updatedAt = new Date()
-      bounty.stage = BountyStage.Failed
-      store.save<Bounty>(bounty)
-    }
-  })
-}
-
-function endFundingPeriod(store: DatabaseManager, bounty: Bounty, isFunded = true): Promise<void> {
+export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.WorkSubmission, async (store, bounty) => {
   bounty.updatedAt = new Date()
+  bounty.stage = BountyStage.Failed
+  await store.save<Bounty>(bounty)
+})
+
+function endFundingPeriod(
+  store: DatabaseManager,
+  bounty: Bounty,
+  blockNumber: number,
+  isFunded: boolean,
+  updatedAt = new Date()
+): Promise<void> {
+  bounty.updatedAt = updatedAt
   if (isFunded) {
     bounty.stage = BountyStage.WorkSubmission
-    bountyScheduleWorkSubmissionEnd(store, bounty)
+    bountyScheduleWorkSubmissionEnd(store, bounty, blockNumber + bounty.workPeriod)
   } else {
     bounty.stage = BountyStage[bounty.totalFunding.gtn(0) ? 'Failed' : 'Expired']
   }
   return store.save<Bounty>(bounty)
 }
 
-function endWorkingPeriod(store: DatabaseManager, bounty: Bounty): Promise<void> {
+function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
   bounty.updatedAt = new Date()
   if (bounty.entries?.length) {
     bounty.stage = BountyStage.Judgment
-    bountyScheduleJudgmentEnd(store, bounty)
+    bountyScheduleJudgmentEnd(store, bounty, blockNumber + bounty.judgingPeriod)
   } else {
     bounty.stage = BountyStage.Failed
   }
@@ -216,7 +224,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   })
   await store.save<Bounty>(bounty)
 
-  bountyScheduleFundingEnd(store, bounty)
+  bountyScheduleFundingEnd(store, bounty, scheduledFundingEnd(bounty, event.blockNumber))
 
   // Record the event
   const createdInEvent = new BountyCreatedEvent({ ...genericEventFields(event), bounty })
@@ -305,10 +313,11 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
 export async function bounty_BountyMaxFundingReached({ event, store }: EventContext & StoreContext): Promise<void> {
   const maxFundingReachedEvent = new BountyEvents.BountyMaxFundingReachedEvent(event)
   const [bountyId] = maxFundingReachedEvent.params
+  const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty stage
   const bounty = await getBounty(store, bountyId)
-  await endFundingPeriod(store, bounty)
+  await endFundingPeriod(store, bounty, event.blockNumber, true, eventTime)
 
   // Record the event
   const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })

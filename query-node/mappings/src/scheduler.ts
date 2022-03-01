@@ -2,7 +2,12 @@ import { In } from 'typeorm'
 import { DatabaseManager, StoreContext } from '@joystream/hydra-common'
 import { eventEmitter, ProcessorEvents } from '@joystream/hydra-processor/lib/start/processor-events'
 import { Bounty, BountyStage } from 'query-node/dist/model'
-import { bountyScheduleWorkSubmissionEnd, bountyScheduleFundingEnd, bountyScheduleJudgementEnd } from './bounty'
+import {
+  bountyScheduleWorkSubmissionEnd,
+  bountyScheduleFundingEnd,
+  bountyScheduleJudgmentEnd,
+  scheduledFundingEnd,
+} from './bounty'
 
 let isSchedulerRunning = false
 let toBeScheduled: [number, () => void][] = []
@@ -47,10 +52,15 @@ async function scheduleMissedMappings(store: DatabaseManager): Promise<void> {
   // Bounty stage updates
   const bounties = await store.getMany(Bounty, {
     where: { stage: In([BountyStage.Funding, BountyStage.WorkSubmission, BountyStage.Judgment]) },
+    relations: ['createdInEvent', 'maxFundingReachedEvent'],
   })
+
   bounties.forEach((bounty) => {
-    bountyScheduleFundingEnd(store, bounty)
-    bountyScheduleWorkSubmissionEnd(store, bounty)
-    bountyScheduleJudgementEnd(store, bounty)
+    const scheduledFundingPeriodEnd = scheduledFundingEnd(bounty, bounty.createdInEvent.inBlock)
+    const fundingPeriodEnd = bounty.maxFundingReachedEvent?.inBlock ?? scheduledFundingPeriodEnd
+
+    bountyScheduleFundingEnd(store, bounty, scheduledFundingPeriodEnd)
+    bountyScheduleWorkSubmissionEnd(store, bounty, fundingPeriodEnd)
+    bountyScheduleJudgmentEnd(store, bounty, fundingPeriodEnd && fundingPeriodEnd + bounty.judgingPeriod)
   })
 }
