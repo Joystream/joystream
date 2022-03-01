@@ -1,15 +1,15 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { BountyMetadata } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
+import { MemberId } from '@joystream/types/common'
 import { BN } from '@polkadot/util'
 import {
   Bounty,
   BountyCanceledEvent,
-  BountyContractClosed,
-  BountyContractOpen,
   BountyContribution,
   BountyCreatedEvent,
   BountyCreatorCherryWithdrawalEvent,
+  BountyEntrantWhitelist,
   BountyEntry,
   BountyEntryStatusCashedOut,
   BountyEntryStatusPassed,
@@ -215,6 +215,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     creator: bountyActorToMembership(bountyParams.creator),
     oracle: bountyActorToMembership(bountyParams.oracle),
     fundingType: asFundingType(bountyParams.funding_type),
+    entrantWhitelist: asEntrantWhitelist(bountyParams.contract_type),
     workPeriod: asInt32(bountyParams.work_period),
     judgingPeriod: asInt32(bountyParams.judging_period),
 
@@ -244,15 +245,11 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     }
   }
 
-  function asContractType(assuranceContract: AssuranceContractType) {
-    if (assuranceContract.isOpen) {
-      return new BountyContractOpen()
-    } else {
-      const closedContract = new BountyContractClosed()
-      closedContract.whitelist = [...assuranceContract.asClosed.values()].map(
-        (id) => new Membership({ id: String(id) })
-      )
-      return closedContract
+  function asEntrantWhitelist(assuranceContract: AssuranceContractType) {
+    if (assuranceContract.isClosed) {
+      const toMembership = (id: MemberId) => new Membership({ id: String(id) })
+      const members = [...assuranceContract.asClosed.values()].map(toMembership)
+      return new BountyEntrantWhitelist({ members })
     }
   }
 }

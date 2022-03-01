@@ -1,19 +1,10 @@
-"Any member can submit work entries to the bounty"
-type BountyContractOpen @variant {
-  # no properties
+type BountyEntrantWhitelist @entity {
+  # Prevents "GraphQLError: Input Object type BountyEntrantWhitelistCreateInput must define one or more fields."
+  _phantom: Int
 
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
+  "Members authorized to submit entries to the bounty"
+  members: [Membership!]!
 }
-
-"Only preselected members can submit work entries to the bounty"
-type BountyContractClosed @variant {
-  # Members authorized to submit entries to the bounty
-  whitelist: [Membership!]!
-}
-
-"Valid of type assurance contract"
-union BountyContractType = BountyContractOpen | BountyContractClosed
 
 type BountyFundingPerpetual @variant {
   "Desired funding"
@@ -74,8 +65,8 @@ type Bounty @entity {
   "Bounty funding type"
   fundingType: BountyFundingType!
 
-  "Bounty assurance contract type"
-  contractType: BountyContractType!
+  "If specified only members listed in BountyEntrantWhitelist are allowed to submit work to the bounty"
+  entrantWhitelist: BountyEntrantWhitelist
 
   "Number of blocks from end of funding period until people can no longer submit bounty submissions"
   workPeriod: Int!
