@@ -130,7 +130,7 @@ mod benchmarking;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
+use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, Parameter,
 };
@@ -337,13 +337,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
     /// Defines the default dynamic bag creation policy for channels (storage bucket number).
     type DefaultChannelDynamicBagNumberOfStorageBuckets: Get<u64>;
 
-    //TODO: remove this
-    /// Defines max random iteration number (eg.: when picking the storage buckets).
-    type MaxRandomIterationNumber: Get<u64>;
-
-    /// Something that provides randomness in the runtime.
-    type Randomness: Randomness<Self::Hash>;
-
     /// Defines max allowed distribution bucket family number.
     type MaxDistributionBucketFamilyNumber: Get<u64>;
 
@@ -447,18 +440,6 @@ pub struct DynamicBagCreationPolicy<DistributionBucketFamilyId: Ord> {
     /// to distribute bag, and for each the number of buckets in that family
     /// which should be used.
     pub families: BTreeMap<DistributionBucketFamilyId, u32>,
-}
-
-impl<DistributionBucketFamilyId: Ord> DynamicBagCreationPolicy<DistributionBucketFamilyId> {
-    // Verifies non-zero number of storage buckets.
-    pub(crate) fn no_storage_buckets_required(&self) -> bool {
-        self.number_of_storage_buckets == 0
-    }
-
-    // Verifies non-zero number of required distribution buckets.
-    pub(crate) fn no_distribution_buckets_required(&self) -> bool {
-        self.families.iter().map(|(_, num)| num).sum::<u32>() == 0
-    }
 }
 
 /// "Storage buckets per bag" value constraint type.
@@ -1353,6 +1334,10 @@ decl_error! {
         /// Storage bucket id collection provided contradicts the existing dynamic bag
         /// creation policy.
         StorageBucketsNumberViolatesDynamicBagCreationPolicy,
+
+        /// Distribution bucket id collection provided contradicts the existing dynamic bag
+        /// creation policy.
+        DistributionBucketsViolatesDynamicBagCreationPolicy,
 
         /// Upload data error: empty content ID provided.
         EmptyContentId,
@@ -2961,11 +2946,6 @@ impl<T: Trait> Module<T> {
 
         // Validate storage bucket IDs
         ensure!(
-            !storage_buckets.is_empty(),
-            Error::<T>::StorageBucketIdCollectionsAreEmpty
-        );
-
-        ensure!(
             creation_policy.number_of_storage_buckets == storage_buckets.len() as u64,
             Error::<T>::StorageBucketsNumberViolatesDynamicBagCreationPolicy
         );
@@ -2976,6 +2956,25 @@ impl<T: Trait> Module<T> {
 
         if let Some(bag_change) = bag_change.as_ref() {
             Self::check_buckets_for_overflow(storage_buckets, &bag_change.voucher_update)?;
+        }
+
+        // Validate distribution bucket IDs
+        // We use this temp variable to validate provided distribution buckets.
+        let mut families_match = BTreeMap::new();
+
+        for distribution_bucket_id in distribution_buckets {
+            *families_match
+                .entry(distribution_bucket_id.distribution_bucket_family_id)
+                .or_insert(0u32) += 1u32;
+        }
+
+        ensure!(
+            families_match == creation_policy.families,
+            Error::<T>::DistributionBucketsViolatesDynamicBagCreationPolicy
+        );
+
+        for distribution_bucket_id in distribution_buckets {
+            Self::ensure_distribution_bucket_exists(&distribution_bucket_id)?;
         }
 
         Ok(())

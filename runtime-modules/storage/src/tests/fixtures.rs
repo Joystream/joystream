@@ -1220,16 +1220,6 @@ impl CreateDynamicBagWithObjectsFixture {
         }
     }
 
-    pub fn with_distribution_buckets(
-        self,
-        distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
-    ) -> Self {
-        Self {
-            distribution_buckets,
-            ..self
-        }
-    }
-
     pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
         Self {
             upload_parameters: UploadParameters::<Test> {
