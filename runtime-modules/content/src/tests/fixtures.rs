@@ -4,7 +4,9 @@ use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_std::cmp::min;
+use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
+use storage::DynamicBagType;
 
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
@@ -27,6 +29,8 @@ impl CreateChannelFixture {
                 reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                storage_buckets: BTreeSet::new(),
+                distribution_buckets: BTreeSet::new(),
             },
         }
     }
@@ -77,6 +81,27 @@ impl CreateChannelFixture {
             },
             ..self
         }
+    }
+
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                storage_buckets,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_default_storage_buckets(self) -> Self {
+        // No storage buckets
+        if storage::NextStorageBucketId::<Test>::get() == 0 {
+            return self.with_storage_buckets(BTreeSet::new());
+        }
+
+        let default_storage_bucket_id =
+            storage::NextStorageBucketId::<Test>::get().saturating_sub(1);
+        return self.with_storage_buckets(BTreeSet::from_iter(vec![default_storage_bucket_id]));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1375,6 +1400,25 @@ pub fn create_data_objects_helper() -> Vec<DataObjectCreationParameters> {
     create_data_object_candidates_helper(1, DATA_OBJECTS_NUMBER)
 }
 
+pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number: u64) {
+    // Set storage bucket in the dynamic bag creation policy to zero.
+    assert_eq!(
+        Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            DynamicBagType::Channel,
+            storage_bucket_number,
+        ),
+        Ok(())
+    );
+    assert_eq!(
+        Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            DynamicBagType::Member,
+            storage_bucket_number,
+        ),
+        Ok(())
+    );
+}
 pub fn create_initial_storage_buckets_helper() {
     // first set limits
     assert_eq!(
@@ -1385,6 +1429,8 @@ pub fn create_initial_storage_buckets_helper() {
         ),
         Ok(())
     );
+
+    set_dynamic_bag_creation_policy_for_storage_numbers(0);
 
     // create bucket(s)
     assert_eq!(
@@ -1400,7 +1446,11 @@ pub fn create_initial_storage_buckets_helper() {
 }
 
 pub fn create_default_member_owned_channel() {
-    CreateChannelFixture::default()
+    create_default_member_owned_channel_with_storage_buckets(false)
+}
+
+pub fn create_default_member_owned_channel_with_storage_buckets(include_storage_buckets: bool) {
+    let mut channel_fixture = CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
         .with_assets(StorageAssets::<Test> {
@@ -1409,8 +1459,14 @@ pub fn create_default_member_owned_channel() {
         })
         .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect());
+
+    if include_storage_buckets {
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
+        channel_fixture = channel_fixture.with_default_storage_buckets();
+    }
+
+    channel_fixture.call_and_assert(Ok(()));
 }
 
 pub fn create_default_curator_owned_channel() {
@@ -1429,7 +1485,13 @@ pub fn create_default_curator_owned_channel() {
 }
 
 pub fn create_default_member_owned_channel_with_video() {
-    create_default_member_owned_channel();
+    create_default_member_owned_channel_with_video_with_storage_buckets(false)
+}
+
+pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
+    include_storage_buckets: bool,
+) {
+    create_default_member_owned_channel_with_storage_buckets(include_storage_buckets);
 
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)

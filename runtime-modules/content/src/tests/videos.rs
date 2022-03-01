@@ -4,6 +4,7 @@ use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+use storage::DynamicBagType;
 
 #[test]
 fn delete_video_nft_is_issued() {
@@ -445,7 +446,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_size_le
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_storage_buckets(true);
 
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -469,6 +470,16 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
+        // Set storage bucket number in the dynamic bag creation policy.
+        assert_eq!(
+            Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+                Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+                DynamicBagType::Channel,
+                1,
+            ),
+            Ok(())
+        );
+
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
             // balance necessary to create channel + video with specified no. of assets
@@ -476,7 +487,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
                 + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
         );
 
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_storage_buckets(true);
 
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -853,7 +864,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_size_left
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video_with_storage_buckets(true);
 
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {
@@ -882,7 +893,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
                 + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER * 2,
         );
 
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video_with_storage_buckets(true);
 
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {

@@ -12,6 +12,8 @@ fn channel_censoring() {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+
         let channel_id = Content::next_channel_id();
         assert_ok!(Content::create_channel(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -22,6 +24,8 @@ fn channel_censoring() {
                 reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                storage_buckets: BTreeSet::new(),
+                distribution_buckets: BTreeSet::new(),
             }
         ));
 
@@ -100,6 +104,8 @@ fn channel_censoring() {
                 reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                storage_buckets: BTreeSet::new(),
+                distribution_buckets: BTreeSet::new(),
             }
         ));
 
@@ -131,6 +137,8 @@ fn channel_censoring() {
 fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -142,6 +150,9 @@ fn successful_channel_creation_with_member_context() {
 fn successful_channel_creation_with_curator_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+
         let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -272,6 +283,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
         run_to_block(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
 
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -283,8 +295,9 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
                     ipfs_content_id: vec![1u8],
                 }],
             })
+            .with_default_storage_buckets()
             .call_and_assert(Err(
-                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+                storage::Error::<Test>::StorageBucketObjectSizeLimitReached.into(),
             ));
     })
 }
@@ -298,6 +311,8 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
             DEFAULT_MEMBER_ACCOUNT_ID,
             DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
         );
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -310,8 +325,9 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
                     })
                     .collect(),
             })
+            .with_default_storage_buckets()
             .call_and_assert(Err(
-                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+                storage::Error::<Test>::StorageBucketObjectNumberLimitReached.into(),
             ));
     })
 }
@@ -322,6 +338,7 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
         run_to_block(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -332,6 +349,7 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
                     ipfs_content_id: vec![1u8],
                 }],
             })
+            .with_default_storage_buckets()
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
     })
 }
@@ -340,6 +358,8 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
 fn successful_channel_creation_with_collaborators_set() {
     with_default_mock_builder(|| {
         run_to_block(1);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
 
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -375,6 +395,7 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
 fn successful_channel_creation_with_reward_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
 
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1232,7 +1253,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_size_limit(
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_storage_buckets(true);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1254,7 +1275,6 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_size_limit(
 fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limit() {
     with_default_mock_builder(|| {
         run_to_block(1);
-
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
@@ -1263,7 +1283,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
                 + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
         );
 
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_storage_buckets(true);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)

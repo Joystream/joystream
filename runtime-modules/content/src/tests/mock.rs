@@ -20,7 +20,6 @@ use common::currency::GovernanceCurrency;
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 /// Type aliases
 pub type HashOutput = <Test as frame_system::Trait>::Hash;
@@ -273,7 +272,6 @@ parameter_types! {
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
@@ -306,8 +304,6 @@ impl storage::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
