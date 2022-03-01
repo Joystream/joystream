@@ -138,7 +138,13 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: Ord> {
+pub struct ChannelCreationParametersRecord<
+    StorageAssets,
+    AccountId,
+    MemberId: Ord,
+    StorageBucketId: Ord,
+    DistributionBucketId: Ord,
+> {
     /// Assets referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
@@ -149,12 +155,18 @@ pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: O
     pub collaborators: BTreeSet<MemberId>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
+    /// Storage buckets to assign to a bag.
+    pub storage_buckets: BTreeSet<StorageBucketId>,
+    /// Distribution buckets to assign to a bag.
+    pub distribution_buckets: BTreeSet<DistributionBucketId>,
 }
 
 pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
     StorageAssets<T>,
     <T as frame_system::Trait>::AccountId,
     <T as common::MembershipTypes>::MemberId,
+    <T as storage::Trait>::StorageBucketId,
+    storage::DistributionBucketId<T>,
 >;
 
 /// Information about channel being updated.

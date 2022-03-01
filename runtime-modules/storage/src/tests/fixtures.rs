@@ -1123,6 +1123,8 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 pub struct CreateDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
     deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+    storage_buckets: BTreeSet<u64>,
+    distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
 }
 
 impl CreateDynamicBagFixture {
@@ -1130,6 +1132,25 @@ impl CreateDynamicBagFixture {
         Self {
             bag_id: Default::default(),
             deletion_prize: Default::default(),
+            storage_buckets: Default::default(),
+            distribution_buckets: Default::default(),
+        }
+    }
+
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            storage_buckets,
+            ..self
+        }
+    }
+
+    pub fn with_distribution_buckets(
+        self,
+        distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
+    ) -> Self {
+        Self {
+            distribution_buckets,
+            ..self
         }
     }
 
@@ -1145,8 +1166,12 @@ impl CreateDynamicBagFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Storage::create_dynamic_bag(self.bag_id.clone(), self.deletion_prize.clone());
+        let actual_result = Storage::create_dynamic_bag(
+            self.bag_id.clone(),
+            self.deletion_prize.clone(),
+            self.storage_buckets.clone(),
+            self.distribution_buckets.clone(),
+        );
 
         assert_eq!(actual_result, expected_result);
 
@@ -1162,6 +1187,8 @@ pub struct CreateDynamicBagWithObjectsFixture {
     bag_id: DynamicBagId<Test>,
     deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
     upload_parameters: UploadParameters<Test>,
+    storage_buckets: BTreeSet<u64>,
+    distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
 }
 
 impl CreateDynamicBagWithObjectsFixture {
@@ -1181,6 +1208,25 @@ impl CreateDynamicBagWithObjectsFixture {
                 ),
                 deletion_prize_source_account_id: sender_acc,
             },
+            storage_buckets: Default::default(),
+            distribution_buckets: Default::default(),
+        }
+    }
+
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            storage_buckets,
+            ..self
+        }
+    }
+
+    pub fn with_distribution_buckets(
+        self,
+        distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
+    ) -> Self {
+        Self {
+            distribution_buckets,
+            ..self
         }
     }
 
@@ -1258,6 +1304,8 @@ impl CreateDynamicBagWithObjectsFixture {
             self.bag_id.clone(),
             self.deletion_prize.clone(),
             self.upload_parameters.clone(),
+            self.storage_buckets.clone(),
+            self.distribution_buckets.clone(),
         );
 
         let balance_post = Balances::usable_balance(self.sender);

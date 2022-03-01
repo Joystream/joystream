@@ -81,7 +81,7 @@ pub const VOUCHER_SIZE_LIMIT: u64 = 100;
 pub const VOUCHER_OBJECTS_LIMIT: u64 = 20;
 pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
 pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
-pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 10;
+pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
 
 impl crate::Trait for Test {
     type Event = TestEvent;

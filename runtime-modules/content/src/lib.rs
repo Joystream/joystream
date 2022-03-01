@@ -369,16 +369,20 @@ decl_module! {
             };
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
-                if let Some(params) = upload_params.clone() {
+                if let Some(upload_params) = upload_params.clone() {
                     Storage::<T>::can_create_dynamic_bag_with_objects_constraints(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         &Some(deletion_prize.clone()),
-                        &params
+                        &upload_params,
+                        &params.storage_buckets,
+                        &params.distribution_buckets,
                     )?;
                 } else {
                     Storage::<T>::can_create_dynamic_bag(
                         &DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         &Some(deletion_prize.clone()),
+                        &params.storage_buckets,
+                        &params.distribution_buckets,
                     )?;
                 }
             }
@@ -388,17 +392,21 @@ decl_module! {
             //
 
             if Storage::<T>::ensure_bag_exists(&channel_bag_id).is_err() {
-                if let Some(params) = upload_params.clone() {
+                if let Some(upload_params) = upload_params.clone() {
                     Storage::<T>::create_dynamic_bag_with_objects_constraints(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         Some(deletion_prize),
-                        params,
+                        upload_params,
+                        params.storage_buckets.clone(),
+                        params.distribution_buckets.clone(),
                     )?;
                     // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
                 } else {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
                         Some(deletion_prize),
+                        params.storage_buckets.clone(),
+                        params.distribution_buckets.clone(),
                     )?;
                 }
             }

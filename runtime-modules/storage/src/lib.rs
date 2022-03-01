@@ -128,9 +128,6 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-//pub(crate) mod distribution_bucket_picker;
-pub(crate) mod random_buckets;
-
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
@@ -151,9 +148,6 @@ use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
 use common::working_group::WorkingGroup;
-
-use random_buckets::DistributionBucketPicker;
-use random_buckets::StorageBucketPicker;
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -209,12 +203,16 @@ pub trait DataObjectStorage<T: Trait> {
     fn create_dynamic_bag(
         bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: BTreeSet<T::StorageBucketId>,
+        distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult;
 
     /// Validates `create_dynamic_bag` parameters and conditions.
     fn can_create_dynamic_bag(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult;
 
     /// Same as create_dynamic_bag but with caller provided objects/data
@@ -222,6 +220,8 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
         params: UploadParameters<T>,
+        storage_buckets: BTreeSet<T::StorageBucketId>,
+        distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult;
 
     /// Same as can_create_dynamic_bag but with caller provided objects/data
@@ -229,6 +229,8 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult;
 
     /// Checks if a bag does exists and returns it. Static Always exists
@@ -335,6 +337,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
     /// Defines the default dynamic bag creation policy for channels (storage bucket number).
     type DefaultChannelDynamicBagNumberOfStorageBuckets: Get<u64>;
 
+    //TODO: remove this
     /// Defines max random iteration number (eg.: when picking the storage buckets).
     type MaxRandomIterationNumber: Get<u64>;
 
@@ -1346,6 +1349,10 @@ decl_error! {
 
         /// Storage bucket id collections are empty.
         StorageBucketIdCollectionsAreEmpty,
+
+        /// Storage bucket id collection provided contradicts the existing dynamic bag
+        /// creation policy.
+        StorageBucketsNumberViolatesDynamicBagCreationPolicy,
 
         /// Upload data error: empty content ID provided.
         EmptyContentId,
@@ -2540,10 +2547,12 @@ decl_module! {
             origin,
             bag_id: DynamicBagId<T>,
             deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+            storage_buckets: BTreeSet<T::StorageBucketId>,
+            distribution_buckets: BTreeSet<DistributionBucketId<T>>,
         ) {
             ensure_root(origin)?;
 
-            Self::create_dynamic_bag(bag_id, deletion_prize)?;
+            Self::create_dynamic_bag(bag_id, deletion_prize, storage_buckets, distribution_buckets)?;
         }
     }
 }
@@ -2704,13 +2713,17 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn create_dynamic_bag(
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: BTreeSet<T::StorageBucketId>,
+        distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
         // validate params and get storage & distribution buckets
-        let bag_change =
-            Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize, &None)?;
-
-        let (storage_bucket_ids, distribution_bucket_ids) =
-            Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change)?;
+        Self::validate_create_dynamic_bag_params(
+            &dynamic_bag_id,
+            &deletion_prize,
+            &None,
+            &storage_buckets,
+            &distribution_buckets,
+        )?;
 
         //
         // == MUTATION SAFE ==
@@ -2719,9 +2732,10 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::create_dynamic_bag_inner(
             &dynamic_bag_id,
             &deletion_prize,
-            &storage_bucket_ids,
-            &distribution_bucket_ids,
+            storage_buckets,
+            distribution_buckets,
         )?;
+
         Ok(())
     }
 
@@ -2729,15 +2743,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         dynamic_bag_id: DynamicBagId<T>,
         deletion_prize: Option<DynamicBagDeletionPrize<T>>,
         params: UploadParameters<T>,
+        storage_buckets: BTreeSet<T::StorageBucketId>,
+        distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
-        let bag_change = Self::validate_create_dynamic_bag_params(
+        Self::validate_create_dynamic_bag_params(
             &dynamic_bag_id,
             &deletion_prize,
             &Some(params),
+            &storage_buckets,
+            &distribution_buckets,
         )?;
-
-        let (storage_bucket_ids, distribution_bucket_ids) =
-            Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change)?;
 
         //
         // == MUTATION SAFE ==
@@ -2746,31 +2761,42 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::create_dynamic_bag_inner(
             &dynamic_bag_id,
             &deletion_prize,
-            &storage_bucket_ids,
-            &distribution_bucket_ids,
+            storage_buckets,
+            distribution_buckets,
         )?;
+
         Ok(())
     }
 
     fn can_create_dynamic_bag(
         bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
-        Self::validate_create_dynamic_bag_params(bag_id, deletion_prize, &None).map(|_| ())
+        Self::validate_create_dynamic_bag_params(
+            bag_id,
+            deletion_prize,
+            &None,
+            storage_buckets,
+            distribution_buckets,
+        )
     }
 
     fn can_create_dynamic_bag_with_objects_constraints(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         params: &UploadParameters<T>,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
-        let bag_change = Self::validate_create_dynamic_bag_params(
+        Self::validate_create_dynamic_bag_params(
             dynamic_bag_id,
             deletion_prize,
             &Some(params.clone()),
-        )?;
-
-        Self::pick_buckets_for_bag(dynamic_bag_id.clone(), &bag_change).map(|_| ())
+            storage_buckets,
+            distribution_buckets,
+        )
     }
 
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
@@ -2789,8 +2815,8 @@ impl<T: Trait> Module<T> {
     fn create_dynamic_bag_inner(
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
-        storage_buckets: &BTreeSet<T::StorageBucketId>,
-        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
+        storage_buckets: BTreeSet<T::StorageBucketId>,
+        distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> DispatchResult {
         if let Some(deletion_prize) = deletion_prize.clone() {
             <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
@@ -2817,8 +2843,8 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id.clone(),
             deletion_prize.clone(),
-            storage_buckets.clone(),
-            distribution_buckets.clone(),
+            storage_buckets,
+            distribution_buckets,
         ));
 
         Ok(())
@@ -2886,7 +2912,9 @@ impl<T: Trait> Module<T> {
         dynamic_bag_id: &DynamicBagId<T>,
         deletion_prize: &Option<DynamicBagDeletionPrize<T>>,
         upload_params: &Option<UploadParameters<T>>,
-    ) -> Result<Option<BagUpdate<BalanceOf<T>>>, DispatchError> {
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
+    ) -> DispatchResult {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
         ensure!(
             !<Bags<T>>::contains_key(bag_id.clone()),
@@ -2929,7 +2957,28 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_sufficient_balance_for_upload(designated_account, total_upload_fee)?;
 
-        Ok(bag_change)
+        let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_id.clone().into());
+
+        // Validate storage bucket IDs
+        ensure!(
+            !storage_buckets.is_empty(),
+            Error::<T>::StorageBucketIdCollectionsAreEmpty
+        );
+
+        ensure!(
+            creation_policy.number_of_storage_buckets == storage_buckets.len() as u64,
+            Error::<T>::StorageBucketsNumberViolatesDynamicBagCreationPolicy
+        );
+
+        for storage_bucket_id in storage_buckets {
+            Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
+        }
+
+        if let Some(bag_change) = bag_change.as_ref() {
+            Self::check_buckets_for_overflow(storage_buckets, &bag_change.voucher_update)?;
+        }
+
+        Ok(())
     }
 
     fn ensure_sufficient_balance_for_upload(
@@ -3563,45 +3612,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // helper pick buckets for bag
-    fn pick_buckets_for_bag(
-        dynamic_bag_id: DynamicBagId<T>,
-        bag_change: &Option<BagUpdate<BalanceOf<T>>>,
-    ) -> Result<BucketPair<T>, DispatchError> {
-        let bag_type: DynamicBagType = dynamic_bag_id.into();
-
-        let storage_bucket_ids = Self::pick_storage_buckets_for_dynamic_bag(
-            bag_type,
-            bag_change.map(|bag_change| bag_change.voucher_update),
-        );
-
-        let distribution_bucket_ids = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
-
-        if bag_change.is_some() {
-            ensure!(
-                !storage_bucket_ids.is_empty(),
-                Error::<T>::StorageBucketIdCollectionsAreEmpty
-            );
-        }
-
-        Ok((storage_bucket_ids, distribution_bucket_ids))
-    }
-
-    // Selects storage bucket ID sets to assign to the dynamic bag.
-    pub(crate) fn pick_storage_buckets_for_dynamic_bag(
-        bag_type: DynamicBagType,
-        voucher_update: Option<VoucherUpdate>,
-    ) -> BTreeSet<T::StorageBucketId> {
-        StorageBucketPicker::<T>::pick_storage_buckets(bag_type, voucher_update)
-    }
-
-    // Selects distributed bucket ID sets to assign to the dynamic bag.
-    pub(crate) fn pick_distribution_buckets_for_dynamic_bag(
-        bag_type: DynamicBagType,
-    ) -> BTreeSet<DistributionBucketId<T>> {
-        DistributionBucketPicker::<T>::pick_distribution_buckets(bag_type)
-    }
-
     // Get default dynamic bag policy by bag type.
     fn get_default_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
@@ -3797,29 +3807,6 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
-    }
-
-    // Generate random number from zero to upper_bound (excluding).
-    pub(crate) fn random_index(seed: &[u8], upper_bound: u64) -> u64 {
-        if upper_bound == 0 {
-            return upper_bound;
-        }
-
-        let mut rand: u64 = 0;
-        for (offset, byte) in seed.iter().enumerate().take(8) {
-            rand += (*byte as u64) << offset;
-        }
-        rand % upper_bound
-    }
-
-    // Get initial random seed. It handles the error on the initial block.
-    pub(crate) fn get_initial_random_seed() -> T::Hash {
-        // Cannot create randomness in the initial block (Substrate error).
-        if <frame_system::Module<T>>::block_number() == Zero::zero() {
-            Default::default()
-        } else {
-            T::Randomness::random_seed()
-        }
     }
 
     // Verify parameters for the `invite_distribution_bucket_operator` extrinsic.
