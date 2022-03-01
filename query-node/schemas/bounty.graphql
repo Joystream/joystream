@@ -51,10 +51,10 @@ type Bounty @entity {
   id: ID!
 
   "Bounty title"
-  title: String!
+  title: String
 
   "Bounty description"
-  description: String!
+  description: String
 
   "Bounty image uri"
   bannerImageUri: String
@@ -91,7 +91,7 @@ type Bounty @entity {
   totalFunding: BigInt!
 
   "Bounty discussion thread"
-  discussionThread: ForumThread!
+  discussionThread: ForumThread
 
   "The contributions (in fund) made to the bounty"
   contributions: [BountyContribution] @derivedFrom(field: "bounty")

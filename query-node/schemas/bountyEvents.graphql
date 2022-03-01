@@ -286,10 +286,10 @@ type WorkSubmittedEvent implements Event @entity {
   entry: BountyEntry!
 
   "Title of the work"
-  title: String!
+  title: String
 
   "Description which contains the work itself as a URL, a BLOB, or just text"
-  description: String!
+  description: String
 }
 
 type OracleJudgmentSubmittedEvent implements Event @entity {
