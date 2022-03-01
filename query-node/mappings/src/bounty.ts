@@ -262,13 +262,14 @@ export async function bounty_BountyCanceled({ event, store }: EventContext & Sto
 export async function bounty_BountyVetoed({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyVetoedEvent = new BountyEvents.BountyVetoedEvent(event)
   const [bountyId] = bountyVetoedEvent.params
+
   const bounty = new Bounty({ id: String(bountyId) })
   const vetoedEvent = new BountyVetoedEvent({ ...genericEventFields(event), bounty })
 
   await store.save<BountyVetoedEvent>(vetoedEvent)
 }
 
-// Store new contributions and add their amount to their bounty totalFunding
+// Store new contributions, update the existing ones amounts and add these amounts to their bounty totalFunding
 export async function bounty_BountyFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   const bountyFundedEvent = new BountyEvents.BountyFundedEvent(event)
   const [bountyId, contributorActor, amount] = bountyFundedEvent.params
@@ -279,14 +280,18 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
     totalFunding: bounty.totalFunding.add(amount),
   }))
 
-  // Create the contribution
-  const contribution = new BountyContribution({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    bounty,
-    contributor: bountyActorToMembership(contributorActor),
-    amount,
-  })
+  // Create or update the contribution
+  let contribution: BountyContribution
+  const contributor = bountyActorToMembership(contributorActor)
+  const existing = await store.get(BountyContribution, { where: { bountyId, contributor } })
+
+  if (existing) {
+    contribution = existing
+    contribution.amount = existing.amount.add(amount)
+  } else {
+    contribution = new BountyContribution({ createdAt: eventTime, bounty, contributor, amount })
+  }
+  contribution.updatedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
