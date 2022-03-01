@@ -707,7 +707,7 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
-            // TODO AUDIT3: enable after open auction fix
+            // TODO RHODES: enable after open auction fix
             // let nft_status = params.auto_issue_nft
             //     .as_ref()
             //     .map_or(
@@ -723,6 +723,7 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
+                // TODO RHODES: enable after open auction fix
                 nft_status: None,
             };
 
@@ -785,7 +786,7 @@ decl_module! {
             }
 
 
-            // TODO AUDIT3: enable after open auction fix
+            // TODO RHODES: enable after open auction fix
             // let nft_status = params.auto_issue_nft
             //     .as_ref()
             //     .map_or(
@@ -1314,42 +1315,43 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
-        ) {
-            // TODO AUDIT3: remove after open auction fix
-            unimplemented!();
-            let sender = ensure_signed(origin)?;
+        ) -> DispatchResult {
+            // TODO RHODES: remove after open auction fix
+            Err(DispatchError::Other("nft issuance disabled"))
 
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            // let sender = ensure_signed(origin)?;
 
-            // Ensure have not been issued yet
-            video.ensure_nft_is_not_issued::<T>()?;
+            // // Ensure given video exists
+            // let video = Self::ensure_video_exists(&video_id)?;
 
-            let channel_id = video.in_channel;
+            // // Ensure have not been issued yet
+            // video.ensure_nft_is_not_issued::<T>()?;
 
-            // Ensure channel exists, retrieve channel owner
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            // let channel_id = video.in_channel;
 
-            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            // // Ensure channel exists, retrieve channel owner
+            // let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // The content owner will be..
-            let nft_status = Self::construct_owned_nft(&params)?;
+            // ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // // The content owner will be..
+            // let nft_status = Self::construct_owned_nft(&params)?;
 
-            // Issue Nft
-            let video = video.set_nft_status(nft_status);
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            // Update the video
-            VideoById::<T>::insert(video_id, video);
+            // // Issue Nft
+            // let video = video.set_nft_status(nft_status);
 
-            Self::deposit_event(RawEvent::NftIssued(
-                actor,
-                video_id,
-                params,
-            ));
+            // // Update the video
+            // VideoById::<T>::insert(video_id, video);
+
+            // Self::deposit_event(RawEvent::NftIssued(
+            //     actor,
+            //     video_id,
+            //     params,
+            // ));
         }
 
         /// Start video nft auction
