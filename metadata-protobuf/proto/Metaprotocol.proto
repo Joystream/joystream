@@ -1,0 +1,167 @@
+syntax = "proto2";
+
+// reacting, unreacting, and changing reaction to video
+message ReactVideo {
+    // ID of the video to react
+    required uint64 video_id = 1;
+
+    // The enum must be wrapped inside "message", otherwide it breaks protobufjs
+    enum Reaction {
+        CANCEL = 0; // This means cancelling any previous reaction
+        LIKE = 1;
+        UNLIKE = 2;
+    }
+
+    // Selected reaction
+    required Reaction reaction = 2;
+}
+
+// reacting, unreacting to a comment
+message ReactComment {
+    // ID of the comment to react
+    required uint64 comment_id = 1;
+
+    // ID of the selected reaction
+    required uint32 reaction_id = 2;
+}
+
+// create comment
+message CreateComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of comment member wants to reply (empty if new comment is parent comment)
+    optional uint64 parent_comment_id = 2;
+
+    // Comment text
+    required string body = 3;
+}
+
+// edit comment by author
+message EditComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of the comment whose text is being edited
+    required uint64 comment_id = 3;
+
+    // New comment body
+    required string new_body = 4;
+}
+
+// delete comment by author 
+message DeleteComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of the comment which will be deleted
+    required uint64 comment_id = 2;
+}
+
+// pin comment on a video by channel owner
+message PinComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of the comment which will be pinned
+    required uint64 comment_id = 2;
+}
+
+
+// delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
+message DeleteCommentModerator {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of comment that will be deleted by moderator
+    required uint64 comment_id = 2;
+
+    // why moderator wants to delete this comment
+    required string rationale = 3;
+}
+
+message BanOrUnbanMemberFromChannel { 
+    // ID of the member that channel owner wants to ban from participating on any video.
+    required uint64 member_id = 1;
+
+    enum Option {
+        BAN = 0; // Ban member (nothing happens if member is already banned)
+        UNBAN = 1; // Unban member (nothing happens if member is already unbanned)
+    }
+
+    // Selected option to ban or unban member from the channel
+    required Option option = 2;
+}
+
+// Enable or disable comment section for all videos of channel
+message EnableOrDisableCommentSection {
+    enum Option {
+        ENABLE = 0; // Enable comment section (nothing happens in it is already enabled)
+        DISABLE = 1; // Disable comment section (nothing happens in it is already disabled)
+    }
+
+    // Selected option to enable or disable comment section
+    required Option option = 2;
+}
+
+// Enable or disable comment section for a single video
+message EnableOrDisableCommentSectionOfVideo {
+    // ID of the video
+    required uint64 video_id = 1;
+
+
+    enum Option {
+        ENABLE = 0; // Enable comment section (nothing happens if it is already enabled)
+        DISABLE = 1; // Disable comment section (nothing happens if it is already disabled)
+    }
+
+    // Selected option to enable or disable comment section
+    required Option option = 2;
+}
+
+// Enable or disable reactions on a single video
+message EnableOrDisableReactionsOnVideo {
+    // ID of the video
+    required uint64 video_id = 1;
+
+
+    enum Option {
+        ENABLE = 0; // Enable reactions (nothing happens if they are already enabled)
+        DISABLE = 1; // Disable reactions (nothing happens if they are already disabled)
+    }
+
+    // Selected option to enable or disable comment section
+    required Option option = 2;
+}
+
+message MemberRemarked {
+    // member_remark extrinsic would emit event containing 
+    // any one of the following serialized messages
+    oneof member_remarked {
+     ReactVideo react_video = 1;
+     ReactComment react_comment = 3;
+     CreateComment create_comment = 5;
+     EditComment edit_comment = 6;
+     DeleteComment delete_comment = 7;
+    }
+}
+
+message ChannelModeratorRemarked {
+    // channel_moderator_remark extrinsic would emit event containing 
+    // any one of the following serialized messages
+    oneof channel_moderator_remarked {
+        DeleteCommentModerator delete_comment_moderator = 1;
+    }
+}
+
+message ChannelOwnerRemarked {
+    // channel_owner_remark extrinsic would emit event containing 
+    // any one of the following serialized messages
+    oneof channel_owner_remarked {
+        PinComment pin_comment = 1;
+        BanOrUnbanMemberFromChannel ban_member_from_channel = 2;
+        EnableOrDisableReactionsOnVideo enable_or_disable_reactions_on_video = 3;
+        EnableOrDisableCommentSection enable_or_disable_comment_section = 4;
+        EnableOrDisableCommentSectionOfVideo enable_or_disable_comment_section_of_video = 5;
+    }
+}
