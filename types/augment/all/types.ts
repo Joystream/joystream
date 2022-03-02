@@ -87,17 +87,6 @@ export interface AuctionParams extends Struct {
   readonly whitelist: BTreeSet<MemberId>;
 }
 
-/** @name AuctionRecord */
-export interface AuctionRecord extends Struct {
-  readonly starting_price: u128;
-  readonly buy_now_price: u128;
-  readonly auction_type: AuctionType;
-  readonly minimal_bid_step: u128;
-  readonly last_bid: Option<Bid>;
-  readonly starts_at: Option<u32>;
-  readonly whitelist: BTreeSet<MemberId>;
-}
-
 /** @name AuctionType */
 export interface AuctionType extends Enum {
   readonly isEnglish: boolean;
@@ -151,6 +140,14 @@ export interface BlockAndTime extends Struct {
   readonly time: u64;
 }
 
+/** @name Bounty */
+export interface Bounty extends Struct {
+  readonly creation_params: BountyCreationParameters;
+  readonly total_funding: u128;
+  readonly milestone: BountyMilestone;
+  readonly active_work_entry_count: u32;
+}
+
 /** @name BountyActor */
 export interface BountyActor extends Enum {
   readonly isCouncil: boolean;
@@ -172,6 +169,39 @@ export interface BountyCreationParameters extends Struct {
 
 /** @name BountyId */
 export interface BountyId extends u64 {}
+
+/** @name BountyMilestone */
+export interface BountyMilestone extends Enum {
+  readonly isCreated: boolean;
+  readonly asCreated: BountyMilestone_Created;
+  readonly isBountyMaxFundingReached: boolean;
+  readonly asBountyMaxFundingReached: BountyMilestone_BountyMaxFundingReached;
+  readonly isWorkSubmitted: boolean;
+  readonly asWorkSubmitted: BountyMilestone_WorkSubmitted;
+  readonly isJudgmentSubmitted: boolean;
+  readonly asJudgmentSubmitted: BountyMilestone_JudgmentSubmitted;
+}
+
+/** @name BountyMilestone_BountyMaxFundingReached */
+export interface BountyMilestone_BountyMaxFundingReached extends Struct {
+  readonly max_funding_reached_at: u32;
+}
+
+/** @name BountyMilestone_Created */
+export interface BountyMilestone_Created extends Struct {
+  readonly created_at: u32;
+  readonly has_contributions: bool;
+}
+
+/** @name BountyMilestone_JudgmentSubmitted */
+export interface BountyMilestone_JudgmentSubmitted extends Struct {
+  readonly successful_bounty: bool;
+}
+
+/** @name BountyMilestone_WorkSubmitted */
+export interface BountyMilestone_WorkSubmitted extends Struct {
+  readonly work_period_started_at: u32;
+}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
@@ -611,13 +641,6 @@ export interface NftOwner extends Enum {
   readonly asMember: MemberId;
 }
 
-/** @name NFTOwner */
-export interface NFTOwner extends Enum {
-  readonly isChannelOwner: boolean;
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-}
-
 /** @name OpenAuctionDetails */
 export interface OpenAuctionDetails extends Struct {
   readonly bid_lock_duration: u32;
@@ -666,13 +689,6 @@ export interface OracleWorkEntryJudgment_Winner extends Struct {
 /** @name OwnedNft */
 export interface OwnedNft extends Struct {
   readonly owner: NftOwner;
-  readonly transactional_status: TransactionalStatus;
-  readonly creator_royalty: Option<Royalty>;
-}
-
-/** @name OwnedNFT */
-export interface OwnedNFT extends Struct {
-  readonly owner: NFTOwner;
   readonly transactional_status: TransactionalStatus;
   readonly creator_royalty: Option<Royalty>;
 }

@@ -22,7 +22,7 @@ if [[ -n "$ALL_PROPOSALS_PARAMETERS_JSON" ]] && [[ -n "$TEST_NODE" ]]; then
 elif [[ -z "$ALL_PROPOSALS_PARAMETERS_JSON" ]] && [[ -z "$TEST_NODE" ]]; then
   PROPOSALS_PARAMETERS_FILE=""
 elif [[ -n "$TEST_NODE" ]]; then
-  PROPOSALS_PARAMETERS_FILE="./tests/integration-tests/proposal-parameters.json"
+  PROPOSALS_PARAMETERS_FILE="./tests/network-tests/proposal-parameters.json"
 else
   mkdir -p runtime-inputs
   PROPOSALS_PARAMETERS_FILE="./runtime-inputs/proposal-parameters-input.json"

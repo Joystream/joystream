@@ -1,28 +1,25 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { JoystreamCLI } from '../../cli/joystream'
-import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
-import { BN } from '@polkadot/util'
+import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership/BuyMembershipHappyCaseFixture'
 import { FixtureRunner } from '../../Fixture'
-import { TmpFileManager } from '../../cli/utils'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { statSync } from 'fs'
+import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
 
-export default async function createChannel({ api, env, query }: FlowProps): Promise<void> {
+export default async function createChannel({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
   debug('Started')
 
   // Create channel owner membership
   const [channelOwnerKeypair] = await api.createKeyPairs(1)
-  const paidTermId = api.createPaidTermId(new BN(+(env.MEMBERSHIP_PAID_TERMS || 0)))
-  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, [channelOwnerKeypair.key.address], paidTermId)
+  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [channelOwnerKeypair.key.address])
   await new FixtureRunner(buyMembershipFixture).run()
   const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
-  // Send some funds to pay the deletion_prize
-  const channelOwnerBalance = api.consts.storage.dataObjectDeletionPrize.muln(2)
+  // Send some funds to pay the deletion_prize and fees
+  const channelOwnerBalance = new BN(10000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
   // Create and init Joystream CLI
@@ -31,7 +28,6 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
   // Import & select channel owner key
   await joystreamCli.init()
   await joystreamCli.importAccount(channelOwnerKeypair.key)
-  await joystreamCli.chooseMemberAccount(memberId)
 
   // Create channel
   const avatarPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(300, 300)
@@ -46,7 +42,12 @@ export default async function createChannel({ api, env, query }: FlowProps): Pro
     rewardAccount: channelOwnerKeypair.key.address,
   }
 
-  const channelId = await joystreamCli.createChannel(channelInput)
+  const channelId = await joystreamCli.createChannel(channelInput, [
+    '--context',
+    'Member',
+    '--useMemberId',
+    memberId.toString(),
+  ])
 
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
