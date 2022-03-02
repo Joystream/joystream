@@ -159,7 +159,7 @@ message ChannelOwnerRemarked {
     // any one of the following serialized messages
     oneof channel_owner_remarked {
         PinComment pin_comment = 1;
-        BanOrUnbanMemberFromChannel ban_member_from_channel = 2;
+        BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         EnableOrDisableReactionsOnVideo enable_or_disable_reactions_on_video = 3;
         EnableOrDisableCommentSection enable_or_disable_comment_section = 4;
         EnableOrDisableCommentSectionOfVideo enable_or_disable_comment_section_of_video = 5;

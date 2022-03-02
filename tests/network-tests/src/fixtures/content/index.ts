@@ -1,5 +1,6 @@
 export * from './activeVideoCounters'
 export * from './createChannelsAndVideos'
+export * from './CreateCommentsFixture'
 export * from './createContentStructure'
 export * from './createMembers'
 export * from './nft'

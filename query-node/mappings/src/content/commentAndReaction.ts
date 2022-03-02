@@ -38,6 +38,8 @@ import {
 import { genericEventFields, inconsistentState, logger } from '../common'
 
 // TODO: Ensure video is actually a video
+// TODO: make sure comment is fully removed (all of its reactions)
+// TODO: make sure video is fully removed (all of its comments & reactions)
 
 export async function processReactVideoMessage(
   { store, event }: EventContext & StoreContext,

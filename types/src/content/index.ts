@@ -16,6 +16,7 @@ export class VideoPostId extends u64 {}
 export class ReactionId extends u64 {}
 export class CurrencyOf extends BalanceOf {}
 export class CurrencyAmount extends CurrencyOf {}
+export class CommentId extends u64 {}
 
 // NFT types
 
@@ -265,6 +266,7 @@ export const contentTypes = {
   // Added in Olympia:
   VideoPostId,
   ReactionId,
+  CommentId,
   VideoPostType,
   VideoPost,
   Side,

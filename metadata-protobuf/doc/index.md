@@ -3,6 +3,10 @@
 
 ## Table of Contents
 
+- [proto/Bounty.proto](#proto/Bounty.proto)
+    - [BountyMetadata](#.BountyMetadata)
+    - [BountyWorkData](#.BountyWorkData)
+  
 - [proto/Channel.proto](#proto/Channel.proto)
     - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
@@ -26,6 +30,9 @@
 - [proto/Playlist.proto](#proto/Playlist.proto)
     - [PlaylistMetadata](#.PlaylistMetadata)
   
+- [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
+    - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
+  
 - [proto/Series.proto](#proto/Series.proto)
     - [SeasonMetadata](#.SeasonMetadata)
     - [SeriesMetadata](#.SeriesMetadata)
@@ -41,11 +48,26 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
+    - [CreateComment](#.CreateComment)
+    - [CreateReply](#.CreateReply)
+    - [DeleteComment](#.DeleteComment)
+    - [DeleteCommentModerator](#.DeleteCommentModerator)
+    - [DeleteReply](#.DeleteReply)
+    - [DeleteReplyModerator](#.DeleteReplyModerator)
+    - [EditComment](#.EditComment)
+    - [EditReply](#.EditReply)
     - [License](#.License)
     - [MediaType](#.MediaType)
+    - [MemberRemarked](#.MemberRemarked)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
+    - [ReactComment](#.ReactComment)
+    - [ReactVideo](#.ReactVideo)
+    - [UnreactComment](#.UnreactComment)
+    - [UnreactVideo](#.UnreactVideo)
     - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
+  
+    - [ReactionOptions](#.ReactionOptions)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
     - [AddUpcomingOpening](#.AddUpcomingOpening)
@@ -61,6 +83,56 @@
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="proto/Bounty.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Bounty.proto
+
+
+
+<a name=".BountyMetadata"></a>
+
+### BountyMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Bounty title |
+| description | [string](#string) | optional | Bounty description |
+| discussionThread | [uint64](#uint64) | optional | Id of the forum thread used to discuss the bounty |
+| banner_image_uri | [string](#string) | optional | Image uri of the bounty&#39;s banner |
+
+
+
+
+
+
+<a name=".BountyWorkData"></a>
+
+### BountyWorkData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Title of the work |
+| description | [string](#string) | optional | Description which contains the work itself as a URL, a BLOB, or just text |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
 
 
 
@@ -236,7 +308,8 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | optional | Member&#39;s real name |
-| avatar | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
 
 
@@ -306,6 +379,38 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
 | videos | [uint64](#uint64) | repeated | Videos in the playlist |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/ProposalsDiscussion.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ProposalsDiscussion.proto
+
+
+
+<a name=".ProposalsDiscussionPostMetadata"></a>
+
+### ProposalsDiscussionPostMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) | optional | Post text content (md-formatted) |
+| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
 
 
 
@@ -515,6 +620,140 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
+<a name=".CreateComment"></a>
+
+### CreateComment
+create comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".CreateReply"></a>
+
+### CreateReply
+create comment reply
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the |
+| comment_id | [uint64](#uint64) | required |  |
+| body | [string](#string) | required |  |
+
+
+
+
+
+
+<a name=".DeleteComment"></a>
+
+### DeleteComment
+delete comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".DeleteCommentModerator"></a>
+
+### DeleteCommentModerator
+delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
+<a name=".DeleteReply"></a>
+
+### DeleteReply
+delete comment reply by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [uint64](#uint64) | required |  |
+| reply_id | [uint64](#uint64) | required |  |
+
+
+
+
+
+
+<a name=".DeleteReplyModerator"></a>
+
+### DeleteReplyModerator
+delete reply by moderator; it will use Content::ModeratorRemarked extrinsic
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [uint64](#uint64) | required |  |
+| reply_id | [uint64](#uint64) | required |  |
+| rationale | [string](#string) | required |  |
+
+
+
+
+
+
+<a name=".EditComment"></a>
+
+### EditComment
+edit comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of the comment whose text is being edited |
+| new_body | [string](#string) | required | New comment body |
+
+
+
+
+
+
+<a name=".EditReply"></a>
+
+### EditReply
+edit comment reply by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required |  |
+| comment_id | [uint64](#uint64) | required |  |
+| reply_id | [uint64](#uint64) | required |  |
+| new_body | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".License"></a>
 
 ### License
@@ -549,6 +788,32 @@ Codec, Container, MIME media-type information
 
 
 
+<a name=".MemberRemarked"></a>
+
+### MemberRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| react_video | [ReactVideo](#ReactVideo) | optional |  |
+| unreact_video | [UnreactVideo](#UnreactVideo) | optional |  |
+| react_comment | [ReactComment](#ReactComment) | optional |  |
+| unreact_comment | [UnreactComment](#UnreactComment) | optional |  |
+| create_comment | [CreateComment](#CreateComment) | optional |  |
+| edit_comment | [EditComment](#EditComment) | optional |  |
+| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+| delete_comment_moderator | [DeleteCommentModerator](#DeleteCommentModerator) | optional |  |
+| create_reply | [CreateReply](#CreateReply) | optional |  |
+| edit_reply | [EditReply](#EditReply) | optional |  |
+| delete_reply | [DeleteReply](#DeleteReply) | optional |  |
+| delete_reply_moderator | [DeleteReplyModerator](#DeleteReplyModerator) | optional |  |
+
+
+
+
+
+
 <a name=".PublishedBeforeJoystream"></a>
 
 ### PublishedBeforeJoystream
@@ -559,6 +824,68 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | is_published | [bool](#bool) | optional | Was video published before joystream platform |
 | date | [string](#string) | optional | Date of publication: &#39;YYYY-MM-DD&#39; [ISO-8601](https://www.iso.org/iso-8601-date-and-time-format.html) |
+
+
+
+
+
+
+<a name=".ReactComment"></a>
+
+### ReactComment
+reacting and changing reaction to comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [uint64](#uint64) | required | ID of the comment to react |
+| reaction | [ReactionOptions](#ReactionOptions) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".ReactVideo"></a>
+
+### ReactVideo
+reacting and changing reaction to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to react |
+| reaction | [ReactionOptions](#ReactionOptions) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".UnreactComment"></a>
+
+### UnreactComment
+unreact to comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | repeated | ID of the comment to unreact |
+
+
+
+
+
+
+<a name=".UnreactVideo"></a>
+
+### UnreactVideo
+unreact to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to unreact |
 
 
 
@@ -610,6 +937,19 @@ Publication status before joystream
 
 
  
+
+
+<a name=".ReactionOptions"></a>
+
+### ReactionOptions
+Rection Options
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LIKE | 0 |  |
+| UNLIKE | 1 |  |
+| LOVE | 2 |  |
+
 
  
 
