@@ -99,9 +99,13 @@ type Membership @entity {
   "List of channels the member has collaborator access to"
   collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
 
+  # Required for Channel->bannedMembers Many-to-Many relationship
   "List of channels the member is baned from participating in"
   memberBannedFromChannels: [Channel!] @derivedFrom(field: "bannedMembers")
 
+  # # Required for CommentReaction->members Many-to-Many relationship
+  # "List of comment reactions the member has made globally"
+  # memberGlobalCommentReactions: [CommentReaction!] @derivedFrom(field: "members")
   # Council & Referendum relations
 
   #"Council reward payment made received by the member."

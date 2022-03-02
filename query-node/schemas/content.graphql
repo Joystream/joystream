@@ -167,8 +167,17 @@ type Video @entity {
   "List of all video comments"
   comments: [Comment!] @derivedFrom(field: "video")
 
+  "Comments count"
+  commentsCount: Int!
+
+  "Is reactions feature enabled on video (true if enabled i.e. video can be reacted)"
+  isReactionFeatureEnabled: Boolean!
+
   "List of all video reactions"
   reactions: [VideoReaction!] @derivedFrom(field: "video")
+
+  "Reactions count"
+  reactionsCount: Int!
 }
 
 type VideoMediaMetadata @entity {
@@ -217,7 +226,7 @@ type License @entity {
   custom_text: String
 }
 
-enum ReactionOptions {
+enum VideoReactionOptions {
   CANCEL
   LIKE
   UNLIKE
@@ -228,7 +237,7 @@ type VideoReaction @entity {
   id: ID!
 
   "The Reaction"
-  reaction: ReactionOptions!
+  reaction: VideoReactionOptions!
 
   "The member that reacted"
   member: Membership!
@@ -241,13 +250,33 @@ type CommentReaction @entity {
   "Unique identifier"
   id: ID!
 
-  "The Reaction"
-  reaction: ReactionOptions!
+  "The Reaction id"
+  reaction_id: Int!
 
   "The member that reacted"
   member: Membership!
 
   "The comment that has been reacted to"
+  comment: Comment!
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+  MODERATED
+}
+
+type CommentReactionsCountByReactionId @entity {
+  "Unique identifier"
+  id: ID!
+
+  "The reaction id"
+  reaction_id: Int!
+
+  "No of times the comment has been reacted with given reaction Id"
+  count: Int!
+
+  "The comment which has been react with given reaction Id"
   comment: Comment!
 }
 
@@ -259,19 +288,25 @@ type Comment @entity {
   author: Membership!
 
   "Comment text"
-  text: String @fulltext(query: "commentText")
+  text: String! @fulltext(query: "commentText")
 
   "Video the comment was added to"
   video: Video!
 
-  "True if the comment is visible; moderators can set this flag"
-  isVisible: Boolean!
+  "Status of the comment; either it is visible, deleted, or moderated (deleted by moderator)"
+  status: CommentStatus!
 
   "List of all reactions to the comment"
   reactions: [CommentReaction!] @derivedFrom(field: "comment")
 
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [CommentReactionsCountByReactionId!] @derivedFrom(field: "comment")
+
   "A (parent) comment that this comment replies to (if any)"
-  parentCommentId: Comment
+  parentComment: Comment
+
+  "How many comments has replied to this comment (if any)"
+  repliesCount: Int!
 
   "List of all text update events (edits)"
   edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
