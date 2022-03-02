@@ -202,6 +202,12 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   const metadata = deserializeMetadata(BountyMetadata, metadataBytes)
   const discussionThread = await whenDef(metadata?.discussionThread, (id) => store.get(ForumThread, { where: { id } }))
 
+  // Create the EntrantWhitelist
+  const entrantWhitelist = asEntrantWhitelist(bountyParams.contract_type)
+  if (entrantWhitelist) {
+    store.save<BountyEntrantWhitelist>(entrantWhitelist)
+  }
+
   // Create the bounty
   const bounty = new Bounty({
     id: String(bountyId),
@@ -215,7 +221,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     creator: bountyActorToMembership(bountyParams.creator),
     oracle: bountyActorToMembership(bountyParams.oracle),
     fundingType: asFundingType(bountyParams.funding_type),
-    entrantWhitelist: asEntrantWhitelist(bountyParams.contract_type),
+    entrantWhitelist,
     workPeriod: asInt32(bountyParams.work_period),
     judgingPeriod: asInt32(bountyParams.judging_period),
 
@@ -246,7 +252,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     }
   }
 
-  function asEntrantWhitelist(assuranceContract: AssuranceContractType) {
+  function asEntrantWhitelist(assuranceContract: AssuranceContractType): BountyEntrantWhitelist | undefined {
     if (assuranceContract.isClosed) {
       const toMembership = (id: MemberId) => new Membership({ id: String(id) })
       const members = [...assuranceContract.asClosed.values()].map(toMembership)
