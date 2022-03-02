@@ -306,15 +306,15 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@3.1.0-alpha.16":
-  version "3.1.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.16.tgz#3bebe326b2ae6ad96b821797ca699c581217ac45"
-  integrity sha512-2Dq5fBqJWdqE0OhvI/kBA0i3gngnDmd0AaSFhJ03LE3mKTvzhapaOyWmEgO9vqQCSopSi0wWorizzksnu2+GQw==
+"@joystream/hydra-cli@3.1.0-alpha.19":
+  version "3.1.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.19.tgz#d7581a4af6455f73226959fe0658768410f4bab2"
+  integrity sha512-NpJSIss1a+LlJRh54ul6huE6ro5wrjqmdf64ePovMsTsHiumKAbY9jxCR/vN6zDhZ4jml/NAyUes3nbYb6RZsg==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
     "@inquirer/select" "^0.0.13-alpha.0"
-    "@joystream/warthog" "~2.41.2"
+    "@joystream/warthog" "^2.41.3"
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -342,10 +342,10 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@3.1.0-alpha.16":
-  version "3.1.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.16.tgz#5756b714767be8f3b237dba270386113c64b1245"
-  integrity sha512-ik1iegF7qZXeumsJ8baeff5VAxgrc6+yyRIZNFgWrCRDVEnP613XNFpUIcKzuXme7BhCVeaY5ynLaQUtU6lcUw==
+"@joystream/hydra-typegen@3.1.0-alpha.19":
+  version "3.1.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.19.tgz#9913d756e67e12a9ad109688b520d25790a6b036"
+  integrity sha512-FrWIXYgrxeIRYwqlaNOwytum91sM1n4qKI3BIkHGoEfmegmTi+5+3tMRavKG+mST/Mq2OIu+LJ4VJP4POaCO3g==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
@@ -358,10 +358,10 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@~2.41.2":
-  version "2.41.2"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.2.tgz#6d3cf5c977320d1c77be518e848e011a9699b22d"
-  integrity sha512-1w6aT5P3xiI/HaTtqJrVj4Yp1/gxG8cGTeYgzlwr3iq8J11skwE4rLCHQucHfVueyBX49AaqWrhl+wI2ACqk4Q==
+"@joystream/warthog@^2.41.3":
+  version "2.41.3"
+  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.3.tgz#12f1ff73f29264dd6ebce1c90ff2dad6b1467871"
+  integrity sha512-CM337UO31zHRgkK1RWpvUr3esQIYmLrpqv/yBOgescNLth/MlfnUpDHV/9fCGfquvFdk/HSUyZFy/6KrJrPXjA==
   dependencies:
     "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz"
     "@types/app-root-path" "^1.2.4"
