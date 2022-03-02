@@ -315,6 +315,27 @@ import {
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  VideoCommentFieldsFragment,
+  GetRootCommentsByVideoIdQuery,
+  GetRootCommentsByVideoIdQueryVariables,
+  GetRepliesByParentCommentIdQuery,
+  GetRepliesByParentCommentIdQueryVariables,
+  GetCommentByIdQuery,
+  GetCommentByIdQueryVariables,
+  GetRootCommentsByVideoId,
+  GetRepliesByParentCommentId,
+  CommentCreatedEventFieldsFragment,
+  GetCommentCreatedEventsByEventIdsQuery,
+  GetCommentCreatedEventsByEventIdsQueryVariables,
+  GetCommentCreatedEventsByEventIds,
+  GetCommentById,
+  GetCommentsByIds,
+  GetCommentsByIdsQuery,
+  GetCommentsByIdsQueryVariables,
+  CommentDeletedEventFieldsFragment,
+  GetCommentDeletedEventsByEventIdsQuery,
+  GetCommentDeletedEventsByEventIdsQueryVariables,
+  GetCommentDeletedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -322,6 +343,7 @@ import { ProposalId } from '@joystream/types/proposals'
 import { BLOCKTIME } from './consts'
 import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
+import { CommentId } from '@joystream/types/content'
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -1132,5 +1154,53 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async rootCommentsByVideoId(videoId: string): Promise<VideoCommentFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetRootCommentsByVideoIdQuery, GetRootCommentsByVideoIdQueryVariables>(
+      GetRootCommentsByVideoId,
+      { videoId },
+      'comments'
+    )
+  }
+
+  public async repliesByParentCommentId(commentId: string): Promise<VideoCommentFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetRepliesByParentCommentIdQuery, GetRepliesByParentCommentIdQueryVariables>(
+      GetRepliesByParentCommentId,
+      { commentId },
+      'comments'
+    )
+  }
+
+  public async getCommentsByIds(ids: CommentId[]): Promise<VideoCommentFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCommentsByIdsQuery, GetCommentsByIdsQueryVariables>(
+      GetCommentsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'comments'
+    )
+  }
+
+  public async getCommentById(commentId: string): Promise<Maybe<VideoCommentFieldsFragment>> {
+    return this.uniqueEntityQuery<GetCommentByIdQuery, GetCommentByIdQueryVariables>(
+      GetCommentById,
+      { commentId },
+      'commentByUniqueInput'
+    )
+  }
+
+  public async getCommentCreatedEvents(events: EventDetails[]): Promise<CommentCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentCreatedEventsByEventIdsQuery,
+      GetCommentCreatedEventsByEventIdsQueryVariables
+    >(GetCommentCreatedEventsByEventIds, { eventIds }, 'commentCreatedEvents')
+  }
+
+  public async getCommentDeletedEvents(events: EventDetails[]): Promise<CommentDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentDeletedEventsByEventIdsQuery,
+      GetCommentDeletedEventsByEventIdsQueryVariables
+    >(GetCommentDeletedEventsByEventIds, { eventIds }, 'commentDeletedEvents')
   }
 }
