@@ -410,7 +410,7 @@ impl<
         bid: Balance,
         last_bid_block: BlockNumber,
     ) -> (Self, bool, Bid<MemberId, AccountId, BlockNumber, Balance>) {
-        let bid = Bid::new(bidder, bidder_account_id, bid, last_bid_block);
+        let bid = Bid::new(bidder.clone(), bidder_account_id, bid, last_bid_block);
         let is_extended = match &mut self.auction_type {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
@@ -424,7 +424,8 @@ impl<
             _ => false,
         };
 
-        self.last_bid = Some(bid.clone());
+        //insert bid
+        let _ = self.bid_list.insert(bidder, bid.clone());
         (self, is_extended, bid)
     }
 
