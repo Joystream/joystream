@@ -24,6 +24,29 @@
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
   
+- [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
+    - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
+    - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
+    - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CreateComment](#.CreateComment)
+    - [DeleteComment](#.DeleteComment)
+    - [DeleteCommentModerator](#.DeleteCommentModerator)
+    - [EditComment](#.EditComment)
+    - [EnableOrDisableCommentSection](#.EnableOrDisableCommentSection)
+    - [EnableOrDisableCommentSectionOfVideo](#.EnableOrDisableCommentSectionOfVideo)
+    - [EnableOrDisableReactionsOnVideo](#.EnableOrDisableReactionsOnVideo)
+    - [MemberRemarked](#.MemberRemarked)
+    - [PinOrUnpinComment](#.PinOrUnpinComment)
+    - [ReactComment](#.ReactComment)
+    - [ReactVideo](#.ReactVideo)
+  
+    - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
+    - [EnableOrDisableCommentSection.Option](#.EnableOrDisableCommentSection.Option)
+    - [EnableOrDisableCommentSectionOfVideo.Option](#.EnableOrDisableCommentSectionOfVideo.Option)
+    - [EnableOrDisableReactionsOnVideo.Option](#.EnableOrDisableReactionsOnVideo.Option)
+    - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
+    - [ReactVideo.Reaction](#.ReactVideo.Reaction)
+  
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
   
@@ -48,26 +71,11 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
-    - [CreateComment](#.CreateComment)
-    - [CreateReply](#.CreateReply)
-    - [DeleteComment](#.DeleteComment)
-    - [DeleteCommentModerator](#.DeleteCommentModerator)
-    - [DeleteReply](#.DeleteReply)
-    - [DeleteReplyModerator](#.DeleteReplyModerator)
-    - [EditComment](#.EditComment)
-    - [EditReply](#.EditReply)
     - [License](#.License)
     - [MediaType](#.MediaType)
-    - [MemberRemarked](#.MemberRemarked)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [ReactComment](#.ReactComment)
-    - [ReactVideo](#.ReactVideo)
-    - [UnreactComment](#.UnreactComment)
-    - [UnreactVideo](#.UnreactVideo)
     - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
-  
-    - [ReactionOptions](#.ReactionOptions)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
     - [AddUpcomingOpening](#.AddUpcomingOpening)
@@ -317,6 +325,327 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Metaprotocol.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Metaprotocol.proto
+
+
+
+<a name=".BanOrUnbanMemberFromChannel"></a>
+
+### BanOrUnbanMemberFromChannel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member_id | [uint64](#uint64) | required | ID of the member that channel owner wants to ban from participating on any video. |
+| option | [BanOrUnbanMemberFromChannel.Option](#BanOrUnbanMemberFromChannel.Option) | required | Selected option to ban or unban member from the channel |
+
+
+
+
+
+
+<a name=".ChannelModeratorRemarked"></a>
+
+### ChannelModeratorRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| delete_comment_moderator | [DeleteCommentModerator](#DeleteCommentModerator) | optional |  |
+
+
+
+
+
+
+<a name=".ChannelOwnerRemarked"></a>
+
+### ChannelOwnerRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
+| ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
+| enable_or_disable_reactions_on_video | [EnableOrDisableReactionsOnVideo](#EnableOrDisableReactionsOnVideo) | optional |  |
+| enable_or_disable_comment_section | [EnableOrDisableCommentSection](#EnableOrDisableCommentSection) | optional |  |
+| enable_or_disable_comment_section_of_video | [EnableOrDisableCommentSectionOfVideo](#EnableOrDisableCommentSectionOfVideo) | optional |  |
+
+
+
+
+
+
+<a name=".CreateComment"></a>
+
+### CreateComment
+create comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| parent_comment_id | [uint64](#uint64) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
+| body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".DeleteComment"></a>
+
+### DeleteComment
+delete comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".DeleteCommentModerator"></a>
+
+### DeleteCommentModerator
+delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
+<a name=".EditComment"></a>
+
+### EditComment
+edit comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of the comment whose text is being edited |
+| new_body | [string](#string) | required | New comment body |
+
+
+
+
+
+
+<a name=".EnableOrDisableCommentSection"></a>
+
+### EnableOrDisableCommentSection
+Enable or disable comment section for all videos of channel
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| option | [EnableOrDisableCommentSection.Option](#EnableOrDisableCommentSection.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+
+<a name=".EnableOrDisableCommentSectionOfVideo"></a>
+
+### EnableOrDisableCommentSectionOfVideo
+Enable or disable comment section for a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [EnableOrDisableCommentSectionOfVideo.Option](#EnableOrDisableCommentSectionOfVideo.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+
+<a name=".EnableOrDisableReactionsOnVideo"></a>
+
+### EnableOrDisableReactionsOnVideo
+Enable or disable reactions on a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [EnableOrDisableReactionsOnVideo.Option](#EnableOrDisableReactionsOnVideo.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+
+<a name=".MemberRemarked"></a>
+
+### MemberRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| react_video | [ReactVideo](#ReactVideo) | optional |  |
+| react_comment | [ReactComment](#ReactComment) | optional |  |
+| create_comment | [CreateComment](#CreateComment) | optional |  |
+| edit_comment | [EditComment](#EditComment) | optional |  |
+| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+
+
+
+
+
+
+<a name=".PinOrUnpinComment"></a>
+
+### PinOrUnpinComment
+pin comment on a video by channel owner
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [uint64](#uint64) | required | ID of the comment which will be pinned |
+| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to ban or unban member from the channel |
+
+
+
+
+
+
+<a name=".ReactComment"></a>
+
+### ReactComment
+reacting, unreacting to a comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [uint64](#uint64) | required | ID of the comment to react |
+| reaction_id | [uint32](#uint32) | required | ID of the selected reaction |
+
+
+
+
+
+
+<a name=".ReactVideo"></a>
+
+### ReactVideo
+reacting, unreacting, and changing reaction to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to react |
+| reaction | [ReactVideo.Reaction](#ReactVideo.Reaction) | required | Selected reaction |
+
+
+
+
+
+ 
+
+
+<a name=".BanOrUnbanMemberFromChannel.Option"></a>
+
+### BanOrUnbanMemberFromChannel.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BAN | 0 | Ban member (nothing happens if member is already banned) |
+| UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
+
+
+
+<a name=".EnableOrDisableCommentSection.Option"></a>
+
+### EnableOrDisableCommentSection.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable comment section (nothing happens in it is already enabled) |
+| DISABLE | 1 | Disable comment section (nothing happens in it is already disabled) |
+
+
+
+<a name=".EnableOrDisableCommentSectionOfVideo.Option"></a>
+
+### EnableOrDisableCommentSectionOfVideo.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
+| DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
+
+
+
+<a name=".EnableOrDisableReactionsOnVideo.Option"></a>
+
+### EnableOrDisableReactionsOnVideo.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
+| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
+
+
+
+<a name=".PinOrUnpinComment.Option"></a>
+
+### PinOrUnpinComment.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PIN | 0 | Pin comment on video (nothing happens if comment is already pinned) |
+| UNPIN | 1 | Unpin comment from video (nothing happens if comment is already unpinned) |
+
+
+
+<a name=".ReactVideo.Reaction"></a>
+
+### ReactVideo.Reaction
+The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CANCEL | 0 | This means cancelling any previous reaction |
+| LIKE | 1 |  |
+| UNLIKE | 2 |  |
+
 
  
 
@@ -620,140 +949,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
-<a name=".CreateComment"></a>
-
-### CreateComment
-create comment
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| body | [string](#string) | required | Comment text |
-
-
-
-
-
-
-<a name=".CreateReply"></a>
-
-### CreateReply
-create comment reply
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the |
-| comment_id | [uint64](#uint64) | required |  |
-| body | [string](#string) | required |  |
-
-
-
-
-
-
-<a name=".DeleteComment"></a>
-
-### DeleteComment
-delete comment by author
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of the comment which will be deleted |
-
-
-
-
-
-
-<a name=".DeleteCommentModerator"></a>
-
-### DeleteCommentModerator
-delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of comment that will be deleted by moderator |
-| rationale | [string](#string) | required | why moderator wants to delete this comment |
-
-
-
-
-
-
-<a name=".DeleteReply"></a>
-
-### DeleteReply
-delete comment reply by author
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| comment_id | [uint64](#uint64) | required |  |
-| reply_id | [uint64](#uint64) | required |  |
-
-
-
-
-
-
-<a name=".DeleteReplyModerator"></a>
-
-### DeleteReplyModerator
-delete reply by moderator; it will use Content::ModeratorRemarked extrinsic
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| comment_id | [uint64](#uint64) | required |  |
-| reply_id | [uint64](#uint64) | required |  |
-| rationale | [string](#string) | required |  |
-
-
-
-
-
-
-<a name=".EditComment"></a>
-
-### EditComment
-edit comment by author
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of the comment whose text is being edited |
-| new_body | [string](#string) | required | New comment body |
-
-
-
-
-
-
-<a name=".EditReply"></a>
-
-### EditReply
-edit comment reply by author
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required |  |
-| comment_id | [uint64](#uint64) | required |  |
-| reply_id | [uint64](#uint64) | required |  |
-| new_body | [string](#string) | required |  |
-
-
-
-
-
-
 <a name=".License"></a>
 
 ### License
@@ -788,32 +983,6 @@ Codec, Container, MIME media-type information
 
 
 
-<a name=".MemberRemarked"></a>
-
-### MemberRemarked
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| react_video | [ReactVideo](#ReactVideo) | optional |  |
-| unreact_video | [UnreactVideo](#UnreactVideo) | optional |  |
-| react_comment | [ReactComment](#ReactComment) | optional |  |
-| unreact_comment | [UnreactComment](#UnreactComment) | optional |  |
-| create_comment | [CreateComment](#CreateComment) | optional |  |
-| edit_comment | [EditComment](#EditComment) | optional |  |
-| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
-| delete_comment_moderator | [DeleteCommentModerator](#DeleteCommentModerator) | optional |  |
-| create_reply | [CreateReply](#CreateReply) | optional |  |
-| edit_reply | [EditReply](#EditReply) | optional |  |
-| delete_reply | [DeleteReply](#DeleteReply) | optional |  |
-| delete_reply_moderator | [DeleteReplyModerator](#DeleteReplyModerator) | optional |  |
-
-
-
-
-
-
 <a name=".PublishedBeforeJoystream"></a>
 
 ### PublishedBeforeJoystream
@@ -824,68 +993,6 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | is_published | [bool](#bool) | optional | Was video published before joystream platform |
 | date | [string](#string) | optional | Date of publication: &#39;YYYY-MM-DD&#39; [ISO-8601](https://www.iso.org/iso-8601-date-and-time-format.html) |
-
-
-
-
-
-
-<a name=".ReactComment"></a>
-
-### ReactComment
-reacting and changing reaction to comment
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| comment_id | [uint64](#uint64) | required | ID of the comment to react |
-| reaction | [ReactionOptions](#ReactionOptions) | required | Selected reaction |
-
-
-
-
-
-
-<a name=".ReactVideo"></a>
-
-### ReactVideo
-reacting and changing reaction to video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video to react |
-| reaction | [ReactionOptions](#ReactionOptions) | required | Selected reaction |
-
-
-
-
-
-
-<a name=".UnreactComment"></a>
-
-### UnreactComment
-unreact to comment
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | repeated | ID of the comment to unreact |
-
-
-
-
-
-
-<a name=".UnreactVideo"></a>
-
-### UnreactVideo
-unreact to video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video to unreact |
 
 
 
@@ -937,19 +1044,6 @@ unreact to video
 
 
  
-
-
-<a name=".ReactionOptions"></a>
-
-### ReactionOptions
-Rection Options
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LIKE | 0 |  |
-| UNLIKE | 1 |  |
-| LOVE | 2 |  |
-
 
  
 

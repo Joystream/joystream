@@ -59,12 +59,20 @@ message DeleteComment {
 }
 
 // pin comment on a video by channel owner
-message PinComment {
+message PinOrUnpinComment {
     // ID of the video
     required uint64 video_id = 1;
 
     // ID of the comment which will be pinned
     required uint64 comment_id = 2;
+
+    enum Option {
+        PIN = 0; // Pin comment on video (nothing happens if comment is already pinned)
+        UNPIN = 1; // Unpin comment from video (nothing happens if comment is already unpinned)
+    }
+
+    // Selected option to ban or unban member from the channel
+    required Option option = 3;
 }
 
 
@@ -158,7 +166,7 @@ message ChannelOwnerRemarked {
     // channel_owner_remark extrinsic would emit event containing 
     // any one of the following serialized messages
     oneof channel_owner_remarked {
-        PinComment pin_comment = 1;
+        PinOrUnpinComment pin_or_unpin_comment = 1;
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         EnableOrDisableReactionsOnVideo enable_or_disable_reactions_on_video = 3;
         EnableOrDisableCommentSection enable_or_disable_comment_section = 4;
