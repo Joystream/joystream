@@ -8,6 +8,8 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 use std::iter::FromIterator;
 
+const NEXT_BID_OFFSET: u64 = 10;
+
 fn setup_open_auction_scenario() {
     let video_id = NextVideoId::<Test>::get();
 
@@ -43,7 +45,7 @@ fn setup_open_auction_scenario() {
 
     let bid = Content::min_starting_price();
 
-    let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
     // Make a successfull bid
     assert_ok!(Content::make_bid(
@@ -52,6 +54,21 @@ fn setup_open_auction_scenario() {
         video_id,
         bid,
     ));
+}
+
+fn setup_open_auction_scenario_with_bid() {
+    let video_id = Content::next_video_id();
+    setup_open_auction_scenario();
+
+    let new_bid = Content::min_starting_price().saturating_add(NEXT_BID_OFFSET);
+
+    // Make an attempt to make auction bid if bid step constraint violated
+    let _ = Content::make_bid(
+        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        SECOND_MEMBER_ID,
+        video_id,
+        new_bid,
+    );
 }
 
 #[test]
@@ -648,7 +665,7 @@ fn make_bid_starting_price_constraint_violated() {
 }
 
 #[test]
-fn make_bid_bid_step_constraint_violated() {
+fn make_bid_bid_step_zero_allowed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -666,6 +683,47 @@ fn make_bid_bid_step_constraint_violated() {
         );
 
         // Failure checked
-        assert_err!(make_bid_result, Error::<Test>::BidStepConstraintViolated);
+        assert_ok!(make_bid_result);
+    })
+}
+
+#[test]
+fn make_bid_fails_with_lower_offer_and_locking_period_not_expired() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        setup_open_auction_scenario_with_bid();
+
+        // attemp to lower the offer on the same block -> error
+        assert_err!(
+            Content::make_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                video_id,
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::BidLockDurationIsNotExpired
+        );
+    })
+}
+
+#[test]
+fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        setup_open_auction_scenario_with_bid();
+
+        // attemp to lower the offer on the same block -> error
+        assert_ok!(Content::make_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            Content::min_starting_price() + (2 * NEXT_BID_OFFSET)
+        ));
     })
 }

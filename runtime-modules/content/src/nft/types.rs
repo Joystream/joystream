@@ -209,17 +209,6 @@ impl<BlockNumber: Default, Balance: Zero + Default + Clone> Default
     }
 }
 
-impl<BlockNumber: Default, Balance: Zero + Default + Clone> AuctionType<BlockNumber, Balance> {
-    fn bid_step(&self) -> Balance {
-        match &self {
-            Self::English(EnglishAuctionDetails::<BlockNumber, Balance> { bid_step, .. }) => {
-                bid_step.clone()
-            }
-            Self::Open(..) => Balance::zero(),
-        }
-    }
-}
-
 /// English auction details
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -369,30 +358,46 @@ impl<
     }
 
     /// Ensure new bid is greater then last bid + minimal bid step
-    pub fn ensure_is_valid_bid<T: Trait>(&self, new_bid: Balance) -> DispatchResult {
-        // Always allow to buy now
-        match &self.buy_now_price {
-            Some(buy_now_price) if new_bid >= *buy_now_price => (),
-
-            // Ensure new bid is greater then last bid + minimal bid step
-            _ => {
-                if let Some(last_bid) = &self.last_bid {
-                    ensure!(
-                        last_bid
-                            .amount
-                            .checked_add(&self.auction_type.bid_step())
-                            .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
-                            <= new_bid,
-                        Error::<T>::BidStepConstraintViolated
-                    );
-                } else {
-                    ensure!(
-                        self.starting_price <= new_bid,
-                        Error::<T>::StartingPriceConstraintViolated
-                    );
-                }
+    pub fn ensure_is_valid_bid<T: Trait>(
+        &self,
+        new_bid: Balance,
+        participant_id: MemberId,
+        current_block: BlockNumber,
+    ) -> DispatchResult {
+        // 1. if bid >= Some(buy_now) -> Ok(())
+        if let Some(buy_now) = &self.buy_now_price {
+            if new_bid > *buy_now {
+                return Ok(());
             }
         }
+
+        let (base_bid, last_bid_block) = self.bid_list.get(&participant_id).map_or_else(
+            || -> Result<(Balance, BlockNumber), DispatchError> {
+                ensure!(
+                    self.starting_price <= new_bid,
+                    Error::<T>::StartingPriceConstraintViolated
+                );
+                Ok((self.starting_price.clone(), Default::default()))
+            },
+            |bid| Ok((bid.amount.clone(), bid.made_at_block)),
+        )?;
+
+        // 3. if type = English: bid >= (base_bid || start_price) + bid_step
+        match &self.auction_type {
+            AuctionType::English(EnglishAuctionDetails { bid_step, .. }) => {
+                ensure!(
+                    base_bid.saturating_add(bid_step.clone()) <= new_bid,
+                    Error::<T>::BidStepConstraintViolated
+                );
+            }
+            AuctionType::Open(_) => {
+                // smaller offer allowed only after locking duration
+                // last_bid_block = default() gives no problems
+                if new_bid < base_bid {
+                    self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid_block)?
+                };
+            }
+        };
 
         Ok(())
     }
@@ -512,11 +517,11 @@ impl<
     pub fn ensure_bid_lock_duration_expired<T: Trait>(
         &self,
         current_block: BlockNumber,
-        bid: Bid<MemberId, AccountId, BlockNumber, Balance>,
+        last_bid_block: BlockNumber,
     ) -> DispatchResult {
         if let AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) = &self.auction_type {
             ensure!(
-                current_block - bid.made_at_block >= *bid_lock_duration,
+                current_block - last_bid_block >= *bid_lock_duration,
                 Error::<T>::BidLockDurationIsNotExpired
             );
         }
@@ -539,7 +544,7 @@ impl<
         self.ensure_caller_is_last_bidder::<T>(who)?;
 
         // ensure bid lock duration expired
-        self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid)
+        self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid.made_at_block)
     }
 
     /// If whitelist set, ensure provided member is authorized to make bids

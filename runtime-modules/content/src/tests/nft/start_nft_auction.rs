@@ -263,7 +263,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -288,7 +287,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -306,56 +304,6 @@ fn start_nft_auction_invalid_params() {
             Error::<Test>::StartingPriceUpperBoundExceeded
         );
 
-        // Make an attempt to start nft auction if minimal bid step provided is less then min allowed bid step
-        let auction_params = AuctionParams {
-            starting_price: Content::max_starting_price(),
-            buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-            }),
-            minimal_bid_step: Content::min_bid_step() - 1,
-            starts_at: None,
-            whitelist: BTreeSet::new(),
-        };
-
-        let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        );
-
-        // Failure checked
-        assert_err!(
-            start_nft_auction_result,
-            Error::<Test>::AuctionBidStepLowerBoundExceeded
-        );
-
-        // Make an attempt to start nft auction if minimal bid step provided is greater then max allowed bid step
-        let auction_params = AuctionParams {
-            starting_price: Content::max_starting_price(),
-            buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-            }),
-            minimal_bid_step: Content::max_bid_step() + 1,
-            starts_at: None,
-            whitelist: BTreeSet::new(),
-        };
-
-        let start_nft_auction_result = Content::start_nft_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        );
-
-        // Failure checked
-        assert_err!(
-            start_nft_auction_result,
-            Error::<Test>::AuctionBidStepUpperBoundExceeded
-        );
-
         // Make an attempt to start open nft auction if minimal bid lock duration
         // of auction provided is less then min allowed bid lock duration
         let auction_params = AuctionParams {
@@ -364,7 +312,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration() - 1,
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -390,7 +337,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::max_bid_lock_duration() + 1,
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -416,8 +362,8 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::min_auction_extension_period() - 1,
                 auction_duration: Content::max_auction_duration(),
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -443,8 +389,8 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::max_auction_extension_period() + 1,
                 auction_duration: Content::max_auction_duration(),
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -470,8 +416,8 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::min_auction_duration() - 1,
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -497,8 +443,8 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::max_auction_extension_period(),
                 auction_duration: Content::max_auction_duration() + 1,
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -524,8 +470,8 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::max_auction_extension_period(),
                 auction_duration: Content::min_auction_duration(),
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -550,7 +496,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: Some(<frame_system::Module<Test>>::block_number() - 1),
             whitelist: BTreeSet::new(),
         };
@@ -575,7 +520,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: Some(
                 <frame_system::Module<Test>>::block_number()
                     + Content::auction_starts_at_max_delta()
@@ -606,7 +550,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -631,7 +574,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID].into_iter()),
         };
@@ -661,7 +603,6 @@ fn start_nft_auction_invalid_params() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
             starts_at: None,
             whitelist,
         };

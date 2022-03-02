@@ -1540,7 +1540,7 @@ decl_module! {
             auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // Ensure new bid is greater then last bid + minimal bid step
-            auction.ensure_is_valid_bid::<T>(bid)?;
+            auction.ensure_is_valid_bid::<T>(bid, participant_id, current_block)?;
 
             // Used only for immediate auction completion
             let funds_destination_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
