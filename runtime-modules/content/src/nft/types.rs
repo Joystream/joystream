@@ -1,4 +1,5 @@
 use super::*;
+use sp_runtime::traits::Zero;
 
 /// Metadata for NFT issuance
 pub type NftMetadata = Vec<u8>;
@@ -169,6 +170,127 @@ impl<MemberId> Default for NftOwner<MemberId> {
     }
 }
 
+/// OwnedNft alias type for simplification.
+pub type Nft<T> = OwnedNft<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
+    CurrencyOf<T>,
+>;
+
+/// Parameters, needed for auction start
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct AuctionParams<BlockNumber, Balance: Zero + Default + Clone, MemberId: Ord> {
+    // Auction type (either english or open)
+    pub auction_type: AuctionType<BlockNumber, Balance>,
+    pub starting_price: Balance,
+    pub buy_now_price: Option<Balance>,
+    pub starts_at: Option<BlockNumber>,
+    pub whitelist: BTreeSet<MemberId>,
+}
+
+/// Auction type
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum AuctionType<BlockNumber, Balance: Zero + Default + Clone> {
+    // English auction details
+    English(EnglishAuctionDetails<BlockNumber, Balance>),
+    // Open auction details
+    Open(OpenAuctionDetails<BlockNumber>),
+}
+
+impl<BlockNumber: Default, Balance: Zero + Default + Clone> Default
+    for AuctionType<BlockNumber, Balance>
+{
+    fn default() -> Self {
+        Self::English(EnglishAuctionDetails::default())
+    }
+}
+
+impl<BlockNumber: Default, Balance: Zero + Default + Clone> AuctionType<BlockNumber, Balance> {
+    fn bid_step(&self) -> Balance {
+        match &self {
+            Self::English(EnglishAuctionDetails::<BlockNumber, Balance> { bid_step, .. }) => {
+                bid_step.clone()
+            }
+            Self::Open(..) => Balance::zero(),
+        }
+    }
+}
+
+/// English auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnglishAuctionDetails<BlockNumber, Balance: Zero + Default + Clone> {
+    // the remaining time on a lot will automatically reset to to the preset extension time
+    // if a new bid is placed within that period
+    pub extension_period: BlockNumber,
+    // auction duration
+    pub auction_duration: BlockNumber,
+    // bid step
+    pub bid_step: Balance,
+}
+
+/// Open auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct OpenAuctionDetails<BlockNumber> {
+    // bid lock duration
+    pub bid_lock_duration: BlockNumber,
+}
+
+/// Parameters used to issue a nft
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
+    /// Roayalty used for the author
+    pub royalty: Option<Royalty>,
+    /// Metadata
+    pub nft_metadata: NftMetadata,
+    /// member id Nft will be issued to
+    pub non_channel_owner: Option<MemberId>,
+    /// Initial transactional status for the nft
+    pub init_transactional_status: InitTransactionalStatus,
+}
+
+pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
+    <T as common::MembershipTypes>::MemberId,
+    InitTransactionalStatus<T>,
+>;
+
+/// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum InitTransactionalStatusRecord<
+    BlockNumber: BaseArithmetic + Copy + Default,
+    MemberId: Default + Copy + Ord,
+    Balance: Default + Clone + BaseArithmetic,
+> {
+    Idle,
+    BuyNow(Balance),
+    InitiatedOfferToMember(MemberId, Option<Balance>),
+    Auction(AuctionParams<BlockNumber, Balance, MemberId>),
+}
+
+impl<
+        BlockNumber: BaseArithmetic + Copy + Default,
+        MemberId: Default + Copy + Ord,
+        Balance: Default + Clone + BaseArithmetic,
+    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, Balance>
+{
+    fn default() -> Self {
+        Self::Idle
+    }
+}
+
+pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::MembershipTypes>::MemberId,
+    CurrencyOf<T>,
+>;
+
+// Auction implementation
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -202,15 +324,14 @@ impl<MemberId, AccountId, BlockNumber: BaseArithmetic + Copy, Balance>
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionRecord<
     BlockNumber: BaseArithmetic + Copy,
-    Balance: Clone,
+    Balance: Clone + Zero + Default,
     MemberId: Ord + Clone,
     AccountId: Ord + Clone,
 > {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     /// Auction type (either english or open)
-    pub auction_type: AuctionType<BlockNumber>,
-    pub minimal_bid_step: Balance,
+    pub auction_type: AuctionType<BlockNumber, Balance>,
     pub last_bid: Option<Bid<MemberId, AccountId, BlockNumber, Balance>>,
     pub starts_at: BlockNumber,
     pub whitelist: BTreeSet<MemberId>,
@@ -230,7 +351,6 @@ impl<
                 starting_price: auction_params.starting_price,
                 buy_now_price: auction_params.buy_now_price,
                 auction_type: auction_params.auction_type,
-                minimal_bid_step: auction_params.minimal_bid_step,
                 last_bid: None,
                 starts_at,
                 whitelist: auction_params.whitelist,
@@ -240,7 +360,6 @@ impl<
                 starting_price: auction_params.starting_price,
                 buy_now_price: auction_params.buy_now_price,
                 auction_type: auction_params.auction_type,
-                minimal_bid_step: auction_params.minimal_bid_step,
                 last_bid: None,
                 starts_at: BlockNumber::default(),
                 whitelist: auction_params.whitelist,
@@ -260,7 +379,7 @@ impl<
                     ensure!(
                         last_bid
                             .amount
-                            .checked_add(&self.minimal_bid_step)
+                            .checked_add(&self.auction_type.bid_step())
                             .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
                             <= new_bid,
                         Error::<T>::BidStepConstraintViolated
@@ -290,6 +409,7 @@ impl<
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
+                ..
             }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
                 *auction_duration += *extension_period;
@@ -450,110 +570,4 @@ pub type Auction<T> = AuctionRecord<
     CurrencyOf<T>,
     <T as common::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
->;
-
-/// OwnedNft alias type for simplification.
-pub type Nft<T> = OwnedNft<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
-    CurrencyOf<T>,
->;
-
-/// Parameters, needed for auction start
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<BlockNumber, Balance, MemberId: Ord> {
-    // Auction type (either english or open)
-    pub auction_type: AuctionType<BlockNumber>,
-    pub starting_price: Balance,
-    pub minimal_bid_step: Balance,
-    pub buy_now_price: Option<Balance>,
-    pub starts_at: Option<BlockNumber>,
-    pub whitelist: BTreeSet<MemberId>,
-}
-
-/// Auction type
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AuctionType<BlockNumber> {
-    // English auction details
-    English(EnglishAuctionDetails<BlockNumber>),
-    // Open auction details
-    Open(OpenAuctionDetails<BlockNumber>),
-}
-
-impl<BlockNumber: Default> Default for AuctionType<BlockNumber> {
-    fn default() -> Self {
-        Self::English(EnglishAuctionDetails::default())
-    }
-}
-
-/// English auction details
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct EnglishAuctionDetails<BlockNumber> {
-    // the remaining time on a lot will automatically reset to to the preset extension time
-    // if a new bid is placed within that period
-    pub extension_period: BlockNumber,
-    // auction duration
-    pub auction_duration: BlockNumber,
-}
-
-/// Open auction details
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct OpenAuctionDetails<BlockNumber> {
-    // bid lock duration
-    pub bid_lock_duration: BlockNumber,
-}
-
-/// Parameters used to issue a nft
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
-    /// Roayalty used for the author
-    pub royalty: Option<Royalty>,
-    /// Metadata
-    pub nft_metadata: NftMetadata,
-    /// member id Nft will be issued to
-    pub non_channel_owner: Option<MemberId>,
-    /// Initial transactional status for the nft
-    pub init_transactional_status: InitTransactionalStatus,
-}
-
-pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
-    <T as common::MembershipTypes>::MemberId,
-    InitTransactionalStatus<T>,
->;
-
-/// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum InitTransactionalStatusRecord<
-    BlockNumber: BaseArithmetic + Copy + Default,
-    MemberId: Default + Copy + Ord,
-    Balance: Default + Clone + BaseArithmetic,
-> {
-    Idle,
-    BuyNow(Balance),
-    InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionParams<BlockNumber, Balance, MemberId>),
-}
-
-impl<
-        BlockNumber: BaseArithmetic + Copy + Default,
-        MemberId: Default + Copy + Ord,
-        Balance: Default + Clone + BaseArithmetic,
-    > Default for InitTransactionalStatusRecord<BlockNumber, MemberId, Balance>
-{
-    fn default() -> Self {
-        Self::Idle
-    }
-}
-
-pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::MembershipTypes>::MemberId,
-    CurrencyOf<T>,
 >;

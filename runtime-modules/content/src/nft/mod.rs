@@ -46,9 +46,12 @@ impl<T: Trait> Module<T> {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
+                bid_step,
             }) => {
                 Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
                 Self::ensure_extension_period_bounds_satisfied(extension_period)?;
+
+                Self::ensure_bid_step_bounds_satisfied(bid_step)?;
 
                 // Ensure auction_duration of English auction is >= extension_period
                 ensure!(
@@ -62,7 +65,7 @@ impl<T: Trait> Module<T> {
         }
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
-        Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
+
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
         if let Some(starts_at) = auction_params.starts_at {

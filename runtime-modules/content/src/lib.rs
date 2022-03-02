@@ -1698,7 +1698,7 @@ decl_module! {
             // Ensure open type auction
             auction.ensure_is_open_auction::<T>()?;
 
-            // Ensure there is a bid to accept
+            // TODO RHODES: allow user to select bid by user
             let bid = auction.ensure_last_bid_exists::<T>()?;
 
             let owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
