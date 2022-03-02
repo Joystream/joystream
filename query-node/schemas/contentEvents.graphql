@@ -22,7 +22,7 @@ type VideoReactedEvent implements Event @entity {
   video: Video!
 
   "The reaction result"
-  reactionResult: ReactionOptions!
+  reactionResult: VideoReactionOptions!
 
   "The member reacting to the video"
   reactingMember: Membership!
@@ -51,8 +51,8 @@ type CommentReactedEvent implements Event @entity {
   "The comment being reacted to"
   comment: Comment!
 
-  "The reaction result"
-  reactionResult: ReactionOptions!
+  "The reaction id"
+  reactionResult: Int!
 
   "The member reacting to the comment"
   reactingMember: Membership!
@@ -219,8 +219,8 @@ type MemberBannedFromChannelEvent implements Event @entity {
   "The chanel user is blocked from"
   channel: Channel!
 
-  "The member being blocked from channel"
-  blockedMember: Membership!
+  "The member being banned from channel"
+  bannedMember: Membership!
 
   # Only channel owner can pin the comment, so no actor context required
 }
