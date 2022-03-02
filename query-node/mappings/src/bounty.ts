@@ -35,7 +35,7 @@ import {
   WorkSubmittedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
-import { asBN, asInt32, deserializeMetadata, genericEventFields } from './common'
+import { asBN, asInt32, deserializeMetadata, genericEventFields, perpareString } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
@@ -207,9 +207,9 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     id: String(bountyId),
     createdAt: eventTime,
     updatedAt: eventTime,
-    title: metadata?.title ?? undefined,
-    description: metadata?.description ?? undefined,
-    bannerImageUri: metadata?.bannerImageUri ?? undefined,
+    title: whenDef(metadata?.title, perpareString) ?? undefined,
+    description: whenDef(metadata?.description, perpareString) ?? undefined,
+    bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString) ?? undefined,
     cherry: bountyParams.cherry,
     entrantStake: bountyParams.entrant_stake,
     creator: bountyActorToMembership(bountyParams.creator),
