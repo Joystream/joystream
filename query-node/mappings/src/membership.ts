@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
-import { MembershipMetadata } from '@joystream/metadata-protobuf'
+import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
 import { bytesToString, deserializeMetadata, genericEventFields } from './common'
 import {
   Membership,
@@ -29,6 +29,13 @@ import {
   MembershipEntryInvited,
   AvatarUri,
 } from 'query-node/dist/model'
+import {
+  processReactVideoMessage,
+  processReactCommentMessage,
+  processCreateCommentMessage,
+  processEditCommentMessage,
+  processDeleteCommentMessage,
+} from './content'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
@@ -476,4 +483,35 @@ export async function members_LeaderInvitationQuotaUpdated({
   })
 
   await store.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
+}
+
+export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const [memberId, message] = new Members.MemberRemarkedEvent(ctx.event).params
+
+  const decodedMessage = MemberRemarked.decode(message)
+  const messageType = decodedMessage.memberRemarked
+
+  if (!messageType) {
+    throw new Error(`Invalid message type; message not found`)
+  }
+
+  if (messageType === 'reactVideo') {
+    processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
+  }
+
+  if (messageType === 'reactComment') {
+    processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
+  }
+
+  if (messageType === 'createComment') {
+    processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+  }
+
+  if (messageType === 'editComment') {
+    processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+  }
+
+  if (messageType === 'deleteComment') {
+    processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+  }
 }
