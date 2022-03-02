@@ -8,9 +8,11 @@ import {
   scheduledFundingEnd,
 } from './bounty'
 
-const scheduleRecord: { [n: number]: (() => Promise<void>)[] } = {}
+type Job = (store: DatabaseManager) => Promise<void>
+
+const scheduleRecord: { [n: number]: Job[] } = {}
 let isSchedulerRunning = false
-let toBeScheduled: [number, () => Promise<void>][] = []
+let toBeScheduled: [number, Job][] = []
 
 export async function runScheduler({ block, store }: BlockContext & StoreContext): Promise<void> {
   if (!isSchedulerRunning) {
@@ -18,14 +20,14 @@ export async function runScheduler({ block, store }: BlockContext & StoreContext
     await scheduleMissedMappings(store)
   }
 
-  await runScheduledJobs(block.height)
+  await runScheduledJobs(store, block.height)
 }
 
-export function scheduleAtBlock(blockNumber: number, job: () => Promise<void>): void {
+export function scheduleAtBlock(blockNumber: number, job: Job): void {
   toBeScheduled.push([blockNumber, job])
 }
 
-async function runScheduledJobs(currentBlock: number): Promise<void> {
+async function runScheduledJobs(store: DatabaseManager, currentBlock: number): Promise<void> {
   // Queue new jobs
   if (toBeScheduled.length) {
     for (const [scheduledFor, job] of toBeScheduled) {
@@ -38,7 +40,7 @@ async function runScheduledJobs(currentBlock: number): Promise<void> {
   // Execute jobs scheduled for the current block
   if (scheduleRecord[currentBlock]) {
     for (const job of scheduleRecord[currentBlock]) {
-      await job()
+      await job(store)
     }
     delete scheduleRecord[currentBlock]
   }
@@ -57,8 +59,8 @@ async function scheduleMissedMappings(store: DatabaseManager): Promise<void> {
     const scheduledFundingPeriodEnd = scheduledFundingEnd(bounty, bounty.createdInEvent.inBlock)
     const fundingPeriodEnd = bounty.maxFundingReachedEvent?.inBlock ?? scheduledFundingPeriodEnd
 
-    bountyScheduleFundingEnd(store, bounty, scheduledFundingPeriodEnd)
-    bountyScheduleWorkSubmissionEnd(store, bounty, fundingPeriodEnd)
-    bountyScheduleJudgmentEnd(store, bounty, fundingPeriodEnd && fundingPeriodEnd + bounty.judgingPeriod)
+    bountyScheduleFundingEnd(bounty, scheduledFundingPeriodEnd)
+    bountyScheduleWorkSubmissionEnd(bounty, fundingPeriodEnd)
+    bountyScheduleJudgmentEnd(bounty, fundingPeriodEnd && fundingPeriodEnd + bounty.judgingPeriod)
   })
 }
