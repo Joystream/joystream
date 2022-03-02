@@ -730,7 +730,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let member_id = Self::insert_member(
+            let invited_member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
@@ -738,7 +738,7 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&member_id, |membership| {
+            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
                 membership.invites = membership.invites.saturating_sub(1);
             });
 
@@ -760,7 +760,7 @@ decl_module! {
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
+            Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
