@@ -1,0 +1,18 @@
+fragment CommentCreatedEventFields on CommentCreatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+  }
+  text
+}
+
+query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
+  commentCreatedEvents(where: { id_in: $eventIds }) {
+    ...CommentCreatedEventFields
+  }
+}
