@@ -162,7 +162,7 @@ type Video @entity {
   isCommentSectionEnabled: Boolean!
 
   "channel owner pinned comment"
-  pinnedComment: Comment @derivedFrom(field: "video")
+  pinnedComment: Comment
 
   "List of all video comments"
   comments: [Comment!] @derivedFrom(field: "video")
@@ -258,6 +258,11 @@ type CommentReaction @entity {
 
   "The comment that has been reacted to"
   comment: Comment!
+
+  # Added to efficiently delete all reactions of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
 }
 
 enum CommentStatus {

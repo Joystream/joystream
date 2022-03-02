@@ -135,7 +135,7 @@ type CommentDeletedEvent implements Event @entity {
   ### SPECIFIC DATA ###
 
   "Comment deleted"
-  comment: Comment
+  comment: Comment!
 
   # No actor context required, since commenter would delete the comment
 }
