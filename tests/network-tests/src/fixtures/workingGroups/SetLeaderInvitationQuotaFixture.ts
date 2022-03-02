@@ -1,17 +1,9 @@
-import BN from 'bn.js'
-import { assert } from 'chai'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { Utils } from '../../utils'
-import {
-  ProposalFieldsFragment,
-  BudgetSetEventFieldsFragment,
-  WorkingGroupFieldsFragment,
-} from '../../graphql/generated/queries'
 
 export class SetLeaderInvitationQuotaFixture extends BaseWorkingGroupFixture {
   protected group: WorkingGroupModuleName
@@ -33,7 +25,7 @@ export class SetLeaderInvitationQuotaFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return await this.api.retrieveMembershipEventDetails(result, 'LeaderInvitationQuotaUpdated')
+    return await this.api.getEventDetails(result, 'members', 'LeaderInvitationQuotaUpdated')
   }
 
   protected assertQueryNodeEventIsValid(qEvent: unknown, i: number): void {
