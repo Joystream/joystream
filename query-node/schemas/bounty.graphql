@@ -1,19 +1,10 @@
-"Any member can submit work entries to the bounty"
-type BountyContractOpen @variant {
-  # no properties
+type BountyEntrantWhitelist @entity {
+  # Prevents "GraphQLError: Input Object type BountyEntrantWhitelistCreateInput must define one or more fields."
+  _phantom: Int
 
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
+  "Members authorized to submit entries to the bounty"
+  members: [Membership!]!
 }
-
-"Only preselected members can submit work entries to the bounty"
-type BountyContractClosed @variant {
-  # Members authorized to submit entries to the bounty
-  whitelist: [Membership!]!
-}
-
-"Valid of type assurance contract"
-union BountyContractType = BountyContractOpen | BountyContractClosed
 
 type BountyFundingPerpetual @variant {
   "Desired funding"
@@ -42,7 +33,6 @@ enum BountyStage {
   Judgment
   Successful
   Failed
-  Terminated
 }
 
 type Bounty @entity {
@@ -51,10 +41,10 @@ type Bounty @entity {
   id: ID!
 
   "Bounty title"
-  title: String!
+  title: String
 
   "Bounty description"
-  description: String!
+  description: String
 
   "Bounty image uri"
   bannerImageUri: String
@@ -74,8 +64,8 @@ type Bounty @entity {
   "Bounty funding type"
   fundingType: BountyFundingType!
 
-  "Bounty assurance contract type"
-  contractType: BountyContractType!
+  "If specified only members listed in BountyEntrantWhitelist are allowed to submit work to the bounty"
+  entrantWhitelist: BountyEntrantWhitelist
 
   "Number of blocks from end of funding period until people can no longer submit bounty submissions"
   workPeriod: Int!
@@ -87,17 +77,20 @@ type Bounty @entity {
   "Current bounty stage"
   stage: BountyStage!
 
-  "Total amount currently available for the reward"
+  "Total amount once contributed to the bounty (excluding the cherry)"
   totalFunding: BigInt!
 
   "Bounty discussion thread"
-  discussionThread: ForumThread!
+  discussionThread: ForumThread
 
   "The contributions (in fund) made to the bounty"
   contributions: [BountyContribution] @derivedFrom(field: "bounty")
 
   "The work entries announce on the bounty"
   entries: [BountyEntry] @derivedFrom(field: "bounty")
+
+  "If true the bounty lifecycle ended and its state will not change anymore"
+  isTerminated: Boolean!
 
   # Events:
   "The event the bounty was created in"
@@ -116,7 +109,7 @@ type Bounty @entity {
   removedInEvent: BountyRemovedEvent @derivedFrom(field: "bounty")
 
   "Event emitted if the oracle judged the bounty work entries"
-  judgement: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
+  judgment: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
 }
 
 "Initial status during creation in Working Period."
@@ -133,19 +126,19 @@ type BountyEntryStatusWithdrawn @variant {
   dummy: Int
 }
 
-"Selected as winner during Judgement Period , and therefore is due an outstanding share of the bounty funds, called reward."
+"Selected as winner during Judgment Period , and therefore is due an outstanding share of the bounty funds, called reward."
 type BountyEntryStatusWinner @variant {
   reward: BigInt!
 }
 
-"Not referenced by oracle in Judgement Period judgement, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
+"Not referenced by oracle in Judgment Period judgment, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
 type BountyEntryStatusPassed @variant {
   # no properties
   # TODO: remove me - variant needs to have at least 1 property now
   dummy: Int
 }
 
-"Rejected by oracle in Judgement Period as a malicious entry, and thus has had stake slashed."
+"Rejected by oracle in Judgment Period as a malicious entry, and thus has had stake slashed."
 type BountyEntryStatusRejected @variant {
   # no properties
   # TODO: remove me - variant needs to have at least 1 property now
