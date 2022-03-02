@@ -68,6 +68,62 @@ fragment ChannelCategoryFields on ChannelCategory {
   activeVideosCounter
 }
 
+fragment VideoFields on Video {
+  id
+  commentsCount
+  reactionsCount
+
+  comments {
+    id
+    author {
+      id
+    }
+    video {
+      id
+    }
+    text
+  }
+
+  reactions {
+    id
+    reaction
+  }
+}
+
+fragment VideoCommentFields on Comment {
+  id
+  author {
+    id
+  }
+
+  video {
+    id
+  }
+
+  text
+  status
+
+  reactions {
+    id
+    member {
+      id
+    }
+  }
+}
+
+fragment CommentReactionFields on Comment {
+  reactions {
+    id
+    member {
+      id
+    }
+  }
+  reactionsCountByReactionId {
+    reactionId
+    count
+  }
+}
+
 fragment VideoCategoryFields on VideoCategory {
   id
   activeVideosCounter
@@ -109,5 +165,36 @@ query getVideoCategoryById($id: ID!) {
 query getOwnedNftByVideoId($videoId: ID!) {
   ownedNfts(where: { video: { id_eq: $videoId } }) {
     ...OwnedNftFields
+  }
+}
+
+query getRootCommentsByVideoId($videoId: ID!) {
+  comments(where: { video: { id_eq: $videoId }, parentComment: null }) {
+    ...VideoCommentFields
+  }
+}
+
+query getRepliesByParentCommentId($commentId: ID!) {
+  comments(where: { parentComment: { id_eq: $commentId } }) {
+    ...VideoCommentFields
+  }
+}
+query getCommentsByIds($ids: [ID!]) {
+  comments(where: { id_in: $ids }) {
+    ...VideoCommentFields
+  }
+}
+
+query getCommentById($commentId: ID!) {
+  commentByUniqueInput(where: { id: $commentId }) {
+    ...VideoCommentFields
+  }
+}
+
+# TODO: fetch member specific reactions
+
+query getReactionsByCommentId($commentId: ID!, $memberId: ID) {
+  commentByUniqueInput(where: { id: $commentId }) {
+    ...CommentReactionFields
   }
 }

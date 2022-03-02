@@ -11,8 +11,46 @@ fragment CommentCreatedEventFields on CommentCreatedEvent {
   text
 }
 
+fragment CommentDeletedEventFields on CommentDeletedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    status
+  }
+}
+
+fragment CommentDeletedEventFields on CommentPinnedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    status
+  }
+}
+
 query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
   commentCreatedEvents(where: { id_in: $eventIds }) {
     ...CommentCreatedEventFields
+  }
+}
+
+query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
+  commentDeletedEvents(where: { id_in: $eventIds }) {
+    ...CommentDeletedEventFields
+  }
+}
+
+query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
+  pinnedCommentEvents(where: { id_in: $eventIds }) {
+    ...CommentDeletedEventFields
   }
 }
