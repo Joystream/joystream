@@ -40,11 +40,12 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   // Give the faucet member accounts some funds (they need some funds for extrinsics)
   await api.treasuryTransferBalanceToAccounts([faucetAccount], new BN(200))
 
-  // Use the above membershipLeader to give faucet account permission to invite other members
+  // Send lead invites to faucet member account
+  const [leadMemberControllerAccount] = await api.getMemberSigners([{ asMember: membershipLeader.member_id }])
   const transferInvitesHappyCaseFixture = new TransferInvitesHappyCaseFixture(
     api,
     query,
-    { memberId: membershipLeader.member_id, account: membershipLeader.role_account_id.toString() },
+    { memberId: membershipLeader.member_id, account: leadMemberControllerAccount },
     { memberId: faucetMemberId, account: faucetAccount },
     invitesToTransfer
   )
