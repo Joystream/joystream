@@ -11,9 +11,10 @@ import {
   IEnableOrDisableCommentSection,
   IEnableOrDisableCommentSectionOfVideo,
   IEnableOrDisableReactionsOnVideo,
-  IPinComment,
+  IPinOrUnpinComment,
   IReactComment,
   IReactVideo,
+  PinOrUnpinComment,
   ReactVideo,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, MemberId } from '@joystream/types/common'
@@ -304,6 +305,11 @@ export async function processEditCommentMessage(
   // load comment
   const comment = await getComment(store, commentId.toString(), ['author'])
 
+  // ensure comment is not deleted or moderated (deleted by moderator)
+  if (comment.status !== CommentStatus.VISIBLE) {
+    return inconsistentState('Comment has been deleted', commentId)
+  }
+
   // ensure comment is being edited by author
   if (comment.author.getId() !== memberId.toString()) {
     return inconsistentState('Only comment author can update the comment', commentId)
@@ -350,6 +356,11 @@ export async function processDeleteCommentMessage(
 
   // load comment
   const comment = await getComment(store, commentId.toString(), ['author', 'comment'])
+
+  // ensure comment is not already deleted or moderated (deleted by moderator)
+  if (comment.status !== CommentStatus.VISIBLE) {
+    return inconsistentState('Comment has been deleted', commentId)
+  }
 
   // ensure comment is being deleted by author
   if (comment.author.getId() !== memberId.toString()) {
@@ -409,6 +420,11 @@ export async function processDeleteCommentModeratorMessage(
     return inconsistentState('comment does not belongs to the videoId: ', videoId)
   }
 
+  // ensure comment is not already deleted or moderated (deleted by moderator)
+  if (comment.status !== CommentStatus.VISIBLE) {
+    return inconsistentState('Comment has been deleted', commentId)
+  }
+
   // decrement video's comment count
   --video.commentsCount
   video.updatedAt = eventTime
@@ -439,13 +455,13 @@ export async function processDeleteCommentModeratorMessage(
   logger.info(`Comment with id ${commentId} deleted by moderator: ${channelModeratorId}`)
 }
 
-export async function processPinCommentMessage(
+export async function processPinOrUnpinCommentMessage(
   { store, event }: EventContext & StoreContext,
   channelOwnerId: MemberId,
   channelId: ChannelId,
-  message: IPinComment
+  message: IPinOrUnpinComment
 ): Promise<void> {
-  const { videoId, commentId } = message
+  const { videoId, commentId, option } = message
   const eventTime = new Date(event.blockTimestamp)
 
   // load video
@@ -464,6 +480,11 @@ export async function processPinCommentMessage(
     return inconsistentState('Cannot add comment; comment section is disables for videoId: ', videoId)
   }
 
+  // ensure comment is not deleted or moderated (deleted by moderator)
+  if (comment.status !== CommentStatus.VISIBLE) {
+    return inconsistentState('Comment has been deleted', commentId)
+  }
+
   // skipping channel owner validation needed to pin the comment, since that is
   // being performed by joystream runtime in `channel_owner_remarked` extrinsic
 
@@ -473,8 +494,17 @@ export async function processPinCommentMessage(
   })
   await store.save<CommentPinnedEvent>(commentPinnedEvent)
 
+  // pin comment on video; if comment is already pinned it remains pinned
+  if (option === PinOrUnpinComment.Option.PIN) {
+    video.pinnedComment = comment
+  }
+
+  // unpin comment from video; if comment is already not pinned, it remains not pinned
+  if (option === PinOrUnpinComment.Option.UNPIN) {
+    video.pinnedComment = undefined
+  }
+
   video.updatedAt = eventTime
-  video.pinnedComment = comment
   await store.save<Video>(video)
 }
 

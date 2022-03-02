@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { In } from 'typeorm'
+import { In, getManager } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import {
@@ -12,7 +12,7 @@ import {
   videoRelationsForCountersBare,
   videoRelationsForCounters,
 } from './utils'
-import { Channel, Video, VideoCategory } from 'query-node/dist/model'
+import { Channel, CommentReaction, Video, VideoCategory, Comment } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -205,6 +205,18 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 
   // remember if video is fully active before update
   const initialVideoActiveStatus = getVideoActiveStatus(video)
+
+  // TODO: remove reactions & comments
+
+  await getManager().transaction(async (transactionalEntityManager) => {
+    await transactionalEntityManager
+      .createQueryBuilder()
+      .delete()
+      .from(CommentReaction)
+      .where({ video_id: video.id })
+      .execute()
+    await transactionalEntityManager.createQueryBuilder().delete().from(Comment).where({ video_id: video.id }).execute()
+  })
 
   // remove video
   await store.remove<Video>(video)

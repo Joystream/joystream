@@ -21,7 +21,7 @@ import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
 import {
   processDeleteCommentModeratorMessage,
-  processPinCommentMessage,
+  processPinOrUnpinCommentMessage,
   processBanOrUnbanMemberFromChannelMessage,
   processEnableOrDisableCommentSectionOfVideoMessage,
   processEnableOrDisableCommentSectionMessage,
@@ -272,12 +272,17 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     throw new Error(`Invalid message type; message not found`)
   }
 
-  if (messageType === 'pinComment') {
-    processPinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinComment!)
+  if (messageType === 'pinOrUnpinComment') {
+    processPinOrUnpinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinOrUnpinComment!)
   }
 
-  if (messageType === 'banMemberFromChannel') {
-    processBanOrUnbanMemberFromChannelMessage(ctx, owner.asMember, channelId, decodedMessage.banMemberFromChannel!)
+  if (messageType === 'banOrUnbanMemberFromChannel') {
+    processBanOrUnbanMemberFromChannelMessage(
+      ctx,
+      owner.asMember,
+      channelId,
+      decodedMessage.banOrUnbanMemberFromChannel!
+    )
   }
 
   if (messageType === 'enableOrDisableCommentSection') {
