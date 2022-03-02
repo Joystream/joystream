@@ -11,9 +11,22 @@ import {
 } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
+import {
+  ChannelCategoryMetadata,
+  ChannelMetadata,
+  ChannelModeratorRemarked,
+  ChannelOwnerRemarked,
+} from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
+import {
+  processDeleteCommentModeratorMessage,
+  processPinCommentMessage,
+  processBanOrUnbanMemberFromChannelMessage,
+  processEnableOrDisableCommentSectionOfVideoMessage,
+  processEnableOrDisableCommentSectionMessage,
+  processEnableOrDisableReactionsOnVideoMessage,
+} from './commentAndReaction'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -247,4 +260,65 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
 
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+}
+
+export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const [owner, channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+
+  const decodedMessage = ChannelOwnerRemarked.decode(message)
+  const messageType = decodedMessage.channelOwnerRemarked
+
+  if (!messageType) {
+    throw new Error(`Invalid message type; message not found`)
+  }
+
+  if (messageType === 'pinComment') {
+    processPinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinComment!)
+  }
+
+  if (messageType === 'banMemberFromChannel') {
+    processBanOrUnbanMemberFromChannelMessage(ctx, owner.asMember, channelId, decodedMessage.banMemberFromChannel!)
+  }
+
+  if (messageType === 'enableOrDisableCommentSection') {
+    processEnableOrDisableCommentSectionMessage(
+      ctx,
+      owner.asMember,
+      channelId,
+      decodedMessage.enableOrDisableCommentSection!
+    )
+  }
+
+  if (messageType === 'enableOrDisableCommentSectionOfVideo') {
+    processEnableOrDisableCommentSectionOfVideoMessage(
+      ctx,
+      owner.asMember,
+      channelId,
+      decodedMessage.enableOrDisableCommentSectionOfVideo!
+    )
+  }
+
+  if (messageType === 'enableOrDisableReactionsOnVideo') {
+    processEnableOrDisableReactionsOnVideoMessage(
+      ctx,
+      owner.asMember,
+      channelId,
+      decodedMessage.enableOrDisableCommentSectionOfVideo!
+    )
+  }
+}
+
+export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const [moderator, channelId, message] = new Content.ChannelModeratorRemarkedEvent(ctx.event).params
+
+  const decodedMessage = ChannelModeratorRemarked.decode(message)
+  const messageType = decodedMessage.channelModeratorRemarked
+
+  if (!messageType) {
+    throw new Error(`Invalid message type; message not found`)
+  }
+
+  if (messageType === 'deleteCommentModerator') {
+    processDeleteCommentModeratorMessage(ctx, moderator.asMember, channelId, decodedMessage.deleteCommentModerator!)
+  }
 }

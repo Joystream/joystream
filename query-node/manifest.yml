@@ -1,7 +1,7 @@
 version: '3.0'
 description: Joystream query-node manifest file for Olympia
 repository: https://github.com/Joystream/joystream
-hydraVersion: "3"
+hydraVersion: '3'
 dataSource:
   kind: substrate
   chain: joystream
@@ -26,6 +26,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
+    - members.MemberRemarked
     # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
@@ -100,6 +101,8 @@ typegen:
     - content.VideoCensorshipStatusUpdated
     - content.FeaturedVideosSet
     - content.ChannelDeleted
+    - content.ChannelOwnerRemarked
+    - content.ChannelModeratorRemarked
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -226,6 +229,8 @@ mappings:
       handler: members_InitialInvitationBalanceUpdated
     - event: members.LeaderInvitationQuotaUpdated
       handler: members_LeaderInvitationQuotaUpdated
+    - event: members.MemberRemarked
+      handler: members_MemberRemarked
     # Storage working group
     - event: storageWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -729,7 +734,10 @@ mappings:
       handler: content_FeaturedVideosSet
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
-
+    - event: content.ChannelOwnerRemarked
+      handler: content_ChannelOwnerRemarked
+    - event: content.ChannelModeratorRemarked
+      handler: content_ChannelModeratorRemarked
     # content NFTs
     - event: content.AuctionStarted
       handler: contentNft_AuctionStarted
@@ -890,5 +898,5 @@ mappings:
   preBlockHooks:
     - handler: bootstrapData
       filter:
-        height: "[0,0]" # will be executed only at genesis
+        height: '[0,0]' # will be executed only at genesis
   postBlockHooks:
