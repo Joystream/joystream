@@ -400,14 +400,8 @@ benchmarks! {
     }
 
     cancel_proposal {
-        let i in 1 .. T::MaxLocks::get();
 
         let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
-
-        for lock_number in 1 .. i {
-            let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
-        }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
     verify {
