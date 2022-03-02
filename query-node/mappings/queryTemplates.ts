@@ -1,6 +1,9 @@
 // this file will be copied to `/generated` folder; provides GraphQL query examples to GraphQL PLayground
 
-import { IQueryTemplate, queryTemplateUtils } from '@apollographql/graphql-playground-react/lib/components/Playground/QueryTemplates/templateUtils'
+import {
+  IQueryTemplate,
+  queryTemplateUtils,
+} from '@apollographql/graphql-playground-react/lib/components/Playground/QueryTemplates/templateUtils'
 
 // fields that will be ignored by autofill
 const commonIgnoredFields = [
@@ -9,6 +12,9 @@ const commonIgnoredFields = [
   'updatedById',
   'deletedById',
   'version',
+
+  // type in `DataObject`'s causes problems - don't use it for now
+  'type',
 ]
 
 const dataObjectIgnoredFields = [
@@ -16,9 +22,6 @@ const dataObjectIgnoredFields = [
 
   // dataObject's `owner` is problematic because it's variant and will need some special handling
   'owner',
-
-  // type also causes problems - don't use it for now
-  'type',
 ]
 
 const exampleDate = `"2018-01-31 23:59"`
@@ -33,7 +36,8 @@ export const queryTemplates: IQueryTemplate[] = [
       ${queryTemplateUtils.descriptionMarker}
       videos(where: { isFeatured_eq: true }) { ${queryTemplateUtils.allPropsMarker} }
     }`,
-  }, {
+  },
+  {
     title: 'All recent videos',
     description: 'Get all videos after created or updated after the given date.',
     ignoredFields: commonIgnoredFields,
@@ -46,7 +50,12 @@ export const queryTemplates: IQueryTemplate[] = [
     }`,
   },
 
-  ...queryTemplateUtils.getOneGetAllTemplates('video category', 'video categories', 'videoCategories', commonIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates(
+    'video category',
+    'video categories',
+    'videoCategories',
+    commonIgnoredFields
+  ),
   {
     title: `All videos in category`,
     description: `Get all videos associated with the given video category.`,
@@ -57,7 +66,12 @@ export const queryTemplates: IQueryTemplate[] = [
     }`,
   },
   ...queryTemplateUtils.getOneGetAllTemplates('channel', 'channels', 'channels', dataObjectIgnoredFields),
-  ...queryTemplateUtils.getOneGetAllTemplates('channel category', 'channels categories', 'channelCategories', commonIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates(
+    'channel category',
+    'channels categories',
+    'channelCategories',
+    commonIgnoredFields
+  ),
 
   {
     title: `Channel's videos`,
