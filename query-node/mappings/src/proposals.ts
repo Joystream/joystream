@@ -503,13 +503,6 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
   }
 
-  if (
-    newStatus.isTypeOf === ProposalStatusExecuted.name &&
-    proposal.details.isTypeOf === RuntimeUpgradeProposalDetails.name
-  ) {
-    await handleRuntimeUpgradeProposalExecution(event, store)
-  }
-
   const proposalExecutedEvent = new ProposalExecutedEvent({
     ...genericEventFields(event),
     executionStatus: newStatus,
@@ -519,6 +512,13 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
 
   newStatus.proposalExecutedEventId = proposalExecutedEvent.id
   await setProposalStatus(event, store, proposal, newStatus)
+
+  if (
+    newStatus.isTypeOf === ProposalStatusExecuted.name &&
+    proposal.details.isTypeOf === RuntimeUpgradeProposalDetails.name
+  ) {
+    await handleRuntimeUpgradeProposalExecution(event, store)
+  }
 }
 
 export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
