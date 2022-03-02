@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory, Api, KeyGenInfo } from './Api'
+import { ApiFactory, Api, KeyGenInfo, FaucetInfo } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -23,6 +23,7 @@ type TestsOutput = {
   accounts: { [k: string]: number }
   keyIds: KeyGenInfo
   miniSecret: string
+  faucet: FaucetInfo
 }
 
 function writeOutput(api: Api, miniSecret: string) {
@@ -33,10 +34,13 @@ function writeOutput(api: Api, miniSecret: string) {
   // first and last key id used to generate keys in this scenario
   const keyIds = api.keyGenInfo()
 
+  const faucet = api.getFaucetInfo()
+
   const output: TestsOutput = {
     accounts,
     keyIds,
     miniSecret,
+    faucet,
   }
 
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
@@ -44,7 +48,7 @@ function writeOutput(api: Api, miniSecret: string) {
 
 export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables
-  config()
+  config({ path: './.env' })
   const env = process.env
 
   // Connect api to the chain
