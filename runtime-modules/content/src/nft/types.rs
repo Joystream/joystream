@@ -1,5 +1,6 @@
 use super::*;
 use sp_runtime::traits::Zero;
+use sp_std::collections::btree_map::BTreeMap;
 
 /// Metadata for NFT issuance
 pub type NftMetadata = Vec<u8>;
@@ -335,6 +336,7 @@ pub struct AuctionRecord<
     pub last_bid: Option<Bid<MemberId, AccountId, BlockNumber, Balance>>,
     pub starts_at: BlockNumber,
     pub whitelist: BTreeSet<MemberId>,
+    pub bid_list: BTreeMap<MemberId, Bid<MemberId, AccountId, BlockNumber, Balance>>,
 }
 
 impl<
@@ -351,18 +353,17 @@ impl<
                 starting_price: auction_params.starting_price,
                 buy_now_price: auction_params.buy_now_price,
                 auction_type: auction_params.auction_type,
-                last_bid: None,
                 starts_at,
                 whitelist: auction_params.whitelist,
+                ..Default::default()
             }
         } else {
             Self {
                 starting_price: auction_params.starting_price,
                 buy_now_price: auction_params.buy_now_price,
                 auction_type: auction_params.auction_type,
-                last_bid: None,
-                starts_at: BlockNumber::default(),
                 whitelist: auction_params.whitelist,
+                ..Default::default()
             }
         }
     }

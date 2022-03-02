@@ -1,10 +1,10 @@
 #![cfg(test)]
 
-mod channels;
+//mod channels;
 mod curators;
 mod fixtures;
-mod merkle;
+//mod merkle;
 mod mock;
 mod nft;
-mod posts;
-mod videos;
+//mod posts;
+//mod videos;

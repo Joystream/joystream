@@ -611,54 +611,75 @@ fn make_bid_bid_step_constraint_violated() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        let video_id = NextVideoId::<Test>::get();
+        setup_open_auction_scenario();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
-
-        let auction_params = AuctionParams {
-            starting_price: Content::min_starting_price(),
-            buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-            }),
-            minimal_bid_step: Content::min_bid_step(),
-            starts_at: None,
-            whitelist: BTreeSet::new(),
-        };
-
-        // Start nft auction
-        assert_ok!(Content::start_nft_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        ));
-
-        let bid = Content::min_starting_price();
-
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
-
-        // Make a successfull bid
-        assert_ok!(Content::make_bid(
+        // Make an attempt to make auction bid if bid step constraint violated
+        let make_bid_result = Content::make_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            bid,
-        ));
+            new_bid,
+        );
 
-        let new_bid = bid + Content::min_bid_step() - 1;
+        // Failure checked
+        assert_err!(make_bid_result, Error::<Test>::BidStepConstraintViolated);
+    })
+}
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, new_bid);
+fn setup_open_auction_scenario() {
+    let video_id = NextVideoId::<Test>::get();
+
+    create_initial_storage_buckets_helper();
+    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+    create_default_member_owned_channel_with_video();
+
+    // Issue nft
+    assert_ok!(Content::issue_nft(
+        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        ContentActor::Member(DEFAULT_MEMBER_ID),
+        video_id,
+        NftIssuanceParameters::<Test>::default(),
+    ));
+
+    let auction_params = AuctionParams {
+        starting_price: Content::min_starting_price(),
+        buy_now_price: None,
+        auction_type: AuctionType::Open(OpenAuctionDetails {
+            bid_lock_duration: Content::min_bid_lock_duration(),
+        }),
+        minimal_bid_step: Content::min_bid_step(),
+        starts_at: None,
+        whitelist: BTreeSet::new(),
+    };
+
+    // Start nft auction
+    assert_ok!(Content::start_nft_auction(
+        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        ContentActor::Member(DEFAULT_MEMBER_ID),
+        video_id,
+        auction_params.clone(),
+    ));
+
+    let bid = Content::min_starting_price();
+
+    let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+
+    // Make a successfull bid
+    assert_ok!(Content::make_bid(
+        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        SECOND_MEMBER_ID,
+        video_id,
+        bid,
+    ));
+}
+
+#[test]
+fn make_bid_bid_step_constraint_violated() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        setup_open_auction_scenario();
 
         // Make an attempt to make auction bid if bid step constraint violated
         let make_bid_result = Content::make_bid(
