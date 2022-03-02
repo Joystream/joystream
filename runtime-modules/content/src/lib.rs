@@ -2,6 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 // Internal Substrate warning (decl_event).
+// TODO RHODES: remove dead code
 #![allow(clippy::unused_unit, dead_code)]
 
 #[cfg(test)]
