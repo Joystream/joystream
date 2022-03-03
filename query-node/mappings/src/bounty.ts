@@ -75,9 +75,10 @@ async function updateBounty(
   store: DatabaseManager,
   event: SubstrateEvent,
   bountyId: BountyId,
+  relations: string[],
   changes: (bounty: Bounty) => Partial<Bounty>
 ) {
-  const bounty = await getBounty(store, bountyId)
+  const bounty = await getBounty(store, bountyId, relations)
   bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
@@ -290,7 +291,7 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty totalFunding
-  const bounty = await updateBounty(store, event, bountyId, (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyId, [], (bounty) => ({
     totalFunding: bounty.totalFunding.add(amount),
   }))
 
@@ -365,7 +366,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], (bounty) => ({
     deletedAt: bounty.updatedAt,
     isTerminated: true,
   }))
@@ -447,7 +448,7 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
 
   // Update the bounty status
   const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
-  const bounty = await updateBounty(store, event, bountyId, () => ({
+  const bounty = await updateBounty(store, event, bountyId, ['entries'], () => ({
     stage: BountyStage[hasWinners ? 'Successful' : 'Failed'],
   }))
 
