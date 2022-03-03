@@ -254,11 +254,10 @@ impl<T: Trait> Module<T> {
     /// Cancel Nft transaction
     pub fn cancel_transaction(nft: Nft<T>) -> Nft<T> {
         if let TransactionalStatus::<T>::Auction(ref auction) = nft.transactional_status {
-            if let Some(ref last_bid) = auction.last_bid {
-                // Unreserve previous bidder balance
-                T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
-            }
-        }
+            auction.bid_list.iter().for_each(|(_, bid)| {
+                T::Currency::unreserve(&bid.bidder_account_id, bid.amount);
+            });
+        };
 
         nft.set_idle_transactional_status()
     }
@@ -363,26 +362,62 @@ impl<T: Trait> Module<T> {
 
     /// Complete auction
     pub(crate) fn complete_auction(
-        in_channel: T::ChannelId,
-        mut nft: Nft<T>,
-        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, CurrencyOf<T>>,
-        owner_account_id: Option<T::AccountId>,
-    ) -> Nft<T> {
-        let last_bid_amount = last_bid.amount;
-        let last_bidder = last_bid.bidder;
-        let bidder_account_id = last_bid.bidder_account_id;
+        video: &Video<T>,
+        winner_id: T::MemberId,
+    ) -> Result<Nft<T>, DispatchError> {
+        let Video::<T> {
+            in_channel,
+            nft_status,
+            ..
+        } = video;
+
+        let owner = nft_status.as_ref().map(|nft| nft.owner.clone()).unwrap();
+        let bid_amount = nft_status
+            .as_ref()
+            .map(|nft| {
+                if let TransactionalStatus::<T>::Auction(Auction::<T> { bid_list, .. }) =
+                    &nft.transactional_status
+                {
+                    bid_list.get(&winner_id).unwrap().amount
+                } else {
+                    Default::default()
+                }
+            })
+            .unwrap();
+
+        let dest_account_id = match owner {
+            NftOwner::Member(member_id) => {
+                let membership = <membership::Module<T>>::ensure_membership(member_id)
+                    .map_err(|_| Error::<T>::MemberProfileNotFound)?;
+                Ok(membership.controller_account)
+            }
+            NftOwner::ChannelOwner => Self::channel_by_id(&in_channel)
+                .reward_account
+                .ok_or(Error::<T>::RewardAccountIsNotSet),
+        }?;
+
+        let src_account_id = <membership::Module<T>>::ensure_membership(winner_id)
+            .map(|membership| membership.controller_account)?;
 
         Self::complete_payment(
-            in_channel,
-            nft.creator_royalty,
-            last_bid_amount,
-            bidder_account_id,
-            owner_account_id,
+            *in_channel,
+            nft_status
+                .as_ref()
+                .map(|nft| nft.creator_royalty.to_owned())
+                .flatten(),
+            bid_amount,
+            src_account_id,
+            Some(dest_account_id),
             true,
         );
 
-        nft.owner = NftOwner::Member(last_bidder);
-        nft.transactional_status = TransactionalStatus::<T>::Idle;
-        nft
+        // TODO RHODES: unlock all accounts money
+
+        let nft = Self::cancel_transaction(Nft::<T> {
+            owner: NftOwner::Member(winner_id),
+            ..video.nft_status.clone().unwrap()
+        });
+
+        Ok(nft)
     }
 }

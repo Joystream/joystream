@@ -149,13 +149,13 @@ decl_error! {
         RewardAccountIsNotSet,
 
         /// Actor is not a last bidder
-        ActorIsNotALastBidder,
+        ActorIsNotBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
         /// Auction does not have bids
-        LastBidDoesNotExist,
+        BidDoesNotExist,
 
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,

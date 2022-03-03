@@ -437,7 +437,7 @@ impl<
 
     // Ensure auction has no bids
     fn ensure_has_no_bids<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.last_bid.is_none(), Error::<T>::ActionHasBidsAlready);
+        ensure!(self.bid_list.is_empty(), Error::<T>::ActionHasBidsAlready);
         Ok(())
     }
 
@@ -490,12 +490,6 @@ impl<
         matches!(&self.last_bid, Some(last_bid) if last_bid.bidder == who)
     }
 
-    /// Ensure caller is last bidder.
-    pub fn ensure_caller_is_last_bidder<T: Trait>(&self, who: MemberId) -> DispatchResult {
-        ensure!(self.is_last_bidder(who), Error::<T>::ActorIsNotALastBidder);
-        Ok(())
-    }
-
     /// Ensure auction type is `Open`
     pub fn ensure_is_open_auction<T: Trait>(&self) -> DispatchResult {
         ensure!(
@@ -539,13 +533,10 @@ impl<
         self.ensure_is_open_auction::<T>()?;
 
         // ensure last bid exists
-        let last_bid = self.ensure_last_bid_exists::<T>()?;
-
-        // ensure caller is last bidder.
-        self.ensure_caller_is_last_bidder::<T>(who)?;
+        let bid = self.ensure_bid_exists::<T>(&who)?;
 
         // ensure bid lock duration expired
-        self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid.made_at_block)
+        self.ensure_bid_lock_duration_expired::<T>(current_block, bid.made_at_block)
     }
 
     /// If whitelist set, ensure provided member is authorized to make bids
@@ -560,14 +551,14 @@ impl<
     }
 
     /// Ensure auction has last bid, return corresponding reference
-    pub fn ensure_last_bid_exists<T: Trait>(
+    pub fn ensure_bid_exists<T: Trait>(
         &self,
-    ) -> Result<Bid<MemberId, AccountId, BlockNumber, Balance>, Error<T>> {
-        if let Some(bid) = &self.last_bid {
-            Ok(bid.clone())
-        } else {
-            Err(Error::<T>::LastBidDoesNotExist)
-        }
+        who: &MemberId,
+    ) -> Result<Bid<MemberId, AccountId, BlockNumber, Balance>, DispatchError> {
+        self.bid_list.get(who).map_or_else(
+            || Err(Error::<T>::BidDoesNotExist.into()),
+            |bid| Ok(bid.clone()),
+        )
     }
 }
 
