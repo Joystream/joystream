@@ -364,6 +364,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         video: &Video<T>,
         winner_id: T::MemberId,
+        bid_amnt: CurrencyOf<T>,
     ) -> Result<Nft<T>, DispatchError> {
         let Video::<T> {
             in_channel,

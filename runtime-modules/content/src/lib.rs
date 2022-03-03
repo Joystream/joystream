@@ -1635,6 +1635,7 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
+            bid_amnt: CurrencyOf<T>, // amount the auctioner is committed to
         ) {
             // Authorize member under given member id
             let account_id = ensure_signed(origin)?;
@@ -1661,7 +1662,7 @@ decl_module! {
             // TODO RHODES: ensure owner_account_id is valid
             let _owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
-            let nft = Self::complete_auction(&video, member_id)?;
+            let nft = Self::complete_auction(&video, member_id, bid_amnt)?;
 
             //
             // == MUTATION SAFE ==
@@ -1684,6 +1685,7 @@ decl_module! {
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             winner_id: T::MemberId,
+            bid_amnt: CurrencyOf<T>, // amount the auctioner is committed to
         ) {
 
             // Ensure given video exists
@@ -1707,7 +1709,7 @@ decl_module! {
             // TODO RHODES: include this in the previous checks
             let _owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
 
-            let nft = Self::complete_auction(&video, winner_id)?;
+            let nft = Self::complete_auction(&video, winner_id, bid_amnt)?;
 
             //
             // == MUTATION SAFE ==
