@@ -53,14 +53,10 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId | string, re
 async function getContribution(
   store: DatabaseManager,
   bountyId: BountyId,
-  contributor: string | undefined
-): Promise<BountyContribution> {
-  const contribution = await store.get(BountyContribution, { where: { bountyId, contributor } })
-  if (!contribution) {
-    const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
-    throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
-  }
-  return contribution
+  contributorId: string | undefined
+): Promise<BountyContribution | undefined> {
+  const contributor = whenDef(contributorId, (id) => ({ contributor: id })) ?? null
+  return await store.get(BountyContribution, { where: { bountyId, contributor } })
 }
 
 async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
@@ -298,8 +294,7 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   // Create or update the contribution
   let contribution: BountyContribution
   const contributor = bountyActorToMembership(contributorActor)
-  const existing = await store.get(BountyContribution, { where: { bountyId, contributor } })
-
+  const existing = await getContribution(store, bountyId, contributor?.id)
   if (existing) {
     contribution = existing
     contribution.amount = existing.amount.add(amount)
@@ -338,6 +333,10 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   // Update the contribution
   const contributor = bountyActorToMembership(contributorActor)
   const contribution = await getContribution(store, bountyId, contributor?.id)
+  if (!contribution) {
+    const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
+    throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
+  }
   contribution.updatedAt = eventTime
   contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
