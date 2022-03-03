@@ -94,7 +94,8 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  // Disable nft tests until functionality re-activated in rhodes release
+  // job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 
   // CLIs:
   const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)
