@@ -1,5 +1,5 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { BountyMetadata } from '@joystream/metadata-protobuf'
+import { BountyMetadata, BountyWorkData } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
 import { MemberId } from '@joystream/types/common'
 import { BN } from '@polkadot/util'
@@ -214,9 +214,9 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     id: String(bountyId),
     createdAt: eventTime,
     updatedAt: eventTime,
-    title: whenDef(metadata?.title, perpareString) ?? undefined,
-    description: whenDef(metadata?.description, perpareString) ?? undefined,
-    bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString) ?? undefined,
+    title: whenDef(metadata?.title, perpareString),
+    description: whenDef(metadata?.description, perpareString),
+    bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString),
     cherry: bountyParams.cherry,
     entrantStake: bountyParams.entrant_stake,
     creator: bountyActorToMembership(bountyParams.creator),
@@ -427,16 +427,24 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const entrySlashedEvent = new BountyEvents.WorkSubmittedEvent(event)
+  const workSubmittedEvent = new BountyEvents.WorkSubmittedEvent(event)
+  const [, entryId, , metadataBytes] = workSubmittedEvent.params
 
-  // Update the entry status
-  const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
+  // Update the entry
+  const entry = await updateEntry(store, event, entryId, () => ({
     workSubmitted: true,
   }))
 
   // Record the event
-  const submittedInEvent = new WorkSubmittedEvent({ ...genericEventFields(event), entry })
-  await store.save<WorkEntrySlashedEvent>(submittedInEvent)
+  const metadata = deserializeMetadata(BountyWorkData, metadataBytes)
+  const submittedInEvent = new WorkSubmittedEvent({
+    ...genericEventFields(event),
+    entry,
+    title: whenDef(metadata?.title, perpareString),
+    description: whenDef(metadata?.description, perpareString),
+  })
+
+  await store.save<WorkSubmittedEvent>(submittedInEvent)
 }
 
 // Start bounties withdrawal period and set entries status to either passed, winner, or rejected
