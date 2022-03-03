@@ -60,8 +60,11 @@ export interface Approved extends Enum {
 export interface AssuranceContractType extends Enum {
   readonly isOpen: boolean;
   readonly isClosed: boolean;
-  readonly asClosed: Vec<MemberId>;
+  readonly asClosed: AssuranceContractType_Closed;
 }
+
+/** @name AssuranceContractType_Closed */
+export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 
 /** @name Auction */
 export interface Auction extends Struct {
@@ -137,6 +140,14 @@ export interface BlockAndTime extends Struct {
   readonly time: u64;
 }
 
+/** @name Bounty */
+export interface Bounty extends Struct {
+  readonly creation_params: BountyCreationParameters;
+  readonly total_funding: u128;
+  readonly milestone: BountyMilestone;
+  readonly active_work_entry_count: u32;
+}
+
 /** @name BountyActor */
 export interface BountyActor extends Enum {
   readonly isCouncil: boolean;
@@ -157,7 +168,40 @@ export interface BountyCreationParameters extends Struct {
 }
 
 /** @name BountyId */
-export interface BountyId extends u32 {}
+export interface BountyId extends u64 {}
+
+/** @name BountyMilestone */
+export interface BountyMilestone extends Enum {
+  readonly isCreated: boolean;
+  readonly asCreated: BountyMilestone_Created;
+  readonly isBountyMaxFundingReached: boolean;
+  readonly asBountyMaxFundingReached: BountyMilestone_BountyMaxFundingReached;
+  readonly isWorkSubmitted: boolean;
+  readonly asWorkSubmitted: BountyMilestone_WorkSubmitted;
+  readonly isJudgmentSubmitted: boolean;
+  readonly asJudgmentSubmitted: BountyMilestone_JudgmentSubmitted;
+}
+
+/** @name BountyMilestone_BountyMaxFundingReached */
+export interface BountyMilestone_BountyMaxFundingReached extends Struct {
+  readonly max_funding_reached_at: u32;
+}
+
+/** @name BountyMilestone_Created */
+export interface BountyMilestone_Created extends Struct {
+  readonly created_at: u32;
+  readonly has_contributions: bool;
+}
+
+/** @name BountyMilestone_JudgmentSubmitted */
+export interface BountyMilestone_JudgmentSubmitted extends Struct {
+  readonly successful_bounty: bool;
+}
+
+/** @name BountyMilestone_WorkSubmitted */
+export interface BountyMilestone_WorkSubmitted extends Struct {
+  readonly work_period_started_at: u32;
+}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
@@ -459,7 +503,7 @@ export interface Entry extends Struct {
 }
 
 /** @name EntryId */
-export interface EntryId extends u32 {}
+export interface EntryId extends u64 {}
 
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
@@ -586,6 +630,9 @@ export interface NftIssuanceParameters extends Struct {
   readonly non_channel_owner: Option<MemberId>;
   readonly init_transactional_status: InitTransactionalStatus;
 }
+
+/** @name NftMetadata */
+export interface NftMetadata extends Bytes {}
 
 /** @name NftOwner */
 export interface NftOwner extends Enum {

@@ -60,7 +60,15 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
+import {
+  bytesToString,
+  genericEventFields,
+  getWorkingGroupModuleName,
+  INT32MAX,
+  MemoryCache,
+  perpareString,
+  toNumber,
+} from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -135,7 +143,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isSetMaxValidatorCount) {
     const details = new SetMaxValidatorCountProposalDetails()
     const specificDetails = proposalDetails.asSetMaxValidatorCount
-    details.newMaxValidatorCount = specificDetails.toNumber()
+    details.newMaxValidatorCount = toNumber(specificDetails, INT32MAX)
     return details
   }
   // CreateWorkingGroupLeadOpeningProposalDetails:
@@ -147,7 +155,7 @@ async function parseProposalDetails(
     details.metadataId = metadata.id
     details.rewardPerBlock = new BN(specificDetails.reward_per_block.unwrapOr(0).toString())
     details.stakeAmount = new BN(specificDetails.stake_policy.stake_amount.toString())
-    details.unstakingPeriod = specificDetails.stake_policy.leaving_unstaking_period.toNumber()
+    details.unstakingPeriod = toNumber(specificDetails.stake_policy.leaving_unstaking_period, INT32MAX)
     return details
   }
   // FillWorkingGroupLeadOpeningProposalDetails:
@@ -254,14 +262,14 @@ async function parseProposalDetails(
   else if (proposalDetails.isSetInitialInvitationCount) {
     const details = new SetInitialInvitationCountProposalDetails()
     const specificDetails = proposalDetails.asSetInitialInvitationCount
-    details.newInitialInvitationsCount = specificDetails.toNumber()
+    details.newInitialInvitationsCount = toNumber(specificDetails, INT32MAX)
     return details
   }
   // SetMembershipLeadInvitationQuotaProposalDetails:
   else if (proposalDetails.isSetMembershipLeadInvitationQuota) {
     const details = new SetMembershipLeadInvitationQuotaProposalDetails()
     const specificDetails = proposalDetails.asSetMembershipLeadInvitationQuota
-    details.newLeadInvitationQuota = specificDetails.toNumber()
+    details.newLeadInvitationQuota = toNumber(specificDetails, INT32MAX)
     return details
   }
   // SetReferralCutProposalDetails:
@@ -335,7 +343,9 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     creator: new Membership({ id: generalProposalParameters.member_id.toString() }),
     title: perpareString(generalProposalParameters.title.toString()),
     description: perpareString(generalProposalParameters.description.toString()),
-    exactExecutionBlock: generalProposalParameters.exact_execution_block.unwrapOr(undefined)?.toNumber(),
+    exactExecutionBlock: generalProposalParameters.exact_execution_block.isSome
+      ? toNumber(generalProposalParameters.exact_execution_block.unwrap(), INT32MAX)
+      : undefined,
     stakingAccount: generalProposalParameters.staking_account_id.toString(),
     status: new ProposalStatusDeciding(),
     isFinalized: false,

@@ -62,7 +62,7 @@ typegen:
     - proposalsDiscussion.PostUpdated
     - proposalsDiscussion.ThreadModeChanged
     - proposalsDiscussion.PostDeleted
-  # Forum
+    # Forum
     - forum.CategoryCreated
     - forum.CategoryArchivalStatusUpdated
     - forum.CategoryDeleted
@@ -79,7 +79,7 @@ typegen:
     - forum.PostReacted
     - forum.CategoryStickyThreadUpdate
     - forum.CategoryMembershipOfModeratorUpdated
-  # Content directory
+    # Content directory
     - content.CuratorGroupCreated
     - content.CuratorGroupStatusSet
     - content.CuratorAdded
@@ -140,6 +140,7 @@ typegen:
     # Not required:
     # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     # - storage.FamiliesInDynamicBagCreationPolicyUpdated
+
     # Council
     - council.AnnouncingPeriodStarted
     - council.NotEnoughCandidates
@@ -165,6 +166,37 @@ typegen:
     - referendum.VoteCast
     - referendum.VoteRevealed
     - referendum.StakeReleased
+    # Bounty
+    - bounty.BountyCreated
+    - bounty.BountyCanceled
+    - bounty.BountyVetoed
+    - bounty.BountyFunded
+    - bounty.BountyMaxFundingReached
+    - bounty.BountyFundingWithdrawal
+    - bounty.BountyCreatorCherryWithdrawal
+    - bounty.BountyRemoved
+    - bounty.WorkEntryAnnounced
+    - bounty.WorkEntryWithdrawn
+    - bounty.WorkEntrySlashed
+    - bounty.WorkSubmitted
+    - bounty.OracleJudgmentSubmitted
+    - bounty.WorkEntrantFundsWithdrawn
+    # content NFTs
+    - content.AuctionStarted
+    - content.NftIssued
+    - content.AuctionBidMade
+    - content.AuctionBidCanceled
+    - content.AuctionCanceled
+    - content.EnglishAuctionCompleted
+    - content.BidMadeCompletingAuction
+    - content.OpenAuctionBidAccepted
+    - content.OfferStarted
+    - content.OfferAccepted
+    - content.OfferCanceled
+    - content.NftSellOrderMade
+    - content.NftBought
+    - content.BuyNowCanceled
+
   calls:
     # Proposals discussion
     - proposalsDiscussion.addPost
@@ -688,13 +720,6 @@ mappings:
       handler: content_ChannelAssetsRemoved
     - event: content.ChannelCensorshipStatusUpdated
       handler: content_ChannelCensorshipStatusUpdated
-    # these events are defined in runtime but never emitted (at the time of writing)
-    #- event: content.ChannelOwnershipTransferRequested
-    #  handler: content_ChannelOwnershipTransferRequested
-    #- event: content.ChannelOwnershipTransferRequestWithdrawn
-    #  handler: content_ChannelOwnershipTransferRequestWithdrawn
-    #- event: content.ChannelOwnershipTransferred
-    #  handler: content_ChannelOwnershipTransferred
     - event: content.ChannelCategoryCreated
       handler: content_ChannelCategoryCreated
     - event: content.ChannelCategoryUpdated
@@ -719,7 +744,38 @@ mappings:
       handler: content_FeaturedVideosSet
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
-    # Storage
+
+    # content NFTs
+    - event: content.AuctionStarted
+      handler: contentNft_AuctionStarted
+    - event: content.NftIssued
+      handler: contentNft_NftIssued
+    - event: content.AuctionBidMade
+      handler: contentNft_AuctionBidMade
+    - event: content.AuctionBidCanceled
+      handler: contentNft_AuctionBidCanceled
+    - event: content.AuctionCanceled
+      handler: contentNft_AuctionCanceled
+    - event: content.EnglishAuctionCompleted
+      handler: contentNft_EnglishAuctionCompleted
+    - event: content.BidMadeCompletingAuction
+      handler: contentNft_BidMadeCompletingAuction
+    - event: content.OpenAuctionBidAccepted
+      handler: contentNft_OpenAuctionBidAccepted
+    - event: content.OfferStarted
+      handler: contentNft_OfferStarted
+    - event: content.OfferAccepted
+      handler: contentNft_OfferAccepted
+    - event: content.OfferCanceled
+      handler: contentNft_OfferCanceled
+    - event: content.NftSellOrderMade
+      handler: contentNft_NftSellOrderMade
+    - event: content.NftBought
+      handler: contentNft_NftBought
+    - event: content.BuyNowCanceled
+      handler: contentNft_BuyNowCanceled
+
+    # storage v2
     - event: storage.StorageBucketCreated
       handler: storage_StorageBucketCreated
     - event: storage.StorageBucketInvitationAccepted
@@ -841,6 +897,35 @@ mappings:
       handler: referendum_VoteRevealed
     - event: referendum.StakeReleased
       handler: referendum_StakeReleased
+    # Bounty
+    - event: bounty.BountyCreated
+      handler: bounty_BountyCreated
+    - event: bounty.BountyCanceled
+      handler: bounty_BountyCanceled
+    - event: bounty.BountyVetoed
+      handler: bounty_BountyVetoed
+    - event: bounty.BountyFunded
+      handler: bounty_BountyFunded
+    - event: bounty.BountyMaxFundingReached
+      handler: bounty_BountyMaxFundingReached
+    - event: bounty.BountyFundingWithdrawal
+      handler: bounty_BountyFundingWithdrawal
+    - event: bounty.BountyCreatorCherryWithdrawal
+      handler: bounty_BountyCreatorCherryWithdrawal
+    - event: bounty.BountyRemoved
+      handler: bounty_BountyRemoved
+    - event: bounty.WorkEntryAnnounced
+      handler: bounty_WorkEntryAnnounced
+    - event: bounty.WorkEntryWithdrawn
+      handler: bounty_WorkEntryWithdrawn
+    - event: bounty.WorkEntrySlashed
+      handler: bounty_WorkEntrySlashed
+    - event: bounty.WorkSubmitted
+      handler: bounty_WorkSubmitted
+    - event: bounty.OracleJudgmentSubmitted
+      handler: bounty_OracleJudgmentSubmitted
+    - event: bounty.WorkEntrantFundsWithdrawn
+      handler: bounty_WorkEntrantFundsWithdrawn
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
@@ -851,3 +936,4 @@ mappings:
       filter:
         height: "[0,0]" # will be executed only at genesis
   postBlockHooks:
+    - handler: runScheduler

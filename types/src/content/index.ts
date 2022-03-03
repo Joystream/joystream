@@ -1,5 +1,5 @@
 import { Vec, Option, Tuple, BTreeSet, UInt } from '@polkadot/types'
-import { bool, u64, u32, Null, Bytes } from '@polkadot/types/primitive'
+import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
 import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, BalanceOf } from '../common'
 
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
@@ -236,6 +236,8 @@ export class PullPayment extends JoyStructDecorated({
 
 export class ModeratorSet extends BTreeSet.with(MemberId) {}
 
+export class NftMetadata extends Vec.with(u8) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -287,6 +289,7 @@ export const contentTypes = {
   CurrencyAmount,
   InitTransactionalStatus,
   NftIssuanceParameters,
+  NftMetadata,
 }
 
 export default contentTypes

@@ -479,18 +479,27 @@ fn invite_member_succeeds() {
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
-        let bob_member_id = Membership::members_created();
+        let invitee_member_id = Membership::members_created();
 
-        InviteMembershipFixture::default().call_and_assert(Ok(()));
+        let fixture = InviteMembershipFixture::default();
+        fixture.call_and_assert(Ok(()));
 
-        let profile = get_membership_by_id(bob_member_id);
+        // Invitations count for inviter member reduced
+        let inviter_member_id = fixture.member_id;
+        let inviter_profile = get_membership_by_id(inviter_member_id);
+        assert_eq!(
+            inviter_profile.invites,
+            crate::DEFAULT_MEMBER_INVITES_COUNT - 1
+        );
 
+        // Invited member created with correct handle and 0 invites
+        let invitee_profile = get_membership_by_id(invitee_member_id);
         let bob = get_bob_info();
-        assert_eq!(Some(profile.handle_hash), bob.handle_hash);
-        assert_eq!(profile.invites, 0);
+        assert_eq!(Some(invitee_profile.handle_hash), bob.handle_hash);
+        assert_eq!(invitee_profile.invites, 0);
 
         // controller account initially set to primary account
-        assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
+        assert_eq!(invitee_profile.controller_account, BOB_ACCOUNT_ID);
 
         let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
         // Working group budget reduced.
@@ -502,15 +511,18 @@ fn invite_member_succeeds() {
         // Invited member account filled.
         assert_eq!(
             initial_invitation_balance,
-            Balances::free_balance(&profile.controller_account)
+            Balances::free_balance(&invitee_profile.controller_account)
         );
 
         // Invited member balance locked.
-        assert_eq!(0, Balances::usable_balance(&profile.controller_account));
+        assert_eq!(
+            0,
+            Balances::usable_balance(&invitee_profile.controller_account)
+        );
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
-            bob_member_id,
-            InviteMembershipFixture::default().get_invite_membership_parameters(),
+            invitee_member_id,
+            fixture.get_invite_membership_parameters(),
         ));
     });
 }
