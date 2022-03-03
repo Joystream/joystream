@@ -270,7 +270,7 @@ parameter_types! {
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        storage::StorageBucketsPerBagValueConstraint {min: 0, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
