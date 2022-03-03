@@ -133,6 +133,9 @@ decl_error! {
         /// Minimal auction bid step constraint violated.
         BidStepConstraintViolated,
 
+        /// Commit verification for bid amount
+        InvalidBidAmountSpecified,
+
         /// Auction starting price constraint violated.
         StartingPriceConstraintViolated,
 

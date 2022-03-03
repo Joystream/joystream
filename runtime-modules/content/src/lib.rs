@@ -246,7 +246,6 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
-
             // Ensure curator group under provided curator_group_id already exist
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
 
@@ -1556,7 +1555,7 @@ decl_module! {
                     // Do not charge more then buy now
                     let _ = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
-                    Self::complete_auction(&video, participant_id)
+                    Self::complete_auction(&video, participant_id, bid)
                         .map(|nft| (nft,RawEvent::BidMadeCompletingAuction(participant_id, video_id)))
                 }
                 _ => {

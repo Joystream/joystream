@@ -364,7 +364,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         video: &Video<T>,
         winner_id: T::MemberId,
-        bid_amnt: CurrencyOf<T>,
+        claimed_amount: CurrencyOf<T>,
     ) -> Result<Nft<T>, DispatchError> {
         let Video::<T> {
             in_channel,
@@ -385,6 +385,12 @@ impl<T: Trait> Module<T> {
                 }
             })
             .unwrap();
+
+        // check in order to avoid bidder front running
+        ensure!(
+            claimed_amount == bid_amount,
+            Error::<T>::InvalidBidAmountSpecified
+        );
 
         let dest_account_id = match owner {
             NftOwner::Member(member_id) => {
