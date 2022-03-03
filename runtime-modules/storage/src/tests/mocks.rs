@@ -62,7 +62,7 @@ parameter_types! {
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
-        crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 400;
 }
 

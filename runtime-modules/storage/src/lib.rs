@@ -1482,6 +1482,12 @@ decl_error! {
 
         /// Invalid transactor account ID for this bucket.
         InvalidTransactorAccount,
+
+        /// Not allowed 'number of storage buckets'
+        NumberOfStorageBucketsOutsideOfAllowedContraints,
+
+        /// Not allowed 'number of distribution buckets'
+        NumberOfDistributionBucketsOutsideOfAllowedContraints,
     }
 }
 
@@ -1518,7 +1524,7 @@ decl_module! {
         const MaxDistributionBucketFamilyNumber: u64 = T::MaxDistributionBucketFamilyNumber::get();
 
         /// Exports const - "Distribution buckets per bag" value constraint.
-        const DistributionBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
+        const DistributionBucketsPerBagValueConstraint: DistributionBucketsPerBagValueConstraint =
             T::DistributionBucketsPerBagValueConstraint::get();
 
         /// Exports const - max number of pending invitations per distribution bucket.
@@ -1636,6 +1642,12 @@ decl_module! {
             number_of_storage_buckets: u64,
         ) {
             T::ensure_storage_working_group_leader_origin(origin)?;
+
+            T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
+                number_of_storage_buckets,
+                Error::<T>::NumberOfStorageBucketsOutsideOfAllowedContraints,
+                Error::<T>::NumberOfStorageBucketsOutsideOfAllowedContraints,
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -3801,6 +3813,13 @@ impl<T: Trait> Module<T> {
     fn validate_update_families_in_dynamic_bag_creation_policy_params(
         families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
     ) -> DispatchResult {
+        let number_of_distribution_buckets: u32 = families.iter().map(|(_, num)| num).sum();
+        T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
+            number_of_distribution_buckets,
+            Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,
+            Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,
+        )?;
+
         for (family_id, _) in families.iter() {
             Self::ensure_distribution_bucket_family_exists(family_id)?;
         }

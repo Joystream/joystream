@@ -3480,7 +3480,7 @@ fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_succeeded() {
         run_to_block(starting_block);
 
         let dynamic_bag_type = DynamicBagType::Channel;
-        let new_bucket_number = 40;
+        let new_bucket_number = 10;
 
         UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -3498,6 +3498,32 @@ fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_succeeded() {
 }
 
 #[test]
+fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_failed_with_constraint_violation(
+) {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        let less_than_allowed_new_bucket_number = 1;
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_new_storage_buckets_number(less_than_allowed_new_bucket_number)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfStorageBucketsOutsideOfAllowedContraints.into(),
+            ));
+
+        let more_than_allowed_new_bucket_number = 11;
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_new_storage_buckets_number(more_than_allowed_new_bucket_number)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfStorageBucketsOutsideOfAllowedContraints.into(),
+            ));
+    });
+}
+
+#[test]
 fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         let non_leader_id = 1;
@@ -3511,7 +3537,7 @@ fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_fails_with_ba
 #[test]
 fn dynamic_bag_creation_policy_defaults_and_updates_succeeded() {
     build_test_externalities().execute_with(|| {
-        let new_bucket_number = 40;
+        let new_bucket_number = 10;
 
         // Change member dynamic bag creation policy.
         let dynamic_bag_type = DynamicBagType::Member;
@@ -3665,7 +3691,7 @@ fn delete_distribution_bucket_family_fails_with_bound_member_dynamic_bag_creatio
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let new_bucket_number = 10;
+        let new_bucket_number = 7;
         let families = BTreeMap::from_iter(vec![(family_id, new_bucket_number)]);
         let dynamic_bag_type = DynamicBagType::Member;
 
@@ -3692,7 +3718,7 @@ fn delete_distribution_bucket_family_fails_with_bound_channel_dynamic_bag_creati
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let new_bucket_number = 10;
+        let new_bucket_number = 7;
         let families = BTreeMap::from_iter(vec![(family_id, new_bucket_number)]);
         let dynamic_bag_type = DynamicBagType::Channel;
 
@@ -4326,7 +4352,7 @@ fn update_families_in_dynamic_bag_creation_policy_succeeded() {
         run_to_block(starting_block);
 
         let dynamic_bag_type = DynamicBagType::Channel;
-        let new_bucket_number = 40;
+        let new_bucket_number = 7;
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -4363,7 +4389,7 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
 fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_type = DynamicBagType::Channel;
-        let new_bucket_number = 40;
+        let new_bucket_number = 7;
         let invalid_family_id = 111;
 
         let families = BTreeMap::from_iter(vec![(invalid_family_id, new_bucket_number)]);
