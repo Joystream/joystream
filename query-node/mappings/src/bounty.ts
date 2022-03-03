@@ -142,7 +142,7 @@ export const bountyScheduleFundingEnd = scheduleBountyStageEnd(
   BountyStage.Funding,
   async (store, bounty, fundingPeriodEnd) => {
     if ('minFundingAmount' in bounty.fundingType) {
-      const isFunded = bounty.totalFunding.gte(bounty.fundingType.minFundingAmount)
+      const isFunded = bounty.totalFunding.gte(new BN(bounty.fundingType.minFundingAmount))
       await endFundingPeriod(store, bounty, fundingPeriodEnd, isFunded)
     }
   }
@@ -152,7 +152,7 @@ export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStag
   'entries',
 ])
 
-export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.WorkSubmission, async (store, bounty) => {
+export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.Judgment, async (store, bounty) => {
   bounty.updatedAt = new Date()
   bounty.stage = BountyStage.Failed
   await store.save<Bounty>(bounty)
@@ -177,7 +177,7 @@ function endFundingPeriod(
 
 function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
   bounty.updatedAt = new Date()
-  if (bounty.entries?.length) {
+  if (bounty.entries?.some((entry) => entry.workSubmitted)) {
     bounty.stage = BountyStage.Judgment
     bountyScheduleJudgmentEnd(bounty, blockNumber + bounty.judgingPeriod)
   } else {
