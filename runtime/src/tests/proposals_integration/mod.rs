@@ -316,19 +316,25 @@ fn proposal_reset_succeeds() {
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         setup_new_council(0);
+        assert_eq!(ProposalsEngine::active_proposal_count(), 0);
+
+        // Voting period long enough to ensure it doesn't expire, but rather is forcefully rejected
+        let voting_period = <Runtime as council::Trait>::IdlePeriodDuration::get() * 2;
 
         // create proposal
         let dummy_proposal = DummyProposalFixture::default()
-            .with_voting_period(100)
+            .with_voting_period(voting_period)
             .with_account_id(account_id)
             .with_proposer(member_id);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
-        // create some votes
+        // create minimal number of votes so it remains active. We cannot do this unless council size is at least 2
+        if <Runtime as council::Trait>::CouncilSize::get() < 2 {
+            return;
+        }
+
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Reject);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
-        vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -337,13 +343,18 @@ fn proposal_reset_succeeds() {
             VotingResults {
                 abstentions: 1,
                 approvals: 0,
-                rejections: 1,
-                slashes: 1,
+                rejections: 0,
+                slashes: 0,
             }
         );
 
+        assert_eq!(ProposalsEngine::active_proposal_count(), 1);
+
         end_idle_period();
         setup_new_council(1);
+
+        // Proposal should have been rejected on new council being elected
+        assert_eq!(ProposalsEngine::active_proposal_count(), 0);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -1178,6 +1189,9 @@ fn proposal_reactivation_succeeds() {
         setup_new_council(1);
 
         run_to_block(System::block_number() + 1);
+
+        // Should get re-activated
+        assert_eq!(ProposalsEngine::active_proposal_count(), 1);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
