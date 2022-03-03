@@ -35,7 +35,7 @@ import {
   WorkSubmittedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
-import { asBN, asInt32, deserializeMetadata, genericEventFields, perpareString } from './common'
+import { asBN, asInt32, bytesToString, deserializeMetadata, genericEventFields, perpareString } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
@@ -441,7 +441,7 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
 // Start bounties withdrawal period and set entries status to either passed, winner, or rejected
 export async function bounty_OracleJudgmentSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const judgmentSubmittedEvent = new BountyEvents.OracleJudgmentSubmittedEvent(event)
-  const [bountyId, , bountyJudgment] = judgmentSubmittedEvent.params
+  const [bountyId, , bountyJudgment, rationale] = judgmentSubmittedEvent.params
 
   const entryJudgments = Array.from(bountyJudgment.entries())
 
@@ -471,7 +471,12 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   )
 
   // Record the event
-  const judgmentEvent = new OracleJudgmentSubmittedEvent({ ...genericEventFields(event), bounty })
+  const judgmentEvent = new OracleJudgmentSubmittedEvent({
+    ...genericEventFields(event),
+    bounty,
+    rationale: bytesToString(rationale),
+  })
+
   await store.save<OracleJudgmentSubmittedEvent>(judgmentEvent)
 }
 
