@@ -323,13 +323,13 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
         // Failure checked
         assert_err!(
             cancel_open_auction_bid_result,
-            Error::<Test>::LastBidDoesNotExist
+            Error::<Test>::BidDoesNotExist
         );
     })
 }
 
 #[test]
-fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
+fn cancel_open_auction_fails_for_with_non_bidder() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -351,7 +351,7 @@ fn cancel_open_auction_bid_actor_is_not_a_last_bidder() {
         // Failure checked
         assert_err!(
             cancel_open_auction_bid_result,
-            Error::<Test>::ActorIsNotALastBidder
+            Error::<Test>::BidDoesNotExist
         );
     })
 }

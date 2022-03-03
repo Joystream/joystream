@@ -106,7 +106,12 @@ pub trait Trait:
     type BloatBondCap: Get<u32>;
 
     /// Type in order to retrieve controller account from channel member owner
-    type MemberInfoProvider: MembershipInfoProvider<Self>;
+    type MemberAuthenticator: MembershipInfoProvider<Self>
+        + common::membership::MemberOriginValidator<
+            <Self as frame_system::Trait>::Origin,
+            <Self as common::MembershipTypes>::MemberId,
+            <Self as frame_system::Trait>::AccountId,
+        >;
 }
 
 decl_storage! {
@@ -1553,7 +1558,7 @@ decl_module! {
             let (nft, event) = match auction.buy_now_price {
                 Some(buy_now_price) if bid >= buy_now_price => {
                     // Do not charge more then buy now
-                    let _ = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
+                    let _ = auction.make_bid(participant_id, participant_account_id, bid, current_block);
 
                     Self::complete_auction(&video, participant_id, bid)
                         .map(|nft| (nft,RawEvent::BidMadeCompletingAuction(participant_id, video_id)))
@@ -2144,7 +2149,7 @@ impl<T: Trait> Module<T> {
             match &channel.owner {
                 ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
                 ChannelOwner::Member(member_id) => {
-                    <T as Trait>::MemberInfoProvider::controller_account_id(*member_id)
+                    <T as Trait>::MemberAuthenticator::controller_account_id(*member_id)
                 }
             }
         }
