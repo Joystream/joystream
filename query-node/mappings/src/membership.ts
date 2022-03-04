@@ -474,7 +474,7 @@ export async function members_LeaderInvitationQuotaUpdated({
   const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event).params
 
   const groupName = 'membershipWorkingGroup'
-  const group = await store.get(WorkingGroup, { where: { name: groupName }, relations: [] })
+  const group = await store.get(WorkingGroup, { where: { name: groupName }, relations: ['leader', 'leader.membership'] })
 
   if (!group) {
     throw new Error(`Working group ${groupName} not found!`)
