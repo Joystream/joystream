@@ -17,7 +17,6 @@ fn setup_open_auction_scenario() {
 
     create_initial_storage_buckets_helper();
     increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
     create_default_member_owned_channel_with_video();
 
     // Issue nft
@@ -45,33 +44,42 @@ fn setup_open_auction_scenario() {
         video_id,
         auction_params.clone(),
     ));
+}
 
-    let bid = Content::min_starting_price();
+fn setup_open_auction_scenario_with_bid(amount: u64) {
+    let video_id = Content::next_video_id();
+    setup_open_auction_scenario();
 
-    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-
-    // Make a successfull bid
+    // Make an attempt to make auction bid if bid step constraint violated
     assert_ok!(Content::make_bid(
         Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
         SECOND_MEMBER_ID,
         video_id,
-        bid,
+        amount,
     ));
-}
 
-fn setup_open_auction_scenario_with_bid() {
-    let video_id = Content::next_video_id();
-    setup_open_auction_scenario();
-
-    let new_bid = Content::min_starting_price().saturating_add(NEXT_BID_OFFSET);
-
-    // Make an attempt to make auction bid if bid step constraint violated
-    let _ = Content::make_bid(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-        SECOND_MEMBER_ID,
-        video_id,
-        new_bid,
+    assert_eq!(
+        System::events().last().unwrap().event,
+        MetaEvent::content(RawEvent::AuctionBidMade(
+            SECOND_MEMBER_ID,
+            video_id,
+            amount,
+            false,
+        ))
     );
+
+    assert!(match Content::video_by_id(video_id).nft_status {
+        Some(Nft::<Test> {
+            transactional_status:
+                TransactionalStatus::<Test>::Auction(Auction::<Test> { bid_list, .. }),
+            ..
+        }) => {
+            bid_list
+                .get(&SECOND_MEMBER_ID)
+                .map_or(false, |bid| bid.amount == amount)
+        }
+        _ => false,
+    });
 }
 
 #[test]
@@ -131,12 +139,7 @@ fn make_bid() {
             auction.starts_at = current_block;
         }
 
-        let (auction, _, _) = auction.make_bid(
-            SECOND_MEMBER_ID,
-            SECOND_MEMBER_ACCOUNT_ID,
-            bid,
-            current_block,
-        );
+        let _ = auction.make_bid(SECOND_MEMBER_ID, bid, current_block);
 
         // Ensure nft status changed to given Auction
         assert!(matches!(
@@ -587,44 +590,28 @@ fn make_bid_starting_price_constraint_violated() {
 }
 
 #[test]
-fn make_bid_bid_step_zero_allowed() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        setup_open_auction_scenario();
-
-        let new_bid = Content::min_starting_price();
-        // Make an attempt to make auction bid if bid step constraint violated
-        let make_bid_result = Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            new_bid,
-        );
-
-        // Failure checked
-        assert_ok!(make_bid_result);
-    })
-}
-
-#[test]
 fn make_bid_fails_with_lower_offer_and_locking_period_not_expired() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        let start_block = 1;
+        run_to_block(start_block);
 
         let video_id = Content::next_video_id();
-        setup_open_auction_scenario_with_bid();
 
-        // attemp to lower the offer on the same block -> error
+        let low_bid = Content::min_starting_price();
+        let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
+
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, high_bid);
+        setup_open_auction_scenario_with_bid(high_bid);
+
+        // attemp to lower the offer while bid still locked -> error
+        run_to_block(start_block + Content::min_bid_lock_duration() - 1);
         assert_err!(
             Content::make_bid(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
-                Content::min_starting_price(),
+                low_bid,
             ),
             Error::<Test>::BidLockDurationIsNotExpired
         );
@@ -638,15 +625,56 @@ fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        setup_open_auction_scenario_with_bid();
+        let first_bid = Content::min_starting_price();
+        let second_bid = first_bid.saturating_add(NEXT_BID_OFFSET);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, second_bid);
+        setup_open_auction_scenario_with_bid(first_bid);
 
         // attemp to lower the offer on the same block -> error
         assert_ok!(Content::make_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            Content::min_starting_price() + (2 * NEXT_BID_OFFSET)
+            second_bid,
         ));
+    })
+}
+
+#[test]
+fn make_bid_succeeds_by_unreserving_prevous_funds() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        let init_bid = Content::min_starting_price();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, init_bid);
+
+        setup_open_auction_scenario_with_bid(init_bid);
+
+        let new_bid = init_bid.saturating_add(NEXT_BID_OFFSET);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, NEXT_BID_OFFSET);
+        assert_eq!(
+            Balances::<Test>::total_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            new_bid
+        );
+
+        assert_ok!(Content::make_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            new_bid,
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::AuctionBidMade(
+                SECOND_MEMBER_ID,
+                video_id,
+                new_bid,
+                false,
+            ))
+        );
     })
 }
 
@@ -657,13 +685,14 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        setup_open_auction_scenario_with_bid();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_open_auction_scenario_with_bid(Content::min_starting_price());
 
         assert_ok!(Content::make_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            DEFAULT_BUY_NOW_PRICE.saturating_add(NEXT_BID_OFFSET),
+            DEFAULT_BUY_NOW_PRICE,
         ));
 
         assert_eq!(
@@ -683,13 +712,14 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
         setup_open_auction_scenario();
 
         assert_ok!(Content::make_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            DEFAULT_BUY_NOW_PRICE.saturating_add(NEXT_BID_OFFSET),
+            DEFAULT_BUY_NOW_PRICE,
         ));
 
         assert_eq!(

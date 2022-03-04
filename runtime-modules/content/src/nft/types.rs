@@ -384,13 +384,12 @@ impl<
 
     /// Make auction bid
     pub fn make_bid(
-        mut self,
+        &mut self,
         bidder: MemberId,
-        bid: Balance,
+        amount: Balance,
         last_bid_block: BlockNumber,
-    ) -> (Self, bool, Bid<BlockNumber, Balance>) {
-        // Unreserve previous bidder balance
-        let bid = Bid::new(bid, last_bid_block);
+    ) -> (bool, Bid<BlockNumber, Balance>) {
+        let bid = Bid::new(amount, last_bid_block);
         let is_extended = match &mut self.auction_type {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
@@ -406,14 +405,16 @@ impl<
             _ => false,
         };
 
-        //insert bid
         let _ = self.bid_list.insert(bidder, bid.clone());
-        (self, is_extended, bid)
+        (is_extended, bid)
     }
 
-    /// Canacel auction bid
-    pub fn cancel_bid(mut self, who: &MemberId) -> Self {
-        let _ = self.bid_list.remove(who);
+    /// Canacel auction bid, PRECONDITIONS:
+    /// 1. self.bid_list.contains_key(who)
+    pub fn cancel_bid(mut self, who: &MemberId, block: BlockNumber) -> Self {
+        if let Some(Bid { amount, .. }) = self.bid_list.remove(who) {
+            T::Currency::unreserve(&who, amount);
+        }
         self
     }
 

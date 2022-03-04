@@ -354,27 +354,29 @@ impl<T: Trait> Module<T> {
     /// 1. video.nft_status.is_some()
     /// 2. matches!(video.nft_status, TransactionalStatus::<T>::Auction)
     pub(crate) fn complete_auction(
-        video: &Video<T>,
+        channel_id: T::ChannelId,
+        nft: &Nft<T>,
         winner_id: T::MemberId,
         claimed_amount: CurrencyOf<T>,
     ) -> Result<Nft<T>, DispatchError> {
-        let nft = video.nft_status.as_ref().unwrap();
-        let dest_account_id = Self::ensure_owner_account_id(video.in_channel, nft)?;
+        let dest_account_id = Self::ensure_owner_account_id(channel_id, nft)?;
         let src_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
 
         if let TransactionalStatus::<T>::Auction(Auction::<T> { bid_list, .. }) =
             &nft.transactional_status
         {
+            assert!(bid_list.contains_key(&winner_id));
             ensure!(
-                bid_list
-                    .get(&winner_id)
-                    .map_or(false, |bid| bid.amount == claimed_amount),
+                bid_list.get(&winner_id).map_or(false, |bid| {
+                    println!("amount: {:?}", bid.amount);
+                    bid.amount == claimed_amount
+                }),
                 Error::<T>::InvalidBidAmountSpecified
             );
         }
 
         Self::complete_payment(
-            video.in_channel,
+            channel_id,
             nft.creator_royalty,
             claimed_amount,
             src_account_id,
@@ -386,17 +388,6 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn cancel_transaction(nft: &Nft<T>, winner: Option<T::MemberId>) -> Nft<T> {
-        if let TransactionalStatus::<T>::Auction(Auction::<T> { bid_list, .. }) =
-            &nft.transactional_status
-        {
-            // unreserve all amounts in the auction from each bidder
-            bid_list.iter().for_each(|(member_id, bid)| {
-                if let Ok(account_id) = T::MemberAuthenticator::controller_account_id(*member_id) {
-                    T::Currency::unreserve(&account_id, bid.amount);
-                }
-            });
-        }
-
         // set owner & idle transactional status
         Nft::<T> {
             owner: winner.map_or(nft.owner.to_owned(), |winner_id| {

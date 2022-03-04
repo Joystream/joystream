@@ -128,7 +128,7 @@ fn cancel_open_auction_bid() {
             Some(OwnedNft {
                 transactional_status: TransactionalStatus::<Test>::Auction(auction_without_bid,),
                 ..
-            }) if auction_without_bid.last_bid.is_none()
+            }) if auction_without_bid.bid_list.is_empty()
         ));
 
         // Last event checked

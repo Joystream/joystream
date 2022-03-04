@@ -1515,9 +1515,6 @@ decl_module! {
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
-            // Ensure bidder have sufficient balance amount to reserve for bid
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1525,7 +1522,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure auction for given video id exists
-            let auction = nft.ensure_auction_state::<T>()?;
+            let mut auction = nft.ensure_auction_state::<T>()?;
 
             let current_block = <frame_system::Module<T>>::block_number();
 
@@ -1541,9 +1538,13 @@ decl_module! {
             // Ensure new bid is greater then last bid + minimal bid step
             auction.ensure_is_valid_bid::<T>(bid, participant_id, current_block)?;
 
+            // unreserve previous bid amount
             if let Some(Bid{amount, ..}) = auction.bid_list.get(&participant_id) {
                 T::Currency::unreserve(&participant_account_id, *amount);
             }
+
+            // Ensure bidder have sufficient balance amount to reserve for bid
+            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
 
             let (nft, event) = match auction.buy_now_price {
                 Some(buy_now_price) if bid >= buy_now_price => {
@@ -1557,7 +1558,8 @@ decl_module! {
 
                     // complete auction @ buy_now_price
                     Self::complete_auction(
-                        &video,
+                        video.in_channel,
+                        &nft.set_auction_transactional_status(auction),
                         participant_id,
                         buy_now_price,
                     ).map(|nft|
@@ -1573,7 +1575,7 @@ decl_module! {
                     // Can not fail, needed check made
                     T::Currency::reserve(&participant_account_id, bid)?;
 
-                    let (auction, is_extended, _) = auction.make_bid(
+                    let (is_extended, bid_element) = auction.make_bid(
                         participant_id,
                         bid,
                         current_block
@@ -1581,7 +1583,7 @@ decl_module! {
 
                     Ok((
                         nft.set_auction_transactional_status(auction),
-                        RawEvent::AuctionBidMade(participant_id, video_id, bid, is_extended)
+                        RawEvent::AuctionBidMade(participant_id, video_id, bid_element.amount, is_extended)
                     ))
                 }
             }?;
@@ -1674,7 +1676,8 @@ decl_module! {
 
             // Complete auction
             let nft = Self::complete_auction(
-                &video,
+                video.in_channel,
+                &nft,
                 member_id,
                 bid_amnt,
             )?;
@@ -1722,7 +1725,8 @@ decl_module! {
 
             // attempt to complete auction
             let nft = Self::complete_auction(
-                &video,
+                video.in_channel,
+                &nft,
                 winner_id,
                 bid_amnt,
             )?;
