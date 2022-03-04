@@ -2,7 +2,7 @@
 
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
@@ -12,13 +12,15 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
+use frame_system::Module as System;
 use membership::Module as Membership;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById,
 };
 
-use crate::{Balances, Call, Module, StorageBucketById, Trait};
+use crate::{Balances, Call, Module, RawEvent, StorageBucketById, Trait};
+use frame_support::sp_runtime::SaturatedConversion;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -28,6 +30,8 @@ type StorageGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -49,6 +53,12 @@ pub trait CreateAccountId {
 }
 
 impl CreateAccountId for u128 {
+    fn create_account_id(id: u32) -> Self {
+        id.into()
+    }
+}
+
+impl CreateAccountId for u64 {
     fn create_account_id(id: u32) -> Self {
         id.into()
     }
@@ -85,11 +95,11 @@ where
         referrer_id: None,
     };
 
+    let member_id = membership::NextMemberId::<T>::get();
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id,
@@ -131,7 +141,7 @@ fn insert_a_leader<
 where
     T::AccountId: CreateAccountId,
 {
-    let (caller_id, member_id) = member_funded_account::<T>(id as u32);
+    let (caller_id, member_id) = member_funded_account::<T>(id.saturated_into());
 
     let (opening_id, application_id) = add_and_apply_opening::<T>(
         &T::Origin::from(RawOrigin::Root),
@@ -142,6 +152,8 @@ where
 
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
+
+    let worker_id = working_group::NextWorkerId::<T, StorageWorkingGroupInstance>::get();
     StorageGroup::<T>::fill_opening(
         RawOrigin::Root.into(),
         opening_id,
@@ -149,10 +161,8 @@ where
     )
     .unwrap();
 
-    let actor_id =
-        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, StorageWorkingGroupInstance>::contains_key(
-        actor_id
+        worker_id
     ));
 
     caller_id
@@ -266,6 +276,17 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<StorageWorkingGroupIn
     application_id
 }
 
+fn create_storage_bucket_helper<T: Trait>(account_id: T::AccountId) -> T::StorageBucketId {
+    let storage_bucket_id = Module::<T>::next_storage_bucket_id();
+
+    Module::<T>::create_storage_bucket(RawOrigin::Signed(account_id).into(), None, false, 0, 0)
+        .unwrap();
+
+    assert!(<StorageBucketById<T>>::contains_key(&storage_bucket_id));
+
+    storage_bucket_id
+}
+
 benchmarks! {
     where_clause {
         where T: balances::Trait,
@@ -277,14 +298,42 @@ benchmarks! {
     _{ }
 
     create_storage_bucket {
-        let lead_id = 0;
-        let lead_account_id = insert_a_leader::<T>(lead_id);
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let storage_bucket_id = Module::<T>::next_storage_bucket_id();
 
     }: _ (RawOrigin::Signed(lead_account_id), None, false, 0, 0)
     verify {
-        let storage_bucket_id: T::StorageBucketId = Default::default();
+        assert!(StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert_last_event::<T>(
+                RawEvent::StorageBucketCreated(storage_bucket_id, None, false, 0, 0).into()
+        );
+    }
 
-        assert!(StorageBucketById::<T>::contains_key(storage_bucket_id));
+    update_storage_bucket_status {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_status = true;
+
+        let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+    }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id, new_status)
+    verify {
+
+        let storage_bucket = Module::<T>::storage_bucket_by_id(&storage_bucket_id);
+        assert_last_event::<T>(
+                RawEvent::StorageBucketStatusUpdated(storage_bucket_id, new_status).into()
+        );
+    }
+
+    delete_storage_bucket {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+
+        let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+    }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
+    verify {
+
+        assert!(!StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert_last_event::<T>(
+                RawEvent::StorageBucketDeleted(storage_bucket_id).into()
+        );
     }
 }
 
@@ -294,11 +343,24 @@ mod tests {
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
 
-    #[ignore] // until enabling the benchmarking for the pallet
     #[test]
     fn create_storage_bucket() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_create_storage_bucket::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_storage_bucket_status() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_storage_bucket_status::<Test>());
+        });
+    }
+
+    #[test]
+    fn delete_storage_bucket() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_delete_storage_bucket::<Test>());
         });
     }
 }
