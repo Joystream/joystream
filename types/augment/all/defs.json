@@ -748,7 +748,8 @@
     "IsExtended": "bool",
     "EnglishAuctionDetails": {
         "extension_period": "u32",
-        "auction_duration": "u32"
+        "auction_duration": "u32",
+        "bid_step": "u128"
     },
     "OpenAuctionDetails": {
         "bid_lock_duration": "u32"
@@ -760,8 +761,6 @@
         }
     },
     "Bid": {
-        "bidder": "MemberId",
-        "bidder_account_id": "GenericAccountId",
         "amount": "u128",
         "made_at_block": "u32"
     },
@@ -821,10 +820,9 @@
         "starting_price": "u128",
         "buy_now_price": "u128",
         "auction_type": "AuctionType",
-        "minimal_bid_step": "u128",
-        "last_bid": "Option<Bid>",
         "starts_at": "Option<u32>",
-        "whitelist": "BTreeSet<MemberId>"
+        "whitelist": "BTreeSet<MemberId>",
+        "bid_list": "BTreeMap<MemberId,Bid>"
     },
     "NFTOwner": {
         "_enum": {

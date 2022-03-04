@@ -92,10 +92,9 @@ export interface AuctionRecord extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: u128;
   readonly auction_type: AuctionType;
-  readonly minimal_bid_step: u128;
-  readonly last_bid: Option<Bid>;
   readonly starts_at: Option<u32>;
   readonly whitelist: BTreeSet<MemberId>;
+  readonly bid_list: BTreeMap<MemberId, Bid>;
 }
 
 /** @name AuctionType */
@@ -139,8 +138,6 @@ export interface BalanceKind extends Enum {
 
 /** @name Bid */
 export interface Bid extends Struct {
-  readonly bidder: MemberId;
-  readonly bidder_account_id: GenericAccountId;
   readonly amount: u128;
   readonly made_at_block: u32;
 }
@@ -461,6 +458,7 @@ export interface DynamicBagType extends Enum {
 export interface EnglishAuctionDetails extends Struct {
   readonly extension_period: u32;
   readonly auction_duration: u32;
+  readonly bid_step: u128;
 }
 
 /** @name Entry */
