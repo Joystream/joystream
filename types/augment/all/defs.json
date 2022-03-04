@@ -619,7 +619,7 @@
         "staking_account_id": "AccountId",
         "submitted_at": "u32",
         "work_submitted": "bool",
-        "oracle_judgment_result": "Option<OracleJudgment>"
+        "oracle_judgment_result": "Option<OracleWorkEntryJudgment>"
     },
     "BountyMilestone_Created": {
         "created_at": "u32",
