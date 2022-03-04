@@ -411,11 +411,8 @@ impl<
 
     /// Canacel auction bid, PRECONDITIONS:
     /// 1. self.bid_list.contains_key(who)
-    pub fn cancel_bid(mut self, who: &MemberId, block: BlockNumber) -> Self {
-        if let Some(Bid { amount, .. }) = self.bid_list.remove(who) {
-            T::Currency::unreserve(&who, amount);
-        }
-        self
+    pub fn cancel_bid(&mut self, who: &MemberId) -> Bid<BlockNumber, Balance> {
+        self.bid_list.remove(who).unwrap()
     }
 
     // Ensure auction has no bids

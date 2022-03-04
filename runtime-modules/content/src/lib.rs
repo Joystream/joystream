@@ -1621,7 +1621,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure auction for given video id exists
-            let auction = nft.ensure_auction_state::<T>()?;
+            let mut auction = nft.ensure_auction_state::<T>()?;
 
             let current_block = <frame_system::Module<T>>::block_number();
 
@@ -1633,7 +1633,11 @@ decl_module! {
             //
 
             // Cancel last auction bid & update auction data
-            let auction = auction.cancel_bid(&participant_id);
+            let bid = auction.cancel_bid(&participant_id);
+
+            // unreserve amount
+            T::Currency::unreserve(&participant_account_id, bid.amount);
+
             let nft = nft.set_auction_transactional_status(auction);
             let video = video.set_nft_status(nft);
 
