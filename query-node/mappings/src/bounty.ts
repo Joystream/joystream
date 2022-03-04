@@ -1,5 +1,5 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { BountyMetadata } from '@joystream/metadata-protobuf'
+import { BountyMetadata, BountyWorkData } from '@joystream/metadata-protobuf'
 import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
 import { MemberId } from '@joystream/types/common'
 import { BN } from '@polkadot/util'
@@ -35,7 +35,7 @@ import {
   WorkSubmittedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
-import { asBN, asInt32, deserializeMetadata, genericEventFields, perpareString } from './common'
+import { asBN, asInt32, bytesToString, deserializeMetadata, genericEventFields, perpareString } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
@@ -50,17 +50,14 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId | string, re
   return bounty
 }
 
-async function getContribution(
+function getContribution(
   store: DatabaseManager,
   bountyId: BountyId,
-  contributor: string | undefined
-): Promise<BountyContribution> {
-  const contribution = await store.get(BountyContribution, { where: { bountyId, contributor } })
-  if (!contribution) {
-    const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
-    throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
-  }
-  return contribution
+  contributorId: string | undefined
+): Promise<BountyContribution | undefined> {
+  return store.get(BountyContribution, {
+    where: { bounty: { id: bountyId }, contributor: { id: contributorId ?? null } },
+  })
 }
 
 async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
@@ -75,9 +72,10 @@ async function updateBounty(
   store: DatabaseManager,
   event: SubstrateEvent,
   bountyId: BountyId,
+  relations: string[],
   changes: (bounty: Bounty) => Partial<Bounty>
 ) {
-  const bounty = await getBounty(store, bountyId)
+  const bounty = await getBounty(store, bountyId, relations)
   bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
@@ -145,7 +143,7 @@ export const bountyScheduleFundingEnd = scheduleBountyStageEnd(
   BountyStage.Funding,
   async (store, bounty, fundingPeriodEnd) => {
     if ('minFundingAmount' in bounty.fundingType) {
-      const isFunded = bounty.totalFunding.gte(bounty.fundingType.minFundingAmount)
+      const isFunded = bounty.totalFunding.gte(new BN(bounty.fundingType.minFundingAmount))
       await endFundingPeriod(store, bounty, fundingPeriodEnd, isFunded)
     }
   }
@@ -155,7 +153,7 @@ export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStag
   'entries',
 ])
 
-export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.WorkSubmission, async (store, bounty) => {
+export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.Judgment, async (store, bounty) => {
   bounty.updatedAt = new Date()
   bounty.stage = BountyStage.Failed
   await store.save<Bounty>(bounty)
@@ -180,7 +178,7 @@ function endFundingPeriod(
 
 function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
   bounty.updatedAt = new Date()
-  if (bounty.entries?.length) {
+  if (bounty.entries?.some((entry) => entry.workSubmitted)) {
     bounty.stage = BountyStage.Judgment
     bountyScheduleJudgmentEnd(bounty, blockNumber + bounty.judgingPeriod)
   } else {
@@ -213,9 +211,9 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
     id: String(bountyId),
     createdAt: eventTime,
     updatedAt: eventTime,
-    title: whenDef(metadata?.title, perpareString) ?? undefined,
-    description: whenDef(metadata?.description, perpareString) ?? undefined,
-    bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString) ?? undefined,
+    title: whenDef(metadata?.title, perpareString),
+    description: whenDef(metadata?.description, perpareString),
+    bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString),
     cherry: bountyParams.cherry,
     entrantStake: bountyParams.entrant_stake,
     creator: bountyActorToMembership(bountyParams.creator),
@@ -290,15 +288,14 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty totalFunding
-  const bounty = await updateBounty(store, event, bountyId, (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyId, [], (bounty) => ({
     totalFunding: bounty.totalFunding.add(amount),
   }))
 
   // Create or update the contribution
   let contribution: BountyContribution
   const contributor = bountyActorToMembership(contributorActor)
-  const existing = await store.get(BountyContribution, { where: { bountyId, contributor } })
-
+  const existing = await getContribution(store, bountyId, contributor?.id)
   if (existing) {
     contribution = existing
     contribution.amount = existing.amount.add(amount)
@@ -337,6 +334,10 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
   // Update the contribution
   const contributor = bountyActorToMembership(contributorActor)
   const contribution = await getContribution(store, bountyId, contributor?.id)
+  if (!contribution) {
+    const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
+    throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
+  }
   contribution.updatedAt = eventTime
   contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
@@ -365,7 +366,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], (bounty) => ({
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], (bounty) => ({
     deletedAt: bounty.updatedAt,
     isTerminated: true,
   }))
@@ -426,28 +427,36 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const entrySlashedEvent = new BountyEvents.WorkSubmittedEvent(event)
+  const workSubmittedEvent = new BountyEvents.WorkSubmittedEvent(event)
+  const [, entryId, , metadataBytes] = workSubmittedEvent.params
 
-  // Update the entry status
-  const entry = await updateEntry(store, event, entrySlashedEvent.params[1], () => ({
+  // Update the entry
+  const entry = await updateEntry(store, event, entryId, () => ({
     workSubmitted: true,
   }))
 
   // Record the event
-  const submittedInEvent = new WorkSubmittedEvent({ ...genericEventFields(event), entry })
-  await store.save<WorkEntrySlashedEvent>(submittedInEvent)
+  const metadata = deserializeMetadata(BountyWorkData, metadataBytes)
+  const submittedInEvent = new WorkSubmittedEvent({
+    ...genericEventFields(event),
+    entry,
+    title: whenDef(metadata?.title, perpareString),
+    description: whenDef(metadata?.description, perpareString),
+  })
+
+  await store.save<WorkSubmittedEvent>(submittedInEvent)
 }
 
 // Start bounties withdrawal period and set entries status to either passed, winner, or rejected
 export async function bounty_OracleJudgmentSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const judgmentSubmittedEvent = new BountyEvents.OracleJudgmentSubmittedEvent(event)
-  const [bountyId, , bountyJudgment] = judgmentSubmittedEvent.params
+  const [bountyId, , bountyJudgment, rationale] = judgmentSubmittedEvent.params
 
   const entryJudgments = Array.from(bountyJudgment.entries())
 
   // Update the bounty status
   const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
-  const bounty = await updateBounty(store, event, bountyId, () => ({
+  const bounty = await updateBounty(store, event, bountyId, ['entries'], () => ({
     stage: BountyStage[hasWinners ? 'Successful' : 'Failed'],
   }))
 
@@ -471,7 +480,12 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   )
 
   // Record the event
-  const judgmentEvent = new OracleJudgmentSubmittedEvent({ ...genericEventFields(event), bounty })
+  const judgmentEvent = new OracleJudgmentSubmittedEvent({
+    ...genericEventFields(event),
+    bounty,
+    rationale: bytesToString(rationale),
+  })
+
   await store.save<OracleJudgmentSubmittedEvent>(judgmentEvent)
 }
 

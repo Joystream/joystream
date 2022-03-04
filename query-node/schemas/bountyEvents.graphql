@@ -314,6 +314,9 @@ type OracleJudgmentSubmittedEvent implements Event @entity {
 
   "Related bounty"
   bounty: Bounty!
+
+  "Rationale of the judgment"
+  rationale: String
 }
 
 type WorkEntrantFundsWithdrawnEvent implements Event @entity {

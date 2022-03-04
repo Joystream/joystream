@@ -58,7 +58,7 @@ export class Entry extends JoyStructDecorated({
   staking_account_id: AccountId,
   submitted_at: BlockNumber,
   work_submitted: bool,
-  oracle_judgment_result: Option.with(OracleJudgment),
+  oracle_judgment_result: Option.with(OracleWorkEntryJudgment),
 }) {}
 
 export class BountyMilestone_Created extends JoyStructDecorated({

@@ -211,8 +211,8 @@ type BountyContribution @entity {
   amount: BigInt!
 
   # Events
-  "The event the contribution was created in"
-  createdInEvent: BountyFundedEvent! @derivedFrom(field: "contribution")
+  "Events the contribution was created and updated in"
+  bountyFundedEvents: [BountyFundedEvent!]! @derivedFrom(field: "contribution")
 
   "Event emitted if the contribution is withdrawn"
   withdrawnInEvent: BountyFundingWithdrawalEvent @derivedFrom(field: "contribution")
