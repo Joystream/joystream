@@ -438,7 +438,7 @@ impl Trait for Test {
     type ModuleId = ContentModuleId;
 
     /// membership info provider
-    type MemberInfoProvider = MemberInfoProvider;
+    type MemberAuthenticator = MemberInfoProvider;
 }
 
 // #[derive (Default)]

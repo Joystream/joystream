@@ -14,21 +14,19 @@ pub type Royalty = Perbill;
 pub enum TransactionalStatusRecord<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
-    AccountId: Default + Clone + Ord,
     Balance: Default + Clone + BaseArithmetic,
 > {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionRecord<BlockNumber, Balance, MemberId, AccountId>),
+    Auction(AuctionRecord<BlockNumber, Balance, MemberId>),
     BuyNow(Balance),
 }
 
 impl<
         BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + Ord,
-        AccountId: Default + Clone + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > Default for TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>
+    > Default for TransactionalStatusRecord<BlockNumber, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
@@ -38,7 +36,6 @@ impl<
 pub type TransactionalStatus<T> = TransactionalStatusRecord<
     <T as frame_system::Trait>::BlockNumber,
     <T as common::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
     CurrencyOf<T>,
 >;
 
@@ -48,26 +45,24 @@ pub type TransactionalStatus<T> = TransactionalStatusRecord<
 pub struct OwnedNft<
     BlockNumber: BaseArithmetic + Copy + Default,
     MemberId: Default + Copy + Ord,
-    AccountId: Default + Clone + Ord,
     Balance: Default + Clone + BaseArithmetic,
 > {
     pub owner: NftOwner<MemberId>,
-    pub transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
+    pub transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
 
 impl<
         BlockNumber: BaseArithmetic + Copy + Default,
         MemberId: Default + Copy + PartialEq + Ord,
-        AccountId: Default + Clone + PartialEq + Ord,
         Balance: Default + Clone + BaseArithmetic,
-    > OwnedNft<BlockNumber, MemberId, AccountId, Balance>
+    > OwnedNft<BlockNumber, MemberId, Balance>
 {
     /// Create new Nft
     pub fn new(
         owner: NftOwner<MemberId>,
         creator_royalty: Option<Royalty>,
-        transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, AccountId, Balance>,
+        transactional_status: TransactionalStatusRecord<BlockNumber, MemberId, Balance>,
     ) -> Self {
         Self {
             owner,
@@ -85,7 +80,7 @@ impl<
     /// Get nft auction record
     pub fn ensure_auction_state<T: Trait>(
         &self,
-    ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId, AccountId>, Error<T>> {
+    ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId>, Error<T>> {
         if let TransactionalStatusRecord::Auction(auction) = &self.transactional_status {
             Ok(auction.to_owned())
         } else {
@@ -111,7 +106,7 @@ impl<
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
-        auction: AuctionRecord<BlockNumber, Balance, MemberId, AccountId>,
+        auction: AuctionRecord<BlockNumber, Balance, MemberId>,
     ) -> Self {
         self.transactional_status = TransactionalStatusRecord::Auction(auction);
         self
@@ -175,7 +170,6 @@ impl<MemberId> Default for NftOwner<MemberId> {
 pub type Nft<T> = OwnedNft<
     <T as frame_system::Trait>::BlockNumber,
     <T as common::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
     CurrencyOf<T>,
 >;
 
@@ -284,25 +278,14 @@ pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Bid<MemberId, AccountId, BlockNumber: BaseArithmetic + Copy, Balance> {
-    pub bidder: MemberId,
-    pub bidder_account_id: AccountId,
+pub struct Bid<BlockNumber: BaseArithmetic + Copy, Balance> {
     pub amount: Balance,
     pub made_at_block: BlockNumber,
 }
 
-impl<MemberId, AccountId, BlockNumber: BaseArithmetic + Copy, Balance>
-    Bid<MemberId, AccountId, BlockNumber, Balance>
-{
-    fn new(
-        bidder: MemberId,
-        bidder_account_id: AccountId,
-        amount: Balance,
-        made_at_block: BlockNumber,
-    ) -> Self {
+impl<BlockNumber: BaseArithmetic + Copy, Balance> Bid<BlockNumber, Balance> {
+    fn new(amount: Balance, made_at_block: BlockNumber) -> Self {
         Self {
-            bidder,
-            bidder_account_id,
             amount,
             made_at_block,
         }
@@ -316,24 +299,21 @@ pub struct AuctionRecord<
     BlockNumber: BaseArithmetic + Copy,
     Balance: Clone + Zero + Default,
     MemberId: Ord + Clone,
-    AccountId: Ord + Clone,
 > {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     /// Auction type (either english or open)
     pub auction_type: AuctionType<BlockNumber, Balance>,
-    pub last_bid: Option<Bid<MemberId, AccountId, BlockNumber, Balance>>,
     pub starts_at: BlockNumber,
     pub whitelist: BTreeSet<MemberId>,
-    pub bid_list: BTreeMap<MemberId, Bid<MemberId, AccountId, BlockNumber, Balance>>,
+    pub bid_list: BTreeMap<MemberId, Bid<BlockNumber, Balance>>,
 }
 
 impl<
         BlockNumber: BaseArithmetic + Copy + Default + Clone,
         Balance: Default + BaseArithmetic + Clone,
         MemberId: Default + PartialEq + Ord + Clone,
-        AccountId: Default + PartialEq + Ord + Clone,
-    > AuctionRecord<BlockNumber, Balance, MemberId, AccountId>
+    > AuctionRecord<BlockNumber, Balance, MemberId>
 {
     /// Create a new auction record with provided parameters
     pub fn new(auction_params: AuctionParams<BlockNumber, Balance, MemberId>) -> Self {
@@ -406,19 +386,21 @@ impl<
     pub fn make_bid(
         mut self,
         bidder: MemberId,
-        bidder_account_id: AccountId,
         bid: Balance,
         last_bid_block: BlockNumber,
-    ) -> (Self, bool, Bid<MemberId, AccountId, BlockNumber, Balance>) {
-        let bid = Bid::new(bidder.clone(), bidder_account_id, bid, last_bid_block);
+    ) -> (Self, bool, Bid<BlockNumber, Balance>) {
+        // Unreserve previous bidder balance
+        let bid = Bid::new(bid, last_bid_block);
         let is_extended = match &mut self.auction_type {
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
                 ..
-            }) if last_bid_block - self.starts_at >= *auction_duration - *extension_period => {
+            }) if last_bid_block.saturating_add(*extension_period)
+                >= self.starts_at.saturating_add(*auction_duration) =>
+            {
                 // bump auction duration when bid is made during extension period.
-                *auction_duration += *extension_period;
+                *auction_duration = auction_duration.saturating_add(*extension_period);
                 true
             }
             _ => false,
@@ -429,9 +411,9 @@ impl<
         (self, is_extended, bid)
     }
 
-    /// Cnacel auction bid
-    pub fn cancel_bid(mut self) -> Self {
-        self.last_bid = None;
+    /// Canacel auction bid
+    pub fn cancel_bid(mut self, who: &MemberId) -> Self {
+        let _ = self.bid_list.remove(who);
         self
     }
 
@@ -483,11 +465,6 @@ impl<
             Error::<T>::NftAuctionIsAlreadyExpired
         );
         Ok(())
-    }
-
-    /// Whether caller is last bidder
-    pub fn is_last_bidder(&self, who: MemberId) -> bool {
-        matches!(&self.last_bid, Some(last_bid) if last_bid.bidder == who)
     }
 
     /// Ensure auction type is `Open`
@@ -554,7 +531,7 @@ impl<
     pub fn ensure_bid_exists<T: Trait>(
         &self,
         who: &MemberId,
-    ) -> Result<Bid<MemberId, AccountId, BlockNumber, Balance>, DispatchError> {
+    ) -> Result<Bid<BlockNumber, Balance>, DispatchError> {
         self.bid_list.get(who).map_or_else(
             || Err(Error::<T>::BidDoesNotExist.into()),
             |bid| Ok(bid.clone()),
@@ -567,5 +544,4 @@ pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
     CurrencyOf<T>,
     <T as common::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
 >;

@@ -106,12 +106,7 @@ pub trait Trait:
     type BloatBondCap: Get<u32>;
 
     /// Type in order to retrieve controller account from channel member owner
-    type MemberAuthenticator: MembershipInfoProvider<Self>
-        + common::membership::MemberOriginValidator<
-            <Self as frame_system::Trait>::Origin,
-            <Self as common::MembershipTypes>::MemberId,
-            <Self as frame_system::Trait>::AccountId,
-        >;
+    type MemberAuthenticator: MembershipInfoProvider<Self>;
 }
 
 decl_storage! {
@@ -1432,7 +1427,7 @@ decl_module! {
             //
 
             // Cancel auction
-            let nft = Self::cancel_transaction(nft);
+            let nft = Self::cancel_transaction(&nft, None);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
@@ -1465,7 +1460,7 @@ decl_module! {
             //
 
             // Cancel pending offer
-            let nft = Self::cancel_transaction(nft);
+            let nft = Self::cancel_transaction(&nft, None);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
@@ -1498,7 +1493,7 @@ decl_module! {
             //
 
             // Cancel sell order
-            let nft = Self::cancel_transaction(nft);
+            let nft = Self::cancel_transaction(&nft, None);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
@@ -1546,23 +1541,31 @@ decl_module! {
             // Ensure new bid is greater then last bid + minimal bid step
             auction.ensure_is_valid_bid::<T>(bid, participant_id, current_block)?;
 
-            // TODO RHODES: include this in the previosu checks
-            // Used only for immediate auction completion
-            let _funds_destination_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
-
-            // Unreserve previous bidder balance
-            if let Some(bid) = auction.bid_list.get(&participant_id) {
-                T::Currency::unreserve(&bid.bidder_account_id, bid.amount);
+            if let Some(Bid{amount, ..}) = auction.bid_list.get(&participant_id) {
+                T::Currency::unreserve(&participant_account_id, *amount);
             }
 
             let (nft, event) = match auction.buy_now_price {
                 Some(buy_now_price) if bid >= buy_now_price => {
-                    // Do not charge more then buy now
-                    let _ = auction.make_bid(participant_id, participant_account_id, bid, current_block);
 
-                    Self::complete_auction(&video, participant_id, bid)
-                        .map(|nft| (nft,RawEvent::BidMadeCompletingAuction(participant_id, video_id)))
-                }
+                    // Do not charge more then buy now
+                    let _ = auction.make_bid(
+                        participant_id,
+                        buy_now_price,
+                        current_block
+                    );
+
+                    // complete auction @ buy_now_price
+                    Self::complete_auction(
+                        &video,
+                        participant_id,
+                        buy_now_price,
+                    ).map(|nft|
+                          (
+                              nft,
+                              RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+                          ))
+                },
                 _ => {
                     // Make auction bid & update auction data
 
@@ -1570,11 +1573,17 @@ decl_module! {
                     // Can not fail, needed check made
                     T::Currency::reserve(&participant_account_id, bid)?;
 
-                    let (auction, is_extended, _) = auction.make_bid(participant_id, participant_account_id, bid, current_block);
+                    let (auction, is_extended, _) = auction.make_bid(
+                        participant_id,
+                        bid,
+                        current_block
+                    );
+
                     Ok((
                         nft.set_auction_transactional_status(auction),
-                        RawEvent::AuctionBidMade(participant_id, video_id, bid, is_extended
-                        )))}
+                        RawEvent::AuctionBidMade(participant_id, video_id, bid, is_extended)
+                    ))
+                }
             }?;
 
             //
@@ -1622,7 +1631,7 @@ decl_module! {
             //
 
             // Cancel last auction bid & update auction data
-            let auction = auction.cancel_bid();
+            let auction = auction.cancel_bid(&participant_id);
             let nft = nft.set_auction_transactional_status(auction);
             let video = video.set_nft_status(nft);
 
@@ -1663,10 +1672,12 @@ decl_module! {
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
 
-            // TODO RHODES: ensure owner_account_id is valid
-            let _owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
-
-            let nft = Self::complete_auction(&video, member_id, bid_amnt)?;
+            // Complete auction
+            let nft = Self::complete_auction(
+                &video,
+                member_id,
+                bid_amnt,
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1691,7 +1702,6 @@ decl_module! {
             winner_id: T::MemberId,
             bid_amnt: CurrencyOf<T>, // amount the auctioner is committed to
         ) {
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1710,10 +1720,12 @@ decl_module! {
             // Ensure bid for winner exists
             auction.ensure_bid_exists::<T>(&winner_id).map(|_| ())?;
 
-            // TODO RHODES: include this in the previous checks
-            let _owner_account_id = Self::ensure_owner_account_id(&video, &nft).ok();
-
-            let nft = Self::complete_auction(&video, winner_id, bid_amnt)?;
+            // attempt to complete auction
+            let nft = Self::complete_auction(
+                &video,
+                winner_id,
+                bid_amnt,
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1815,7 +1827,7 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -1997,22 +2009,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure owner account id exists, retreive corresponding one.
-    fn ensure_owner_account_id(
-        video: &Video<T>,
-        owned_nft: &Nft<T>,
-    ) -> Result<T::AccountId, Error<T>> {
-        if let NftOwner::Member(member_id) = owned_nft.owner {
-            let membership = <membership::Module<T>>::ensure_membership(member_id)
-                .map_err(|_| Error::<T>::MemberProfileNotFound)?;
-            Ok(membership.controller_account)
-        } else if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
-            Ok(reward_account)
-        } else {
-            Err(Error::<T>::RewardAccountIsNotSet)
-        }
-    }
-
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
@@ -2149,7 +2145,7 @@ impl<T: Trait> Module<T> {
             match &channel.owner {
                 ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
                 ChannelOwner::Member(member_id) => {
-                    <T as Trait>::MemberAuthenticator::controller_account_id(*member_id)
+                    T::MemberAuthenticator::controller_account_id(*member_id)
                 }
             }
         }
