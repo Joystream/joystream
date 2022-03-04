@@ -303,7 +303,6 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete payment, either auction related or buy now/offer
-    // TODO RHODES: fix considering that you can directly specify a dest account
     pub(crate) fn complete_payment(
         in_channel: T::ChannelId,
         creator_royalty: Option<Royalty>,
@@ -367,10 +366,9 @@ impl<T: Trait> Module<T> {
         {
             assert!(bid_list.contains_key(&winner_id));
             ensure!(
-                bid_list.get(&winner_id).map_or(false, |bid| {
-                    println!("amount: {:?}", bid.amount);
-                    bid.amount == claimed_amount
-                }),
+                bid_list
+                    .get(&winner_id)
+                    .map_or(false, |bid| { bid.amount == claimed_amount }),
                 Error::<T>::InvalidBidAmountSpecified
             );
         }
