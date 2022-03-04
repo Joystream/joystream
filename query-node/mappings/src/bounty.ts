@@ -50,13 +50,14 @@ async function getBounty(store: DatabaseManager, bountyId: BountyId | string, re
   return bounty
 }
 
-async function getContribution(
+function getContribution(
   store: DatabaseManager,
   bountyId: BountyId,
   contributorId: string | undefined
 ): Promise<BountyContribution | undefined> {
-  const contributor = whenDef(contributorId, (id) => ({ contributor: id })) ?? null
-  return await store.get(BountyContribution, { where: { bountyId, contributor } })
+  return store.get(BountyContribution, {
+    where: { bounty: { id: bountyId }, contributor: { id: contributorId ?? null } },
+  })
 }
 
 async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
