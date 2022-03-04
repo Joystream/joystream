@@ -291,7 +291,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
   ): Promise<[ContentActor, string]> {
     if (context === 'Member') {
-      const { id, membership } = await this.getRequiredMemberContext(true)
+      const { id, membership } = await this.getRequiredMemberContext()
       return [
         createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
         membership.controller_account.toString(),
