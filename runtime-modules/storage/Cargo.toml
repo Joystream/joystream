@@ -20,6 +20,9 @@ staking-handler = { package = 'pallet-staking-handler', default-features = false
 
 # Benchmarking
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group', optional = true}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -32,6 +35,8 @@ default = ['std']
 runtime-benchmarks = [
     "frame-benchmarking",
     "sp-runtime/runtime-benchmarks",
+    "working-group",
+    'sp-core',
 ]
 std = [
     'serde',
