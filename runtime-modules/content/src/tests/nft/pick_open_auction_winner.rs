@@ -7,6 +7,8 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+const NEXT_BID_OFFSET: u64 = 10;
+
 #[test]
 fn pick_open_auction_winner() {
     with_default_mock_builder(|| {
@@ -399,7 +401,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
 }
 
 #[test]
-fn pick_open_auction_winner_last_bid_does_not_exist() {
+fn pick_open_auction_winner_bid_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -452,6 +454,83 @@ fn pick_open_auction_winner_last_bid_does_not_exist() {
         assert_err!(
             pick_open_auction_winner_result,
             Error::<Test>::BidDoesNotExist
+        );
+    })
+}
+
+#[test]
+fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        let start_block = 1;
+        run_to_block(start_block);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let bid_lock_duration = Content::min_bid_lock_duration();
+
+        let auction_params = AuctionParams {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_nft_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // deposit initial balance
+        let low_bid = Content::min_starting_price();
+        let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
+
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, high_bid);
+
+        // Make nft auction bid
+        assert_ok!(Content::make_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            high_bid,
+        ));
+
+        run_to_block(bid_lock_duration + start_block);
+
+        // Attempt to race
+        assert_ok!(Content::make_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            low_bid,
+        ));
+
+        // bid amount secured by commit
+        assert_err!(
+            Content::pick_open_auction_winner(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                SECOND_MEMBER_ID,
+                high_bid,
+            ),
+            Error::<Test>::InvalidBidAmountSpecified,
         );
     })
 }
