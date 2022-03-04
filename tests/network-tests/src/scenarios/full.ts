@@ -31,7 +31,8 @@ import initStorageBucket from '../flows/clis/initStorageBucket'
 import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
-import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
+// Disable nft tests until functionality re-activated in rhodes release
+// import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 
 scenario('Full', async ({ job, env }) => {
