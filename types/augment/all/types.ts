@@ -499,7 +499,7 @@ export interface Entry extends Struct {
   readonly staking_account_id: AccountId;
   readonly submitted_at: u32;
   readonly work_submitted: bool;
-  readonly oracle_judgment_result: Option<OracleJudgment>;
+  readonly oracle_judgment_result: Option<OracleWorkEntryJudgment>;
 }
 
 /** @name EntryId */
