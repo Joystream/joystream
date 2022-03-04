@@ -33,7 +33,6 @@ fn pick_open_auction_winner() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -69,6 +68,8 @@ fn pick_open_auction_winner() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            bid,
         ));
 
         // Runtime tested state after call
@@ -119,7 +120,6 @@ fn pick_open_auction_winner_auth_failed() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -153,6 +153,8 @@ fn pick_open_auction_winner_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            bid,
         );
 
         // Failure checked
@@ -189,7 +191,6 @@ fn pick_open_auction_winner_actor_not_authorized() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -223,6 +224,8 @@ fn pick_open_auction_winner_actor_not_authorized() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            bid,
         );
 
         // Failure checked
@@ -246,6 +249,8 @@ fn pick_open_auction_winner_video_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            Content::min_starting_price(),
         );
 
         // Failure checked
@@ -273,6 +278,8 @@ fn pick_open_auction_winner_nft_is_not_issued() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            Content::min_starting_price(),
         );
 
         // Failure checked
@@ -308,6 +315,8 @@ fn pick_open_auction_winner_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            Content::min_starting_price(),
         );
 
         // Failure checked
@@ -344,8 +353,9 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
+
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -376,6 +386,8 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            bid,
         );
 
         // Failure checked
@@ -412,7 +424,6 @@ fn pick_open_auction_winner_last_bid_does_not_exist() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -433,12 +444,14 @@ fn pick_open_auction_winner_last_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            SECOND_MEMBER_ID,
+            Content::min_starting_price(),
         );
 
         // Failure checked
         assert_err!(
             pick_open_auction_winner_result,
-            Error::<Test>::LastBidDoesNotExist
+            Error::<Test>::BidDoesNotExist
         );
     })
 }

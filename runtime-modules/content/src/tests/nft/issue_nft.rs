@@ -222,7 +222,6 @@ fn issue_nft_fails_with_invalid_auction_parameters() {
             auction_type: AuctionType::Open(OpenAuctionDetails {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
-            minimal_bid_step: Content::min_bid_step(),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };

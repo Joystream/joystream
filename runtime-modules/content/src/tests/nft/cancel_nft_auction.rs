@@ -251,8 +251,9 @@ fn cancel_nft_auction_english_auction_with_bids() {
             auction_type: AuctionType::English(EnglishAuctionDetails {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
+                bid_step: Content::max_bid_step(),
             }),
-            minimal_bid_step: Content::max_bid_step(),
+
             starts_at: None,
             whitelist: BTreeSet::new(),
         };

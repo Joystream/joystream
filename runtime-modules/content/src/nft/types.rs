@@ -351,31 +351,38 @@ impl<
             }
         }
 
-        let (base_bid, last_bid_block) = self.bid_list.get(&participant_id).map_or_else(
-            || -> Result<(Balance, BlockNumber), DispatchError> {
+        let old_bid_element = self.bid_list.get(&participant_id).map_or_else(
+            || -> Result<_, DispatchError> {
                 ensure!(
                     self.starting_price <= new_bid,
                     Error::<T>::StartingPriceConstraintViolated
                 );
-                Ok((self.starting_price.clone(), Default::default()))
+                Ok(None)
             },
-            |bid| Ok((bid.amount.clone(), bid.made_at_block)),
+            |bid| Ok(Some(bid.clone())),
         )?;
 
         // 3. if type = English: bid >= (base_bid || start_price) + bid_step
         match &self.auction_type {
             AuctionType::English(EnglishAuctionDetails { bid_step, .. }) => {
-                ensure!(
-                    base_bid.saturating_add(bid_step.clone()) <= new_bid,
-                    Error::<T>::BidStepConstraintViolated
-                );
+                if let Some(Bid { amount, .. }) = old_bid_element {
+                    ensure!(
+                        amount.saturating_add(bid_step.clone()) <= new_bid,
+                        Error::<T>::BidStepConstraintViolated
+                    );
+                }
             }
             AuctionType::Open(_) => {
                 // smaller offer allowed only after locking duration
-                // last_bid_block = default() gives no problems
-                if new_bid < base_bid {
-                    self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid_block)?
-                };
+                if let Some(Bid {
+                    amount,
+                    made_at_block,
+                }) = old_bid_element
+                {
+                    if new_bid < amount {
+                        self.ensure_bid_lock_duration_expired::<T>(current_block, made_at_block)?
+                    }
+                }
             }
         };
 

@@ -134,7 +134,7 @@ fn cancel_open_auction_bid() {
         // Last event checked
         assert_event(
             MetaEvent::content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
-            number_of_events_before_call + 1,
+            number_of_events_before_call + 2,
         );
     })
 }
