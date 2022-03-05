@@ -1918,7 +1918,7 @@ export type BountyContribution = BaseGraphQlObject & {
   contributorId?: Maybe<Scalars['String']>
   /** Amount of the contribution */
   amount: Scalars['BigInt']
-  createdInEvent: BountyFundedEvent
+  bountyFundedEvents: Array<BountyFundedEvent>
   withdrawnInEvent?: Maybe<BountyFundingWithdrawalEvent>
 }
 
@@ -1993,7 +1993,9 @@ export type BountyContributionWhereInput = {
   amount_in?: Maybe<Array<Scalars['BigInt']>>
   bounty?: Maybe<BountyWhereInput>
   contributor?: Maybe<MembershipWhereInput>
-  createdInEvent?: Maybe<BountyFundedEventWhereInput>
+  bountyFundedEvents_none?: Maybe<BountyFundedEventWhereInput>
+  bountyFundedEvents_some?: Maybe<BountyFundedEventWhereInput>
+  bountyFundedEvents_every?: Maybe<BountyFundedEventWhereInput>
   withdrawnInEvent?: Maybe<BountyFundingWithdrawalEventWhereInput>
   AND?: Maybe<Array<BountyContributionWhereInput>>
   OR?: Maybe<Array<BountyContributionWhereInput>>
@@ -13905,6 +13907,8 @@ export type OracleJudgmentSubmittedEvent = Event &
     version: Scalars['Int']
     bounty: Bounty
     bountyId: Scalars['String']
+    /** Rationale of the judgment */
+    rationale?: Maybe<Scalars['String']>
   }
 
 export type OracleJudgmentSubmittedEventConnection = {
@@ -13919,6 +13923,7 @@ export type OracleJudgmentSubmittedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   bounty: Scalars['ID']
+  rationale?: Maybe<Scalars['String']>
 }
 
 export type OracleJudgmentSubmittedEventEdge = {
@@ -13943,6 +13948,8 @@ export enum OracleJudgmentSubmittedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   BountyAsc = 'bounty_ASC',
   BountyDesc = 'bounty_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
 }
 
 export type OracleJudgmentSubmittedEventUpdateInput = {
@@ -13951,6 +13958,7 @@ export type OracleJudgmentSubmittedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   bounty?: Maybe<Scalars['ID']>
+  rationale?: Maybe<Scalars['String']>
 }
 
 export type OracleJudgmentSubmittedEventWhereInput = {
@@ -13997,6 +14005,11 @@ export type OracleJudgmentSubmittedEventWhereInput = {
   indexInBlock_lt?: Maybe<Scalars['Int']>
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   bounty?: Maybe<BountyWhereInput>
   AND?: Maybe<Array<OracleJudgmentSubmittedEventWhereInput>>
   OR?: Maybe<Array<OracleJudgmentSubmittedEventWhereInput>>
