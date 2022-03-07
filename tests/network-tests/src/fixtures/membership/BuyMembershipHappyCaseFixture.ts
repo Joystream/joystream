@@ -19,6 +19,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
   protected memberIds: MemberId[] = []
   protected events: MembershipBoughtEventDetails[] = []
   protected members: Membership[] = []
+  protected defaultInviteCount!: number
 
   public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
     super(api, query)
@@ -58,6 +59,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
         metadata: { name, about },
         isVerified,
         entry,
+        inviteCount
       } = qMember
       const metadata = Utils.metadataFromBytes(MembershipMetadata, params.metadata)
       assert.equal(handle, params.handle)
@@ -65,6 +67,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       assert.equal(controllerAccount, params.controller_account)
       assert.equal(name, metadata.name)
       assert.equal(about, metadata.about)
+      assert.equal(inviteCount, this.defaultInviteCount)
       // TODO: avatar
       assert.equal(isVerified, false)
       Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
@@ -87,7 +90,12 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     // TODO: avatar
   }
 
+  protected async loadDefaultInviteCount() {
+    this.defaultInviteCount = (await this.api.query.members.initialInvitationCount()).toNumber()
+  }
+
   async execute(): Promise<void> {
+    await this.loadDefaultInviteCount()
     // Add membership-price funds to accounts
     const membershipFee = await this.api.getMembershipFee()
     await Promise.all(this.accounts.map((a) => this.api.treasuryTransferBalance(a, membershipFee)))

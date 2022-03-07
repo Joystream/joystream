@@ -62,6 +62,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
         isVerified,
         entry,
         invitedBy,
+        inviteCount
       } = qMember
       const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
       assert.equal(handle, txParams.handle)
@@ -69,6 +70,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       assert.equal(controllerAccount, txParams.controller_account)
       assert.equal(name, metadata.name)
       assert.equal(about, metadata.about)
+      assert.equal(inviteCount, 0)
       // TODO: avatar
       assert.equal(isVerified, false)
       Utils.assert(entry.__typename === 'MembershipEntryInvited', 'Query node: Invalid member entry method')
@@ -125,7 +127,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
     const { inviteCount, invitees } = qInviter
     // Assert that inviteCount was correctly updated
     assert.equal(inviteCount, this.initialInvitesCount! - this.accounts.length)
-    // Assert that all invited members are part of "invetees" field
+    // Assert that all invited members are part of "invitees" field
     assert.isNotEmpty(invitees)
     assert.includeMembers(
       invitees.map(({ id }) => id),
