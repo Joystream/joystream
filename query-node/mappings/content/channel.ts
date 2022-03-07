@@ -3,13 +3,17 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../generated/types'
-import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
+import {
+  convertContentActorToChannelOwner,
+  processChannelMetadata,
+  updateChannelCategoryVideoActiveCounter,
+  unsetAssetRelations,
+} from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
-import { removeDataObject } from '../storage/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -24,11 +28,15 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
+    activeVideosCounter: 0,
+
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOwner(store, contentActor)),
+
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })
     ),
@@ -53,12 +61,17 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
     return inconsistentState('Non-existing channel update requested', channelId)
   }
+
+  const originalCategory = channel.category
 
   // prepare changed metadata
   const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
@@ -93,6 +106,9 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   // save channel
   await store.save<Channel>(channel)
 
+  // transfer video active counter value to new category
+  await updateChannelCategoryVideoActiveCounter(store, originalCategory, channel.category, channel.activeVideosCounter)
+
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
 }
@@ -104,7 +120,7 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
-  await Promise.all(assets.map((a) => removeDataObject(store, a)))
+  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
@@ -132,6 +148,14 @@ export async function content_ChannelCensorshipStatusUpdated({
   // save channel
   await store.save<Channel>(channel)
 
+  // update active video counter for category (if any)
+  await updateChannelCategoryVideoActiveCounter(
+    store,
+    isCensored.isTrue ? channel.category : undefined,
+    isCensored.isTrue ? undefined : channel.category,
+    channel.activeVideosCounter
+  )
+
   // emit log event
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
 }
@@ -151,6 +175,7 @@ export async function content_ChannelCategoryCreated({ store, event }: EventCont
     id: channelCategoryId.toString(),
     channels: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),

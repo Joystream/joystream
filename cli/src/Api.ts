@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { createType, types } from '@joystream/types/'
+import { createType, types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
@@ -208,7 +208,7 @@ export default class Api {
     return this._api.query[module]
   }
 
-  protected async membershipById(memberId: MemberId): Promise<Membership | null> {
+  async membershipById(memberId: MemberId): Promise<Membership | null> {
     const profile = await this._api.query.members.membershipById(memberId)
 
     // Can't just use profile.isEmpty because profile.suspended is Bool (which isEmpty method always returns false)
@@ -482,11 +482,6 @@ export default class Api {
       block: stageBlock,
       date: stageDate,
     }
-  }
-
-  async getMemberIdsByControllerAccount(address: string): Promise<MemberId[]> {
-    const ids = await this._api.query.members.memberIdsByControllerAccountId(address)
-    return ids.toArray()
   }
 
   async workerExitRationaleConstraint(group: WorkingGroups): Promise<InputValidationLengthConstraint> {
