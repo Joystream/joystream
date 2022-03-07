@@ -1,4 +1,48 @@
 use super::*;
+use sp_std::collections::btree_map::BTreeMap;
+#[cfg(feature = "std")]
+use strum_macros::EnumIter;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct ContentModerationPermissions {
+    pub hide_video: bool,
+    pub hide_channel: bool,
+    pub pause_channel: bool,
+    pub delete_object: bool,
+    pub delete_nft_free_video: bool,
+    pub delete_any_video: bool,
+    pub delete_channel: bool,
+}
+
+impl Default for ContentModerationPermissions {
+    fn default() -> Self {
+        Self {
+            hide_video: false,
+            hide_channel: false,
+            pause_channel: false,
+            delete_object: false,
+            delete_nft_free_video: false,
+            delete_any_video: false,
+            delete_channel: false,
+        }
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ContentModerationAction {
+    HideVideo,
+    HideChannel,
+    PauseChannel,
+    DeleteObject,
+    DeleteNftFreeVideo,
+    DeleteAnyVideo,
+    DeleteChannel,
+}
+
+pub type ModerationPermissionsByLevel<T> =
+    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, ContentModerationPermissions>;
 
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -13,6 +57,9 @@ where
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
+
+    // Group's moderation permissions
+    permissions: ModerationPermissionsByLevel<T>,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -21,11 +68,20 @@ impl<T: Trait> Default for CuratorGroup<T> {
             curators: BTreeSet::new(),
             // default curator group status right after creation
             active: false,
+            permissions: BTreeMap::new(),
         }
     }
 }
 
 impl<T: Trait> CuratorGroup<T> {
+    pub fn create(active: bool, permissions: &ModerationPermissionsByLevel<T>) -> Self {
+        Self {
+            curators: BTreeSet::new(),
+            active: active,
+            permissions: permissions.clone(),
+        }
+    }
+
     /// Check if `CuratorGroup` contains curator under given `curator_id`
     pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
@@ -39,6 +95,16 @@ impl<T: Trait> CuratorGroup<T> {
     /// Set `CuratorGroup` status as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.active = is_active
+    }
+
+    /// Set new group permissions
+    pub fn set_permissions(&mut self, permissions: &ModerationPermissionsByLevel<T>) {
+        self.permissions = permissions.clone()
+    }
+
+    /// Get reference to all group permissions
+    pub fn get_permissions(&self) -> &ModerationPermissionsByLevel<T> {
+        &self.permissions
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
@@ -101,6 +167,41 @@ impl<T: Trait> CuratorGroup<T> {
 
         // Ensure curator under given curator_id exists in CuratorGroup
         Self::ensure_curator_in_group_exists(&curator_group, curator_id)?;
+        Ok(())
+    }
+
+    pub fn can_perform_action(
+        &self,
+        action: ContentModerationAction,
+        privilege_level: T::ChannelPrivilegeLevel,
+    ) -> bool {
+        let permissions_for_level = self.permissions.get(&privilege_level);
+        if let Some(permissions_for_level) = permissions_for_level {
+            match action {
+                ContentModerationAction::HideVideo => permissions_for_level.hide_video,
+                ContentModerationAction::HideChannel => permissions_for_level.hide_channel,
+                ContentModerationAction::PauseChannel => permissions_for_level.pause_channel,
+                ContentModerationAction::DeleteObject => permissions_for_level.delete_object,
+                ContentModerationAction::DeleteNftFreeVideo => {
+                    permissions_for_level.delete_nft_free_video
+                }
+                ContentModerationAction::DeleteAnyVideo => permissions_for_level.delete_any_video,
+                ContentModerationAction::DeleteChannel => permissions_for_level.delete_channel,
+            }
+        } else {
+            false
+        }
+    }
+
+    pub fn ensure_can_perform_action(
+        &self,
+        action: ContentModerationAction,
+        privilege_level: T::ChannelPrivilegeLevel,
+    ) -> DispatchResult {
+        ensure!(
+            self.can_perform_action(action, privilege_level),
+            Error::<T>::CuratorModerationActionNotAllowed
+        );
         Ok(())
     }
 }

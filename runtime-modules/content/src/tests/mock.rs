@@ -464,6 +464,9 @@ impl Trait for Test {
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
 
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
+
+    /// channel privilege level
+    type ChannelPrivilegeLevel = u8;
 }
 
 // #[derive (Default)]

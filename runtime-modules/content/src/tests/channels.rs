@@ -1283,6 +1283,50 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
     })
 }
 
+// channel privilege level tests
+#[test]
+fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelPrivilegeLevelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_privilege_level_update_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelPrivilegeLevelFixture::default()
+            .with_channel_id(2)
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn successful_channel_privilege_level_update_with_lead_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelPrivilegeLevelFixture::default().call_and_assert(Ok(()));
+    })
+}
+
 // channel deletion tests
 #[test]
 fn successful_curator_channel_deletion_by_lead() {

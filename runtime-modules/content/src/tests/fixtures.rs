@@ -4,12 +4,61 @@ use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_std::cmp::min;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::{IntoIterator, Iterator};
+use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
 // fixtures
+
+pub struct CreateCuratorGroupFixture {
+    sender: AccountId,
+    is_active: bool,
+    permissions: ModerationPermissionsByLevel<Test>,
+}
+
+impl CreateCuratorGroupFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            is_active: false,
+            permissions: BTreeMap::new(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_is_active(self, is_active: bool) -> Self {
+        Self { is_active, ..self }
+    }
+
+    pub fn with_level_permissions(
+        self,
+        level: <Test as Trait>::ChannelPrivilegeLevel,
+        level_permissions: ContentModerationPermissions,
+    ) -> Self {
+        let mut permissions = self.permissions.clone();
+        permissions.insert(level, level_permissions);
+        Self {
+            permissions,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Content::create_curator_group(
+            Origin::signed(self.sender),
+            self.is_active,
+            self.permissions.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 pub struct CreateChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -121,6 +170,7 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
+                        privilege_level: Zero::zero(),
                     },
                     self.params.clone(),
                 ))
@@ -423,6 +473,7 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
+                            privilege_level: Zero::zero(),
                         },
                         self.params.clone(),
                     ))
@@ -453,6 +504,67 @@ impl UpdateChannelFixture {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }))
                 }
+            }
+        }
+    }
+}
+
+pub struct UpdateChannelPrivilegeLevelFixture {
+    sender: AccountId,
+    channel_id: ChannelId,
+    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+}
+
+impl UpdateChannelPrivilegeLevelFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            channel_id: ChannelId::one(), // channel index starts at 1
+            privilege_level: <Test as Trait>::ChannelPrivilegeLevel::one(), // default privilege level is 0
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_privilege_level(
+        self,
+        privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    ) -> Self {
+        Self {
+            privilege_level,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let channel_pre = Content::channel_by_id(&self.channel_id);
+        let actual_result =
+            Content::update_channel_privilege_level(origin, self.channel_id, self.privilege_level);
+        let channel_post = Content::channel_by_id(&self.channel_id);
+        assert_eq!(actual_result, expected_result);
+        match actual_result {
+            Ok(()) => {
+                // Event emitted
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelPrivilegeLevelUpdated(
+                        self.channel_id,
+                        self.privilege_level,
+                    ))
+                );
+                // Privilege level updated
+                assert_eq!(channel_post.privilege_level, self.privilege_level);
+            }
+            Err(_err) => {
+                // Channel not changed
+                assert_eq!(channel_pre, channel_post);
             }
         }
     }
@@ -1347,6 +1459,33 @@ impl ClaimChannelRewardFixture {
 }
 
 // helper functions
+pub fn assert_group_has_permissions_for_actions(
+    group: &CuratorGroup<Test>,
+    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    allowed_actions: &Vec<ContentModerationAction>,
+) {
+    for action in ContentModerationAction::iter() {
+        let result = group.ensure_can_perform_action(action, privilege_level);
+        if allowed_actions.contains(&action) {
+            assert_eq!(
+                result,
+                Ok(()),
+                "Expected curator group to have {:?} action permissions for privilege_level {}",
+                action,
+                privilege_level
+            );
+        } else {
+            assert_eq!(
+                result,
+                Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+                "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
+                action,
+                privilege_level
+            );
+        }
+    }
+}
+
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }

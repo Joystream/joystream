@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, *};
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -7,19 +8,13 @@ use frame_support::{assert_err, assert_ok};
 pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
     let curator_group_id = Content::next_curator_group_id();
     // create new group and add curator id to it
-    assert_ok!(Content::create_curator_group(Origin::signed(
-        LEAD_ACCOUNT_ID
-    )));
+    CreateCuratorGroupFixture::default()
+        .with_is_active(true)
+        .call_and_assert(Ok(()));
     assert_ok!(Content::add_curator_to_group(
         Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
         curator_id
-    ));
-    // make group active
-    assert_ok!(Content::set_curator_group_status(
-        Origin::signed(LEAD_ACCOUNT_ID),
-        curator_group_id,
-        true
     ));
     curator_group_id
 }
@@ -31,9 +26,7 @@ fn curator_group_management() {
         run_to_block(1);
 
         let curator_group_id = Content::next_curator_group_id();
-        assert_ok!(Content::create_curator_group(Origin::signed(
-            LEAD_ACCOUNT_ID
-        )));
+        CreateCuratorGroupFixture::default().call_and_assert(Ok(()));
 
         assert_eq!(
             System::events().last().unwrap().event,
@@ -42,9 +35,10 @@ fn curator_group_management() {
 
         let group = Content::curator_group_by_id(curator_group_id);
 
-        // By default group is empty and not active
+        // Default group is empty, not active and has no permissions
         assert_eq!(group.is_active(), false);
         assert_eq!(group.get_curators().len(), 0);
+        assert_eq!(group.get_permissions().len(), 0);
 
         // Activate group
         assert_ok!(Content::set_curator_group_status(
@@ -60,6 +54,90 @@ fn curator_group_management() {
 
         let group = Content::curator_group_by_id(curator_group_id);
         assert_eq!(group.is_active(), true);
+
+        // Group permissions
+        let mut permissions = ModerationPermissionsByLevel::<Test>::new();
+        permissions.insert(
+            0,
+            ContentModerationPermissions {
+                hide_video: true,
+                delete_nft_free_video: true,
+                ..ContentModerationPermissions::default()
+            },
+        );
+        permissions.insert(
+            1,
+            ContentModerationPermissions {
+                hide_channel: true,
+                pause_channel: true,
+                ..ContentModerationPermissions::default()
+            },
+        );
+        permissions.insert(
+            2,
+            ContentModerationPermissions {
+                delete_any_video: true,
+                delete_channel: true,
+                delete_nft_free_video: true,
+                delete_object: true,
+                hide_channel: true,
+                hide_video: true,
+                pause_channel: true,
+            },
+        );
+
+        // Update group permissions
+        assert_ok!(Content::update_curator_group_permissions(
+            Origin::signed(LEAD_ACCOUNT_ID),
+            curator_group_id,
+            permissions.clone()
+        ));
+
+        // Check CuratorGroupPermissionsUpdated event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::CuratorGroupPermissionsUpdated(
+                curator_group_id,
+                permissions.clone()
+            ))
+        );
+
+        // Validate permissions
+        let group = Content::curator_group_by_id(curator_group_id);
+        assert_eq!(group.get_permissions().len(), 3);
+        // Iterate over privilege levels from 0 to 3
+        // (3 will be a "non-existent map entry" case)
+        for i in 0u8..4u8 {
+            assert_eq!(group.get_permissions().get(&i), permissions.get(&i));
+            let allowed_actions: Vec<ContentModerationAction>;
+            match i {
+                0 => {
+                    allowed_actions = vec![
+                        ContentModerationAction::HideVideo,
+                        ContentModerationAction::DeleteNftFreeVideo,
+                    ]
+                }
+                1 => {
+                    allowed_actions = vec![
+                        ContentModerationAction::HideChannel,
+                        ContentModerationAction::PauseChannel,
+                    ]
+                }
+                2 => {
+                    allowed_actions = vec![
+                        ContentModerationAction::DeleteAnyVideo,
+                        ContentModerationAction::DeleteChannel,
+                        ContentModerationAction::DeleteNftFreeVideo,
+                        ContentModerationAction::DeleteObject,
+                        ContentModerationAction::HideChannel,
+                        ContentModerationAction::HideVideo,
+                        ContentModerationAction::PauseChannel,
+                    ]
+                }
+                _ => allowed_actions = vec![],
+            }
+            assert_group_has_permissions_for_actions(&group, i, &allowed_actions);
+        }
 
         // Cannot add non curators into group
         assert_err!(

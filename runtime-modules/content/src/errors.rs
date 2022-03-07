@@ -265,5 +265,7 @@ decl_error! {
         /// Reward account is none
         RewardAccountNotFoundInChannel,
 
+        /// Curator does not have permissions to perform given moderation action
+        CuratorModerationActionNotAllowed,
     }
 }

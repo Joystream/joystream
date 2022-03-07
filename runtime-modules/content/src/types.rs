@@ -72,7 +72,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -87,10 +87,12 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+    // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
+    pub privilege_level: ChannelPrivilegeLevel,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
+impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
+    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
 {
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
@@ -108,6 +110,7 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
+    <T as Trait>::ChannelPrivilegeLevel,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.

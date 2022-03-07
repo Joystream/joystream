@@ -1,6 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 // Internal Substrate warning (decl_event).
 #![allow(clippy::unused_unit, clippy::all)]
 
@@ -126,6 +126,16 @@ pub trait Trait:
 
     /// Channel migrated in each block during migration
     type ChannelsMigrationsEachBlock: Get<u64>;
+
+    // Channel's privilege level
+    type ChannelPrivilegeLevel: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDeserialize
+        + PartialEq;
 }
 
 decl_storage! {
@@ -251,6 +261,8 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_curator_group(
             origin,
+            is_active: bool,
+            permissions: ModerationPermissionsByLevel<T>
         ) {
 
             let sender = ensure_signed(origin)?;
@@ -263,14 +275,40 @@ decl_module! {
 
             let curator_group_id = Self::next_curator_group_id();
 
-            // Insert empty curator group with `active` parameter set to false
-            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<T>::default());
+            // Insert curator group with provided permissions
+            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::create(is_active, &permissions));
 
             // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
+        }
+
+        /// Update existing curator group's permissions
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_curator_group_permissions(
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            permissions: ModerationPermissionsByLevel<T>
+        ) {
+            let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
+            // Ensure curator group under provided curator_group_id already exist
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Set `permissions` for curator group under given `curator_group_id`
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.set_permissions(&permissions)
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions))
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -466,6 +504,7 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
+                privilege_level: Zero::zero(),
             };
 
             // add channel to onchain state
@@ -551,6 +590,31 @@ decl_module! {
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
+        }
+
+        // Extrinsic for updating channel privilege level (requires lead access)
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_privilege_level(
+            origin,
+            channel_id: T::ChannelId,
+            new_privilege_level: T::ChannelPrivilegeLevel,
+        ) {
+            let sender = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&sender)?;
+
+            // check that channel exists
+            let mut channel = Self::ensure_channel_validity(&channel_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+            channel.privilege_level = new_privilege_level;
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
         // extrinsics for channel deletion
@@ -2383,9 +2447,12 @@ decl_event!(
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
         IsExtended = bool,
+        ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
+        ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
+        CuratorGroupPermissionsUpdated(CuratorGroupId, ModerationPermissionsByLevel),
         CuratorGroupStatusSet(CuratorGroupId, bool /* active status */),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
@@ -2393,6 +2460,7 @@ decl_event!(
         // Channels
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
+        ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
 
         ChannelCensorshipStatusUpdated(

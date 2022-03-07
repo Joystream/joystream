@@ -477,6 +477,7 @@ impl content::Trait for Runtime {
     type ModuleId = ContentModuleId;
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
+    type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
 }
 
 // The referendum instance alias.
