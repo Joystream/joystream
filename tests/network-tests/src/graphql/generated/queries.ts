@@ -4320,7 +4320,7 @@ export const GetProposalExecutedEventsByEventIds = gql`
 `
 export const GetProposalVotedEventsByEventIds = gql`
   query getProposalVotedEventsByEventIds($eventIds: [ID!]) {
-    proposalVotedEvents(where: { id_in: $eventIds }) {
+    proposalVotedEvents(where: { id_in: $eventIds }, limit: 200) {
       ...ProposalVotedEventFields
     }
   }

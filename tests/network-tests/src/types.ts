@@ -78,3 +78,9 @@ export type PostPath = {
   threadId: ThreadId
   postId: PostId
 }
+
+// Forum init
+export type FaucetInfo = {
+  suri: string
+  memberId: number
+}

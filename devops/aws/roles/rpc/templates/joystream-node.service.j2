@@ -13,7 +13,7 @@ ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
         --pruning archive \
         --ws-max-connections 512 \
         --telemetry-url "wss://telemetry.joystream.org/submit/ 0" \
-        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
         --reserved-nodes \
                 {{ boot_nodes|join(" ") }}
 

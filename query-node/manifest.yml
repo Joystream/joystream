@@ -897,7 +897,6 @@ mappings:
       handler: referendum_VoteRevealed
     - event: referendum.StakeReleased
       handler: referendum_StakeReleased
-
     # Bounty
     - event: bounty.BountyCreated
       handler: bounty_BountyCreated
@@ -927,13 +926,11 @@ mappings:
       handler: bounty_OracleJudgmentSubmitted
     - event: bounty.WorkEntrantFundsWithdrawn
       handler: bounty_WorkEntrantFundsWithdrawn
-
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
     - event: system.ExtrinsicSuccess
       handler: system_ExtrinsicSuccess
-
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
