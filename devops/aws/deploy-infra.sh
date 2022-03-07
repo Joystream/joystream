@@ -63,29 +63,38 @@ if [ $? -eq 0 ]; then
 
   BUILD_SERVER=$(get_aws_export $NEW_STACK_NAME "BuildPublicIp")
 
-  BUCKET_NAME=$(get_aws_export $NEW_STACK_NAME "S3BucketName")
-
-  DOMAIN_NAME=$(get_aws_export $NEW_STACK_NAME "DomainName")
+  BUILD_INSTANCE_ID=$(get_aws_export $NEW_STACK_NAME "BuildInstanceId")
 
   mkdir -p $DATA_PATH
 
   echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
-  if [ -z "$EC2_AMI_ID" ]
+  # Build binaries if AMI not specified or a custom proposals parameter is passed
+  if [ -z "$EC2_AMI_ID" ] || [ -n "$ALL_PROPOSALS_PARAMETERS_JSON" ]
   then
     echo -e "\n\n=========== Compile joystream-node on build server ==========="
     ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
-      --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE data_path=$DATA_PATH"
-
-    echo -e "\n\n=========== Install additional utils on build server ==========="
-    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml
+      --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
+                    data_path=$DATA_PATH proposal_parameters=$ALL_PROPOSALS_PARAMETERS_JSON"
   fi
 
-  echo -e "\n\n=========== Configure and start new validators, rpc node and pioneer ==========="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-pioneer.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
-                  data_path=$DATA_PATH bucket_name=$BUCKET_NAME number_of_validators=$NUMBER_OF_VALIDATORS
-                  deployment_type=$DEPLOYMENT_TYPE initial_balances_file=$INITIAL_BALANCES_PATH initial_members_file=$INITIAL_MEMBERS_PATH"
+  if [ -z "$EC2_AMI_ID" ]
+  then
+    echo -e "\n\n=========== Install additional utils on build server ==========="
+    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-build-server.yml
+  fi
 
-  echo -e "\n\n Pioneer URL: https://$DOMAIN_NAME"
+  echo -e "\n\n=========== Configure and start new validators and rpc node ==========="
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
+                  data_path=$DATA_PATH number_of_validators=$NUMBER_OF_VALIDATORS
+                  deployment_type=$DEPLOYMENT_TYPE
+                  initial_balances_file=$INITIAL_BALANCES_PATH
+                  initial_members_file=$INITIAL_MEMBERS_PATH
+                  skip_chain_setup=$SKIP_CHAIN_SETUP"
+
+  echo -e "\n\n=========== Delete Build instance ==========="
+  DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
+  echo $DELETE_RESULT
+
 fi

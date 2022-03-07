@@ -60,7 +60,7 @@ yarn start
 
 **Testing infrastructure**
 
-- [Network integration](./tests/integration-tests) - Joystream network integration testing framework
+- [Network integration](./tests/network-tests) - Joystream network integration testing framework
 
 ## Running a local full node
 

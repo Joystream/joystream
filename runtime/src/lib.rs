@@ -95,7 +95,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 0,
+    spec_version: 1,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -508,15 +508,15 @@ pub type CouncilModule = council::Module<Runtime>;
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
-    pub const VoteStageDuration: BlockNumber = 5;
-    pub const RevealStageDuration: BlockNumber = 7;
+    pub const VoteStageDuration: BlockNumber = 100;
+    pub const RevealStageDuration: BlockNumber = 50;
     pub const MinimumVotingStake: u64 = 10000;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
-    pub const AnnouncingPeriodDuration: BlockNumber = 15;
-    pub const IdlePeriodDuration: BlockNumber = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const AnnouncingPeriodDuration: BlockNumber = 200;
+    pub const IdlePeriodDuration: BlockNumber = 400;
+    pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
     pub const DefaultBudgetIncrement: u64 = 1000;
