@@ -25,7 +25,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
     )
 }
 
-mod constants;
+pub mod constants;
 mod integration;
 pub mod primitives;
 mod proposals_configuration;
