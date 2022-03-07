@@ -2518,7 +2518,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        // Third work entry
+        // Third work entry (no works submitted)
         let member_id = 3;
         let account_id = 3;
 
@@ -2532,14 +2532,6 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .call_and_assert(Ok(()));
 
         let entry_id3 = 3u64;
-
-        let work_data = b"Work submitted".to_vec();
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id3)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
 
         run_to_block(starting_block + working_period + 1);
 
