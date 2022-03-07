@@ -62,7 +62,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
         isVerified,
         entry,
         invitedBy,
-        inviteCount
+        inviteCount,
       } = qMember
       const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
       assert.equal(handle, txParams.handle)
