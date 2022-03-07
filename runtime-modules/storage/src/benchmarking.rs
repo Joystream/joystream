@@ -323,6 +323,32 @@ benchmarks! {
         );
     }
 
+    update_uploading_blocked_status {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_status = true;
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_status)
+    verify {
+
+        assert_eq!(Module::<T>::uploading_blocked(), new_status);
+        assert_last_event::<T>(
+                RawEvent::UploadingBlockStatusUpdated(new_status).into()
+        );
+    }
+
+    update_data_size_fee {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_fee: BalanceOf<T> = 10u32.into();
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_fee)
+    verify {
+
+        assert_eq!(Module::<T>::data_object_per_mega_byte_fee(), new_fee);
+        assert_last_event::<T>(
+                RawEvent::DataObjectPerMegabyteFeeUpdated(new_fee).into()
+        );
+    }
+
     delete_storage_bucket {
         let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
 
@@ -361,6 +387,20 @@ mod tests {
     fn delete_storage_bucket() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_delete_storage_bucket::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_uploading_blocked_status() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_uploading_blocked_status::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_data_size_fee() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_data_size_fee::<Test>());
         });
     }
 }
