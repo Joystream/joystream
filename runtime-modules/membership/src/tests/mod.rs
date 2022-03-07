@@ -528,6 +528,69 @@ fn invite_member_succeeds() {
 }
 
 #[test]
+fn invite_member_succeeds_with_additional_checks() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        let new_initial_balance = 50;
+        SetInitialInvitationBalanceFixture::default()
+            .with_initial_balance(new_initial_balance)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(buy_default_membership_as_alice());
+        let invitee_member_id = Membership::members_created();
+
+        let fixture = InviteMembershipFixture::default();
+        fixture.call_and_assert(Ok(()));
+
+        // Invitations count for inviter member reduced
+        let inviter_member_id = fixture.member_id;
+        let inviter_profile = get_membership_by_id(inviter_member_id);
+        assert_eq!(
+            inviter_profile.invites,
+            crate::DEFAULT_MEMBER_INVITES_COUNT - 1
+        );
+
+        // Invited member created with correct handle and 0 invites
+        let invitee_profile = get_membership_by_id(invitee_member_id);
+        let bob = get_bob_info();
+        assert_eq!(Some(invitee_profile.handle_hash), bob.handle_hash);
+        assert_eq!(invitee_profile.invites, 0);
+
+        // controller account initially set to primary account
+        assert_eq!(invitee_profile.controller_account, BOB_ACCOUNT_ID);
+
+        let initial_invitation_balance = Membership::initial_invitation_balance();
+        // Working group budget reduced.
+        assert_eq!(
+            WORKING_GROUP_BUDGET - initial_invitation_balance,
+            <Test as Trait>::WorkingGroup::get_budget()
+        );
+
+        // Invited member account filled.
+        assert_eq!(
+            initial_invitation_balance,
+            Balances::free_balance(&invitee_profile.controller_account)
+        );
+
+        // Invited member balance locked.
+        assert_eq!(
+            0,
+            Balances::usable_balance(&invitee_profile.controller_account)
+        );
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
+            invitee_member_id,
+            fixture.get_invite_membership_parameters(),
+        ));
+    });
+}
+
+#[test]
 fn invite_member_fails_with_existing_invitation_lock() {
     build_test_externalities().execute_with(|| {
         let initial_balance = DefaultMembershipPrice::get();
@@ -724,10 +787,14 @@ fn set_initial_invitation_balance_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        SetInitialInvitationBalanceFixture::default().call_and_assert(Ok(()));
+        let new_initial_balance = 500;
+
+        SetInitialInvitationBalanceFixture::default()
+            .with_initial_balance(new_initial_balance)
+            .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(Event::<Test>::InitialInvitationBalanceUpdated(
-            DEFAULT_INITIAL_INVITATION_BALANCE,
+            new_initial_balance,
         ));
     });
 }
