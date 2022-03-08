@@ -1613,19 +1613,19 @@ impl<T: Trait> Module<T> {
 
         // Validate all work entry judgements.
         for (entry_id, work_entry_judgment) in judgment.iter() {
+            let entry = Self::ensure_work_entry_exists(bounty_id, entry_id)?;
             if let OracleWorkEntryJudgment::Winner { reward } = work_entry_judgment {
                 // Check for zero reward.
                 ensure!(*reward != Zero::zero(), Error::<T>::ZeroWinnerReward);
 
+                // Check winner work submission.
+                ensure!(
+                    entry.work_submitted,
+                    Error::<T>::WinnerShouldHasWorkSubmission
+                );
+
                 reward_sum_from_judgment += *reward;
             }
-
-            // Check winner work submission.
-            let entry = Self::ensure_work_entry_exists(bounty_id, entry_id)?;
-            ensure!(
-                entry.work_submitted,
-                Error::<T>::WinnerShouldHasWorkSubmission
-            );
         }
 
         // Check for invalid total sum for successful bounty.

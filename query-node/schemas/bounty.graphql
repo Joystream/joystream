@@ -1,0 +1,219 @@
+type BountyEntrantWhitelist @entity {
+  # Prevents "GraphQLError: Input Object type BountyEntrantWhitelistCreateInput must define one or more fields."
+  _phantom: Int
+
+  "Members authorized to submit entries to the bounty"
+  members: [Membership!]!
+}
+
+type BountyFundingPerpetual @variant {
+  "Desired funding"
+  target: BigInt!
+}
+
+type BountyFundingLimited @variant {
+  "Minimum amount of funds for a successful bounty"
+  minFundingAmount: BigInt!
+
+  "Upper boundary for a bounty funding"
+  maxFundingAmount: BigInt!
+
+  "Maximum allowed funding period"
+  fundingPeriod: Int!
+}
+
+"Bounty funding types"
+union BountyFundingType = BountyFundingPerpetual | BountyFundingLimited
+
+"All valid bounty stages"
+enum BountyStage {
+  Funding
+  Expired
+  WorkSubmission
+  Judgment
+  Successful
+  Failed
+}
+
+type Bounty @entity {
+  # Bounty creation parameters:
+  "Bounty's runtime id"
+  id: ID!
+
+  "Bounty title"
+  title: String
+
+  "Bounty description"
+  description: String
+
+  "Bounty image uri"
+  bannerImageUri: String
+
+  "Amount of funding provided by the creator"
+  cherry: BigInt!
+
+  "Stake minimum amount required to submit work entry to the bounty"
+  entrantStake: BigInt!
+
+  "Bounty creator (if created by a member and not the council)"
+  creator: Membership
+
+  "Bounty oracle (if a member and not the council)"
+  oracle: Membership
+
+  "Bounty funding type"
+  fundingType: BountyFundingType!
+
+  "If specified only members listed in BountyEntrantWhitelist are allowed to submit work to the bounty"
+  entrantWhitelist: BountyEntrantWhitelist
+
+  "Number of blocks from end of funding period until people can no longer submit bounty submissions"
+  workPeriod: Int!
+
+  "Number of block from end of work period until oracle can no longer decide winners"
+  judgingPeriod: Int!
+
+  # Bounty current state:
+  "Current bounty stage"
+  stage: BountyStage!
+
+  "Total amount once contributed to the bounty (excluding the cherry)"
+  totalFunding: BigInt!
+
+  "Bounty discussion thread"
+  discussionThread: ForumThread
+
+  "The contributions (in fund) made to the bounty"
+  contributions: [BountyContribution] @derivedFrom(field: "bounty")
+
+  "The work entries announce on the bounty"
+  entries: [BountyEntry] @derivedFrom(field: "bounty")
+
+  "If true the bounty lifecycle ended and its state will not change anymore"
+  isTerminated: Boolean!
+
+  # Events:
+  "The event the bounty was created in"
+  createdInEvent: BountyCreatedEvent! @derivedFrom(field: "bounty")
+
+  "Event emitted if the bounty is canceled"
+  canceledEvent: BountyCanceledEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the bounty is vetoed"
+  vetoedEvent: BountyVetoedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the bounty reached its maximum funding amount"
+  maxFundingReachedEvent: BountyMaxFundingReachedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted when the bounty is removed (i.e terminated)"
+  removedInEvent: BountyRemovedEvent @derivedFrom(field: "bounty")
+
+  "Event emitted if the oracle judged the bounty work entries"
+  judgment: OracleJudgmentSubmittedEvent @derivedFrom(field: "bounty")
+}
+
+"Initial status during creation in Working Period."
+type BountyEntryStatusWorking @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"When withdrawn during the Working Period."
+type BountyEntryStatusWithdrawn @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Selected as winner during Judgment Period , and therefore is due an outstanding share of the bounty funds, called reward."
+type BountyEntryStatusWinner @variant {
+  reward: BigInt!
+}
+
+"Not referenced by oracle in Judgment Period judgment, and therefore is not owed any share of the bounty funds, but has outstanding stake that can be recovered."
+type BountyEntryStatusPassed @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Rejected by oracle in Judgment Period as a malicious entry, and thus has had stake slashed."
+type BountyEntryStatusRejected @variant {
+  # no properties
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+"Worker cashed out stake and/or share of bounty reward."
+type BountyEntryStatusCashedOut @variant {
+  reward: BigInt
+}
+
+"All valid work entry statuses"
+union BountyEntryStatus =
+    BountyEntryStatusWorking
+  | BountyEntryStatusWithdrawn
+  | BountyEntryStatusWinner
+  | BountyEntryStatusPassed
+  | BountyEntryStatusRejected
+  | BountyEntryStatusCashedOut
+
+type BountyEntry @entity {
+  # Work entry creation parameters:
+  "Work Entry Id"
+  id: ID!
+
+  "Bounty to which the work entry corresponds"
+  bounty: Bounty!
+
+  "Member which submitted the work entry"
+  worker: Membership!
+
+  "Staking account with the work entry stake"
+  stakingAccount: String
+
+  # Work entry current state:
+  "Whether at least one work has been submitted"
+  workSubmitted: Boolean!
+
+  "Work entry status"
+  status: BountyEntryStatus!
+
+  # Events
+  "The event the work entry was created in"
+  announcedInEvent: WorkEntryAnnouncedEvent! @derivedFrom(field: "entry")
+
+  "Event emitted if the entry is withdrawn"
+  withdrawnInEvent: WorkEntryWithdrawnEvent @derivedFrom(field: "entry")
+
+  "Event emitted if the entry is withdrawn"
+  slashedInEvent: WorkEntrySlashedEvent @derivedFrom(field: "entry")
+
+  "All of the submitted work events"
+  works: [WorkSubmittedEvent] @derivedFrom(field: "entry")
+
+  "Event emitted if the entrant cashed out stake and/or share of bounty reward"
+  cashedOutInEvent: WorkEntrantFundsWithdrawnEvent @derivedFrom(field: "entry")
+}
+
+type BountyContribution @entity {
+  "Contribution Id"
+  id: ID!
+
+  "Bounty to which the contribution is made"
+  bounty: Bounty!
+
+  "Member making the contribution (if a member and not the council)"
+  contributor: Membership
+
+  "Amount of the contribution"
+  amount: BigInt!
+
+  # Events
+  "Events the contribution was created and updated in"
+  bountyFundedEvents: [BountyFundedEvent!]! @derivedFrom(field: "contribution")
+
+  "Event emitted if the contribution is withdrawn"
+  withdrawnInEvent: BountyFundingWithdrawalEvent @derivedFrom(field: "contribution")
+}
