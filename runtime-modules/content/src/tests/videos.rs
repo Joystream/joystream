@@ -1168,7 +1168,6 @@ fn unsuccessful_video_deletion_with_invalid_object_ids() {
 }
 
 #[test]
-#[ignore] // TODO: reenable in rhodes
 fn unsuccessful_video_deletion_with_nft_already_issued() {
     with_default_mock_builder(|| {
         run_to_block(1);
