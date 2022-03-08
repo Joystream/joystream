@@ -369,7 +369,7 @@ decl_event! {
         /// New council was elected and appointed
         NewCouncilElected(Vec<MemberId>),
 
-        /// New council was elected and appointed
+        /// New council was not elected
         NewCouncilNotElected(),
 
         /// Candidacy stake that was no longer needed was released
