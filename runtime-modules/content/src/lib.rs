@@ -1502,6 +1502,43 @@ decl_module! {
             Self::deposit_event(RawEvent::BuyNowCanceled(video_id, owner_id));
         }
 
+        /// Update Buy now nft price
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_buy_now_price(
+            origin,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            new_price: CurrencyOf<T>,
+        ) {
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft owner
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure nft in buy now state
+            nft.ensure_buy_now_state::<T>()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Cancel sell order
+            let video = video.set_nft_status(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::BuyNow(new_price),
+                ..nft
+            });
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BuyNowPriceUpdated(video_id, owner_id, new_price));
+        }
+
+
         /// Make auction bid
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn make_bid(
@@ -2322,6 +2359,7 @@ decl_event!(
         NftSellOrderMade(VideoId, ContentActor, CurrencyAmount),
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
+        BuyNowPriceUpdated(VideoId, ContentActor, CurrencyAmount),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
         /// Metaprotocols related event
