@@ -100,7 +100,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: defaultInviteCount,
+    inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
