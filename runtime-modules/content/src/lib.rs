@@ -1,9 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
-// Internal Substrate warning (decl_event).
-// TODO RHODES: remove dead code
-#![allow(clippy::unused_unit, dead_code)]
 
 #[cfg(test)]
 mod tests;
@@ -711,15 +708,14 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
-            // TODO RHODES: enable after open auction fix
-            // let nft_status = params.auto_issue_nft
-            //     .as_ref()
-            //     .map_or(
-            //         Ok(None),
-            //         |issuance_params| {
-            //             Some(Self::construct_owned_nft(issuance_params)).transpose()
-            //         }
-            // )?;
+            let nft_status = params.auto_issue_nft
+                .as_ref()
+                .map_or(
+                    Ok(None),
+                    |issuance_params| {
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                    }
+            )?;
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -727,8 +723,7 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
-                // TODO RHODES: enable after open auction fix
-                nft_status: None,
+                nft_status,
             };
 
             //
@@ -1323,43 +1318,41 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
-        ) -> DispatchResult {
-            // TODO RHODES: remove after open auction fix
-            Err(DispatchError::Other("nft issuance disabled"))
+        ) {
 
-            // let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
 
-            // // Ensure given video exists
-            // let video = Self::ensure_video_exists(&video_id)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-            // // Ensure have not been issued yet
-            // video.ensure_nft_is_not_issued::<T>()?;
+            // Ensure have not been issued yet
+            video.ensure_nft_is_not_issued::<T>()?;
 
-            // let channel_id = video.in_channel;
+            let channel_id = video.in_channel;
 
-            // // Ensure channel exists, retrieve channel owner
-            // let channel = Self::ensure_channel_exists(&channel_id)?;
+            // Ensure channel exists, retrieve channel owner
+            let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
-            // // The content owner will be..
-            // let nft_status = Self::construct_owned_nft(&params)?;
+            // The content owner will be..
+            let nft_status = Self::construct_owned_nft(&params)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // // Issue Nft
-            // let video = video.set_nft_status(nft_status);
+            // Issue Nft
+            let video = video.set_nft_status(nft_status);
 
-            // // Update the video
-            // VideoById::<T>::insert(video_id, video);
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
 
-            // Self::deposit_event(RawEvent::NftIssued(
-            //     actor,
-            //     video_id,
-            //     params,
-            // ));
+            Self::deposit_event(RawEvent::NftIssued(
+                actor,
+                video_id,
+                params,
+            ));
         }
 
         /// Start video nft auction
