@@ -19,9 +19,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             .or_else(|| self.is_work_submission_stage())
             .or_else(|| self.is_judgment_stage())
             .or_else(|| self.is_successful_bounty_withdrawal_stage())
-            .unwrap_or(BountyStage::FailedBountyWithdrawal {
-                judgment_submitted: false,
-            })
+            .unwrap_or(BountyStage::FailedBountyWithdrawal)
     }
 
     // Calculates funding stage of the bounty.
@@ -71,40 +69,19 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                 match self.bounty.creation_params.funding_type {
                     // Perpetual funding is not reached its target yet.
                     FundingType::Perpetual { .. } => return None,
-                    FundingType::Limited { funding_period, .. } => {
+                    FundingType::Limited { .. } => {
                         let minimum_funding_reached = self.minimum_funding_reached();
                         let funding_period_expired = self.funding_period_expired(created_at);
-                        let working_period_is_not_expired =
-                            !self.work_period_expired(created_at + funding_period);
 
-                        if minimum_funding_reached
-                            && funding_period_expired
-                            && working_period_is_not_expired
-                        {
+                        if minimum_funding_reached && funding_period_expired {
                             return Some(BountyStage::WorkSubmission);
                         }
                     }
                 }
             }
             // Maximum funding reached. Work period is not expired.
-            BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            } => {
-                let work_period_is_not_expired = !self.work_period_expired(max_funding_reached_at);
-
-                if work_period_is_not_expired {
-                    return Some(BountyStage::WorkSubmission);
-                }
-            }
-            // Work in progress. Work period is not expired.
-            BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            } => {
-                let work_period_is_not_expired = !self.work_period_expired(work_period_started_at);
-
-                if work_period_is_not_expired {
-                    return Some(BountyStage::WorkSubmission);
-                }
+            BountyMilestone::BountyMaxFundingReached { .. } => {
+                return Some(BountyStage::WorkSubmission)
             }
             _ => return None,
         }
@@ -116,16 +93,8 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Returns None if conditions are not met.
     fn is_judgment_stage(&self) -> Option<BountyStage> {
         // Can be judged only if there are work submissions.
-        if let BountyMilestone::WorkSubmitted {
-            work_period_started_at,
-        } = self.bounty.milestone
-        {
-            let work_period_expired = self.work_period_expired(work_period_started_at);
-
-            let judgment_period_is_not_expired =
-                !self.judgment_period_expired(work_period_started_at);
-
-            if work_period_expired && judgment_period_is_not_expired {
+        if self.bounty.active_work_entry_count > 0 {
+            if BountyMilestone::WorkSubmitted == self.bounty.milestone {
                 return Some(BountyStage::Judgment);
             }
         }
@@ -141,13 +110,10 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         if let BountyMilestone::JudgmentSubmitted { successful_bounty } =
             self.bounty.milestone.clone()
         {
-            if successful_bounty {
-                return Some(BountyStage::SuccessfulBountyWithdrawal);
-            } else {
-                return Some(BountyStage::FailedBountyWithdrawal {
-                    judgment_submitted: true,
-                });
-            }
+            return match successful_bounty {
+                true => Some(BountyStage::SuccessfulBountyWithdrawal),
+                false => Some(BountyStage::FailedBountyWithdrawal),
+            };
         }
 
         None
@@ -164,11 +130,6 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         }
     }
 
-    // Checks whether the work period expired by now starting from the provided block number.
-    fn work_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
-        work_period_started_at + self.bounty.creation_params.work_period < self.now
-    }
-
     // Checks whether the funding period expired by now starting from the provided block number.
     fn funding_period_expired(&self, created_at: T::BlockNumber) -> bool {
         match self.bounty.creation_params.funding_type {
@@ -176,14 +137,5 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             FundingType::Perpetual { .. } => false,
             FundingType::Limited { funding_period, .. } => created_at + funding_period < self.now,
         }
-    }
-
-    // Checks whether the judgment period expired by now when work period start from the provided
-    // block number.
-    fn judgment_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
-        work_period_started_at
-            + self.bounty.creation_params.work_period
-            + self.bounty.creation_params.judging_period
-            < self.now
     }
 }

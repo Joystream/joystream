@@ -3,28 +3,30 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::storage::StorageMap;
-use frame_support::traits::Currency;
-use frame_system::RawOrigin;
-use sp_runtime::DispatchError;
-use sp_std::collections::btree_map::BTreeMap;
-
 use crate::{
     Bounties, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage,
-    Entries, Error, FundingType, OracleWorkEntryJudgment, RawEvent,
+    Entries, Error, FundingType, OracleWorkEntryJudgment, RawEvent, WorkEntrantStakeAccountAction,
+    WorkEntrantStakeAccountActionMap,
 };
 use fixtures::{
     decrease_bounty_account_balance, get_council_budget, increase_account_balance,
     increase_total_balance_issuance_using_account_id, run_to_block, set_council_budget,
-    AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture, EventFixture,
-    FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, SwitchOracleFixture,
-    VetoBountyFixture, WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture,
-    WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_CHERRY,
+    AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture, EndWorkPeriodFixture,
+    EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, SwitchOracleFixture,
+    TerminateBountyFixture, VetoBountyFixture, WithdrawFundingFixture,
+    WithdrawWorkEntrantFundsFixture, WithdrawWorkEntryFixture,
+    WorkEntrantStakeAccountActionMapFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD,
 };
+use frame_support::storage::StorageMap;
+use frame_support::traits::Currency;
+use frame_system::RawOrigin;
 use mocks::{
-    build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, MinFundingLimit, System,
-    Test, COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
+    build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, System, Test,
+    COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
+use sp_runtime::DispatchError;
+use sp_runtime::Perbill;
+use sp_std::collections::btree_map::BTreeMap;
 
 const DEFAULT_WINNER_REWARD: u64 = 10;
 
@@ -165,10 +167,7 @@ fn validate_work_submission_bounty_stage() {
     build_test_externalities().execute_with(|| {
         let created_at = 10;
         let funding_period = 10;
-        let work_period = 10;
-        let judging_period = 10;
         let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
 
         // Limited funding period
         let params = BountyCreationParameters::<Test> {
@@ -177,7 +176,6 @@ fn validate_work_submission_bounty_stage() {
                 min_funding_amount,
                 max_funding_amount: 10,
             },
-            work_period,
             ..Default::default()
         };
 
@@ -215,43 +213,14 @@ fn validate_work_submission_bounty_stage() {
             Bounty::get_bounty_stage(&bounty),
             BountyStage::WorkSubmission
         );
-
-        // Work period is not expired.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_type: FundingType::Limited {
-                    funding_period,
-                    min_funding_amount,
-                    max_funding_amount: 10,
-                },
-                work_period,
-                judging_period,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(work_period_started_at + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::WorkSubmission
-        );
     });
 }
 
 #[test]
 fn validate_judgment_bounty_stage() {
     build_test_externalities().execute_with(|| {
-        let created_at = 10;
         let funding_period = 10;
-        let work_period = 10;
-        let judging_period = 10;
         let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
 
         // Work period is not expired.
         let bounty = BountyRecord {
@@ -261,17 +230,12 @@ fn validate_judgment_bounty_stage() {
                     min_funding_amount,
                     max_funding_amount: 10,
                 },
-                work_period,
-                judging_period,
                 ..Default::default()
             },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
+            milestone: BountyMilestone::WorkSubmitted,
+            active_work_entry_count: 1,
             ..Default::default()
         };
-
-        System::set_block_number(work_period_started_at + work_period + 1);
 
         assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgment);
     });
@@ -290,6 +254,22 @@ fn validate_successful_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::SuccessfulBountyWithdrawal
+        );
+    });
+}
+
+#[test]
+fn validate_failed_withdrawal_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let successful_bounty = false;
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::JudgmentSubmitted { successful_bounty },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FailedBountyWithdrawal
         );
     });
 }
@@ -346,13 +326,11 @@ fn create_bounty_fails_with_insufficient_cherry_value() {
 }
 
 #[test]
-fn create_bounty_fails_with_insufficient_oracle_cherry_value() {
+fn create_bounty_fails_with_insufficient_oracle_reward_value() {
     build_test_externalities().execute_with(|| {
-        // set_council_budget(500);
-
         CreateBountyFixture::default()
-            .with_oracle_cherry(0)
-            .call_and_assert(Err(Error::<Test>::OracleCherryLessThenMinimumAllowed.into()));
+            .with_oracle_reward(0)
+            .call_and_assert(Err(Error::<Test>::OracleRewardLessThenMinimumAllowed.into()));
     });
 }
 
@@ -362,7 +340,7 @@ fn create_bounty_transfers_member_balance_correctly() {
         let member_id = 1;
         let account_id = 1;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let initial_balance = 500;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
@@ -372,19 +350,19 @@ fn create_bounty_transfers_member_balance_correctly() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
 
         let bounty_id = 1;
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            cherry + oracle_cherry
+            cherry + oracle_reward
         );
     });
 }
@@ -393,7 +371,7 @@ fn create_bounty_transfers_member_balance_correctly() {
 fn create_bounty_transfers_the_council_balance_correctly() {
     build_test_externalities().execute_with(|| {
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let initial_balance = 500;
 
         set_council_budget(initial_balance);
@@ -401,19 +379,19 @@ fn create_bounty_transfers_the_council_balance_correctly() {
         // Insufficient member controller account balance.
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         assert_eq!(
             get_council_budget(),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
 
         let bounty_id = 1;
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            cherry + oracle_cherry
+            cherry + oracle_reward
         );
     });
 }
@@ -424,6 +402,11 @@ fn create_bounty_fails_with_invalid_origin() {
         // For a council bounty.
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Signed(1))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        // For a council bounty.
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
 
         // For a member bounty.
@@ -476,31 +459,16 @@ fn create_bounty_fails_with_invalid_entrant_stake() {
 }
 
 #[test]
-fn create_bounty_fails_with_invalid_periods() {
-    build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
-        CreateBountyFixture::default()
-            .with_work_period(0)
-            .call_and_assert(Err(Error::<Test>::WorkPeriodCannotBeZero.into()));
-
-        CreateBountyFixture::default()
-            .with_judging_period(0)
-            .call_and_assert(Err(Error::<Test>::JudgingPeriodCannotBeZero.into()));
-    });
-}
-
-#[test]
 fn create_bounty_fails_with_insufficient_balances() {
     build_test_externalities().execute_with(|| {
         let member_id = 1;
         let account_id = 1;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         // Insufficient council budget.
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
 
         // Insufficient member controller account balance.
@@ -508,7 +476,7 @@ fn create_bounty_fails_with_insufficient_balances() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
     });
 }
@@ -521,20 +489,20 @@ fn cancel_bounty_succeeds_full_test() {
 
         let initial_balance = 500;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
         assert_eq!(
             get_council_budget(),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
 
         CancelBountyFixture::default()
@@ -548,7 +516,7 @@ fn cancel_bounty_succeeds_full_test() {
             BountyActor::Council,
         ));
 
-        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Council,
         ));
@@ -589,7 +557,7 @@ fn cancel_bounty_succeeds_at_funding_expired_stage() {
             BountyActor::Council,
         ));
 
-        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Council,
         ));
@@ -621,7 +589,6 @@ fn cancel_bounty_by_member_succeeds() {
 
         CancelBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
     });
@@ -659,20 +626,10 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
 
-        // Created by a member - try to cancel with invalid member_id
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 2u64;
-        let invalid_member_id = 2;
-
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(invalid_member_id)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
 
         // Created by a member - try to cancel with bad origin
         CreateBountyFixture::default()
@@ -680,80 +637,202 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .with_creator_member_id(member_id)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 3u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        // Created by a member  - try to cancel by council
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 4u64;
+        let bounty_id = 2u64;
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn cancel_bounty_fails_with_invalid_stage() {
+    //WorkSubmission
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
 
-        // Test bounty with funding.
-        CreateBountyFixture::default().call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(MinFundingLimit::get())
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        CancelBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
         CancelBountyFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        CancelBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        CancelBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
 #[test]
-fn cancel_bounty_return_cherries_fails_insufficient_balance() {
+fn cancel_bounty_insufficient_balance_return_cherry_and_oracle_reward_fails() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 200;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
         assert_eq!(
             get_council_budget(),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
 
         decrease_bounty_account_balance(bounty_id, 1);
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::NoBountyBalanceToCherryWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::NoBountyBalanceToOracleRewardAndCherryWithdrawal.into(),
+            ));
     });
 }
 
@@ -765,20 +844,20 @@ fn veto_bounty_succeeds() {
 
         let initial_balance = 500;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
         assert_eq!(
             get_council_budget(),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
 
         VetoBountyFixture::default()
@@ -791,7 +870,7 @@ fn veto_bounty_succeeds() {
             bounty_id,
             BountyActor::Council,
         ));
-        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Council,
         ));
@@ -829,61 +908,220 @@ fn veto_bounty_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
+
+        VetoBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn veto_bounty_fails_with_invalid_stage() {
+    //FundingExpired
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
 
-        // Test bounty with funding.
-        CreateBountyFixture::default().call_and_assert(Ok(()));
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
 
-        let bounty_id = 1u64;
+        run_to_block(funding_period + 10);
+
+        VetoBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(MinFundingLimit::get())
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        VetoBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
         VetoBountyFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        VetoBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        VetoBountyFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
 #[test]
-fn veto_bounty_return_cherries_fails_insufficient_balance() {
+fn veto_bounty_return_cherry_and_oracle_reward_fails_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 200;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
         assert_eq!(
             get_council_budget(),
-            initial_balance - cherry - oracle_cherry
+            initial_balance - cherry - oracle_reward
         );
         //decrease bounty account by 1, in order too fail balance validation
         decrease_bounty_account_balance(bounty_id, 1);
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::NoBountyBalanceToCherryWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::NoBountyBalanceToOracleRewardAndCherryWithdrawal.into(),
+            ));
     });
 }
 
@@ -899,7 +1137,7 @@ fn fund_bounty_succeeds_by_member() {
         let member_id = 1;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
-        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
+        let oracle_reward = DEFAULT_BOUNTY_ORACLE_REWARD;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
         increase_total_balance_issuance_using_account_id(
@@ -910,7 +1148,7 @@ fn fund_bounty_succeeds_by_member() {
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -937,7 +1175,7 @@ fn fund_bounty_succeeds_by_member() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry + oracle_cherry
+            amount + cherry + oracle_reward
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
@@ -958,14 +1196,14 @@ fn fund_bounty_succeeds_by_council() {
         let amount = 100;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
-        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
+        let oracle_reward = DEFAULT_BOUNTY_ORACLE_REWARD;
 
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -979,7 +1217,7 @@ fn fund_bounty_succeeds_by_council() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - amount - cherry - oracle_cherry
+            initial_balance - amount - cherry - oracle_reward
         );
 
         assert_eq!(
@@ -989,7 +1227,7 @@ fn fund_bounty_succeeds_by_council() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry + oracle_cherry
+            amount + cherry + oracle_reward
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
@@ -1047,7 +1285,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
 }
 
 #[test]
-fn multiple_fund_bounty_succeed() {
+fn fund_bounty_multiple_contibutors_succeeds() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
@@ -1057,14 +1295,14 @@ fn multiple_fund_bounty_succeed() {
         let member_id = 1;
         let initial_balance = 500;
         let cherry = DEFAULT_BOUNTY_CHERRY;
-        let oracle_cherry = DEFAULT_BOUNTY_ORACLE_CHERRY;
+        let oracle_reward = DEFAULT_BOUNTY_ORACLE_REWARD;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -1090,7 +1328,7 @@ fn multiple_fund_bounty_succeed() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            2 * amount + cherry + oracle_cherry
+            2 * amount + cherry + oracle_reward
         );
     });
 }
@@ -1116,6 +1354,23 @@ fn fund_bounty_fails_with_invalid_origin() {
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_council()
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .with_council()
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -1189,38 +1444,189 @@ fn fund_bounty_fails_with_less_than_minimum_amount() {
 
 #[test]
 fn fund_bounty_fails_with_invalid_stage() {
+    //FundingExpired
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
-        let max_amount = 100;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
+        let starting_block = 1;
+        run_to_block(starting_block);
         let initial_balance = 500;
-
-        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+        let funding_period = 10;
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1u64;
+        run_to_block(funding_period + 10);
 
-        // Fund to maximum.
         FundBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
+    });
+
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .with_amount(amount)
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
             .call_and_assert(Err(
                 Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
+            ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
             ));
     });
 }
@@ -1256,46 +1662,439 @@ fn fund_bounty_fails_with_expired_funding_period() {
 }
 
 #[test]
+fn end_working_period_with_entries_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let oracle_member_id = 2;
+        let worker_member_id = 3;
+        let worker_account_id = 3;
+        let funding_member_id = 4;
+        let funding_account_id = 4;
+        let cherry = 200;
+        let oracle_reward = 100;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_oracle_member_id(oracle_member_id)
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        increase_account_balance(&funding_account_id, initial_balance);
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&worker_account_id, initial_balance);
+
+        // Winner
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_staking_account_id(worker_account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id1 = 1;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_member_id.into()))
+            .call_and_assert(Ok(()));
+
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgment);
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkSubmissionPeriodEnded(
+            bounty_id,
+            BountyActor::Member(oracle_member_id),
+        ));
+    });
+}
+
+#[test]
+fn end_working_period_without_entries_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let oracle_member_id = 2;
+        let funding_member_id = 4;
+        let funding_account_id = 4;
+        let cherry = 200;
+        let oracle_reward = 100;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_oracle_member_id(oracle_member_id)
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        increase_account_balance(&funding_account_id, initial_balance);
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_member_id.into()))
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkSubmissionPeriodEnded(
+            bounty_id,
+            BountyActor::Member(oracle_member_id),
+        ));
+
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FailedBountyWithdrawal
+        );
+    });
+}
+
+#[test]
+fn end_working_period_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let oracle_member_id = 2;
+        let funding_member_id = 4;
+        let funding_account_id = 4;
+        let cherry = 200;
+        let oracle_reward = 100;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_oracle_member_id(oracle_member_id)
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        increase_account_balance(&funding_account_id, initial_balance);
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(2)
+            .with_origin(RawOrigin::Signed(oracle_member_id.into()))
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn end_working_period_without_entries_no_balance_return_oracle_reward_fails() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let oracle_member_id = 2;
+        let funding_member_id = 4;
+        let funding_account_id = 4;
+        let cherry = 200;
+        let oracle_reward = 100;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_oracle_member_id(oracle_member_id)
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        increase_account_balance(&funding_account_id, initial_balance);
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .call_and_assert(Ok(()));
+
+        decrease_bounty_account_balance(bounty_id, 1);
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_member_id.into()))
+            .call_and_assert(Err(
+                Error::<Test>::NoBountyBalanceToOracleRewardWithdrawal.into()
+            ));
+    });
+}
+
+#[test]
+fn end_working_period_invalid_stage_fails() {
+    //Funding
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 10);
+
+        let bounty_id = 1;
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+        run_to_block(funding_period + 1);
+        let bounty_id = 1;
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
+    });
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+            ));
+    });
+}
+
+#[test]
 fn withdraw_member_funding_succeeds() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let max_amount = 500;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let initial_balance = 500;
-        let cherry = 200;
         let funding_period = 10;
-
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-        increase_account_balance(&account_id, initial_balance);
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let oracle_member_id = 2;
+        let funding_member_id = 4;
+        let funding_account_id = 4;
+        let cherry = 200;
+        let oracle_reward = 100;
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_oracle_member_id(oracle_member_id)
             .with_max_funding_amount(max_amount)
             .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_cherry(cherry)
+            .with_entrant_stake(entrant_stake)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1u64;
+        let bounty_id = 1;
+        increase_account_balance(&funding_account_id, initial_balance);
 
         FundBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_amount(amount)
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
             .call_and_assert(Ok(()));
 
         run_to_block(funding_period + starting_block + 1);
 
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_member_id.into()))
+            .call_and_assert(Ok(()));
+
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FailedBountyWithdrawal
+        );
+
         WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Module::<Test>::usable_balance(&funding_account_id),
             initial_balance + cherry
         );
 
@@ -1324,12 +2123,13 @@ fn withdraw_council_funding_succeeds() {
         let initial_balance = 500;
         let cherry = 200;
         let funding_period = 10;
-
+        let oracle_member_id = 2;
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
 
         CreateBountyFixture::default()
             .with_limited_funding(max_amount, max_amount, funding_period)
             .with_cherry(cherry)
+            .with_oracle_member_id(oracle_member_id)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -1341,7 +2141,11 @@ fn withdraw_council_funding_succeeds() {
             .call_and_assert(Ok(()));
 
         run_to_block(funding_period + starting_block + 1);
-
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FailedBountyWithdrawal
+        );
         WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_council()
@@ -1376,7 +2180,7 @@ fn withdraw_member_funding_with_half_cherry() {
         let member_id2 = 2;
         let initial_balance = 500;
         let cherry = 200;
-        let oracle_cherry = 200;
+        let oracle_reward = 200;
         let funding_period = 10;
 
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
@@ -1386,7 +2190,7 @@ fn withdraw_member_funding_with_half_cherry() {
         CreateBountyFixture::default()
             .with_limited_funding(max_amount, max_amount, funding_period)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -1420,7 +2224,7 @@ fn withdraw_member_funding_with_half_cherry() {
         // On funding amount + creation funding + half of the cherry left.
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            amount + cherry / 2 + oracle_cherry
+            amount + cherry / 2 + oracle_reward
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
@@ -1496,6 +2300,18 @@ fn withdraw_member_funding_fails_with_invalid_origin() {
 
         WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_council()
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .with_council()
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
@@ -1503,36 +2319,165 @@ fn withdraw_member_funding_fails_with_invalid_origin() {
 
 #[test]
 fn withdraw_member_funding_fails_with_invalid_stage() {
+    //Funding
     build_test_externalities().execute_with(|| {
-        let max_amount = 500;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let initial_balance = 500;
-        let cherry = 200;
-        let funding_period = 10;
+        let starting_block = 1;
+        run_to_block(starting_block);
 
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-        increase_account_balance(&account_id, initial_balance);
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        WithdrawFundingFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_cherry(cherry)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1u64;
+        run_to_block(funding_period + 10);
+
+        WithdrawFundingFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_amount(amount)
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        WithdrawFundingFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
         WithdrawFundingFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        WithdrawFundingFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
@@ -1596,7 +2541,6 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
-            .with_work_period(work_period)
             .with_entrant_stake(entrant_stake)
             .call_and_assert(Ok(()));
 
@@ -1632,6 +2576,10 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
             .with_origin(RawOrigin::Signed(account_id1))
             .with_member_id(member_id1)
             .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
         // Judgment
@@ -1672,7 +2620,7 @@ fn withdraw_member_funding_return_oracle_cherry_to_creator() {
         let member_id = 1;
         let initial_balance = 500;
         let cherry = 200;
-        let oracle_cherry = 300;
+        let oracle_reward = 300;
         let funding_period = 10;
         let bounty_id = 1u64;
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
@@ -1682,7 +2630,7 @@ fn withdraw_member_funding_return_oracle_cherry_to_creator() {
             .with_max_funding_amount(max_amount)
             .with_limited_funding(max_amount, max_amount, funding_period)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         //stage Funding { has_contributions: false }
@@ -1711,7 +2659,7 @@ fn withdraw_member_funding_return_oracle_cherry_to_creator() {
             initial_balance + cherry
         );
 
-        //council receives back the oracle cherry but pays cherry to funder
+        //council receives back the oracle reward but pays cherry to funder
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - cherry
@@ -1723,7 +2671,7 @@ fn withdraw_member_funding_return_oracle_cherry_to_creator() {
             0
         );
 
-        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Council,
         ));
@@ -1731,62 +2679,15 @@ fn withdraw_member_funding_return_oracle_cherry_to_creator() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
     });
 }
+
 #[test]
-fn withdraw_member_funding_return_oracle_cherry_fails_insufficient_balance() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let max_amount = 500;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let initial_balance = 500;
-        let cherry = 200;
-        let oracle_cherry = 300;
-        let funding_period = 10;
-        let bounty_id = 1u64;
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-        increase_account_balance(&account_id, initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
-            .call_and_assert(Ok(()));
-
-        //stage Funding { has_contributions: false }
-
-        FundBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_amount(amount)
-            .call_and_assert(Ok(()));
-
-        //stage Funding { has_contributions: true }
-
-        run_to_block(funding_period + starting_block + 1);
-
-        //stage FailedBountyWithdrawal { judgment_submitted: false }
-
-        //Bounty account 600 - 1 -> 599 >= 600 -> false
-        decrease_bounty_account_balance(bounty_id, 1);
-        WithdrawFundingFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .call_and_assert(Err(Error::<Test>::NoBountyBalanceToCherryWithdrawal.into()));
-    });
-}
-#[test]
-fn bounty_removal_succeeds() {
+fn withdraw_member_funding_bounty_removal_succeeds() {
     build_test_externalities().execute_with(|| {
         let max_amount = 500;
         let amount = 100;
         let initial_balance = 500;
         let cherry = 100;
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let account_id = 1;
         let member_id = 1;
         let funding_period = 10;
@@ -1802,7 +2703,7 @@ fn bounty_removal_succeeds() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .with_limited_funding(max_amount, max_amount, funding_period)
             .call_and_assert(Ok(()));
 
@@ -1861,7 +2762,7 @@ fn bounty_removal_succeeds() {
         let cherry_remaining_fraction = cherry - (cherry * 2 / 3) + amount;
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id))
-                - oracle_cherry,
+                - oracle_reward,
             cherry_remaining_fraction
         );
 
@@ -2008,21 +2909,173 @@ fn announce_work_entry_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn announce_work_entry_fails_with_invalid_stage() {
+    //Funding
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
-        let bounty_id = 1u64;
+        AnnounceWorkEntryFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
 
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 10);
+
+        AnnounceWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
         AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        AnnounceWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
@@ -2137,206 +3190,14 @@ fn withdraw_work_entry_succeeded() {
             .with_entry_id(entry_id)
             .call_and_assert(Ok(()));
 
-        assert_eq!(Balances::usable_balance(&account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_balance - entrant_stake
+        );
 
         EventFixture::assert_last_crate_event(RawEvent::WorkEntryWithdrawn(
             bounty_id, entry_id, member_id,
         ));
-    });
-}
-
-#[test]
-fn withdraw_work_slashes_successfully1() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 100;
-        let work_period = 1000;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(work_period)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Announcing entry with no slashes
-        let member_id1 = 1;
-        let account_id1 = 1;
-
-        increase_account_balance(&account_id1, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_staking_account_id(account_id1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id1),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id1 = 1;
-
-        // Announcing entry with half slashing.
-
-        let member_id2 = 2;
-        let account_id2 = 2;
-
-        increase_account_balance(&account_id2, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_staking_account_id(account_id2)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id2 = 2;
-
-        // No slashes
-        WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_entry_id(entry_id1)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(Balances::usable_balance(&account_id1), initial_balance);
-
-        // Slashes half.
-        let half_period = work_period / 2;
-        run_to_block(starting_block + half_period);
-
-        WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_entry_id(entry_id2)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake / 2
-        );
-    });
-}
-
-#[test]
-fn withdraw_work_slashes_successfully2() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 100;
-        let work_period = 1000;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(work_period)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Announcing entry with 33%
-        let member_id1 = 1;
-        let account_id1 = 1;
-
-        increase_account_balance(&account_id1, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_staking_account_id(account_id1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id1),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id1 = 1;
-
-        // Announcing entry with full slashing.
-
-        let member_id2 = 2;
-        let account_id2 = 2;
-
-        increase_account_balance(&account_id2, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_staking_account_id(account_id2)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id2 = 2;
-
-        // Slashes half.
-        let one_third_period = work_period / 3;
-        run_to_block(starting_block + one_third_period);
-
-        WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_entry_id(entry_id1)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id1),
-            initial_balance - entrant_stake / 3
-        );
-
-        // Slashes all.
-        run_to_block(starting_block + work_period);
-
-        WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_entry_id(entry_id2)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake
-        );
     });
 }
 
@@ -2427,65 +3288,174 @@ fn withdraw_work_entry_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+
+        WithdrawWorkEntryFixture::default()
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn withdraw_work_entry_fails_with_invalid_stage() {
+    //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let work_period = 10;
+        set_council_budget(initial_balance);
 
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        WithdrawWorkEntryFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(work_period)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        run_to_block(funding_period + 10);
+
+        WithdrawWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
+        run_to_block(funding_period + 1);
 
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
             .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id),
-            initial_balance - entrant_stake
-        );
 
         let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + work_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        WithdrawWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawalWithoutJudgementSubmitted.into(),
-            ));
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        WithdrawWorkEntryFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
@@ -2629,64 +3599,176 @@ fn submit_work_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn submit_work_fails_with_invalid_stage() {
+    //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let work_period = 10;
+        set_council_budget(initial_balance);
 
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        SubmitWorkFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(work_period)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        run_to_block(funding_period + 10);
+
+        SubmitWorkFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
+        run_to_block(funding_period + 1);
 
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
             .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id),
-            initial_balance - entrant_stake
-        );
 
         let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + work_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        SubmitWorkFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
             .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        SubmitWorkFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawalWithoutJudgementSubmitted.into(),
+                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
             ));
     });
 }
@@ -2700,16 +3782,12 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         let initial_balance = 500;
         let max_amount = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
@@ -2789,8 +3867,10 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
-
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
         // Judgment
         let judgment = vec![
             (
@@ -2816,13 +3896,9 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
         assert_eq!(Bounty::entries(entry_id2).oracle_judgment_result, None);
-        assert!(!<Entries<Test>>::contains_key(entry_id3));
-        assert_eq!(
-            Balances::total_balance(&account_id),
-            initial_balance - entrant_stake
-        );
+        assert!(<Entries<Test>>::contains_key(entry_id3));
+        assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
-        EventFixture::contains_crate_event(RawEvent::WorkEntrySlashed(bounty_id, entry_id3));
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Council,
@@ -2840,20 +3916,16 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
         let initial_balance = 500;
         let max_amount = 100;
         let cherry = DEFAULT_BOUNTY_CHERRY;
-        let oracle_cherry = 10;
+        let oracle_reward = 10;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .with_cherry(cherry)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
@@ -2886,7 +3958,10 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
 
         // Judgment
         let judgment = vec![(
@@ -2921,7 +3996,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
 }
 
 #[test]
-fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
+fn submit_judgment_returns_oracle_reward_on_successful_bounty() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2929,12 +4004,10 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
         let initial_balance = 500;
         let reward = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
         let bounty_id = 1;
 
-        let funder_member_id = 2;
-        let funder_account_id = 2;
+        let funding_member_id = 2;
+        let funding_account_id = 2;
 
         let worker_member_id = 3;
         let worker_account_id = 3;
@@ -2942,28 +4015,26 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
         let oracle_member_id = 4;
         let oracle_account_id = 4;
 
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let cherry = 50;
 
         set_council_budget(initial_balance);
-        increase_account_balance(&funder_account_id, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
         increase_account_balance(&worker_account_id, entrant_stake);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(reward)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .with_oracle_member_id(oracle_member_id)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_amount(reward)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         AnnounceWorkEntryFixture::default()
@@ -2983,7 +4054,10 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_account_id))
+            .call_and_assert(Ok(()));
 
         let judgment = vec![entry_id]
             .iter()
@@ -2998,32 +4072,31 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
         //oracle receives an oracle cherry
         assert_eq!(
             balances::Module::<Test>::usable_balance(&oracle_account_id),
-            oracle_cherry
+            oracle_reward
         );
 
         //council has to pay the oracle cherry
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - oracle_cherry
+            initial_balance - oracle_reward
         );
 
         //funder account pays the reward, but don't receive any cherry
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&funder_account_id),
+            balances::Module::<Test>::usable_balance(&funding_account_id),
             initial_balance - reward
         );
 
         //worker account unlocks his stake and withdraws the reward only on withdrawal
         assert_eq!(
             balances::Module::<Test>::usable_balance(&worker_account_id),
-            0
+            entrant_stake
         );
 
         //Bounty account still has reward
@@ -3032,7 +4105,7 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
             reward
         );
 
-        EventFixture::contains_crate_event(RawEvent::BountyOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Member(oracle_member_id),
         ));
@@ -3044,6 +4117,7 @@ fn submit_judgment_returns_oracle_cherry_on_successful_bounty() {
         ));
     });
 }
+
 #[test]
 fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
     build_test_externalities().execute_with(|| {
@@ -3053,12 +4127,10 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
         let initial_balance = 500;
         let reward = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
         let bounty_id = 1;
 
-        let funder_member_id = 2;
-        let funder_account_id = 2;
+        let funding_member_id = 2;
+        let funding_account_id = 2;
 
         let worker_member_id = 3;
         let worker_account_id = 3;
@@ -3066,28 +4138,26 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
         let oracle_member_id = 4;
         let oracle_account_id = 4;
 
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let cherry = 50;
 
         set_council_budget(initial_balance);
-        increase_account_balance(&funder_account_id, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
         increase_account_balance(&worker_account_id, entrant_stake);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(reward)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .with_oracle_member_id(oracle_member_id)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_amount(reward)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         AnnounceWorkEntryFixture::default()
@@ -3107,7 +4177,10 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_account_id))
+            .call_and_assert(Ok(()));
 
         // Judgment
         let judgment = vec![(entry_id, OracleWorkEntryJudgment::Rejected)]
@@ -3120,27 +4193,26 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!<Entries<Test>>::contains_key(entry_id));
+        assert!(<Entries<Test>>::contains_key(entry_id));
 
-        //oracle receives an oracle cherry
+        //oracle receives an oracle reward
         assert_eq!(
             balances::Module::<Test>::usable_balance(&oracle_account_id),
-            oracle_cherry
+            oracle_reward
         );
 
-        //council doesn't receive back the oracle cherry nor the cherry
+        //council doesn't receive back the oracle reward nor the cherry
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - oracle_cherry - cherry
+            initial_balance - oracle_reward - cherry
         );
 
         //funder account receives back the reward and a cherry fraction on withdrwal not now
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&funder_account_id),
+            balances::Module::<Test>::usable_balance(&funding_account_id),
             initial_balance - reward
         );
 
@@ -3156,7 +4228,7 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             reward + cherry
         );
 
-        EventFixture::contains_crate_event(RawEvent::BountyOracleCherryWithdrawal(
+        EventFixture::contains_crate_event(RawEvent::BountyOracleRewardWithdrawal(
             bounty_id,
             BountyActor::Member(oracle_member_id),
         ));
@@ -3178,8 +4250,6 @@ fn submit_judgment_by_member_succeeded() {
         let initial_balance = 500;
         let max_amount = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
         let oracle_member_id = 1;
         let oracle_account_id = 1;
 
@@ -3188,8 +4258,6 @@ fn submit_judgment_by_member_succeeded() {
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .with_oracle_member_id(oracle_member_id)
             .call_and_assert(Ok(()));
 
@@ -3223,7 +4291,10 @@ fn submit_judgment_by_member_succeeded() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_account_id))
+            .call_and_assert(Ok(()));
 
         let judgment = vec![entry_id]
             .iter()
@@ -3238,7 +4309,6 @@ fn submit_judgment_by_member_succeeded() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
@@ -3282,138 +4352,171 @@ fn submit_judgment_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
 
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
         // Oracle is set to a member - try to submit judgment with invalid member_id
         CreateBountyFixture::default()
             .with_oracle_member_id(member_id)
             .call_and_assert(Ok(()));
 
         let bounty_id = 2u64;
-        let invalid_member_id = 2;
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_oracle_member_id(invalid_member_id)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
-
-        // Oracle is set to a member - try to submit judgment with bad origin
-        CreateBountyFixture::default()
-            .with_oracle_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 3u64;
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
-
-        // Oracle is set to a member - try to submit judgment as a council
-        CreateBountyFixture::default()
-            .with_oracle_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 4u64;
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
     });
 }
 
 #[test]
 fn submit_judgment_fails_with_invalid_stage() {
-    build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
-        // Test already cancelled bounty.
-        CreateBountyFixture::default().call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
-    });
-}
-
-#[test]
-fn submit_judgment_fails_with_zero_work_entries() {
+    //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
+        set_council_budget(initial_balance);
 
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        SubmitJudgmentFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        run_to_block(funding_period + 10);
+
+        SubmitJudgmentFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        SubmitJudgmentFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
+        run_to_block(funding_period + 1);
+        SubmitJudgmentFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
+        ));
+    });
 
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
             .call_and_assert(Ok(()));
 
         let entry_id = 1;
-
-        let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
-
-        WithdrawWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
             .with_entry_id(entry_id)
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
-        // Withdrawn entry.
-        let judgment = vec![entry_id]
-            .iter()
-            .map(|entry_id| {
-                (
-                    *entry_id,
-                    OracleWorkEntryJudgment::Winner {
-                        reward: DEFAULT_WINNER_REWARD,
-                    },
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Err(Error::<Test>::NoActiveWorkEntries.into()));
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        SubmitJudgmentFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+        ));
     });
 }
 
@@ -3426,16 +4529,12 @@ fn submit_judgment_fails_with_invalid_judgment() {
         let initial_balance = 500;
         let max_amount = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
@@ -3479,7 +4578,10 @@ fn submit_judgment_fails_with_invalid_judgment() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
 
         // Invalid entry_id
         let invalid_entry_id = 1111u64;
@@ -3570,12 +4672,10 @@ fn submit_judgment_fails_insufficient_balance() {
         let initial_balance = 500;
         let reward = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
         let bounty_id = 1;
 
-        let funder_member_id = 2;
-        let funder_account_id = 2;
+        let funding_member_id = 2;
+        let funding_account_id = 2;
 
         let worker_member_id = 3;
         let worker_account_id = 3;
@@ -3583,28 +4683,26 @@ fn submit_judgment_fails_insufficient_balance() {
         let oracle_member_id = 4;
         let oracle_account_id = 4;
 
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let cherry = 50;
 
         set_council_budget(initial_balance);
-        increase_account_balance(&funder_account_id, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
         increase_account_balance(&worker_account_id, entrant_stake);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(reward)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .with_oracle_member_id(oracle_member_id)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_amount(reward)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         AnnounceWorkEntryFixture::default()
@@ -3624,7 +4722,10 @@ fn submit_judgment_fails_insufficient_balance() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(oracle_account_id))
+            .call_and_assert(Ok(()));
 
         let judgment = vec![entry_id]
             .iter()
@@ -3642,9 +4743,10 @@ fn submit_judgment_fails_insufficient_balance() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
-            .call_and_assert(Err(Error::<Test>::NoBountyBalanceToCherryWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::NoBountyBalanceToOracleRewardAndCherryWithdrawal.into(),
+            ));
     });
 }
 
@@ -3658,13 +4760,11 @@ fn withdraw_work_entrant_funds_succeeded() {
         let max_amount = 100;
         let winner_reward = max_amount;
         let entrant_stake = 37;
-        let work_period = 1;
 
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
-            .with_work_period(work_period)
             .with_entrant_stake(entrant_stake)
             .call_and_assert(Ok(()));
 
@@ -3727,6 +4827,11 @@ fn withdraw_work_entrant_funds_succeeded() {
             .with_entry_id(entry_id2)
             .call_and_assert(Ok(()));
 
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
         // Judgment
         let mut judgment = BTreeMap::new();
         judgment.insert(
@@ -3735,8 +4840,6 @@ fn withdraw_work_entrant_funds_succeeded() {
                 reward: winner_reward,
             },
         );
-
-        run_to_block(starting_block + work_period + 1);
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
@@ -3768,7 +4871,10 @@ fn withdraw_work_entrant_funds_succeeded() {
             .with_entry_id(entry_id2)
             .call_and_assert(Ok(()));
 
-        assert_eq!(Balances::usable_balance(&account_id2), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&account_id2),
+            initial_balance - entrant_stake
+        );
 
         EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
             bounty_id, entry_id2, member_id2,
@@ -3782,7 +4888,7 @@ fn withdraw_work_entrant_funds_succeeded() {
 }
 
 #[test]
-fn withdraw_work_entrant_funds_on_judgement_fails_return_oracle_cherry_to_creator() {
+fn withdraw_work_entrant_funds_on_judgment_fails_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -3790,41 +4896,33 @@ fn withdraw_work_entrant_funds_on_judgement_fails_return_oracle_cherry_to_creato
         let initial_balance = 500;
         let reward = 100;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
         let bounty_id = 1;
 
-        let funder_member_id = 2;
-        let funder_account_id = 2;
+        let funding_member_id = 2;
+        let funding_account_id = 2;
 
         let worker_member_id = 3;
         let worker_account_id = 3;
 
-        let oracle_member_id = 4;
-        let oracle_account_id = 4;
-
-        let oracle_cherry = 100;
+        let oracle_reward = 100;
         let cherry = 50;
 
         set_council_budget(initial_balance);
-        increase_account_balance(&funder_account_id, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
         increase_account_balance(&worker_account_id, entrant_stake);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(reward)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
-            .with_oracle_member_id(oracle_member_id)
-            .with_oracle_cherry(oracle_cherry)
+            .with_oracle_reward(oracle_reward)
             .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_amount(reward)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         AnnounceWorkEntryFixture::default()
@@ -3838,135 +4936,24 @@ fn withdraw_work_entrant_funds_on_judgement_fails_return_oracle_cherry_to_creato
 
         let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_member_id(oracle_member_id)
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
             .with_entry_id(entry_id)
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + judging_period + 1);
-
-        //first funder must withdraw his money in oreder to make the "withdrawal_completed" condition true
-        WithdrawFundingFixture::default()
+        EndWorkPeriodFixture::default()
             .with_bounty_id(bounty_id)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
-        //with "withdrawal_completed" condition true, we can return the oracle cherry in "withdraw_work_entrant_funds"
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id))
-            .with_member_id(worker_member_id)
-            .with_entry_id(entry_id)
-            .call_and_assert(Ok(()));
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(entry_id, OracleWorkEntryJudgment::Winner { reward: reward });
 
-        //the oracle don't receive the oracle cherry because the judgement period
-        //expired without him sending a judge submission
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&oracle_account_id),
-            0
-        );
-
-        //council receives back the oracle cherry but has to pay the cherry to the funder
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - cherry
-        );
-
-        //funder account receives back the reward and wins a cherry
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&funder_account_id),
-            initial_balance + cherry
-        );
-
-        //worker account gets his stake unlocked
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&worker_account_id),
-            37
-        );
-
-        //bounty account is empty
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            0
-        );
-
-        EventFixture::contains_crate_event(RawEvent::BountyCreatorOracleCherryWithdrawal(
-            bounty_id,
-            BountyActor::Council,
-        ));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_on_judgement_fails_insufficient_balance() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let reward = 100;
-        let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
-        let bounty_id = 1;
-
-        let funder_member_id = 2;
-        let funder_account_id = 2;
-
-        let worker_member_id = 3;
-        let worker_account_id = 3;
-
-        let oracle_member_id = 4;
-        let oracle_account_id = 4;
-
-        let oracle_cherry = 100;
-        let cherry = 50;
-
-        set_council_budget(initial_balance);
-        increase_account_balance(&funder_account_id, initial_balance);
-        increase_account_balance(&worker_account_id, entrant_stake);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(reward)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
-            .with_oracle_member_id(oracle_member_id)
-            .with_oracle_cherry(oracle_cherry)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        FundBountyFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_amount(reward)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
-            .call_and_assert(Ok(()));
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id))
-            .with_member_id(worker_member_id)
-            .with_staking_account_id(worker_account_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-
-        let work_data = b"Work submitted".to_vec();
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(oracle_account_id))
-            .with_member_id(oracle_member_id)
-            .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
-
-        run_to_block(starting_block + working_period + judging_period + 1);
-
-        WithdrawFundingFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_member_id(funder_member_id)
-            .with_origin(RawOrigin::Signed(funder_account_id))
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         //bounty account 100 - 1 -> 99 >= 100 -> false
@@ -3976,9 +4963,10 @@ fn withdraw_work_entrant_funds_on_judgement_fails_insufficient_balance() {
             .with_origin(RawOrigin::Signed(worker_account_id))
             .with_member_id(worker_member_id)
             .with_entry_id(entry_id)
-            .call_and_assert(Err(Error::<Test>::NoBountyBalanceToCherryWithdrawal.into()));
+            .call_and_assert(Err(balances::Error::<Test, _>::InsufficientBalance.into()));
     });
 }
+
 #[test]
 fn withdraw_work_entrant_funds_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
@@ -3998,7 +4986,9 @@ fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
 
         let initial_balance = 500;
         let max_amount = 100;
+        let winner_reward = max_amount;
         let entrant_stake = 37;
+        let work_period = 1;
 
         set_council_budget(initial_balance);
 
@@ -4016,7 +5006,46 @@ fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
-        run_to_block(100);
+        let member_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, initial_balance);
+
+        // Winner
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward,
+            },
+        );
+
+        run_to_block(starting_block + work_period + 1);
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
 
         let invalid_entry_id = 11u64;
 
@@ -4068,65 +5097,143 @@ fn withdraw_work_entrant_funds_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
+    //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let work_period = 10;
+        set_council_budget(initial_balance);
 
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(work_period)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        run_to_block(funding_period + 10);
+
+        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+        ));
+    });
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+        ));
+    });
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
+        run_to_block(funding_period + 1);
 
+        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
+            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
+        ));
+    });
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
             .call_and_assert(Ok(()));
 
         let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
-            ));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
     });
 }
 
 #[test]
-fn oracle_council_switch_to_oracle_member_successful() {
+fn switch_oracle_to_member_by_council_oracle_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4136,22 +5243,14 @@ fn oracle_council_switch_to_oracle_member_successful() {
 
         set_council_budget(initial_balance);
 
-        let create_bounty_fixture = CreateBountyFixture::default();
-
-        create_bounty_fixture.call_and_assert(Ok(()));
+        CreateBountyFixture::default().call_and_assert(Ok(()));
         let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
 
         SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
             bounty_id,
             BountyActor::Council,
             BountyActor::Member(new_oracle_member_id),
@@ -4160,178 +5259,7 @@ fn oracle_council_switch_to_oracle_member_successful() {
 }
 
 #[test]
-fn council_switch_by_approval_new_oracle_member_successful() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let current_oracle_member_id = 2;
-        let new_oracle_member_id = 5;
-
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture = CreateBountyFixture::default()
-            .with_allow_council_switch_oracle()
-            .with_oracle_member_id(current_oracle_member_id);
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(
-            RawEvent::BountyInactiveOracleSwitchedByCouncilApproval(
-                bounty_id,
-                BountyActor::Member(current_oracle_member_id),
-                BountyActor::Member(new_oracle_member_id),
-            ),
-        );
-    });
-}
-
-#[test]
-fn oracle_member_switch_to_oracle_council_successful() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let actual_oracle_member_id = 5;
-        let actual_oracle_account_id = 5;
-
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture =
-            CreateBountyFixture::default().with_oracle_member_id(actual_oracle_member_id);
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleFixture::default()
-            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
-            .with_new_oracle_member_id(BountyActor::Council)
-            .call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
-            bounty_id,
-            BountyActor::Member(actual_oracle_member_id),
-            BountyActor::Council,
-        ));
-    });
-}
-
-#[test]
-fn oracle_member_switch_to_oracle_member_successful() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let actual_oracle_member_id = 5;
-        let actual_oracle_account_id = 5;
-        let new_oracle_member_id = 6;
-
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture =
-            CreateBountyFixture::default().with_oracle_member_id(actual_oracle_member_id);
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleFixture::default()
-            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
-            bounty_id,
-            BountyActor::Member(actual_oracle_member_id),
-            BountyActor::Member(new_oracle_member_id),
-        ));
-    });
-}
-
-#[test]
-fn oracle_member_switch_to_same_member_fails_same_new_oracle() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let actual_oracle_member_id = 5;
-        let actual_oracle_account_id = 5;
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture =
-            CreateBountyFixture::default().with_oracle_member_id(actual_oracle_member_id);
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(actual_oracle_member_id))
-            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
-            .call_and_assert(Err(Error::<Test>::MemberIsAlreadyAnOracle.into()));
-    });
-}
-
-#[test]
-fn oracle_council_switch_to_council_fails_same_new_oracle() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture = CreateBountyFixture::default();
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Council)
-            .call_and_assert(Err(Error::<Test>::MemberIsAlreadyAnOracle.into()));
-    });
-}
-
-#[test]
-fn council_switch_by_approval_new_oracle_member_fails_council_flag_switched_off() {
+fn switch_oracle_to_member_by_council_approval_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4356,23 +5284,30 @@ fn council_switch_by_approval_new_oracle_member_fails_council_flag_switched_off(
 
         SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(
-                Error::<Test>::CouncilIsNotAllowedToSwitchInactiveOracle.into(),
-            ));
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCouncilApproval(
+            bounty_id,
+            BountyActor::Member(current_oracle_member_id),
+            BountyActor::Member(new_oracle_member_id),
+        ));
     });
 }
 
 #[test]
-fn oracle_switch_fails_new_oracle_not_a_member() {
+fn switch_oracle_to_council_by_member_oracle_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let actual_oracle_member_id = 10;
+        let actual_oracle_member_id = 5;
+        let actual_oracle_account_id = 5;
+
         set_council_budget(initial_balance);
 
-        let create_bounty_fixture = CreateBountyFixture::default();
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_oracle_member_id(actual_oracle_member_id);
 
         create_bounty_fixture.call_and_assert(Ok(()));
         let bounty_id = 1u64;
@@ -4384,35 +5319,144 @@ fn oracle_switch_fails_new_oracle_not_a_member() {
         ));
 
         SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(actual_oracle_member_id))
-            .call_and_assert(Err(membership::Error::<Test>::MemberProfileNotFound.into()));
+            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
+            .with_new_oracle_member_id(BountyActor::Council)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
+            bounty_id,
+            BountyActor::Member(actual_oracle_member_id),
+            BountyActor::Council,
+        ));
     });
 }
 
 #[test]
-fn oracle_switch_fails_invalid_stage_successful_withdrawal() {
+fn switch_oracle_to_member_by_oracle_member_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let actual_oracle_member_id = 5;
+        let actual_oracle_account_id = 5;
+        let new_oracle_member_id = 6;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_oracle_member_id(actual_oracle_member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        SwitchOracleFixture::default()
+            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
+            bounty_id,
+            BountyActor::Member(actual_oracle_member_id),
+            BountyActor::Member(new_oracle_member_id),
+        ));
+    });
+}
+
+#[test]
+fn switch_oracle_to_same_member_fails() {
+    //Member to Member
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let actual_oracle_member_id = 5;
+        let actual_oracle_account_id = 5;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_oracle_member_id(actual_oracle_member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        SwitchOracleFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_new_oracle_member_id(BountyActor::Member(actual_oracle_member_id))
+            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
+            .call_and_assert(Err(Error::<Test>::MemberIsAlreadyAnOracle.into()));
+    });
+    //Council to Council
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        SwitchOracleFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_new_oracle_member_id(BountyActor::Council)
+            .call_and_assert(Err(Error::<Test>::MemberIsAlreadyAnOracle.into()));
+    });
+}
+
+#[test]
+fn switch_oracle_to_member_by_not_council_and_not_current_oracle_fails() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let current_oracle_member_id = 2;
+        let new_oracle_member_id = 5;
+
+        set_council_budget(initial_balance);
+
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_oracle_member_id(current_oracle_member_id);
+
+        create_bounty_fixture.call_and_assert(Ok(()));
+        let bounty_id = 1u64;
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+            Vec::new(),
+        ));
+
+        SwitchOracleFixture::default()
+            .with_origin(RawOrigin::None)
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(Error::<Test>::OriginIsNotCouncilAndIsNotOracle.into()));
+    });
+}
+
+#[test]
+fn switch_oracle_fails_invalid_stage() {
+    //SuccessfulBountyWithdrawal
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
         let initial_balance = 500;
         let max_amount = 100;
+        let winner_reward = max_amount;
         let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
-        let new_oracle_member_id = 2;
+
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
             .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -4421,8 +5465,11 @@ fn oracle_switch_fails_invalid_stage_successful_withdrawal() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
+        let member_id = 1;
+        let account_id = 1;
         increase_account_balance(&account_id, initial_balance);
 
+        // Winner
         AnnounceWorkEntryFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
@@ -4430,26 +5477,401 @@ fn oracle_switch_fails_invalid_stage_successful_withdrawal() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
-        let entry_id = 1u64;
+        let entry_id = 1;
 
-        let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward,
+            },
+        );
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
+        let new_oracle_member_id = 2;
 
         SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
+            ));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + funding_period + 1);
+        let new_oracle_member_id = 2;
+        let bounty_id = 1;
+
+        SwitchOracleFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        let min_funding = 500;
+        let max_funding = 1000;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_funding, max_funding, funding_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(250)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + funding_period + 1);
+        let new_oracle_member_id = 2;
+
+        SwitchOracleFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
+    });
+}
+
+#[test]
+fn terminate_bounty_in_working_period_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let initial_balance = 2000;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+
+        let bounty_creation_bounty_fixture = CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake);
+
+        let bounty_creation_params =
+            bounty_creation_bounty_fixture.get_bounty_creation_parameters();
+        bounty_creation_bounty_fixture.call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FailedBountyWithdrawal
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyTerminatedByCouncil(
+            bounty_id,
+            bounty_creation_params.creator,
+            bounty_creation_params.oracle,
+        ))
+    });
+}
+
+#[test]
+fn terminate_bounty_in_working_period_fails_entry_not_judged() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let funding_account_id = 1;
+        let funding_member_id = 1;
+
+        let worker_member_id = 3;
+        let worker_account_id = 3;
+
+        let initial_balance = 500;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
+        increase_account_balance(&worker_account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_staking_account_id(worker_account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1u64;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::AllWorkEntriesMustBeJudgedBeforeTerminatingBounty.into(),
+            ));
+
+        let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance - oracle_reward - cherry
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&funding_account_id),
+            initial_balance - funding_amount
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&worker_account_id),
+            initial_balance - worker_entrant_stake
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            oracle_reward + cherry + funding_amount
+        );
+    });
+}
+
+#[test]
+fn terminate_bounty_fails_with_invalid_stage() {
+    //Funding
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 10);
+
+        let bounty_id = 1;
+
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+
+    //FailedBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .call_and_assert(Ok(()));
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(250)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
+    });
+
+    //SuccessfulBountyWithdrawal
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         // Judgment
         let judgment = vec![(
             entry_id,
-            OracleWorkEntryJudgment::Winner { reward: max_amount },
+            OracleWorkEntryJudgment::Winner { reward: min_amount },
         )]
         .iter()
         .cloned()
@@ -4460,8 +5882,8 @@ fn oracle_switch_fails_invalid_stage_successful_withdrawal() {
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+        TerminateBountyFixture::default()
+            .with_bounty_id(bounty_id)
             .call_and_assert(Err(
                 Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
             ));
@@ -4469,110 +5891,91 @@ fn oracle_switch_fails_invalid_stage_successful_withdrawal() {
 }
 
 #[test]
-fn oracle_switch_fails_invalid_stage_failed_bounty_withdrawal_without_judgement() {
+fn terminate_bounty_invalid_origin() {
     build_test_externalities().execute_with(|| {
-
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let max_amount = 500;
+        let funding_amount = 500;
+        let funding_account_id = 1;
+        let funding_member_id = 1;
+
         let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
-        let new_oracle_member_id = 2;
-        set_council_budget(initial_balance);
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        let bounty_id = 1u64;
 
         FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(funding_account_id))
+            .with_member_id(funding_member_id)
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        TerminateBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
+            .with_origin(RawOrigin::Signed(1))
+            .call_and_assert(Err(DispatchError::BadOrigin));
 
-        increase_account_balance(&account_id, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+        TerminateBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1u64;
-
-        let work_data = b"Work submitted".to_vec();
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
-
-        run_to_block(starting_block + working_period + 1);
-
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
-
-        run_to_block(starting_block + working_period + judging_period + 1);
-
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(
-                Err(Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawalWithoutJudgementSubmitted.into()));
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
-fn oracle_switch_fails_invalid_stage_failed_bounty_withdrawal_with_judgement() {
+fn work_entrants_stake_account_action_succeeds() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = 500;
-        let max_amount = 100;
-        let entrant_stake = 37;
-        let working_period = 10;
-        let judging_period = 10;
-        let new_oracle_member_id = 2;
-        set_council_budget(initial_balance);
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let worker_member_id = 1;
+        let worker_account_id = 1;
+
+        let initial_balance = 1000;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&worker_account_id, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .with_work_period(working_period)
-            .with_judging_period(judging_period)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
+        let bounty_id = 1u64;
 
         FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
             .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance
+        );
 
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_staking_account_id(worker_account_id)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
@@ -4580,33 +5983,624 @@ fn oracle_switch_fails_invalid_stage_failed_bounty_withdrawal_with_judgement() {
 
         let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
             .with_entry_id(entry_id)
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        run_to_block(starting_block + working_period + 1);
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
 
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
-        // Judgment
-        let judgment = vec![(entry_id, OracleWorkEntryJudgment::Rejected)]
+        let judgment = vec![entry_id]
             .iter()
-            .cloned()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
             .collect::<BTreeMap<_, _>>();
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        SwitchOracleFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance - worker_entrant_stake
+        );
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(
+                b"This worker failed a bit and must be slashed 50%".to_vec(),
+            ),
+        };
+
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id, stake_account_action_entry);
+
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries)
+            .call_and_assert(Ok(()));
+
+        let amount_slashed = slashing_share * worker_entrant_stake;
+
+        assert_eq!(
+            Balances::free_balance(&worker_account_id),
+            initial_balance - amount_slashed
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance - amount_slashed
+        );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeAccountAction(
+            bounty_id,
+            entry_id,
+            slashing_share,
+            amount_slashed,
+            Some(b"This worker failed a bit and must be slashed 50%".to_vec()),
+        ));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+    });
+}
+
+#[test]
+fn work_entrants_stake_account_action_fails_invalid_entry() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let worker_member_id = 1;
+        let worker_account_id = 1;
+
+        let initial_balance = 1000;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&worker_account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance
+        );
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_staking_account_id(worker_account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1u64;
+
+        let work_data = b"Work 1 submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance - worker_entrant_stake
+        );
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let judgment = vec![entry_id]
+            .iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+
+        let invalid_entry = 5;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(invalid_entry, stake_account_action_entry);
+
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance - worker_entrant_stake
+        );
+    });
+}
+
+#[test]
+fn work_entrants_stake_account_action_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let worker_account_id_1 = 2;
+
+        let initial_balance = 500;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&worker_account_id_1, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_entrant_stake(worker_entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let slashing_share_1 = Perbill::from_percent(50);
+        let stake_account_action_entry_1 = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share_1,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+        let entry_id_1 = 1u64;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id_1, stake_account_action_entry_1);
+
+        let bounty_id = 1u64;
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_origin(RawOrigin::None)
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries.clone())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_origin(RawOrigin::Signed(4).into())
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn work_entrants_stake_account_action_invalid_stage() {
+    //Funding
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+        let entry_id = 1u64;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id, stake_account_action_entry);
+
+        let bounty_id = 1u64;
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 10);
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+        let entry_id = 1u64;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id, stake_account_action_entry);
+
+        let bounty_id = 1u64;
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries.clone())
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawalWithJudgementSubmitted
-                    .into(),
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
             ));
+    });
+
+    //WorkSubmission
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+        let entry_id = 1u64;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id, stake_account_action_entry);
+
+        let bounty_id = 1u64;
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries.clone())
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
+            ));
+    });
+
+    //Judgment
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let min_amount = 500;
+        let max_amount = 1000;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(min_amount, max_amount, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(min_amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        let bounty_id = 1;
+        let account_id = 1;
+        increase_account_balance(&account_id, entrant_stake);
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_staking_account_id(account_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+        let entry_id = 1u64;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id, stake_account_action_entry);
+
+        let bounty_id = 1u64;
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
+    });
+}
+
+#[test]
+fn work_entrants_stake_account_action_fails_entry_is_winner() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let worker_member_id = 1;
+        let worker_account_id = 1;
+
+        let initial_balance = 1000;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&worker_account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance
+        );
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_staking_account_id(worker_account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1u64;
+
+        let work_data = b"Work 1 submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id))
+            .with_member_id(worker_member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let judgment = vec![entry_id]
+            .iter()
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner { reward: max_amount },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance
+        );
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+
+        let invalid_entry = 5;
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(invalid_entry, stake_account_action_entry);
+
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
+
+        assert_eq!(Balances::free_balance(&worker_account_id), initial_balance);
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id),
+            initial_balance
+        );
+    });
+}
+
+#[test]
+fn work_entrants_stake_account_action_fails_entry_is_not_judged() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+
+        let funding_amount = 500;
+
+        let worker_member_id_1 = 1;
+        let worker_account_id_1 = 1;
+
+        let worker_member_id_2 = 2;
+        let worker_account_id_2 = 2;
+
+        let initial_balance = 1000;
+        let cherry = 200;
+        let oracle_reward = 200;
+        let worker_entrant_stake = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&worker_account_id_1, initial_balance);
+        increase_account_balance(&worker_account_id_2, initial_balance);
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_cherry(cherry)
+            .with_oracle_reward(oracle_reward)
+            .with_entrant_stake(worker_entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::free_balance(&worker_account_id_2),
+            initial_balance
+        );
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance
+        );
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_staking_account_id(worker_account_id_1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id_1 = 1u64;
+
+        let work_data = b"Work 1 submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_staking_account_id(worker_account_id_2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id_2 = 2u64;
+
+        let work_data = b"Work 2 submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_entry_id(entry_id_2)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::free_balance(&worker_account_id_2),
+            initial_balance
+        );
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance - worker_entrant_stake
+        );
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+        let judgment = vec![entry_id_1]
+            .iter()
+            .map(|entry_id_1| (*entry_id_1, OracleWorkEntryJudgment::Rejected))
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        let slashing_share = Perbill::from_percent(50);
+        let stake_account_action_entry = WorkEntrantStakeAccountAction {
+            slashing_share: slashing_share,
+            action_justification: Some(b"This worker failed and must be slashed 50%".to_vec()),
+        };
+
+        let mut stake_account_action_entries = WorkEntrantStakeAccountActionMap::new();
+        stake_account_action_entries.insert(entry_id_2, stake_account_action_entry);
+
+        WorkEntrantStakeAccountActionMapFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_stake_account_action(stake_account_action_entries)
+            .call_and_assert(Err(Error::<Test>::WorkEntryMustBeJudged.into()));
+
+        assert_eq!(
+            Balances::free_balance(&worker_account_id_2),
+            initial_balance
+        );
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance - worker_entrant_stake
+        );
     });
 }
