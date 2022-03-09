@@ -1,7 +1,7 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { genericEventFields, inconsistentState, logger } from '../common'
+import { genericEventFields, getById, inconsistentState, logger } from '../common'
 import {
   // entities
   Auction,
@@ -349,6 +349,9 @@ export async function createNft(
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
 
+  // load creator channel
+  const creatorChannel = (await getById(store, Video, video.getId(), ['channel'])).channel
+
   // prepare nft record
   const nft = new OwnedNft({
     id: video.id.toString(),
@@ -356,6 +359,7 @@ export async function createNft(
     ownerMember,
     creatorRoyalty,
     metadata: decodedMetadata,
+    creatorChannel: creatorChannel,
     // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
     transactionalStatus: new TransactionalStatusIdle(),
   })
@@ -520,7 +524,9 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
   // specific event processing
 
   // load video
-  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed')
+  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed', [
+    'channel',
+  ])
 
   // prepare and save nft record
   const nft = await createNft(store, video, nftIssuanceParameters, event.blockNumber)
