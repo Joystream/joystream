@@ -1897,6 +1897,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
+            price_commit: CurrencyOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -1910,7 +1911,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure given participant can buy nft now
-            Self::ensure_can_buy_now(&nft, &participant_account_id)?;
+            Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
             let channel = Self::channel_by_id(&video.in_channel);
             let owner_account_id =  Self::ensure_reward_account(&channel)?;
