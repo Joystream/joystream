@@ -786,7 +786,10 @@ decl_error! {
 
         ///Council cannot terminate a bounty when there are active entries still left
         ///Call Switch oracle and then judge those entries, or submit Judgment if you already an oracle
-        AllWorkEntriesMustBeJudgedBeforeTerminatingBounty
+        AllWorkEntriesMustBeJudgedBeforeTerminatingBounty,
+
+        ///Worker tried to access a work entry that doesn't belong to him
+        WorkEntryDoesntBelongToWorker
     }
 }
 
@@ -1283,8 +1286,10 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
-            Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&entry_id)?;
 
+            ensure!(entry.member_id == member_id,
+                Error::<T>::WorkEntryDoesntBelongToWorker);
             //
             // == MUTATION SAFE ==
             //
@@ -1495,6 +1500,9 @@ decl_module! {
             );
 
             let entry = Self::ensure_work_entry_exists(&entry_id)?;
+
+            ensure!(entry.member_id == member_id,
+                Error::<T>::WorkEntryDoesntBelongToWorker);
             //
             // == MUTATION SAFE ==
             //

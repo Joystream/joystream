@@ -3248,6 +3248,118 @@ fn withdraw_work_entry_fails_with_invalid_entry_id() {
 }
 
 #[test]
+fn withdraw_work_entry_fails_entry_id_doesnt_belong_to_worker() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 200;
+        let entrant_stake = 37;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let worker_member_id_1 = 1;
+        let worker_account_id_1 = 1;
+        increase_account_balance(&worker_account_id_1, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_staking_account_id(worker_account_id_1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id_1 = 1;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .call_and_assert(Ok(()));
+
+        // Legitimate participant
+        let worker_member_id_2 = 2;
+        let worker_account_id_2 = 2;
+        increase_account_balance(&worker_account_id_2, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_staking_account_id(worker_account_id_2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id_2 = 2;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Ok(()));
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntryWithdrawn(
+            bounty_id,
+            entry_id_1,
+            worker_member_id_1,
+        ));
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntBelongToWorker.into()));
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_1),
+            initial_balance - entrant_stake
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance - entrant_stake
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkEntryWithdrawn(
+            bounty_id,
+            entry_id_2,
+            worker_member_id_2,
+        ));
+    });
+}
+
+#[test]
 fn withdraw_work_entry_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -5053,6 +5165,168 @@ fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
             .with_bounty_id(bounty_id)
             .with_entry_id(invalid_entry_id)
             .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
+    });
+}
+
+#[test]
+fn withdraw_work_entrant_funds_fails_entry_id_doesnt_belong_to_worker() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 200;
+        let winner_reward = max_amount;
+        let entrant_stake = 37;
+        let work_period = 1;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let worker_member_id_1 = 1;
+        let worker_account_id_1 = 1;
+        increase_account_balance(&worker_account_id_1, initial_balance);
+
+        // Winner
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_staking_account_id(worker_account_id_1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id_1 = 1;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .call_and_assert(Ok(()));
+
+        // Legitimate participant
+        let worker_member_id_2 = 2;
+        let worker_account_id_2 = 2;
+        increase_account_balance(&worker_account_id_2, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_staking_account_id(worker_account_id_2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id_2 = 2;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Ok(()));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id_1,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward / 2,
+            },
+        );
+        judgment.insert(
+            entry_id_2,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward / 2,
+            },
+        );
+        run_to_block(starting_block + work_period + 1);
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
+
+        // Withdraw work entrant.
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_1),
+            initial_balance + winner_reward / 2
+        );
+
+        // Bounty exists before the last withdrawal call.
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
+
+        //Tries to steal worker_member_id_2
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_1))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntBelongToWorker.into()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_1),
+            initial_balance + winner_reward / 2
+        );
+
+        // Withdraw work entrant.
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(worker_account_id_2))
+            .with_member_id(worker_member_id_2)
+            .with_entry_id(entry_id_2)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&worker_account_id_2),
+            initial_balance + winner_reward / 2
+        );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
+            bounty_id,
+            entry_id_1,
+            worker_member_id_1,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
+            bounty_id,
+            entry_id_2,
+            worker_member_id_2,
+        ));
+
+        // Bounty was removed with the last withdrawal call.
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
     });
 }
 
