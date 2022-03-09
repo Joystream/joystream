@@ -79,28 +79,6 @@ fn assert_video_and_channel_existrinsics_with(result: DispatchResult) {
     );
 
     assert_eq!(
-        Content::update_channel_censorship_status(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-            channel_id.clone(),
-            true,
-            b"test".to_vec()
-        ),
-        result
-    );
-
-    assert_eq!(
-        Content::update_video_censorship_status(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-            video_id.clone(),
-            true,
-            b"test".to_vec()
-        ),
-        result
-    );
-
-    assert_eq!(
         Content::delete_video(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),

@@ -77,8 +77,6 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, Chan
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
-    /// If curators have censored this channel or not
-    pub is_censored: bool,
     /// Reward account where revenue is sent if set.
     pub reward_account: Option<AccountId>,
     /// collaborator set
@@ -89,19 +87,6 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, Chan
     pub cumulative_payout_earned: Balance,
     // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
-}
-
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
-{
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::ChannelCensorshipStatusDidNotChange
-        );
-        Ok(())
-    }
 }
 
 // Channel alias type for simplification.
@@ -257,8 +242,6 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>
 pub struct VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT> {
     pub in_channel: ChannelId,
     pub in_series: Option<SeriesId>,
-    /// Whether the curators have censored the video or not.
-    pub is_censored: bool,
     /// enable or not comments
     pub enable_comments: bool,
     /// First post to a video works as a description
@@ -566,15 +549,6 @@ impl<ChannelId: Clone, SeriesId: Clone, VideoPostId: Clone, OwnedNFT: Clone>
     pub fn set_nft_status(mut self, nft: OwnedNFT) -> Self {
         self.nft_status = Some(nft);
         self
-    }
-
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::VideoCensorshipStatusDidNotChange
-        );
-        Ok(())
     }
 }
 

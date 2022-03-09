@@ -313,29 +313,6 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     }
 }
 
-// Ensure actor can censor
-pub fn ensure_actor_authorized_to_censor<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    // Only lead and curators can censor channels and videos
-    // Only lead can censor curator group owned channels and videos
-    let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    match actor {
-        ContentActor::Lead => Ok(()),
-        ContentActor::Curator(..) => {
-            ensure!(
-                !ensure_channel_is_owned_by_curators::<T>(owner).is_ok(),
-                Error::<T>::CannotCensoreCuratorGroupOwnedChannels,
-            );
-            Ok(())
-        }
-        ContentActor::Member(_) => Err(Error::<T>::ActorNotAuthorized.into()),
-    }
-}
-
 // Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,

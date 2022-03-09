@@ -500,7 +500,6 @@ decl_module! {
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 num_videos: 0u64,
-                is_censored: false,
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
@@ -700,37 +699,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_censorship_status(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            is_censored: bool,
-            rationale: Vec<u8>,
-        ) {
-            // check that channel exists
-            let channel = Self::ensure_channel_validity(&channel_id)?;
-
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                &channel.owner,
-            )?;
-
-            // Ensure censorship status have been changed
-            channel.ensure_censorship_status_changed::<T>(is_censored)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.is_censored = is_censored
-            });
-
-            Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -828,7 +796,6 @@ decl_module! {
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 in_series: None,
-                is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 /// Newly created video has no nft
@@ -1161,47 +1128,6 @@ decl_module! {
             _video_id: T::VideoId
         ) {
             Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video_censorship_status(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            is_censored: bool,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-            // check that video exists
-            let video = Self::ensure_video_validity(&video_id)?;
-
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                // The channel owner will be..
-                &Self::channel_by_id(video.in_channel).owner,
-            )?;
-
-            // Ensure censorship status have been changed
-            video.ensure_censorship_status_changed::<T>(is_censored)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update
-            VideoById::<T>::mutate(video_id, |video| {
-                video.is_censored = is_censored;
-            });
-
-            Self::deposit_event(
-                RawEvent::VideoCensorshipStatusUpdated(
-                    actor,
-                    video_id,
-                    is_censored,
-                    rationale
-                ));
-
-            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2488,7 +2414,6 @@ decl_event!(
         Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
-        IsCensored = bool,
         AuctionParams = AuctionParams<
             <T as frame_system::Trait>::BlockNumber,
             CurrencyOf<T>,
@@ -2522,13 +2447,6 @@ decl_event!(
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
-
-        ChannelCensorshipStatusUpdated(
-            ContentActor,
-            ChannelId,
-            IsCensored,
-            Vec<u8>, /* rationale */
-        ),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
@@ -2565,13 +2483,6 @@ decl_event!(
         VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
         VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
-
-        VideoCensorshipStatusUpdated(
-            ContentActor,
-            VideoId,
-            IsCensored,
-            Vec<u8>, /* rationale */
-        ),
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),

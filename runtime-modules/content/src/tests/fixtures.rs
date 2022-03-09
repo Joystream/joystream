@@ -158,7 +158,6 @@ impl CreateChannelFixture {
                     channel_id,
                     Channel::<Test> {
                         owner: owner,
-                        is_censored: false,
                         reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
@@ -453,7 +452,6 @@ impl UpdateChannelFixture {
                         self.channel_id,
                         ChannelRecord {
                             owner: owner,
-                            is_censored: channel_pre.is_censored,
                             reward_account: self
                                 .params
                                 .reward_account

@@ -58,17 +58,8 @@ decl_error! {
         /// Vfdeo in season can`t be removed (because order is important)
         VideoInSeason,
 
-        /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels,
-
         /// Actor cannot authorize as lead for given extrinsic
         ActorCannotBeLead,
-
-        /// Channel censorship status did not change
-        ChannelCensorshipStatusDidNotChange,
-
-        /// Video censorship status did not change
-        VideoCensorshipStatusDidNotChange,
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
