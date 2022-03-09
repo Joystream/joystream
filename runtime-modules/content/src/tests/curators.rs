@@ -1,16 +1,37 @@
 #![cfg(test)]
 
+use std::collections::BTreeMap;
+
 use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, *};
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
+pub fn create_curator_group(permissions: ModerationPermissionsByLevel<Test>) -> CuratorGroupId {
     let curator_group_id = Content::next_curator_group_id();
     // create new group and add curator id to it
     CreateCuratorGroupFixture::default()
         .with_is_active(true)
+        .with_permissions(&permissions)
         .call_and_assert(Ok(()));
+    curator_group_id
+}
+
+pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
+    let curator_group_id = create_curator_group(BTreeMap::new());
+    assert_ok!(Content::add_curator_to_group(
+        Origin::signed(LEAD_ACCOUNT_ID),
+        curator_group_id,
+        curator_id
+    ));
+    curator_group_id
+}
+
+pub fn add_curator_to_new_group_with_permissions(
+    curator_id: CuratorId,
+    permissions: ModerationPermissionsByLevel<Test>,
+) -> CuratorGroupId {
+    let curator_group_id = create_curator_group(permissions);
     assert_ok!(Content::add_curator_to_group(
         Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
@@ -38,7 +59,7 @@ fn curator_group_management() {
         // Default group is empty, not active and has no permissions
         assert_eq!(group.is_active(), false);
         assert_eq!(group.get_curators().len(), 0);
-        assert_eq!(group.get_permissions().len(), 0);
+        assert_eq!(group.get_permissions_by_level().len(), 0);
 
         // Activate group
         assert_ok!(Content::set_curator_group_status(
@@ -61,7 +82,7 @@ fn curator_group_management() {
             0,
             ContentModerationPermissions {
                 hide_video: true,
-                delete_nft_free_video: true,
+                delete_video: true,
                 ..ContentModerationPermissions::default()
             },
         );
@@ -76,9 +97,8 @@ fn curator_group_management() {
         permissions.insert(
             2,
             ContentModerationPermissions {
-                delete_any_video: true,
+                delete_video: true,
                 delete_channel: true,
-                delete_nft_free_video: true,
                 delete_object: true,
                 hide_channel: true,
                 hide_video: true,
@@ -104,17 +124,20 @@ fn curator_group_management() {
 
         // Validate permissions
         let group = Content::curator_group_by_id(curator_group_id);
-        assert_eq!(group.get_permissions().len(), 3);
+        assert_eq!(group.get_permissions_by_level().len(), 3);
         // Iterate over privilege levels from 0 to 3
         // (3 will be a "non-existent map entry" case)
         for i in 0u8..4u8 {
-            assert_eq!(group.get_permissions().get(&i), permissions.get(&i));
+            assert_eq!(
+                group.get_permissions_by_level().get(&i),
+                permissions.get(&i)
+            );
             let allowed_actions: Vec<ContentModerationAction>;
             match i {
                 0 => {
                     allowed_actions = vec![
                         ContentModerationAction::HideVideo,
-                        ContentModerationAction::DeleteNftFreeVideo,
+                        ContentModerationAction::DeleteVideo,
                     ]
                 }
                 1 => {
@@ -125,9 +148,8 @@ fn curator_group_management() {
                 }
                 2 => {
                     allowed_actions = vec![
-                        ContentModerationAction::DeleteAnyVideo,
+                        ContentModerationAction::DeleteVideo,
                         ContentModerationAction::DeleteChannel,
-                        ContentModerationAction::DeleteNftFreeVideo,
                         ContentModerationAction::DeleteObject,
                         ContentModerationAction::HideChannel,
                         ContentModerationAction::HideVideo,

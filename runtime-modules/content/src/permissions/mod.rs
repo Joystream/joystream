@@ -480,3 +480,24 @@ pub fn ensure_authorized_to_update_max_reward<T: Trait>(sender: &T::AccountId) -
 pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
+
+/// MODERATIONS BY CURATORS/LEAD
+
+pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actions: &Vec<ContentModerationAction>,
+    channel_privilege_level: T::ChannelPrivilegeLevel,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(&sender, &actor)?;
+    // Ensure actor is either lead of part of curators group with sufficient permissions
+    match actor {
+        ContentActor::Lead => Ok(()),
+        ContentActor::Curator(curator_group_id, ..) => {
+            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            group.ensure_can_perform_actions(actions, channel_privilege_level)?;
+            Ok(())
+        }
+        _ => Err(Error::<T>::ActorNotAuthorized.into()),
+    }
+}

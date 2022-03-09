@@ -10,8 +10,7 @@ pub struct ContentModerationPermissions {
     pub hide_channel: bool,
     pub pause_channel: bool,
     pub delete_object: bool,
-    pub delete_nft_free_video: bool,
-    pub delete_any_video: bool,
+    pub delete_video: bool,
     pub delete_channel: bool,
 }
 
@@ -22,8 +21,7 @@ impl Default for ContentModerationPermissions {
             hide_channel: false,
             pause_channel: false,
             delete_object: false,
-            delete_nft_free_video: false,
-            delete_any_video: false,
+            delete_video: false,
             delete_channel: false,
         }
     }
@@ -36,8 +34,7 @@ pub enum ContentModerationAction {
     HideChannel,
     PauseChannel,
     DeleteObject,
-    DeleteNftFreeVideo,
-    DeleteAnyVideo,
+    DeleteVideo,
     DeleteChannel,
 }
 
@@ -58,8 +55,8 @@ where
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
 
-    // Group's moderation permissions
-    permissions: ModerationPermissionsByLevel<T>,
+    // Group's moderation permissions (by channel's privilage level)
+    permissions_by_level: ModerationPermissionsByLevel<T>,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -68,17 +65,17 @@ impl<T: Trait> Default for CuratorGroup<T> {
             curators: BTreeSet::new(),
             // default curator group status right after creation
             active: false,
-            permissions: BTreeMap::new(),
+            permissions_by_level: BTreeMap::new(),
         }
     }
 }
 
 impl<T: Trait> CuratorGroup<T> {
-    pub fn create(active: bool, permissions: &ModerationPermissionsByLevel<T>) -> Self {
+    pub fn create(active: bool, permissions_by_level: &ModerationPermissionsByLevel<T>) -> Self {
         Self {
             curators: BTreeSet::new(),
             active: active,
-            permissions: permissions.clone(),
+            permissions_by_level: permissions_by_level.clone(),
         }
     }
 
@@ -98,13 +95,16 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Set new group permissions
-    pub fn set_permissions(&mut self, permissions: &ModerationPermissionsByLevel<T>) {
-        self.permissions = permissions.clone()
+    pub fn set_permissions_by_level(
+        &mut self,
+        permissions_by_level: &ModerationPermissionsByLevel<T>,
+    ) {
+        self.permissions_by_level = permissions_by_level.clone()
     }
 
     /// Get reference to all group permissions
-    pub fn get_permissions(&self) -> &ModerationPermissionsByLevel<T> {
-        &self.permissions
+    pub fn get_permissions_by_level(&self) -> &ModerationPermissionsByLevel<T> {
+        &self.permissions_by_level
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
@@ -175,17 +175,14 @@ impl<T: Trait> CuratorGroup<T> {
         action: ContentModerationAction,
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> bool {
-        let permissions_for_level = self.permissions.get(&privilege_level);
+        let permissions_for_level = self.permissions_by_level.get(&privilege_level);
         if let Some(permissions_for_level) = permissions_for_level {
             match action {
                 ContentModerationAction::HideVideo => permissions_for_level.hide_video,
                 ContentModerationAction::HideChannel => permissions_for_level.hide_channel,
                 ContentModerationAction::PauseChannel => permissions_for_level.pause_channel,
                 ContentModerationAction::DeleteObject => permissions_for_level.delete_object,
-                ContentModerationAction::DeleteNftFreeVideo => {
-                    permissions_for_level.delete_nft_free_video
-                }
-                ContentModerationAction::DeleteAnyVideo => permissions_for_level.delete_any_video,
+                ContentModerationAction::DeleteVideo => permissions_for_level.delete_video,
                 ContentModerationAction::DeleteChannel => permissions_for_level.delete_channel,
             }
         } else {
@@ -202,6 +199,17 @@ impl<T: Trait> CuratorGroup<T> {
             self.can_perform_action(action, privilege_level),
             Error::<T>::CuratorModerationActionNotAllowed
         );
+        Ok(())
+    }
+
+    pub fn ensure_can_perform_actions(
+        &self,
+        actions: &Vec<ContentModerationAction>,
+        privilege_level: T::ChannelPrivilegeLevel,
+    ) -> DispatchResult {
+        for action in actions {
+            self.ensure_can_perform_action(action.clone(), privilege_level)?;
+        }
         Ok(())
     }
 }

@@ -14,6 +14,7 @@ mod types;
 
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
+use sp_std::vec;
 
 pub use errors::*;
 pub use nft::*;
@@ -290,7 +291,7 @@ decl_module! {
         pub fn update_curator_group_permissions(
             origin,
             curator_group_id: T::CuratorGroupId,
-            permissions: ModerationPermissionsByLevel<T>
+            permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
             let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
@@ -304,11 +305,11 @@ decl_module! {
 
             // Set `permissions` for curator group under given `curator_group_id`
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.set_permissions(&permissions)
+                curator_group.set_permissions_by_level(&permissions_by_level)
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions))
+            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -936,9 +937,7 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
-            // Ensure nft for this video have not been issued
-            video.ensure_nft_is_not_issued::<T>()?;
-
+            // ensure assets can be deleted
             if !assets_to_remove.is_empty() {
                 Storage::<T>::can_delete_data_objects(
                     &Self::bag_id_for_channel(&channel_id),
@@ -956,36 +955,57 @@ decl_module! {
             //     )?;
             // }
 
-            // bloat bond logic: channel owner is refunded
-            video.video_post_id.as_ref().map(
-                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
-            ).transpose()?;
-
             //
             // == MUTATION SAFE ==
             //
 
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
+
+            Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            rationale: Vec<u8>,
+        ) {
+            let sender = ensure_signed(origin.clone())?;
+
+            // check that video exists
+            let video = Self::ensure_video_validity(&video_id)?;
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
+            // Permissions check
+            let actions_to_perform = if assets_to_remove.is_empty() {
+                vec![ContentModerationAction::DeleteVideo]
+            } else {
+                vec![ContentModerationAction::DeleteVideo, ContentModerationAction::DeleteObject]
+            };
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            // ensure video can be removed
+            Self::ensure_video_can_be_removed(&video)?;
+
+            // ensure assets can be deleted
             if !assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone()
+                Storage::<T>::can_delete_data_objects(
+                    &Self::bag_id_for_channel(&channel_id),
+                    &assets_to_remove,
                 )?;
             }
 
-            // Remove video
-            VideoById::<T>::remove(video_id);
+            //
+            // == MUTATION SAFE ==
+            //
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
 
-            // Remove all comments related
-            <VideoPostById<T>>::remove_prefix(video_id);
-
-            // Update corresponding channel
-            // Remove recently deleted video from the channel
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_videos = channel.num_videos.saturating_sub(1)
-            });
-
-            Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
+            Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2239,9 +2259,10 @@ impl<T: Trait> Module<T> {
         Ok(VideoById::<T>::get(video_id))
     }
 
-    // Ensure given video is not in season
+    // Ensure given video has no associated nft
     fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
-        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
+        // Ensure nft for this video have not been issued
+        video.ensure_nft_is_not_issued::<T>()?;
         Ok(())
     }
 
@@ -2397,6 +2418,45 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn execute_delete_video_mutation(
+        sender: &T::AccountId,
+        channel_id: T::ChannelId,
+        video_id: T::VideoId,
+        video: &Video<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        // bloat bond logic: channel owner is refunded
+        video
+            .video_post_id
+            .as_ref()
+            .map(|video_post_id| {
+                Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
+            })
+            .transpose()?;
+
+        if !assets_to_remove.is_empty() {
+            Storage::<T>::delete_data_objects(
+                sender.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
+        }
+
+        // Remove video
+        VideoById::<T>::remove(video_id);
+
+        // Remove all comments related
+        <VideoPostById<T>>::remove_prefix(video_id);
+
+        // Update corresponding channel
+        // Remove recently deleted video from the channel
+        ChannelById::<T>::mutate(channel_id, |channel| {
+            channel.num_videos = channel.num_videos.saturating_sub(1)
+        });
+
+        Ok(())
+    }
+
     // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
     pub fn on_runtime_upgrade() {
         // setting final index triggers migration
@@ -2504,6 +2564,7 @@ decl_event!(
         VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
         VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
+        VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
 
         VideoCensorshipStatusUpdated(
             ContentActor,
