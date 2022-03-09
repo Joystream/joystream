@@ -5808,6 +5808,7 @@ export type Channel = BaseGraphQlObject & {
   /** Number of the block the channel was created in */
   createdInBlock: Scalars['Int']
   collaborators: Array<Membership>
+  ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
 }
 
 export type ChannelCategoriesByNameFtsOutput = {
@@ -6074,6 +6075,9 @@ export type ChannelWhereInput = {
   collaborators_none?: Maybe<MembershipWhereInput>
   collaborators_some?: Maybe<MembershipWhereInput>
   collaborators_every?: Maybe<MembershipWhereInput>
+  ownednftcreatorChannel_none?: Maybe<OwnedNftWhereInput>
+  ownednftcreatorChannel_some?: Maybe<OwnedNftWhereInput>
+  ownednftcreatorChannel_every?: Maybe<OwnedNftWhereInput>
   AND?: Maybe<Array<ChannelWhereInput>>
   OR?: Maybe<Array<ChannelWhereInput>>
 }
@@ -14040,6 +14044,8 @@ export type OwnedNft = BaseGraphQlObject & {
   transactionalStatusUpdates: Array<TransactionalStatusUpdate>
   /** Creator royalty */
   creatorRoyalty?: Maybe<Scalars['Float']>
+  creatorChannel: Channel
+  creatorChannelId: Scalars['String']
 }
 
 export type OwnedNftConnection = {
@@ -14053,6 +14059,7 @@ export type OwnedNftCreateInput = {
   metadata: Scalars['String']
   transactionalStatus: Scalars['JSONObject']
   creatorRoyalty?: Maybe<Scalars['Float']>
+  creatorChannel: Scalars['ID']
 }
 
 export type OwnedNftEdge = {
@@ -14073,6 +14080,8 @@ export enum OwnedNftOrderByInput {
   MetadataDesc = 'metadata_DESC',
   CreatorRoyaltyAsc = 'creatorRoyalty_ASC',
   CreatorRoyaltyDesc = 'creatorRoyalty_DESC',
+  CreatorChannelAsc = 'creatorChannel_ASC',
+  CreatorChannelDesc = 'creatorChannel_DESC',
 }
 
 export type OwnedNftUpdateInput = {
@@ -14080,6 +14089,7 @@ export type OwnedNftUpdateInput = {
   metadata?: Maybe<Scalars['String']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
   creatorRoyalty?: Maybe<Scalars['Float']>
+  creatorChannel?: Maybe<Scalars['ID']>
 }
 
 export type OwnedNftWhereInput = {
@@ -14127,6 +14137,7 @@ export type OwnedNftWhereInput = {
   transactionalStatusUpdates_none?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_some?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_every?: Maybe<TransactionalStatusUpdateWhereInput>
+  creatorChannel?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<OwnedNftWhereInput>>
   OR?: Maybe<Array<OwnedNftWhereInput>>
 }
