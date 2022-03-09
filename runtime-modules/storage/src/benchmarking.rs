@@ -1,6 +1,5 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::{StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get};
@@ -9,6 +8,7 @@ use sp_arithmetic::traits::One;
 use sp_runtime::traits::Bounded;
 use sp_std::boxed::Box;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -19,7 +19,10 @@ use working_group::{
     StakeParameters, StakePolicy, WorkerById,
 };
 
-use crate::{Balances, Call, Module, RawEvent, StorageBucketById, Trait};
+use crate::{
+    BagId, Balances, Call, Cid, DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById,
+    StorageBucketOperatorStatus, Trait, WorkerId,
+};
 use frame_support::sp_runtime::SaturatedConversion;
 
 // The storage working group instance alias.
@@ -32,6 +35,8 @@ type StorageGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
+pub const DEFAULT_WORKER_ID: u64 = 100002;
+pub const SECOND_WORKER_ID: u64 = 1;
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -173,7 +178,7 @@ fn insert_a_worker<
 >(
     leader_account_id: T::AccountId,
     id: u64,
-) -> T::AccountId
+) -> (T::AccountId, WorkerId<T>)
 where
     T::AccountId: CreateAccountId,
 {
@@ -190,16 +195,15 @@ where
 
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
+    let worker_id = working_group::NextWorkerId::<T, StorageWorkingGroupInstance>::get();
     StorageGroup::<T>::fill_opening(leader_origin.into(), opening_id, successful_application_ids)
         .unwrap();
 
-    let actor_id =
-        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, StorageWorkingGroupInstance>::contains_key(
-        actor_id
+        &worker_id
     ));
 
-    caller_id
+    (caller_id, worker_id)
 }
 
 fn add_and_apply_opening<T: Trait + working_group::Trait<StorageWorkingGroupInstance>>(
@@ -279,13 +283,45 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<StorageWorkingGroupIn
 fn create_storage_bucket_helper<T: Trait>(account_id: T::AccountId) -> T::StorageBucketId {
     let storage_bucket_id = Module::<T>::next_storage_bucket_id();
 
-    Module::<T>::create_storage_bucket(RawOrigin::Signed(account_id).into(), None, false, 0, 0)
+    Module::<T>::create_storage_bucket(RawOrigin::Signed(account_id).into(), None, true, 0, 0)
         .unwrap();
 
     assert!(<StorageBucketById<T>>::contains_key(&storage_bucket_id));
 
     storage_bucket_id
 }
+
+fn create_storage_buckets<T: Trait>(
+    account_id: T::AccountId,
+    i: u32,
+) -> BTreeSet<T::StorageBucketId> {
+    iter::repeat(())
+        .take(i.saturated_into())
+        .map(|_| create_storage_bucket_helper::<T>(account_id.clone()))
+        .collect::<_>()
+}
+
+fn create_cids(i: u32) -> BTreeSet<Cid> {
+    fn create_cid(i: u32) -> Cid {
+        let bytes = i.to_be_bytes();
+        let mut buffer = Vec::new();
+
+        // Total CID = 32 bytes
+        for _ in 0..8 {
+            buffer.append(&mut bytes.to_vec());
+        }
+
+        buffer
+    }
+
+    iter::repeat(())
+        .take(i.saturated_into())
+        .map(|_| create_cid(i))
+        .collect::<_>()
+}
+
+const BLACKLIST_SIZE_LIMIT: u32 = 2000;
+const STORAGE_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
 
 benchmarks! {
     where_clause {
@@ -297,29 +333,16 @@ benchmarks! {
     }
     _{ }
 
-    create_storage_bucket {
+    delete_storage_bucket {
         let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let storage_bucket_id = Module::<T>::next_storage_bucket_id();
-
-    }: _ (RawOrigin::Signed(lead_account_id), None, false, 0, 0)
-    verify {
-        assert!(StorageBucketById::<T>::contains_key(&storage_bucket_id));
-        assert_last_event::<T>(
-                RawEvent::StorageBucketCreated(storage_bucket_id, None, false, 0, 0).into()
-        );
-    }
-
-    update_storage_bucket_status {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let new_status = true;
 
         let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
-    }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id, new_status)
+    }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
     verify {
 
-        let storage_bucket = Module::<T>::storage_bucket_by_id(&storage_bucket_id);
+        assert!(!StorageBucketById::<T>::contains_key(&storage_bucket_id));
         assert_last_event::<T>(
-                RawEvent::StorageBucketStatusUpdated(storage_bucket_id, new_status).into()
+            RawEvent::StorageBucketDeleted(storage_bucket_id).into()
         );
     }
 
@@ -332,7 +355,7 @@ benchmarks! {
 
         assert_eq!(Module::<T>::uploading_blocked(), new_status);
         assert_last_event::<T>(
-                RawEvent::UploadingBlockStatusUpdated(new_status).into()
+            RawEvent::UploadingBlockStatusUpdated(new_status).into()
         );
     }
 
@@ -345,20 +368,335 @@ benchmarks! {
 
         assert_eq!(Module::<T>::data_object_per_mega_byte_fee(), new_fee);
         assert_last_event::<T>(
-                RawEvent::DataObjectPerMegabyteFeeUpdated(new_fee).into()
+            RawEvent::DataObjectPerMegabyteFeeUpdated(new_fee).into()
         );
     }
 
-    delete_storage_bucket {
+    update_storage_buckets_per_bag_limit {
         let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_limit = 10u64;
 
-        let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
-    }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
+    }: _ (RawOrigin::Signed(lead_account_id), new_limit)
     verify {
 
-        assert!(!StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert_eq!(Module::<T>::storage_buckets_per_bag_limit(), new_limit);
         assert_last_event::<T>(
-                RawEvent::StorageBucketDeleted(storage_bucket_id).into()
+            RawEvent::StorageBucketsPerBagLimitUpdated(new_limit).into()
+        );
+    }
+
+    update_storage_buckets_voucher_max_limits {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_size = 20u64;
+        let new_object_number = 10u64;
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_size, new_object_number)
+    verify {
+
+        assert_eq!(Module::<T>::voucher_max_objects_size_limit(), new_size);
+        assert_eq!(Module::<T>::voucher_max_objects_number_limit(), new_object_number);
+        assert_last_event::<T>(
+            RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_size, new_object_number).into()
+        );
+    }
+
+    update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+
+        let dynamic_bag_type = DynamicBagType::Member;
+        let new_number = 10u64;
+
+    }: _ (RawOrigin::Signed(lead_account_id), dynamic_bag_type, new_number)
+    verify {
+        let creation_policy = Module::<T>::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+        assert_eq!(creation_policy.number_of_storage_buckets, new_number);
+        assert_last_event::<T>(
+            RawEvent::NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(
+                dynamic_bag_type,
+                new_number
+            ).into()
+        );
+    }
+
+    update_blacklist {
+        let i in 0 .. BLACKLIST_SIZE_LIMIT;
+        let j in 0 .. BLACKLIST_SIZE_LIMIT;
+
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+
+        let add_cids = create_cids(i);
+        let remove_cids = create_cids(j);
+
+        // Add 'cids to remove' first.
+        Module::<T>::update_blacklist(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            remove_cids.clone(),
+            Default::default(),
+        )
+        .unwrap();
+
+    }: _ (RawOrigin::Signed(lead_account_id), remove_cids.clone(), add_cids.clone())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::UpdateBlacklist(
+                remove_cids,
+                add_cids
+            ).into()
+        );
+    }
+
+    create_storage_bucket {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let storage_bucket_id = Module::<T>::next_storage_bucket_id();
+
+    }: _ (RawOrigin::Signed(lead_account_id), None, false, 0, 0)
+    verify {
+        assert!(StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert_last_event::<T>(
+            RawEvent::StorageBucketCreated(storage_bucket_id, None, false, 0, 0).into()
+        );
+    }
+
+    update_storage_buckets_for_bag {
+        let i in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
+        let j in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
+
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let bag_id = BagId::<T>::Static(StaticBagId::Council);
+
+        Module::<T>::update_storage_buckets_per_bag_limit(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            STORAGE_BUCKETS_FOR_BAG_NUMBER.saturated_into(),
+        ).unwrap();
+
+        let add_buckets = create_storage_buckets::<T>(lead_account_id.clone(), i);
+        let remove_buckets = create_storage_buckets::<T>(lead_account_id.clone(), j);
+
+        // Add 'buckets to remove' first.
+        Module::<T>::update_storage_buckets_for_bag(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bag_id.clone(),
+            remove_buckets.clone(),
+            Default::default(),
+        )
+        .unwrap();
+
+    }: _ (
+        RawOrigin::Signed(lead_account_id),
+        bag_id.clone(),
+        add_buckets.clone(),
+        remove_buckets.clone()
+    )
+    verify {
+        let bag = Module::<T>::bag(bag_id.clone());
+        assert_eq!(bag.stored_by, add_buckets.clone());
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketsUpdatedForBag(bag_id, add_buckets, remove_buckets).into()
+        );
+    }
+
+    cancel_storage_bucket_operator_invite {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+        let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        Module::<T>::invite_storage_bucket_operator(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id,
+            worker_id,
+        )
+        .unwrap();
+
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::InvitedStorageWorker(
+                worker_id
+            )
+        );
+
+    }: _ (RawOrigin::Signed(lead_account_id), bucket_id)
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::Missing
+        );
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketInvitationCancelled(bucket_id).into()
+        );
+    }
+
+    invite_storage_bucket_operator {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+        let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::Missing
+        );
+
+    }: _ (RawOrigin::Signed(lead_account_id), bucket_id, worker_id)
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::InvitedStorageWorker(
+                worker_id
+            )
+        );
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketOperatorInvited(bucket_id, worker_id).into()
+        );
+    }
+
+    remove_storage_bucket_operator {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        Module::<T>::invite_storage_bucket_operator(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id,
+            worker_id,
+        )
+        .unwrap();
+
+        Module::<T>::accept_storage_bucket_invitation(
+            RawOrigin::Signed(worker_account_id.clone()).into(),
+            worker_id,
+            bucket_id,
+            worker_account_id.clone()
+        )
+        .unwrap();
+
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::StorageWorker(
+                worker_id,
+                worker_account_id,
+            )
+        );
+
+    }: _ (RawOrigin::Signed(lead_account_id), bucket_id)
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::Missing
+        );
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketOperatorRemoved(bucket_id).into()
+        );
+    }
+
+    update_storage_bucket_status {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+        let new_status = false;
+
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        assert!(bucket.accepting_new_bags);
+
+    }: _ (RawOrigin::Signed(lead_account_id), bucket_id, new_status)
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert!(!bucket.accepting_new_bags);
+        assert_last_event::<T>(
+            RawEvent::StorageBucketStatusUpdated(bucket_id, new_status).into()
+        );
+    }
+
+    set_storage_bucket_voucher_limits {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        let new_objects_size_limit: u64 = 10;
+        let new_objects_number_limit: u64 = 10;
+
+        Module::<T>::update_storage_buckets_voucher_max_limits(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            new_objects_size_limit,
+            new_objects_number_limit
+        )
+        .unwrap();
+
+    }: _ (
+        RawOrigin::Signed(lead_account_id),
+        bucket_id,
+        new_objects_size_limit,
+        new_objects_number_limit
+    )
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(bucket.voucher.size_limit, new_objects_size_limit);
+        assert_eq!(bucket.voucher.objects_limit, new_objects_number_limit);
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketVoucherLimitsSet(
+                bucket_id,
+                new_objects_size_limit,
+                new_objects_number_limit
+            ).into()
+        );
+    }
+
+    accept_storage_bucket_invitation {
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        Module::<T>::invite_storage_bucket_operator(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id,
+            worker_id,
+        )
+        .unwrap();
+
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::InvitedStorageWorker(worker_id)
+        );
+
+    }: _ (
+            RawOrigin::Signed(worker_account_id.clone()),
+            worker_id,
+            bucket_id,
+            worker_account_id.clone()
+    )
+    verify {
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(
+            bucket.operator_status,
+            StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::StorageWorker(
+                worker_id,
+                worker_account_id.clone(),
+            )
+        );
+
+        assert_last_event::<T>(
+            RawEvent::StorageBucketInvitationAccepted(
+                bucket_id,
+                worker_id,
+                worker_account_id
+            ).into()
         );
     }
 }
@@ -368,20 +706,6 @@ mod tests {
     use super::*;
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
-
-    #[test]
-    fn create_storage_bucket() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_storage_bucket::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_storage_bucket_status() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_storage_bucket_status::<Test>());
-        });
-    }
 
     #[test]
     fn delete_storage_bucket() {
@@ -401,6 +725,96 @@ mod tests {
     fn update_data_size_fee() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_update_data_size_fee::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_storage_buckets_per_bag_limit() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_storage_buckets_per_bag_limit::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_storage_buckets_voucher_max_limits() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_storage_buckets_voucher_max_limits::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(
+                test_benchmark_update_number_of_storage_buckets_in_dynamic_bag_creation_policy::<
+                    Test,
+                >()
+            );
+        });
+    }
+
+    #[test]
+    fn update_blacklist() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_blacklist::<Test>());
+        });
+    }
+
+    #[test]
+    fn create_storage_bucket() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_create_storage_bucket::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_storage_buckets_for_bag() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_storage_buckets_for_bag::<Test>());
+        });
+    }
+
+    #[test]
+    fn cancel_storage_bucket_operator_invite() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_storage_bucket_operator_invite::<Test>());
+        });
+    }
+
+    #[test]
+    fn invite_storage_bucket_operator() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_invite_storage_bucket_operator::<Test>());
+        });
+    }
+
+    #[test]
+    fn remove_storage_bucket_operator() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_remove_storage_bucket_operator::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_storage_bucket_status() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_storage_bucket_status::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_storage_bucket_voucher_limits() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_storage_bucket_voucher_limits::<Test>());
+        });
+    }
+
+    #[test]
+    fn accept_storage_bucket_invitation() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_accept_storage_bucket_invitation::<Test>());
         });
     }
 }

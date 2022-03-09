@@ -214,7 +214,7 @@ fn accept_storage_bucket_invitation_succeeded() {
 #[test]
 fn accept_storage_bucket_invitation_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_storage_provider_id = 1;
+        let non_storage_provider_id = 51;
 
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(non_storage_provider_id))

@@ -73,10 +73,15 @@ parameter_types! {
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
+pub const DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 0;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
+pub const BENCHMARKING_STORAGE_PROVIDER_ID1: u64 = 0;
+pub const BENCHMARKING_STORAGE_PROVIDER_ID2: u64 = 1;
+pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID: u64 = 0;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 pub const INITIAL_BALANCE: u64 = 10_000;
@@ -125,7 +130,12 @@ impl crate::Trait for Test {
     fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
-        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
+        let allowed_accounts = vec![
+            DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID,
+        ];
+
+        if !allowed_accounts.contains(&account_id) {
             Err(DispatchError::BadOrigin)
         } else {
             Ok(())
@@ -133,8 +143,12 @@ impl crate::Trait for Test {
     }
 
     fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers =
-            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
+        let allowed_storage_providers = vec![
+            DEFAULT_STORAGE_PROVIDER_ID,
+            ANOTHER_STORAGE_PROVIDER_ID,
+            BENCHMARKING_STORAGE_PROVIDER_ID1,
+            BENCHMARKING_STORAGE_PROVIDER_ID2,
+        ];
 
         if !allowed_storage_providers.contains(worker_id) {
             Err(DispatchError::Other("Invalid worker"))
@@ -156,7 +170,12 @@ impl crate::Trait for Test {
     fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
-        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
+        let allowed_accounts = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+        ];
+
+        if !allowed_accounts.contains(&account_id) {
             Err(DispatchError::BadOrigin)
         } else {
             Ok(())
@@ -167,6 +186,7 @@ impl crate::Trait for Test {
         let allowed_providers = vec![
             DEFAULT_DISTRIBUTION_PROVIDER_ID,
             ANOTHER_DISTRIBUTION_PROVIDER_ID,
+            BENCHMARKING_DISTRIBUTION_PROVIDER_ID,
         ];
 
         if !allowed_providers.contains(worker_id) {
