@@ -9,6 +9,7 @@ use sp_runtime::traits::Bounded;
 use sp_std::boxed::Box;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
+use sp_std::iter::FromIterator;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -20,8 +21,8 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Call, Cid, DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById,
-    StorageBucketOperatorStatus, Trait, WorkerId,
+    BagId, Balances, Call, Cid, DataObjectCreationParameters, DynamicBagType, Module, RawEvent,
+    StaticBagId, StorageBucketById, StorageBucketOperatorStatus, Trait, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
@@ -314,14 +315,35 @@ fn create_cids(i: u32) -> BTreeSet<Cid> {
         buffer
     }
 
-    iter::repeat(())
-        .take(i.saturated_into())
-        .map(|_| create_cid(i))
-        .collect::<_>()
+    (0..i).into_iter().map(|idx| create_cid(idx)).collect::<_>()
 }
 
-const BLACKLIST_SIZE_LIMIT: u32 = 2000;
+fn set_storage_operator<T: Trait>(
+    lead_account_id: T::AccountId,
+    bucket_id: T::StorageBucketId,
+    worker_id: WorkerId<T>,
+    worker_account_id: T::AccountId,
+) {
+    Module::<T>::invite_storage_bucket_operator(
+        RawOrigin::Signed(lead_account_id.clone()).into(),
+        bucket_id,
+        worker_id,
+    )
+    .unwrap();
+
+    Module::<T>::accept_storage_bucket_invitation(
+        RawOrigin::Signed(worker_account_id.clone()).into(),
+        worker_id,
+        bucket_id,
+        worker_account_id.clone(),
+    )
+    .unwrap();
+}
+
+const BLACKLIST_SIZE_LIMIT: u32 = 200;
 const STORAGE_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
+const MAX_BYTE_SIZE: u32 = 1000;
+const OBJECT_COUNT: u32 = 400;
 
 benchmarks! {
     where_clause {
@@ -564,20 +586,12 @@ benchmarks! {
             insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
-        Module::<T>::invite_storage_bucket_operator(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
+        set_storage_operator::<T>(
+            lead_account_id.clone(),
             bucket_id,
             worker_id,
-        )
-        .unwrap();
-
-        Module::<T>::accept_storage_bucket_invitation(
-            RawOrigin::Signed(worker_account_id.clone()).into(),
-            worker_id,
-            bucket_id,
             worker_account_id.clone()
-        )
-        .unwrap();
+        );
 
         let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
         assert_eq!(
@@ -699,6 +713,135 @@ benchmarks! {
             ).into()
         );
     }
+
+    set_storage_operator_metadata {
+        let i in 1 .. MAX_BYTE_SIZE;
+
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+
+        set_storage_operator::<T>(
+            lead_account_id.clone(),
+            bucket_id,
+            worker_id,
+            worker_account_id.clone()
+        );
+
+    }: _ (
+            RawOrigin::Signed(worker_account_id.clone()),
+            worker_id,
+            bucket_id,
+            metadata.clone()
+    )
+    verify {
+        assert_last_event::<T>(
+            RawEvent::StorageOperatorMetadataSet(
+                bucket_id,
+                worker_id,
+                metadata
+            ).into()
+        );
+    }
+
+    accept_pending_data_objects {
+        let i in 1 .. OBJECT_COUNT;
+
+        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+        let bag_id = BagId::<T>::Static(StaticBagId::Council);
+
+        set_storage_operator::<T>(
+            lead_account_id.clone(),
+            bucket_id,
+            worker_id,
+            worker_account_id.clone()
+        );
+
+        Module::<T>::update_storage_buckets_per_bag_limit(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            STORAGE_BUCKETS_FOR_BAG_NUMBER.saturated_into(),
+        ).unwrap();
+
+        Module::<T>::update_storage_buckets_for_bag(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bag_id.clone(),
+            BTreeSet::from_iter(vec![bucket_id]),
+            Default::default(),
+        )
+        .unwrap();
+
+        let new_objects_size_limit: u64 = (i * OBJECT_COUNT).saturated_into();
+        let new_objects_number_limit: u64 = i.saturated_into();
+
+        Module::<T>::update_storage_buckets_voucher_max_limits(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            new_objects_size_limit,
+            new_objects_number_limit
+        )
+        .unwrap();
+
+        Module::<T>::set_storage_bucket_voucher_limits(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id,
+            new_objects_size_limit,
+            new_objects_number_limit
+        )
+        .unwrap();
+
+        let object_parameters = create_cids(i)
+            .iter()
+            .map(|cid| DataObjectCreationParameters{
+                size: i.saturated_into(),
+                ipfs_content_id: cid.clone(),
+            })
+            .collect::<Vec<_>>();
+
+        println!("create_cids(3): {:?}", create_cids(3));
+        println!("create_cids(i): {:?}", create_cids(i));
+        println!("i: {:?}", i);
+        println!("object_parameters: {:?}", object_parameters.len());
+
+        let upload_parameters = UploadParameters::<T>{
+            bag_id: bag_id.clone(),
+            deletion_prize_source_account_id: worker_account_id.clone(),
+            expected_data_size_fee: Default::default(),
+            object_creation_list: object_parameters.clone()
+        };
+
+        Module::<T>::sudo_upload_data_objects(
+            RawOrigin::Root.into(),
+            upload_parameters,
+        )
+        .unwrap();
+
+        let data_objects = (0..i).into_iter()
+            .map(|id| id.saturated_into())
+            .collect::<BTreeSet<_>>();
+
+        println!("{:?}", data_objects);
+    }: _ (
+            RawOrigin::Signed(worker_account_id.clone()),
+            worker_id,
+            bucket_id,
+            bag_id.clone(),
+            data_objects.clone()
+         )
+    verify {
+        assert_last_event::<T>(
+            RawEvent::PendingDataObjectsAccepted(
+                bucket_id,
+                worker_id,
+                bag_id,
+                data_objects,
+            ).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -815,6 +958,20 @@ mod tests {
     fn accept_storage_bucket_invitation() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_accept_storage_bucket_invitation::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_storage_operator_metadata() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_storage_operator_metadata::<Test>());
+        });
+    }
+
+    #[test]
+    fn accept_pending_data_objects() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_accept_pending_data_objects::<Test>());
         });
     }
 }

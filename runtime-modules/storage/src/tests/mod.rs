@@ -36,6 +36,7 @@ use mocks::{
 };
 
 use fixtures::*;
+use sp_arithmetic::traits::SaturatedConversion;
 
 // helper
 
@@ -2480,11 +2481,16 @@ fn update_blacklist_succeeded() {
 #[test]
 fn update_blacklist_failed_with_exceeding_size_limit() {
     build_test_externalities().execute_with(|| {
+        let b: usize = BlacklistSizeLimit::get().saturated_into();
+        let hashes = (0..b)
+            .into_iter()
+            .map(|i| vec![i.saturated_into::<u8>()])
+            .collect::<Vec<_>>();
         let cid1 = vec![1];
-        let cid2 = vec![2];
-        let cid3 = vec![3];
+        let cid2 = vec![220];
+        let cid3 = vec![221];
 
-        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(hashes);
 
         UpdateBlacklistFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -2509,11 +2515,16 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
 #[test]
 fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_hashes() {
     build_test_externalities().execute_with(|| {
+        let b: usize = BlacklistSizeLimit::get().saturated_into();
+        let hashes = (0..b)
+            .into_iter()
+            .map(|i| vec![i.saturated_into::<u8>()])
+            .collect::<Vec<_>>();
         let cid1 = vec![1];
-        let cid2 = vec![2];
-        let cid3 = vec![3];
+        let cid2 = vec![220];
+        let cid3 = vec![221];
 
-        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(hashes);
 
         UpdateBlacklistFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -4613,8 +4624,6 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
 
         let picked_bucket_ids =
             Storage::pick_distribution_buckets_for_dynamic_bag(dynamic_bag_type);
-
-        println!("{:?}", picked_bucket_ids);
 
         assert_eq!(picked_bucket_ids.len(), (new_bucket_number * 2) as usize); // buckets from two families
 

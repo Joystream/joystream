@@ -58,7 +58,7 @@ parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 6;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
-    pub const BlacklistSizeLimit: u64 = 1;
+    pub const BlacklistSizeLimit: u64 = 200;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
