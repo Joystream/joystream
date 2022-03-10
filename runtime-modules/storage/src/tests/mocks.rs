@@ -56,7 +56,7 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxDistributionBucketFamilyNumber: u64 = 6;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 80;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 200;
@@ -75,14 +75,16 @@ parameter_types! {
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
 pub const DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 1;
-pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
+pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1: u64 = 100003;
+pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2: u64 = 100004;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 pub const BENCHMARKING_STORAGE_PROVIDER_ID1: u64 = 0;
 pub const BENCHMARKING_STORAGE_PROVIDER_ID2: u64 = 1;
-pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID: u64 = 0;
+pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID1: u64 = 0;
+pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID2: u64 = 1;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 pub const INITIAL_BALANCE: u64 = 10_000;
@@ -163,7 +165,8 @@ impl crate::Trait for Test {
 
         let allowed_providers = vec![
             DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2,
         ];
 
         if !allowed_providers.contains(&account_id) {
@@ -178,7 +181,8 @@ impl crate::Trait for Test {
 
         let allowed_accounts = vec![
             DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2,
         ];
 
         if !allowed_accounts.contains(&account_id) {
@@ -192,7 +196,8 @@ impl crate::Trait for Test {
         let allowed_providers = vec![
             DEFAULT_DISTRIBUTION_PROVIDER_ID,
             ANOTHER_DISTRIBUTION_PROVIDER_ID,
-            BENCHMARKING_DISTRIBUTION_PROVIDER_ID,
+            BENCHMARKING_DISTRIBUTION_PROVIDER_ID1,
+            BENCHMARKING_DISTRIBUTION_PROVIDER_ID2,
         ];
 
         if !allowed_providers.contains(worker_id) {

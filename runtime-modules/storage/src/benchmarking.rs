@@ -1,13 +1,14 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use frame_benchmarking::{account, benchmarks};
-use frame_support::storage::{StorageMap, StorageValue};
+use frame_support::storage::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_support::traits::Instance;
 use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
-use sp_arithmetic::traits::One;
+use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Bounded;
 use sp_std::boxed::Box;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
 use sp_std::iter::FromIterator;
@@ -22,9 +23,9 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Call, Cid, DataObjectCreationParameters, DistributionBucketFamilyById,
-    DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById, StorageBucketOperatorStatus,
-    Trait, UploadParameters, WorkerId,
+    BagId, Balances, Call, Cid, DataObjectCreationParameters, DistributionBucketByFamilyIdById,
+    DistributionBucketFamilyById, DistributionBucketId, DynamicBagType, Module, RawEvent,
+    StaticBagId, StorageBucketById, StorageBucketOperatorStatus, Trait, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
@@ -33,15 +34,13 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance3;
 
-// Alias for storage working group.
-type StorageGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
-
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100003;
-pub const DEFAULT_WORKER_ID: u64 = 100002;
+pub const DEFAULT_STORAGE_WORKER_ID: u64 = 100002;
+pub const DEFAULT_DISTRIBUTION_WORKER_ID: u64 = 100004;
 pub const SECOND_WORKER_ID: u64 = 1;
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
@@ -152,7 +151,7 @@ where
         + working_group::Trait<StorageWorkingGroupInstance>
         + balances::Trait,
 {
-    return insert_leader::<T, StorageWorkingGroupInstance>(id);
+    insert_leader::<T, StorageWorkingGroupInstance>(id)
 }
 
 fn insert_distribution_leader<T>(id: u64) -> T::AccountId
@@ -163,7 +162,7 @@ where
         + working_group::Trait<DistributionWorkingGroupInstance>
         + balances::Trait,
 {
-    return insert_leader::<T, DistributionWorkingGroupInstance>(id);
+    insert_leader::<T, DistributionWorkingGroupInstance>(id)
 }
 
 fn insert_leader<T, I>(id: u64) -> T::AccountId
@@ -181,8 +180,7 @@ where
         &OpeningType::Leader,
     );
 
-    let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
-    successful_application_ids.insert(application_id);
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
 
     let worker_id = working_group::NextWorkerId::<T, I>::get();
     working_group::Module::<T, I>::fill_opening(
@@ -197,8 +195,9 @@ where
     caller_id
 }
 
-fn insert_a_worker<
-    T: Trait + membership::Trait + working_group::Trait<StorageWorkingGroupInstance> + balances::Trait,
+fn insert_worker<
+    T: Trait + membership::Trait + working_group::Trait<I> + balances::Trait,
+    I: Instance,
 >(
     leader_account_id: T::AccountId,
     id: u64,
@@ -210,24 +209,52 @@ where
 
     let leader_origin = RawOrigin::Signed(leader_account_id);
 
-    let (opening_id, application_id) = add_and_apply_opening::<T, StorageWorkingGroupInstance>(
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(leader_origin.clone()),
         &caller_id,
         &member_id,
         &OpeningType::Regular,
     );
 
-    let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
-    successful_application_ids.insert(application_id);
-    let worker_id = working_group::NextWorkerId::<T, StorageWorkingGroupInstance>::get();
-    StorageGroup::<T>::fill_opening(leader_origin.into(), opening_id, successful_application_ids)
-        .unwrap();
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
+        leader_origin.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
 
-    assert!(WorkerById::<T, StorageWorkingGroupInstance>::contains_key(
-        &worker_id
-    ));
+    assert!(WorkerById::<T, I>::contains_key(&worker_id));
 
     (caller_id, worker_id)
+}
+
+fn insert_storage_worker<
+    T: Trait + membership::Trait + working_group::Trait<StorageWorkingGroupInstance> + balances::Trait,
+>(
+    leader_account_id: T::AccountId,
+    id: u64,
+) -> (T::AccountId, WorkerId<T>)
+where
+    T::AccountId: CreateAccountId,
+{
+    insert_worker::<T, StorageWorkingGroupInstance>(leader_account_id, id)
+}
+
+fn insert_distribution_worker<
+    T: Trait
+        + membership::Trait
+        + working_group::Trait<DistributionWorkingGroupInstance>
+        + balances::Trait,
+>(
+    leader_account_id: T::AccountId,
+    id: u64,
+) -> (T::AccountId, WorkerId<T>)
+where
+    T::AccountId: CreateAccountId,
+{
+    insert_worker::<T, DistributionWorkingGroupInstance>(leader_account_id, id)
 }
 
 fn add_and_apply_opening<T: Trait + working_group::Trait<I>, I: Instance>(
@@ -336,7 +363,7 @@ fn create_cids(i: u32) -> BTreeSet<Cid> {
         buffer
     }
 
-    (0..i).into_iter().map(|idx| create_cid(idx)).collect::<_>()
+    (0..i).into_iter().map(create_cid).collect::<_>()
 }
 
 fn set_storage_operator<T: Trait>(
@@ -346,7 +373,7 @@ fn set_storage_operator<T: Trait>(
     worker_account_id: T::AccountId,
 ) {
     Module::<T>::invite_storage_bucket_operator(
-        RawOrigin::Signed(lead_account_id.clone()).into(),
+        RawOrigin::Signed(lead_account_id).into(),
         bucket_id,
         worker_id,
     )
@@ -356,13 +383,77 @@ fn set_storage_operator<T: Trait>(
         RawOrigin::Signed(worker_account_id.clone()).into(),
         worker_id,
         bucket_id,
-        worker_account_id.clone(),
+        worker_account_id,
     )
     .unwrap();
 }
 
+fn create_distribution_bucket_helper<T: Trait>(
+    lead_account_id: T::AccountId,
+) -> DistributionBucketId<T> {
+    create_distribution_bucket_with_family::<T>(lead_account_id, None)
+}
+
+fn create_distribution_bucket_families<T: Trait>(
+    lead_account_id: T::AccountId,
+    i: u32,
+) -> Vec<T::DistributionBucketFamilyId> {
+    iter::repeat(())
+        .take(i.saturated_into())
+        .map(|_| create_distribution_family::<T>(lead_account_id.clone()))
+        .collect::<Vec<_>>()
+}
+
+fn create_distribution_family<T: Trait>(
+    lead_account_id: T::AccountId,
+) -> T::DistributionBucketFamilyId {
+    let fam_id = Module::<T>::next_distribution_bucket_family_id();
+
+    Module::<T>::create_distribution_bucket_family(RawOrigin::Signed(lead_account_id).into())
+        .unwrap();
+
+    fam_id
+}
+
+fn create_distribution_bucket_with_family<T: Trait>(
+    lead_account_id: T::AccountId,
+    existing_family_id: Option<T::DistributionBucketFamilyId>,
+) -> DistributionBucketId<T> {
+    let family_id = if let Some(existing_family_id) = existing_family_id {
+        existing_family_id
+    } else {
+        create_distribution_family::<T>(lead_account_id.clone())
+    };
+
+    let family = Module::<T>::distribution_bucket_family_by_id(family_id);
+    let bucket_idx = family.next_distribution_bucket_index;
+    let bucket_status = true;
+
+    Module::<T>::create_distribution_bucket(
+        RawOrigin::Signed(lead_account_id).into(),
+        family_id,
+        bucket_status,
+    )
+    .unwrap();
+
+    Module::<T>::create_distribution_bucket_id(family_id, bucket_idx)
+}
+
+fn create_distribution_buckets<T: Trait>(
+    account_id: T::AccountId,
+    family_id: T::DistributionBucketFamilyId,
+    i: u32,
+) -> BTreeSet<DistributionBucketId<T>> {
+    iter::repeat(())
+        .take(i.saturated_into())
+        .map(|_| create_distribution_bucket_with_family::<T>(account_id.clone(), Some(family_id)))
+        .collect::<_>()
+}
+
 const BLACKLIST_SIZE_LIMIT: u32 = 200;
 const STORAGE_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
+const DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
+const DISTRIBUTION_BUCKET_FAMILIES_NUMBER: u32 = 80;
 const MAX_BYTE_SIZE: u32 = 1000;
 const OBJECT_COUNT: u32 = 400;
 
@@ -534,7 +625,7 @@ benchmarks! {
     )
     verify {
         let bag = Module::<T>::bag(bag_id.clone());
-        assert_eq!(bag.stored_by, add_buckets.clone());
+        assert_eq!(bag.stored_by, add_buckets);
 
         assert_last_event::<T>(
             RawEvent::StorageBucketsUpdatedForBag(bag_id, add_buckets, remove_buckets).into()
@@ -543,7 +634,7 @@ benchmarks! {
 
     cancel_storage_bucket_operator_invite {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+        let (_, worker_id) = insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         Module::<T>::invite_storage_bucket_operator(
@@ -577,7 +668,7 @@ benchmarks! {
 
     invite_storage_bucket_operator {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+        let (_, worker_id) = insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
@@ -605,7 +696,7 @@ benchmarks! {
     remove_storage_bucket_operator {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         set_storage_operator::<T>(
@@ -694,11 +785,11 @@ benchmarks! {
     accept_storage_bucket_invitation {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         Module::<T>::invite_storage_bucket_operator(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
+            RawOrigin::Signed(lead_account_id).into(),
             bucket_id,
             worker_id,
         )
@@ -741,13 +832,13 @@ benchmarks! {
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
 
         set_storage_operator::<T>(
-            lead_account_id.clone(),
+            lead_account_id,
             bucket_id,
             worker_id,
             worker_account_id.clone()
@@ -774,7 +865,7 @@ benchmarks! {
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
 
@@ -809,7 +900,7 @@ benchmarks! {
         .unwrap();
 
         Module::<T>::set_storage_bucket_voucher_limits(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
+            RawOrigin::Signed(lead_account_id).into(),
             bucket_id,
             new_objects_size_limit,
             new_objects_number_limit
@@ -828,7 +919,7 @@ benchmarks! {
             bag_id: bag_id.clone(),
             deletion_prize_source_account_id: worker_account_id.clone(),
             expected_data_size_fee: Default::default(),
-            object_creation_list: object_parameters.clone()
+            object_creation_list: object_parameters
         };
 
         Module::<T>::sudo_upload_data_objects(
@@ -866,6 +957,275 @@ benchmarks! {
     verify {
         assert!(DistributionBucketFamilyById::<T>::contains_key(&family_id));
         assert_last_event::<T>(RawEvent::DistributionBucketFamilyCreated(family_id).into());
+    }
+
+    delete_distribution_bucket_family {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let family_id = Module::<T>::next_distribution_bucket_family_id();
+
+        Module::<T>::create_distribution_bucket_family(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+        )
+        .unwrap();
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id)
+    verify {
+        assert!(!DistributionBucketFamilyById::<T>::contains_key(&family_id));
+        assert_last_event::<T>(RawEvent::DistributionBucketFamilyDeleted(family_id).into());
+    }
+
+    create_distribution_bucket {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let family_id = Module::<T>::next_distribution_bucket_family_id();
+
+        Module::<T>::create_distribution_bucket_family(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+        )
+        .unwrap();
+        let bucket_status = false;
+
+        let bucket_idx: T::DistributionBucketIndex = Zero::zero();
+        let bucket_id = Module::<T>::create_distribution_bucket_id(family_id, bucket_idx);
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id, bucket_status)
+    verify {
+        assert!(DistributionBucketByFamilyIdById::<T>::contains_key(&family_id, &bucket_idx));
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketCreated(family_id, bucket_status, bucket_id).into()
+        );
+    }
+
+    update_distribution_bucket_status {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        let new_bucket_status = false;
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), new_bucket_status)
+    verify {
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+
+        assert_eq!(bucket.accepting_new_bags, new_bucket_status);
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketStatusUpdated(bucket_id, new_bucket_status).into()
+        );
+    }
+
+    delete_distribution_bucket {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone())
+    verify {
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+        assert!(!DistributionBucketByFamilyIdById::<T>::contains_key(&family_id, &bucket_idx));
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketDeleted(bucket_id).into()
+        );
+    }
+
+    update_distribution_buckets_for_bag {
+        let i in 1 .. DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER;
+        let j in 1 .. DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER;
+
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let bag_id = BagId::<T>::Static(StaticBagId::Council);
+        let family_id = Module::<T>::next_distribution_bucket_family_id();
+
+        Module::<T>::create_distribution_bucket_family(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+        )
+        .unwrap();
+
+        let new_limit = 7;
+        Module::<T>::update_distribution_buckets_per_bag_limit(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            new_limit
+        )
+        .unwrap();
+
+        let added_buckets = create_distribution_buckets::<T>(lead_account_id.clone(), family_id, i);
+        let remove_buckets = create_distribution_buckets::<T>(lead_account_id.clone(), family_id, j);
+
+        let added_bucket_idxs = added_buckets
+            .iter()
+            .map(|id| id.distribution_bucket_index)
+            .collect::<BTreeSet<_>>();
+        let remove_buckets_idxs = remove_buckets
+            .iter()
+            .map(|id| id.distribution_bucket_index)
+            .collect::<BTreeSet<_>>();
+
+        // Set 'buckets to remove' first.
+        Module::<T>::update_distribution_buckets_for_bag(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bag_id.clone(),
+            family_id,
+            remove_buckets_idxs.clone(),
+            BTreeSet::new(),
+        )
+        .unwrap();
+
+    }: _ (
+        RawOrigin::Signed(lead_account_id.clone()),
+        bag_id.clone(),
+        family_id,
+        added_bucket_idxs.clone(),
+        remove_buckets_idxs.clone()
+    )
+    verify {
+        let bag = Module::<T>::bag(bag_id.clone());
+        assert_eq!(bag.distributed_by, added_buckets);
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketsUpdatedForBag(
+                bag_id,
+                family_id,
+                added_bucket_idxs,
+                remove_buckets_idxs,
+            ).into()
+        );
+    }
+
+    update_distribution_buckets_per_bag_limit {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let new_limit = 7;
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), new_limit)
+    verify {
+        assert_eq!(Module::<T>::distribution_buckets_per_bag_limit(), new_limit);
+
+        assert_last_event::<T>(RawEvent::DistributionBucketsPerBagLimitUpdated(new_limit).into());
+    }
+
+    update_distribution_bucket_mode {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+        let distributing = true;
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), distributing)
+    verify {
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+
+        assert_eq!(bucket.distributing, distributing);
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketModeUpdated(bucket_id, distributing).into()
+        );
+    }
+
+    update_families_in_dynamic_bag_creation_policy {
+        let i in 1 .. DISTRIBUTION_BUCKET_FAMILIES_NUMBER;
+
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let dynamic_bag_type = DynamicBagType::Member;
+        let family_ids = create_distribution_bucket_families::<T>(lead_account_id.clone(), i);
+
+        let fam_number = 10u32;
+        let fam_policies = family_ids.iter()
+            .cloned()
+            .map(|id| (id, fam_number))
+            .collect::<BTreeMap<_,_>>();
+
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), dynamic_bag_type, fam_policies.clone())
+    verify {
+
+        let policy = Module::<T>::dynamic_bag_creation_policy(dynamic_bag_type);
+        assert_eq!(policy.families, fam_policies);
+
+        assert_last_event::<T>(
+            RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(dynamic_bag_type, fam_policies).into()
+        );
+    }
+
+    invite_distribution_bucket_operator {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (_, worker_id) = insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
+    verify {
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+
+        assert!(bucket.pending_invitations.contains(&worker_id));
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketOperatorInvited(bucket_id, worker_id).into()
+        );
+    }
+
+    cancel_distribution_bucket_operator_invite {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (_, worker_id) = insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        // Invite operator first.
+        Module::<T>::invite_distribution_bucket_operator(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id.clone(),
+            worker_id,
+        )
+        .unwrap();
+
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        assert!(bucket.pending_invitations.contains(&worker_id));
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
+    verify {
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        assert!(!bucket.pending_invitations.contains(&worker_id));
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketInvitationCancelled(bucket_id, worker_id).into()
+        );
+    }
+
+    remove_distribution_bucket_operator {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        // Invite operator.
+        Module::<T>::invite_distribution_bucket_operator(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            bucket_id.clone(),
+            worker_id,
+        )
+        .unwrap();
+
+        // Accept invitation.
+        Module::<T>::accept_distribution_bucket_invitation(
+            RawOrigin::Signed(worker_account_id).into(),
+            worker_id,
+            bucket_id.clone(),
+        )
+        .unwrap();
+
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        assert!(bucket.operators.contains(&worker_id));
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
+    verify {
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        assert!(!bucket.operators.contains(&worker_id));
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketOperatorRemoved(bucket_id, worker_id).into()
+        );
     }
 }
 
@@ -1004,6 +1364,87 @@ mod tests {
     fn create_distribution_bucket_family() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_create_distribution_bucket_family::<Test>());
+        });
+    }
+
+    #[test]
+    fn delete_distribution_bucket_family() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_delete_distribution_bucket_family::<Test>());
+        });
+    }
+
+    #[test]
+    fn create_distribution_bucket() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_create_distribution_bucket::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_distribution_bucket_status() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_distribution_bucket_status::<Test>());
+        });
+    }
+
+    #[test]
+    fn delete_distribution_bucket() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_delete_distribution_bucket::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_distribution_buckets_for_bag() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_distribution_buckets_for_bag::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_distribution_buckets_per_bag_limit() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_distribution_buckets_per_bag_limit::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn update_distribution_bucket_mode() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_distribution_bucket_mode::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_families_in_dynamic_bag_creation_policy() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_families_in_dynamic_bag_creation_policy::<Test>());
+        });
+    }
+
+    #[test]
+    fn invite_distribution_bucket_operator() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_invite_distribution_bucket_operator::<Test>());
+        });
+    }
+
+    #[test]
+    fn cancel_distribution_bucket_operator_invite() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_distribution_bucket_operator_invite::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn remove_distribution_bucket_operator() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_remove_distribution_bucket_operator::<Test>());
         });
     }
 }
