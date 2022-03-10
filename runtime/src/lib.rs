@@ -516,9 +516,9 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const DefaultBudgetIncrement: u64 = 1000;
-    pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -732,10 +732,10 @@ parameter_types! {
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const GatewayRewardPeriod: u32 = 14400 + 50;
-    pub const DistributionRewardPeriod: u32 = 14400 + 50;
     pub const OperationsAlphaRewardPeriod: u32 = 14400 + 60;
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
+    pub const DistributionRewardPeriod: u32 = 14400 + 90;
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
