@@ -998,7 +998,8 @@ impl joystream_utility::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+    // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
 }
 
 impl proposals_codex::Trait for Runtime {
