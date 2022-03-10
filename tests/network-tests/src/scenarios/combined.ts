@@ -10,7 +10,7 @@ import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import { WorkingGroups } from '../WorkingGroups'
 
-scenario(async ({ job }) => {
+scenario('Combined', async ({ job }) => {
   // These tests assume:
   // - storage setup (including hired lead)
   // - existing council

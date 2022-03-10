@@ -5,7 +5,7 @@ import { scenario } from '../Scenario'
 import { WorkingGroups } from '../WorkingGroups'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
 
-scenario(async ({ job }) => {
+scenario('Init storage and distribution', async ({ job }) => {
   const setupLead = job('setup leads', [
     leaderSetup(WorkingGroups.Distribution, true),
     leaderSetup(WorkingGroups.Storage, true),

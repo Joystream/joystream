@@ -1,0 +1,55 @@
+fragment ChannelFields on Channel {
+  id
+  activeVideosCounter
+  title
+  description
+  isPublic
+  language {
+    iso
+  }
+  rewardAccount
+  isCensored
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+  category {
+    name
+  }
+  avatarPhoto {
+    ...StorageDataObjectFields
+  }
+  coverPhoto {
+    ...StorageDataObjectFields
+  }
+}
+
+fragment ChannelCategoryFields on ChannelCategory {
+  id
+  activeVideosCounter
+}
+
+fragment VideoCategoryFields on VideoCategory {
+  id
+  activeVideosCounter
+}
+
+query getChannelById($id: ID!) {
+  channelByUniqueInput(where: { id: $id }) {
+    ...ChannelFields
+  }
+}
+
+query getChannelCategoryById($id: ID!) {
+  channelCategoryByUniqueInput(where: { id: $id }) {
+    ...ChannelCategoryFields
+  }
+}
+
+query getVideoCategoryById($id: ID!) {
+  videoCategoryByUniqueInput(where: { id: $id }) {
+    ...VideoCategoryFields
+  }
+}

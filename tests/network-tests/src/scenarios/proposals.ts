@@ -8,7 +8,7 @@ import validatorCountProposal from '../flows/proposals/validatorCountProposal'
 import wgMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
+scenario('Proposals', async ({ job }) => {
   job('creating members', creatingMemberships)
 
   const councilJob = job('council setup', councilSetup)

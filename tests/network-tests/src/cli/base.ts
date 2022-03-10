@@ -1,9 +1,14 @@
 import path from 'path'
-import { execFile } from 'child_process'
+import { execFile, ChildProcess, PromiseWithChild, ExecFileException, ExecException } from 'child_process'
 import { promisify } from 'util'
 import { Sender } from '../sender'
 
-export type CommandResult = { stdout: string; stderr: string; out: string }
+export type CommandResult = {
+  exitCode: number
+  stdout: string
+  stderr: string
+  out: string
+}
 
 export abstract class CLI {
   protected env: Record<string, string>
@@ -38,17 +43,53 @@ export abstract class CLI {
     return nextArg
   }
 
-  async run(command: string, customArgs: string[] = [], lockKeys: string[] = []): Promise<CommandResult> {
+  async run(
+    command: string,
+    customArgs: string[] = [],
+    lockKeys: string[] = [],
+    requireSuccess = true
+  ): Promise<CommandResult> {
+    const defaultError = 1
+
     const pExecFile = promisify(execFile)
     const { env } = this
-    const { stdout, stderr } = await Sender.asyncLock.acquire(
+    const { stdout, stderr, exitCode } = await Sender.asyncLock.acquire(
       lockKeys.map((k) => `nonce-${k}`),
-      () =>
-        pExecFile(this.binPath, [command, ...this.getArgs(customArgs)], {
-          env,
-          cwd: this.rootPath,
-        })
+
+      async () => {
+        try {
+          // execute command and wait for std outputs (or error)
+          const execOutputs = await pExecFile(this.binPath, [command, ...this.getArgs(customArgs)], {
+            env,
+            cwd: this.rootPath,
+          })
+
+          // return outputs and exit code
+          return {
+            ...execOutputs,
+            exitCode: 0,
+          }
+        } catch (error: unknown) {
+          const errorTyped = error as ExecFileException & { stdout?: string; stderr?: string }
+          // escape if command's success is required
+          if (requireSuccess) {
+            throw error
+          }
+
+          return {
+            exitCode: errorTyped.code || defaultError,
+            stdout: errorTyped.stdout || '',
+            stderr: errorTyped.stderr || '',
+          }
+        }
+      }
     )
-    return { stdout, stderr, out: stdout.trim() }
+
+    return {
+      exitCode,
+      stdout,
+      stderr,
+      out: stdout.trim(),
+    }
   }
 }

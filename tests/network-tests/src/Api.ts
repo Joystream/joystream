@@ -1,7 +1,8 @@
 import { ApiPromise, WsProvider, Keyring, SubmittableResult } from '@polkadot/api'
-import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
+import { Bytes, BTreeSet, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { decodeAddress } from '@polkadot/keyring'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
 import {
@@ -12,6 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
+import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
@@ -28,7 +30,6 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
-// import { v4 as uuid } from 'uuid'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 import { VideoId, VideoCategoryId } from '@joystream/types/content'
@@ -137,18 +138,18 @@ export class ApiFactory {
     return keys
   }
 
-  private createKeyPair(suriPath: string, isCustom = false): KeyringPair {
+  private createKeyPair(suriPath: string, isCustom = false, isFinalPath = false): KeyringPair {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = `${this.miniSecret}//testing//${suriPath}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
   }
 
-  public createCustomKeyPair(customPath: string): KeyringPair {
-    return this.createKeyPair(customPath, true)
+  public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
+    return this.createKeyPair(customPath, true, isFinalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -242,8 +243,8 @@ export class Api {
     return this.factory.createKeyPairs(n)
   }
 
-  public createCustomKeyPair(path: string): KeyringPair {
-    return this.factory.createCustomKeyPair(path)
+  public createCustomKeyPair(path: string, finalPath = false): KeyringPair {
+    return this.factory.createCustomKeyPair(path, finalPath)
   }
 
   public keyGenInfo(): KeyGenInfo {
@@ -1931,5 +1932,75 @@ export class Api {
   async assignCouncil(accounts: string[]): Promise<ISubmittableResult> {
     const setCouncilCall = this.api.tx.council.setCouncil(accounts)
     return this.makeSudoCall(setCouncilCall)
+  }
+
+  // Storage
+
+  async createStorageBucket(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectsLimit: number,
+    workerId?: WorkerId
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(
+      this.api.tx.storage.createStorageBucket(workerId || null, true, sizeLimit, objectsLimit),
+      accountFrom
+    )
+  }
+
+  async acceptStorageBucketInvitation(accountFrom: string, workerId: WorkerId, storageBucketId: StorageBucketId) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, accountFrom),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsForBag(
+    accountFrom: string, // group leader
+    channelId: string,
+    addStorageBuckets: StorageBucketId[]
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsForBag(
+        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
+        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
+        this.api.createType('BTreeSet<StorageBucketId>', [])
+      ),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsPerBagLimit(
+    accountFrom: string, // group leader
+    limit: number
+  ) {
+    return this.sender.signAndSend(this.api.tx.storage.updateStorageBucketsPerBagLimit(limit), accountFrom)
+  }
+
+  async updateStorageBucketsVoucherMaxLimits(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectLimit: number
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsVoucherMaxLimits(sizeLimit, objectLimit),
+      accountFrom
+    )
+  }
+
+  async acceptPendingDataObjects(
+    accountFrom: string,
+    workerId: WorkerId,
+    storageBucketId: StorageBucketId,
+    channelId: string,
+    dataObjectIds: string[]
+  ): Promise<ISubmittableResult> {
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
+
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
+      accountFrom
+    )
   }
 }

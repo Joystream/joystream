@@ -2,6 +2,7 @@ import { Api } from './Api'
 import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
+import { QueryNodeApi } from './QueryNodeApi'
 
 export abstract class BaseFixture {
   protected readonly api: Api
@@ -80,6 +81,15 @@ export abstract class BaseFixture {
     }
 
     return result
+  }
+}
+
+export abstract class BaseQueryNodeFixture extends BaseFixture {
+  protected readonly query: QueryNodeApi
+
+  constructor(api: Api, query: QueryNodeApi) {
+    super(api)
+    this.query = query
   }
 }
 
