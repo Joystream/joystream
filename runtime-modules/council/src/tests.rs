@@ -8,7 +8,7 @@ use crate::mock::*;
 use common::council::CouncilBudgetManager;
 use common::council::CouncilOriginValidator;
 use frame_support::traits::Currency;
-use frame_support::StorageValue;
+use frame_support::{assert_err, assert_ok, StorageValue};
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
@@ -1802,6 +1802,88 @@ fn test_council_budget_manager_works_correctlyl() {
         assert_eq!(
             <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
             new_budget
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_successful() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_ok!(Council::councilor_remark(origin.into(), member_id, msg));
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_origin() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_councilor() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::NotCouncilor,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_candidate() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::CandidateDoesNotExist,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_origin() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
         );
     });
 }
