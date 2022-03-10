@@ -973,6 +973,150 @@ benchmarks! {
         );
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
+
+    entrant_remark {
+        let cherry: BalanceOf<T> = 100u32.into();
+        let funding_amount: BalanceOf<T> = 100u32.into();
+        let stake: BalanceOf<T> = 100u32.into();
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            cherry,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
+            entrant_stake: stake,
+            ..Default::default()
+        };
+
+        let bounty_id = create_max_funded_bounty::<T>(params);
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
+
+        Bounty::<T>::announce_work_entry(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            bounty_id,
+            account_id.clone()
+        ).unwrap();
+
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
+        let msg = b"test".to_vec();
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id, msg.clone())
+    verify {
+        assert_last_event::<T>(
+            Event::<T>::BountyEntrantRemarked(member_id, bounty_id, entry_id, msg).into()
+        );
+    }
+
+    contributor_remark {
+        let funding_period = 1u32;
+        let bounty_amount: BalanceOf<T> = 200u32.into();
+        let cherry: BalanceOf<T> = 100u32.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+
+        T::CouncilBudgetManager::set_budget(cherry);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            funding_type: FundingType::Limited{
+                min_funding_amount: bounty_amount,
+                max_funding_amount: bounty_amount,
+                funding_period: funding_period.into(),
+            },
+            cherry,
+            entrant_stake,
+            ..Default::default()
+        };
+        // should reach default max bounty funding amount
+        let amount: BalanceOf<T> = 100u32.into();
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        let funder = BountyActor::Member(member_id);
+
+        Bounty::<T>::fund_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            funder.clone(),
+            bounty_id,
+            amount
+        ).unwrap();
+
+        run_to_block::<T>((funding_period + 1u32).into());
+        let msg = b"test".to_vec();
+
+    }: _(RawOrigin::Signed(account_id.clone()), funder.clone(), bounty_id, msg.clone())
+    verify {
+        assert_last_event::<T>(
+            Event::<T>::BountyContributorRemarked(funder, bounty_id, msg).into()
+        );
+    }
+
+    oracle_remark {
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100u32.into();
+        let funding_amount: BalanceOf<T> = 10000000u32.into();
+        let oracle = BountyActor::Council;
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: BountyActor::Council,
+            cherry,
+            entrant_stake,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_max_funded_bounty::<T>(params);
+        let msg = b"test".to_vec();
+
+    }: _(RawOrigin::Root, oracle.clone(), bounty_id, msg.clone())
+        verify {
+        assert_last_event::<T>(
+            Event::<T>::BountyOracleRemarked(oracle, bounty_id, msg).into()
+        );
+        }
+
+    creator_remark {
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100u32.into();
+        let funding_amount: BalanceOf<T> = 10000000u32.into();
+        let oracle = BountyActor::Council;
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let rationale = b"text".to_vec();
+        let creator = BountyActor::Council;
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: creator.clone(),
+            cherry,
+            entrant_stake,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_max_funded_bounty::<T>(params);
+        let msg = b"test".to_vec();
+
+    }: _(RawOrigin::Root, creator.clone(), bounty_id, msg.clone())
+        verify {
+        assert_last_event::<T>(
+            Event::<T>::BountyCreatorRemarked(creator, bounty_id, msg).into()
+        );
+        }
 }
 
 #[cfg(test)]
@@ -1097,6 +1241,34 @@ mod tests {
     fn withdraw_work_entrant_funds() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_work_entrant_funds::<Test>());
+        });
+    }
+
+    #[test]
+    fn bounty_contributor_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_contributor_remark::<Test>());
+        });
+    }
+
+    #[test]
+    fn bounty_oracle_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_oracle_remark::<Test>());
+        });
+    }
+
+    #[test]
+    fn bounty_entrant_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_entrant_remark::<Test>());
+        });
+    }
+
+    #[test]
+    fn bounty_creator_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_creator_remark::<Test>());
         });
     }
 }

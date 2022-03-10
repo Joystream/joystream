@@ -38,7 +38,6 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
@@ -69,7 +68,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -641,33 +640,8 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        StorageWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_exists(&worker_id)
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        DistributionWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: ActorId,
-    ) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
-    }
+    type StorageWorkingGroup = StorageWorkingGroup;
+    type DistributionWorkingGroup = DistributionWorkingGroup;
 }
 
 impl common::membership::MembershipTypes for Runtime {
