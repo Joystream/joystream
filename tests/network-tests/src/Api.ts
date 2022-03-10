@@ -24,6 +24,7 @@ import {
   KeyGenInfo,
   WorkingGroupModuleName,
   ProposalType,
+  FaucetInfo,
 } from './types'
 
 import { ProposalParameters } from '@joystream/types/proposals'
@@ -56,6 +57,9 @@ export class ApiFactory {
 
   // source of funds for all new accounts
   private readonly treasuryAccount: string
+
+  // faucet details
+  public faucetInfo: FaucetInfo
 
   public static async create(
     provider: WsProvider,
@@ -97,10 +101,15 @@ export class ApiFactory {
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
     this.keyId = 0
+    this.faucetInfo = { suri: '', memberId: 0 }
   }
 
   public getApi(label: string): Api {
     return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
+  }
+
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.faucetInfo = info
   }
 
   public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
@@ -1012,5 +1021,13 @@ export class Api {
       this.api.tx.content.createVideo({ Member: ownerId }, channeld, createParameters),
       accountFrom
     )
+  }
+
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.factory.setFaucetInfo(info)
+  }
+
+  public getFaucetInfo(): FaucetInfo {
+    return this.factory.faucetInfo
   }
 }

@@ -25,7 +25,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
     )
 }
 
-mod constants;
+pub mod constants;
 mod integration;
 pub mod primitives;
 mod proposals_configuration;
@@ -38,7 +38,6 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
@@ -69,7 +68,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -95,7 +94,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 0,
+    spec_version: 1,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -507,15 +506,15 @@ pub type CouncilModule = council::Module<Runtime>;
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
-    pub const VoteStageDuration: BlockNumber = 5;
-    pub const RevealStageDuration: BlockNumber = 7;
+    pub const VoteStageDuration: BlockNumber = 100;
+    pub const RevealStageDuration: BlockNumber = 50;
     pub const MinimumVotingStake: u64 = 10000;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
-    pub const AnnouncingPeriodDuration: BlockNumber = 15;
-    pub const IdlePeriodDuration: BlockNumber = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const AnnouncingPeriodDuration: BlockNumber = 200;
+    pub const IdlePeriodDuration: BlockNumber = 400;
+    pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
     pub const DefaultBudgetIncrement: u64 = 1000;
@@ -641,33 +640,8 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        StorageWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_exists(&worker_id)
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        DistributionWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: ActorId,
-    ) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
-    }
+    type StorageWorkingGroup = StorageWorkingGroup;
+    type DistributionWorkingGroup = DistributionWorkingGroup;
 }
 
 impl common::membership::MembershipTypes for Runtime {

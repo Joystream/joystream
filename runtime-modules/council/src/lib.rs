@@ -217,6 +217,8 @@ pub trait WeightInfo {
     fn withdraw_candidacy() -> Weight;
     fn set_budget() -> Weight;
     fn plan_budget_refill() -> Weight;
+    fn councilor_remark() -> Weight;
+    fn candidate_remark() -> Weight;
 }
 
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
@@ -401,6 +403,12 @@ decl_event! {
 
         /// Request has been funded
         RequestFunded(AccountId, Balance),
+
+        /// Councilor remark message
+        CouncilorRemarked(MemberId, Vec<u8>),
+
+        /// Candidate remark message
+        CandidateRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -464,7 +472,10 @@ decl_error! {
         RepeatedFundRequestAccount,
 
         /// Funding requests without recieving accounts
-        EmptyFundingRequests
+        EmptyFundingRequests,
+
+        /// Candidate id not found
+        CandidateDoesNotExist,
     }
 }
 
@@ -854,6 +865,58 @@ decl_module! {
                 let  _ = balances::Module::<T>::deposit_creating(&account, amount);
                 Self::deposit_event(RawEvent::RequestFunded(account, amount));
             }
+        }
+
+        /// Councilor makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::councilor_remark()]
+        pub fn councilor_remark(
+            origin,
+            councilor_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            Self::ensure_member_consulate(origin, councilor_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CouncilorRemarked(councilor_id, msg));
+        }
+
+        /// Candidate makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::candidate_remark()]
+        pub fn candidate_remark(
+            origin,
+            candidate_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            EnsureChecks::<T>::ensure_user_membership(origin, &candidate_id)?;
+            ensure!(
+                Self::is_valid_candidate_id(&candidate_id),
+                Error::<T>::CandidateDoesNotExist,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
         }
     }
 }
