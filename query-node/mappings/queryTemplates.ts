@@ -6,13 +6,7 @@ import {
 } from '@apollographql/graphql-playground-react/lib/components/Playground/QueryTemplates/templateUtils'
 
 // fields that will be ignored by autofill
-const commonIgnoredFields = [
-  'deletedAt',
-  'createdById',
-  'updatedById',
-  'deletedById',
-  'version',
-]
+const commonIgnoredFields = ['deletedAt', 'createdById', 'updatedById', 'deletedById', 'version']
 
 const exampleDate = `"2018-01-31 23:59"`
 
