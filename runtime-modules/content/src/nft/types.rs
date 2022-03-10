@@ -552,13 +552,28 @@ pub type Auction<T> = AuctionRecord<
 >;
 
 /// Auction Trait to group common Auction operations
-pub(crate) trait AuctionTrait<MemberId, BlockNumber, Balance> {
-    fn white_list(&self) -> BTreeSet<MemberId>;
+pub(crate) trait AuctionTrait<MemberId: Ord, BlockNumber, Balance> {
+    // Read only members t
+    fn whitelist(&self) -> BTreeSet<MemberId>;
     fn buy_now_price(&self) -> Option<Balance>;
     fn starting_price(&self) -> Option<Balance>;
     fn ensure_auction_is_not_expired<T: Trait>(&self, block: BlockNumber) -> DispatchResult;
-    fn ensure_whitelisted_participant<T: Trait>(&self, participant_id: MemberId) -> DispatchResult;
-
     fn ensure_auction_started<T: Trait>(&self) -> DispatchResult;
     fn ensure_auction_can_be_canceled<T: Trait>(&self) -> DispatchResult;
+    //
+    fn ensure_whitelisted_participant<T: Trait>(
+        &self,
+        participant_id: &MemberId,
+    ) -> DispatchResult {
+        ensure!(
+            self.whitelist().is_empty() || self.whitelist().contains(participant_id),
+            Error::<T>::MemberIsNotAllowedToParticipate
+        );
+        Ok(())
+    }
+}
+
+/// Bid Trait to group comon Bid Operation
+pub(crate) trait BidTrait<Balance> {
+    fn amount(&self) -> Balance;
 }
