@@ -192,6 +192,7 @@ impl CreateChannelFixture {
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
+                        is_hidden: false,
                     },
                     self.params.clone(),
                 ))
@@ -494,6 +495,7 @@ impl UpdateChannelFixture {
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
                             privilege_level: Zero::zero(),
+                            is_hidden: false,
                         },
                         self.params.clone(),
                     ))
@@ -933,6 +935,142 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             self.channel_id,
             self.rationale.clone(),
         ))
+    }
+}
+
+pub struct SetChannelVisibilityAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    is_hidden: bool,
+    rationale: Vec<u8>,
+}
+
+impl SetChannelVisibilityAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            is_hidden: true,
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_is_hidden(self, is_hidden: bool) -> Self {
+        Self { is_hidden, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+
+        let actual_result = Content::set_channel_visibility_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.is_hidden,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let channel_post = ChannelById::<Test>::get(&self.channel_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(channel_post.is_hidden, self.is_hidden);
+            assert_ne!(channel_post.is_hidden, channel_pre.is_hidden);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelVisibilitySetByModerator(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.is_hidden,
+                    self.rationale.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct SetVideoVisibilityAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    is_hidden: bool,
+    rationale: Vec<u8>,
+}
+
+impl SetVideoVisibilityAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            video_id: VideoId::one(),
+            is_hidden: true,
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_is_hidden(self, is_hidden: bool) -> Self {
+        Self { is_hidden, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: ChannelId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = VideoById::<Test>::get(&self.video_id);
+
+        let actual_result = Content::set_video_visibility_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.is_hidden,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = VideoById::<Test>::get(&self.video_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(video_post.is_hidden, self.is_hidden);
+            assert_ne!(video_post.is_hidden, video_pre.is_hidden);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoVisibilitySetByModerator(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.is_hidden,
+                    self.rationale.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
     }
 }
 

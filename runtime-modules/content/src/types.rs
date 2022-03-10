@@ -87,6 +87,8 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, Chan
     pub cumulative_payout_earned: Balance,
     // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
+    // Whether the channel has been marked as hidden by a curator
+    pub is_hidden: bool,
 }
 
 // Channel alias type for simplification.
@@ -248,6 +250,8 @@ pub struct VideoRecord<ChannelId, SeriesId, VideoPostId, OwnedNFT> {
     pub video_post_id: Option<VideoPostId>,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNFT>,
+    // Whether the video has been marked as hidden by a curator
+    pub is_hidden: bool,
 }
 
 pub type Video<T> = VideoRecord<

@@ -521,6 +521,7 @@ decl_module! {
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 privilege_level: Zero::zero(),
+                is_hidden: false,
             };
 
             // add channel to onchain state
@@ -669,44 +670,75 @@ decl_module! {
             Ok(())
         }
 
-            // extrinsics for channel deletion
-            #[weight = 10_000_000] // TODO: adjust weight
-            pub fn delete_channel_as_moderator(
-                origin,
-                actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-                channel_id: T::ChannelId,
-                num_objects_to_delete: u64,
-                rationale: Vec<u8>,
-            ) -> DispatchResult {
+        // extrinsics for channel deletion as moderator
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            num_objects_to_delete: u64,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
 
-                let sender = ensure_signed(origin)?;
-                // check that channel exists
-                let channel = Self::ensure_channel_validity(&channel_id)?;
+            let sender = ensure_signed(origin)?;
+            // check that channel exists
+            let channel = Self::ensure_channel_validity(&channel_id)?;
 
-                // Permissions check
-                let actions_to_perform = if num_objects_to_delete == 0 {
-                    vec![ContentModerationAction::DeleteChannel]
-                } else {
-                    vec![ContentModerationAction::DeleteChannel, ContentModerationAction::DeleteObject]
-                };
-                ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+            // Permissions check
+            let actions_to_perform = if num_objects_to_delete == 0 {
+                vec![ContentModerationAction::DeleteChannel]
+            } else {
+                vec![ContentModerationAction::DeleteChannel, ContentModerationAction::DeleteObject]
+            };
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
-                // check that channel videos are 0
-                ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
+            // check that channel videos are 0
+            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-                let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
-                let (bag_exists, assets_to_remove) = Self::ensure_channel_bag_can_be_dropped(&dynamic_bag_id, num_objects_to_delete)?;
+            let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
+            let (bag_exists, assets_to_remove) = Self::ensure_channel_bag_can_be_dropped(&dynamic_bag_id, num_objects_to_delete)?;
 
-                //
-                // == MUTATION SAFE ==
-                //
-                Self::execute_delete_channel_mutation(sender, channel_id, if bag_exists { Some(&dynamic_bag_id) } else { None }, &assets_to_remove)?;
+            //
+            // == MUTATION SAFE ==
+            //
+            Self::execute_delete_channel_mutation(sender, channel_id, if bag_exists { Some(&dynamic_bag_id) } else { None }, &assets_to_remove)?;
 
-                // deposit event
-                Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
 
-                Ok(())
-            }
+            Ok(())
+        }
+
+        // extrinsics for channel visibility status (hidden/visible) setting by moderator
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_channel_visibility_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            is_hidden: bool,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
+            // check that channel exists
+            let channel = Self::ensure_channel_validity(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, vec![ContentModerationAction::HideChannel].as_ref(), channel.privilege_level)?;
+
+            // Ensure that the new visibility is not equal to the current visibility
+            ensure!(channel.is_hidden != is_hidden, Error::<T>::VisibilityStatusUnchanged);
+
+            //
+            // == MUTATION SAFE ==
+            //
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.is_hidden = is_hidden });
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelVisibilitySetByModerator(actor, channel_id, is_hidden, rationale));
+
+            Ok(())
+        }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel_category(
@@ -810,6 +842,7 @@ decl_module! {
                 video_post_id:  None,
                 /// Newly created video has no nft
                 nft_status: None,
+                is_hidden: false,
             };
 
             // add it to the onchain state
@@ -983,6 +1016,42 @@ decl_module! {
             Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
 
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
+        }
+
+        // extrinsics for video visibility status (hidden/visible) setting by moderator
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_video_visibility_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            is_hidden: bool,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin.clone())?;
+
+            // check that video exists
+            let video = Self::ensure_video_validity(&video_id)?;
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
+            // Permissions check
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, vec![ContentModerationAction::HideVideo].as_ref(), channel.privilege_level)?;
+
+            // Ensure that the new visibility is not equal to the current visibility
+            ensure!(video.is_hidden != is_hidden, Error::<T>::VisibilityStatusUnchanged);
+
+            //
+            // == MUTATION SAFE ==
+            //
+            VideoById::<T>::mutate(video_id, |video| { video.is_hidden = is_hidden });
+
+            // deposit event
+            Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2513,6 +2582,14 @@ decl_event!(
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
+        ChannelDeleted(ContentActor, ChannelId),
+        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
+        ChannelVisibilitySetByModerator(
+            ContentActor,
+            ChannelId,
+            bool,
+            Vec<u8>, /* rationale */
+        ),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
@@ -2549,6 +2626,7 @@ decl_event!(
         VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
         VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
+        VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),
@@ -2589,8 +2667,6 @@ decl_event!(
             PersonUpdateParameters<StorageAssets>,
         ),
         PersonDeleted(ContentActor, PersonId),
-        ChannelDeleted(ContentActor, ChannelId),
-        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
 
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),

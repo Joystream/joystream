@@ -261,5 +261,8 @@ decl_error! {
 
         /// Curator group's permissions by level map exceeded the maximum allowed size
         CuratorGroupMaxPermissionsByLevelMapSizeExceeded,
+
+        /// Channel/Video visibility was set to a value that doesn't differ from the current value
+        VisibilityStatusUnchanged,
     }
 }

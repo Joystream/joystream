@@ -1474,6 +1474,22 @@ fn unsuccessful_moderation_action_channel_deletion_by_actors_with_auth_failure()
 }
 
 #[test]
+fn unsuccessful_moderation_action_channel_deletion_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_moderation_action_channel_deletion_by_curator_without_permissions() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1695,5 +1711,187 @@ fn successful_moderation_action_channel_with_assets_deletion_by_lead() {
         create_default_member_owned_channel();
 
         DeleteChannelAsModeratorFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_visibility_change_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - not in group
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_visibility_change_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_channel_visibility_change() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    hide_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+        // As curator
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+        // As lead
+        SetChannelVisibilityAsModeratorFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_visibility_redundant_change() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    hide_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+        // As curator
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_is_hidden(false)
+            .call_and_assert(Err(Error::<Test>::VisibilityStatusUnchanged.into()));
+        // As lead
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_is_hidden(false)
+            .call_and_assert(Err(Error::<Test>::VisibilityStatusUnchanged.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_visibility_change_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        // As curator
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_visibility_change_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    hide_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+        // Set to hidden
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+        // Set to visible
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_is_hidden(false)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_visibility_change_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        // Set to hidden
+        SetChannelVisibilityAsModeratorFixture::default().call_and_assert(Ok(()));
+        // Set to visible
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_is_hidden(false)
+            .call_and_assert(Ok(()));
     })
 }
