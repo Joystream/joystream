@@ -577,3 +577,29 @@ pub(crate) trait AuctionTrait<MemberId: Ord, BlockNumber, Balance> {
 pub(crate) trait BidTrait<Balance> {
     fn amount(&self) -> Balance;
 }
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct OpenBid<BlockNumber, Balance> {
+    pub amount: Balance,
+    pub made_at_block: BlockNumber,
+}
+
+impl<Balance: Copy, BlockNumber> BidTrait<Balance> for OpenBid<BlockNumber, Balance> {
+    fn amount(&self) -> Balance {
+        self.amount
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnglishBid<MemberId, Balance> {
+    pub amount: Balance,
+    pub bidder_id: MemberId,
+}
+
+impl<Balance: Copy, MemberId> BidTrait<Balance> for EnglishBid<MemberId, Balance> {
+    fn amount(&self) -> Balance {
+        self.amount
+    }
+}
