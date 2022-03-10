@@ -401,6 +401,7 @@ parameter_types! {
     pub const BloatBondCap: u32 = 1000;
     pub const VideosMigrationsEachBlock: u64 = VIDEO_MIGRATIONS_PER_BLOCK;
     pub const ChannelsMigrationsEachBlock: u64 = CHANNEL_MIGRATIONS_PER_BLOCK;
+    pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
 }
 
 impl Trait for Test {
@@ -464,6 +465,9 @@ impl Trait for Test {
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
 
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
+
+    /// max number of keys per curator_group.permissions_by_level map instance
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
 
     /// channel privilege level
     type ChannelPrivilegeLevel = u8;

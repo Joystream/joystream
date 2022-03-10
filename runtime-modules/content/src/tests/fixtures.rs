@@ -43,13 +43,41 @@ impl CreateCuratorGroupFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<CuratorGroupId> {
+        let new_group_id = Content::next_curator_group_id();
         let actual_result = Content::create_curator_group(
             Origin::signed(self.sender),
             self.is_active,
             self.permissions.clone(),
         );
         assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CuratorGroupCreated(new_group_id))
+            );
+
+            assert!(CuratorGroupById::<Test>::contains_key(new_group_id));
+            let group = Content::curator_group_by_id(new_group_id);
+
+            assert_eq!(group.is_active(), self.is_active);
+            assert_eq!(group.get_curators().len(), 0);
+            assert_eq!(
+                group.get_permissions_by_level().len(),
+                self.permissions.len()
+            );
+            for i in 0..self.permissions.len() {
+                let index = i as u8;
+                assert_eq!(
+                    group.get_permissions_by_level().get(&index),
+                    self.permissions.get(&index)
+                );
+            }
+
+            Some(new_group_id)
+        } else {
+            None
+        }
     }
 }
 

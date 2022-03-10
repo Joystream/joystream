@@ -46,20 +46,9 @@ fn curator_group_management() {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        let curator_group_id = Content::next_curator_group_id();
-        CreateCuratorGroupFixture::default().call_and_assert(Ok(()));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorGroupCreated(curator_group_id))
-        );
-
-        let group = Content::curator_group_by_id(curator_group_id);
-
-        // Default group is empty, not active and has no permissions
-        assert_eq!(group.is_active(), false);
-        assert_eq!(group.get_curators().len(), 0);
-        assert_eq!(group.get_permissions_by_level().len(), 0);
+        let curator_group_id = CreateCuratorGroupFixture::default()
+            .call_and_assert(Ok(()))
+            .unwrap();
 
         // Activate group
         assert_ok!(Content::set_curator_group_status(
@@ -128,10 +117,6 @@ fn curator_group_management() {
         // Iterate over privilege levels from 0 to 3
         // (3 will be a "non-existent map entry" case)
         for i in 0u8..4u8 {
-            assert_eq!(
-                group.get_permissions_by_level().get(&i),
-                permissions.get(&i)
-            );
             let allowed_actions: Vec<ContentModerationAction>;
             match i {
                 0 => {
@@ -233,6 +218,54 @@ fn curator_group_management() {
                 DEFAULT_CURATOR_ID
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
+        );
+    })
+}
+
+#[test]
+fn unsuccessful_curator_group_creation_with_max_permissions_by_level_map_size_exceeded() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // Group permissions
+        let mut permissions = ModerationPermissionsByLevel::<Test>::new();
+        for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
+            permissions.insert(i, ContentModerationPermissions::default());
+        }
+
+        CreateCuratorGroupFixture::default()
+            .with_permissions(&permissions)
+            .call_and_assert(Err(
+                Error::<Test>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded.into(),
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_curator_group_permissions_update_with_max_permissions_by_level_map_size_exceeded() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let group_id = CreateCuratorGroupFixture::default()
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        // Group permissions
+        let mut permissions = ModerationPermissionsByLevel::<Test>::new();
+        for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
+            permissions.insert(i, ContentModerationPermissions::default());
+        }
+
+        // Update group permissions
+        assert_eq!(
+            Content::update_curator_group_permissions(
+                Origin::signed(LEAD_ACCOUNT_ID),
+                group_id,
+                permissions
+            ),
+            Err(Error::<Test>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded.into())
         );
     })
 }

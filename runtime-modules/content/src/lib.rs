@@ -128,6 +128,9 @@ pub trait Trait:
     /// Channel migrated in each block during migration
     type ChannelsMigrationsEachBlock: Get<u64>;
 
+    /// Max number of keys per curator_group.permissions_by_level map instance
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<u8>;
+
     // Channel's privilege level
     type ChannelPrivilegeLevel: Parameter
         + Member
@@ -254,6 +257,9 @@ decl_module! {
         /// Exports const -  max number of curators per group
         const MaxNumberOfCuratorsPerGroup: MaxNumber = T::MaxNumberOfCuratorsPerGroup::get();
 
+        /// Exports const -  max number of keys per curator_group.permissions_by_level map instance
+        const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
+
         // ======
         // Next set of extrinsics can only be invoked by lead.
         // ======
@@ -263,12 +269,17 @@ decl_module! {
         pub fn create_curator_group(
             origin,
             is_active: bool,
-            permissions: ModerationPermissionsByLevel<T>
+            permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
 
             let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
+            // Ensure permissions_by_level map max. allowed size is not exceeded
+            ensure!(
+                permissions_by_level.len() <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
+                Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
+            );
 
             //
             // == MUTATION SAFE ==
@@ -277,7 +288,7 @@ decl_module! {
             let curator_group_id = Self::next_curator_group_id();
 
             // Insert curator group with provided permissions
-            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::create(is_active, &permissions));
+            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::create(is_active, &permissions_by_level));
 
             // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
@@ -298,6 +309,11 @@ decl_module! {
             ensure_lead_auth_success::<T>(&sender)?;
             // Ensure curator group under provided curator_group_id already exist
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+            // Ensure permissions_by_level map max. allowed size is not exceeded
+            ensure!(
+                permissions_by_level.len() <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
+                Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
+            );
 
             //
             // == MUTATION SAFE ==
