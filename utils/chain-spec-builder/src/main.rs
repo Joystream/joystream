@@ -23,7 +23,8 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
-    self, chain_spec_properties, forum_config, initial_balances, initial_members, AccountId,
+    self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
+    AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -195,7 +196,7 @@ impl ChainSpecBuilder {
 // as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
-    _deployment: &ChainDeployment,
+    deployment: &ChainDeployment,
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
@@ -224,6 +225,11 @@ fn genesis_constructor(
         .map(|path| initial_balances::from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
 
+    let content_config = match deployment {
+        ChainDeployment::live => content_config::production_config(),
+        _ => content_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
@@ -231,6 +237,7 @@ fn genesis_constructor(
         members,
         forum_cfg,
         initial_account_balances,
+        content_config,
     )
 }
 

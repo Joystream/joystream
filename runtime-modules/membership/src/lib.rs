@@ -711,10 +711,10 @@ decl_module! {
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
-            let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+            let invitation_balance = Self::initial_invitation_balance();
 
             ensure!(
-                default_invitation_balance <= current_wg_budget,
+                invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
             );
 
@@ -730,7 +730,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let member_id = Self::insert_member(
+            let invited_member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
@@ -738,29 +738,29 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&member_id, |membership| {
+            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
                 membership.invites = membership.invites.saturating_sub(1);
             });
 
             // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
+            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
             let _ = balances::Module::<T>::deposit_creating(
                 &params.controller_account,
-                default_invitation_balance
+                invitation_balance
             );
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
-                default_invitation_balance,
+                invitation_balance,
                 WithdrawReasons::except(WithdrawReason::TransactionPayment)
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
+            Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.

@@ -1,8 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
-// Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -1321,6 +1319,7 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) {
+
             let sender = ensure_signed(origin)?;
 
             // Ensure given video exists

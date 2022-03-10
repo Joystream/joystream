@@ -5,7 +5,7 @@ import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@jo
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { bytesToString, deserializeMetadata, genericEventFields } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields, getWorker, toNumber } from './common'
 import {
   Membership,
   MembershipEntryMethod,
@@ -28,6 +28,7 @@ import {
   MembershipEntryPaid,
   MembershipEntryInvited,
   AvatarUri,
+  WorkingGroup,
 } from 'query-node/dist/model'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
@@ -99,7 +100,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: defaultInviteCount,
+    inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
@@ -265,12 +266,13 @@ export async function members_MemberAccountsUpdated({ store, event }: EventConte
   await store.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
 }
 
-export async function members_MemberVerificationStatusUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
-  const [memberId, verificationStatus] = new Members.MemberVerificationStatusUpdatedEvent(event).params
+export async function members_MemberVerificationStatusUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [memberId, verificationStatus, workerId] = new Members.MemberVerificationStatusUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
+  const worker = await getWorker(store, 'membershipWorkingGroup', workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   member.isVerified = verificationStatus.valueOf()
@@ -282,6 +284,7 @@ export async function members_MemberVerificationStatusUpdated(
     ...genericEventFields(event),
     member: member,
     isVerified: member.isVerified,
+    worker,
   })
 
   await store.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
@@ -469,6 +472,21 @@ export async function members_LeaderInvitationQuotaUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event).params
+
+  const groupName = 'membershipWorkingGroup'
+  const group = await store.get(WorkingGroup, {
+    where: { name: groupName },
+    relations: ['leader', 'leader.membership'],
+  })
+
+  if (!group) {
+    throw new Error(`Working group ${groupName} not found!`)
+  }
+
+  const lead = group.leader!.membership
+  lead.inviteCount = toNumber(newQuota)
+
+  await store.save<Membership>(lead)
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
     ...genericEventFields(event),

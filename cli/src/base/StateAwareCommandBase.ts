@@ -14,7 +14,6 @@ type StateObject = {
   queryNodeUri: string | null | undefined
   defaultWorkingGroup: WorkingGroups
   metadataCache: Record<string, any>
-  selectedMemberId?: string
 }
 
 // State object default values

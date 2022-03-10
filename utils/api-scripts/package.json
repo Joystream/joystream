@@ -12,7 +12,7 @@
     "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
-    "@joystream/types": "^0.18.0",
+    "@joystream/types": "^0.18.5",
     "@polkadot/api": "5.9.1",
     "@polkadot/types": "5.9.1",
     "@polkadot/keyring": "7.3.1",
