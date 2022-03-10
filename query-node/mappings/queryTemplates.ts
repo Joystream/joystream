@@ -12,22 +12,12 @@ const commonIgnoredFields = [
   'updatedById',
   'deletedById',
   'version',
-
-  // type in `DataObject`'s causes problems - don't use it for now
-  'type',
-]
-
-const dataObjectIgnoredFields = [
-  ...commonIgnoredFields,
-
-  // dataObject's `owner` is problematic because it's variant and will need some special handling
-  'owner',
 ]
 
 const exampleDate = `"2018-01-31 23:59"`
 
 export const queryTemplates: IQueryTemplate[] = [
-  ...queryTemplateUtils.getOneGetAllTemplates('video', 'videos', 'videos', dataObjectIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('video', 'videos', 'videos', commonIgnoredFields),
   {
     title: 'Featured videos',
     description: 'Get all featured videos.',
@@ -65,7 +55,7 @@ export const queryTemplates: IQueryTemplate[] = [
       videos(where: { category: { id_eq: 1 } }) { ${queryTemplateUtils.allPropsMarker} }
     }`,
   },
-  ...queryTemplateUtils.getOneGetAllTemplates('channel', 'channels', 'channels', dataObjectIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('channel', 'channels', 'channels', commonIgnoredFields),
   ...queryTemplateUtils.getOneGetAllTemplates(
     'channel category',
     'channels categories',
@@ -83,9 +73,9 @@ export const queryTemplates: IQueryTemplate[] = [
     }`,
   },
 
-  ...queryTemplateUtils.getOneGetAllTemplates('asset', 'assets', 'dataObjects', dataObjectIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('asset', 'assets', 'storageDataObjects', commonIgnoredFields),
   ...queryTemplateUtils.getOneGetAllTemplates('membership', 'memberships', 'memberships', commonIgnoredFields),
 
   ...queryTemplateUtils.getOneGetAllTemplates('curator group', 'curator groups', 'curatorGroups', commonIgnoredFields),
-  ...queryTemplateUtils.getOneGetAllTemplates('worker', 'workers', 'workers', dataObjectIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('worker', 'workers', 'workers', commonIgnoredFields),
 ].map(queryTemplateUtils.formatQuery)
