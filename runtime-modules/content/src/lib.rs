@@ -620,15 +620,14 @@ decl_module! {
             ensure_lead_auth_success::<T>(&sender)?;
 
             // check that channel exists
-            let mut channel = Self::ensure_channel_validity(&channel_id)?;
+            Self::ensure_channel_validity(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
-            channel.privilege_level = new_privilege_level;
 
             // Update the channel
-            ChannelById::<T>::insert(channel_id, channel.clone());
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
 
             Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
