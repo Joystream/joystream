@@ -37,6 +37,7 @@ impl_outer_event! {
         frame_system<T>,
         membership_mod<T>,
         working_group Instance2 <T>,
+        working_group Instance3 <T>,
     }
 }
 
@@ -74,7 +75,7 @@ parameter_types! {
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
 pub const DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 1;
-pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 0;
+pub const DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
@@ -160,7 +161,12 @@ impl crate::Trait for Test {
     fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
-        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
+        let allowed_providers = vec![
+            DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+        ];
+
+        if !allowed_providers.contains(&account_id) {
             Err(DispatchError::BadOrigin)
         } else {
             Ok(())
@@ -259,6 +265,7 @@ impl frame_system::Trait for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
+    pub const LockId2: [u8; 8] = [10; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
@@ -271,6 +278,21 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = Weights;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance3;
+
+impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();

@@ -2,6 +2,7 @@
 
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::{StorageMap, StorageValue};
+use frame_support::traits::Instance;
 use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
@@ -21,13 +22,16 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Call, Cid, DataObjectCreationParameters, DynamicBagType, Module, RawEvent,
-    StaticBagId, StorageBucketById, StorageBucketOperatorStatus, Trait, UploadParameters, WorkerId,
+    BagId, Balances, Call, Cid, DataObjectCreationParameters, DistributionBucketFamilyById,
+    DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById, StorageBucketOperatorStatus,
+    Trait, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance3;
 
 // Alias for storage working group.
 type StorageGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
@@ -36,6 +40,7 @@ type StorageGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100003;
 pub const DEFAULT_WORKER_ID: u64 = 100002;
 pub const SECOND_WORKER_ID: u64 = 1;
 
@@ -139,17 +144,37 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn insert_a_leader<
-    T: Trait + membership::Trait + working_group::Trait<StorageWorkingGroupInstance> + balances::Trait,
->(
-    id: u64,
-) -> T::AccountId
+fn insert_storage_leader<T>(id: u64) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
+    T: Trait
+        + membership::Trait
+        + working_group::Trait<StorageWorkingGroupInstance>
+        + balances::Trait,
+{
+    return insert_leader::<T, StorageWorkingGroupInstance>(id);
+}
+
+fn insert_distribution_leader<T>(id: u64) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+    T: Trait
+        + membership::Trait
+        + working_group::Trait<DistributionWorkingGroupInstance>
+        + balances::Trait,
+{
+    return insert_leader::<T, DistributionWorkingGroupInstance>(id);
+}
+
+fn insert_leader<T, I>(id: u64) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+    T: Trait + membership::Trait + working_group::Trait<I> + balances::Trait,
+    I: Instance,
 {
     let (caller_id, member_id) = member_funded_account::<T>(id.saturated_into());
 
-    let (opening_id, application_id) = add_and_apply_opening::<T>(
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Root),
         &caller_id,
         &member_id,
@@ -159,17 +184,15 @@ where
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
 
-    let worker_id = working_group::NextWorkerId::<T, StorageWorkingGroupInstance>::get();
-    StorageGroup::<T>::fill_opening(
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
         RawOrigin::Root.into(),
         opening_id,
         successful_application_ids,
     )
     .unwrap();
 
-    assert!(WorkerById::<T, StorageWorkingGroupInstance>::contains_key(
-        worker_id
-    ));
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
 
     caller_id
 }
@@ -187,7 +210,7 @@ where
 
     let leader_origin = RawOrigin::Signed(leader_account_id);
 
-    let (opening_id, application_id) = add_and_apply_opening::<T>(
+    let (opening_id, application_id) = add_and_apply_opening::<T, StorageWorkingGroupInstance>(
         &T::Origin::from(leader_origin.clone()),
         &caller_id,
         &member_id,
@@ -207,55 +230,53 @@ where
     (caller_id, worker_id)
 }
 
-fn add_and_apply_opening<T: Trait + working_group::Trait<StorageWorkingGroupInstance>>(
+fn add_and_apply_opening<T: Trait + working_group::Trait<I>, I: Instance>(
     add_opening_origin: &T::Origin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, ApplicationId) {
-    let opening_id = add_opening_helper::<T>(add_opening_origin, job_opening_type);
+    let opening_id = add_opening_helper::<T, I>(add_opening_origin, job_opening_type);
 
     let application_id =
-        apply_on_opening_helper::<T>(applicant_account_id, applicant_member_id, &opening_id);
+        apply_on_opening_helper::<T, I>(applicant_account_id, applicant_member_id, &opening_id);
 
     (opening_id, application_id)
 }
 
-fn add_opening_helper<T: Trait + working_group::Trait<StorageWorkingGroupInstance>>(
+fn add_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
-    StorageGroup::<T>::add_opening(
+    working_group::Module::<T, I>::add_opening(
         add_opening_origin.clone(),
         vec![],
         *job_opening_type,
         StakePolicy {
-            stake_amount:
-            <T as working_group::Trait<StorageWorkingGroupInstance>>::MinimumApplicationStake::get(
-            ),
-            leaving_unstaking_period: <T as
-            working_group::Trait<StorageWorkingGroupInstance>>::MinUnstakingPeriodLimit::get() + One::one(),
+            stake_amount: <T as working_group::Trait<I>>::MinimumApplicationStake::get(),
+            leaving_unstaking_period: <T as working_group::Trait<I>>::MinUnstakingPeriodLimit::get(
+            ) + One::one(),
         },
         Some(One::one()),
     )
-        .unwrap();
+    .unwrap();
 
-    let opening_id = StorageGroup::<T>::next_opening_id() - 1;
+    let opening_id = working_group::Module::<T, I>::next_opening_id() - 1;
 
     assert!(
-        OpeningById::<T, StorageWorkingGroupInstance>::contains_key(opening_id),
+        OpeningById::<T, I>::contains_key(opening_id),
         "Opening not added"
     );
 
     opening_id
 }
 
-fn apply_on_opening_helper<T: Trait + working_group::Trait<StorageWorkingGroupInstance>>(
+fn apply_on_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     opening_id: &OpeningId,
 ) -> ApplicationId {
-    StorageGroup::<T>::apply_on_opening(
+    working_group::Module::<T, I>::apply_on_opening(
         RawOrigin::Signed((*applicant_account_id).clone()).into(),
         ApplyOnOpeningParameters::<T> {
             member_id: *applicant_member_id,
@@ -264,17 +285,17 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<StorageWorkingGroupIn
             reward_account_id: applicant_account_id.clone(),
             description: vec![],
             stake_parameters: StakeParameters {
-                stake: <T as working_group::Trait<StorageWorkingGroupInstance>>::MinimumApplicationStake::get(),
-                staking_account_id: applicant_account_id.clone()
+                stake: <T as working_group::Trait<I>>::MinimumApplicationStake::get(),
+                staking_account_id: applicant_account_id.clone(),
             },
         },
     )
-        .unwrap();
+    .unwrap();
 
-    let application_id = StorageGroup::<T>::next_application_id() - 1;
+    let application_id = working_group::Module::<T, I>::next_application_id() - 1;
 
     assert!(
-        ApplicationById::<T, StorageWorkingGroupInstance>::contains_key(application_id),
+        ApplicationById::<T, I>::contains_key(application_id),
         "Application not added"
     );
 
@@ -350,13 +371,14 @@ benchmarks! {
         where T: balances::Trait,
               T: Trait,
               T: working_group::Trait<StorageWorkingGroupInstance>,
+              T: working_group::Trait<DistributionWorkingGroupInstance>,
               T: membership::Trait,
               T::AccountId: CreateAccountId,
     }
     _{ }
 
     delete_storage_bucket {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
 
         let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
     }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
@@ -369,7 +391,7 @@ benchmarks! {
     }
 
     update_uploading_blocked_status {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let new_status = true;
 
     }: _ (RawOrigin::Signed(lead_account_id), new_status)
@@ -382,7 +404,7 @@ benchmarks! {
     }
 
     update_data_size_fee {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let new_fee: BalanceOf<T> = 10u32.into();
 
     }: _ (RawOrigin::Signed(lead_account_id), new_fee)
@@ -395,7 +417,7 @@ benchmarks! {
     }
 
     update_storage_buckets_per_bag_limit {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let new_limit = 10u64;
 
     }: _ (RawOrigin::Signed(lead_account_id), new_limit)
@@ -408,7 +430,7 @@ benchmarks! {
     }
 
     update_storage_buckets_voucher_max_limits {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let new_size = 20u64;
         let new_object_number = 10u64;
 
@@ -423,7 +445,7 @@ benchmarks! {
     }
 
     update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
 
         let dynamic_bag_type = DynamicBagType::Member;
         let new_number = 10u64;
@@ -445,7 +467,7 @@ benchmarks! {
         let i in 0 .. BLACKLIST_SIZE_LIMIT;
         let j in 0 .. BLACKLIST_SIZE_LIMIT;
 
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
 
         let add_cids = create_cids(i);
         let remove_cids = create_cids(j);
@@ -469,7 +491,7 @@ benchmarks! {
     }
 
     create_storage_bucket {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let storage_bucket_id = Module::<T>::next_storage_bucket_id();
 
     }: _ (RawOrigin::Signed(lead_account_id), None, false, 0, 0)
@@ -484,7 +506,7 @@ benchmarks! {
         let i in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
         let j in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
 
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
 
         Module::<T>::update_storage_buckets_per_bag_limit(
@@ -520,7 +542,7 @@ benchmarks! {
     }
 
     cancel_storage_bucket_operator_invite {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
@@ -554,7 +576,7 @@ benchmarks! {
     }
 
     invite_storage_bucket_operator {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (_, worker_id) = insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
@@ -581,7 +603,7 @@ benchmarks! {
     }
 
     remove_storage_bucket_operator {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_a_worker::<T>(lead_account_id.clone(), DEFAULT_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
@@ -617,7 +639,7 @@ benchmarks! {
     }
 
     update_storage_bucket_status {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
         let new_status = false;
 
@@ -635,7 +657,7 @@ benchmarks! {
     }
 
     set_storage_bucket_voucher_limits {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         let new_objects_size_limit: u64 = 10;
@@ -670,7 +692,7 @@ benchmarks! {
     }
 
     accept_storage_bucket_invitation {
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
@@ -717,7 +739,7 @@ benchmarks! {
     set_storage_operator_metadata {
         let i in 1 .. MAX_BYTE_SIZE;
 
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
@@ -750,7 +772,7 @@ benchmarks! {
     accept_pending_data_objects {
         let i in 1 .. OBJECT_COUNT;
 
-        let lead_account_id = insert_a_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_a_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
@@ -802,11 +824,6 @@ benchmarks! {
             })
             .collect::<Vec<_>>();
 
-        println!("create_cids(3): {:?}", create_cids(3));
-        println!("create_cids(i): {:?}", create_cids(i));
-        println!("i: {:?}", i);
-        println!("object_parameters: {:?}", object_parameters.len());
-
         let upload_parameters = UploadParameters::<T>{
             bag_id: bag_id.clone(),
             deletion_prize_source_account_id: worker_account_id.clone(),
@@ -823,8 +840,6 @@ benchmarks! {
         let data_objects = (0..i).into_iter()
             .map(|id| id.saturated_into())
             .collect::<BTreeSet<_>>();
-
-        println!("{:?}", data_objects);
     }: _ (
             RawOrigin::Signed(worker_account_id.clone()),
             worker_id,
@@ -841,6 +856,16 @@ benchmarks! {
                 data_objects,
             ).into()
         );
+    }
+
+    create_distribution_bucket_family {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let family_id = Module::<T>::next_distribution_bucket_family_id();
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()))
+    verify {
+        assert!(DistributionBucketFamilyById::<T>::contains_key(&family_id));
+        assert_last_event::<T>(RawEvent::DistributionBucketFamilyCreated(family_id).into());
     }
 }
 
@@ -972,6 +997,13 @@ mod tests {
     fn accept_pending_data_objects() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_accept_pending_data_objects::<Test>());
+        });
+    }
+
+    #[test]
+    fn create_distribution_bucket_family() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_create_distribution_bucket_family::<Test>());
         });
     }
 }

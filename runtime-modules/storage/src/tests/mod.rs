@@ -641,7 +641,7 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4318,7 +4318,7 @@ fn update_distribution_buckets_for_bags_fails_with_non_accepting_new_bags_bucket
 #[test]
 fn update_distribution_buckets_for_bags_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4395,7 +4395,7 @@ fn update_distribution_buckets_per_bag_limit_succeeded() {
 #[test]
 fn update_distribution_buckets_per_bag_limit_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateDistributionBucketsPerBagLimitFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4520,7 +4520,7 @@ fn update_families_in_dynamic_bag_creation_policy_succeeded() {
 #[test]
 fn update_families_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4680,7 +4680,7 @@ fn invite_distribution_bucket_operator_succeeded() {
 #[test]
 fn invite_distribution_bucket_operator_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         InviteDistributionBucketOperatorFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -5165,8 +5165,9 @@ fn remove_distribution_bucket_operator_succeeded() {
 #[test]
 fn remove_distribution_bucket_operator_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
+        let non_leader_account = 11;
         RemoveDistributionBucketOperatorFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_origin(RawOrigin::Signed(non_leader_account))
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
