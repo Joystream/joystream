@@ -1,5 +1,8 @@
 #![cfg(test)]
 
+use std::collections::BTreeMap;
+use std::iter::FromIterator;
+
 use super::curators;
 use super::fixtures::*;
 use super::mock::*;
@@ -1426,5 +1429,271 @@ fn unsuccessful_channel_creation_with_invalid_moderator_set() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
+    })
+}
+
+/// MODERATION ACTIONS
+
+#[test]
+fn unsuccessful_moderation_action_channel_deletion_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - not in group
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_deletion_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        CreateChannelFixture::default().call_and_assert(Ok(()));
+
+        let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_channel_deletion() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        // As curator
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+
+        // As lead
+        DeleteChannelAsModeratorFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_with_videos_deletion() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    delete_object: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        // As curator
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelContainsVideos.into()));
+
+        // As lead
+        DeleteChannelAsModeratorFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelContainsVideos.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_delete() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    delete_object: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        // As curator
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
+        // As lead
+        DeleteChannelAsModeratorFixture::default()
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        CreateChannelFixture::default().call_and_assert(Ok(()));
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_num_objects_to_delete(0)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_with_assets_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+                0,
+                ContentModerationPermissions {
+                    delete_channel: true,
+                    delete_object: true,
+                    ..ContentModerationPermissions::default()
+                },
+            )]),
+        );
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        CreateChannelFixture::default().call_and_assert(Ok(()));
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_with_assets_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelAsModeratorFixture::default().call_and_assert(Ok(()));
     })
 }

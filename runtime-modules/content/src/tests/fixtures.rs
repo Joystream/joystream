@@ -703,6 +703,67 @@ impl UpdateVideoFixture {
     }
 }
 
+pub trait ChannelDeletion {
+    fn get_sender(&self) -> &AccountId;
+    fn get_channel_id(&self) -> &ChannelId;
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId>;
+    fn get_num_objects_to_delete(&self) -> u64;
+    fn execute_call(&self) -> DispatchResult;
+    fn expected_event_on_success(&self) -> MetaEvent;
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
+        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
+            .deletion_prize
+            .unwrap_or(BalanceOf::<Test>::zero());
+        let objects_deletion_prize =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
+                    acc + obj.deletion_prize
+                });
+
+        let channel_objects_ids =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .map(|(id, _)| id)
+                .collect::<BTreeSet<_>>();
+
+        let actual_result = self.execute_call();
+
+        let balance_post = Balances::<Test>::usable_balance(self.get_sender());
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    self.expected_event_on_success()
+                );
+
+                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
+
+                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+                assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
+                assert!(!channel_objects_ids.iter().any(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                }));
+                assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+            }
+
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                if err != Error::<Test>::ChannelDoesNotExist.into() {
+                    assert!(ChannelById::<Test>::contains_key(&self.get_channel_id()));
+                    assert!(channel_objects_ids.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
+                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+                }
+            }
+        }
+    }
+}
+
 pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -738,66 +799,112 @@ impl DeleteChannelFixture {
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
+}
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
-        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
-            .deletion_prize
-            .unwrap_or(BalanceOf::<Test>::zero());
-        let objects_deletion_prize =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-                    acc + obj.deletion_prize
-                });
+impl ChannelDeletion for DeleteChannelFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_num_objects_to_delete(&self) -> u64 {
+        self.num_objects_to_delete
+    }
 
-        let channel_objects_ids =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-                .map(|(id, _)| id)
-                .collect::<BTreeSet<_>>();
-
-        let actual_result = Content::delete_channel(
-            origin,
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_channel(
+            Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.channel_id,
             self.num_objects_to_delete,
-        );
+        )
+    }
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
-        assert_eq!(actual_result, expected_result);
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::ChannelDeleted(
+            self.actor.clone(),
+            self.channel_id,
+        ))
+    }
+}
 
-        match actual_result {
-            Ok(()) => {
-                assert_eq!(
-                    System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::ChannelDeleted(
-                        self.actor.clone(),
-                        self.channel_id,
-                    ))
-                );
+pub struct DeleteChannelAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    num_objects_to_delete: u64,
+    rationale: Vec<u8>,
+}
 
-                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
-
-                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
-                assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
-                assert!(!channel_objects_ids.iter().any(|id| {
-                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                }));
-                assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-            }
-
-            Err(err) => {
-                assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::ChannelDoesNotExist.into() {
-                    assert!(ChannelById::<Test>::contains_key(&self.channel_id));
-                    assert!(channel_objects_ids.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                    }));
-                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-                }
-            }
+impl DeleteChannelAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            rationale: b"rationale".to_vec(),
         }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
+        Self {
+            num_objects_to_delete,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+}
+
+impl ChannelDeletion for DeleteChannelAsModeratorFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_num_objects_to_delete(&self) -> u64 {
+        self.num_objects_to_delete
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_channel_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.num_objects_to_delete,
+            self.rationale.clone(),
+        )
+    }
+
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::ChannelDeletedByModerator(
+            self.actor.clone(),
+            self.channel_id,
+            self.rationale.clone(),
+        ))
     }
 }
 

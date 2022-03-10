@@ -639,64 +639,59 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-            // get bag id for the channel
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
-            let bag_id = storage::BagIdType::from(dyn_bag.clone());
+            let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
+            let (bag_exists, assets_to_remove) = Self::ensure_channel_bag_can_be_dropped(&dynamic_bag_id, num_objects_to_delete)?;
 
-            // channel has a dynamic bag associated to it -> remove assets from storage
-            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
-                // ensure that bag size provided is valid
-                ensure!(
-                    bag.objects_number == num_objects_to_delete,
-                    Error::<T>::InvalidBagSizeSpecified
-                );
+            //
+            // == MUTATION SAFE ==
+            //
+            Self::execute_delete_channel_mutation(sender, channel_id, if bag_exists { Some(&dynamic_bag_id) } else { None }, &assets_to_remove)?;
 
-                // construct collection of assets to be removed
-                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
-
-                if !assets_to_remove.is_empty() {
-                    Storage::<T>::can_delete_dynamic_bag_with_objects(
-                        &dyn_bag,
-                    )?;
-
-                    Storage::<T>::can_delete_data_objects(
-                        &bag_id,
-                        &assets_to_remove,
-                    )?;
-                } else {
-                    Storage::<T>::can_delete_dynamic_bag(
-                        &dyn_bag,
-                    )?;
-                }
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                // remove specified assets from storage
-                if !assets_to_remove.is_empty() {
-                    Storage::<T>::delete_data_objects(
-                        sender.clone(),
-                        Self::bag_id_for_channel(&channel_id),
-                        assets_to_remove.clone(),
-                    )?;
-                }
-
-                // delete channel dynamic bag
-                Storage::<T>::delete_dynamic_bag(
-                    sender,
-                    dyn_bag,
-                )?;
-            }
-
-            // remove channel from on chain state
-            ChannelById::<T>::remove(channel_id);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
 
             Ok(())
         }
+
+            // extrinsics for channel deletion
+            #[weight = 10_000_000] // TODO: adjust weight
+            pub fn delete_channel_as_moderator(
+                origin,
+                actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+                channel_id: T::ChannelId,
+                num_objects_to_delete: u64,
+                rationale: Vec<u8>,
+            ) -> DispatchResult {
+
+                let sender = ensure_signed(origin)?;
+                // check that channel exists
+                let channel = Self::ensure_channel_validity(&channel_id)?;
+
+                // Permissions check
+                let actions_to_perform = if num_objects_to_delete == 0 {
+                    vec![ContentModerationAction::DeleteChannel]
+                } else {
+                    vec![ContentModerationAction::DeleteChannel, ContentModerationAction::DeleteObject]
+                };
+                ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+                // check that channel videos are 0
+                ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
+
+                let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
+                let (bag_exists, assets_to_remove) = Self::ensure_channel_bag_can_be_dropped(&dynamic_bag_id, num_objects_to_delete)?;
+
+                //
+                // == MUTATION SAFE ==
+                //
+                Self::execute_delete_channel_mutation(sender, channel_id, if bag_exists { Some(&dynamic_bag_id) } else { None }, &assets_to_remove)?;
+
+                // deposit event
+                Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
+
+                Ok(())
+            }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel_category(
@@ -2383,6 +2378,62 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn ensure_channel_bag_can_be_dropped(
+        dynamic_bag_id: &storage::DynamicBagId<T>,
+        num_objects_to_delete: u64,
+    ) -> Result<(bool, BTreeSet<DataObjectId<T>>), DispatchError> {
+        let bag_id = storage::BagIdType::from(dynamic_bag_id.clone());
+
+        if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
+            // channel has a dynamic bag associated
+            // ensure that bag size provided is valid
+            ensure!(
+                bag.objects_number == num_objects_to_delete,
+                Error::<T>::InvalidBagSizeSpecified
+            );
+
+            // construct collection of assets to be removed
+            let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
+
+            if !assets_to_remove.is_empty() {
+                Storage::<T>::can_delete_dynamic_bag_with_objects(&dynamic_bag_id)?;
+                Storage::<T>::can_delete_data_objects(&bag_id, &assets_to_remove)?;
+            } else {
+                Storage::<T>::can_delete_dynamic_bag(&dynamic_bag_id)?;
+            }
+            Ok((true, assets_to_remove))
+        } else {
+            Ok((false, BTreeSet::<DataObjectId<T>>::new()))
+        }
+    }
+
+    fn execute_delete_channel_mutation(
+        sender: T::AccountId,
+        channel_id: T::ChannelId,
+        dynamic_bag_id: Option<&storage::DynamicBagId<T>>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        // channel has a dynamic bag associated to it -> remove assets from storage
+        if let Some(dynamic_bag_id) = dynamic_bag_id {
+            // remove specified assets from storage
+            if !assets_to_remove.is_empty() {
+                Storage::<T>::delete_data_objects(
+                    sender.clone(),
+                    Self::bag_id_for_channel(&channel_id),
+                    assets_to_remove.clone(),
+                )?;
+            }
+
+            // delete channel dynamic bag
+            Storage::<T>::delete_dynamic_bag(sender, dynamic_bag_id.clone())?;
+        }
+
+        // remove channel from on chain state
+        ChannelById::<T>::remove(channel_id);
+
+        Ok(())
+    }
+
     // Reset Videos and Channels on runtime upgrade but preserving next ids and categories.
     pub fn on_runtime_upgrade() {
         // setting final index triggers migration
@@ -2524,6 +2575,7 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ChannelDeleted(ContentActor, ChannelId),
+        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
 
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),
