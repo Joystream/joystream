@@ -1891,6 +1891,64 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
+
+        /// Channel owner remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_auth_success::<T>(&sender, &actor)?;
+            ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelOwnerRemarked(actor, channel_id, msg));
+        }
+
+        /// Channel collaborator remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_collaborator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
+        }
+
+        /// Channel moderator remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_moderator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_auth_success::<T>(&sender, &actor)?;
+            ensure_actor_is_moderator::<T>(&actor, &channel.moderators)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
+        }
+
+        /// NFT owner remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
+            let video = Self::ensure_video_exists(&video_id)?;
+            let nft = video.ensure_nft_is_issued::<T>()?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
+        }
+
     }
 }
 
@@ -2265,5 +2323,11 @@ decl_event!(
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
+
+        /// Metaprotocols related event
+        ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
+        ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
     }
 );
