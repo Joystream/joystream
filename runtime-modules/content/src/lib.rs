@@ -1508,12 +1508,13 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid: CurrencyOf<T>,
+            bid_amount: CurrencyOf<T>,
         ) {
 
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
+            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1522,29 +1523,23 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure auction for given video id exists
-            let mut auction = nft.ensure_auction_state::<T>()?;
-
-            let current_block = <frame_system::Module<T>>::block_number();
+            let auction = nft.ensure_auction_state::<T>()?;
 
             // Ensure nft auction not expired
-            auction.ensure_nft_auction_not_expired::<T>(current_block)?;
-
-            // Ensure auction have been already started
-            auction.ensure_auction_started::<T>(current_block)?;
+            Self::ensure_nft_auction_not_expired(&nft)?;
 
             // Ensure participant have been already added to whitelist if set
-            auction.ensure_whitelisted_participant::<T>(participant_id)?;
+            Self::ensure_whitelisted_participant::<T>(participant_id)?;
 
             // Ensure new bid is greater then last bid + minimal bid step
-            auction.ensure_is_valid_bid::<T>(bid, participant_id, current_block)?;
+            Self::ensure_bid_can_be_made::<T>(auction, participant_id, bid_amount)?;
 
             // unreserve previous bid amount
-            if let Some(Bid{amount, ..}) = auction.bid_list.get(&participant_id) {
-                T::Currency::unreserve(&participant_account_id, *amount);
-            }
+            // if let Some(Bid{amount, ..}) = auction.bid_list.get(&participant_id) {
+            //     T::Currency::unreserve(&participant_account_id, *amount);
+            // }
 
             // Ensure bidder have sufficient balance amount to reserve for bid
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
 
             let (nft, event) = match auction.buy_now_price {
                 Some(buy_now_price) if bid >= buy_now_price => {

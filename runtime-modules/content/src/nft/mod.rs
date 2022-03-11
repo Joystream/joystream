@@ -32,7 +32,7 @@ impl<T: Trait> Module<T> {
         bid: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_reserve(participant, bid),
+            T::Currency::total_balance(participant) >= bid,
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -398,7 +398,7 @@ impl<T: Trait> Module<T> {
 
     // fetches the desginated nft owner account, preconditions:
     // 1. Self::ensure_channel_exist(channel_id).is_ok()
-    pub(crate) fn ensure_owner_account_id(
+    pub(crate) fn ensure_owner_account_id<T: Trait>(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
@@ -407,6 +407,151 @@ impl<T: Trait> Module<T> {
             NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
                 .reward_account
                 .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+        }
+    }
+
+    pub(crate) fn ensure_whitelisted_participant<T: Trait>(
+        auction: &Auction<T>,
+        participant_id: T::MemberId,
+    ) -> DispatchResult {
+        ensure!(
+            auction.whitelist().is_empty() || auction.whitelist().contains(participant_id),
+            Error::<T>::MemberIsNotAllowedToParticipate
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(&auction: Auction<T>) -> DispatchResult {
+        match &auction.auction_type {
+            AuctionTypeOf::<T>::English(eng) => {
+                ensure!(eng.top_bid.is_none(), Error::<T>::ActionHasBidsAlready)
+            }
+            AuctionTypeOf::<T>::Open(open) => {
+                ensure!(open.bids == 0, Error::<T>::ActionHasBidsAlready)
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(&auction: Auction<T>) -> DispatchResult {
+        ensure_auction_has_no_bids(auction)
+    }
+
+    pub(crate) fn ensure_nft_auction_not_expired<T: Trait>(&nft: Nft<T>) -> DispatchResult {
+        let now = <frame_system::Module<T>>::block_number();
+        if let TransactionalStatus::<T>::Auction(Auction::<T> { auction_type, .. }) =
+            nft.transactional_status
+        {
+            match auction_type {
+                AuctionTypeOf::<T>::English(eng) => {
+                    ensure!(eng.end > now, Error::<T>::NftAuctionIsAlreadyExpired,)
+                }
+                AuctionTypeOf::<T>::Open(open) => ensure!(
+                    nft_auction_status == open_auction,
+                    Error::<T>::NftAuctionIsAlreadyExpired,
+                ),
+            }
+        } else {
+            Err(Error::<T>::NotInAuctionState.into())
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn ensure_bid_can_be_made<T: Trait>(
+        auction: &Auction<T>,
+        bidder: T::MemberId,
+        amount: CurrencyOf<T>,
+        video_id: T::VideoId,
+    ) -> DispatchResult {
+        // 1. if bid >= Some(buy_now) -> Ok(())
+        if let Some(buy_now) = &self.buy_now_price {
+            if new_bid > *buy_now {
+                return Ok(());
+            }
+        };
+
+        match &auction.auction_type {
+            AuctionTypeOf::<T>::English(EnglishAuction::<T> { top_bid, .. }) => top_bid
+                .map_or_else(
+                    || {
+                        ensure!(
+                            auction.starting_price <= amount,
+                            Error::<T>::StartingPriceConstraintViolated,
+                        );
+                        Ok(())
+                    },
+                    |bid| {
+                        ensure!(
+                            bid.amount.saturating_add(bid_step.clone()) <= amount,
+                            Error::<T>::BidStepConstraintViolated
+                        );
+                        Ok(())
+                    },
+                ),
+            AuctionTypeOf::<T>::Open(open) => Self::ensure_bid_exists(&video_id, &member_id)
+                .map_or_else(
+                    || {
+                        ensure!(
+                            auction.starting_price <= amount
+                                Error::<T>::StartingPriceConstraintViolated,
+                        );
+                        Ok(())
+                    },
+                    |bid| {
+                        if amount < bid.amount {
+                            ensure_bid_lock_duration_expired::<T>(&open, bid.made_at_block)
+                        }
+                    },
+                ),
+        }
+    }
+
+    pub(crate) fn ensure_bid_lock_duration_expired<T: Trait>(
+        open_auction: &OpenAuction<T>,
+        last_bid_block: <T as frame_system::Trait>::BlockNumber,
+    ) -> DispatchResult {
+        let now = <frame_system::Module<T>>::block_number();
+        ensure!(
+            last_bid_block.saturating_add(auction.bid_lock_duration) >= now,
+            Error::<T>::BidLockDurationIsNotExpired
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_nft_exists<T: Trait>(
+        video_id: T::VideoId,
+    ) -> Result<Nft<T>, DispatchError> {
+        Self::video_by_id(nft_video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
+    }
+
+    /// Ensure auction has last bid, return corresponding reference
+    pub fn ensure_bid_exists<T: Trait>(
+        &self,
+        who: &MemberId,
+    ) -> Result<Bid<BlockNumber, Balance>, DispatchError> {
+        self.bid_list.get(who).map_or_else(
+            || Err(Error::<T>::BidDoesNotExist.into()),
+            |bid| Ok(bid.clone()),
+        )
+    }
+
+    /// Ensure bid can be cancelled
+    pub fn ensure_bid_can_be_canceled<T: Trait>(
+        who: MemberId,
+        nft_video_id: T::VideoId,
+    ) -> DispatchResult {
+        let nft = Self::ensure_nft_exists(nft_video_id)?;
+        let bid = Self::ensure_bid_exists(nft_video_id, who)?;
+
+        match nft.transactional_status {
+            Auction::<T> {
+                auction_type: AuctionTypeOf::<T>::Open(open),
+                ..
+            } if open.auction_id == bid.auction_id => {
+                ensure_bid_lock_duration_expired::<T>(&open, bid.made_at_block)
+            }
+            _ => Ok(()),
         }
     }
 }
