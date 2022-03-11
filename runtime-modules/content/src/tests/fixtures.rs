@@ -1836,22 +1836,43 @@ pub fn assert_group_has_permissions_for_actions(
     privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
     allowed_actions: &Vec<ContentModerationAction>,
 ) {
-    assert_eq!(
-        group.ensure_can_perform_actions(allowed_actions, privilege_level),
-        Ok(()),
-        "Expected curator group to have {:?} action permissions for privilege_level {}",
-        allowed_actions,
-        privilege_level
-    );
+    if !allowed_actions.is_empty() {
+        assert_eq!(
+            group.ensure_can_perform_actions(allowed_actions, privilege_level),
+            Ok(()),
+            "Expected curator group to have {:?} action permissions for privilege_level {}",
+            allowed_actions,
+            privilege_level
+        );
+    }
     for action in ContentModerationAction::iter() {
-        if !allowed_actions.contains(&action) {
-            assert_eq!(
-                group.ensure_can_perform_action(action, privilege_level),
-                Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
-                "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
-                action,
-                privilege_level
-            );
+        match action {
+            ContentModerationAction::PauseChannelFunctionality(..) => {
+                for pause_channel_func in PausedChannelFunctionality::iter() {
+                    if !allowed_actions.contains(
+                        &ContentModerationAction::PauseChannelFunctionality(pause_channel_func),
+                    ) {
+                        assert_eq!(
+                                group.ensure_can_perform_action(ContentModerationAction::PauseChannelFunctionality(pause_channel_func), privilege_level),
+                                Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+                                "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
+                                action.clone(),
+                                privilege_level
+                            );
+                    }
+                }
+            }
+            _ => {
+                if !allowed_actions.contains(&action) {
+                    assert_eq!(
+                            group.ensure_can_perform_action(action.clone(), privilege_level),
+                            Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+                            "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
+                            action.clone(),
+                            privilege_level
+                        );
+                }
+            }
         }
     }
 }

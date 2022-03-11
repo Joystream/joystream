@@ -3,43 +3,38 @@ use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ContentModerationPermissions {
-    pub hide_video: bool,
-    pub hide_channel: bool,
-    pub pause_channel: bool,
-    pub delete_object: bool,
-    pub delete_video: bool,
-    pub delete_channel: bool,
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum PausedChannelFunctionality {
+    ChannelFundsTransfer,
+    CreatorCashout,
+    VideoNftIssuance,
+    VideoNftStatusUpdate,
+    VideoCreation,
+    VideoUpdate,
+    ChannelUpdate,
+    CreatorTokenIssuance,
 }
 
-impl Default for ContentModerationPermissions {
+impl Default for PausedChannelFunctionality {
     fn default() -> Self {
-        Self {
-            hide_video: false,
-            hide_channel: false,
-            pause_channel: false,
-            delete_object: false,
-            delete_video: false,
-            delete_channel: false,
-        }
+        Self::ChannelFundsTransfer
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum ContentModerationAction {
     HideVideo,
     HideChannel,
-    PauseChannel,
+    PauseChannelFunctionality(PausedChannelFunctionality),
     DeleteObject,
     DeleteVideo,
     DeleteChannel,
 }
 
 pub type ModerationPermissionsByLevel<T> =
-    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, ContentModerationPermissions>;
+    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
 
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -170,24 +165,30 @@ impl<T: Trait> CuratorGroup<T> {
         Ok(())
     }
 
+    pub fn can_perform_actions(
+        &self,
+        actions: &Vec<ContentModerationAction>,
+        privilege_level: T::ChannelPrivilegeLevel,
+    ) -> bool {
+        let permissions_for_level = self.permissions_by_level.get(&privilege_level);
+        if let Some(permissions_for_level) = permissions_for_level {
+            for action in actions {
+                if !permissions_for_level.contains(&action) {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn can_perform_action(
         &self,
         action: ContentModerationAction,
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> bool {
-        let permissions_for_level = self.permissions_by_level.get(&privilege_level);
-        if let Some(permissions_for_level) = permissions_for_level {
-            match action {
-                ContentModerationAction::HideVideo => permissions_for_level.hide_video,
-                ContentModerationAction::HideChannel => permissions_for_level.hide_channel,
-                ContentModerationAction::PauseChannel => permissions_for_level.pause_channel,
-                ContentModerationAction::DeleteObject => permissions_for_level.delete_object,
-                ContentModerationAction::DeleteVideo => permissions_for_level.delete_video,
-                ContentModerationAction::DeleteChannel => permissions_for_level.delete_channel,
-            }
-        } else {
-            false
-        }
+        self.can_perform_actions(&vec![action], privilege_level)
     }
 
     pub fn ensure_can_perform_action(
@@ -207,9 +208,10 @@ impl<T: Trait> CuratorGroup<T> {
         actions: &Vec<ContentModerationAction>,
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> DispatchResult {
-        for action in actions {
-            self.ensure_can_perform_action(action.clone(), privilege_level)?;
-        }
+        ensure!(
+            self.can_perform_actions(actions, privilege_level),
+            Error::<T>::CuratorModerationActionNotAllowed
+        );
         Ok(())
     }
 }

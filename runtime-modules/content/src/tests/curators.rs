@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use std::collections::BTreeMap;
+use std::iter::FromIterator;
 
 use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, *};
@@ -66,34 +67,64 @@ fn curator_group_management() {
         assert_eq!(group.is_active(), true);
 
         // Group permissions
-        let mut permissions = ModerationPermissionsByLevel::<Test>::new();
-        permissions.insert(
-            0,
-            ContentModerationPermissions {
-                hide_video: true,
-                delete_video: true,
-                ..ContentModerationPermissions::default()
-            },
-        );
-        permissions.insert(
-            1,
-            ContentModerationPermissions {
-                hide_channel: true,
-                pause_channel: true,
-                ..ContentModerationPermissions::default()
-            },
-        );
-        permissions.insert(
-            2,
-            ContentModerationPermissions {
-                delete_video: true,
-                delete_channel: true,
-                delete_object: true,
-                hide_channel: true,
-                hide_video: true,
-                pause_channel: true,
-            },
-        );
+        let permissions = BTreeMap::from_iter(vec![
+            (
+                0,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::HideVideo,
+                    ContentModerationAction::DeleteVideo,
+                ]),
+            ),
+            (
+                1,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::HideChannel,
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoCreation,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoUpdate,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::ChannelUpdate,
+                    ),
+                ]),
+            ),
+            (
+                2,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteVideo,
+                    ContentModerationAction::DeleteChannel,
+                    ContentModerationAction::DeleteObject,
+                    ContentModerationAction::HideChannel,
+                    ContentModerationAction::HideVideo,
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::ChannelFundsTransfer,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::CreatorCashout,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::CreatorTokenIssuance,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::ChannelUpdate,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoCreation,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoNftIssuance,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoNftStatusUpdate,
+                    ),
+                    ContentModerationAction::PauseChannelFunctionality(
+                        PausedChannelFunctionality::VideoUpdate,
+                    ),
+                ]),
+            ),
+        ]);
 
         // Update group permissions
         assert_ok!(Content::update_curator_group_permissions(
@@ -118,30 +149,11 @@ fn curator_group_management() {
         // (3 will be a "non-existent map entry" case)
         for i in 0u8..4u8 {
             let allowed_actions: Vec<ContentModerationAction>;
-            match i {
-                0 => {
-                    allowed_actions = vec![
-                        ContentModerationAction::HideVideo,
-                        ContentModerationAction::DeleteVideo,
-                    ]
-                }
-                1 => {
-                    allowed_actions = vec![
-                        ContentModerationAction::HideChannel,
-                        ContentModerationAction::PauseChannel,
-                    ]
-                }
-                2 => {
-                    allowed_actions = vec![
-                        ContentModerationAction::DeleteVideo,
-                        ContentModerationAction::DeleteChannel,
-                        ContentModerationAction::DeleteObject,
-                        ContentModerationAction::HideChannel,
-                        ContentModerationAction::HideVideo,
-                        ContentModerationAction::PauseChannel,
-                    ]
-                }
-                _ => allowed_actions = vec![],
+            let permissions_for_level = permissions.get(&i);
+            if let Some(permissions_for_level) = permissions_for_level {
+                allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
+            } else {
+                allowed_actions = vec![]
             }
             assert_group_has_permissions_for_actions(&group, i, &allowed_actions);
         }
@@ -231,7 +243,7 @@ fn unsuccessful_curator_group_creation_with_max_permissions_by_level_map_size_ex
         // Group permissions
         let mut permissions = ModerationPermissionsByLevel::<Test>::new();
         for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
-            permissions.insert(i, ContentModerationPermissions::default());
+            permissions.insert(i, BTreeSet::new());
         }
 
         CreateCuratorGroupFixture::default()
@@ -255,7 +267,7 @@ fn unsuccessful_curator_group_permissions_update_with_max_permissions_by_level_m
         // Group permissions
         let mut permissions = ModerationPermissionsByLevel::<Test>::new();
         for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
-            permissions.insert(i, ContentModerationPermissions::default());
+            permissions.insert(i, BTreeSet::new());
         }
 
         // Update group permissions

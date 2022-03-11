@@ -1519,12 +1519,9 @@ fn unsuccessful_moderation_action_channel_assets_deletion_by_curator_without_per
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1542,12 +1539,9 @@ fn unsuccessful_moderation_action_non_existing_channel_deletion() {
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1574,13 +1568,12 @@ fn unsuccessful_moderation_action_channel_with_videos_deletion() {
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    delete_object: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteChannel,
+                    ContentModerationAction::DeleteObject,
+                ]),
             )]),
         );
 
@@ -1607,13 +1600,12 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    delete_object: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteChannel,
+                    ContentModerationAction::DeleteObject,
+                ]),
             )]),
         );
 
@@ -1641,12 +1633,9 @@ fn successful_moderation_action_channel_deletion_by_curator() {
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1669,13 +1658,12 @@ fn successful_moderation_action_channel_with_assets_deletion_by_curator() {
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_channel: true,
-                    delete_object: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteChannel,
+                    ContentModerationAction::DeleteObject,
+                ]),
             )]),
         );
 
@@ -1776,12 +1764,9 @@ fn unsuccessful_moderation_action_non_existing_channel_visibility_change() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideChannel]),
             )]),
         );
         // As curator
@@ -1806,12 +1791,9 @@ fn unsuccessful_moderation_action_channel_visibility_redundant_change() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideChannel]),
             )]),
         );
         // As curator
@@ -1856,12 +1838,9 @@ fn successful_moderation_action_channel_visibility_change_by_curator() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_channel: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideChannel]),
             )]),
         );
         // Set to hidden

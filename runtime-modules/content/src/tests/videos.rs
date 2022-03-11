@@ -1182,12 +1182,9 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_curator() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
             )]),
         );
 
@@ -1227,12 +1224,9 @@ fn unsuccessful_moderation_action_video_assets_deletion_by_curator_with_no_permi
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
             )]),
         );
 
@@ -1257,12 +1251,9 @@ fn successful_moderation_action_video_deletion_by_curator() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
             )]),
         );
 
@@ -1300,13 +1291,12 @@ fn successful_moderation_action_video_deletion_with_assets_by_curator() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    delete_video: true,
-                    delete_object: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteVideo,
+                    ContentModerationAction::DeleteObject,
+                ]),
             )]),
         );
 
@@ -1403,12 +1393,9 @@ fn unsuccessful_moderation_action_non_existing_video_visibility_change() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideVideo]),
             )]),
         );
         // As curator
@@ -1433,12 +1420,9 @@ fn unsuccessful_moderation_action_video_visibility_redundant_change() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideVideo]),
             )]),
         );
         // As curator
@@ -1483,12 +1467,9 @@ fn successful_moderation_action_video_visibility_change_by_curator() {
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
-            ModerationPermissionsByLevel::<Test>::from_iter(vec![(
+            BTreeMap::from_iter(vec![(
                 0,
-                ContentModerationPermissions {
-                    hide_video: true,
-                    ..ContentModerationPermissions::default()
-                },
+                BTreeSet::from_iter(vec![ContentModerationAction::HideVideo]),
             )]),
         );
         // Set to hidden
