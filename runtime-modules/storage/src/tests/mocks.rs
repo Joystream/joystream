@@ -206,6 +206,8 @@ impl crate::Trait for Test {
             Ok(())
         }
     }
+
+    type WeightInfo = ();
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;

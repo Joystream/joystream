@@ -641,6 +641,7 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
+    type WeightInfo = weights::storage::WeightInfo;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_leader_origin(origin)

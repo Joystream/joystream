@@ -378,6 +378,8 @@ impl storage::Trait for Test {
             Ok(())
         }
     }
+
+    type WeightInfo = ();
 }
 
 // Anyone can upload and delete without restriction
