@@ -1582,6 +1582,13 @@ decl_module! {
         // ===== Storage Lead actions =====
 
         /// Delete storage bucket. Must be empty. Storage operator must be missing.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::delete_storage_bucket()]
         pub fn delete_storage_bucket(
             origin,
@@ -1611,6 +1618,13 @@ decl_module! {
         }
 
         /// Updates global uploading flag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_uploading_blocked_status()]
         pub fn update_uploading_blocked_status(origin, new_status: bool) {
             T::ensure_storage_working_group_leader_origin(origin)?;
@@ -1625,6 +1639,13 @@ decl_module! {
         }
 
         /// Updates size-based pricing of new objects uploaded.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_data_size_fee()]
         pub fn update_data_size_fee(origin, new_data_size_fee: BalanceOf<T>) {
             T::ensure_storage_working_group_leader_origin(origin)?;
@@ -1639,6 +1660,13 @@ decl_module! {
         }
 
         /// Updates "Storage buckets per bag" number limit.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_storage_buckets_per_bag_limit()]
         pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
             T::ensure_storage_working_group_leader_origin(origin)?;
@@ -1659,6 +1687,13 @@ decl_module! {
         }
 
         /// Updates "Storage buckets voucher max limits".
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_storage_buckets_voucher_max_limits()]
         pub fn update_storage_buckets_voucher_max_limits(
             origin,
@@ -1680,6 +1715,13 @@ decl_module! {
         }
 
         /// Update number of storage buckets used in given dynamic bag creation policy.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy()]
         pub fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
@@ -1708,6 +1750,15 @@ decl_module! {
         }
 
         /// Add and remove hashes to the current blacklist.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + V)` where:
+        /// - `W` is the number of items in `remove_hashes`
+        /// - `V` is the number of items in `add_hashes`
+        /// - DB:
+        ///    - `O(W)` - from the the generated weights
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_blacklist(
             remove_hashes.len().saturated_into(),
             add_hashes.len().saturated_into())
@@ -1752,6 +1803,13 @@ decl_module! {
         }
 
         /// Create storage bucket.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::create_storage_bucket()]
         pub fn create_storage_bucket(
             origin,
@@ -1802,7 +1860,16 @@ decl_module! {
             );
         }
 
-        /// Updates storage buckets for a bag..
+        /// Updates storage buckets for a bag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + V)` where:
+        /// - `W` is the number of items in `add_buckets`
+        /// - `V` is the number of items in `remove_buckets`
+        /// - DB:
+        ///    - `O(V + W)` - from the the generated weights
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_storage_buckets_for_bag(
             add_buckets.len().saturated_into(),
             remove_buckets.len().saturated_into())
@@ -1856,6 +1923,13 @@ decl_module! {
         }
 
         /// Cancel pending storage bucket invite. An invitation must be pending.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::cancel_storage_bucket_operator_invite()]
         pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
             T::ensure_storage_working_group_leader_origin(origin)?;
@@ -1878,6 +1952,13 @@ decl_module! {
         }
 
         /// Invite storage bucket operator. Must be missing.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::invite_storage_bucket_operator()]
         pub fn invite_storage_bucket_operator(
             origin,
@@ -1907,6 +1988,13 @@ decl_module! {
         }
 
         /// Removes storage bucket operator.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::remove_storage_bucket_operator()]
         pub fn remove_storage_bucket_operator(
             origin,
@@ -1933,6 +2021,13 @@ decl_module! {
         }
 
         /// Update whether new bags are being accepted for storage.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_storage_bucket_status()]
         pub fn update_storage_bucket_status(
             origin,
@@ -1957,6 +2052,13 @@ decl_module! {
         }
 
         /// Sets storage bucket voucher limits.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::set_storage_bucket_voucher_limits()]
         pub fn set_storage_bucket_voucher_limits(
             origin,
@@ -2004,6 +2106,13 @@ decl_module! {
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
         /// It accepts an additional account ID (transactor) for accepting data objects to prevent
         /// transaction nonce collisions.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::accept_storage_bucket_invitation()]
         pub fn accept_storage_bucket_invitation(
             origin,
@@ -2039,6 +2148,14 @@ decl_module! {
         }
 
         /// Sets storage operator metadata (eg.: storage node URL).
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is length of the `metadata`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::set_storage_operator_metadata(metadata.len().saturated_into())]
         pub fn set_storage_operator_metadata(
@@ -2063,6 +2180,14 @@ decl_module! {
         }
 
         /// A storage provider signals that the data object was successfully uploaded to its storage.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W )` where:
+        /// - `W` is the number of items in `data_objects`
+        /// - DB:
+        ///    - `O(W)` - from the the generated weights
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::accept_pending_data_objects(data_objects.len().saturated_into())]
         pub fn accept_pending_data_objects(
@@ -2110,6 +2235,13 @@ decl_module! {
         // ===== Distribution Lead actions =====
 
         /// Create a distribution bucket family.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::create_distribution_bucket_family()]
         pub fn create_distribution_bucket_family(origin) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
@@ -2138,6 +2270,13 @@ decl_module! {
         }
 
         /// Deletes a distribution bucket family.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::delete_distribution_bucket_family()]
         pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
@@ -2168,6 +2307,13 @@ decl_module! {
         }
 
         /// Create a distribution bucket.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::create_distribution_bucket()]
         pub fn create_distribution_bucket(
             origin,
@@ -2205,6 +2351,13 @@ decl_module! {
         }
 
         /// Updates a distribution bucket 'accepts new bags' flag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_distribution_bucket_status()]
         pub fn update_distribution_bucket_status(
             origin,
@@ -2233,6 +2386,13 @@ decl_module! {
         }
 
         /// Delete distribution bucket. Must be empty.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::delete_distribution_bucket()]
         pub fn delete_distribution_bucket(
             origin,
@@ -2263,6 +2423,15 @@ decl_module! {
         }
 
         /// Updates distribution buckets for a bag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + V)` where:
+        /// - `W` is the number of items in `add_buckets_indices`
+        /// - `V` is the number of items in `remove_buckets_indices`
+        /// - DB:
+        ///    - `O(V + W)` - from the the generated weights
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_distribution_buckets_for_bag(
             add_buckets_indices.len().saturated_into(),
             remove_buckets_indices.len().saturated_into())
@@ -2317,6 +2486,13 @@ decl_module! {
         }
 
         /// Updates "Distribution buckets per bag" number limit.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_distribution_buckets_per_bag_limit()]
         pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u64) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
@@ -2337,6 +2513,13 @@ decl_module! {
         }
 
         /// Updates 'distributing' flag for the distributing flag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_distribution_bucket_mode()]
         pub fn update_distribution_bucket_mode(
             origin,
@@ -2365,6 +2548,15 @@ decl_module! {
         }
 
         /// Update number of distributed buckets used in given dynamic bag creation policy.
+        /// Updates distribution buckets for a bag.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the number of items in `families`
+        /// - DB:
+        ///    - `O(W)` - from the the generated weights
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::update_families_in_dynamic_bag_creation_policy(
                 families.len().saturated_into()
@@ -2398,6 +2590,13 @@ decl_module! {
         }
 
         /// Invite an operator. Must be missing.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::invite_distribution_bucket_operator()]
         pub fn invite_distribution_bucket_operator(
             origin,
@@ -2428,6 +2627,13 @@ decl_module! {
         }
 
         /// Cancel pending invite. Must be pending.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::cancel_distribution_bucket_operator_invite()]
         pub fn cancel_distribution_bucket_operator_invite(
             origin,
@@ -2464,6 +2670,13 @@ decl_module! {
         }
 
         /// Removes distribution bucket operator.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::remove_distribution_bucket_operator()]
         pub fn remove_distribution_bucket_operator(
             origin,
@@ -2498,6 +2711,14 @@ decl_module! {
         }
 
         /// Set distribution bucket family metadata.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is length of the `metadata`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::set_distribution_bucket_family_metadata(
                 metadata.len().saturated_into()
@@ -2528,6 +2749,13 @@ decl_module! {
         // ===== Distribution Operator actions =====
 
         /// Accept pending invite.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::accept_distribution_bucket_invitation()]
         pub fn accept_distribution_bucket_invitation(
             origin,
@@ -2562,6 +2790,14 @@ decl_module! {
         }
 
         /// Set distribution operator metadata for the distribution bucket.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is length of the `metadata`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::set_distribution_operator_metadata(metadata.len().saturated_into())
         ]

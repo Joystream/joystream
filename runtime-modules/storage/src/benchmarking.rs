@@ -470,8 +470,8 @@ benchmarks! {
 
     delete_storage_bucket {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-
         let storage_bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
     }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
     verify {
 
@@ -537,7 +537,6 @@ benchmarks! {
 
     update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-
         let dynamic_bag_type = DynamicBagType::Member;
         let new_number = 10u64;
 
