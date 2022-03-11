@@ -77,6 +77,12 @@ type OwnedNft
 
   "Creator royalty"
   creatorRoyalty: Float
+
+  "Owner curator group"
+  ownerCuratorGroup: CuratorGroup
+
+  "Is NFT owned by channel"
+  isOwnedByChannel: Boolean!
 }
 
 type TransactionalStatusUpdate @entity {

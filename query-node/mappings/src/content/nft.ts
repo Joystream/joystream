@@ -349,12 +349,25 @@ export async function createNft(
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
 
+  // Is NFT owned by channel or some member
+  const isOwnedByChannel = !ownerMember
+
+  // load channel
+  const channel = (await getById(store, Video, video.getId(), ['channel'])).channel
+
+  // load channel ownerCuratorGroup (if any)
+  const ownerCuratorGroup = isOwnedByChannel
+    ? (await getById(store, Channel, channel.getId(), ['ownerCuratorGroup'])).ownerCuratorGroup
+    : undefined
+
   // prepare nft record
   const nft = new OwnedNft({
     id: video.id.toString(),
     video: video,
     ownerMember,
     creatorRoyalty,
+    ownerCuratorGroup,
+    isOwnedByChannel,
     metadata: decodedMetadata,
     // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
     transactionalStatus: new TransactionalStatusIdle(),
