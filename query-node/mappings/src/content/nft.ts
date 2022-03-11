@@ -23,6 +23,7 @@ import {
   ContentActorCurator,
   ContentActorLead,
   Curator,
+  Channel,
 
   // events
   AuctionStartedEvent,
@@ -39,6 +40,7 @@ import {
   NftSellOrderMadeEvent,
   NftBoughtEvent,
   BuyNowCanceledEvent,
+  NftSlingedBackToTheOriginalArtistEvent,
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
@@ -948,4 +950,45 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
   })
 
   await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)
+}
+
+export async function contentNft_NftSlingedBackToTheOriginalArtist({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [videoId, ownerId] = new Content.NftBoughtEvent(event).params
+
+  // load NFT
+  const { video, nft } = await getNftFromVideo(
+    store,
+    videoId.toString(),
+    'Non-existing video was slinged',
+    'Non-existing nft was slinged'
+  )
+
+  // load channel
+  const channel = (await getById(store, Video, video.getId(), ['channel'])).channel
+
+  // load channel ownerCuratorGroup (if any)
+  const ownerCuratorGroup = (await getById(store, Channel, channel.getId(), ['ownerCuratorGroup'])).ownerCuratorGroup
+
+  nft.ownerMember = undefined
+  nft.ownerCuratorGroup = ownerCuratorGroup
+  nft.isOwnedByChannel = true
+  nft.updatedAt = new Date(event.blockTimestamp)
+
+  store.save<OwnedNft>(nft)
+
+  // common event processing - second
+
+  const nftSlingedBackToTheOriginalArtistEvent = new NftSlingedBackToTheOriginalArtistEvent({
+    ...genericEventFields(event),
+
+    video,
+    owner: new Membership({ id: ownerId.toString() }),
+  })
+
+  await store.save<NftSlingedBackToTheOriginalArtistEvent>(nftSlingedBackToTheOriginalArtistEvent)
 }
