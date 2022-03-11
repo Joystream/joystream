@@ -175,6 +175,7 @@ export async function createWorkingGroupOpeningMetadata(
     expectedEndingTimestamp,
     hiringLimit,
     shortDescription,
+    title,
   } = metadata
 
   const openingMetadata = new WorkingGroupOpeningMetadata({
@@ -182,6 +183,7 @@ export async function createWorkingGroupOpeningMetadata(
     updatedAt: eventTime,
     originallyValid,
     applicationDetails: applicationDetails || undefined,
+    title: title ?? undefined,
     description: description || undefined,
     shortDescription: shortDescription || undefined,
     hiringLimit: hiringLimit || undefined,
