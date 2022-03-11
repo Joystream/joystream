@@ -410,7 +410,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub(crate) fn ensure_whitelisted_participant<T: Trait>(
+    pub(crate) fn ensure_whitelisted_participant(
         auction: &Auction<T>,
         participant_id: T::MemberId,
     ) -> DispatchResult {
@@ -421,7 +421,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(&auction: Auction<T>) -> DispatchResult {
+    pub(crate) fn ensure_auction_has_no_bids(&auction: Auction<T>) -> DispatchResult {
         match &auction.auction_type {
             AuctionTypeOf::<T>::English(eng) => {
                 ensure!(eng.top_bid.is_none(), Error::<T>::ActionHasBidsAlready)
@@ -433,16 +433,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(&auction: Auction<T>) -> DispatchResult {
+    pub(crate) fn ensure_auction_has_no_bids(&auction: Auction<T>) -> DispatchResult {
         ensure_auction_has_no_bids(auction)
     }
 
-    pub(crate) fn ensure_nft_auction_not_expired<T: Trait>(&nft: Nft<T>) -> DispatchResult {
+    pub(crate) fn ensure_nft_auction_not_expired(
+        &nft: Nft<T>,
+    ) -> Result<Auction<T>, DispatchErorr> {
         let now = <frame_system::Module<T>>::block_number();
-        if let TransactionalStatus::<T>::Auction(Auction::<T> { auction_type, .. }) =
-            nft.transactional_status
-        {
-            match auction_type {
+        if let TransactionalStatus::<T>::Auction(auction) = nft.transactional_status {
+            match auction.auction_type {
                 AuctionTypeOf::<T>::English(eng) => {
                     ensure!(eng.end > now, Error::<T>::NftAuctionIsAlreadyExpired,)
                 }
@@ -451,14 +451,13 @@ impl<T: Trait> Module<T> {
                     Error::<T>::NftAuctionIsAlreadyExpired,
                 ),
             }
+            Ok(auction)
         } else {
             Err(Error::<T>::NotInAuctionState.into())
         }
-
-        Ok(())
     }
 
-    pub(crate) fn ensure_bid_can_be_made<T: Trait>(
+    pub(crate) fn ensure_bid_can_be_made(
         auction: &Auction<T>,
         bidder: T::MemberId,
         amount: CurrencyOf<T>,
@@ -500,14 +499,14 @@ impl<T: Trait> Module<T> {
                     },
                     |bid| {
                         if amount < bid.amount {
-                            ensure_bid_lock_duration_expired::<T>(&open, bid.made_at_block)
+                            Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
                         }
                     },
                 ),
         }
     }
 
-    pub(crate) fn ensure_bid_lock_duration_expired<T: Trait>(
+    pub(crate) fn ensure_bid_lock_duration_expired(
         open_auction: &OpenAuction<T>,
         last_bid_block: <T as frame_system::Trait>::BlockNumber,
     ) -> DispatchResult {
@@ -519,14 +518,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_nft_exists<T: Trait>(
-        video_id: T::VideoId,
-    ) -> Result<Nft<T>, DispatchError> {
+    pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, DispatchError> {
         Self::video_by_id(nft_video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
     }
 
     /// Ensure auction has last bid, return corresponding reference
-    pub fn ensure_bid_exists<T: Trait>(
+    pub fn ensure_bid_exists(
         &self,
         who: &MemberId,
     ) -> Result<Bid<BlockNumber, Balance>, DispatchError> {
@@ -537,10 +534,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure bid can be cancelled
-    pub fn ensure_bid_can_be_canceled<T: Trait>(
-        who: MemberId,
-        nft_video_id: T::VideoId,
-    ) -> DispatchResult {
+    pub fn ensure_bid_can_be_canceled(who: MemberId, nft_video_id: T::VideoId) -> DispatchResult {
         let nft = Self::ensure_nft_exists(nft_video_id)?;
         let bid = Self::ensure_bid_exists(nft_video_id, who)?;
 
@@ -549,7 +543,7 @@ impl<T: Trait> Module<T> {
                 auction_type: AuctionTypeOf::<T>::Open(open),
                 ..
             } if open.auction_id == bid.auction_id => {
-                ensure_bid_lock_duration_expired::<T>(&open, bid.made_at_block)
+                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
             }
             _ => Ok(()),
         }

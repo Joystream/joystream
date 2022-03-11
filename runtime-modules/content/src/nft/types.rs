@@ -292,7 +292,6 @@ impl<BlockNumber: BaseArithmetic + Copy, Balance> Bid<BlockNumber, Balance> {
     }
 }
 
-
 impl<
         BlockNumber: BaseArithmetic + Copy + Default + Clone,
         Balance: Default + BaseArithmetic + Clone,
@@ -435,7 +434,6 @@ pub struct AuctionRecord<
     pub whitelist: BTreeSet<MemberId>,
     pub bid_list: BTreeMap<MemberId, Bid<BlockNumber, Balance>>,
 }
-
 
 /// Auction alias type for simplification.
 pub type Auction<T> = AuctionRecord<

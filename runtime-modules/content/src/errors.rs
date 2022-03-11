@@ -160,6 +160,9 @@ decl_error! {
         /// Auction does not have bids
         BidDoesNotExist,
 
+        /// Selected Bid is for past open auction
+        BidIsForPastAuction,
+        
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 
