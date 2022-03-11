@@ -7,19 +7,18 @@ use crate::*;
 impl<T: Trait> Module<T> {
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed = if let AuctionType::English(EnglishAuctionDetails {
-            auction_duration,
-            ..
-        }) = auction.auction_type
-        {
-            let now = <frame_system::Module<T>>::block_number();
+        let can_be_completed =
+            if let AuctionTypeOf::<T>::English(EnglishAuction::<T> { end, duration, .. }) =
+                auction.auction_type
+            {
+                let now = <frame_system::Module<T>>::block_number();
 
-            // Check whether auction time expired.
-            (now - auction.starts_at) >= auction_duration
-        } else {
-            // Open auction can be completed at any time
-            true
-        };
+                // Check whether auction time expired.
+                now >= end.saturating_sub(duration)
+            } else {
+                // Open auction can be completed at any time
+                true
+            };
 
         ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
 
@@ -39,27 +38,28 @@ impl<T: Trait> Module<T> {
     }
 
     /// Safety/bound checks for auction parameters
-    pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::BlockNumber, CurrencyOf<T>, T::MemberId>,
-    ) -> DispatchResult {
+    pub(crate) fn validate_auction_params(auction_params: &AuctionParams<T>) -> DispatchResult {
         match auction_params.auction_type {
-            AuctionType::English(EnglishAuctionDetails {
+            AuctionTypeOf::<T>::English(EnglishAuction::<T> {
                 extension_period,
-                auction_duration,
-                bid_step,
+                duration,
+                min_bid_step,
+                ..
             }) => {
-                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
+                Self::ensure_auction_duration_bounds_satisfied(duration)?;
                 Self::ensure_extension_period_bounds_satisfied(extension_period)?;
 
-                Self::ensure_bid_step_bounds_satisfied(bid_step)?;
+                Self::ensure_bid_step_bounds_satisfied(min_bid_step.unwrap_or_default())?;
 
                 // Ensure auction_duration of English auction is >= extension_period
                 ensure!(
-                    auction_duration >= extension_period,
+                    duration >= extension_period,
                     Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
                 );
             }
-            AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
+            AuctionTypeOf::<T>::Open(OpenAuction::<T> {
+                bid_lock_duration, ..
+            }) => {
                 Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
             }
         }
@@ -68,34 +68,12 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
-        if let Some(starts_at) = auction_params.starts_at {
-            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
-        }
-
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
                 Error::<T>::BuyNowIsLessThenStartingPrice
             );
         }
-
-        Ok(())
-    }
-
-    /// Ensure starts at bounds satisfied
-    pub(crate) fn ensure_starts_at_delta_bounds_satisfied(
-        starts_at: T::BlockNumber,
-    ) -> DispatchResult {
-        ensure!(
-            starts_at >= <frame_system::Module<T>>::block_number(),
-            Error::<T>::StartsAtLowerBoundExceeded
-        );
-
-        ensure!(
-            starts_at
-                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
-            Error::<T>::StartsAtUpperBoundExceeded
-        );
 
         Ok(())
     }
@@ -272,7 +250,10 @@ impl<T: Trait> Module<T> {
             nft.owner = NftOwner::Member(new_owner);
         }
 
-        nft.set_idle_transactional_status()
+        Nft::<T> {
+            transactional_status: TransactionalStatus::<T>::Idle,
+            ..nft
+        }
     }
 
     /// Completes nft offer
@@ -299,7 +280,10 @@ impl<T: Trait> Module<T> {
             nft.owner = NftOwner::Member(*to);
         }
 
-        nft.set_idle_transactional_status()
+        Nft::<T> {
+            transactional_status: TransactionalStatus::<T>::Idle,
+            ..nft
+        }
     }
 
     /// Complete payment, either auction related or buy now/offer
@@ -353,30 +337,29 @@ impl<T: Trait> Module<T> {
     /// 1. video.nft_status.is_some()
     /// 2. matches!(video.nft_status, TransactionalStatus::<T>::Auction)
     pub(crate) fn complete_auction(
-        channel_id: T::ChannelId,
-        nft: &Nft<T>,
+        video_id: T::VideoId,
         winner_id: T::MemberId,
-        claimed_amount: CurrencyOf<T>,
     ) -> Result<Nft<T>, DispatchError> {
-        let dest_account_id = Self::ensure_owner_account_id(channel_id, nft)?;
+        let Video::<T> {
+            in_channel,
+            nft_status,
+            ..
+        } = Self::video_by_id(video_id);
+        let nft = nft_status.unwrap();
+
+        let auction = Self::ensure_auction_state(&nft)?;
+        let bid_amount = match auction.auction_type {
+            AuctionTypeOf::<T>::English(eng) => eng.top_bid.unwrap().amount,
+            AuctionTypeOf::<T>::Open(_) => Self::bid_by_video_by_member(video_id, winner_id).amount,
+        };
+
+        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft)?;
         let src_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
 
-        if let TransactionalStatus::<T>::Auction(Auction::<T> { bid_list, .. }) =
-            &nft.transactional_status
-        {
-            assert!(bid_list.contains_key(&winner_id));
-            ensure!(
-                bid_list
-                    .get(&winner_id)
-                    .map_or(false, |bid| { bid.amount == claimed_amount }),
-                Error::<T>::InvalidBidAmountSpecified
-            );
-        }
-
         Self::complete_payment(
-            channel_id,
+            in_channel,
             nft.creator_royalty,
-            claimed_amount,
+            bid_amount,
             src_account_id,
             Some(dest_account_id),
             true,
@@ -393,12 +376,13 @@ impl<T: Trait> Module<T> {
             }),
             creator_royalty: nft.creator_royalty,
             transactional_status: TransactionalStatus::<T>::Idle,
+            open_auctions_nonce: nft.open_auctions_nonce,
         }
     }
 
     // fetches the desginated nft owner account, preconditions:
     // 1. Self::ensure_channel_exist(channel_id).is_ok()
-    pub(crate) fn ensure_owner_account_id<T: Trait>(
+    pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
@@ -415,13 +399,17 @@ impl<T: Trait> Module<T> {
         participant_id: T::MemberId,
     ) -> DispatchResult {
         ensure!(
-            auction.whitelist().is_empty() || auction.whitelist().contains(participant_id),
+            auction.whitelist.is_empty() || auction.whitelist.contains(&participant_id),
             Error::<T>::MemberIsNotAllowedToParticipate
         );
         Ok(())
     }
 
-    pub(crate) fn ensure_auction_has_no_bids(&auction: Auction<T>) -> DispatchResult {
+    pub(crate) fn ensure_auction_can_be_canceled(auction: &Auction<T>) -> DispatchResult {
+        Self::ensure_auction_has_no_bids(auction)
+    }
+
+    pub(crate) fn ensure_auction_has_no_bids(auction: &Auction<T>) -> DispatchResult {
         match &auction.auction_type {
             AuctionTypeOf::<T>::English(eng) => {
                 ensure!(eng.top_bid.is_none(), Error::<T>::ActionHasBidsAlready)
@@ -433,25 +421,26 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_auction_has_no_bids(&auction: Auction<T>) -> DispatchResult {
-        ensure_auction_has_no_bids(auction)
+    pub(crate) fn ensure_auction_has_valid_bids(auction: &Auction<T>) -> DispatchResult {
+        Self::ensure_auction_has_no_bids(auction)
+            .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))
     }
 
     pub(crate) fn ensure_nft_auction_not_expired(
-        &nft: Nft<T>,
-    ) -> Result<Auction<T>, DispatchErorr> {
+        nft: &Nft<T>,
+    ) -> Result<Auction<T>, DispatchError> {
         let now = <frame_system::Module<T>>::block_number();
-        if let TransactionalStatus::<T>::Auction(auction) = nft.transactional_status {
-            match auction.auction_type {
+        if let TransactionalStatus::<T>::Auction(auction) = &nft.transactional_status {
+            match &auction.auction_type {
                 AuctionTypeOf::<T>::English(eng) => {
                     ensure!(eng.end > now, Error::<T>::NftAuctionIsAlreadyExpired,)
                 }
                 AuctionTypeOf::<T>::Open(open) => ensure!(
-                    nft_auction_status == open_auction,
+                    nft.open_auctions_nonce == open.auction_id,
                     Error::<T>::NftAuctionIsAlreadyExpired,
                 ),
             }
-            Ok(auction)
+            Ok(auction.to_owned())
         } else {
             Err(Error::<T>::NotInAuctionState.into())
         }
@@ -459,21 +448,39 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn ensure_bid_can_be_made(
         auction: &Auction<T>,
-        bidder: T::MemberId,
+        member_id: T::MemberId,
         amount: CurrencyOf<T>,
         video_id: T::VideoId,
     ) -> DispatchResult {
         // 1. if bid >= Some(buy_now) -> Ok(())
-        if let Some(buy_now) = &self.buy_now_price {
-            if new_bid > *buy_now {
+        if let Some(buy_now) = &auction.buy_now_price {
+            if amount > *buy_now {
                 return Ok(());
             }
-        };
+        }
 
         match &auction.auction_type {
-            AuctionTypeOf::<T>::English(EnglishAuction::<T> { top_bid, .. }) => top_bid
+            AuctionTypeOf::<T>::English(eng) => eng.top_bid.clone().map_or_else(
+                || {
+                    ensure!(
+                        auction.starting_price <= amount,
+                        Error::<T>::StartingPriceConstraintViolated,
+                    );
+                    Ok(())
+                },
+                |bid| {
+                    ensure!(
+                        bid.amount
+                            .saturating_add(eng.min_bid_step.unwrap_or_default())
+                            <= amount,
+                        Error::<T>::BidStepConstraintViolated
+                    );
+                    Ok(())
+                },
+            ),
+            AuctionTypeOf::<T>::Open(open) => Self::ensure_open_bid_exists(video_id, member_id)
                 .map_or_else(
-                    || {
+                    |_| {
                         ensure!(
                             auction.starting_price <= amount,
                             Error::<T>::StartingPriceConstraintViolated,
@@ -481,25 +488,11 @@ impl<T: Trait> Module<T> {
                         Ok(())
                     },
                     |bid| {
-                        ensure!(
-                            bid.amount.saturating_add(bid_step.clone()) <= amount,
-                            Error::<T>::BidStepConstraintViolated
-                        );
-                        Ok(())
-                    },
-                ),
-            AuctionTypeOf::<T>::Open(open) => Self::ensure_bid_exists(&video_id, &member_id)
-                .map_or_else(
-                    || {
-                        ensure!(
-                            auction.starting_price <= amount
-                                Error::<T>::StartingPriceConstraintViolated,
-                        );
-                        Ok(())
-                    },
-                    |bid| {
+                        // ensure lock duration if offer is lower
                         if amount < bid.amount {
                             Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
+                        } else {
+                            Ok(())
                         }
                     },
                 ),
@@ -512,40 +505,93 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let now = <frame_system::Module<T>>::block_number();
         ensure!(
-            last_bid_block.saturating_add(auction.bid_lock_duration) >= now,
+            last_bid_block.saturating_add(open_auction.bid_lock_duration) >= now,
             Error::<T>::BidLockDurationIsNotExpired
         );
         Ok(())
     }
 
-    pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, DispatchError> {
-        Self::video_by_id(nft_video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
-    }
-
-    /// Ensure auction has last bid, return corresponding reference
-    pub fn ensure_bid_exists(
-        &self,
-        who: &MemberId,
-    ) -> Result<Bid<BlockNumber, Balance>, DispatchError> {
-        self.bid_list.get(who).map_or_else(
-            || Err(Error::<T>::BidDoesNotExist.into()),
-            |bid| Ok(bid.clone()),
-        )
+    pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, Error<T>> {
+        Self::ensure_video_exists(&video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
     }
 
     /// Ensure bid can be cancelled
-    pub fn ensure_bid_can_be_canceled(who: MemberId, nft_video_id: T::VideoId) -> DispatchResult {
+    pub fn ensure_bid_can_be_canceled(
+        who: T::MemberId,
+        nft_video_id: T::VideoId,
+    ) -> DispatchResult {
         let nft = Self::ensure_nft_exists(nft_video_id)?;
-        let bid = Self::ensure_bid_exists(nft_video_id, who)?;
+        let bid = Self::ensure_open_bid_exists(nft_video_id, who)?;
 
         match nft.transactional_status {
-            Auction::<T> {
+            TransactionalStatus::<T>::Auction(Auction::<T> {
                 auction_type: AuctionTypeOf::<T>::Open(open),
                 ..
-            } if open.auction_id == bid.auction_id => {
+            }) if open.auction_id == bid.auction_id => {
                 Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
             }
             _ => Ok(()),
+        }
+    }
+
+    // NFT
+    /// Get nft auction record
+    pub(crate) fn ensure_auction_state(nft: &Nft<T>) -> Result<Auction<T>, DispatchError> {
+        if let TransactionalStatus::<T>::Auction(auction) = &nft.transactional_status {
+            Ok(auction.to_owned())
+        } else {
+            Err(Error::<T>::NotInAuctionState.into())
+        }
+    }
+
+    ///  Ensure nft transactional status is set to `Idle`
+    pub(crate) fn ensure_nft_transactional_status_is_idle(nft: &Nft<T>) -> DispatchResult {
+        if let TransactionalStatus::<T>::Idle = nft.transactional_status {
+            Ok(())
+        } else {
+            Err(Error::<T>::NftIsNotIdle.into())
+        }
+    }
+
+    /// Ensure Nft has pending offer
+    pub(crate) fn ensure_pending_offer_state(nft: &Nft<T>) -> DispatchResult {
+        ensure!(
+            matches!(
+                nft.transactional_status,
+                TransactionalStatus::<T>::InitiatedOfferToMember(..),
+            ),
+            Error::<T>::PendingOfferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure Nft is in BuyNow state
+    pub(crate) fn ensure_buy_now_state(nft: &Nft<T>) -> DispatchResult {
+        ensure!(
+            matches!(
+                nft.transactional_status,
+                TransactionalStatus::<T>::BuyNow(..),
+            ),
+            Error::<T>::NftNotInBuyNowState
+        );
+        Ok(())
+    }
+
+    pub fn ensure_is_open_auction(auction: &Auction<T>) -> Result<OpenAuction<T>, DispatchError> {
+        if let AuctionTypeOf::<T>::Open(open) = &auction.auction_type {
+            Ok(open.clone())
+        } else {
+            Err(Error::<T>::IsNotOpenAuctionType.into())
+        }
+    }
+
+    pub fn ensure_is_english_auction(
+        auction: &Auction<T>,
+    ) -> Result<EnglishAuction<T>, DispatchError> {
+        if let AuctionTypeOf::<T>::English(english) = &auction.auction_type {
+            Ok(english.clone())
+        } else {
+            Err(Error::<T>::IsNotEnglishAuctionType.into())
         }
     }
 }

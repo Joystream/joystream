@@ -162,7 +162,7 @@ decl_error! {
 
         /// Selected Bid is for past open auction
         BidIsForPastAuction,
-        
+
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 

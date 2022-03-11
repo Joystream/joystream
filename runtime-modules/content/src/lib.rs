@@ -69,6 +69,9 @@ pub trait Trait:
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
+    /// Type of identifier for OpenAuction
+    type OpenAuctionId: NumericIdentifier;
+
     /// Type of identifier for Video Categories
     type VideoCategoryId: NumericIdentifier;
 
@@ -189,6 +192,11 @@ decl_storage! {
 
         /// Max nft auction whitelist length
         pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
+
+        /// Bids for open auctions
+        pub BidByVideoByMember get(fn bid_by_video_by_member):
+        double_map hasher(blake2_128_concat) T::VideoId,
+        hasher(blake2_128_concat) T::MemberId => OpenBid<T>;
     }
 }
 
@@ -1342,11 +1350,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Issue Nft
-            let video = video.set_nft_status(nft_status);
-
             // Update the video
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft_status));
 
             Self::deposit_event(RawEvent::NftIssued(
                 actor,
@@ -1361,7 +1366,7 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            auction_params: AuctionParams<T::BlockNumber, CurrencyOf<T>, T::MemberId>,
+            auction_params: AuctionParams<T>,
         ) {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1373,7 +1378,7 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there nft transactional status is set to idle.
-            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
             // Validate round_duration & starting_price
             Self::validate_auction_params(&auction_params)?;
@@ -1383,18 +1388,17 @@ decl_module! {
             //
 
             // Create new auction
-            let mut auction = AuctionRecord::new(auction_params.clone());
+            let auction = AuctionRecord::new(auction_params.clone());
 
-            // If starts_at is not set, set it to now
-            if auction_params.starts_at.is_none() {
-                auction.starts_at = <frame_system::Module<T>>::block_number();
-            }
-
-            let nft = nft.set_auction_transactional_status(auction);
-            let video = video.set_nft_status(nft);
 
             // Update the video
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(
+                video_id,
+                |v| v.set_nft_status(Nft::<T> {
+                    transactional_status: TransactionalStatus::<T>::Auction(auction),
+                    ..nft
+                })
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionStarted(owner_id, video_id, auction_params));
@@ -1417,10 +1421,10 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure auction for given video id exists
-            let auction = nft.ensure_auction_state::<T>()?;
+            let auction = Self::ensure_auction_state(&nft)?;
 
             // Ensure given auction can be canceled
-            auction.ensure_auction_can_be_canceled::<T>()?;
+            Self::ensure_auction_can_be_canceled(&auction)?;
 
             //
             // == MUTATION SAFE ==
@@ -1428,9 +1432,8 @@ decl_module! {
 
             // Cancel auction
             let nft = Self::cancel_transaction(&nft, None);
-            let video = video.set_nft_status(nft);
 
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
@@ -1453,7 +1456,7 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure nft in pending offer state
-            nft.ensure_pending_offer_state::<T>()?;
+            Self::ensure_pending_offer_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -1461,9 +1464,7 @@ decl_module! {
 
             // Cancel pending offer
             let nft = Self::cancel_transaction(&nft, None);
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferCanceled(video_id, owner_id));
@@ -1486,7 +1487,7 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure nft in buy now state
-            nft.ensure_buy_now_state::<T>()?;
+            Self::ensure_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -1494,9 +1495,7 @@ decl_module! {
 
             // Cancel sell order
             let nft = Self::cancel_transaction(&nft, None);
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::BuyNowCanceled(video_id, owner_id));
@@ -1514,81 +1513,77 @@ decl_module! {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
+            Self::ensure_has_sufficient_balance(&participant_account_id, bid_amount)?;
 
             // Ensure nft is already issued
-            let nft = Self::ensure_nft_exists(video_id)?
+            let nft = Self::ensure_nft_exists(video_id)?;
             let auction =  Self::ensure_nft_auction_not_expired(&nft)?;
 
             // Ensure participant have been already added to whitelist if set
-            Self::ensure_whitelisted_participant::<T>(&auction, participant_id)?;
+            Self::ensure_whitelisted_participant(&auction, participant_id)?;
 
             // Ensure new bid is greater then last bid + minimal bid step
-            Self::ensure_bid_can_be_made::<T>(auction, participant_id, bid_amount, video_id)?;
+            Self::ensure_bid_can_be_made(&auction, participant_id, bid_amount, video_id)?;
             //
             // == MUTATION_SAFE ==
             //
 
 //            unreserve previous bid amount
-            if let Some(Bid{amount, ..}) = auction.bid_list.get(&participant_id) {
-                T::Currency::unreserve(&participant_account_id, *amount);
-            }
 
             // Ensure bidder have sufficient balance amount to reserve for bid
 
-            let (nft, event) = match auction.buy_now_price {
-                Some(buy_now_price) if bid >= buy_now_price => {
+            // let (nft, event) = match auction.buy_now_price {
+            //     Some(buy_now_price) if bid >= buy_now_price => {
 
-                    // Do not charge more then buy now
-                    let _ = auction.make_bid(
-                        participant_id,
-                        buy_now_price,
-                        current_block
-                    );
+            //         // Do not charge more then buy now
+            //         let _ = auction.make_bid(
+            //             participant_id,
+            //             buy_now_price,
+            //             current_block
+            //         );
 
-                    // complete auction @ buy_now_price
-                    Self::complete_auction(
-                        video.in_channel,
-                        &nft.set_auction_transactional_status(auction),
-                        participant_id,
-                        buy_now_price,
-                    ).map(|nft|
-                          (
-                              nft,
-                              RawEvent::BidMadeCompletingAuction(participant_id, video_id),
-                          ))
-                },
-                _ => {
-                    // Make auction bid & update auction data
+            //         // complete auction @ buy_now_price
+            //         Self::complete_auction(
+            //             video.in_channel,
+            //             &nft.set_auction_transactional_status(auction),
+            //             participant_id,
+            //             buy_now_price,
+            //         ).map(|nft|
+            //               (
+            //                   nft,
+            //                   RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+            //               ))
+            //     },
+            //     _ => {
+            //         // Make auction bid & update auction data
 
-                    // Reseve balance for current bid
-                    // Can not fail, needed check made
-                    T::Currency::reserve(&participant_account_id, bid)?;
+            //         // Reseve balance for current bid
+            //         // Can not fail, needed check made
+            //         T::Currency::reserve(&participant_account_id, bid)?;
 
-                    let (is_extended, bid_element) = auction.make_bid(
-                        participant_id,
-                        bid,
-                        current_block
-                    );
+            //         let (is_extended, bid_element) = auction.make_bid(
+            //             participant_id,
+            //             bid,
+            //             current_block
+            //         );
 
-                    Ok((
-                        nft.set_auction_transactional_status(auction),
-                        RawEvent::AuctionBidMade(participant_id, video_id, bid_element.amount, is_extended)
-                    ))
-                }
-            }?;
+            //         Ok((
+            //             nft.set_auction_transactional_status(auction),
+            //             RawEvent::AuctionBidMade(participant_id, video_id, bid_element.amount, is_extended)
+            //         ))
+            //     }
+            // }?;
 
             //
             // == MUTATION SAFE ==
             //
 
 
-            // insert video
-            let video = video.set_nft_status(nft);
-            VideoById::<T>::insert(video_id, video);
+            // update video
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
-            Self::deposit_event(event);
+//            Self::deposit_event(event);
 
         }
 
@@ -1640,13 +1635,15 @@ decl_module! {
             let nft = Self::ensure_nft_exists(video_id)?;
 
             // Ensure auction for given video id exists, retrieve corresponding one
-            nft.ensure_auction_state::<T>()
-                // ensure auction is english
-                .and_then(|auction| auction.ensure_is_english_auction::<T>().map(|| auction))
-                // ensure there is top bid
-                .and_then(|auction| auction.ensure_bid_exists::<T>(member_id).map(|_| auction))
-                // ensure it can be completed
-                .and_then(|auction| Self::ensure_auction_can_be_completed(&auction))?;
+            Self::ensure_auction_state(&nft)
+            // ensure auction is english
+                .and_then(|auction| Self::ensure_is_english_auction(&auction).map(|eng| (eng, auction)))
+            // ensure there is top bid
+                .and_then(|(eng,auction)| Self::ensure_auction_has_valid_bids(&auction).map(|_| (eng, auction)))
+            // ensure it can be completed and return top bid
+                .and_then(|(eng, auction)| Self::ensure_auction_can_be_completed(&auction)
+                          .map(|_| eng.top_bid.unwrap())
+                )?;
 
             //
             // == MUTATION SAFE ==
@@ -1654,14 +1651,12 @@ decl_module! {
 
             // Complete auction
             let nft = Self::complete_auction(
-                video.in_channel,
-                &nft,
+                video_id,
                 member_id,
-                bid_amnt,
             )?;
 
             // Update the video
-            VideoById::<T>::mutate(video_id, |video| *video = video.set_nft_status(nft));
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
@@ -1679,17 +1674,22 @@ decl_module! {
         ) {
             // Ensure nft is already issued
             let nft = Self::ensure_nft_exists(video_id)?;
+            let video = Self::video_by_id(video_id);
 
             // Ensure actor is authorized to accept open auction bid
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure auction for given video id exists, retrieve corresponding one
-            let auction = nft.ensure_auction_state::<T>()
-                .and_then(|auction| auction.ensure_is_open_auction::<T>().map(|| auction))?;
+            let auction = Self::ensure_auction_state(&nft)
+                .and_then(|auction| Self::ensure_is_open_auction(&auction).map(|_| auction))?;
 
-            let bid = Self::ensure_bid_exists(video_id, member_id)?;
+            let bid = Self::ensure_open_bid_exists(video_id, winner_id)
+                .and_then(|bid| {
+                    ensure!(bid.amount == bid_amnt, Error::<T>::InvalidBidAmountSpecified);
+                    Ok(bid)
+                })?;
 
-            if AuctionTypeOf::<T>::Open(open) = &auction.auction_type {
+            if let AuctionTypeOf::<T>::Open(open) = &auction.auction_type {
                 ensure!(bid.auction_id == open.auction_id, Error::<T>::BidIsForPastAuction)
             }
 
@@ -1698,14 +1698,12 @@ decl_module! {
             //
 
             let nft = Self::complete_auction(
-                video.in_channel,
-                &nft,
+                video_id,
                 winner_id,
-                bid_amnt,
             )?;
 
             // Update the video
-            VideoById::<T>::mutate(video_id, |video| *video = video.set_nft_status(nft));
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
@@ -1731,17 +1729,21 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there is no pending offer or existing auction for given nft.
-            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Set nft transactional status to InitiatedOfferToMember
-            let nft = nft.set_pending_offer_transactional_status(to, price);
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(
+                video_id,
+                |v| v.set_nft_status(Nft::<T> {
+                    transactional_status:
+                    TransactionalStatus::<T>::InitiatedOfferToMember(to, price),
+                    ..nft
+                })
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
@@ -1765,17 +1767,20 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there is no pending offer or existing auction for given nft.
-            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Set nft owner to ChannelOwner
-            let nft = nft.set_owner(NftOwner::ChannelOwner);
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(
+                video_id,
+                |v| v.set_nft_status(Nft::<T> {
+                    owner: NftOwner::ChannelOwner,
+                    ..nft
+                })
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::NftSlingedBackToTheOriginalArtist(video_id, owner_id));
@@ -1806,9 +1811,8 @@ decl_module! {
 
             // Complete nft offer
             let nft = Self::complete_nft_offer(video.in_channel, nft, owner_account_id, receiver_account_id);
-            let video = video.set_nft_status(nft);
 
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferAccepted(video_id));
@@ -1833,17 +1837,20 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
-            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Place nft sell order
-            let nft = nft.set_buy_now_transactionl_status(price);
-            let video = video.set_nft_status(nft);
-
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(
+                video_id,
+                |v| v.set_nft_status(Nft::<T> {
+                    transactional_status: TransactionalStatus::<T>::BuyNow(price),
+                    ..nft
+                })
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::NftSellOrderMade(video_id, owner_id, price));
@@ -1879,9 +1886,8 @@ decl_module! {
 
             // Buy nft
             let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
-            let video = video.set_nft_status(nft);
 
-            VideoById::<T>::insert(video_id, video);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
@@ -1993,12 +1999,10 @@ impl<T: Trait> Module<T> {
                 Ok(TransactionalStatus::<T>::BuyNow(*balance))
             }
             InitTransactionalStatus::<T>::Auction(params) => {
-                Self::validate_auction_params(&params)?;
-                let mut auction = AuctionRecord::new(params.clone());
-                if params.starts_at.is_none() {
-                    auction.starts_at = <frame_system::Module<T>>::block_number();
-                }
-                Ok(TransactionalStatus::<T>::Auction(auction))
+                Self::validate_auction_params(params)?;
+                Ok(TransactionalStatus::<T>::Auction(Auction::<T>::new(
+                    params.clone(),
+                )))
             }
         }
     }
@@ -2121,6 +2125,17 @@ impl<T: Trait> Module<T> {
             }
         }
     }
+
+    pub(crate) fn ensure_open_bid_exists(
+        video_id: T::VideoId,
+        member_id: T::MemberId,
+    ) -> Result<OpenBid<T>, DispatchError> {
+        ensure!(
+            BidByVideoByMember::<T>::contains_key(video_id, member_id),
+            Error::<T>::BidDoesNotExist,
+        );
+        Ok(Self::bid_by_video_by_member(video_id, member_id))
+    }
 }
 
 decl_event!(
@@ -2141,11 +2156,7 @@ decl_event!(
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         IsCensored = bool,
-        AuctionParams = AuctionParams<
-            <T as frame_system::Trait>::BlockNumber,
-            CurrencyOf<T>,
-            <T as common::MembershipTypes>::MemberId,
-        >,
+        AuctionParams = AuctionParams<T>,
         NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
         CurrencyAmount = CurrencyOf<T>,
