@@ -33,9 +33,9 @@
   dependencies:
     xss "^1.0.8"
 
-"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz":
-  version "1.7.28"
-  resolved "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz#24c9c54e14ae0ba13c894738b4b87301f5801b26"
+"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/graphql-playground-react%401.7.29/graphql-playground-react-v1.7.29.tgz":
+  version "1.7.29"
+  resolved "https://github.com/Joystream/graphql-playground/releases/download/graphql-playground-react%401.7.29/graphql-playground-react-v1.7.29.tgz#bf0bf4a72f74de156ccf2a8638e7cb617a8b41e2"
   dependencies:
     "@types/lru-cache" "^4.1.1"
     apollo-link "^1.2.13"
@@ -306,15 +306,15 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@3.1.0-alpha.16":
-  version "3.1.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.16.tgz#3bebe326b2ae6ad96b821797ca699c581217ac45"
-  integrity sha512-2Dq5fBqJWdqE0OhvI/kBA0i3gngnDmd0AaSFhJ03LE3mKTvzhapaOyWmEgO9vqQCSopSi0wWorizzksnu2+GQw==
+"@joystream/hydra-cli@3.1.0-alpha.20":
+  version "3.1.0-alpha.20"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.20.tgz#cb114994b6b74761164796540b6d64ad1096f219"
+  integrity sha512-NFDnNjt7E+HLpIBbKwJSh+1MZ+hZgGzPmLY6Ux+7lSW+g8DiMc7ZnuYRHkEEIUrDyiPTapKDF3bWmo5LD6lHQA==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
     "@inquirer/select" "^0.0.13-alpha.0"
-    "@joystream/warthog" "~2.41.2"
+    "@joystream/warthog" "^2.41.4"
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -342,10 +342,10 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@3.1.0-alpha.16":
-  version "3.1.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.16.tgz#5756b714767be8f3b237dba270386113c64b1245"
-  integrity sha512-ik1iegF7qZXeumsJ8baeff5VAxgrc6+yyRIZNFgWrCRDVEnP613XNFpUIcKzuXme7BhCVeaY5ynLaQUtU6lcUw==
+"@joystream/hydra-typegen@3.1.0-alpha.20":
+  version "3.1.0-alpha.20"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.20.tgz#dbfc608908fa3809a9904a8165281111b4a104f9"
+  integrity sha512-+hDsr2Ys+UoVuOLj0kCoUq3+DcNopgNkzxQ6c1o1EyAVh5/a5dmp/jjxpLkN/CvIKej19pZqM3q914G8rYi/7g==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
@@ -358,12 +358,12 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@~2.41.2":
-  version "2.41.2"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.2.tgz#6d3cf5c977320d1c77be518e848e011a9699b22d"
-  integrity sha512-1w6aT5P3xiI/HaTtqJrVj4Yp1/gxG8cGTeYgzlwr3iq8J11skwE4rLCHQucHfVueyBX49AaqWrhl+wI2ACqk4Q==
+"@joystream/warthog@^2.41.4":
+  version "2.41.4"
+  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.4.tgz#4b0a396d9d6eee9e469a36b1ca1c86c3890d56d6"
+  integrity sha512-yfGgrjbg3alGR+7g1NcSTdlpYtgH0kDFNDSKFWiYFEPNsjwwCBgWnsVQ+ED1PWAa2RhUhwp9J4dsI5U21P543A==
   dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/joystream%401.7.28/graphql-playground-react-v1.7.28.tgz"
+    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/graphql-playground-react%401.7.29/graphql-playground-react-v1.7.29.tgz"
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
     "@types/caller" "^1.0.0"
