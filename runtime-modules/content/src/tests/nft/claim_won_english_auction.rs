@@ -30,7 +30,7 @@ fn claim_won_english_auction() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::min_bid_step(),
@@ -121,7 +121,7 @@ fn claim_won_english_auction_cannot_be_completed() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::min_bid_step(),
@@ -191,7 +191,7 @@ fn claim_won_english_auction_auth_failed() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::min_bid_step(),
@@ -353,7 +353,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -418,7 +418,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::min_bid_step(),

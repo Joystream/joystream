@@ -248,7 +248,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::max_bid_step(),

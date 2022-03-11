@@ -30,7 +30,7 @@ fn setup_open_auction_scenario() {
     let auction_params = AuctionParams {
         starting_price: Content::min_starting_price(),
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
-        auction_type: AuctionType::Open(OpenAuctionDetails {
+        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
             bid_lock_duration: Content::min_bid_lock_duration(),
         }),
         starts_at: None,
@@ -373,7 +373,7 @@ fn make_bid_nft_auction_expired() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::min_auction_duration(),
                 bid_step: Content::max_bid_step(),
@@ -436,7 +436,7 @@ fn make_bid_nft_auction_is_not_started() {
         let auction_params = AuctionParams {
             starting_price,
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: Some(<frame_system::Module<Test>>::block_number() + 1),
@@ -490,7 +490,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: Some(<frame_system::Module<Test>>::block_number() + 1),
@@ -554,7 +554,7 @@ fn make_bid_starting_price_constraint_violated() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,

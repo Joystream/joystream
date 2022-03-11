@@ -25,7 +25,7 @@ fn setup_english_auction_scenario() {
     let auction_params = AuctionParams {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::English(EnglishAuctionDetails {
+        auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
             extension_period: Content::min_auction_extension_period(),
             auction_duration: Content::max_auction_duration(),
             bid_step: Content::max_bid_step(),
@@ -61,7 +61,7 @@ fn setup_open_auction_scenario() {
     let auction_params = AuctionParams {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::Open(OpenAuctionDetails {
+        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
             bid_lock_duration: Content::min_bid_lock_duration(),
         }),
         starts_at: None,

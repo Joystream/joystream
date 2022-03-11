@@ -219,7 +219,7 @@ fn issue_nft_fails_with_invalid_auction_parameters() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,

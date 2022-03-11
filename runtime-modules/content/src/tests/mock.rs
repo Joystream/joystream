@@ -401,6 +401,9 @@ impl Trait for Test {
     /// Type of identifier for Videos
     type VideoId = u64;
 
+    /// Type of identifier for open auctions
+    type OpenAuctionId = u64;
+
     /// Type of identifier for Video Categories
     type VideoCategoryId = u64;
 
@@ -562,15 +565,14 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 }
 
 /// Get good params for open auction
-pub fn get_open_auction_params(
-) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
+pub fn get_open_auction_params() -> AuctionParams<Test> {
     AuctionParams {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::Open(OpenAuctionDetails {
+        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
             bid_lock_duration: Content::min_bid_lock_duration(),
         }),
-        starts_at: None,
+
         whitelist: BTreeSet::new(),
     }
 }

@@ -260,7 +260,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,
@@ -284,7 +284,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price() + 1,
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,
@@ -309,7 +309,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration() - 1,
             }),
             starts_at: None,
@@ -334,7 +334,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::max_bid_lock_duration() + 1,
             }),
             starts_at: None,
@@ -359,7 +359,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period() - 1,
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::max_bid_step(),
@@ -386,7 +386,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::max_auction_extension_period() + 1,
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::max_bid_step(),
@@ -413,7 +413,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::min_auction_duration() - 1,
                 bid_step: Content::max_bid_step(),
@@ -440,7 +440,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::max_auction_extension_period(),
                 auction_duration: Content::max_auction_duration() + 1,
                 bid_step: Content::max_bid_step(),
@@ -467,7 +467,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::max_auction_extension_period(),
                 auction_duration: Content::min_auction_duration(),
                 bid_step: Content::max_bid_step(),
@@ -493,7 +493,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: Some(<frame_system::Module<Test>>::block_number() - 1),
@@ -517,7 +517,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: Some(
@@ -547,7 +547,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: buy_now_price + 1,
             buy_now_price: Some(buy_now_price),
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,
@@ -571,7 +571,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,
@@ -600,7 +600,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
             }),
             starts_at: None,

@@ -34,7 +34,7 @@ fn pick_open_auction_winner() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -121,7 +121,7 @@ fn pick_open_auction_winner_auth_failed() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -192,7 +192,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -352,7 +352,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
+            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 bid_step: Content::max_bid_step(),
@@ -425,7 +425,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
@@ -484,7 +484,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         let auction_params = AuctionParams {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
             starts_at: None,
             whitelist: BTreeSet::new(),
         };
