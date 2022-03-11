@@ -80,6 +80,12 @@ type OwnedNft
 
   "NFT creator's channel"
   creatorChannel: Channel!
+
+  "Owner curator group"
+  ownerCuratorGroup: CuratorGroup
+
+  "Is NFT owned by channel"
+  isOwnedByChannel: Boolean!
 }
 
 type TransactionalStatusUpdate @entity {
