@@ -32,7 +32,7 @@ use frame_support::sp_runtime::SaturatedConversion;
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance3;
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -961,12 +961,7 @@ benchmarks! {
 
     delete_distribution_bucket_family {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let family_id = Module::<T>::next_distribution_bucket_family_id();
-
-        Module::<T>::create_distribution_bucket_family(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
-        )
-        .unwrap();
+        let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id)
     verify {
@@ -976,12 +971,7 @@ benchmarks! {
 
     create_distribution_bucket {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let family_id = Module::<T>::next_distribution_bucket_family_id();
-
-        Module::<T>::create_distribution_bucket_family(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
-        )
-        .unwrap();
+        let family_id = create_distribution_family::<T>(lead_account_id.clone());
         let bucket_status = false;
 
         let bucket_idx: T::DistributionBucketIndex = Zero::zero();
@@ -1032,12 +1022,7 @@ benchmarks! {
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
-        let family_id = Module::<T>::next_distribution_bucket_family_id();
-
-        Module::<T>::create_distribution_bucket_family(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
-        )
-        .unwrap();
+        let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
         let new_limit = 7;
         Module::<T>::update_distribution_buckets_per_bag_limit(
@@ -1225,6 +1210,80 @@ benchmarks! {
 
         assert_last_event::<T>(
             RawEvent::DistributionBucketOperatorRemoved(bucket_id, worker_id).into()
+        );
+    }
+
+    set_distribution_bucket_family_metadata {
+        let i in 1 .. MAX_BYTE_SIZE;
+        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let family_id = create_distribution_family::<T>(lead_account_id.clone());
+
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id, metadata.clone())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketFamilyMetadataSet(family_id, metadata).into()
+        );
+    }
+
+    accept_distribution_bucket_invitation {
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        // Invite operator.
+        Module::<T>::invite_distribution_bucket_operator(
+            RawOrigin::Signed(lead_account_id).into(),
+            bucket_id.clone(),
+            worker_id,
+        )
+        .unwrap();
+
+    }: _ (RawOrigin::Signed(worker_account_id.clone()), worker_id, bucket_id.clone())
+    verify {
+        let (family_id, bucket_idx) =
+            (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        assert!(bucket.operators.contains(&worker_id));
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketInvitationAccepted(worker_id, bucket_id).into()
+        );
+    }
+
+    set_distribution_operator_metadata {
+        let i in 1 .. MAX_BYTE_SIZE;
+        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        // Invite operator.
+        Module::<T>::invite_distribution_bucket_operator(
+            RawOrigin::Signed(lead_account_id).into(),
+            bucket_id.clone(),
+            worker_id,
+        )
+        .unwrap();
+
+        // Accept invitation.
+        Module::<T>::accept_distribution_bucket_invitation(
+            RawOrigin::Signed(worker_account_id.clone()).into(),
+            worker_id,
+            bucket_id.clone(),
+        )
+        .unwrap();
+
+    }: _ (RawOrigin::Signed(worker_account_id), worker_id, bucket_id.clone(), metadata.clone())
+    verify {
+
+        assert_last_event::<T>(
+            RawEvent::DistributionBucketMetadataSet(worker_id, bucket_id, metadata).into()
         );
     }
 }
@@ -1445,6 +1504,27 @@ mod tests {
     fn remove_distribution_bucket_operator() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_remove_distribution_bucket_operator::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_distribution_bucket_family_metadata() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_distribution_bucket_family_metadata::<Test>());
+        });
+    }
+
+    #[test]
+    fn accept_distribution_bucket_invitation() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_accept_distribution_bucket_invitation::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_distribution_operator_metadata() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_distribution_operator_metadata::<Test>());
         });
     }
 }

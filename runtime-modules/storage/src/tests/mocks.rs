@@ -37,7 +37,7 @@ impl_outer_event! {
         frame_system<T>,
         membership_mod<T>,
         working_group Instance2 <T>,
-        working_group Instance3 <T>,
+        working_group Instance9 <T>,
     }
 }
 
@@ -291,7 +291,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 // The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance3;
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
     type Event = TestEvent;
