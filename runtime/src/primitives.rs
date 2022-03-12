@@ -52,6 +52,9 @@ pub type ChannelCategoryId = u64;
 /// Content Directory Video identifier.
 pub type VideoId = u64;
 
+/// Content Directory Open Auction identifier.
+pub type OpenAuctionId = u64;
+
 /// Content Directory Video Category identifier.
 pub type VideoCategoryId = u64;
 
