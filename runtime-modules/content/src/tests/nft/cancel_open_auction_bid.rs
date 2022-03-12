@@ -84,6 +84,10 @@ fn cancel_open_auction_bid() {
         // Runtime tested state after call
 
         // Ensure bid on specific auction successfully canceled
+        assert!(!BidByVideoByMember::<Test>::contains_key(
+            video_id,
+            SECOND_MEMBER_ID
+        ));
 
         // Last event checked
         assert_event(
@@ -248,5 +252,41 @@ fn cancel_open_auction_fails_for_with_non_bidder() {
             cancel_open_auction_bid_result,
             Error::<Test>::BidDoesNotExist
         );
+    })
+}
+
+#[test]
+fn cancel_open_auction_ok_for_expired_auction() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(DEFAULT_MODERATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        setup_open_auction_scenario_with_bid();
+
+        let bid = Content::min_starting_price();
+
+        assert_ok!(Content::make_bid(
+            Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
+            DEFAULT_MODERATOR_ID,
+            video_id,
+            bid,
+        ));
+
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            DEFAULT_MODERATOR_ID,
+            bid,
+        ));
+
+        // Attempt OK: auction closed
+        assert_ok!(Content::cancel_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+        ));
     })
 }
