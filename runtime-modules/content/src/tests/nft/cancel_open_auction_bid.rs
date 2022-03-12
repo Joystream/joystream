@@ -7,42 +7,6 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-fn setup_english_auction_scenario() {
-    let video_id = NextVideoId::<Test>::get();
-
-    create_initial_storage_buckets_helper();
-    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel_with_video();
-
-    // Issue nft
-    assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        video_id,
-        NftIssuanceParameters::<Test>::default(),
-    ));
-
-    let auction_params = AuctionParams::<Test> {
-        starting_price: Content::min_starting_price(),
-        buy_now_price: None,
-        auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
-            extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
-            min_bid_step: Content::max_bid_step(),
-            ..Default::default()
-        }),
-        whitelist: BTreeSet::new(),
-    };
-
-    // Start nft auction
-    assert_ok!(Content::start_nft_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        video_id,
-        auction_params.clone(),
-    ));
-}
-
 fn setup_open_auction_scenario() {
     let video_id = NextVideoId::<Test>::get();
 
@@ -61,10 +25,7 @@ fn setup_open_auction_scenario() {
     let auction_params = AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-            bid_lock_duration: Content::min_bid_lock_duration(),
-            ..Default::default()
-        }),
+        auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
         whitelist: BTreeSet::new(),
     };
 

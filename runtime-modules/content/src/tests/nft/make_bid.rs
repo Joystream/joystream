@@ -30,10 +30,7 @@ fn setup_open_auction_scenario() {
     let auction_params = AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
-        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-            bid_lock_duration: Content::min_bid_lock_duration(),
-            ..Default::default()
-        }),
+        auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
         whitelist: BTreeSet::new(),
     };
 
@@ -334,7 +331,7 @@ fn make_bid_nft_auction_expired() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
+            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::min_auction_duration(),
                 min_bid_step: Content::max_bid_step(),
@@ -395,10 +392,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-                ..Default::default()
-            }),
+            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
             whitelist: BTreeSet::from_iter(
                 vec![COLLABORATOR_MEMBER_ID, DEFAULT_MODERATOR_ID].into_iter(),
             ),
@@ -459,10 +453,7 @@ fn make_bid_starting_price_constraint_violated() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-                ..Default::default()
-            }),
+            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
             whitelist: BTreeSet::new(),
         };
 

@@ -7,20 +7,18 @@ use crate::*;
 impl<T: Trait> Module<T> {
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed = if let AuctionTypeOf::<T>::English(EnglishAuction::<T> {
-            end,
-            auction_duration,
-            ..
-        }) = auction.auction_type
-        {
-            let now = <frame_system::Module<T>>::block_number();
+        let can_be_completed =
+            if let AuctionTypeOf::<T>::English(EnglishAuction::<T> { end, .. }) =
+                auction.auction_type
+            {
+                let now = <frame_system::Module<T>>::block_number();
 
-            // Check whether auction time expired.
-            now >= end.saturating_sub(auction_duration)
-        } else {
-            // Open auction can be completed at any time
-            true
-        };
+                // Check whether auction time expired.
+                now >= end
+            } else {
+                // Open auction can be completed at any time
+                true
+            };
 
         ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
 
@@ -41,28 +39,21 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(auction_params: &AuctionParams<T>) -> DispatchResult {
-        match auction_params.auction_type {
-            AuctionTypeOf::<T>::English(EnglishAuction::<T> {
-                extension_period,
-                auction_duration,
-                min_bid_step,
-                ..
-            }) => {
-                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
-                Self::ensure_extension_period_bounds_satisfied(extension_period)?;
+        match &auction_params.auction_type {
+            AuctionType::<_, _>::English(eng) => {
+                Self::ensure_auction_duration_bounds_satisfied(eng.auction_duration)?;
+                Self::ensure_extension_period_bounds_satisfied(eng.extension_period)?;
 
-                Self::ensure_bid_step_bounds_satisfied(min_bid_step)?;
+                Self::ensure_bid_step_bounds_satisfied(eng.min_bid_step)?;
 
                 // Ensure auction_duration of English auction is >= extension_period
                 ensure!(
-                    auction_duration >= extension_period,
+                    eng.auction_duration >= eng.extension_period,
                     Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
                 );
             }
-            AuctionTypeOf::<T>::Open(OpenAuction::<T> {
-                bid_lock_duration, ..
-            }) => {
-                Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
+            AuctionType::<_, _>::Open(bid_lock_duration) => {
+                Self::ensure_bid_lock_duration_bounds_satisfied(*bid_lock_duration)?;
             }
         }
 
@@ -368,9 +359,8 @@ impl<T: Trait> Module<T> {
             owner: winner.map_or(nft.owner.to_owned(), |winner_id| {
                 NftOwner::Member(winner_id)
             }),
-            creator_royalty: nft.creator_royalty,
             transactional_status: TransactionalStatus::<T>::Idle,
-            open_auctions_nonce: nft.open_auctions_nonce,
+            ..nft.clone()
         }
     }
 
@@ -441,12 +431,14 @@ impl<T: Trait> Module<T> {
         if let TransactionalStatus::<T>::Auction(auction) = &nft.transactional_status {
             match &auction.auction_type {
                 AuctionTypeOf::<T>::English(eng) => {
-                    ensure!(eng.end > now, Error::<T>::NftAuctionIsAlreadyExpired,)
+                    ensure!(eng.end >= now, Error::<T>::NftAuctionIsAlreadyExpired)
                 }
-                AuctionTypeOf::<T>::Open(open) => ensure!(
-                    nft.open_auctions_nonce == open.auction_id,
-                    Error::<T>::NftAuctionIsAlreadyExpired,
-                ),
+                AuctionTypeOf::<T>::Open(open) => {
+                    ensure!(
+                        nft.open_auctions_nonce == open.auction_id,
+                        Error::<T>::NftAuctionIsAlreadyExpired,
+                    )
+                }
             }
             Ok(auction.to_owned())
         } else {
@@ -511,7 +503,8 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let now = <frame_system::Module<T>>::block_number();
         ensure!(
-            last_bid_block.saturating_add(open_auction.bid_lock_duration) >= now,
+            // now - last_bid_block >= duration
+            now.saturating_sub(last_bid_block) >= open_auction.bid_lock_duration,
             Error::<T>::BidLockDurationIsNotExpired
         );
         Ok(())
@@ -534,8 +527,7 @@ impl<T: Trait> Module<T> {
                 auction_type: AuctionTypeOf::<T>::Open(open),
                 ..
             }) if open.auction_id == bid.auction_id => {
-                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)?;
-                Ok(())
+                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
             }
             _ => Ok(()),
         }
@@ -612,6 +604,28 @@ impl<T: Trait> Module<T> {
                 .saturating_add(english.extension_period)
         } else {
             english.auction_duration
+        }
+    }
+
+    pub(crate) fn new_auction_from_params(
+        params: &AuctionParams<T>,
+        new_nonce: <T as Trait>::OpenAuctionId,
+    ) -> Auction<T> {
+        let auction_type = match params.auction_type.clone() {
+            AuctionType::<_, _>::Open(bid_lock_duration) => {
+                AuctionTypeOf::<T>::Open(OpenAuction::<T> {
+                    bid_lock_duration,
+                    auction_id: new_nonce,
+                })
+            }
+            AuctionType::<_, _>::English(eng) => AuctionTypeOf::<T>::English(eng),
+        };
+
+        Auction::<T> {
+            starting_price: params.starting_price,
+            buy_now_price: params.buy_now_price,
+            auction_type,
+            whitelist: params.whitelist.clone(),
         }
     }
 }

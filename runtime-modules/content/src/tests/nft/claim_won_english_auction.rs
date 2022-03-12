@@ -7,11 +7,13 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+const AUCTION_END_BLOCK: u64 = 10;
+const AUCTION_START_BLOCK: u64 = 1;
 #[test]
 fn claim_won_english_auction() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -30,10 +32,11 @@ fn claim_won_english_auction() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
+            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
+                end: AUCTION_END_BLOCK,
                 ..Default::default()
             }),
             whitelist: BTreeSet::new(),
@@ -101,7 +104,7 @@ fn claim_won_english_auction() {
 fn claim_won_english_auction_cannot_be_completed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -120,10 +123,11 @@ fn claim_won_english_auction_cannot_be_completed() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
+            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
+                end: AUCTION_END_BLOCK,
                 ..Default::default()
             }),
 
@@ -170,7 +174,7 @@ fn claim_won_english_auction_cannot_be_completed() {
 fn claim_won_english_auction_auth_failed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -189,10 +193,11 @@ fn claim_won_english_auction_auth_failed() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
+            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
+                end: AUCTION_END_BLOCK,
                 ..Default::default()
             }),
             whitelist: BTreeSet::new(),
@@ -241,7 +246,7 @@ fn claim_won_english_auction_auth_failed() {
 fn claim_won_english_auction_video_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -264,7 +269,7 @@ fn claim_won_english_auction_video_does_not_exist() {
 fn claim_won_english_auction_nft_is_not_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -291,7 +296,7 @@ fn claim_won_english_auction_nft_is_not_issued() {
 fn claim_won_english_auction_not_in_auction_state() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -326,7 +331,7 @@ fn claim_won_english_auction_not_in_auction_state() {
 fn claim_won_english_auction_is_not_english_auction_type() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -347,10 +352,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-                bid_lock_duration,
-                ..Default::default()
-            }),
+            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
             whitelist: BTreeSet::new(),
         };
 
@@ -394,7 +396,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 fn claim_won_english_auction_last_bid_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -413,10 +415,11 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
         let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
+            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
+                end: AUCTION_END_BLOCK,
                 ..Default::default()
             }),
 

@@ -569,10 +569,7 @@ pub fn get_open_auction_params() -> AuctionParams<Test> {
     AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-            bid_lock_duration: Content::min_bid_lock_duration(),
-            auction_id: 0,
-        }),
+        auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
 
         whitelist: BTreeSet::new(),
     }

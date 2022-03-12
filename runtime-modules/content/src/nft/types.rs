@@ -180,11 +180,11 @@ pub struct EnglishBidRecord<Balance, MemberId> {
 /// Auction type
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AuctionType<EnglishAuction: Default, OpenAuction> {
+pub enum AuctionType<EnglishAuctionParams: Default, OpenAuctionParams> {
     // English auction details
-    English(EnglishAuction),
+    English(EnglishAuctionParams),
     // Open auction details
-    Open(OpenAuction),
+    Open(OpenAuctionParams),
 }
 
 impl<EnglishAuction: Default, OpenAuction> Default for AuctionType<EnglishAuction, OpenAuction> {
@@ -197,8 +197,11 @@ impl<EnglishAuction: Default, OpenAuction> Default for AuctionType<EnglishAuctio
 pub type Auction<T> =
     AuctionRecord<CurrencyOf<T>, <T as common::MembershipTypes>::MemberId, AuctionTypeOf<T>>;
 
-pub type AuctionParams<T> =
-    AuctionParamsRecord<AuctionTypeOf<T>, CurrencyOf<T>, <T as common::MembershipTypes>::MemberId>;
+pub type AuctionParams<T> = AuctionParamsRecord<
+    AuctionType<EnglishAuction<T>, <T as frame_system::Trait>::BlockNumber>,
+    CurrencyOf<T>,
+    <T as common::MembershipTypes>::MemberId,
+>;
 
 pub type EnglishAuction<T> = EnglishAuctionRecord<
     <T as frame_system::Trait>::BlockNumber,

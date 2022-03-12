@@ -722,7 +722,7 @@ decl_module! {
                 .map_or(
                     Ok(None),
                     |issuance_params| {
-                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params,video_id)).transpose()
                     }
                 )?;
 
@@ -800,7 +800,7 @@ decl_module! {
                     Ok(None),
                     |issuance_params| {
                         ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
-                        Some(Self::construct_owned_nft(issuance_params)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
                     }
                 )?;
 
@@ -1344,7 +1344,7 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_status = Self::construct_owned_nft(&params)?;
+            let nft_status = Self::construct_owned_nft(&params, video_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1388,13 +1388,18 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = AuctionRecord::new(auction_params.clone());
+            let new_nonce = match &auction_params.auction_type {
+                AuctionType::<_,_>::Open(_) => nft.open_auctions_nonce.saturating_add(One::one()),
+                _ => nft.open_auctions_nonce
+            };
+            let auction = Self::new_auction_from_params(&auction_params, new_nonce);
 
             // Update the video
             VideoById::<T>::mutate(
                 video_id,
                 |v| v.set_nft_status(Nft::<T> {
                     transactional_status: TransactionalStatus::<T>::Auction(auction),
+                    open_auctions_nonce: new_nonce,
                     ..nft
                 })
             );
@@ -1645,7 +1650,9 @@ decl_module! {
             // ensure auction is english
                 .and_then(|auction| Self::ensure_is_english_auction(&auction).map(|eng| (eng, auction)))
             // ensure there is top bid
-                .and_then(|(eng,auction)| Self::ensure_auction_has_valid_bids(&auction, video_id).map(|_| (eng, auction)))
+                .and_then(|(eng,auction)|
+                          Self::ensure_auction_has_valid_bids(&auction, video_id)
+                          .map(|_| (eng, auction)))
             // ensure it can be completed and return top bid
                 .and_then(|(eng, auction)| Self::ensure_auction_can_be_completed(&auction)
                           .map(|_| eng.top_bid.unwrap())
@@ -1997,6 +2004,7 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
+        video_id: T::VideoId,
     ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
@@ -2006,11 +2014,13 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::BuyNow(balance) => {
                 Ok(TransactionalStatus::<T>::BuyNow(*balance))
             }
-            InitTransactionalStatus::<T>::Auction(params) => {
+            InitTransactionalStatus::<T>::Auction(ref params) => {
                 Self::validate_auction_params(params)?;
-                Ok(TransactionalStatus::<T>::Auction(Auction::<T>::new(
-                    params.clone(),
-                )))
+                let new_nonce = Self::ensure_nft_exists(video_id)
+                    .map(|nft| nft.open_auctions_nonce.saturating_add(One::one()))?;
+                Ok(TransactionalStatus::<T>::Auction(
+                    Self::new_auction_from_params(params, new_nonce),
+                ))
             }
         }
     }
@@ -2018,9 +2028,11 @@ impl<T: Trait> Module<T> {
     /// Construct the Nft that is intended to be issued
     pub fn construct_owned_nft(
         issuance_params: &NftIssuanceParameters<T>,
+        video_id: T::VideoId,
     ) -> Result<Nft<T>, DispatchError> {
         let transactional_status = Self::ensure_valid_init_transactional_status(
             &issuance_params.init_transactional_status,
+            video_id,
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
