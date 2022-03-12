@@ -22,15 +22,15 @@ fn setup_english_auction_scenario() {
         NftIssuanceParameters::<Test>::default(),
     ));
 
-    let auction_params = AuctionParams {
+    let auction_params = AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
         auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
             extension_period: Content::min_auction_extension_period(),
             auction_duration: Content::max_auction_duration(),
-            bid_step: Content::max_bid_step(),
+            min_bid_step: Content::max_bid_step(),
+            ..Default::default()
         }),
-        starts_at: None,
         whitelist: BTreeSet::new(),
     };
 
@@ -58,13 +58,13 @@ fn setup_open_auction_scenario() {
         NftIssuanceParameters::<Test>::default(),
     ));
 
-    let auction_params = AuctionParams {
+    let auction_params = AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
         auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
             bid_lock_duration: Content::min_bid_lock_duration(),
+            ..Default::default()
         }),
-        starts_at: None,
         whitelist: BTreeSet::new(),
     };
 
@@ -123,13 +123,6 @@ fn cancel_open_auction_bid() {
         // Runtime tested state after call
 
         // Ensure bid on specific auction successfully canceled
-        assert!(matches!(
-            Content::video_by_id(video_id).nft_status,
-            Some(OwnedNft {
-                transactional_status: TransactionalStatus::<Test>::Auction(auction_without_bid,),
-                ..
-            }) if auction_without_bid.bid_list.is_empty()
-        ));
 
         // Last event checked
         assert_event(
@@ -237,65 +230,6 @@ fn cancel_open_auction_bid_nft_is_not_issued() {
         assert_err!(
             cancel_open_auction_bid_result,
             Error::<Test>::NftDoesNotExist
-        );
-    })
-}
-
-#[test]
-fn cancel_open_auction_bid_not_in_auction_state() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = NextVideoId::<Test>::get();
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
-
-        // Make an attempt to cancel open auction bid for nft which is not in auction state
-        let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-        );
-
-        // Failure checked
-        assert_err!(
-            cancel_open_auction_bid_result,
-            Error::<Test>::NotInAuctionState
-        );
-    })
-}
-
-#[test]
-fn cancel_open_auction_bid_is_not_open_auction_type() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        setup_english_auction_scenario();
-
-        // Make an attempt to cancel open auction bid for nft which is not in open auction state
-        let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-        );
-
-        // Failure checked
-        assert_err!(
-            cancel_open_auction_bid_result,
-            Error::<Test>::IsNotOpenAuctionType
         );
     })
 }

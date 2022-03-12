@@ -7,18 +7,20 @@ use crate::*;
 impl<T: Trait> Module<T> {
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed =
-            if let AuctionTypeOf::<T>::English(EnglishAuction::<T> { end, duration, .. }) =
-                auction.auction_type
-            {
-                let now = <frame_system::Module<T>>::block_number();
+        let can_be_completed = if let AuctionTypeOf::<T>::English(EnglishAuction::<T> {
+            end,
+            auction_duration,
+            ..
+        }) = auction.auction_type
+        {
+            let now = <frame_system::Module<T>>::block_number();
 
-                // Check whether auction time expired.
-                now >= end.saturating_sub(duration)
-            } else {
-                // Open auction can be completed at any time
-                true
-            };
+            // Check whether auction time expired.
+            now >= end.saturating_sub(auction_duration)
+        } else {
+            // Open auction can be completed at any time
+            true
+        };
 
         ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
 
@@ -42,18 +44,18 @@ impl<T: Trait> Module<T> {
         match auction_params.auction_type {
             AuctionTypeOf::<T>::English(EnglishAuction::<T> {
                 extension_period,
-                duration,
+                auction_duration,
                 min_bid_step,
                 ..
             }) => {
-                Self::ensure_auction_duration_bounds_satisfied(duration)?;
+                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
                 Self::ensure_extension_period_bounds_satisfied(extension_period)?;
 
-                Self::ensure_bid_step_bounds_satisfied(min_bid_step.unwrap_or_default())?;
+                Self::ensure_bid_step_bounds_satisfied(min_bid_step)?;
 
                 // Ensure auction_duration of English auction is >= extension_period
                 ensure!(
-                    duration >= extension_period,
+                    auction_duration >= extension_period,
                     Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
                 );
             }
@@ -476,9 +478,7 @@ impl<T: Trait> Module<T> {
                 },
                 |bid| {
                     ensure!(
-                        bid.amount
-                            .saturating_add(eng.min_bid_step.unwrap_or_default())
-                            <= amount,
+                        bid.amount.saturating_add(eng.min_bid_step) <= amount,
                         Error::<T>::BidStepConstraintViolated
                     );
                     Ok(())
@@ -607,9 +607,11 @@ impl<T: Trait> Module<T> {
     ) -> <T as frame_system::Trait>::BlockNumber {
         let now = <frame_system::Module<T>>::block_number();
         if english.end.saturating_sub(english.extension_period) < now {
-            english.duration.saturating_add(english.extension_period)
+            english
+                .auction_duration
+                .saturating_add(english.extension_period)
         } else {
-            english.duration
+            english.auction_duration
         }
     }
 }

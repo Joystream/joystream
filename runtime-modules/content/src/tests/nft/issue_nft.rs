@@ -216,13 +216,13 @@ fn issue_nft_fails_with_invalid_auction_parameters() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
             auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
+                ..Default::default()
             }),
-            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 

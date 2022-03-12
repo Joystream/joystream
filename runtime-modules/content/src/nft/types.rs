@@ -148,9 +148,9 @@ impl<Balance, MemberId: Ord, AuctionType> AuctionRecord<Balance, MemberId, Aucti
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct EnglishAuctionRecord<BlockNumber, Balance, EnglishBid> {
     pub end: BlockNumber,
-    pub duration: BlockNumber,
+    pub auction_duration: BlockNumber,
     pub extension_period: BlockNumber,
-    pub min_bid_step: Option<Balance>,
+    pub min_bid_step: Balance,
     pub top_bid: Option<EnglishBid>,
 }
 

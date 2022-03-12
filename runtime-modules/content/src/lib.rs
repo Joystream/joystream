@@ -1530,11 +1530,10 @@ decl_module! {
 
             let (nft, event) = match auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
-
                     // complete auction @ buy_now_price
                     Self::complete_auction(
                         video_id,
-                            participant_id,
+                        participant_id,
                         buy_now_price,
                     ).map(|nft|
                           (
@@ -1543,11 +1542,38 @@ decl_module! {
                           ))
                 },
                 _ => {
-                    // Reseve balance for current bid
-                    // Can not fail, needed check made
+                    // unreseve balance from previous bid
+                    match &auction.auction_type {
+                        AuctionTypeOf::<T>::Open(_) => {
+                            Self::ensure_open_bid_exists(video_id, participant_id)
+                                .map_or((), |bid| {
+                                    T::Currency::unreserve(
+                                        &participant_account_id,
+                                        bid.amount
+                                    );
+                                })
+                        },
+                        AuctionTypeOf::<T>::English(eng) => {
+                            eng.top_bid.as_ref().map_or((),
+                                |bid| {
+                                    if bid.bidder_id == participant_id {
+                                        T::Currency::unreserve(
+                                            &participant_account_id,
+                                            bid.amount
+                                        );
+                                    }
+                                })
+                        }
+                    };
+
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
-                    let new_auction = Self::make_bid_for_auction(auction, video_id, participant_id, bid_amount);
+                    let new_auction = Self::make_bid_for_auction(
+                        auction,
+                        video_id,
+                        participant_id,
+                        bid_amount
+                    );
 
                     Ok((
                         Nft::<T> {
@@ -2132,7 +2158,7 @@ impl<T: Trait> Module<T> {
                         amount,
                         bidder_id,
                     }),
-                    duration: Self::extend_english_auction(&eng),
+                    auction_duration: Self::extend_english_auction(&eng),
                     ..eng
                 }),
                 ..auction

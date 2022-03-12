@@ -27,13 +27,13 @@ fn setup_open_auction_scenario() {
         NftIssuanceParameters::<Test>::default(),
     ));
 
-    let auction_params = AuctionParams {
+    let auction_params = AuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
         auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
             bid_lock_duration: Content::min_bid_lock_duration(),
+            ..Default::default()
         }),
-        starts_at: None,
         whitelist: BTreeSet::new(),
     };
 
@@ -60,26 +60,8 @@ fn setup_open_auction_scenario_with_bid(amount: u64) {
 
     assert_eq!(
         System::events().last().unwrap().event,
-        MetaEvent::content(RawEvent::AuctionBidMade(
-            SECOND_MEMBER_ID,
-            video_id,
-            amount,
-            false,
-        ))
+        MetaEvent::content(RawEvent::AuctionBidMade(SECOND_MEMBER_ID, video_id, amount,))
     );
-
-    assert!(match Content::video_by_id(video_id).nft_status {
-        Some(Nft::<Test> {
-            transactional_status:
-                TransactionalStatus::<Test>::Auction(Auction::<Test> { bid_list, .. }),
-            ..
-        }) => {
-            bid_list
-                .get(&SECOND_MEMBER_ID)
-                .map_or(false, |bid| bid.amount == amount)
-        }
-        _ => false,
-    });
 }
 
 #[test]
@@ -132,32 +114,11 @@ fn make_bid() {
 
         // Runtime tested state after call
 
-        let mut auction: Auction<Test> = AuctionRecord::new(auction_params.clone());
-        let current_block = <frame_system::Module<Test>>::block_number();
-
-        if auction_params.starts_at.is_none() {
-            auction.starts_at = current_block;
-        }
-
-        let _ = auction.make_bid(SECOND_MEMBER_ID, bid, current_block);
-
-        // Ensure nft status changed to given Auction
-        assert!(matches!(
-            Content::video_by_id(video_id).nft_status,
-            Some(OwnedNft {
-                transactional_status: TransactionalStatus::<Test>::Auction(auction_with_bid,),
-                ..
-            }) if auction == auction_with_bid
-        ));
+        // TODO: Ensure nft status changed to given Auction
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                SECOND_MEMBER_ID,
-                video_id,
-                bid,
-                false,
-            )),
+            MetaEvent::content(RawEvent::AuctionBidMade(SECOND_MEMBER_ID, video_id, bid)),
             number_of_events_before_call + 4,
         );
     })
@@ -370,15 +331,15 @@ fn make_bid_nft_auction_expired() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::min_auction_duration(),
-                bid_step: Content::max_bid_step(),
+                min_bid_step: Content::max_bid_step(),
+                ..Default::default()
             }),
-            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -412,62 +373,6 @@ fn make_bid_nft_auction_expired() {
 }
 
 #[test]
-fn make_bid_nft_auction_is_not_started() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = NextVideoId::<Test>::get();
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
-
-        let starting_price = Content::min_starting_price();
-
-        let auction_params = AuctionParams {
-            starting_price,
-            buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
-                bid_lock_duration: Content::min_bid_lock_duration(),
-            }),
-            starts_at: Some(<frame_system::Module<Test>>::block_number() + 1),
-            whitelist: BTreeSet::new(),
-        };
-
-        // Start nft auction
-        assert_ok!(Content::start_nft_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        ));
-
-        let _ =
-            balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, starting_price);
-
-        // Make an attempt to make auction bid if auction is not started
-        let make_bid_result = Content::make_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            starting_price,
-        );
-
-        // Failure checked
-        assert_err!(make_bid_result, Error::<Test>::AuctionDidNotStart);
-    })
-}
-
-#[test]
 fn make_bid_member_is_not_allowed_to_participate() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
@@ -487,13 +392,13 @@ fn make_bid_member_is_not_allowed_to_participate() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
+                ..Default::default()
             }),
-            starts_at: Some(<frame_system::Module<Test>>::block_number() + 1),
             whitelist: BTreeSet::from_iter(
                 vec![COLLABORATOR_MEMBER_ID, DEFAULT_MODERATOR_ID].into_iter(),
             ),
@@ -551,13 +456,13 @@ fn make_bid_starting_price_constraint_violated() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
                 bid_lock_duration: Content::min_bid_lock_duration(),
+                ..Default::default()
             }),
-            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -672,7 +577,6 @@ fn make_bid_succeeds_by_unreserving_prevous_funds() {
                 SECOND_MEMBER_ID,
                 video_id,
                 new_bid,
-                false,
             ))
         );
     })

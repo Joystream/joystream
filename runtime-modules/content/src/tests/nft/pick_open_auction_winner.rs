@@ -31,11 +31,13 @@ fn pick_open_auction_winner() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
-            starts_at: None,
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
+                bid_lock_duration,
+                ..Default::default()
+            }),
             whitelist: BTreeSet::new(),
         };
 
@@ -118,11 +120,13 @@ fn pick_open_auction_winner_auth_failed() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
-            starts_at: None,
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
+                bid_lock_duration,
+                ..Default::default()
+            }),
             whitelist: BTreeSet::new(),
         };
 
@@ -189,11 +193,13 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
-            starts_at: None,
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
+                bid_lock_duration,
+                ..Default::default()
+            }),
             whitelist: BTreeSet::new(),
         };
 
@@ -349,16 +355,16 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             auction_type: AuctionTypeOf::<Test>::English(EnglishAuction::<Test> {
                 extension_period: Content::min_auction_extension_period(),
                 auction_duration: Content::max_auction_duration(),
-                bid_step: Content::max_bid_step(),
+                min_bid_step: Content::max_bid_step(),
+                ..Default::default()
             }),
 
-            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -422,11 +428,13 @@ fn pick_open_auction_winner_bid_does_not_exist() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
-            starts_at: None,
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
+                bid_lock_duration,
+                ..Default::default()
+            }),
             whitelist: BTreeSet::new(),
         };
 
@@ -481,11 +489,13 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = AuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> { bid_lock_duration }),
-            starts_at: None,
+            auction_type: AuctionTypeOf::<Test>::Open(OpenAuction::<Test> {
+                bid_lock_duration,
+                ..Default::default()
+            }),
             whitelist: BTreeSet::new(),
         };
 
