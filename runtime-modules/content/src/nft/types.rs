@@ -132,17 +132,6 @@ pub struct AuctionRecord<Balance, MemberId: Ord, AuctionType> {
     pub whitelist: BTreeSet<MemberId>,
 }
 
-impl<Balance, MemberId: Ord, AuctionType> AuctionRecord<Balance, MemberId, AuctionType> {
-    pub fn new(params: AuctionParamsRecord<AuctionType, Balance, MemberId>) -> Self {
-        Self {
-            starting_price: params.starting_price,
-            buy_now_price: params.buy_now_price,
-            auction_type: params.auction_type,
-            whitelist: params.whitelist,
-        }
-    }
-}
-
 /// English Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
