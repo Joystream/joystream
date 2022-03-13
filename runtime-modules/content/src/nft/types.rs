@@ -68,17 +68,6 @@ impl<MemberId> Default for NftOwner<MemberId> {
     }
 }
 
-/// Parameters, needed for auction start
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParamsRecord<AuctionType, Balance, MemberId: Ord> {
-    // Auction type (either english or open)
-    pub auction_type: AuctionType,
-    pub starting_price: Balance,
-    pub buy_now_price: Option<Balance>,
-    pub whitelist: BTreeSet<MemberId>,
-}
-
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -183,13 +172,16 @@ impl<EnglishAuction: Default, OpenAuction> Default for AuctionType<EnglishAuctio
 }
 
 // Aliases
+/// Auction Record alias
 pub type Auction<T> =
     AuctionRecord<CurrencyOf<T>, <T as common::MembershipTypes>::MemberId, AuctionTypeOf<T>>;
 
-pub type AuctionParams<T> = AuctionParamsRecord<
-    AuctionType<EnglishAuction<T>, <T as frame_system::Trait>::BlockNumber>,
+/// AuctionParameters used for Auction initialization, it is almost a copycat of Auction<T>
+/// Except that AuctionTypeOf<T> has been replaced because auction_id member is unknown @ creation
+pub type AuctionParams<T> = AuctionRecord<
     CurrencyOf<T>,
     <T as common::MembershipTypes>::MemberId,
+    AuctionType<EnglishAuction<T>, <T as frame_system::Trait>::BlockNumber>,
 >;
 
 pub type EnglishAuction<T> = EnglishAuctionRecord<
