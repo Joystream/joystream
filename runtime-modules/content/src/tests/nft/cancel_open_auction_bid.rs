@@ -84,7 +84,7 @@ fn cancel_open_auction_bid() {
         // Runtime tested state after call
 
         // Ensure bid on specific auction successfully canceled
-        assert!(!BidByVideoByMember::<Test>::contains_key(
+        assert!(!BidByVideoAndMember::<Test>::contains_key(
             video_id,
             SECOND_MEMBER_ID
         ));

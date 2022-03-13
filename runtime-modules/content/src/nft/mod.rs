@@ -406,7 +406,7 @@ impl<T: Trait> Module<T> {
             }
             AuctionTypeOf::<T>::Open(_) => {
                 ensure!(
-                    BidByVideoByMember::<T>::iter_prefix(video_id)
+                    BidByVideoAndMember::<T>::iter_prefix(video_id)
                         .next()
                         .is_none(),
                     Error::<T>::ActionHasBidsAlready

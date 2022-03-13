@@ -194,7 +194,7 @@ decl_storage! {
         pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
 
         /// Bids for open auctions
-        pub BidByVideoByMember get(fn bid_by_video_by_member):
+        pub BidByVideoAndMember get(fn bid_by_video_and_member):
         double_map hasher(blake2_128_concat) T::VideoId,
         hasher(blake2_128_concat) T::MemberId => OpenBid<T>;
     }
@@ -1618,13 +1618,13 @@ decl_module! {
             //
 
             // Cancel last auction bid & update auction data
-            let bid = Self::bid_by_video_by_member(&video_id, &participant_id);
+            let bid = Self::bid_by_video_and_member(&video_id, &participant_id);
 
             // unreserve amount
             T::Currency::unreserve(&participant_account_id, bid.amount);
 
             // remove
-            BidByVideoByMember::<T>::remove(&video_id, &participant_id);
+            BidByVideoAndMember::<T>::remove(&video_id, &participant_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
@@ -2151,10 +2151,10 @@ impl<T: Trait> Module<T> {
         member_id: T::MemberId,
     ) -> Result<OpenBid<T>, DispatchError> {
         ensure!(
-            BidByVideoByMember::<T>::contains_key(video_id, member_id),
+            BidByVideoAndMember::<T>::contains_key(video_id, member_id),
             Error::<T>::BidDoesNotExist,
         );
-        Ok(Self::bid_by_video_by_member(video_id, member_id))
+        Ok(Self::bid_by_video_and_member(video_id, member_id))
     }
 
     fn make_bid_for_auction(
@@ -2176,7 +2176,7 @@ impl<T: Trait> Module<T> {
                 ..auction
             },
             AuctionTypeOf::<T>::Open(ref open) => {
-                BidByVideoByMember::<T>::insert(
+                BidByVideoAndMember::<T>::insert(
                     video_id,
                     bidder_id,
                     OpenBid::<T> {
