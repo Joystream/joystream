@@ -199,6 +199,12 @@ pub trait DataObjectStorage<T: Trait> {
         bag_id: DynamicBagId<T>,
     ) -> DispatchResult;
 
+    /// Delete dynamic bag along with all the associated objects.
+    fn delete_dynamic_bag_with_objects(
+        deletion_prize_account_id: T::AccountId,
+        bag_id: DynamicBagId<T>,
+    ) -> DispatchResult;
+
     /// Validates `delete_dynamic_bag` parameters and conditions.
     fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
 
@@ -2679,6 +2685,57 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         if let Some(deletion_prize) = deletion_prize {
             <StorageTreasury<T>>::withdraw(&deletion_prize_account_id, deletion_prize)?;
+        }
+
+        <Bags<T>>::remove(&bag_id);
+
+        Self::change_bag_assignments_for_distribution_buckets(
+            &BTreeSet::new(),
+            &deleted_dynamic_bag.distributed_by,
+        );
+
+        Self::change_bag_assignments_for_storage_buckets(
+            &BTreeSet::new(),
+            &deleted_dynamic_bag.stored_by,
+        );
+
+        Self::deposit_event(RawEvent::DynamicBagDeleted(
+            deletion_prize_account_id,
+            dynamic_bag_id,
+        ));
+
+        Ok(())
+    }
+
+    fn delete_dynamic_bag_with_objects(
+        deletion_prize_account_id: T::AccountId,
+        dynamic_bag_id: DynamicBagId<T>,
+    ) -> DispatchResult {
+        // ensures that can_delete_dynamic_bag_with_objects is satisfied
+        let bag_deletion_prize = Self::validate_delete_dynamic_bag_params(&dynamic_bag_id, true)?;
+
+        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
+
+        let deleted_dynamic_bag = Self::dynamic_bag(&dynamic_bag_id);
+
+        let mut objects_to_delete = BTreeSet::<T::DataObjectId>::new();
+        for (object_id, _object) in <DataObjectsById<T>>::iter_prefix(&bag_id) {
+            objects_to_delete.insert(object_id);
+        }
+
+        //
+        // == MUTATION SAFE ==
+        //
+        if !objects_to_delete.is_empty() {
+            Self::delete_data_objects(
+                deletion_prize_account_id.clone(),
+                bag_id.clone(),
+                objects_to_delete,
+            )?;
+        }
+
+        if let Some(bag_deletion_prize) = bag_deletion_prize {
+            <StorageTreasury<T>>::withdraw(&deletion_prize_account_id, bag_deletion_prize)?;
         }
 
         <Bags<T>>::remove(&bag_id);

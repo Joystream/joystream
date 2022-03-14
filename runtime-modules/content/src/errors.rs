@@ -264,5 +264,8 @@ decl_error! {
 
         /// Operation cannot be executed, because this channel feature has been paused by a curator
         ChannelFeaturePaused,
+
+        /// Unexpected runtime state: missing channel bag during delete_channel attempt
+        ChannelBagMissing,
     }
 }
