@@ -884,7 +884,9 @@ export class Api {
 
   async createAuctionParameters(
     auctionType: 'English' | 'Open',
-    whitelist: string[] = []
+    whitelist: string[] = [],
+    auctionDuration?: BN,
+    extensionPeriod?: BN
   ): Promise<{
     auctionParams: AuctionParams
     startingPrice: BN
@@ -894,15 +896,22 @@ export class Api {
     auctionDuration: BN
   }> {
     const boundaries = await this.getAuctionParametersBoundaries()
+    console.log('before auctionDuration', auctionDuration, extensionPeriod)
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
+    console.log('auctionDuration', auctionDuration, extensionPeriod)
+
+    if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
+      throw new Error('Auction duration must be larger than extension period')
+    }
 
     const encodedAuctionType =
       auctionType === 'English'
         ? {
             English: {
-              extension_period: boundaries.extensionPeriod.min,
+              extension_period: extensionPeriod,
               auction_duration: auctionDuration,
             },
           }
