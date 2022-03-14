@@ -5,26 +5,6 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Ensure nft auction can be completed
-    pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed =
-            if let AuctionTypeOf::<T>::English(EnglishAuction::<T> { end, .. }) =
-                auction.auction_type
-            {
-                let now = <frame_system::Module<T>>::block_number();
-
-                // Check whether auction time expired.
-                now >= end
-            } else {
-                // Open auction can be completed at any time
-                true
-            };
-
-        ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
-
-        Ok(())
-    }
-
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
@@ -37,25 +17,40 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Safety/bound checks for auction parameters
-    pub(crate) fn validate_auction_params(auction_params: &AuctionParams<T>) -> DispatchResult {
-        match &auction_params.auction_type {
-            AuctionType::<_, _>::English(eng) => {
-                Self::ensure_auction_duration_bounds_satisfied(eng.auction_duration)?;
-                Self::ensure_extension_period_bounds_satisfied(eng.extension_period)?;
+    /// Safety/bound checks for english auction parameters
+    pub(crate) fn validate_english_auction_params(
+        auction_params: &EnglishAuctionParams<T>,
+    ) -> DispatchResult {
+        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        Self::ensure_extension_period_bounds_satisfied(auction_params.extension_period)?;
 
-                Self::ensure_bid_step_bounds_satisfied(eng.min_bid_step)?;
+        Self::ensure_bid_step_bounds_satisfied(auction_params.min_bid_step)?;
 
-                // Ensure auction_duration of English auction is >= extension_period
-                ensure!(
-                    eng.auction_duration >= eng.extension_period,
-                    Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
-                );
-            }
-            AuctionType::<_, _>::Open(bid_lock_duration) => {
-                Self::ensure_bid_lock_duration_bounds_satisfied(*bid_lock_duration)?;
-            }
+        // Ensure auction_duration of English auction is >= extension_period
+        ensure!(
+            auction_params.auction_duration >= auction_params.extension_period,
+            Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
+        );
+
+        Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
+
+        Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
+
+        if let Some(buy_now_price) = auction_params.buy_now_price {
+            ensure!(
+                buy_now_price > auction_params.starting_price,
+                Error::<T>::BuyNowIsLessThenStartingPrice
+            );
         }
+
+        Ok(())
+    }
+
+    /// Safety/bound checks for english auction parameters
+    pub(crate) fn validate_open_auction_params(
+        auction_params: &OpenAuctionParams<T>,
+    ) -> DispatchResult {
+        Self::ensure_bid_lock_duration_bounds_satisfied(auction_params.bid_lock_duration)?;
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
 
@@ -378,136 +373,22 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub(crate) fn ensure_whitelisted_participant(
-        auction: &Auction<T>,
-        participant_id: T::MemberId,
-    ) -> DispatchResult {
-        ensure!(
-            auction.whitelist.is_empty() || auction.whitelist.contains(&participant_id),
-            Error::<T>::MemberIsNotAllowedToParticipate
-        );
-        Ok(())
-    }
-
-    pub(crate) fn ensure_auction_can_be_canceled(
-        auction: &Auction<T>,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        Self::ensure_auction_has_no_bids(auction, video_id)
-    }
-
-    pub(crate) fn ensure_auction_has_no_bids(
-        auction: &Auction<T>,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        match &auction.auction_type {
-            AuctionTypeOf::<T>::English(eng) => {
-                ensure!(eng.top_bid.is_none(), Error::<T>::ActionHasBidsAlready)
+    pub(crate) fn ensure_nft_auction_not_expired(nft: &Nft<T>) -> DispatchResult {
+        let now = <frame_system::Module<T>>::block_number();
+        match &nft.transactional_status {
+            TransactionalStatus::<T>::EnglishAuction(eng) => {
+                ensure!(eng.end >= now, Error::<T>::NftAuctionIsAlreadyExpired);
+                Ok(())
             }
-            AuctionTypeOf::<T>::Open(_) => {
+            TransactionalStatus::<T>::OpenAuction(open) => {
                 ensure!(
-                    BidByVideoAndMember::<T>::iter_prefix(video_id)
-                        .next()
-                        .is_none(),
-                    Error::<T>::ActionHasBidsAlready
-                )
+                    nft.open_auctions_nonce == open.auction_id,
+                    Error::<T>::NftAuctionIsAlreadyExpired,
+                );
+                Ok(())
             }
+            _ => Err(Error::<T>::NotInAuctionState.into()),
         }
-        Ok(())
-    }
-
-    pub(crate) fn ensure_auction_has_valid_bids(
-        auction: &Auction<T>,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        Self::ensure_auction_has_no_bids(auction, video_id)
-            .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))
-    }
-
-    pub(crate) fn ensure_nft_auction_not_expired(
-        nft: &Nft<T>,
-    ) -> Result<Auction<T>, DispatchError> {
-        let now = <frame_system::Module<T>>::block_number();
-        if let TransactionalStatus::<T>::Auction(auction) = &nft.transactional_status {
-            match &auction.auction_type {
-                AuctionTypeOf::<T>::English(eng) => {
-                    ensure!(eng.end >= now, Error::<T>::NftAuctionIsAlreadyExpired)
-                }
-                AuctionTypeOf::<T>::Open(open) => {
-                    ensure!(
-                        nft.open_auctions_nonce == open.auction_id,
-                        Error::<T>::NftAuctionIsAlreadyExpired,
-                    )
-                }
-            }
-            Ok(auction.to_owned())
-        } else {
-            Err(Error::<T>::NotInAuctionState.into())
-        }
-    }
-
-    pub(crate) fn ensure_bid_can_be_made(
-        auction: &Auction<T>,
-        member_id: T::MemberId,
-        amount: CurrencyOf<T>,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        // 1. if bid >= Some(buy_now) -> Ok(())
-        if let Some(buy_now) = &auction.buy_now_price {
-            if amount > *buy_now {
-                return Ok(());
-            }
-        }
-
-        match &auction.auction_type {
-            AuctionTypeOf::<T>::English(eng) => eng.top_bid.clone().map_or_else(
-                || {
-                    ensure!(
-                        auction.starting_price <= amount,
-                        Error::<T>::StartingPriceConstraintViolated,
-                    );
-                    Ok(())
-                },
-                |bid| {
-                    ensure!(
-                        bid.amount.saturating_add(eng.min_bid_step) <= amount,
-                        Error::<T>::BidStepConstraintViolated
-                    );
-                    Ok(())
-                },
-            ),
-            AuctionTypeOf::<T>::Open(open) => Self::ensure_open_bid_exists(video_id, member_id)
-                .map_or_else(
-                    |_| {
-                        ensure!(
-                            auction.starting_price <= amount,
-                            Error::<T>::StartingPriceConstraintViolated,
-                        );
-                        Ok(())
-                    },
-                    |bid| {
-                        // ensure lock duration if offer is lower
-                        if amount < bid.amount {
-                            Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
-                        } else {
-                            Ok(())
-                        }
-                    },
-                ),
-        }
-    }
-
-    pub(crate) fn ensure_bid_lock_duration_expired(
-        open_auction: &OpenAuction<T>,
-        last_bid_block: <T as frame_system::Trait>::BlockNumber,
-    ) -> DispatchResult {
-        let now = <frame_system::Module<T>>::block_number();
-        ensure!(
-            // now - last_bid_block >= duration
-            now.saturating_sub(last_bid_block) >= open_auction.bid_lock_duration,
-            Error::<T>::BidLockDurationIsNotExpired
-        );
-        Ok(())
     }
 
     pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, Error<T>> {
@@ -522,21 +403,29 @@ impl<T: Trait> Module<T> {
         let nft = Self::ensure_nft_exists(nft_video_id)?;
         let bid = Self::ensure_open_bid_exists(nft_video_id, who)?;
 
-        match &nft.transactional_status {
-            TransactionalStatus::<T>::Auction(Auction::<T> {
-                auction_type: AuctionTypeOf::<T>::Open(open),
-                ..
-            }) if open.auction_id == bid.auction_id => {
-                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)
+        Self::ensure_open_auction_state(&nft).and_then(|open| {
+            if open.auction_id == bid.auction_id {
+                open.ensure_bid_lock_duration_expired(bid.made_at_block)
             }
-            _ => Ok(()),
-        }
+            Ok(())
+        })
     }
 
     // NFT
-    /// Get nft auction record
-    pub(crate) fn ensure_auction_state(nft: &Nft<T>) -> Result<Auction<T>, DispatchError> {
-        if let TransactionalStatus::<T>::Auction(auction) = &nft.transactional_status {
+    /// Get nft english auction record
+    pub(crate) fn ensure_english_auction_state(
+        nft: &Nft<T>,
+    ) -> Result<EnglishAuction<T>, DispatchError> {
+        if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
+            Ok(auction.to_owned())
+        } else {
+            Err(Error::<T>::NotInAuctionState.into())
+        }
+    }
+
+    /// Get nft open auction record
+    pub(crate) fn ensure_open_auction_state(nft: &Nft<T>) -> Result<OpenAuction<T>, DispatchError> {
+        if let TransactionalStatus::<T>::OpenAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
         } else {
             Err(Error::<T>::NotInAuctionState.into())
@@ -576,24 +465,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_is_open_auction(auction: &Auction<T>) -> Result<OpenAuction<T>, DispatchError> {
-        if let AuctionTypeOf::<T>::Open(open) = &auction.auction_type {
-            Ok(open.clone())
-        } else {
-            Err(Error::<T>::IsNotOpenAuctionType.into())
-        }
-    }
-
-    pub fn ensure_is_english_auction(
-        auction: &Auction<T>,
-    ) -> Result<EnglishAuction<T>, DispatchError> {
-        if let AuctionTypeOf::<T>::English(english) = &auction.auction_type {
-            Ok(english.clone())
-        } else {
-            Err(Error::<T>::IsNotEnglishAuctionType.into())
-        }
-    }
-
     pub(crate) fn extend_english_auction(
         english: &EnglishAuction<T>,
     ) -> <T as frame_system::Trait>::BlockNumber {
@@ -604,28 +475,6 @@ impl<T: Trait> Module<T> {
                 .saturating_add(english.extension_period)
         } else {
             english.auction_duration
-        }
-    }
-
-    pub(crate) fn new_auction_from_params(
-        params: &AuctionParams<T>,
-        new_nonce: <T as Trait>::OpenAuctionId,
-    ) -> Auction<T> {
-        let auction_type = match params.auction_type.clone() {
-            AuctionType::<_, _>::Open(bid_lock_duration) => {
-                AuctionTypeOf::<T>::Open(OpenAuction::<T> {
-                    bid_lock_duration,
-                    auction_id: new_nonce,
-                })
-            }
-            AuctionType::<_, _>::English(eng) => AuctionTypeOf::<T>::English(eng),
-        };
-
-        Auction::<T> {
-            starting_price: params.starting_price,
-            buy_now_price: params.buy_now_price,
-            auction_type,
-            whitelist: params.whitelist.clone(),
         }
     }
 }

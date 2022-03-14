@@ -9,23 +9,28 @@ pub type Royalty = Perbill;
 /// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum TransactionalStatusRecord<MemberId, Balance, AuctionType> {
+pub enum TransactionalStatusRecord<MemberId, Balance, EnglishAuctionType, OpenAuctionType> {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionType),
+    EnglishAuction(EnglishAuctionType),
+    OpenAuction(OpenAuctionType),
     BuyNow(Balance),
 }
 
-impl<MemberId, Balance, AuctionType> Default
-    for TransactionalStatusRecord<MemberId, Balance, AuctionType>
+impl<MemberId, Balance, EnglishAuction, OpenAuction> Default
+    for TransactionalStatusRecord<MemberId, Balance, EnglishAuction, OpenAuction>
 {
     fn default() -> Self {
         Self::Idle
     }
 }
 
-pub type TransactionalStatus<T> =
-    TransactionalStatusRecord<<T as common::MembershipTypes>::MemberId, CurrencyOf<T>, Auction<T>>;
+pub type TransactionalStatus<T> = TransactionalStatusRecord<
+    <T as common::MembershipTypes>::MemberId,
+    CurrencyOf<T>,
+    EnglishAuction<T>,
+    OpenAuction<T>,
+>;
 
 /// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -51,6 +56,23 @@ impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
             transactional_status,
             creator_royalty,
             open_auctions_nonce: AuctionId::zero(),
+        }
+    }
+
+    pub(crate) fn with_transactional_status(
+        self,
+        transactional_status: TransactionalStatus,
+    ) -> Self {
+        Self {
+            transactional_status,
+            ..self
+        }
+    }
+
+    pub(crate) fn increment_open_auction_count(self) -> Self {
+        Self {
+            open_auctions_nonce: self.open_auctions_nonce.saturating_add(One::one()),
+            ..self
         }
     }
 }
@@ -90,54 +112,242 @@ pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
 /// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum InitTransactionalStatusRecord<AuctionParams, MemberId, Balance> {
+pub enum InitTransactionalStatusRecord<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance> {
     Idle,
     BuyNow(Balance),
     InitiatedOfferToMember(MemberId, Option<Balance>),
-    Auction(AuctionParams),
+    EnglishAuction(EnglishAuctionParams),
+    OpenAuction(OpenAuctionParams),
 }
 
-impl<AuctionParams, MemberId, Balance> Default
-    for InitTransactionalStatusRecord<AuctionParams, MemberId, Balance>
+impl<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance> Default
+    for InitTransactionalStatusRecord<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
     }
 }
 
-pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
-    AuctionParams<T>,
-    <T as common::MembershipTypes>::MemberId,
-    CurrencyOf<T>,
->;
-
-/// Information on the auction being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionRecord<Balance, MemberId: Ord, AuctionType> {
-    pub starting_price: Balance,
-    pub buy_now_price: Option<Balance>,
-    pub auction_type: AuctionType,
-    pub whitelist: BTreeSet<MemberId>,
-}
-
 /// English Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct EnglishAuctionRecord<BlockNumber, Balance, EnglishBid> {
+pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
+    pub starting_price: Balance,
+    pub buy_now_price: Option<Balance>,
+    pub whitelist: BTreeSet<MemberId>,
     pub end: BlockNumber,
     pub auction_duration: BlockNumber,
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
-    pub top_bid: Option<EnglishBid>,
+    pub top_bid: Option<EnglishBid<Balance, MemberId>>,
+}
+
+impl<BlockNumber: Copy + PartialOrd, Balance: Copy, MemberId: Ord + Copy>
+    EnglishAuctionRecord<BlockNumber, Balance, MemberId>
+{
+    pub fn new(params: EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>) -> Self {
+        Self {
+            starting_price: params.starting_price,
+            buy_now_price: params.buy_now_price,
+            whitelist: params.whitelist.clone(),
+            end: params.end,
+            auction_duration: params.auction_duration,
+            extension_period: params.extension_period,
+            min_bid_step: params.min_bid_step,
+            top_bid: None,
+        }
+    }
+
+    pub(crate) fn ensure_whitelisted_participant<T: Trait>(
+        &self,
+        participant_id: MemberId,
+    ) -> DispatchResult {
+        ensure!(
+            self.whitelist.is_empty() || self.whitelist.contains(&participant_id),
+            Error::<T>::MemberIsNotAllowedToParticipate
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.top_bid.is_none(), Error::<T>::ActionHasBidsAlready);
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_can_be_canceled<T: Trait>(&self) -> DispatchResult {
+        self.ensure_auction_has_no_bids::<T>()
+    }
+
+    pub(crate) fn ensure_auction_has_valid_bids<T: Trait>(&self) -> DispatchResult {
+        self.ensure_auction_has_no_bids::<T>()
+            .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))
+    }
+
+    pub(crate) fn ensure_bid_can_be_made<T: Trait>(&self, amount: Balance) -> DispatchResult {
+        if let Some(buy_now) = &self.buy_now_price {
+            if amount > *buy_now {
+                return Ok(());
+            }
+        }
+
+        self.top_bid.as_ref().map_or_else(
+            || {
+                ensure!(
+                    self.starting_price <= amount,
+                    Error::<T>::StartingPriceConstraintViolated,
+                );
+                Ok(())
+            },
+            |top_bid| {
+                ensure!(
+                    top_bid.amount.saturating_add(self.min_bid_step) <= amount,
+                    Error::<T>::BidStepConstraintViolated
+                );
+                Ok(())
+            },
+        )
+    }
+
+    pub(crate) fn ensure_auction_is_not_expired<T: Trait>(
+        &self,
+        now: BlockNumber,
+    ) -> DispatchResult {
+        ensure!(now <= self.end, Error::<T>::AuctionCannotBeCompleted);
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_can_be_completed<T: Trait>(
+        &self,
+        now: BlockNumber,
+    ) -> DispatchResult {
+        self.ensure_auction_is_not_expired(now)
+            .map_or_else(|| Ok(()), |_| Error::<T>::AuctionCannotBeCompleted)
+    }
+
+    pub(crate) fn with_bid(self, amount: Balance, bidder_id: MemberId, block: BlockNumber) -> Self {
+        let (auction_duration, end) = if self.end.saturating_sub(self.extension_period) < block {
+            (
+                self.auction_duration.saturating_add(self.extension_period),
+                self.end.saturating_add(self.extension_period),
+            )
+        } else {
+            (self.auction_duration, self.end)
+        };
+
+        Self {
+            end,
+            auction_duration,
+            top_bid: Some(EnglishBid { amount, bidder_id }),
+            ..self
+        }
+    }
 }
 
 /// Open Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OpenAuctionRecord<BlockNumber, AuctionId> {
+pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId: Ord> {
+    pub starting_price: Balance,
+    pub buy_now_price: Option<Balance>,
+    pub whitelist: BTreeSet<MemberId>,
     pub bid_lock_duration: BlockNumber,
     pub auction_id: AuctionId,
+}
+
+impl<BlockNumber: Copy, AuctionId: Copy, Balance: Copy, MemberId: Ord + Copy>
+    OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>
+{
+    pub fn new(
+        params: OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>,
+        auction_nonce: AuctionId,
+    ) -> Self {
+        Self {
+            starting_price: params.starting_price,
+            buy_now_price: params.buy_now_price,
+            whitelist: params.whitelist.clone(),
+            bid_lock_duration: params.bid_lock_duration,
+            auction_id: params.auction_id,
+        }
+    }
+
+    pub(crate) fn ensure_whitelisted_participant<T: Trait>(
+        &self,
+        participant_id: T::MemberId,
+    ) -> DispatchResult {
+        ensure!(
+            self.whitelist.is_empty() || self.whitelist.contains(&participant_id),
+            Error::<T>::MemberIsNotAllowedToParticipate
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(
+        &self,
+        video_id: T::VideoId,
+    ) -> DispatchResult {
+        ensure!(
+            crate::BidByVideoAndMember::<T>::iter_prefix(video_id)
+                .next()
+                .is_none(),
+            Error::<T>::ActionHasBidsAlready
+        )
+    }
+
+    pub(crate) fn ensure_auction_can_be_canceled<T: Trait>(
+        &self,
+        video_id: T::VideoId,
+    ) -> DispatchResult {
+        self.ensure_auction_has_no_bids(video_id)
+    }
+
+    pub(crate) fn ensure_auction_has_valid_bids<T: Trait>(&self) -> DispatchResult {
+        self.ensure_auction_has_no_bids()
+            .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))
+    }
+
+    pub(crate) fn ensure_bid_can_be_made<T: Trait>(
+        &self,
+        amount: Balance,
+        video_id: T::VideoId,
+        participant_id: T::MemberId,
+    ) -> DispatchResult {
+        if let Some(buy_now) = &self.buy_now_price {
+            if amount > *buy_now {
+                return Ok(());
+            }
+        }
+
+        Self::ensure_open_bid_exists(video_id, participant_id).map_or_else(
+            |_| {
+                ensure!(
+                    self.starting_price <= amount,
+                    Error::<T>::StartingPriceConstraintViolated,
+                );
+                Ok(())
+            },
+            |bid| {
+                // ensure lock duration if offer is lower
+                if amount < bid.amount {
+                    self.ensure_bid_lock_duration_expired(bid.made_at_block)
+                } else {
+                    Ok(())
+                }
+            },
+        )
+    }
+
+    pub(crate) fn ensure_bid_lock_duration_expired<T: Trait>(
+        &self,
+        last_bid_block: <T as frame_system::Trait>::BlockNumber,
+    ) -> DispatchResult {
+        let now = <frame_system::Module<T>>::block_number();
+        ensure!(
+            // now - last_bid_block >= duration
+            now.saturating_sub(last_bid_block) >= self.bid_lock_duration,
+            Error::<T>::BidLockDurationIsNotExpired
+        );
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -148,52 +358,84 @@ pub struct OpenBidRecord<Balance, BlockNumber, AuctionId> {
     pub auction_id: AuctionId,
 }
 
+impl<Balance, BlockNumber, AuctionId> OpenBidRecord<Balance, BlockNumber, AuctionId> {
+    pub(crate) fn new(amount: Balance, made_at_block: BlockNumber, auction_id: AuctionId) -> Self {
+        Self {
+            amount,
+            made_at_block,
+            auction_id,
+        }
+    }
+
+    pub(crate) fn ensure_valid_bid_commit<T: Trait>(&self, commit: Balance) -> DispatchResult {
+        ensure!(self.amount == commit, Error::<T>::InvalidBidAmountSpecified);
+        Ok(())
+    }
+
+    pub(crate) fn ensure_bid_is_relevant<T: Trait>(&self, auction_id: AuctionId) -> DispatchResult {
+        ensure!(
+            self.auction_id == auction_id,
+            Error::<T>::InvalidBidAmountSpecified
+        );
+        Ok(())
+    }
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct EnglishBidRecord<Balance, MemberId> {
+pub struct EnglishBid<Balance, MemberId> {
     pub amount: Balance,
     pub bidder_id: MemberId,
 }
 
-/// Auction type
+/// English Auction Init Params
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AuctionType<EnglishAuctionParams: Default, OpenAuctionParams> {
-    // English auction details
-    English(EnglishAuctionParams),
-    // Open auction details
-    Open(OpenAuctionParams),
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
+    pub starting_price: Balance,
+    pub buy_now_price: Option<Balance>,
+    pub whitelist: BTreeSet<MemberId>,
+    pub end: BlockNumber,
+    pub auction_duration: BlockNumber,
+    pub extension_period: BlockNumber,
+    pub min_bid_step: Balance,
 }
 
-impl<EnglishAuction: Default, OpenAuction> Default for AuctionType<EnglishAuction, OpenAuction> {
-    fn default() -> Self {
-        Self::English(EnglishAuction::default())
-    }
+/// Open Auction Init Params
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct OpenAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
+    pub starting_price: Balance,
+    pub buy_now_price: Option<Balance>,
+    pub whitelist: BTreeSet<MemberId>,
+    pub bid_lock_duration: BlockNumber,
 }
 
 // Aliases
-/// Auction Record alias
-pub type Auction<T> =
-    AuctionRecord<CurrencyOf<T>, <T as common::MembershipTypes>::MemberId, AuctionTypeOf<T>>;
-
-/// AuctionParameters used for Auction initialization, it is almost a copycat of Auction<T>
-/// Except that AuctionTypeOf<T> has been replaced because auction_id member is unknown @ creation
-pub type AuctionParams<T> = AuctionRecord<
-    CurrencyOf<T>,
-    <T as common::MembershipTypes>::MemberId,
-    AuctionType<EnglishAuction<T>, <T as frame_system::Trait>::BlockNumber>,
->;
-
 pub type EnglishAuction<T> = EnglishAuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
     CurrencyOf<T>,
-    EnglishBidRecord<CurrencyOf<T>, <T as common::MembershipTypes>::MemberId>,
+    <T as common::MembershipTypes>::MemberId,
 >;
 
-pub type OpenAuction<T> =
-    OpenAuctionRecord<<T as frame_system::Trait>::BlockNumber, <T as Trait>::OpenAuctionId>;
+pub type OpenAuction<T> = OpenAuctionRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as Trait>::OpenAuctionId,
+    CurrencyOf<T>,
+    <T as common::MembershipTypes>::MemberId,
+>;
 
-pub type AuctionTypeOf<T> = AuctionType<EnglishAuction<T>, OpenAuction<T>>;
+pub type EnglishAuctionParams<T> = EnglishAuctionParamsRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    CurrencyOf<T>,
+    <T as common::MembershipTypes>::MemberId,
+>;
+
+pub type OpenAuctionParams<T> = OpenAuctionParamsRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    CurrencyOf<T>,
+    <T as common::MembershipTypes>::MemberId,
+>;
 
 pub type OpenBid<T> = OpenBidRecord<
     CurrencyOf<T>,
@@ -205,4 +447,11 @@ pub type Nft<T> = OwnedNft<
     TransactionalStatus<T>,
     <T as common::MembershipTypes>::MemberId,
     <T as Trait>::OpenAuctionId,
+>;
+
+pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
+    EnglishAuctionParams<T>,
+    OpenAuctionParams<T>,
+    <T as common::MembershipTypes>::MemberId,
+    CurrencyOf<T>,
 >;
