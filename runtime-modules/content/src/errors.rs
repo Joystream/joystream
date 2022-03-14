@@ -265,5 +265,8 @@ decl_error! {
         /// Reward account is none
         RewardAccountNotFoundInChannel,
 
+        /// Invalid channel transfer status for transfer operations.
+        InvalidChannelTransferStatus,
+
     }
 }

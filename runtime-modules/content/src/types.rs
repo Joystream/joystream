@@ -87,6 +87,39 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+    /// Transfer status of the channel. Requires to be explicitly accepted.
+    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+/// Defines whether a channel is being transfered. No transfer by the default.
+pub enum ChannelTransferStatus<MemberId: Ord, CuratorGroupId, Balance> {
+    /// Default transfer status: no pending tranfers.
+    NoActiveTransfer,
+
+    /// There is ongoing transfer with parameters.
+    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
+}
+
+impl<MemberId: Ord, CuratorGroupId, Balance> Default
+    for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
+{
+    fn default() -> Self {
+        ChannelTransferStatus::NoActiveTransfer
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
+    /// New channel owner.
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    /// New set of the channel's collaborators.
+    pub new_collaborators: BTreeSet<MemberId>,
+    /// Transfer price: can be 0, which means free.
+    pub price: Balance,
 }
 
 impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>

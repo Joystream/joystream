@@ -421,6 +421,7 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
+                transfer_status: ChannelTransferStatus::NoActiveTransfer,
             };
 
             // add channel to onchain state
@@ -1948,6 +1949,38 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
+        /// Updates channel transfer status to whatever the current owner wants.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_transfer_status(
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            new_status_params: PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
+
+            ensure!(
+                channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
+                Error::<T>::InvalidChannelTransferStatus
+            );
+
+            Self::validate_member_set(&new_status_params.new_collaborators)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            ChannelById::<T>::mutate(&channel_id,
+                |channel| channel.transfer_status =
+                    ChannelTransferStatus::PendingTransfer(new_status_params.clone())
+            );
+
+            Self::deposit_event(
+                RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_status_params)
+            );
+        }
+
     }
 }
 
@@ -2219,6 +2252,11 @@ decl_event!(
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
         IsExtended = bool,
+        PendingTransfer = PendingTransfer<
+            <T as common::MembershipTypes>::MemberId,
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            BalanceOf<T>,
+        >,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2310,5 +2348,8 @@ decl_event!(
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
+
+        /// Channel transfer
+        UpdateChannelTransferStatus(ChannelId, ContentActor, PendingTransfer),
     }
 );
