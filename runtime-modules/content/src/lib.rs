@@ -1389,12 +1389,17 @@ decl_module! {
 
             // Create new auction
             let new_nonce = nft.open_auctions_nonce.saturating_add(One::one());
-            let auction = OpenAuction::<T>::new(auction_params, new_nonce);
+            let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce);
 
             // Update the video
+            let new_nft = nft
+                .with_transactional_status(TransactionalStatus::<T>::OpenAuction(auction))
+                .increment_open_auction_count();
+
             VideoById::<T>::mutate(
                 video_id,
-                |v| v.set_nft_status(nft.with_transactional_status(TransactionalStatus::<T>::OpenAuction(auction))));
+                |v| v.set_nft_status(new_nft)
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::OpenAuctionStarted(owner_id, video_id, auction_params, new_nonce));
@@ -1428,7 +1433,7 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = EnglishAuction::<T>::new(auction_params);
+            let auction = EnglishAuction::<T>::new(auction_params.clone());
 
             // Update the video
             VideoById::<T>::mutate(
@@ -1589,8 +1594,8 @@ decl_module! {
 
             // Validate parameters & return english auction
             let auction =  Self::ensure_open_auction_state(&nft)
-                .and_then(|open| open.ensure_whitelisted_participant(participant_id).map(|_| open))
-                .and_then(|open| open.ensure_bid_can_be_made::<T>(bid_amount, video_id, participant_id).map(|_| open))?;
+                .and_then(|open| open.ensure_whitelisted_participant::<T>(participant_id).map(|_| open))
+                .and_then(|open| Self::ensure_open_bid_can_be_made(&open, bid_amount, video_id, participant_id).map(|_| open))?;
 
             //
             // == MUTATION_SAFE ==
@@ -1627,7 +1632,7 @@ decl_module! {
 
                     Ok((nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount)))
                 }
-            };
+            }?;
 
             // update video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
@@ -1661,7 +1666,7 @@ decl_module! {
             let auction =  Self::ensure_english_auction_state(&nft)
                 .and_then(|eng| eng.ensure_auction_is_not_expired::<T>(now).map(|_| eng))
                 .and_then(|eng| eng.ensure_whitelisted_participant::<T>(participant_id).map(|_| eng))
-                .and_then(|eng| eng.ensure_bid_can_be_made(bid_amount).map(|_| eng))?;
+                .and_then(|eng| eng.ensure_bid_can_be_made::<T>(bid_amount).map(|_| eng))?;
 
             //
             // == MUTATION_SAFE ==
@@ -1759,9 +1764,10 @@ decl_module! {
 
             // Ensure nft & english auction validity for nft exists, retrieve top bid
             let top_bid = Self::ensure_nft_exists(video_id)
+                .map_err(|e| -> DispatchError {e.into()})
                 .and_then(|nft| Self::ensure_english_auction_state(&nft))
-                .and_then(|eng| eng.ensure_auction_has_valid_bids().map(|_| eng))
-                .and_then(|eng| eng.ensure_auction_can_be_completed(now).map(|_| eng))
+                .and_then(|eng| eng.ensure_auction_has_valid_bids::<T>().map(|_| eng))
+                .and_then(|eng| eng.ensure_auction_can_be_completed::<T>(now).map(|_| eng))
                 .map(|eng| eng.top_bid.unwrap())?;
 
             //
@@ -1797,14 +1803,14 @@ decl_module! {
             let video = Self::video_by_id(video_id);
 
             // Ensure auction for given video id exists, retrieve corresponding one
-            let auction = Self::ensure_open_auction_state(&nft);
+            let auction = Self::ensure_open_auction_state(&nft)?;
 
             // Ensure actor is authorized to accept open auction bid
                 ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             let bid = Self::ensure_open_bid_exists(video_id, winner_id)
-                .and_then(|bid| bid.ensure_valid_bid_commit(commit).map(|_| bid))
-                .and_then(|bid| bid.ensure_bid_is_relevant(auction.auction_id).map(|_| bid))?;
+                .and_then(|bid| bid.ensure_valid_bid_commit::<T>(commit).map(|_| bid))
+                .and_then(|bid| bid.ensure_bid_is_relevant::<T>(auction.auction_id).map(|_| bid))?;
 
             //
             // == MUTATION SAFE ==

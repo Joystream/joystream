@@ -373,6 +373,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // TODO: encapsulate this
     pub(crate) fn ensure_nft_auction_not_expired(nft: &Nft<T>) -> DispatchResult {
         let now = <frame_system::Module<T>>::block_number();
         match &nft.transactional_status {
@@ -405,10 +406,55 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_open_auction_state(&nft).and_then(|open| {
             if open.auction_id == bid.auction_id {
-                open.ensure_bid_lock_duration_expired(bid.made_at_block)
+                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)?;
             }
             Ok(())
         })
+    }
+
+    // check bid lock expiration: free function in order to silence rustc
+    pub(crate) fn ensure_bid_lock_duration_expired(
+        open: &OpenAuction<T>,
+        last_bid_block: <T as frame_system::Trait>::BlockNumber,
+    ) -> DispatchResult {
+        let now = <frame_system::Module<T>>::block_number();
+        ensure!(
+            // now - last_bid_block >= duration
+            now.saturating_sub(last_bid_block) >= open.bid_lock_duration,
+            Error::<T>::BidLockDurationIsNotExpired
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_open_bid_can_be_made(
+        open: &OpenAuction<T>,
+        amount: CurrencyOf<T>,
+        video_id: T::VideoId,
+        participant_id: T::MemberId,
+    ) -> DispatchResult {
+        if let Some(completion_price) = open.buy_now_price {
+            if completion_price <= amount {
+                return Ok(());
+            }
+        }
+
+        Module::<T>::ensure_open_bid_exists(video_id, participant_id).map_or_else(
+            |_| {
+                ensure!(
+                    open.starting_price <= amount,
+                    Error::<T>::StartingPriceConstraintViolated,
+                );
+                Ok(())
+            },
+            |bid| {
+                // ensure lock duration if offer is lower
+                if amount < bid.amount {
+                    Self::ensure_bid_lock_duration_expired(open, bid.made_at_block)
+                } else {
+                    Ok(())
+                }
+            },
+        )
     }
 
     // NFT
@@ -463,18 +509,5 @@ impl<T: Trait> Module<T> {
             Error::<T>::NftNotInBuyNowState
         );
         Ok(())
-    }
-
-    pub(crate) fn extend_english_auction(
-        english: &EnglishAuction<T>,
-    ) -> <T as frame_system::Trait>::BlockNumber {
-        let now = <frame_system::Module<T>>::block_number();
-        if english.end.saturating_sub(english.extension_period) < now {
-            english
-                .auction_duration
-                .saturating_add(english.extension_period)
-        } else {
-            english.auction_duration
-        }
     }
 }
