@@ -1,14 +1,13 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import {
   BanOrUnbanMemberFromChannel,
-  EnableOrDisableCommentSection,
+  EnableOrDisableCommentSectionOfVideo,
   EnableOrDisableReactionsOnVideo,
   IBanOrUnbanMemberFromChannel,
   ICreateComment,
   IDeleteComment,
   IDeleteCommentModerator,
   IEditComment,
-  IEnableOrDisableCommentSection,
   IEnableOrDisableCommentSectionOfVideo,
   IEnableOrDisableReactionsOnVideo,
   IPinOrUnpinComment,
@@ -36,7 +35,7 @@ import {
   VideoReaction,
   VideoReactionOptions,
 } from 'query-node/dist/model'
-import { genericEventFields, inconsistentState, logger } from '../common'
+import { genericEventFields, inconsistentState, logger, newMetaprotocolEntityId } from '../common'
 
 // TODO: Ensure video is actually a video
 // TODO: make sure comment is fully removed (all of its reactions)
@@ -52,7 +51,7 @@ export async function processReactVideoMessage(
   const reactionResult = parseVideoReaction(reaction)
 
   // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
+  const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -62,20 +61,10 @@ export async function processReactVideoMessage(
     )
   }
 
-  // // const bannedMember = await store.get(Membership, { where: { id: commentId }, relations: ['bannedMembers'] })
-
   // ensure reaction feature is enabled on the video
   if (!video.isReactionFeatureEnabled) {
     return inconsistentState('Cannot add reaction; reaction feature is disabled on this video: ', video.channel.id)
   }
-
-  const videoReactedEvent = new VideoReactedEvent({
-    ...genericEventFields(event),
-    video,
-    reactingMember: new Membership({ id: memberId.toString() }),
-    reactionResult,
-  })
-  await store.save<VideoReactedEvent>(videoReactedEvent)
 
   // load reaction by member to the video (if any)
   const existingVideoReactionByMember = await store.get(VideoReaction, {
@@ -99,6 +88,7 @@ export async function processReactVideoMessage(
     }
   } else if (reactionResult !== VideoReactionOptions.CANCEL) {
     const newVideoReactionByMember = new VideoReaction({
+      id: newMetaprotocolEntityId(event),
       createdAt: eventTime,
       updatedAt: eventTime,
       video,
@@ -109,10 +99,15 @@ export async function processReactVideoMessage(
     await store.save<VideoReaction>(newVideoReactionByMember)
 
     ++video.reactionsCount
-
-    // emit log event
-    logger.info(`New reaction has been added by the member: ${memberId} to the video: ${videoId}`)
   }
+
+  const videoReactedEvent = new VideoReactedEvent({
+    ...genericEventFields(event),
+    video,
+    reactingMember: new Membership({ id: memberId.toString() }),
+    reactionResult,
+  })
+  await store.save<VideoReactedEvent>(videoReactedEvent)
 
   video.updatedAt = eventTime
   await store.save<Video>(video)
@@ -127,10 +122,13 @@ export async function processReactCommentMessage(
   const eventTime = new Date(event.blockTimestamp)
 
   // load comment
-  const comment = await getComment(store, commentId.toString(), ['video', 'reactionsCountByReactionId'])
-
-  // load video
-  const video = await getVideo(store, comment.video.id.toString(), ['channel'])
+  const comment = await getComment(store, commentId, [
+    'video',
+    'video.channel',
+    'video.channel.bannedMembers',
+    'reactionsCountByReactionId',
+  ])
+  const { video } = comment
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -150,11 +148,11 @@ export async function processReactCommentMessage(
 
   // load same reaction by member to the comment (if any)
   const existingCommentReactionByMember = await store.get(CommentReaction, {
-    where: { reaction: reactionId, comment: { id: commentId.toString() }, member: { id: memberId.toString() } },
+    where: { reactionId, comment: { id: commentId }, member: { id: memberId.toString() } },
   })
 
   const reactionsCount = await store.get(CommentReactionsCountByReactionId, {
-    where: { reaction: reactionId, comment: { id: commentId.toString() } },
+    where: { reactionId, comment: { id: commentId.toString() } },
   })
 
   // remove the reaction if same reaction already exists by the member on the comment
@@ -167,18 +165,17 @@ export async function processReactCommentMessage(
 
     comment.updatedAt = eventTime
     await store.save<Comment>(comment)
-
     await store.remove<CommentReaction>(existingCommentReactionByMember)
-
     // emit log event
     logger.info(`Reaction has been removed by the member: ${memberId} to the commentId: ${commentId}`)
   } else {
     if (reactionsCount) {
-      --reactionsCount.count
+      ++reactionsCount.count
       reactionsCount.updatedAt = eventTime
       await store.save<CommentReactionsCountByReactionId>(reactionsCount)
     } else {
       const newReactionsCount = new CommentReactionsCountByReactionId({
+        id: newMetaprotocolEntityId(event),
         count: 1,
         reactionId,
         comment,
@@ -189,10 +186,12 @@ export async function processReactCommentMessage(
     }
 
     const newVideoReactionByMember = new CommentReaction({
+      id: newMetaprotocolEntityId(event),
       createdAt: eventTime,
       updatedAt: eventTime,
       comment,
       reactionId,
+      video,
       member: new Membership({ id: memberId.toString() }),
     })
     await store.save<CommentReaction>(newVideoReactionByMember)
@@ -221,11 +220,12 @@ export async function processCreateCommentMessage(
   memberId: MemberId,
   message: ICreateComment
 ): Promise<void> {
+  // in case of null `parentCommentId` protobuf would assign it a default value i.e. ''
   const { videoId, parentCommentId, body } = message
   const eventTime = new Date(event.blockTimestamp)
 
   // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
+  const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -242,7 +242,8 @@ export async function processCreateCommentMessage(
 
   // if new comment is replying to some parent comment, 1. validate that comment existence,
   //  2. set `parentComment` to the parent comment, otherwise set `parentComment` to undefined
-  const parentComment = parentCommentId ? await getComment(store, parentCommentId.toString(), ['video']) : undefined
+  const parentComment =
+    parentCommentId && parentCommentId !== '' ? await getComment(store, parentCommentId.toString()) : undefined
 
   // increment video's comment count
   ++video.commentsCount
@@ -257,6 +258,7 @@ export async function processCreateCommentMessage(
   }
 
   const comment = new Comment({
+    id: newMetaprotocolEntityId(event),
     createdAt: eventTime,
     updatedAt: eventTime,
     text: body,
@@ -264,7 +266,9 @@ export async function processCreateCommentMessage(
     status: CommentStatus.VISIBLE,
     author: new Membership({ id: memberId.toString() }),
     parentComment,
+    repliesCount: 0,
   })
+  await store.save<Comment>(comment)
 
   const commentCreatedEvent = new CommentCreatedEvent({
     ...genericEventFields(event),
@@ -273,7 +277,6 @@ export async function processCreateCommentMessage(
   })
   await store.save<CommentCreatedEvent>(commentCreatedEvent)
 
-  await store.save<Comment>(comment)
   // emit log event
   logger.info(`New comment has been added by the member: ${memberId} to the video: ${videoId}`)
 }
@@ -287,7 +290,7 @@ export async function processEditCommentMessage(
   const eventTime = new Date(event.blockTimestamp)
 
   // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
+  const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -303,7 +306,10 @@ export async function processEditCommentMessage(
   }
 
   // load comment
-  const comment = await getComment(store, commentId.toString(), ['author'])
+  const comment = await getComment(store, commentId, ['author'])
+  if (!comment) {
+    return inconsistentState(`comment not found by id: ${commentId}`)
+  }
 
   // ensure comment is not deleted or moderated (deleted by moderator)
   if (comment.status !== CommentStatus.VISIBLE) {
@@ -339,7 +345,7 @@ export async function processDeleteCommentMessage(
   const eventTime = new Date(event.blockTimestamp)
 
   // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
+  const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -355,7 +361,10 @@ export async function processDeleteCommentMessage(
   }
 
   // load comment
-  const comment = await getComment(store, commentId.toString(), ['author', 'comment'])
+  const comment = await getComment(store, commentId, ['author', 'comment'])
+  if (!comment) {
+    return inconsistentState(`comment not found by id: ${commentId}`)
+  }
 
   // ensure comment is not already deleted or moderated (deleted by moderator)
   if (comment.status !== CommentStatus.VISIBLE) {
@@ -413,7 +422,7 @@ export async function processDeleteCommentModeratorMessage(
   }
 
   // load comment
-  const comment = await getComment(store, commentId.toString(), ['video'])
+  const comment = await getComment(store, commentId, ['video'])
 
   // ensure comment belongs to the video
   if (comment.video.id !== videoId.toString()) {
@@ -468,7 +477,7 @@ export async function processPinOrUnpinCommentMessage(
   const video = await getVideo(store, videoId.toString(), ['channel'])
 
   // load comment
-  const comment = await getComment(store, commentId.toString())
+  const comment = await getComment(store, commentId)
 
   // ensure channel owns the video
   if (video.channel.getId() !== channelId.toString()) {
@@ -539,32 +548,6 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   await store.save<Channel>(channel)
 }
 
-export async function processEnableOrDisableCommentSectionMessage(
-  { store, event }: EventContext & StoreContext,
-  channelOwnerId: MemberId,
-  channelId: ChannelId,
-  message: IEnableOrDisableCommentSection
-): Promise<void> {
-  const { option } = message
-  const eventTime = new Date(event.blockTimestamp)
-
-  // load channel
-  const channel = await getChannel(store, channelId.toString())
-
-  // enable comment section; if comment section is already enabled it remains as it is.
-  if (option === EnableOrDisableCommentSection.Option.ENABLE) {
-    channel.isCommentSectionEnabled = true
-  }
-
-  // disable comment section; if comment section is already disabled it remains as it is.
-  if (option === EnableOrDisableCommentSection.Option.DISABLE) {
-    channel.isCommentSectionEnabled = false
-  }
-
-  channel.updatedAt = eventTime
-  await store.save<Channel>(channel)
-}
-
 export async function processEnableOrDisableCommentSectionOfVideoMessage(
   { store, event }: EventContext & StoreContext,
   channelOwnerId: MemberId,
@@ -585,12 +568,12 @@ export async function processEnableOrDisableCommentSectionOfVideoMessage(
   }
 
   // enable comments on video; if comments are already enabled it remains as it is.
-  if (option === EnableOrDisableCommentSection.Option.ENABLE) {
+  if (option === EnableOrDisableCommentSectionOfVideo.Option.ENABLE) {
     video.isCommentSectionEnabled = true
   }
 
   // disable comments on video; if comments are already disabled it remains as it is.
-  if (option === EnableOrDisableCommentSection.Option.DISABLE) {
+  if (option === EnableOrDisableCommentSectionOfVideo.Option.DISABLE) {
     video.isCommentSectionEnabled = false
   }
 
@@ -634,7 +617,7 @@ export async function processEnableOrDisableReactionsOnVideoMessage(
 async function getChannel(store: DatabaseManager, channelId: string, relations?: string[]): Promise<Channel> {
   const channel = await store.get(Channel, { where: { id: channelId }, relations })
   if (!channel) {
-    throw new Error(`Channel not found by id: ${channelId.toString()}`)
+    throw new Error(`Channel not found by id: ${channelId}`)
   }
   return channel
 }
@@ -642,7 +625,7 @@ async function getChannel(store: DatabaseManager, channelId: string, relations?:
 async function getVideo(store: DatabaseManager, videoId: string, relations?: string[]): Promise<Video> {
   const video = await store.get(Video, { where: { id: videoId }, relations })
   if (!video) {
-    throw new Error(`Video not found by id: ${videoId.toString()}`)
+    throw new Error(`Video not found by id: ${videoId}`)
   }
   return video
 }
@@ -650,7 +633,7 @@ async function getVideo(store: DatabaseManager, videoId: string, relations?: str
 async function getComment(store: DatabaseManager, commentId: string, relations?: string[]): Promise<Comment> {
   const comment = await store.get(Comment, { where: { id: commentId }, relations })
   if (!comment) {
-    throw new Error(`Video comment not found by id: ${commentId.toString()}`)
+    throw new Error(`Video comment not found by id: ${commentId}`)
   }
   return comment
 }

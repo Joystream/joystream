@@ -121,6 +121,10 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     createdInBlock: event.blockNumber,
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+    isCommentSectionEnabled: true,
+    isReactionFeatureEnabled: true,
+    commentsCount: 0,
+    reactionsCount: 0,
   })
   // deserialize & process metadata
   if (videoCreationParameters.meta.isSome) {
