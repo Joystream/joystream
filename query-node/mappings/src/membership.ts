@@ -490,7 +490,7 @@ export async function members_LeaderInvitationQuotaUpdated({
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const [memberId, message] = new Members.MemberRemarkedEvent(ctx.event).params
 
-  const decodedMessage = MemberRemarked.decode(message)
+  const decodedMessage = MemberRemarked.decode(message.toU8a(true))
   const messageType = decodedMessage.memberRemarked
 
   if (!messageType) {
@@ -498,22 +498,26 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   }
 
   if (messageType === 'reactVideo') {
-    processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
+    await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
+    return
   }
 
   if (messageType === 'reactComment') {
-    processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
+    await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
+    return
   }
 
   if (messageType === 'createComment') {
-    processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+    await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+    return
   }
 
   if (messageType === 'editComment') {
     processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+    return
   }
 
   if (messageType === 'deleteComment') {
-    processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+    await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
   }
 }

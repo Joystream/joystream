@@ -24,7 +24,6 @@ import {
   processPinOrUnpinCommentMessage,
   processBanOrUnbanMemberFromChannelMessage,
   processEnableOrDisableCommentSectionOfVideoMessage,
-  processEnableOrDisableCommentSectionMessage,
   processEnableOrDisableReactionsOnVideoMessage,
 } from './commentAndReaction'
 
@@ -265,7 +264,7 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const [owner, channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
 
-  const decodedMessage = ChannelOwnerRemarked.decode(message)
+  const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
   const messageType = decodedMessage.channelOwnerRemarked
 
   if (!messageType) {
@@ -273,38 +272,32 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   }
 
   if (messageType === 'pinOrUnpinComment') {
-    processPinOrUnpinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinOrUnpinComment!)
+    await processPinOrUnpinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinOrUnpinComment!)
+    return
   }
 
   if (messageType === 'banOrUnbanMemberFromChannel') {
-    processBanOrUnbanMemberFromChannelMessage(
+    await processBanOrUnbanMemberFromChannelMessage(
       ctx,
       owner.asMember,
       channelId,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
-  }
-
-  if (messageType === 'enableOrDisableCommentSection') {
-    processEnableOrDisableCommentSectionMessage(
-      ctx,
-      owner.asMember,
-      channelId,
-      decodedMessage.enableOrDisableCommentSection!
-    )
+    return
   }
 
   if (messageType === 'enableOrDisableCommentSectionOfVideo') {
-    processEnableOrDisableCommentSectionOfVideoMessage(
+    await processEnableOrDisableCommentSectionOfVideoMessage(
       ctx,
       owner.asMember,
       channelId,
       decodedMessage.enableOrDisableCommentSectionOfVideo!
     )
+    return
   }
 
   if (messageType === 'enableOrDisableReactionsOnVideo') {
-    processEnableOrDisableReactionsOnVideoMessage(
+    await processEnableOrDisableReactionsOnVideoMessage(
       ctx,
       owner.asMember,
       channelId,
@@ -316,7 +309,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const [moderator, channelId, message] = new Content.ChannelModeratorRemarkedEvent(ctx.event).params
 
-  const decodedMessage = ChannelModeratorRemarked.decode(message)
+  const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
   const messageType = decodedMessage.channelModeratorRemarked
 
   if (!messageType) {
@@ -324,6 +317,11 @@ export async function content_ChannelModeratorRemarked(ctx: EventContext & Store
   }
 
   if (messageType === 'deleteCommentModerator') {
-    processDeleteCommentModeratorMessage(ctx, moderator.asMember, channelId, decodedMessage.deleteCommentModerator!)
+    await processDeleteCommentModeratorMessage(
+      ctx,
+      moderator.asMember,
+      channelId,
+      decodedMessage.deleteCommentModerator!
+    )
   }
 }
