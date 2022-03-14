@@ -17,7 +17,7 @@
 
     - name: Install subkey
       include_role:
-        name: admin
+        name: build-server
         tasks_from: main
 
     - name: Basic AMI Creation

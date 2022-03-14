@@ -4,7 +4,9 @@ mod channels;
 mod curators;
 mod fixtures;
 mod merkle;
+mod metaprotocol;
 mod mock;
-mod nft;
+// TODO RHODES: enable after open auction fix
+//mod nft;
 mod posts;
 mod videos;

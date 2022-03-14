@@ -157,6 +157,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl membership::Trait for Test {
@@ -274,6 +277,12 @@ impl crate::WeightInfo for () {
         0
     }
     fn leave_role(_: u32) -> Weight {
+        0
+    }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
         0
     }
 }

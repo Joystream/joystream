@@ -5,7 +5,7 @@ import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@jo
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
-import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields, getWorker, toNumber } from './common'
 import {
   Membership,
   MembershipEntryMethod,
@@ -28,6 +28,7 @@ import {
   MembershipEntryPaid,
   MembershipEntryInvited,
   AvatarUri,
+  WorkingGroup,
 } from 'query-node/dist/model'
 import {
   processReactVideoMessage,
@@ -106,7 +107,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: defaultInviteCount,
+    inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
@@ -478,6 +479,21 @@ export async function members_LeaderInvitationQuotaUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event).params
+
+  const groupName = 'membershipWorkingGroup'
+  const group = await store.get(WorkingGroup, {
+    where: { name: groupName },
+    relations: ['leader', 'leader.membership'],
+  })
+
+  if (!group) {
+    throw new Error(`Working group ${groupName} not found!`)
+  }
+
+  const lead = group.leader!.membership
+  lead.inviteCount = toNumber(newQuota)
+
+  await store.save<Membership>(lead)
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
     ...genericEventFields(event),

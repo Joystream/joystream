@@ -1,5 +1,6 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
 import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
 import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
@@ -228,6 +229,14 @@ export function bytesToString(b: Bytes): string {
 export function perpareString(s: string): string {
   // eslint-disable-next-line no-control-regex
   return s.replace(/\u0000/g, '')
+}
+
+export function asInt32(value: Codec): number {
+  return Math.min(Math.max(Math.trunc(Number(value)), -2147483647), 2147483647)
+}
+
+export function asBN(value: Codec): BN {
+  return new BN(value.toString())
 }
 
 export function hasValuesForProperties<
