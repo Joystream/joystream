@@ -896,12 +896,10 @@ export class Api {
     auctionDuration: BN
   }> {
     const boundaries = await this.getAuctionParametersBoundaries()
-    console.log('before auctionDuration', auctionDuration, extensionPeriod)
 
     // auction duration must be larger than extension period (enforced in runtime)
     auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
     extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
-    console.log('auctionDuration', auctionDuration, extensionPeriod)
 
     if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
       throw new Error('Auction duration must be larger than extension period')

@@ -70,17 +70,6 @@ export class NftEnglishAuctionWithExtensionFixture extends BaseQueryNodeFixture 
 
     const waitBlocks =
       this.auctionDuration + 1 + (this.participants.length >= this.extensionPeriod ? this.extensionPeriod : 0)
-
-    // Math.min(this.auctionDuration.toNumber(), this.extensionPeriod.toNumber() + this.participants.length) + 1
-    console.log(
-      'waitBlocks ',
-      this.auctionDuration,
-      this.participants.length >= this.extensionPeriod,
-      this.extensionPeriod,
-      this.participants.length >= this.extensionPeriod ? this.extensionPeriod : 0,
-      this.auctionDuration + 1 + (this.participants.length >= this.extensionPeriod ? this.extensionPeriod : 0),
-      waitBlocks
-    )
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
 
     this.debug('Complete auction')
