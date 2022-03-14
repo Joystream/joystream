@@ -4,7 +4,7 @@ import { CommentId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
-import { CommentStatus } from 'src/graphql/generated/schema'
+import { CommentStatus } from '../../../graphql/generated/schema'
 import { Api } from '../../../Api'
 import { POST_DEPOSIT } from '../../../consts'
 import { StandardizedFixture } from '../../../Fixture'
@@ -28,12 +28,12 @@ export class CreateCommentsFixture extends StandardizedFixture {
     this.commentsParams = commentsParams
   }
 
-  public async getCreatedCommentsIds(): Promise<CommentId[]> {
+  public async getCreatedCommentsIds(): Promise<string[]> {
     const qEvents = await this.query.tryQueryWithTimeout(
       () => this.query.getCommentCreatedEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
-    return qEvents.map((e) => (e.comment.id as unknown) as CommentId)
+    return qEvents.map((e) => e.comment.id)
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<MemberRemarkedEventDetails> {
@@ -64,15 +64,9 @@ export class CreateCommentsFixture extends StandardizedFixture {
           parentCommentId: params.msg.parentCommentId,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, MemberRemarked.encode(msg).finish())
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
     })
   }
-
-  // protected getCommentExpectedText({ metadata: inputMeta }: CommentParams): string {
-  //   const meta = Utils.getDeserializedMetadataFormInput(ForumPostMetadata, inputMeta)
-  //   const metaBytes = Utils.getMetadataBytesFromInput(ForumPostMetadata, inputMeta)
-  //   return meta ? meta.text || '' : Utils.bytesToString(metaBytes)
-  // }
 
   protected assertQueriedCommentsAreValid(
     qComments: VideoCommentFieldsFragment[],
@@ -91,7 +85,6 @@ export class CreateCommentsFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: CommentCreatedEventFieldsFragment, i: number): void {
     const params = this.commentsParams[i]
-    // assert.equal(qEvent.text, this.getCommentExpectedText(params))
     assert.equal(qEvent.text, params.msg.body)
   }
 

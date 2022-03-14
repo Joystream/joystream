@@ -4,9 +4,8 @@ import { CommentId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
-import { CommentStatus } from 'src/graphql/generated/schema'
+import { CommentStatus } from '../../../graphql/generated/schema'
 import { Api } from '../../../Api'
-import { POST_DEPOSIT } from '../../../consts'
 import { StandardizedFixture } from '../../../Fixture'
 import { CommentDeletedEventFieldsFragment, VideoCommentFieldsFragment } from '../../../graphql/generated/queries'
 import { QueryNodeApi } from '../../../QueryNodeApi'
@@ -28,7 +27,7 @@ export class DeleteCommentsFixture extends StandardizedFixture {
     this.commentsParams = commentsParams
   }
 
-  public async getCreatedCommentsIds(): Promise<CommentId[]> {
+  public async getDeletedCommentsIds(): Promise<CommentId[]> {
     const qEvents = await this.query.tryQueryWithTimeout(
       () => this.query.getCommentCreatedEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
@@ -50,8 +49,6 @@ export class DeleteCommentsFixture extends StandardizedFixture {
 
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
-    // Send required funds to accounts (PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, POST_DEPOSIT)))
     await super.execute()
   }
 
