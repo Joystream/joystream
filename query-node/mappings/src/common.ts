@@ -9,6 +9,10 @@ import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
+// used to create Ids for metaprotocol entities (entities that don't
+// have any runtime existence; and solely exist on the Query node).
+export const METAPROTOCOL = 'METAPROTOCOL'
+
 // Max value the database can store in Int column field
 export const INT32MAX = 2147483647
 
@@ -39,6 +43,14 @@ class Logger {
 }
 
 export const logger = new Logger()
+
+/*
+  Get Id of new metaprotocol entity in Query node DB
+ */
+export function newMetaprotocolEntityId(substrateEvent: SubstrateEvent): string {
+  const { blockNumber, indexInBlock } = substrateEvent
+  return `${METAPROTOCOL}-${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`
+}
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
