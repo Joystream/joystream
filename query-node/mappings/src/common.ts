@@ -5,7 +5,7 @@ import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
 import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
-import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { AnyMessage, AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
@@ -198,7 +198,13 @@ export function deserializeMetadata<T>(
   metadataBytes: Bytes
 ): DecodedMetadataObject<T> | null {
   try {
-    return metaToObject(metadataType, metadataType.decode(metadataBytes.toU8a(true)))
+    const message = metadataType.decode(metadataBytes.toU8a(true))
+    Object.keys(message).forEach((key) => {
+      if (typeof message[key] === 'string') {
+        message[key] = bytesToString(message[key])
+      }
+    })
+    return metaToObject(metadataType, message)
   } catch (e) {
     invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
