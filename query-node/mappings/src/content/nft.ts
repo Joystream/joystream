@@ -44,11 +44,7 @@ import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
 import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
-
-// definition of generic type for Hydra DatabaseManager's methods
-type EntityType<T> = {
-  new (...args: any[]): T
-}
+import { EntityType } from '../common'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
