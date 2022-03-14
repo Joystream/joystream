@@ -2,18 +2,23 @@ import BN from 'bn.js'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
-  CommentParams,
+  CreateCommentParams,
   CreateChannelsAndVideosFixture,
   CreateCommentsFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
+  ReactToVideosFixture,
+  ReactVideoParams,
+  ReactCommentParams,
+  ReactToCommentsFixture,
 } from '../../fixtures/content'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 import Long from 'long'
+import { ReactVideo } from '@joystream/metadata-protobuf'
 
 export default async function comments({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:video-comments')
+  const debug = extendDebug('flow:comments and reactions')
   debug('Started')
   api.enableDebugTxLogs()
 
@@ -42,9 +47,9 @@ export default async function comments({ api, query, env }: FlowProps): Promise<
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
-  const createMembersFixture = new CreateMembersFixture(api, query, 1, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(api, query, 3, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
-  const author = createMembersFixture.getCreatedItems()
+  const [channelOwner, ...participants] = createMembersFixture.getCreatedItems()
 
   // create channels and videos
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
@@ -55,28 +60,121 @@ export default async function comments({ api, query, env }: FlowProps): Promise<
     videoCount,
     channelCategoryIds[0],
     videoCategoryIds[0],
-    author[0]
+    channelOwner
   )
   await new FixtureRunner(createChannelsAndVideos).run()
   const { videosData } = createChannelsAndVideos.getCreatedItems()
 
   // Create comments
-  const comments: CommentParams[] = [
+  const comments: CreateCommentParams[] = [
     // Valid cases:
     {
       msg: {
         videoId: Long.fromNumber(videosData[0].videoId),
         body: 'Some text',
       },
-      asMember: author[1].memberId,
+      asMember: participants[0].memberId,
     },
-
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        body: 'Some text',
+      },
+      asMember: participants[1].memberId,
+    },
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[1].videoId),
+        body: 'Some text',
+      },
+      asMember: participants[0].memberId,
+    },
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[1].videoId),
+        body: 'Some text',
+      },
+      asMember: participants[1].memberId,
+    },
     // Invalid cases
   ]
 
   // check that comments on videos are working
   const createCommentsFixture = new CreateCommentsFixture(api, query, comments)
   await new FixtureRunner(createCommentsFixture).run()
+
+  const createdCommentsIds = await createCommentsFixture.getCreatedCommentsIds()
+
+  console.log(createdCommentsIds)
+
+  // Create comment reactions
+  const commentReactions: ReactCommentParams[] = [
+    // comment reactions:
+    {
+      msg: {
+        commentId: createdCommentsIds[0],
+        reactionId: 1,
+      },
+      asMember: participants[0].memberId,
+    },
+    {
+      msg: {
+        commentId: createdCommentsIds[0],
+        reactionId: 2,
+      },
+      asMember: participants[0].memberId,
+    },
+    {
+      msg: {
+        commentId: createdCommentsIds[0],
+        reactionId: 2,
+      },
+      asMember: participants[1].memberId,
+    },
+    // Revert video reactions:
+    {
+      msg: {
+        commentId: createdCommentsIds[0],
+        reactionId: 1,
+      },
+      asMember: participants[0].memberId,
+    },
+  ]
+
+  // check that reactions on videos are working
+  const reactToCommentsFixture = new ReactToCommentsFixture(api, query, commentReactions)
+  await new FixtureRunner(reactToCommentsFixture).run()
+
+  // Create video reactions
+  const videoReactions: ReactVideoParams[] = [
+    // Video reactions:
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        reaction: ReactVideo.Reaction.LIKE,
+      },
+      asMember: participants[0].memberId,
+    },
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        reaction: ReactVideo.Reaction.UNLIKE,
+      },
+      asMember: participants[1].memberId,
+    },
+    // Revert video reactions:
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        reaction: ReactVideo.Reaction.CANCEL,
+      },
+      asMember: participants[1].memberId,
+    },
+  ]
+
+  // check that reactions on videos are working
+  const reactToVideosFixture = new ReactToVideosFixture(api, query, videoReactions)
+  await new FixtureRunner(reactToVideosFixture).run()
 
   debug('Done')
 }
