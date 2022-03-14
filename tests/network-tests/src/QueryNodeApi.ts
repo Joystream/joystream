@@ -336,6 +336,22 @@ import {
   GetCommentDeletedEventsByEventIdsQuery,
   GetCommentDeletedEventsByEventIdsQueryVariables,
   GetCommentDeletedEventsByEventIds,
+  VideoReactionFieldsFragment,
+  GetVideoReactionsByIds,
+  GetVideoReactionsByIdsQuery,
+  GetVideoReactionsByIdsQueryVariables,
+  VideoReactedEventFieldsFragment,
+  GetVideoReactedEventsByEventIds,
+  GetVideoReactedEventsByEventIdsQuery,
+  GetVideoReactedEventsByEventIdsQueryVariables,
+  CommentReactedEventFieldsFragment,
+  GetCommentReactedEventsByEventIds,
+  GetCommentReactedEventsByEventIdsQuery,
+  GetCommentReactedEventsByEventIdsQueryVariables,
+  CommentReactionFieldsFragment,
+  GetCommentReactionsByIds,
+  GetCommentReactionsByIdsQuery,
+  GetCommentReactionsByIdsQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1202,5 +1218,37 @@ export class QueryNodeApi {
       GetCommentDeletedEventsByEventIdsQuery,
       GetCommentDeletedEventsByEventIdsQueryVariables
     >(GetCommentDeletedEventsByEventIds, { eventIds }, 'commentDeletedEvents')
+  }
+
+  public async getVideoReactedEvents(events: EventDetails[]): Promise<VideoReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactedEventsByEventIdsQuery,
+      GetVideoReactedEventsByEventIdsQueryVariables
+    >(GetVideoReactedEventsByEventIds, { eventIds }, 'videoReactedEvents')
+  }
+
+  public async getCommentReactedEvents(events: EventDetails[]): Promise<CommentReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentReactedEventsByEventIdsQuery,
+      GetCommentReactedEventsByEventIdsQueryVariables
+    >(GetCommentReactedEventsByEventIds, { eventIds }, 'commentReactedEvents')
+  }
+
+  public async getVideoReactionsByIds(ids: string[]): Promise<VideoReactionFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideoReactionsByIdsQuery, GetVideoReactionsByIdsQueryVariables>(
+      GetVideoReactionsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'videoReactions'
+    )
+  }
+
+  public async getCommentReactionsByIds(ids: string[]): Promise<CommentReactionFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCommentReactionsByIdsQuery, GetCommentReactionsByIdsQueryVariables>(
+      GetCommentReactionsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'commentReactions'
+    )
   }
 }
