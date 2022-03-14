@@ -6,6 +6,7 @@ use frame_support::traits::Currency;
 use sp_std::cmp::min;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::{IntoIterator, Iterator};
+use std::iter::FromIterator;
 use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
@@ -193,6 +194,7 @@ impl CreateChannelFixture {
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
                         is_hidden: false,
+                        paused_features: BTreeSet::new(),
                     },
                     self.params.clone(),
                 ))
@@ -241,7 +243,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
@@ -359,7 +361,7 @@ impl UpdateChannelFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(), // channel index starts at 1
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: None,
@@ -496,6 +498,7 @@ impl UpdateChannelFixture {
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
                             privilege_level: Zero::zero(),
                             is_hidden: false,
+                            paused_features: BTreeSet::new(),
                         },
                         self.params.clone(),
                     ))
@@ -935,6 +938,84 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             self.channel_id,
             self.rationale.clone(),
         ))
+    }
+}
+
+pub struct ChangeChannelFeaturesStatusAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    changes: ChannelFeatureStatusChanges,
+    rationale: Vec<u8>,
+}
+
+impl ChangeChannelFeaturesStatusAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            changes: BTreeMap::from_iter(vec![(
+                ChannelFeature::default(),
+                ChannelFeatureStatus::Paused,
+            )]),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_changes(self, changes: ChannelFeatureStatusChanges) -> Self {
+        Self { changes, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+
+        let actual_result = Content::change_channel_features_status_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.changes.clone(),
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let channel_post = ChannelById::<Test>::get(&self.channel_id);
+
+        if actual_result.is_ok() {
+            let mut expected_paused_features = channel_pre.paused_features;
+            for (feature, status) in self.changes.iter() {
+                if *status == ChannelFeatureStatus::Paused {
+                    expected_paused_features.insert(*feature);
+                } else {
+                    expected_paused_features.remove(feature);
+                }
+            }
+            assert_eq!(channel_post.paused_features, expected_paused_features);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelFeaturesStatusChangedByModerator(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.changes.clone(),
+                    self.rationale.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(channel_post, channel_pre);
+        }
     }
 }
 
@@ -1847,13 +1928,13 @@ pub fn assert_group_has_permissions_for_actions(
     }
     for action in ContentModerationAction::iter() {
         match action {
-            ContentModerationAction::PauseChannelFunctionality(..) => {
-                for pause_channel_func in PausedChannelFunctionality::iter() {
+            ContentModerationAction::ChangeChannelFeatureStatus(..) => {
+                for feature in ChannelFeature::iter() {
                     if !allowed_actions.contains(
-                        &ContentModerationAction::PauseChannelFunctionality(pause_channel_func),
+                        &ContentModerationAction::ChangeChannelFeatureStatus(feature),
                     ) {
                         assert_eq!(
-                                group.ensure_can_perform_action(ContentModerationAction::PauseChannelFunctionality(pause_channel_func), privilege_level),
+                                group.ensure_can_perform_action(ContentModerationAction::ChangeChannelFeatureStatus(feature), privilege_level),
                                 Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
                                 "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
                                 action.clone(),
@@ -2078,6 +2159,16 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
             post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
             video_reference: VideoId::one(),
         })
+        .call_and_assert(Ok(()));
+}
+
+pub fn pause_channel_feature(channel_id: ChannelId, feature: ChannelFeature) {
+    ChangeChannelFeaturesStatusAsModeratorFixture::default()
+        .with_channel_id(channel_id)
+        .with_changes(BTreeMap::from_iter(vec![(
+            feature,
+            ChannelFeatureStatus::Paused,
+        )]))
         .call_and_assert(Ok(()));
 }
 

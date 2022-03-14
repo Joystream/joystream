@@ -5,29 +5,37 @@ use strum_macros::EnumIter;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum PausedChannelFunctionality {
+pub enum ChannelFeature {
     ChannelFundsTransfer,
     CreatorCashout,
     VideoNftIssuance,
-    VideoNftStatusUpdate,
     VideoCreation,
     VideoUpdate,
     ChannelUpdate,
     CreatorTokenIssuance,
 }
 
-impl Default for PausedChannelFunctionality {
+impl Default for ChannelFeature {
     fn default() -> Self {
         Self::ChannelFundsTransfer
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum ChannelFeatureStatus {
+    Paused,
+    Active,
+}
+
+pub type ChannelFeatureStatusChanges = BTreeMap<ChannelFeature, ChannelFeatureStatus>;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum ContentModerationAction {
     HideVideo,
     HideChannel,
-    PauseChannelFunctionality(PausedChannelFunctionality),
+    ChangeChannelFeatureStatus(ChannelFeature),
     DeleteObject,
     DeleteVideo,
     DeleteChannel,

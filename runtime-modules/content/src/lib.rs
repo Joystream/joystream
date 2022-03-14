@@ -522,6 +522,7 @@ decl_module! {
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 privilege_level: Zero::zero(),
                 is_hidden: false,
+                paused_features: BTreeSet::new(),
             };
 
             // add channel to onchain state
@@ -548,6 +549,8 @@ decl_module! {
                 &actor,
                 &channel,
             )?;
+
+            channel.ensure_feature_not_paused::<T>(ChannelFeature::ChannelUpdate)?;
 
             // maybe update the reward account if actor is not a collaborator
             if let Some(reward_account) = params.reward_account.as_ref() {
@@ -631,6 +634,45 @@ decl_module! {
             ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
 
             Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
+        }
+
+        // extrinsics for pausing/re-enabling specified channel features
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn change_channel_features_status_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            channel_feature_status_changes: ChannelFeatureStatusChanges,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
+            // check that channel exists
+            let channel = Self::ensure_channel_validity(&channel_id)?;
+            let mut new_paused_features = channel.paused_features.clone();
+
+            // Check permissions for moderation actions
+            let mut actions = Vec::<ContentModerationAction>::new();
+            for (feature, status) in channel_feature_status_changes.iter() {
+                actions.push(ContentModerationAction::ChangeChannelFeatureStatus(*feature));
+                if *status == ChannelFeatureStatus::Paused {
+                    new_paused_features.insert(*feature);
+                } else {
+                    new_paused_features.remove(feature);
+                }
+            }
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions, channel.privilege_level)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features });
+
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelFeaturesStatusChangedByModerator(actor, channel_id, channel_feature_status_changes, rationale));
+
+            Ok(())
         }
 
         // extrinsics for channel deletion
@@ -817,6 +859,8 @@ decl_module! {
                 &channel,
             )?;
 
+            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoCreation)?;
+
             // next video id
             let video_id = NextVideoId::<T>::get();
 
@@ -881,6 +925,8 @@ decl_module! {
                 &actor,
                 &channel,
             )?;
+
+            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoUpdate)?;
 
             if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 let params = Self::construct_upload_parameters(
@@ -1509,6 +1555,8 @@ decl_module! {
             ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountIsNotSet);
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
+            channel.ensure_feature_not_paused::<T>(ChannelFeature::CreatorCashout)?;
+
             let cashout = item
                 .cumulative_payout_claimed
                 .saturating_sub(channel.cumulative_payout_earned);
@@ -1572,6 +1620,8 @@ decl_module! {
             let channel = Self::ensure_channel_validity(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+
+            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
 
             // The content owner will be..
             let nft_owner = if let Some(to) = to {
@@ -2588,6 +2638,12 @@ decl_event!(
             ContentActor,
             ChannelId,
             bool,
+            Vec<u8>, /* rationale */
+        ),
+        ChannelFeaturesStatusChangedByModerator(
+            ContentActor,
+            ChannelId,
+            ChannelFeatureStatusChanges,
             Vec<u8>, /* rationale */
         ),
 

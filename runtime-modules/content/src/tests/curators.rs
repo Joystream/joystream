@@ -79,14 +79,14 @@ fn curator_group_management() {
                 1,
                 BTreeSet::from_iter(vec![
                     ContentModerationAction::HideChannel,
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoCreation,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::VideoCreation,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoUpdate,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::VideoUpdate,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::ChannelUpdate,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::ChannelUpdate,
                     ),
                 ]),
             ),
@@ -98,29 +98,26 @@ fn curator_group_management() {
                     ContentModerationAction::DeleteObject,
                     ContentModerationAction::HideChannel,
                     ContentModerationAction::HideVideo,
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::ChannelFundsTransfer,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::ChannelFundsTransfer,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::CreatorCashout,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::CreatorCashout,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::CreatorTokenIssuance,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::CreatorTokenIssuance,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::ChannelUpdate,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::ChannelUpdate,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoCreation,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::VideoCreation,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoNftIssuance,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::VideoNftIssuance,
                     ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoNftStatusUpdate,
-                    ),
-                    ContentModerationAction::PauseChannelFunctionality(
-                        PausedChannelFunctionality::VideoUpdate,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        ChannelFeature::VideoUpdate,
                     ),
                 ]),
             ),

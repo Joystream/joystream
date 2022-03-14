@@ -89,6 +89,23 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, Chan
     pub privilege_level: ChannelPrivilegeLevel,
     // Whether the channel has been marked as hidden by a curator
     pub is_hidden: bool,
+    // List of channel features that have been paused by a curator
+    pub paused_features: BTreeSet<ChannelFeature>,
+}
+
+impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
+    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, ChannelPrivilegeLevel>
+{
+    pub fn ensure_feature_not_paused<T: Trait>(
+        &self,
+        channel_feautre: ChannelFeature,
+    ) -> DispatchResult {
+        ensure!(
+            !self.paused_features.contains(&channel_feautre),
+            Error::<T>::ChannelFeaturePaused
+        );
+        Ok(())
+    }
 }
 
 // Channel alias type for simplification.

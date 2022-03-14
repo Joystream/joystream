@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
+use strum::IntoEnumIterator;
 
 use super::curators;
 use super::fixtures::*;
@@ -1872,5 +1873,267 @@ fn successful_moderation_action_channel_visibility_change_by_lead() {
         SetChannelVisibilityAsModeratorFixture::default()
             .with_is_hidden(false)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - not in group
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_features_status_change_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_channel_features_status_change() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::ChangeChannelFeatureStatus(
+                    ChannelFeature::default(),
+                )]),
+            )]),
+        );
+        // As curator
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+        // As lead
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_features_status_change_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        // Give curator the access to change all channel features EXCEPT ChannelFeature::default()
+        let mut allowed_actions = BTreeSet::<ContentModerationAction>::new();
+        for f in ChannelFeature::iter() {
+            if f != ChannelFeature::default() {
+                allowed_actions.insert(ContentModerationAction::ChangeChannelFeatureStatus(f));
+            }
+        }
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(0, allowed_actions)]),
+        );
+        // As curator
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_features_status_change_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let channel_features_to_manage = BTreeSet::from_iter(vec![
+            ChannelFeature::VideoCreation,
+            ChannelFeature::VideoUpdate,
+            ChannelFeature::ChannelUpdate,
+        ]);
+        let allowed_actions = BTreeSet::from_iter(
+            channel_features_to_manage
+                .iter()
+                .map(|feature| ContentModerationAction::ChangeChannelFeatureStatus(*feature)),
+        );
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(0, allowed_actions)]),
+        );
+        // Set features to Paused
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_changes(ChannelFeatureStatusChanges::from_iter(
+                channel_features_to_manage
+                    .iter()
+                    .map(|feature| (*feature, ChannelFeatureStatus::Paused)),
+            ))
+            .call_and_assert(Ok(()));
+        // Set features to Active
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_changes(ChannelFeatureStatusChanges::from_iter(
+                channel_features_to_manage
+                    .iter()
+                    .map(|feature| (*feature, ChannelFeatureStatus::Active)),
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_features_status_change_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        // Set all features to Paused
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_changes(ChannelFeatureStatusChanges::from_iter(
+                ChannelFeature::iter().map(|feature| (feature, ChannelFeatureStatus::Paused)),
+            ))
+            .call_and_assert(Ok(()));
+        // Set all features to Active
+        ChangeChannelFeaturesStatusAsModeratorFixture::default()
+            .with_changes(ChannelFeatureStatusChanges::from_iter(
+                ChannelFeature::iter().map(|feature| (feature, ChannelFeatureStatus::Active)),
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/// Paused features
+
+#[test]
+fn channel_cannot_be_updated_when_channel_update_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+        pause_channel_feature(ChannelId::one(), ChannelFeature::ChannelUpdate);
+
+        // Try to update as owner
+        UpdateChannelFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        // Try to update as collaborator
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+#[test]
+fn video_cannot_created_when_channel_video_creation_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+        pause_channel_feature(ChannelId::one(), ChannelFeature::VideoCreation);
+
+        // Try to add video as owner
+        CreateVideoFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        // Try to add video as collaborator
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+#[test]
+fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        pause_channel_feature(ChannelId::one(), ChannelFeature::VideoNftIssuance);
+
+        // Try to issue video nft as owner
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                VideoId::one(),
+                None,
+                b"metablob".to_vec(),
+                None
+            ),
+            Err(Error::<Test>::ChannelFeaturePaused.into())
+        );
+        // Try to issue video nft as collaborator
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(COLLABORATOR_MEMBER_ID),
+                VideoId::one(),
+                None,
+                b"metablob".to_vec(),
+                None
+            ),
+            Err(Error::<Test>::ChannelFeaturePaused.into())
+        );
     })
 }
