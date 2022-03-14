@@ -24,7 +24,7 @@ fragment CommentDeletedEventFields on CommentDeletedEvent {
   }
 }
 
-fragment CommentDeletedEventFields on CommentPinnedEvent {
+fragment CommentPinnedEventFields on CommentPinnedEvent {
   id
   createdAt
   inBlock
@@ -37,6 +37,37 @@ fragment CommentDeletedEventFields on CommentPinnedEvent {
   }
 }
 
+fragment VideoReactedEventFields on VideoReactedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  reactionResult
+  reactingMember {
+    id
+  }
+}
+
+fragment CommentReactedEventFields on CommentReactedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+  }
+  reactionResult
+  reactingMember {
+    id
+  }
+}
 query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
   commentCreatedEvents(where: { id_in: $eventIds }) {
     ...CommentCreatedEventFields
@@ -50,7 +81,19 @@ query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
 }
 
 query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
-  pinnedCommentEvents(where: { id_in: $eventIds }) {
-    ...CommentDeletedEventFields
+  commentPinnedEvents(where: { id_in: $eventIds }) {
+    ...CommentPinnedEventFields
+  }
+}
+
+query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
+  videoReactedEvents(where: { id_in: $eventIds }) {
+    ...VideoReactedEventFields
+  }
+}
+
+query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
+  commentReactedEvents(where: { id_in: $eventIds }) {
+    ...CommentReactedEventFields
   }
 }

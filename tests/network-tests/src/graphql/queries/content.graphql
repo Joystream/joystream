@@ -111,7 +111,7 @@ fragment VideoCommentFields on Comment {
   }
 }
 
-fragment CommentReactionFields on Comment {
+fragment CommentReactionAndCountFields on Comment {
   reactions {
     id
     member {
@@ -121,6 +121,28 @@ fragment CommentReactionFields on Comment {
   reactionsCountByReactionId {
     reactionId
     count
+  }
+}
+
+fragment VideoReactionFields on VideoReaction {
+  id
+  reaction
+  member {
+    id
+  }
+  video {
+    id
+  }
+}
+
+fragment CommentReactionFields on CommentReaction {
+  id
+  reactionId
+  member {
+    id
+  }
+  comment {
+    id
   }
 }
 
@@ -195,6 +217,30 @@ query getCommentById($commentId: ID!) {
 
 query getReactionsByCommentId($commentId: ID!, $memberId: ID) {
   commentByUniqueInput(where: { id: $commentId }) {
+    ...CommentReactionAndCountFields
+  }
+}
+
+query getVideoReactionsByIds($ids: [ID!]) {
+  videoReactions(where: { id_in: $ids }) {
+    ...VideoReactionFields
+  }
+}
+
+query getCommentReactionsByIds($ids: [ID!]) {
+  commentReactions(where: { id_in: $ids }) {
     ...CommentReactionFields
+  }
+}
+
+query getVideoById($commentId: ID!) {
+  videoByUniqueInput(where: { id: $commentId }) {
+    ...VideoFields
+  }
+}
+
+query getVideosByIds($ids: [ID!]) {
+  videos(where: { id_in: $ids }) {
+    ...VideoFields
   }
 }
