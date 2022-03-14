@@ -3603,7 +3603,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn generate_new_storage_buckets(
+    fn update_storage_buckets(
         bucket_ids: &BTreeSet<T::StorageBucketId>,
         new_voucher_update: VoucherUpdate,
         op: &BagOperationParams<T>,
@@ -3661,7 +3661,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn generate_new_distribution_buckets(
+    fn update_distribution_buckets(
         bucket_ids: &BTreeSet<DistributionBucketId<T>>,
         op: &BagOperationParams<T>,
     ) -> BTreeMap<DistributionBucketId<T>, DistributionBucket<T>> {
@@ -3764,10 +3764,10 @@ impl<T: Trait> Module<T> {
 
         // new candidate storage buckets
         let new_storage_buckets =
-            Self::generate_new_storage_buckets(&stored_by, new_voucher_update, &bag_op.params)?;
+            Self::update_storage_buckets(&stored_by, new_voucher_update, &bag_op.params)?;
         // new candidate distribution buckets
         let new_distribution_buckets =
-            Self::generate_new_distribution_buckets(&distributed_by, &bag_op.params);
+            Self::update_distribution_buckets(&distributed_by, &bag_op.params);
 
         // check that user or treasury account have enough balance
         let (net_prize, storage_fee) = Self::ensure_sufficient_balance(
