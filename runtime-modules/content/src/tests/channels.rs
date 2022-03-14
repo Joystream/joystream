@@ -1510,30 +1510,6 @@ fn unsuccessful_moderation_action_channel_deletion_by_curator_without_permission
 }
 
 #[test]
-fn unsuccessful_moderation_action_channel_assets_deletion_by_curator_without_permissions() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let group_id = curators::add_curator_to_new_group_with_permissions(
-            DEFAULT_CURATOR_ID,
-            BTreeMap::from_iter(vec![(
-                0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
-            )]),
-        );
-
-        DeleteChannelAsModeratorFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
-    })
-}
-
-#[test]
 fn unsuccessful_moderation_action_non_existing_channel_deletion() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1571,10 +1547,7 @@ fn unsuccessful_moderation_action_channel_with_videos_deletion() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![
-                    ContentModerationAction::DeleteChannel,
-                    ContentModerationAction::DeleteObject,
-                ]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1603,10 +1576,7 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![
-                    ContentModerationAction::DeleteChannel,
-                    ContentModerationAction::DeleteObject,
-                ]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1661,10 +1631,7 @@ fn successful_moderation_action_channel_with_assets_deletion_by_curator() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![
-                    ContentModerationAction::DeleteChannel,
-                    ContentModerationAction::DeleteObject,
-                ]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
             )]),
         );
 
@@ -1778,35 +1745,6 @@ fn unsuccessful_moderation_action_non_existing_channel_visibility_change() {
         // As lead
         SetChannelVisibilityAsModeratorFixture::default()
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_moderation_action_channel_visibility_redundant_change() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
-            DEFAULT_CURATOR_ID,
-            BTreeMap::from_iter(vec![(
-                0,
-                BTreeSet::from_iter(vec![ContentModerationAction::HideChannel]),
-            )]),
-        );
-        // As curator
-        SetChannelVisibilityAsModeratorFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_is_hidden(false)
-            .call_and_assert(Err(Error::<Test>::VisibilityStatusUnchanged.into()));
-        // As lead
-        SetChannelVisibilityAsModeratorFixture::default()
-            .with_is_hidden(false)
-            .call_and_assert(Err(Error::<Test>::VisibilityStatusUnchanged.into()));
     })
 }
 

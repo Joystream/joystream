@@ -193,7 +193,6 @@ impl CreateChannelFixture {
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
-                        is_hidden: false,
                         paused_features: BTreeSet::new(),
                     },
                     self.params.clone(),
@@ -497,7 +496,6 @@ impl UpdateChannelFixture {
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
                             privilege_level: Zero::zero(),
-                            is_hidden: false,
                             paused_features: BTreeSet::new(),
                         },
                         self.params.clone(),
@@ -1055,8 +1053,6 @@ impl SetChannelVisibilityAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
-
         let actual_result = Content::set_channel_visibility_as_moderator(
             Origin::signed(self.sender.clone()),
             self.actor.clone(),
@@ -1067,11 +1063,7 @@ impl SetChannelVisibilityAsModeratorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let channel_post = ChannelById::<Test>::get(&self.channel_id);
-
         if actual_result.is_ok() {
-            assert_eq!(channel_post.is_hidden, self.is_hidden);
-            assert_ne!(channel_post.is_hidden, channel_pre.is_hidden);
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelVisibilitySetByModerator(
@@ -1081,8 +1073,6 @@ impl SetChannelVisibilityAsModeratorFixture {
                     self.rationale.clone(),
                 ))
             );
-        } else {
-            assert_eq!(channel_post, channel_pre);
         }
     }
 }
@@ -1123,8 +1113,6 @@ impl SetVideoVisibilityAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let video_pre = VideoById::<Test>::get(&self.video_id);
-
         let actual_result = Content::set_video_visibility_as_moderator(
             Origin::signed(self.sender.clone()),
             self.actor.clone(),
@@ -1135,11 +1123,7 @@ impl SetVideoVisibilityAsModeratorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let video_post = VideoById::<Test>::get(&self.video_id);
-
         if actual_result.is_ok() {
-            assert_eq!(video_post.is_hidden, self.is_hidden);
-            assert_ne!(video_post.is_hidden, video_pre.is_hidden);
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::VideoVisibilitySetByModerator(
@@ -1149,8 +1133,6 @@ impl SetVideoVisibilityAsModeratorFixture {
                     self.rationale.clone(),
                 ))
             );
-        } else {
-            assert_eq!(video_post, video_pre);
         }
     }
 }

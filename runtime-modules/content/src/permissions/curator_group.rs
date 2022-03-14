@@ -36,7 +36,6 @@ pub enum ContentModerationAction {
     HideVideo,
     HideChannel,
     ChangeChannelFeatureStatus(ChannelFeature),
-    DeleteObject,
     DeleteVideo,
     DeleteChannel,
 }

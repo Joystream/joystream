@@ -276,10 +276,7 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
             // Ensure permissions_by_level map max. allowed size is not exceeded
-            ensure!(
-                permissions_by_level.len() <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
-                Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
-            );
+            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
             //
             // == MUTATION SAFE ==
@@ -310,10 +307,7 @@ decl_module! {
             // Ensure curator group under provided curator_group_id already exist
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
             // Ensure permissions_by_level map max. allowed size is not exceeded
-            ensure!(
-                permissions_by_level.len() <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
-                Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
-            );
+            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
             //
             // == MUTATION SAFE ==
@@ -521,7 +515,6 @@ decl_module! {
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 privilege_level: Zero::zero(),
-                is_hidden: false,
                 paused_features: BTreeSet::new(),
             };
 
@@ -727,11 +720,7 @@ decl_module! {
             let channel = Self::ensure_channel_validity(&channel_id)?;
 
             // Permissions check
-            let actions_to_perform = if num_objects_to_delete == 0 {
-                vec![ContentModerationAction::DeleteChannel]
-            } else {
-                vec![ContentModerationAction::DeleteChannel, ContentModerationAction::DeleteObject]
-            };
+            let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
             // check that channel videos are 0
@@ -766,15 +755,12 @@ decl_module! {
             let channel = Self::ensure_channel_validity(&channel_id)?;
 
             // Permissions check
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, vec![ContentModerationAction::HideChannel].as_ref(), channel.privilege_level)?;
-
-            // Ensure that the new visibility is not equal to the current visibility
-            ensure!(channel.is_hidden != is_hidden, Error::<T>::VisibilityStatusUnchanged);
+            let actions_to_perform = vec![ContentModerationAction::HideChannel];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
             //
             // == MUTATION SAFE ==
             //
-            ChannelById::<T>::mutate(channel_id, |channel| { channel.is_hidden = is_hidden });
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelVisibilitySetByModerator(actor, channel_id, is_hidden, rationale));
@@ -886,7 +872,6 @@ decl_module! {
                 video_post_id:  None,
                 /// Newly created video has no nft
                 nft_status: None,
-                is_hidden: false,
             };
 
             // add it to the onchain state
@@ -1038,11 +1023,7 @@ decl_module! {
             let channel = ChannelById::<T>::get(channel_id);
 
             // Permissions check
-            let actions_to_perform = if assets_to_remove.is_empty() {
-                vec![ContentModerationAction::DeleteVideo]
-            } else {
-                vec![ContentModerationAction::DeleteVideo, ContentModerationAction::DeleteObject]
-            };
+            let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
             // ensure video can be removed
@@ -1084,15 +1065,12 @@ decl_module! {
             let channel = ChannelById::<T>::get(channel_id);
 
             // Permissions check
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, vec![ContentModerationAction::HideVideo].as_ref(), channel.privilege_level)?;
-
-            // Ensure that the new visibility is not equal to the current visibility
-            ensure!(video.is_hidden != is_hidden, Error::<T>::VisibilityStatusUnchanged);
+            let actions_to_perform = vec![ContentModerationAction::HideVideo];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
             //
             // == MUTATION SAFE ==
             //
-            VideoById::<T>::mutate(video_id, |video| { video.is_hidden = is_hidden });
 
             // deposit event
             Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
@@ -2565,6 +2543,17 @@ impl<T: Trait> Module<T> {
         // remove channel from on chain state
         ChannelById::<T>::remove(channel_id);
 
+        Ok(())
+    }
+
+    fn ensure_permissions_by_level_map_size_not_exceeded(
+        permissions_by_level: &ModerationPermissionsByLevel<T>,
+    ) -> DispatchResult {
+        ensure!(
+            permissions_by_level.len()
+                <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
+            Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
+        );
         Ok(())
     }
 
