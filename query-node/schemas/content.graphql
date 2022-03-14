@@ -75,9 +75,6 @@ type Channel @entity {
 
   "List of members blocked from from participating on any video of the channel."
   bannedMembers: [Membership!]
-
-  "Is comment section enabled (true if enabled)"
-  isCommentSectionEnabled: Boolean!
 }
 
 type VideoCategory @entity {
@@ -233,7 +230,7 @@ enum VideoReactionOptions {
 }
 
 type VideoReaction @entity {
-  "Unique identifier"
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "The Reaction"
@@ -247,7 +244,7 @@ type VideoReaction @entity {
 }
 
 type CommentReaction @entity {
-  "Unique identifier"
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "The Reaction id"
@@ -272,7 +269,7 @@ enum CommentStatus {
 }
 
 type CommentReactionsCountByReactionId @entity {
-  "Unique identifier"
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "The reaction id"
@@ -286,7 +283,7 @@ type CommentReactionsCountByReactionId @entity {
 }
 
 type Comment @entity {
-  "Unique identifier"
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "Author of the video comment"
