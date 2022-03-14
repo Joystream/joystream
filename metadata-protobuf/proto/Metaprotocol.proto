@@ -19,7 +19,7 @@ message ReactVideo {
 // reacting, unreacting to a comment
 message ReactComment {
     // ID of the comment to react
-    required uint64 comment_id = 1;
+    required string comment_id = 1;
 
     // ID of the selected reaction
     required uint32 reaction_id = 2;
@@ -31,7 +31,7 @@ message CreateComment {
     required uint64 video_id = 1;
 
     // ID of comment member wants to reply (empty if new comment is parent comment)
-    optional uint64 parent_comment_id = 2;
+    optional string parent_comment_id = 2;
 
     // Comment text
     required string body = 3;
@@ -43,7 +43,7 @@ message EditComment {
     required uint64 video_id = 1;
 
     // ID of the comment whose text is being edited
-    required uint64 comment_id = 3;
+    required string comment_id = 3;
 
     // New comment body
     required string new_body = 4;
@@ -55,7 +55,7 @@ message DeleteComment {
     required uint64 video_id = 1;
 
     // ID of the comment which will be deleted
-    required uint64 comment_id = 2;
+    required string comment_id = 2;
 }
 
 // pin comment on a video by channel owner
@@ -64,7 +64,7 @@ message PinOrUnpinComment {
     required uint64 video_id = 1;
 
     // ID of the comment which will be pinned
-    required uint64 comment_id = 2;
+    required string comment_id = 2;
 
     enum Option {
         PIN = 0; // Pin comment on video (nothing happens if comment is already pinned)
@@ -82,7 +82,7 @@ message DeleteCommentModerator {
     required uint64 video_id = 1;
 
     // ID of comment that will be deleted by moderator
-    required uint64 comment_id = 2;
+    required string comment_id = 2;
 
     // why moderator wants to delete this comment
     required string rationale = 3;
@@ -98,17 +98,6 @@ message BanOrUnbanMemberFromChannel {
     }
 
     // Selected option to ban or unban member from the channel
-    required Option option = 2;
-}
-
-// Enable or disable comment section for all videos of channel
-message EnableOrDisableCommentSection {
-    enum Option {
-        ENABLE = 0; // Enable comment section (nothing happens in it is already enabled)
-        DISABLE = 1; // Disable comment section (nothing happens in it is already disabled)
-    }
-
-    // Selected option to enable or disable comment section
     required Option option = 2;
 }
 
@@ -169,7 +158,6 @@ message ChannelOwnerRemarked {
         PinOrUnpinComment pin_or_unpin_comment = 1;
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         EnableOrDisableReactionsOnVideo enable_or_disable_reactions_on_video = 3;
-        EnableOrDisableCommentSection enable_or_disable_comment_section = 4;
         EnableOrDisableCommentSectionOfVideo enable_or_disable_comment_section_of_video = 5;
     }
 }

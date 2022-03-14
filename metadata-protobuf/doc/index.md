@@ -32,7 +32,6 @@
     - [DeleteComment](#.DeleteComment)
     - [DeleteCommentModerator](#.DeleteCommentModerator)
     - [EditComment](#.EditComment)
-    - [EnableOrDisableCommentSection](#.EnableOrDisableCommentSection)
     - [EnableOrDisableCommentSectionOfVideo](#.EnableOrDisableCommentSectionOfVideo)
     - [EnableOrDisableReactionsOnVideo](#.EnableOrDisableReactionsOnVideo)
     - [MemberRemarked](#.MemberRemarked)
@@ -41,7 +40,6 @@
     - [ReactVideo](#.ReactVideo)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
-    - [EnableOrDisableCommentSection.Option](#.EnableOrDisableCommentSection.Option)
     - [EnableOrDisableCommentSectionOfVideo.Option](#.EnableOrDisableCommentSectionOfVideo.Option)
     - [EnableOrDisableReactionsOnVideo.Option](#.EnableOrDisableReactionsOnVideo.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
@@ -383,7 +381,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | enable_or_disable_reactions_on_video | [EnableOrDisableReactionsOnVideo](#EnableOrDisableReactionsOnVideo) | optional |  |
-| enable_or_disable_comment_section | [EnableOrDisableCommentSection](#EnableOrDisableCommentSection) | optional |  |
 | enable_or_disable_comment_section_of_video | [EnableOrDisableCommentSectionOfVideo](#EnableOrDisableCommentSectionOfVideo) | optional |  |
 
 
@@ -400,7 +397,7 @@ create comment
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
-| parent_comment_id | [uint64](#uint64) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
+| parent_comment_id | [string](#string) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
 | body | [string](#string) | required | Comment text |
 
 
@@ -417,7 +414,7 @@ delete comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of the comment which will be deleted |
+| comment_id | [string](#string) | required | ID of the comment which will be deleted |
 
 
 
@@ -433,7 +430,7 @@ delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of comment that will be deleted by moderator |
+| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
 | rationale | [string](#string) | required | why moderator wants to delete this comment |
 
 
@@ -450,23 +447,8 @@ edit comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of the comment whose text is being edited |
+| comment_id | [string](#string) | required | ID of the comment whose text is being edited |
 | new_body | [string](#string) | required | New comment body |
-
-
-
-
-
-
-<a name=".EnableOrDisableCommentSection"></a>
-
-### EnableOrDisableCommentSection
-Enable or disable comment section for all videos of channel
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| option | [EnableOrDisableCommentSection.Option](#EnableOrDisableCommentSection.Option) | required | Selected option to enable or disable comment section |
 
 
 
@@ -533,7 +515,7 @@ pin comment on a video by channel owner
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [uint64](#uint64) | required | ID of the comment which will be pinned |
+| comment_id | [string](#string) | required | ID of the comment which will be pinned |
 | option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to ban or unban member from the channel |
 
 
@@ -549,7 +531,7 @@ reacting, unreacting to a comment
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| comment_id | [uint64](#uint64) | required | ID of the comment to react |
+| comment_id | [string](#string) | required | ID of the comment to react |
 | reaction_id | [uint32](#uint32) | required | ID of the selected reaction |
 
 
@@ -584,18 +566,6 @@ reacting, unreacting, and changing reaction to video
 | ---- | ------ | ----------- |
 | BAN | 0 | Ban member (nothing happens if member is already banned) |
 | UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
-
-
-
-<a name=".EnableOrDisableCommentSection.Option"></a>
-
-### EnableOrDisableCommentSection.Option
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENABLE | 0 | Enable comment section (nothing happens in it is already enabled) |
-| DISABLE | 1 | Disable comment section (nothing happens in it is already disabled) |
 
 
 
