@@ -112,10 +112,12 @@ class StorageDataObjectChangeListener_ThumbnailPhoto implements IListener<Storag
     oldValue: StorageDataObject | undefined,
     newValue: StorageDataObject
   ): IChangePair<IAvcChange> | undefined
+
   hasValueChanged(
     oldValue: StorageDataObject,
     newValue: StorageDataObject | undefined
   ): IChangePair<IAvcChange> | undefined
+
   hasValueChanged(oldValue: StorageDataObject, newValue: StorageDataObject): IChangePair<IAvcChange> | undefined {
     const oldVideo = oldValue?.videoThumbnail
     const newVideo = newValue?.videoThumbnail
@@ -143,10 +145,12 @@ class StorageDataObjectChangeListener_Media implements IListener<StorageDataObje
     oldValue: StorageDataObject | undefined,
     newValue: StorageDataObject
   ): IChangePair<IAvcChange> | undefined
+
   hasValueChanged(
     oldValue: StorageDataObject,
     newValue: StorageDataObject | undefined
   ): IChangePair<IAvcChange> | undefined
+
   hasValueChanged(oldValue: StorageDataObject, newValue: StorageDataObject): IChangePair<IAvcChange> | undefined {
     const oldVideo = oldValue?.videoMedia
     const newVideo = newValue?.videoMedia

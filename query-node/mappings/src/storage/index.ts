@@ -18,7 +18,6 @@ import {
   StorageDataObject,
   StorageSystemParameters,
   GeoCoordinates,
-  Video,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
@@ -43,7 +42,6 @@ import {
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
 } from './utils'
-import { In } from 'typeorm'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
@@ -251,10 +249,10 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
   ): void {
     const ids = entities.map((entity) => entity.id.toString())
 
-    for (let entity of entities) {
+    for (const entity of entities) {
       updateEntity(entity)
 
-      for (let relation of relations) {
+      for (const relation of relations) {
         const target = relation.reduce((acc, relationPart) => {
           if (!acc) {
             return acc
