@@ -478,15 +478,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let upload_parameters = UploadParameters::<T> {
+                bag_id: Self::bag_id_for_channel(&channel_id),
+                object_creation_list: params.assets_to_upload.clone()
+                    .map_or(Default::default(), |assets| assets.object_creation_list),
+                deletion_prize_source_account_id: sender.clone(),
+                expected_data_size_fee: params.assets_to_upload.clone()
+                    .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+            };
+
             Storage::<T>::upload_and_delete_data_objects(
-                UploadParameters::<T> {
-                    bag_id: Self::bag_id_for_channel(&channel_id),
-                    object_creation_list: params.assets_to_upload.clone()
-                        .map_or(Default::default(), |assets| assets.object_creation_list),
-                    deletion_prize_source_account_id: sender.clone(),
-                    expected_data_size_fee: params.assets_to_upload.clone()
-                        .map_or(Default::default(), |assets| assets.expected_data_size_fee)
-                },
+                upload_parmaters,
                 params.assets_to_remove.clone(),
             )?;
 
@@ -728,15 +730,17 @@ decl_module! {
             //
 
             // upload/delete video assets from storage with commit or rollback semantics
+            let upload_parameters = UploadParameters::<T> {
+                bag_id: Self::bag_id_for_channel(&channel_id),
+                object_creation_list: params.assets_to_upload.clone()
+                    .map_or(Default::default(), |assets| assets.object_creation_list),
+                deletion_prize_source_account_id: sender.clone(),
+                expected_data_size_fee: params.assets_to_upload.clone()
+                    .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+            };
+
             Storage::<T>::upload_and_delete_data_objects(
-                UploadParameters::<T> {
-                    bag_id: Self::bag_id_for_channel(&channel_id),
-                    object_creation_list: params.assets_to_upload.clone()
-                        .map_or(Default::default(), |assets| assets.object_creation_list),
-                    deletion_prize_source_account_id: sender.clone(),
-                    expected_data_size_fee: params.assets_to_upload.clone()
-                        .map_or(Default::default(), |assets| assets.expected_data_size_fee)
-                },
+                upload_parameters,
                 params.assets_to_remove.clone(),
                 )?;
 
