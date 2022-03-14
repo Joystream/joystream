@@ -359,6 +359,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 parameter_types! {
@@ -448,6 +451,12 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
         0
     }
     fn leave_role(_: u32) -> Weight {
+        0
+    }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
         0
     }
 }
@@ -609,6 +618,12 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }

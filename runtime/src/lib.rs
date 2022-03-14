@@ -38,7 +38,6 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
@@ -69,7 +68,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -518,9 +517,9 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const DefaultBudgetIncrement: u64 = 1000;
-    pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -642,33 +641,8 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        StorageWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_exists(&worker_id)
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        DistributionWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: ActorId,
-    ) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
-    }
+    type StorageWorkingGroup = StorageWorkingGroup;
+    type DistributionWorkingGroup = DistributionWorkingGroup;
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -759,10 +733,10 @@ parameter_types! {
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const GatewayRewardPeriod: u32 = 14400 + 50;
-    pub const DistributionRewardPeriod: u32 = 14400 + 50;
     pub const OperationsAlphaRewardPeriod: u32 = 14400 + 60;
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
+    pub const DistributionRewardPeriod: u32 = 14400 + 90;
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
@@ -1025,7 +999,8 @@ impl joystream_utility::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+    // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
 }
 
 impl proposals_codex::Trait for Runtime {
