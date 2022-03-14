@@ -573,7 +573,6 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   const { member, video } = await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
 
   // Ensure if planned auction period would be extended
-  console.log(`extendsAuction.valueOf()`, extendsAuction.valueOf())
   if (extendsAuction.valueOf() === true) {
     const { auction } = await getCurrentAuctionFromVideo(
       store,
