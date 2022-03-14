@@ -63,6 +63,7 @@ pub trait WeightInfo {
     fn terminate_bounty() -> Weight;
     fn end_working_period() -> Weight;
     fn veto_bounty() -> Weight;
+    fn switch_oracle_to_council_by_council_approval_successful() -> Weight;
     fn switch_oracle_to_council_by_oracle_member() -> Weight;
     fn switch_oracle_to_member_by_oracle_member() -> Weight;
     fn switch_oracle_to_member_by_oracle_council() -> Weight;
@@ -72,14 +73,13 @@ pub trait WeightInfo {
     fn withdraw_funding_by_member() -> Weight;
     fn withdraw_funding_by_council() -> Weight;
     fn announce_work_entry(i: u32) -> Weight;
-    fn withdraw_work_entry() -> Weight;
     fn submit_work(i: u32) -> Weight;
     fn submit_oracle_judgment_by_council_all_winners(i: u32) -> Weight;
-    fn submit_oracle_judgment_by_council_all_rejected(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_council_all_rejected(i: u32, j: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
-    fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_member_all_rejected(i: u32, j: u32) -> Weight;
     fn withdraw_work_entrant_funds() -> Weight;
-    fn work_entrants_stake_account_action(i: u32, j: u32) -> Weight;
+    fn unlock_work_entrant_stake() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -94,7 +94,7 @@ use serde::{Deserialize, Serialize};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, fail, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::{traits::AccountIdConversion, ModuleId};
@@ -425,19 +425,20 @@ pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
 
 /// Defines the oracle judgment for the work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OracleWorkEntryJudgment<Balance> {
     /// The work entry is selected as a winner.
     Winner { reward: Balance },
 
     /// The work entry is considered harmful. The stake will be slashed.
-    Rejected,
-}
+    Rejected {
+        ///The percent share (0 - 1) to slash.
+        slashing_share: Perbill,
 
-impl<Balance> Default for OracleWorkEntryJudgment<Balance> {
-    fn default() -> Self {
-        Self::Rejected
-    }
+        /// After slash takes place the rest of the locked balance will be unlocked,
+        /// the council has the option to give description why slash happened.
+        action_justification: Option<Vec<u8>>,
+    },
 }
 
 impl<Balance> OracleWorkEntryJudgment<Balance> {
@@ -445,18 +446,6 @@ impl<Balance> OracleWorkEntryJudgment<Balance> {
     pub(crate) fn is_winner(&self) -> bool {
         matches!(*self, Self::Winner { .. })
     }
-}
-
-/// Defines how much a failed work entry should be slashed by the council.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct WorkEntrantStakeAccountAction {
-    ///The percent share (0 - 1) to slash.
-    slashing_share: Perbill,
-
-    /// After slash takes place the rest of the locked balance will be unlocked,
-    /// the council has the option to give description why slash happened.
-    action_justification: Option<Vec<u8>>,
 }
 
 /// Balance alias for `balances` module.
@@ -475,10 +464,6 @@ pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::EntryId, BalanceOf<T
 
 /// The collection of the oracle judgments for the work entries.
 pub type OracleJudgment<EntryId, Balance> = BTreeMap<EntryId, OracleWorkEntryJudgment<Balance>>;
-
-/// The collection of the slash amounts to be applied by the council to work entries.
-pub type WorkEntrantStakeAccountActionMap<EntryId> =
-    BTreeMap<EntryId, WorkEntrantStakeAccountAction>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -641,19 +626,15 @@ decl_event! {
         /// - oracle (caller)
         WorkSubmissionPeriodEnded(BountyId, BountyActor<MemberId>),
 
-        /// Work entry stake account action.
+        /// Work entry stake unlocked.
         /// Params:
         /// - bounty ID
         /// - entry ID
-        /// - slashing share
-        /// - slashing amount
-        /// - action justification text optional
-        WorkEntrantStakeAccountAction(
+        /// - stake account
+        WorkEntrantStakeUnlocked(
             BountyId,
             EntryId,
-            Perbill,
-            Balance,
-            Option<Vec<u8>>),
+            AccountId),
     }
 }
 
@@ -775,21 +756,17 @@ decl_error! {
         ///Cannot withdraw cherry and oracle reward from bounty account, because of insufficient balance,
         NoBountyBalanceToOracleRewardAndCherryWithdrawal,
 
+        ///Cannot withdraw cherry from bounty account, because of insufficient balance,
+        NoBountyBalanceToCherryWithdrawal,
+
         ///Cannot withdraw oracle reward from bounty account, because of insufficient balance,
         NoBountyBalanceToOracleRewardWithdrawal,
 
-        ///Council cannot slash an entry that is winner.
-        WorkEntryMustBeJudgedAsRejected,
-
-        ///Council cannot slash an entry that hasn't been judged
-        WorkEntryMustBeJudged,
-
-        ///Council cannot terminate a bounty when there are active entries still left
-        ///Call Switch oracle and then judge those entries, or submit Judgment if you already an oracle
-        AllWorkEntriesMustBeJudgedBeforeTerminatingBounty,
-
         ///Worker tried to access a work entry that doesn't belong to him
-        WorkEntryDoesntBelongToWorker
+        WorkEntryDoesntBelongToWorker,
+
+        ///Worker tried to access a work entry that already is judged
+        CannotUnlockWorkEntryAlreadyJudged
     }
 }
 
@@ -1043,11 +1020,10 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            ensure!(current_bounty_stage == BountyStage::WorkSubmission,
+            ensure!(matches!(current_bounty_stage,
+                BountyStage::WorkSubmission|
+                BountyStage::Judgment),
                 Self::unexpected_bounty_stage_error(current_bounty_stage));
-
-            ensure!(bounty.active_work_entry_count == 0,
-                Error::<T>::AllWorkEntriesMustBeJudgedBeforeTerminatingBounty);
 
             let account_id = Self::bounty_account_id(bounty_id);
             let amount =
@@ -1082,7 +1058,8 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::switch_oracle_to_council_by_oracle_member()
         .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_member())
         .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_council())
-        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_not_oracle_council())]
+        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_not_oracle_council())
+        .max(WeightInfoBounty::<T>::switch_oracle_to_council_by_council_approval_successful())]
         pub fn switch_oracle(
             origin,
             new_oracle: BountyActor<MemberId<T>>,
@@ -1264,41 +1241,6 @@ decl_module! {
             ));
         }
 
-        /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_work_entry()]
-        pub fn withdraw_work_entry(
-            origin,
-            member_id: MemberId<T>,
-            bounty_id: T::BountyId,
-            entry_id: T::EntryId,
-        ) {
-            T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
-
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
-
-            ensure!(entry.member_id == member_id,
-                Error::<T>::WorkEntryDoesntBelongToWorker);
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::remove_work_entry(&bounty_id, &entry_id);
-
-            Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
-        }
-
         /// Submit work for a bounty.
         /// # <weight>
         ///
@@ -1382,7 +1324,9 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkSubmissionPeriodEnded(bounty_id, current_oracle.clone()));
         }
 
-        /// Submits an oracle judgment for a bounty.
+        /// Submits an oracle judgment for a bounty, slashing the entries rejected 
+        /// by an arbitrary percentage and rewarding the winners by an arbitrary amount 
+        /// (not surpassing the total fund amount)
         /// # <weight>
         ///
         /// ## weight
@@ -1406,34 +1350,28 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::Judgment)?;
+            //Checks if there are sufficient funds to safely perform oracle cherry withdrawal
+            let account_id = Self::bounty_account_id(bounty_id);
 
             Self::validate_judgment(&bounty, &judgment)?;
 
             // Lookup for any winners in the judgment.
             let successful_bounty = Self::judgment_has_winners(&judgment);
-
-            BountyActorManager::<T>::get_bounty_actor_manager(
-                bounty.creation_params.oracle.clone(),
-            )?;
-
-            //Checks if there are sufficient funds to safely perform oracle cherry withdrawal
-            let account_id = Self::bounty_account_id(bounty_id);
             let amount =
                 bounty.creation_params.oracle_reward + bounty.creation_params.cherry + bounty.total_funding;
+            let has_balance = Self::check_balance_for_account(amount, &account_id);
+
             //
             // == MUTATION SAFE ==
             //
 
             // Return a cherry to a creator.
             if successful_bounty {
-                ensure!(Self::check_balance_for_account(amount, &account_id),
-                    Error::<T>::NoBountyBalanceToOracleRewardAndCherryWithdrawal);
-
+                ensure!(has_balance, Error::<T>::NoBountyBalanceToOracleRewardAndCherryWithdrawal);
                 Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
             }
             else{
-                ensure!(Self::check_balance_for_account(amount, &account_id),
-                    Error::<T>::NoBountyBalanceToOracleRewardWithdrawal);
+                ensure!(has_balance, Error::<T>::NoBountyBalanceToOracleRewardWithdrawal);
             }
 
             Self::withdraw_oracle_reward_to_oracle(bounty_id, &bounty)?;
@@ -1449,18 +1387,29 @@ decl_module! {
                 // Update work entries for winners.
                 match *work_entry_judgment{
                     OracleWorkEntryJudgment::Winner{ .. } => {
+
                         <Entries<T>>::mutate(entry_id, |entry| {
-                            entry.oracle_judgment_result = Some(*work_entry_judgment);
+                            entry.oracle_judgment_result = Some(work_entry_judgment.clone());
                         });
 
                         let entry = Self::entries(entry_id);
                         // Unstake the full work entry state.
                         T::StakingHandler::unlock(&entry.staking_account_id);
                     },
-                    OracleWorkEntryJudgment::Rejected => {
-                        <Entries<T>>::mutate(entry_id, |entry| {
-                            entry.oracle_judgment_result = Some(*work_entry_judgment);
-                        });
+                    OracleWorkEntryJudgment::Rejected{
+                        slashing_share,
+                        ..
+                    } => {
+                        let entry = Self::entries(entry_id);
+                        let slashing_amount = slashing_share * bounty.creation_params.entrant_stake;
+
+                        if slashing_amount > Zero::zero() {
+                            T::StakingHandler::slash(&entry.staking_account_id, Some(slashing_amount));
+                        }
+
+                        T::StakingHandler::unlock(&entry.staking_account_id);
+
+                        Self::remove_work_entry(&bounty_id, &entry_id);
                     }
                 }
             }
@@ -1527,24 +1476,24 @@ decl_module! {
             }
         }
 
-        ///Work entrants stake account action.
-        ///When a bounty fails with work entries, the council will decide if the staking accounts
-        ///related to those entries should be slashed or unslocked
+        ///Unlocks the stake related to a work entry
+        ///After the oracle makes the judgment or the council terminates the bounty by calling terminate_bounty(...), 
+        ///each worker whose entry has not been judged, can unlock the totality of their stake.
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N)`
-        /// - `N` is the work_data length,
+        /// `O (1)`
         /// - db:
-        ///    - `O(N)`
+        ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::work_entrants_stake_account_action_weight(&stake_account_action)]
-        pub fn work_entrants_stake_account_action(
+        #[weight = WeightInfoBounty::<T>::unlock_work_entrant_stake()]
+        pub fn unlock_work_entrant_stake(
             origin,
+            member_id: MemberId<T>,
             bounty_id: T::BountyId,
-            stake_account_action: WorkEntrantStakeAccountActionMap<T::EntryId>,
+            entry_id: T::EntryId,
         ) {
-            ensure_root(origin)?;
+            T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1557,37 +1506,30 @@ decl_module! {
                 Self::unexpected_bounty_stage_error(current_bounty_stage)
             );
 
-            let staking_balance = bounty.creation_params.entrant_stake;
-            let entries = Self::validate_work_entries_to_slash(stake_account_action)?;
+            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+
+            ensure!(entry.member_id == member_id,
+                Error::<T>::WorkEntryDoesntBelongToWorker);
+
+            ensure!(entry.oracle_judgment_result.is_none(),
+                Error::<T>::CannotUnlockWorkEntryAlreadyJudged);
 
             //
             // == MUTATION SAFE ==
             //
 
-            for (entry_id, (entry, action)) in entries {
-
-                let slashing_amount = action.slashing_share * staking_balance;
-
-                if slashing_amount > Zero::zero() {
-                    T::StakingHandler::slash(&entry.staking_account_id, Some(slashing_amount));
-                }
-
-                T::StakingHandler::unlock(&entry.staking_account_id);
-                Self::deposit_event(
-                    RawEvent::WorkEntrantStakeAccountAction(
-                        bounty_id,
-                        entry_id,
-                        action.slashing_share,
-                        slashing_amount,
-                        action.action_justification)
-                );
-                Self::remove_work_entry(&bounty_id, &entry_id);
-            }
+            T::StakingHandler::unlock(&entry.staking_account_id);
+            Self::deposit_event(
+                RawEvent::WorkEntrantStakeUnlocked(
+                    bounty_id,
+                    entry_id,
+                    entry.staking_account_id)
+            );
+            Self::remove_work_entry(&bounty_id, &entry_id);
 
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
                 Self::remove_bounty(&bounty_id);
             }
-
         }
     }
 }
@@ -1898,19 +1840,17 @@ impl<T: Trait> Module<T> {
 
         // Validate all work entry Judgments.
         for (entry_id, work_entry_judgment) in judgment.iter() {
+            let entry = Self::ensure_work_entry_exists(entry_id)?;
             if let OracleWorkEntryJudgment::Winner { reward } = work_entry_judgment {
                 // Check for zero reward.
                 ensure!(*reward != Zero::zero(), Error::<T>::ZeroWinnerReward);
-
+                // Check winner work submission.
+                ensure!(
+                    entry.work_submitted,
+                    Error::<T>::WinnerShouldHasWorkSubmission
+                );
                 reward_sum_from_judgment += *reward;
             }
-
-            // Check winner work submission.
-            let entry = Self::ensure_work_entry_exists(entry_id)?;
-            ensure!(
-                entry.work_submitted,
-                Error::<T>::WinnerShouldHasWorkSubmission
-            );
         }
 
         // Check for invalid total sum for successful bounty.
@@ -1924,36 +1864,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Validates work entries to slash.
-    fn validate_work_entries_to_slash(
-        stake_account_action: WorkEntrantStakeAccountActionMap<T::EntryId>,
-    ) -> Result<BTreeMap<T::EntryId, (Entry<T>, WorkEntrantStakeAccountAction)>, DispatchError>
-    {
-        let mut entries: BTreeMap<T::EntryId, (Entry<T>, WorkEntrantStakeAccountAction)> =
-            BTreeMap::new();
-        for (entry_id, action) in stake_account_action {
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
-            //Council can slash an entry if
-            //work hasn't been submitted,
-            //otherwise council should call switch oracle and judge first or find
-            //another oracle if the current one is inactive.
-            //After that he can reject the work and slash it
-            if entry.work_submitted {
-                match entry.oracle_judgment_result {
-                    Some(judgment_result) => {
-                        if judgment_result.is_winner() {
-                            fail!(Error::<T>::WorkEntryMustBeJudgedAsRejected);
-                        }
-                    }
-                    None => fail!(Error::<T>::WorkEntryMustBeJudged),
-                };
-            }
-
-            entries.insert(entry_id, (entry, action));
-        }
-
-        Ok(entries)
-    }
     // Removes the work entry and decrements active entry count in a bounty.
     fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::EntryId) {
         <Entries<T>>::remove(entry_id);
@@ -2087,13 +1997,26 @@ impl<T: Trait> Module<T> {
     }
 
     // Calculates weight for submit_oracle_Judgment extrinsic.
-    fn submit_oracle_judgment_weight(judgment: &OracleJudgmentOf<T>) -> Weight {
-        let collection_length: u32 = judgment.len().saturated_into();
-
+    fn submit_oracle_judgment_weight(judgment_map: &OracleJudgmentOf<T>) -> Weight {
+        let collection_length: u32 = judgment_map.len().saturated_into();
+        let justification_length: u32 = judgment_map
+            .iter()
+            .map(|(_, judgment)| match judgment {
+                OracleWorkEntryJudgment::Winner { .. } => 0,
+                OracleWorkEntryJudgment::Rejected {
+                    action_justification,
+                    ..
+                } => match action_justification {
+                    Some(ref justification) => justification.len().saturated_into(),
+                    None => 0,
+                },
+            })
+            .sum();
         WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_winners(collection_length)
             .max(
                 WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_rejected(
                     collection_length,
+                    justification_length,
                 ),
             )
             .max(
@@ -2104,25 +2027,8 @@ impl<T: Trait> Module<T> {
             .max(
                 WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_rejected(
                     collection_length,
+                    justification_length,
                 ),
             )
-    }
-
-    // Calculates weight for work_entrants_stake_account_action extrinsic.
-    fn work_entrants_stake_account_action_weight(
-        stake_account_action: &WorkEntrantStakeAccountActionMap<T::EntryId>,
-    ) -> Weight {
-        let collection_length: u32 = stake_account_action.len().saturated_into();
-        let justification_length: u32 = stake_account_action
-            .iter()
-            .map(|(_, action)| match action.action_justification {
-                Some(ref justification) => justification.len().saturated_into(),
-                None => 0,
-            })
-            .sum();
-        WeightInfoBounty::<T>::work_entrants_stake_account_action(
-            collection_length,
-            justification_length,
-        )
     }
 }

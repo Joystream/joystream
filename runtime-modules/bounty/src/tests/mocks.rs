@@ -168,6 +168,9 @@ impl crate::WeightInfo for () {
     fn end_working_period() -> u64 {
         0
     }
+    fn switch_oracle_to_council_by_council_approval_successful() -> u64 {
+        0
+    }
     fn switch_oracle_to_council_by_oracle_member() -> u64 {
         0
     }
@@ -198,28 +201,25 @@ impl crate::WeightInfo for () {
     fn announce_work_entry(_i: u32) -> u64 {
         0
     }
-    fn withdraw_work_entry() -> u64 {
-        0
-    }
     fn submit_work(_i: u32) -> u64 {
         0
     }
     fn submit_oracle_judgment_by_council_all_winners(_i: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_council_all_rejected(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_council_all_rejected(_i: u32, _j: u32) -> u64 {
         0
     }
     fn submit_oracle_judgment_by_member_all_winners(_i: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_member_all_rejected(_i: u32, _j: u32) -> u64 {
         0
     }
     fn withdraw_work_entrant_funds() -> u64 {
         0
     }
-    fn work_entrants_stake_account_action(_i: u32, _j: u32) -> u64 {
+    fn unlock_work_entrant_stake() -> u64 {
         0
     }
 }

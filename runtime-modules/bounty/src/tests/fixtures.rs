@@ -3,14 +3,13 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
-use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, RawEvent, WorkEntrantStakeAccountActionMap,
+    Entry, FundingType, OracleJudgmentOf, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 
@@ -563,62 +562,6 @@ impl AnnounceWorkEntryFixture {
     }
 }
 
-pub struct WithdrawWorkEntryFixture {
-    origin: RawOrigin<u128>,
-    entry_id: u64,
-    bounty_id: u64,
-    member_id: u64,
-}
-
-impl WithdrawWorkEntryFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            entry_id: 1,
-            bounty_id: 1,
-            member_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_member_id(self, member_id: u64) -> Self {
-        Self { member_id, ..self }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn with_entry_id(self, entry_id: u64) -> Self {
-        Self { entry_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bounty = Bounty::bounties(self.bounty_id);
-        let actual_result = Bounty::withdraw_work_entry(
-            self.origin.clone().into(),
-            self.member_id,
-            self.bounty_id,
-            self.entry_id,
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Entries<Test>>::contains_key(&self.entry_id));
-
-            let new_bounty = Bounty::bounties(self.bounty_id);
-            assert_eq!(
-                new_bounty.active_work_entry_count,
-                old_bounty.active_work_entry_count - 1
-            );
-        }
-    }
-}
-
 pub struct SubmitWorkFixture {
     origin: RawOrigin<u128>,
     entry_id: u64,
@@ -884,43 +827,60 @@ impl EndWorkPeriodFixture {
     }
 }
 
-pub struct WorkEntrantStakeAccountActionMapFixture {
+pub struct UnlockWorkEntrantStakeFixture {
     origin: RawOrigin<u128>,
+    entry_id: u64,
     bounty_id: u64,
-    stake_account_action: WorkEntrantStakeAccountActionMap<u64>,
+    member_id: u64,
 }
 
-impl WorkEntrantStakeAccountActionMapFixture {
+impl UnlockWorkEntrantStakeFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Root,
+            origin: RawOrigin::Signed(1),
+            entry_id: 1,
             bounty_id: 1,
-            stake_account_action: BTreeMap::new(),
+            member_id: 1,
         }
     }
+
     pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
     }
 
     pub fn with_bounty_id(self, bounty_id: u64) -> Self {
         Self { bounty_id, ..self }
     }
-    pub fn with_stake_account_action(
-        self,
-        stake_account_action: WorkEntrantStakeAccountActionMap<u64>,
-    ) -> Self {
-        Self {
-            stake_account_action,
-            ..self
-        }
+
+    pub fn with_entry_id(self, entry_id: u64) -> Self {
+        Self { entry_id, ..self }
     }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::work_entrants_stake_account_action(
+        let old_bounty = Bounty::bounties(self.bounty_id);
+        let actual_result = Bounty::unlock_work_entrant_stake(
             self.origin.clone().into(),
+            self.member_id,
             self.bounty_id,
-            self.stake_account_action.clone(),
+            self.entry_id,
         );
 
         assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::Entries<Test>>::contains_key(&self.entry_id));
+
+            if <crate::Bounties<Test>>::contains_key(self.bounty_id) {
+                let new_bounty = Bounty::bounties(self.bounty_id);
+                assert_eq!(
+                    new_bounty.active_work_entry_count,
+                    old_bounty.active_work_entry_count - 1
+                );
+            }
+        }
     }
 }
