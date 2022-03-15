@@ -5,7 +5,7 @@ import { QueryNodeApi } from '../../../QueryNodeApi'
 import { Utils } from '../../../utils'
 import { IMember } from '../createMembers'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
-import { assertNftOwner } from './utils'
+import { assertNftOwner, assertAuctionAndBids } from './utils'
 
 export class NftEnglishAuctionWithExtensionFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -71,6 +71,9 @@ export class NftEnglishAuctionWithExtensionFixture extends BaseQueryNodeFixture 
     const waitBlocks =
       this.auctionDuration + 1 + (this.participants.length >= this.extensionPeriod ? this.extensionPeriod : 0)
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
+
+    this.debug('Check NFT Auction and bids')
+    await assertAuctionAndBids(this.query, this.videoId, winner)
 
     this.debug('Complete auction')
     await this.api.claimWonEnglishAuction(winner.account, winner.memberId.toNumber(), this.videoId)
