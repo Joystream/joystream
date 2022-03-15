@@ -19,7 +19,7 @@ export class CurrencyAmount extends CurrencyOf {}
 
 // NFT types
 
-export class Royalty extends UInt {}
+export class Royalty extends UInt.with(32, 'Perbill') {}
 export class IsExtended extends bool {}
 
 export class EnglishAuctionDetails extends JoyStructDecorated({

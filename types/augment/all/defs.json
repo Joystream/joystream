@@ -771,7 +771,7 @@
         "reason": "Hash"
     },
     "ModeratorSet": "BTreeSet<MemberId>",
-    "Royalty": "u64",
+    "Royalty": "Perbill",
     "IsExtended": "bool",
     "EnglishAuctionDetails": {
         "extension_period": "u32",
