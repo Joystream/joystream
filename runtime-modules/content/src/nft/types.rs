@@ -132,7 +132,7 @@ pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
     pub auction_duration: BlockNumber,
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
-    pub top_bid: Option<EnglishBid<Balance, MemberId>>,
+    pub top_bid: Option<EnglishAuctionBid<Balance, MemberId>>,
 }
 
 impl<
@@ -235,7 +235,7 @@ impl<
         Self {
             end,
             auction_duration,
-            top_bid: Some(EnglishBid { amount, bidder_id }),
+            top_bid: Some(EnglishAuctionBid { amount, bidder_id }),
             ..self
         }
     }
@@ -286,14 +286,14 @@ impl<
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OpenBidRecord<Balance, BlockNumber, AuctionId> {
+pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
     pub amount: Balance,
     pub made_at_block: BlockNumber,
     pub auction_id: AuctionId,
 }
 
 impl<Balance: PartialEq, BlockNumber, AuctionId: PartialEq>
-    OpenBidRecord<Balance, BlockNumber, AuctionId>
+    OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
 {
     pub(crate) fn new(amount: Balance, made_at_block: BlockNumber, auction_id: AuctionId) -> Self {
         Self {
@@ -319,7 +319,7 @@ impl<Balance: PartialEq, BlockNumber, AuctionId: PartialEq>
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct EnglishBid<Balance, MemberId> {
+pub struct EnglishAuctionBid<Balance, MemberId> {
     pub amount: Balance,
     pub bidder_id: MemberId,
 }
@@ -373,7 +373,7 @@ pub type OpenAuctionParams<T> = OpenAuctionParamsRecord<
     <T as common::MembershipTypes>::MemberId,
 >;
 
-pub type OpenBid<T> = OpenBidRecord<
+pub type OpenAuctionBid<T> = OpenAuctionBidRecord<
     CurrencyOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::OpenAuctionId,

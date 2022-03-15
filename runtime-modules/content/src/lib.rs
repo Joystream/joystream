@@ -192,9 +192,9 @@ decl_storage! {
         pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
 
         /// Bids for open auctions
-        pub BidByVideoAndMember get(fn bid_by_video_and_member):
+        pub OpenAuctionBidByVideoAndMember get(fn open_auction_bid_by_video_and_member):
         double_map hasher(blake2_128_concat) T::VideoId,
-        hasher(blake2_128_concat) T::MemberId => OpenBid<T>;
+        hasher(blake2_128_concat) T::MemberId => OpenAuctionBid<T>;
     }
 }
 
@@ -1621,8 +1621,8 @@ decl_module! {
                             );
                         });
 
-                    let new_open_bid = OpenBid::<T>::new(bid_amount, now, auction.auction_id);
-                    BidByVideoAndMember::<T>::insert(
+                    let new_open_bid = OpenAuctionBid::<T>::new(bid_amount, now, auction.auction_id);
+                    OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
                         participant_id,
                         new_open_bid,
@@ -1734,13 +1734,13 @@ decl_module! {
             //
 
             // Cancel last auction bid & update auction data
-            let bid = Self::bid_by_video_and_member(&video_id, &participant_id);
+            let bid = Self::open_auction_bid_by_video_and_member(&video_id, &participant_id);
 
             // unreserve amount
             T::Currency::unreserve(&participant_account_id, bid.amount);
 
             // remove
-            BidByVideoAndMember::<T>::remove(&video_id, &participant_id);
+            OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
@@ -1821,7 +1821,7 @@ decl_module! {
             )?;
 
             // remove bid
-            BidByVideoAndMember::<T>::remove(video_id, winner_id);
+            OpenAuctionBidByVideoAndMember::<T>::remove(video_id, winner_id);
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
@@ -2319,12 +2319,14 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_open_bid_exists(
         video_id: T::VideoId,
         member_id: T::MemberId,
-    ) -> Result<OpenBid<T>, DispatchError> {
+    ) -> Result<OpenAuctionBid<T>, DispatchError> {
         ensure!(
-            BidByVideoAndMember::<T>::contains_key(video_id, member_id),
+            OpenAuctionBidByVideoAndMember::<T>::contains_key(video_id, member_id),
             Error::<T>::BidDoesNotExist,
         );
-        Ok(Self::bid_by_video_and_member(video_id, member_id))
+        Ok(Self::open_auction_bid_by_video_and_member(
+            video_id, member_id,
+        ))
     }
 }
 
