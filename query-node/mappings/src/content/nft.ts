@@ -361,21 +361,15 @@ export async function createNft(
   // Is NFT owned by channel or some member
   const isOwnedByChannel = !ownerMember
 
-  // load channel
-  const channel = (await getById(store, Video, video.getId(), ['channel'])).channel
-
-  // load channel ownerCuratorGroup (if any)
-  const ownerCuratorGroup = isOwnedByChannel
-    ? (await getById(store, Channel, channel.getId(), ['ownerCuratorGroup'])).ownerCuratorGroup
-    : undefined
+  const channel = await getById(store, Channel, creatorChannel.getId(), ['ownerMember', 'ownerCuratorGroup'])
 
   // prepare nft record
   const nft = new OwnedNft({
     id: video.id.toString(),
     video: video,
-    ownerMember,
+    ownerMember: isOwnedByChannel ? channel.ownerMember || undefined : ownerMember,
     creatorRoyalty,
-    ownerCuratorGroup,
+    ownerCuratorGroup: isOwnedByChannel ? channel.ownerCuratorGroup || undefined : undefined,
     isOwnedByChannel,
     metadata: decodedMetadata,
     creatorChannel: creatorChannel,
