@@ -221,7 +221,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
     );
 
     ensure!(
-        stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
+        stake_policy.leaving_unstaking_period >= T::MinUnstakingPeriodLimit::get(),
         Error::<T, I>::UnstakingPeriodLessThanMinimum
     );
 

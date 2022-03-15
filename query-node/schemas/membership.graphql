@@ -93,6 +93,10 @@ type Membership @entity {
   "List of proposal thread whitelists the member is part of"
   whitelistedIn: [ProposalDiscussionWhitelist!] @derivedFrom(field: "members")
 
+  # Required for BountyEntrantWhitelist->members Many-to-Many relationship
+  "List of bounty entrant whitelists the member is part of"
+  whitelistedInBounties: [BountyEntrantWhitelist!] @derivedFrom(field: "members")
+
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
 

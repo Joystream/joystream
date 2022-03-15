@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.18.0",
+  "version": "0.18.5",
   "description": "Types for Joystream Substrate Runtime - Olympia release",
   "main": "index.js",
   "types": "index.d.ts",
