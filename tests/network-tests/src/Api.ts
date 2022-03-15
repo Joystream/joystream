@@ -978,8 +978,8 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.sellNft(videoId, { Member: ownerId }, price), accountFrom)
   }
 
-  async buyNft(accountFrom: string, videoId: number, participantId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId), accountFrom)
+  async buyNft(accountFrom: string, videoId: number, participantId: number, price: BN): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId, price), accountFrom)
   }
 
   async offerNft(
