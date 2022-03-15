@@ -5,6 +5,7 @@ import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockN
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
+export class AuctionId extends u64 { }
 export class CuratorId extends u64 { }
 export class CuratorGroupId extends u64 { }
 export class ChannelCategoryId extends u64 { }
@@ -22,40 +23,41 @@ export class CurrencyAmount extends CurrencyOf { }
 export class Royalty extends UInt { }
 export class IsExtended extends bool { }
 
-export class EnglishAuctionDetails extends JoyStructDecorated({
+export class EnglishAuction extends JoyStructDecorated({
+    starting_price: Balance,
+    buy_now_price: Option.with(Balance),
+    min_bid_step: Balance,
+    top_bid: Option.with(Bid),
+    whitelist: BTreeSet.with(MemberId),
     extension_period: BlockNumber,
     auction_duration: BlockNumber,
-    bid_step: Balance,
+    min_bid_step: Balance,
+    end: BlockNumber,
 }) { }
 
-export class OpenAuctionDetails extends JoyStructDecorated({
+export class OpenAuction extends JoyStructDecorated({
+    starting_price: Balance,
+    buy_now_price: Option.with(Balance),
+    whitelist: BTreeSet.with(MemberId),
     bid_lock_duration: BlockNumber,
 }) { }
 
-export class AuctionType extends JoyEnum({
-    English: EnglishAuctionDetails,
-    Open: OpenAuctionDetails,
-}) { }
-
-export class Bid extends JoyStructDecorated({
+export class OpenBid extends JoyStructDecorated({
     amount: Balance,
     made_at_block: BlockNumber,
+    auction_id: AuctionId,
 }) { }
 
-export class Auction extends JoyStructDecorated({
-    starting_price: Balance,
-    buy_now_price: Option.with(Balance),
-    auction_type: AuctionType,
-    minimal_bid_step: Balance,
-    last_bid: Option.with(Bid),
-    starts_at: BlockNumber,
-    whitelist: BTreeSet.with(MemberId),
+export class EnglishBid extends JoyStructDecorated({
+    amount: Balance,
+    bidder_id: MemberId,
 }) { }
 
 export class TransactionalStatus extends JoyEnum({
     Idle: Null,
     InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
-    Auction,
+    EnglishAuction: EnglishAuction,
+    OpenAuction: OpenAuction,
     BuyNow: Balance,
 }) { }
 
@@ -68,22 +70,32 @@ export class OwnedNft extends JoyStructDecorated({
     owner: NftOwner,
     transactional_status: TransactionalStatus,
     creator_royalty: Option.with(Royalty),
+    open_auctions_nonce: AuctionId,
 }) { }
 
-export class AuctionParams extends JoyStructDecorated({
-    auction_type: AuctionType,
+export class EnglishAuctionParams extends JoyStructDecorated({
     starting_price: Balance,
-    minimal_bid_step: Balance,
     buy_now_price: Option.with(Balance),
-    starts_at: Option.with(BlockNumber),
     whitelist: BTreeSet.with(MemberId),
+    end: BlockNumber,
+    auction_duration: BlockNumber,
+    extension_period: BlockNumber,
+    min_bid_step: Balance,
+}) { }
+
+export class OpenAuctionParams extends JoyStructDecorated({
+    starting_price: Balance,
+    buy_now_price: Option.with(Balance),
+    whitelist: BTreeSet.with(MemberId),
+    bid_lock_duration: BlockNumber,
 }) { }
 
 export class InitTransactionalStatus extends JoyEnum({
     Idle: Null,
-    InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
     BuyNow: Balance,
-    Auction: AuctionParams,
+    InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
+    EnglishAuction: EnglishAuctionParams,
+    OpenAuction: OpenAuctionParams,
 }) { }
 
 export class NftIssuanceParameters extends JoyStructDecorated({
