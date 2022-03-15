@@ -76,9 +76,6 @@ decl_error! {
         // Auction Errors
         // ---------------------
 
-        // Auction for given video did not start
-        //AuctionDidNotStart,
-
         /// Nft for given video id already exists
         NftAlreadyExists,
 

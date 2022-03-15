@@ -262,7 +262,7 @@ pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId: Ord> {
 
 impl<
         BlockNumber: Copy + Saturating + PartialOrd,
-        AuctionId: Copy,
+        AuctionId: Copy + PartialEq,
         Balance: Copy + PartialOrd + Saturating,
         MemberId: Ord + Copy,
     > OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>
@@ -302,6 +302,17 @@ impl<
             auction_id: self.auction_id,
         }
     }
+
+    pub(crate) fn ensure_bid_can_be_canceled<T: Trait>(
+        &self,
+        bid: &OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>,
+    ) -> DispatchResult {
+        if bid.ensure_bid_is_relevant::<T>(self.auction_id).is_ok() {
+            Module::<T>::ensure_bid_lock_duration_expired(&self, bid.made_at_block)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -323,7 +334,7 @@ impl<Balance: PartialEq, BlockNumber, AuctionId: PartialEq>
     pub(crate) fn ensure_bid_is_relevant<T: Trait>(&self, auction_id: AuctionId) -> DispatchResult {
         ensure!(
             self.auction_id == auction_id,
-            Error::<T>::InvalidBidAmountSpecified
+            Error::<T>::BidIsForPastAuction
         );
         Ok(())
     }

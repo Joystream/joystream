@@ -1735,8 +1735,17 @@ decl_module! {
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
+            // ensure nft exists
+            let nft = Self::ensure_nft_exists(video_id)?;
+
+            // ensure open auction state
+            let open_auction = Self::ensure_open_auction_state(&nft)?;
+
+            // ensure bid exists
+            let old_bid = Self::ensure_open_bid_exists(video_id, participant_id)?;
+
             // ensure conditions for canceling a bid are met
-            Self::ensure_bid_can_be_canceled(participant_id, video_id)?;
+            open_auction.ensure_bid_can_be_canceled::<T>(&old_bid)?;
 
             //
             // == MUTATION SAFE ==
