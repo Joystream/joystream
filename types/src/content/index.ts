@@ -194,6 +194,7 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   enable_comments: Option.with(bool),
+  auto_issue_nft: Option.with(NftIssuanceParameters),
 }) {}
 
 export class VideoPostType extends JoyEnum({
