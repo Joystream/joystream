@@ -267,6 +267,48 @@ impl<
         MemberId: Ord + Copy,
     > OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>
 {
+    pub(crate) fn ensure_can_make_bid<T: Trait>(
+        &self,
+        now: BlockNumber,
+        new_offer: Balance,
+        old_bid: &Option<OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>>,
+    ) -> DispatchResult {
+        if let Some(completion_price) = self.buy_now_price {
+            if completion_price <= new_offer {
+                return Ok(());
+            }
+        }
+
+        old_bid.as_ref().map_or_else(
+            || self.ensure_offer_above_reserve::<T>(new_offer),
+            |bid| self.ensure_can_update_bid::<T>(now, new_offer, bid),
+        )
+    }
+
+    pub(crate) fn ensure_offer_above_reserve<T: Trait>(
+        &self,
+        new_offer: Balance,
+    ) -> DispatchResult {
+        ensure!(
+            self.starting_price <= new_offer,
+            Error::<T>::StartingPriceConstraintViolated,
+        );
+        Ok(())
+    }
+
+    pub(crate) fn ensure_can_update_bid<T: Trait>(
+        &self,
+        block: BlockNumber,
+        new_offer: Balance,
+        old_bid: &OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>,
+    ) -> DispatchResult {
+        if old_bid.is_offer_lower(new_offer) {
+            self.ensure_bid_lock_duration_expired::<T>(block, &old_bid)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn new(
         params: OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>,
         auction_nonce: AuctionId,
@@ -332,9 +374,16 @@ pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
     pub auction_id: AuctionId,
 }
 
-impl<Balance: PartialEq, BlockNumber: Saturating + PartialOrd + Copy, AuctionId: PartialEq>
-    OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
+impl<
+        Balance: Copy + PartialOrd + PartialEq,
+        BlockNumber: Saturating + PartialOrd + Copy,
+        AuctionId: PartialEq,
+    > OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
 {
+    pub(crate) fn is_offer_lower(&self, new_offer: Balance) -> bool {
+        self.amount > new_offer
+    }
+
     pub(crate) fn ensure_lock_duration_expired<T: Trait>(
         &self,
         now: BlockNumber,

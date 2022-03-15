@@ -1597,7 +1597,8 @@ decl_module! {
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // ensure bid can be made
-            Self::ensure_open_auction_bid_can_be_made(&open_auction, bid_amount, video_id, participant_id)?;
+            let old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
+            open_auction.ensure_can_make_bid::<T>(now, bid_amount, &old_bid)?;
 
             //
             // == MUTATION_SAFE ==
