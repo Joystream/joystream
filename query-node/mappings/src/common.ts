@@ -1,8 +1,8 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
-import { Worker, Event, Network } from 'query-node/dist/model'
+import { WorkingGroup as WGType, WorkerId, ThreadId } from '@joystream/types/augment/all'
+import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -251,7 +251,7 @@ export type WorkingGroupModuleName =
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'
 
-export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName {
   if (group.isContent) {
     return 'contentWorkingGroup'
   } else if (group.isMembership) {
@@ -273,6 +273,18 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
   }
 
   unexpectedData('Unsupported working group encountered:', group.type)
+}
+
+export async function getWorkingGroupByName(
+  store: DatabaseManager,
+  name: WorkingGroupModuleName,
+  relations: string[] = []
+): Promise<WGEntity> {
+  const group = await store.get(WGEntity, { where: { name }, relations })
+  if (!group) {
+    throw new Error(`Working group ${name} not found!`)
+  }
+  return group
 }
 
 export async function getWorker(
