@@ -499,6 +499,7 @@ decl_module! {
             }
 
             if !params.assets_to_remove.is_empty() {
+                Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
                 Self::remove_data_objects_from_set(&mut channel.data_objects, &params.assets_to_remove);
             }
 
@@ -840,6 +841,9 @@ decl_module! {
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
+            video.ensure_nft_is_not_issued::<T>()?;
+
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(&channel_id);
 
@@ -865,6 +869,7 @@ decl_module! {
             }
 
             if !params.assets_to_remove.is_empty() {
+                Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
                 Self::remove_data_objects_from_set(&mut updated_video_data_objects, &params.assets_to_remove);
             }
 
@@ -873,7 +878,6 @@ decl_module! {
                 .map_or(
                     Ok(None),
                     |issuance_params| {
-                        ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
                         Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
                     }
                 )?;
@@ -913,7 +917,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            num_objects_to_delete: u64,
         ) {
             let sender = ensure_signed(origin)?;
 
@@ -933,11 +937,14 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
+            // ensure provided num_objects_to_delete is valid
+            Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video)?;
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
@@ -947,7 +954,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) {
             let sender = ensure_signed(origin)?;
@@ -966,10 +973,13 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
+            // ensure provided num_objects_to_delete is valid
+            Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
+
             //
             // == MUTATION SAFE ==
             //
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video)?;
 
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
@@ -2477,14 +2487,13 @@ impl<T: Trait> Module<T> {
         channel_id: T::ChannelId,
         video_id: T::VideoId,
         video: &Video<T>,
-        assets_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> DispatchResult {
         // delete assets from storage with upload and rollback semantics
-        if !assets_to_remove.is_empty() {
+        if !video.data_objects.is_empty() {
             Storage::<T>::delete_data_objects(
                 sender.clone(),
                 Self::bag_id_for_channel(&channel_id),
-                assets_to_remove.clone(),
+                video.data_objects.clone(),
             )?;
         }
 
@@ -2609,6 +2618,29 @@ impl<T: Trait> Module<T> {
         for id in objects {
             set.remove(id);
         }
+    }
+
+    fn ensure_assets_to_remove_are_part_of_assets_set(
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+        assets_set: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        for id in assets_to_remove {
+            if !assets_set.contains(id) {
+                return Err(Error::<T>::AssetsToRemoveBeyondEntityAssetsSet.into());
+            }
+        }
+        Ok(())
+    }
+
+    fn ensure_valid_video_num_objects_to_delete(
+        video: &Video<T>,
+        num_objects_to_delete: u64,
+    ) -> DispatchResult {
+        ensure!(
+            (video.data_objects.len() as u64) == num_objects_to_delete,
+            Error::<T>::InvalidVideoDataObjectsCountProvided
+        );
+        Ok(())
     }
 }
 

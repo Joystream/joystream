@@ -1043,15 +1043,17 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_video();
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_remove(
-                ((DATA_OBJECTS_NUMBER as u64 + 1)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
+                ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
             )
-            .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+            .call_and_assert(Err(
+                Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
+            ));
     })
 }
 
