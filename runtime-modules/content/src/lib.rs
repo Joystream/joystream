@@ -1493,8 +1493,7 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure auction state that can be canceled
-            Self::ensure_open_auction_state(&nft)
-                .and_then(|open| open.ensure_auction_can_be_canceled::<T>(video_id))?;
+            Self::ensure_open_auction_state(&nft)?;
 
             //
             // == MUTATION SAFE ==

@@ -282,26 +282,6 @@ impl<
         );
         Ok(())
     }
-
-    pub(crate) fn ensure_auction_has_no_bids<T: Trait>(
-        &self,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        ensure!(
-            crate::BidByVideoAndMember::<T>::iter_prefix(video_id)
-                .next()
-                .is_none(),
-            Error::<T>::ActionHasBidsAlready
-        );
-        Ok(())
-    }
-
-    pub(crate) fn ensure_auction_can_be_canceled<T: Trait>(
-        &self,
-        video_id: T::VideoId,
-    ) -> DispatchResult {
-        self.ensure_auction_has_no_bids::<T>(video_id)
-    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
