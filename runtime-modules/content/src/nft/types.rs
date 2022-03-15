@@ -174,6 +174,14 @@ impl<
         self.ensure_auction_has_no_bids::<T>()
     }
 
+    pub(crate) fn ensure_top_bid_exists<T: Trait>(
+        &self,
+    ) -> Result<EnglishAuctionBid<Balance, MemberId>, DispatchError> {
+        self.top_bid
+            .to_owned()
+            .ok_or_else(|| Error::<T>::BidDoesNotExist.into())
+    }
+
     pub(crate) fn ensure_auction_has_valid_bids<T: Trait>(&self) -> DispatchResult {
         self.ensure_auction_has_no_bids::<T>()
             .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))

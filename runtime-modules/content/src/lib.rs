@@ -1661,16 +1661,22 @@ decl_module! {
             let nft = Self::ensure_nft_exists(video_id)?;
 
             // Validate parameters & return english auction
-            let auction =  Self::ensure_english_auction_state(&nft)
-                .and_then(|eng| eng.ensure_auction_is_not_expired::<T>(now).map(|_| eng))
-                .and_then(|eng| eng.ensure_whitelisted_participant::<T>(participant_id).map(|_| eng))
-                .and_then(|eng| eng.ensure_bid_can_be_made::<T>(bid_amount).map(|_| eng))?;
+            let eng_auction =  Self::ensure_english_auction_state(&nft)?;
+
+            // Ensure top bid is present
+            let top_bid = eng_auction.ensure_top_bid_exists::<T>().ok();
+
+            // ensure bidder is whitelisted
+            eng_auction.ensure_whitelisted_participant::<T>(participant_id)?;
+
+            // bid can be made
+            eng_auction.ensure_bid_can_be_made::<T>(bid_amount)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            let (nft, event) = match auction.buy_now_price {
+            let (nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
                     Self::complete_auction(
@@ -1685,7 +1691,7 @@ decl_module! {
                 },
                 _ => {
                     // unreseve balance from previous bid
-                    auction.top_bid.as_ref().map_or((), |bid| {
+                    top_bid.map_or((), |bid| {
                         if bid.bidder_id == participant_id {
                             T::Currency::unreserve(
                                 &participant_account_id,
@@ -1696,7 +1702,7 @@ decl_module! {
 
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
-                    let new_auction = auction.with_bid(bid_amount, participant_id, now);
+                    let new_auction = eng_auction.with_bid(bid_amount, participant_id, now);
 
                     Ok((
                         nft.with_transactional_status(
