@@ -415,6 +415,9 @@ decl_module! {
             Self::validate_member_set(&params.collaborators)?;
 
             let storage_assets = params.assets.clone().unwrap_or_default();
+
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
                 object_creation_list: storage_assets.object_creation_list,
@@ -444,6 +447,7 @@ decl_module! {
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 privilege_level: Zero::zero(),
                 paused_features: BTreeSet::new(),
+                data_objects: data_objects_ids.clone(),
             };
 
             // add channel to onchain state
@@ -487,17 +491,26 @@ decl_module! {
                 channel.collaborators = new_collabs.clone();
             }
 
+            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+            if !new_data_object_ids.is_empty() {
+                Self::insert_new_data_objects_to_set(&mut channel.data_objects, &new_data_object_ids);
+            }
+
+            if !params.assets_to_remove.is_empty() {
+                Self::remove_data_objects_from_set(&mut channel.data_objects, &params.assets_to_remove);
+            }
+
             //
             // == MUTATION SAFE ==
             //
 
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.object_creation_list),
+                object_creation_list: assets_to_upload.object_creation_list,
                 deletion_prize_source_account_id: sender,
-                expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -772,12 +785,18 @@ decl_module! {
                     }
                 )?;
 
+            let storage_assets = params.assets.clone().unwrap_or_default();
+
+            // assets ids
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 nft_status,
+                data_objects: data_objects_ids.clone(),
             };
 
             if let Some(upload_assets) = params.assets.as_ref() {
@@ -806,7 +825,7 @@ decl_module! {
                 channel.num_videos = channel.num_videos.saturating_add(1);
             });
 
-            Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
+            Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params, data_objects_ids));
 
         }
 
@@ -834,6 +853,19 @@ decl_module! {
             channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoUpdate)?;
             if params.auto_issue_nft.is_some() {
                 channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+            }
+
+            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+            let mut updated_video_data_objects = video.data_objects.clone();
+
+            if !new_data_object_ids.is_empty() {
+                Self::insert_new_data_objects_to_set(&mut updated_video_data_objects, &new_data_object_ids);
+            }
+
+            if !params.assets_to_remove.is_empty() {
+                Self::remove_data_objects_from_set(&mut updated_video_data_objects, &params.assets_to_remove);
             }
 
             let nft_status = params.auto_issue_nft
@@ -870,7 +902,10 @@ decl_module! {
                 VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
-            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
+            // Update the video
+            VideoById::<T>::mutate(video_id, |video| { video.data_objects = updated_video_data_objects });
+
+            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_object_ids));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2557,6 +2592,24 @@ impl<T: Trait> Module<T> {
             video_id, member_id,
         ))
     }
+
+    fn insert_new_data_objects_to_set(
+        set: &mut BTreeSet<DataObjectId<T>>,
+        objects: &BTreeSet<DataObjectId<T>>,
+    ) {
+        for id in objects {
+            set.insert(id.clone());
+        }
+    }
+
+    fn remove_data_objects_from_set(
+        set: &mut BTreeSet<DataObjectId<T>>,
+        objects: &BTreeSet<DataObjectId<T>>,
+    ) {
+        for id in objects {
+            set.remove(id);
+        }
+    }
 }
 
 decl_event!(
@@ -2643,8 +2696,19 @@ decl_event!(
         VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
-        VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
-        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
+        VideoCreated(
+            ContentActor,
+            ChannelId,
+            VideoId,
+            VideoCreationParameters,
+            BTreeSet<DataObjectId>,
+        ),
+        VideoUpdated(
+            ContentActor,
+            VideoId,
+            VideoUpdateParameters,
+            BTreeSet<DataObjectId>,
+        ),
         VideoDeleted(ContentActor, VideoId),
         VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
         VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),

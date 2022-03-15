@@ -194,6 +194,7 @@ impl CreateChannelFixture {
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
                         paused_features: BTreeSet::new(),
+                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
                     },
                     self.params.clone(),
                 ))
@@ -319,6 +320,7 @@ impl CreateVideoFixture {
                     self.channel_id,
                     video_id,
                     self.params.clone(),
+                    BTreeSet::from_iter(beg_obj_id..end_obj_id),
                 ))
             );
 
@@ -508,6 +510,16 @@ impl UpdateChannelFixture {
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
                             privilege_level: Zero::zero(),
                             paused_features: BTreeSet::new(),
+                            data_objects: BTreeSet::from_iter(
+                                BTreeSet::from_iter(
+                                    channel_pre
+                                        .data_objects
+                                        .union(&BTreeSet::from_iter(beg_obj_id..end_obj_id))
+                                        .cloned()
+                                )
+                                .difference(&self.params.assets_to_remove)
+                                .cloned()
+                            )
                         },
                         self.params.clone(),
                     ))
@@ -722,7 +734,8 @@ impl UpdateVideoFixture {
                     MetaEvent::content(RawEvent::VideoUpdated(
                         self.actor.clone(),
                         self.video_id,
-                        self.params.clone()
+                        self.params.clone(),
+                        BTreeSet::from_iter(beg_obj_id..end_obj_id),
                     ))
                 );
 
