@@ -178,6 +178,9 @@ decl_error! {
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
 
+        /// Invalid Buy Now price commit provided
+        InvalidBuyNowPriceProvided,
+
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
 

@@ -189,8 +189,10 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
+        offering: CurrencyOf<T>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
+            ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
             Self::ensure_sufficient_free_balance(participant_account_id, *price)
         } else {
             Err(Error::<T>::NftNotInBuyNowState.into())
