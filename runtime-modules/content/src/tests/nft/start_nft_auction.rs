@@ -8,8 +8,10 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 use std::iter::FromIterator;
 
+const DEFAULT_AUCTION_END: u64 = 10;
+
 #[test]
-fn start_nft_auction() {
+fn start_open_auction() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -34,9 +36,10 @@ fn start_nft_auction() {
         let number_of_events_before_call = System::events().len();
 
         let auction_params = get_open_auction_params();
+        let nft = Content::ensure_nft_exists(video_id).unwrap();
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -46,13 +49,21 @@ fn start_nft_auction() {
         // Runtime tested state after call
 
         // TODO: Ensure nft status changed to given Auction
+        assert!(matches!(
+            nft,
+            Nft::<Test> {
+                transactional_status: TransactionalStatus::<Test>::OpenAuction(_),
+                ..
+            }
+        ));
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::AuctionStarted(
+            MetaEvent::content(RawEvent::OpenAuctionStarted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 auction_params,
+                nft.open_auctions_nonce + 1,
             )),
             number_of_events_before_call + 1,
         );
@@ -70,7 +81,7 @@ fn start_nft_auction_video_does_not_exist() {
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction which corresponding video does not exist yet
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -97,7 +108,7 @@ fn start_nft_auction_not_issued() {
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction for nft which is not issued yet
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -132,7 +143,7 @@ fn start_nft_auction_auth_failed() {
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction with wrong credentials
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -167,7 +178,7 @@ fn start_nft_auction_not_authorized() {
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction if actor is not authorized
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
@@ -211,7 +222,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
         let auction_params = get_open_auction_params();
 
         // Make an attempt to start nft auction if nft transaction status is not idle
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -244,15 +255,14 @@ fn start_nft_auction_invalid_params() {
         ));
 
         // Make an attempt to start nft auction if starting price provided is less then min starting price
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
+            bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -266,15 +276,14 @@ fn start_nft_auction_invalid_params() {
         );
 
         // Make an attempt to start nft auction if starting price provided is greater then max starting price
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price() + 1,
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
+            bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -289,15 +298,14 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start open nft auction if minimal bid lock duration
         // of auction provided is less then min allowed bid lock duration
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration() - 1),
-
+            bid_lock_duration: Content::min_bid_lock_duration() - 1,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -312,15 +320,14 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start open nft auction if minimal bid lock duration
         // of auction provided is greater then max allowed bid lock duration
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::max_bid_lock_duration() + 1),
-
+            bid_lock_duration: Content::max_bid_lock_duration() + 1,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -335,20 +342,17 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if extension period
         // of auction provided is less then min allowed extension period
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::min_auction_extension_period() - 1,
-                auction_duration: Content::max_auction_duration(),
-                min_bid_step: Content::max_bid_step(),
-                ..Default::default()
-            }),
-
+            extension_period: Content::min_auction_extension_period() - 1,
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::max_bid_step(),
+            end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -363,20 +367,17 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if extension period
         // of auction provided is greater then max allowed extension period
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::max_auction_extension_period() + 1,
-                auction_duration: Content::max_auction_duration(),
-                min_bid_step: Content::max_bid_step(),
-                ..Default::default()
-            }),
-
+            extension_period: Content::max_auction_extension_period() + 1,
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::max_bid_step(),
+            end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -391,20 +392,17 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if auction duration
         // of auction provided is less then min allowed auction duration
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::min_auction_duration() - 1,
-                min_bid_step: Content::max_bid_step(),
-                ..Default::default()
-            }),
-
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::min_auction_duration() - 1,
+            min_bid_step: Content::max_bid_step(),
+            end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -419,20 +417,17 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if auction duration
         // of auction provided is greater then max allowed auction duration
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::max_auction_extension_period(),
-                auction_duration: Content::max_auction_duration() + 1,
-                min_bid_step: Content::max_bid_step(),
-                ..Default::default()
-            }),
-
+            extension_period: Content::max_auction_extension_period(),
+            auction_duration: Content::max_auction_duration() + 1,
+            min_bid_step: Content::max_bid_step(),
+            end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -447,24 +442,21 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if extension period
         // of auction provided is greater auction duration
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::max_auction_extension_period(),
-                auction_duration: Content::min_auction_duration(),
-                min_bid_step: Content::max_bid_step(),
-                ..Default::default()
-            }),
-
+            extension_period: Content::max_auction_extension_period(),
+            auction_duration: Content::min_auction_duration(),
+            min_bid_step: Content::max_bid_step(),
+            end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -476,15 +468,14 @@ fn start_nft_auction_invalid_params() {
         // Make an attempt to start nft auction if auction related buy now is less then starting price
         let buy_now_price = Content::min_starting_price();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: buy_now_price + 1,
             buy_now_price: Some(buy_now_price),
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
+            bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -498,19 +489,18 @@ fn start_nft_auction_invalid_params() {
         );
 
         // Make an attempt to start nft auction if auction whitelist provided consists only 1 member
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
+            bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID].into_iter()),
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -525,15 +515,14 @@ fn start_nft_auction_invalid_params() {
             .map(|member| member as u64)
             .collect();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
+            bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist,
         };
 
-        let start_nft_auction_result = Content::start_nft_auction(
+        let start_nft_auction_result = Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,

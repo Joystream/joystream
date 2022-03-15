@@ -32,15 +32,15 @@ fn pick_open_auction_winner() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -53,7 +53,7 @@ fn pick_open_auction_winner() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -118,15 +118,15 @@ fn pick_open_auction_winner_auth_failed() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -139,7 +139,7 @@ fn pick_open_auction_winner_auth_failed() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -188,15 +188,15 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -209,7 +209,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -347,22 +347,18 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::English(EnglishAuction::<Test> {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::max_auction_duration(),
-                min_bid_step: Content::max_bid_step(),
-                end: AUCTION_ENDING_BLOCK,
-                ..Default::default()
-            }),
-
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::max_bid_step(),
+            end: AUCTION_ENDING_BLOCK,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -375,7 +371,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -421,15 +417,15 @@ fn pick_open_auction_winner_bid_does_not_exist() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -479,15 +475,15 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams::<Test> {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::<_, _>::Open(bid_lock_duration),
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -501,7 +497,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, high_bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -511,7 +507,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         run_to_block(bid_lock_duration + start_block);
 
         // Attempt to race
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,

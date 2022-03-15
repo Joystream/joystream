@@ -565,13 +565,12 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 }
 
 /// Get good params for open auction
-pub fn get_open_auction_params() -> AuctionParams<Test> {
-    AuctionParams::<Test> {
+pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
+    OpenAuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::<_, _>::Open(Content::min_bid_lock_duration()),
-
         whitelist: BTreeSet::new(),
+        bid_lock_duration: Content::min_bid_lock_duration(),
     }
 }
 
