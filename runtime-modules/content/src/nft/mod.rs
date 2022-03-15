@@ -373,25 +373,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // TODO: encapsulate this
-    pub(crate) fn ensure_nft_auction_not_expired(nft: &Nft<T>) -> DispatchResult {
-        let now = <frame_system::Module<T>>::block_number();
-        match &nft.transactional_status {
-            TransactionalStatus::<T>::EnglishAuction(eng) => {
-                ensure!(eng.end >= now, Error::<T>::NftAuctionIsAlreadyExpired);
-                Ok(())
-            }
-            TransactionalStatus::<T>::OpenAuction(open) => {
-                ensure!(
-                    nft.open_auctions_nonce == open.auction_id,
-                    Error::<T>::NftAuctionIsAlreadyExpired,
-                );
-                Ok(())
-            }
-            _ => Err(Error::<T>::NotInAuctionState.into()),
-        }
-    }
-
     pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, Error<T>> {
         Self::ensure_video_exists(&video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
     }
@@ -404,7 +385,7 @@ impl<T: Trait> Module<T> {
         let nft = Self::ensure_nft_exists(nft_video_id)?;
         let bid = Self::ensure_open_bid_exists(nft_video_id, who)?;
 
-        Self::ensure_open_auction_state(&nft).and_then(|open| {
+        Self::ensure_open_auction_state(&nft).map_or(Ok(()), |open| {
             if open.auction_id == bid.auction_id {
                 Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)?;
             }
