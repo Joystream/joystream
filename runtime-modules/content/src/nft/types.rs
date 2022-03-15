@@ -348,7 +348,6 @@ impl<
         if bid.ensure_bid_is_relevant::<T>(self.auction_id).is_ok() {
             self.ensure_bid_lock_duration_expired::<T>(now, bid)
         } else {
-            println!("HAHA ******");
             Ok(())
         }
     }
