@@ -11,7 +11,7 @@
     "@apollo/client": "^3.3.21",
     "@elastic/ecs-winston-format": "^1.3.1",
     "@joystream/metadata-protobuf": "^2.0.0",
-    "@joystream/types": "^0.18.5",
+    "@joystream/types": "^0.19.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
