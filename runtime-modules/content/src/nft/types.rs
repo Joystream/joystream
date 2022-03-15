@@ -305,13 +305,22 @@ impl<
 
     pub(crate) fn ensure_bid_can_be_canceled<T: Trait>(
         &self,
+        now: BlockNumber,
         bid: &OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>,
     ) -> DispatchResult {
         if bid.ensure_bid_is_relevant::<T>(self.auction_id).is_ok() {
-            Module::<T>::ensure_bid_lock_duration_expired(&self, bid.made_at_block)
+            self.ensure_bid_lock_duration_expired::<T>(now, bid)
         } else {
             Ok(())
         }
+    }
+
+    pub(crate) fn ensure_bid_lock_duration_expired<T: Trait>(
+        &self,
+        now: BlockNumber,
+        bid: &OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>,
+    ) -> DispatchResult {
+        bid.ensure_lock_duration_expired::<T>(now, self.bid_lock_duration)
     }
 }
 
@@ -323,9 +332,21 @@ pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
     pub auction_id: AuctionId,
 }
 
-impl<Balance: PartialEq, BlockNumber, AuctionId: PartialEq>
+impl<Balance: PartialEq, BlockNumber: Saturating + PartialOrd + Copy, AuctionId: PartialEq>
     OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
 {
+    pub(crate) fn ensure_lock_duration_expired<T: Trait>(
+        &self,
+        now: BlockNumber,
+        bid_lock_duration: BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            now.saturating_sub(self.made_at_block) >= bid_lock_duration,
+            Error::<T>::BidLockDurationIsNotExpired
+        );
+        Ok(())
+    }
+
     pub(crate) fn ensure_valid_bid_commit<T: Trait>(&self, commit: Balance) -> DispatchResult {
         ensure!(self.amount == commit, Error::<T>::InvalidBidAmountSpecified);
         Ok(())

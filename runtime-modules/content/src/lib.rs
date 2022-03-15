@@ -1745,7 +1745,8 @@ decl_module! {
             let old_bid = Self::ensure_open_bid_exists(video_id, participant_id)?;
 
             // ensure conditions for canceling a bid are met
-            open_auction.ensure_bid_can_be_canceled::<T>(&old_bid)?;
+            let now = <frame_system::Module<T>>::block_number();
+            open_auction.ensure_bid_can_be_canceled::<T>(now, &old_bid)?;
 
             //
             // == MUTATION SAFE ==

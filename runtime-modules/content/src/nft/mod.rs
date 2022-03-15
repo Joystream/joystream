@@ -377,22 +377,6 @@ impl<T: Trait> Module<T> {
         Self::ensure_video_exists(&video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
     }
 
-    /// Ensure bid can be cancelled
-    pub(crate) fn ensure_bid_can_be_canceled(
-        who: T::MemberId,
-        nft_video_id: T::VideoId,
-    ) -> DispatchResult {
-        let nft = Self::ensure_nft_exists(nft_video_id)?;
-        let bid = Self::ensure_open_bid_exists(nft_video_id, who)?;
-
-        Self::ensure_open_auction_state(&nft).map_or(Ok(()), |open| {
-            if open.auction_id == bid.auction_id {
-                Self::ensure_bid_lock_duration_expired(&open, bid.made_at_block)?;
-            }
-            Ok(())
-        })
-    }
-
     // check bid lock expiration: free function in order to silence rustc
     pub(crate) fn ensure_bid_lock_duration_expired(
         open: &OpenAuction<T>,
