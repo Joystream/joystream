@@ -208,7 +208,7 @@ impl<
         &self,
         now: BlockNumber,
     ) -> DispatchResult {
-        ensure!(now <= self.end, Error::<T>::AuctionCannotBeCompleted);
+        ensure!(now <= self.end, Error::<T>::NftAuctionIsAlreadyExpired);
         Ok(())
     }
 

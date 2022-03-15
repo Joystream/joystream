@@ -222,7 +222,10 @@ fn cancel_nft_auction_not_in_auction_state() {
         );
 
         // Failure checked
-        assert_err!(cancel_nft_auction_result, Error::<Test>::NotInAuctionState);
+        assert_err!(
+            cancel_nft_auction_result,
+            Error::<Test>::IsNotOpenAuctionType
+        );
     })
 }
 

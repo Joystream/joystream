@@ -312,7 +312,7 @@ fn claim_won_english_auction_not_in_auction_state() {
         // Failure checked
         assert_err!(
             claim_won_english_auction_result,
-            Error::<Test>::NotInAuctionState
+            Error::<Test>::IsNotEnglishAuctionType,
         );
     })
 }

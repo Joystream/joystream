@@ -94,9 +94,6 @@ fn make_bid() {
 
         // Runtime tested state before call
 
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // deposit initial balance
         let bid = Content::min_starting_price();
 
@@ -115,9 +112,9 @@ fn make_bid() {
         // TODO: Ensure nft status changed to given Auction
 
         // Last event checked
-        assert_event(
+        assert_eq!(
+            System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::AuctionBidMade(SECOND_MEMBER_ID, video_id, bid)),
-            number_of_events_before_call + 4,
         );
     })
 }
@@ -305,7 +302,7 @@ fn make_bid_nft_is_not_in_auction_state() {
         );
 
         // Failure checked
-        assert_err!(make_bid_result, Error::<Test>::NotInAuctionState);
+        assert_err!(make_bid_result, Error::<Test>::IsNotOpenAuctionType);
     })
 }
 
@@ -348,7 +345,7 @@ fn make_bid_nft_auction_expired() {
         ));
 
         // Run to the block when auction expires
-        run_to_block(Content::min_auction_duration() + 1);
+        run_to_block(DEFAULT_AUCTION_END + 1);
 
         // deposit initial balance
         let bid = Content::min_starting_price();

@@ -446,7 +446,7 @@ impl<T: Trait> Module<T> {
         if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
         } else {
-            Err(Error::<T>::NotInAuctionState.into())
+            Err(Error::<T>::IsNotEnglishAuctionType.into())
         }
     }
 
@@ -455,7 +455,7 @@ impl<T: Trait> Module<T> {
         if let TransactionalStatus::<T>::OpenAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
         } else {
-            Err(Error::<T>::NotInAuctionState.into())
+            Err(Error::<T>::IsNotOpenAuctionType.into())
         }
     }
 

@@ -30,13 +30,7 @@ fn start_open_auction() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         let auction_params = get_open_auction_params();
-        let nft = Content::ensure_nft_exists(video_id).unwrap();
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
@@ -48,7 +42,7 @@ fn start_open_auction() {
 
         // Runtime tested state after call
 
-        // TODO: Ensure nft status changed to given Auction
+        let nft = Content::ensure_nft_exists(video_id).unwrap();
         assert!(matches!(
             nft,
             Nft::<Test> {
@@ -58,14 +52,14 @@ fn start_open_auction() {
         ));
 
         // Last event checked
-        assert_event(
+        assert_eq!(
+            System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::OpenAuctionStarted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 auction_params,
-                nft.open_auctions_nonce + 1,
+                nft.open_auctions_nonce,
             )),
-            number_of_events_before_call + 1,
         );
     })
 }

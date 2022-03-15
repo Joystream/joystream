@@ -322,7 +322,7 @@ fn pick_open_auction_winner_not_in_auction_state() {
         // Failure checked
         assert_err!(
             pick_open_auction_winner_result,
-            Error::<Test>::NotInAuctionState
+            Error::<Test>::IsNotOpenAuctionType,
         );
     })
 }
