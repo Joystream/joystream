@@ -290,6 +290,18 @@ impl<
         );
         Ok(())
     }
+
+    pub(crate) fn make_bid(
+        &self,
+        amount: Balance,
+        made_at_block: BlockNumber,
+    ) -> OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
+        OpenAuctionBidRecord::<Balance, BlockNumber, AuctionId> {
+            amount,
+            made_at_block,
+            auction_id: self.auction_id,
+        }
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -303,14 +315,6 @@ pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
 impl<Balance: PartialEq, BlockNumber, AuctionId: PartialEq>
     OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
 {
-    pub(crate) fn new(amount: Balance, made_at_block: BlockNumber, auction_id: AuctionId) -> Self {
-        Self {
-            amount,
-            made_at_block,
-            auction_id,
-        }
-    }
-
     pub(crate) fn ensure_valid_bid_commit<T: Trait>(&self, commit: Balance) -> DispatchResult {
         ensure!(self.amount == commit, Error::<T>::InvalidBidAmountSpecified);
         Ok(())

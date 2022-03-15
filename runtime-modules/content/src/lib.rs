@@ -1591,15 +1591,19 @@ decl_module! {
             let nft = Self::ensure_nft_exists(video_id)?;
 
             // Validate parameters & return english auction
-            let auction =  Self::ensure_open_auction_state(&nft)
-                .and_then(|open| open.ensure_whitelisted_participant::<T>(participant_id).map(|_| open))
-                .and_then(|open| Self::ensure_open_bid_can_be_made(&open, bid_amount, video_id, participant_id).map(|_| open))?;
+            let open_auction =  Self::ensure_open_auction_state(&nft)?;
+
+            // check whitelisted participant
+            open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
+
+            // ensure bid can be made
+            Self::ensure_open_auction_bid_can_be_made(&open_auction, bid_amount, video_id, participant_id)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            let (nft, event) = match auction.buy_now_price {
+            let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
                     Self::complete_auction(
@@ -1621,11 +1625,10 @@ decl_module! {
                             );
                         });
 
-                    let new_open_bid = OpenAuctionBid::<T>::new(bid_amount, now, auction.auction_id);
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
                         participant_id,
-                        new_open_bid,
+                        open_auction.make_bid(bid_amount, now),
                     );
 
                     Ok((nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount)))

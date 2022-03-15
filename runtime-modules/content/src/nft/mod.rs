@@ -407,7 +407,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_open_bid_can_be_made(
+    pub(crate) fn ensure_open_auction_bid_can_be_made(
         open: &OpenAuction<T>,
         amount: CurrencyOf<T>,
         video_id: T::VideoId,
