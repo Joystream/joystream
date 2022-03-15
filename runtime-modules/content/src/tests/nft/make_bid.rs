@@ -107,9 +107,12 @@ fn make_bid() {
             bid,
         ));
 
-        // Runtime tested state after call
-
-        // TODO: Ensure nft status changed to given Auction
+        // Ensure nft status changed to given Auction
+        let nft = Content::ensure_nft_exists(video_id).unwrap();
+        assert!(matches!(
+            nft.transactional_status,
+            TransactionalStatus::<Test>::OpenAuction(_),
+        ));
 
         // Last event checked
         assert_eq!(

@@ -205,7 +205,7 @@ fn issue_nft_royalty_bounds_violated() {
 }
 
 #[test]
-fn issue_nft_fails_with_invalid_auction_parameters() {
+fn issue_nft_fails_with_invalid_open_auction_parameters() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
