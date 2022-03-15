@@ -268,5 +268,12 @@ decl_error! {
         /// Invalid channel transfer status for transfer operations.
         InvalidChannelTransferStatus,
 
+        /// Incorrect actor tries to accept the channel transfer.
+        InvalidChannelTransferAcceptor,
+
+        /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
+        /// channel pending transfer parameters.
+        InvalidChannelTransferCommitmentParams,
+
     }
 }

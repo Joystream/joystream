@@ -1418,6 +1418,85 @@ impl UpdateChannelTransferStatusFixture {
     }
 }
 
+pub struct AcceptChannelTransferFixture {
+    origin: RawOrigin<u64>,
+    channel_id: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    params: TransferParameters<MemberId, BalanceOf<Test>>,
+}
+
+impl AcceptChannelTransferFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            params: TransferParameters::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_transfer_params(
+        self,
+        params: TransferParameters<MemberId, BalanceOf<Test>>,
+    ) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_channel = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::accept_channel_transfer(
+            self.origin.clone().into(),
+            self.channel_id,
+            self.actor.clone(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_channel = Content::channel_by_id(self.channel_id);
+        if actual_result.is_ok() {
+            assert_eq!(
+                new_channel.transfer_status,
+                ChannelTransferStatus::NoActiveTransfer
+            );
+            let channel_owner =
+                if let ChannelTransferStatus::PendingTransfer(ref params) = old_channel.transfer_status {
+                    params.new_owner.clone()
+                } else {
+                    panic!("Invalid transfer status")
+                };
+
+            assert_eq!(
+                new_channel.owner,
+                channel_owner
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelTransferAccepted(
+                    self.channel_id,
+                    self.actor.clone(),
+                    self.params.clone()
+                ))
+            );
+        } else {
+            assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
+        }
+    }
+}
+
 // helper functions
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());

@@ -493,3 +493,15 @@ pub fn ensure_actor_authorized_to_transfer_channel<T: Trait>(
     ensure_actor_auth_success::<T>(&sender, actor)?;
     ensure_actor_is_channel_owner::<T>(actor, owner)
 }
+
+// Transfer acceptance check.
+pub fn ensure_actor_authorized_to_accept_channel<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_acceptor: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+
+    ensure_actor_is_channel_owner::<T>(actor, channel_acceptor)
+}

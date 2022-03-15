@@ -116,6 +116,14 @@ impl<MemberId: Ord, CuratorGroupId, Balance> Default
 pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
     /// New channel owner.
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    /// Transfer parameters.
+    pub transfer_params: TransferParameters<MemberId, Balance>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct TransferParameters<MemberId: Ord, Balance> {
     /// New set of the channel's collaborators.
     pub new_collaborators: BTreeSet<MemberId>,
     /// Transfer price: can be 0, which means free.

@@ -1965,7 +1965,7 @@ decl_module! {
                 Error::<T>::InvalidChannelTransferStatus
             );
 
-            Self::validate_member_set(&new_status_params.new_collaborators)?;
+            Self::validate_member_set(&new_status_params.transfer_params.new_collaborators)?;
 
             //
             // == MUTATION SAFE ==
@@ -1979,6 +1979,43 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_status_params)
             );
+        }
+
+        /// Accepts channel transfer.
+        /// `commitment_params` is required to prevent changing the transfer conditions.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_channel_transfer(
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &channel.owner)?;
+
+            if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
+                ensure!(
+                    params.transfer_params == commitment_params,
+                    Error::<T>::InvalidChannelTransferCommitmentParams
+                );
+            } else {
+                return Err(Error::<T>::InvalidChannelTransferStatus.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let ChannelTransferStatus::PendingTransfer(params) = channel.transfer_status {
+                ChannelById::<T>::mutate(&channel_id, |channel| {
+                    channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                    channel.owner = params.new_owner.clone();
+                });
+
+                Self::deposit_event(
+                    RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+                );
+            }
         }
 
     }
@@ -2257,6 +2294,8 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorGroupId,
             BalanceOf<T>,
         >,
+        TransferParameters =
+            TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2351,5 +2390,6 @@ decl_event!(
 
         /// Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, PendingTransfer),
+        ChannelTransferAccepted(ChannelId, ContentActor, TransferParameters),
     }
 );
