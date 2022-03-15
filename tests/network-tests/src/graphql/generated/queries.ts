@@ -75,7 +75,22 @@ export type OwnedNftFieldsFragment = {
   transactionalStatus:
     | { __typename: 'TransactionalStatusIdle' }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | { __typename: 'TransactionalStatusAuction' }
+    | {
+        __typename: 'TransactionalStatusAuction'
+        auction?: Types.Maybe<{
+          startsAtBlock: number
+          isCompleted: boolean
+          endedAtBlock?: Types.Maybe<number>
+          plannedEndAtBlock?: Types.Maybe<number>
+          minimalBidStep: any
+          startingPrice: any
+          auctionType:
+            | { __typename: 'AuctionTypeEnglish'; extensionPeriod?: Types.Maybe<number>; duration: number }
+            | { __typename: 'AuctionTypeOpen'; bidLockingTime: number }
+          bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
+          lastBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
+        }>
+      }
     | { __typename: 'TransactionalStatusBuyNow' }
 }
 
@@ -2115,6 +2130,42 @@ export const OwnedNftFields = gql`
     metadata
     transactionalStatus {
       __typename
+      ... on TransactionalStatusAuction {
+        auction {
+          startsAtBlock
+          isCompleted
+          endedAtBlock
+          plannedEndAtBlock
+          minimalBidStep
+          startingPrice
+          auctionType {
+            __typename
+            ... on AuctionTypeOpen {
+              bidLockingTime
+            }
+            ... on AuctionTypeEnglish {
+              extensionPeriod
+              duration
+            }
+          }
+          bids {
+            id
+            bidder {
+              id
+              handle
+            }
+            amount
+            createdInBlock
+          }
+          lastBid {
+            id
+            amount
+            bidder {
+              id
+            }
+          }
+        }
+      }
     }
     creatorRoyalty
   }
