@@ -14,7 +14,7 @@ on:
       keyName:
         description: 'SSH key pair on AWS'
         required: false
-        default: 'joystream-github-action-key'
+        default: 'joystream-github-action-key-new'
       instanceType:
         description: 'AWS EC2 instance type (t2.micro, t2.large)'
         required: false
@@ -92,8 +92,8 @@ jobs:
             --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
                           branch_name=${{ github.event.inputs.branchName }} \
                           skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
-                          proposal_parameters='${{ github.event.inputs.proposalParameters }}' \
-                          stack_name=${{ env.STACK_NAME }}"
+                          stack_name=${{ env.STACK_NAME }} \
+                          proposal_parameters=${{ github.event.inputs.proposalParameters }}"
 
       - name: Save the endpoints file as an artifact
         uses: actions/upload-artifact@v2

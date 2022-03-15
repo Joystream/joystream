@@ -1,12 +1,22 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
 import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
 import { Worker, Event, Network } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+// Max value the database can store in Int column field
+export const INT32MAX = 2147483647
+
+// Max value we can use as argument for JavaScript `Date` constructor to create a valid Date object
+// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+export const TIMESTAMPMAX = 8640000000000000
+
 /*
   Simple logger enabling error and informational reporting.
 
@@ -209,6 +219,14 @@ export function perpareString(s: string): string {
   return s.replace(/\u0000/g, '')
 }
 
+export function asInt32(value: Codec): number {
+  return Math.min(Math.max(Math.trunc(Number(value)), -2147483647), 2147483647)
+}
+
+export function asBN(value: Codec): BN {
+  return new BN(value.toString())
+}
+
 export function hasValuesForProperties<
   T extends Record<string, unknown>,
   P extends keyof T & string,
@@ -301,4 +319,24 @@ export function deterministicEntityId(createdInEvent: SubstrateEvent, additional
     `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
     (additionalIdentifier ? `-${additionalIdentifier}` : '')
   )
+}
+
+// Convert a BN to number without throwing an error if > Number.MAX_SAFE_INTEGER
+// add with a custom limit to maxValue if needed
+export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number {
+  try {
+    if (value.toNumber() > maxValue) {
+      logger.info(`toNumber() Warning: Input value ${value.toNumber()} exceeds maxValue: ${maxValue}.`)
+      return maxValue
+    }
+
+    return value.toNumber()
+  } catch (e) {
+    logger.info(
+      `toNumber() Warning: BN.toNumber() conversion error: ${
+        e instanceof Error ? e.message : e
+      }. Returning maxValue: ${maxValue}`
+    )
+    return maxValue
+  }
 }

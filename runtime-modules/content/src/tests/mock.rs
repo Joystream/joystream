@@ -315,69 +315,8 @@ impl storage::Trait for Test {
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
 
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers =
-            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
-
-        if !allowed_storage_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
-        ];
-
-        if !allowed_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
+    type StorageWorkingGroup = StorageWG;
+    type DistributionWorkingGroup = DistributionWG;
 }
 
 // Anyone can upload and delete without restriction
@@ -436,6 +375,9 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
+
+    /// membership info provider
+    type MemberInfoProvider = MemberInfoProvider;
 }
 
 // #[derive (Default)]
@@ -670,5 +612,158 @@ impl LockComparator<u64> for Test {
         } else {
             false
         }
+    }
+}
+
+pub struct MemberInfoProvider {}
+impl MembershipInfoProvider<Test> for MemberInfoProvider {
+    fn controller_account_id(
+        member_id: common::MemberId<Test>,
+    ) -> Result<AccountId, DispatchError> {
+        match member_id {
+            DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
+            DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
+            _ => Err(DispatchError::Other("no account found")),
+        }
+    }
+}
+
+// storage & distribution wg auth
+// working group integration
+pub struct StorageWG;
+pub struct DistributionWG;
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers =
+            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ID,
+            ANOTHER_DISTRIBUTION_PROVIDER_ID,
+        ];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for StorageWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
     }
 }

@@ -1,8 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
-// Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -29,8 +27,8 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, working_group::WorkingGroup, MembershipTypes, StorageOwnership,
-    Url,
+    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -104,6 +102,9 @@ pub trait Trait:
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
+
+    /// Type in order to retrieve controller account from channel member owner
+    type MemberInfoProvider: MembershipInfoProvider<Self>;
 }
 
 decl_storage! {
@@ -1267,7 +1268,8 @@ decl_module! {
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&item.channel_id)?;
 
-            ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountIsNotSet);
+            let reward_account = Self::ensure_reward_account(&channel)?;
+
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = item
@@ -1281,7 +1283,7 @@ decl_module! {
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
             Self::verify_proof(&proof, &item)?;
 
-            ContentTreasury::<T>::transfer_reward( &channel.reward_account.unwrap(), cashout);
+            ContentTreasury::<T>::transfer_reward(&reward_account, cashout);
             ChannelById::<T>::mutate(
                 &item.channel_id,
                 |channel| channel.cumulative_payout_earned =
@@ -1317,6 +1319,7 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) {
+
             let sender = ensure_signed(origin)?;
 
             // Ensure given video exists
@@ -1498,6 +1501,43 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BuyNowCanceled(video_id, owner_id));
         }
+
+        /// Update Buy now nft price
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_buy_now_price(
+            origin,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            new_price: CurrencyOf<T>,
+        ) {
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft owner
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure nft in buy now state
+            nft.ensure_buy_now_state::<T>()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Cancel sell order
+            let video = video.set_nft_status(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::BuyNow(new_price),
+                ..nft
+            });
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BuyNowPriceUpdated(video_id, owner_id, new_price));
+        }
+
 
         /// Make auction bid
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1857,6 +1897,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
+            price_commit: CurrencyOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -1870,9 +1911,10 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure given participant can buy nft now
-            Self::ensure_can_buy_now(&nft, &participant_account_id)?;
+            Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+            let channel = Self::channel_by_id(&video.in_channel);
+            let owner_account_id =  Self::ensure_reward_account(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1887,6 +1929,64 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
+
+        /// Channel owner remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_auth_success::<T>(&sender, &actor)?;
+            ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelOwnerRemarked(actor, channel_id, msg));
+        }
+
+        /// Channel collaborator remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_collaborator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
+        }
+
+        /// Channel moderator remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn channel_moderator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_auth_success::<T>(&sender, &actor)?;
+            ensure_actor_is_moderator::<T>(&actor, &channel.moderators)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
+        }
+
+        /// NFT owner remark
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
+            let video = Self::ensure_video_exists(&video_id)?;
+            let nft = video.ensure_nft_is_issued::<T>()?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
+        }
+
     }
 }
 
@@ -2123,6 +2223,21 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+
+    pub(crate) fn ensure_reward_account(
+        channel: &Channel<T>,
+    ) -> Result<T::AccountId, DispatchError> {
+        if let Some(reward_account) = &channel.reward_account {
+            Ok(reward_account.clone())
+        } else {
+            match &channel.owner {
+                ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
+                ChannelOwner::Member(member_id) => {
+                    <T as Trait>::MemberInfoProvider::controller_account_id(*member_id)
+                }
+            }
+        }
+    }
 }
 
 decl_event!(
@@ -2245,6 +2360,13 @@ decl_event!(
         NftSellOrderMade(VideoId, ContentActor, CurrencyAmount),
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
+        BuyNowPriceUpdated(VideoId, ContentActor, CurrencyAmount),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
+
+        /// Metaprotocols related event
+        ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
+        ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
     }
 );
