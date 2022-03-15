@@ -5,7 +5,7 @@ import { Channel, ChannelCategory, Video, VideoCategory, StorageDataObject } fro
 import { videoRelationsForCountersBare } from '../../content/utils'
 
 export type IVideoDerivedEntites = 'channel' | 'channel.category' | 'category'
-export type IAvcChange = 1 | -1 | [(1 | -1), IVideoDerivedEntites[]]
+export type IAvcChange = 1 | -1 | [1 | -1, IVideoDerivedEntites[]]
 export type IAvcChannelChange = number
 
 /*
@@ -32,14 +32,14 @@ function hasVideoChanged(
   if (!oldValue) {
     return {
       old: undefined,
-      new: Number(isVideoActive(newValue as Video)) as IAvcChange || undefined,
+      new: (Number(isVideoActive(newValue as Video)) as IAvcChange) || undefined,
     }
   }
 
   // video is being deleted?
   if (!newValue) {
     return {
-      old: -Number(isVideoActive(oldValue)) as IAvcChange || undefined,
+      old: (-Number(isVideoActive(oldValue)) as IAvcChange) || undefined,
       new: undefined,
     }
   }
@@ -54,23 +54,27 @@ function hasVideoChanged(
   }
 
   // active status stays unchanged but relation(s) changed, return list of changed relations
-  if (originalState === newState) { // && newState
+  if (originalState === newState) {
     return {
       old: [
         -1,
         [
           oldValue.channel && oldValue.channel.id !== newValue.channel?.id && 'channel',
-          oldValue.channel?.category && oldValue.channel.category?.id !== newValue.channel?.category?.id && 'channel.category',
+          oldValue.channel?.category &&
+            oldValue.channel.category?.id !== newValue.channel?.category?.id &&
+            'channel.category',
           oldValue.category && oldValue.category.id !== newValue.category?.id && 'category',
-        ].filter(item => item) as IVideoDerivedEntites[]
+        ].filter((item) => item) as IVideoDerivedEntites[],
       ],
       new: [
         1,
         [
           newValue.channel && oldValue.channel?.id !== newValue.channel.id && 'channel',
-          newValue.channel?.category && oldValue.channel?.category?.id !== newValue.channel.category?.id && 'channel.category',
+          newValue.channel?.category &&
+            oldValue.channel?.category?.id !== newValue.channel.category?.id &&
+            'channel.category',
           newValue.category && oldValue.category?.id !== newValue.category.id && 'category',
-        ].filter(item => item) as IVideoDerivedEntites[]
+        ].filter((item) => item) as IVideoDerivedEntites[],
       ],
     }
   }
@@ -79,8 +83,8 @@ function hasVideoChanged(
   const change = Number(newState) - Number(originalState)
 
   return {
-    old: -change as IAvcChange || undefined,
-    new: change as IAvcChange || undefined,
+    old: (-change as IAvcChange) || undefined,
+    new: (change as IAvcChange) || undefined,
   }
 }
 
@@ -237,10 +241,11 @@ class ActiveVideoCounterExecutor<
 
     const [counterChange, entitiesToChange] = change
 
-    const shouldChange = false
-      || entity instanceof Channel && entitiesToChange.includes('channel')
-      || entity instanceof ChannelCategory && entitiesToChange.includes('channel.category')
-      || entity instanceof VideoCategory && entitiesToChange.includes('category')
+    const shouldChange =
+      false ||
+      (entity instanceof Channel && entitiesToChange.includes('channel')) ||
+      (entity instanceof ChannelCategory && entitiesToChange.includes('channel.category')) ||
+      (entity instanceof VideoCategory && entitiesToChange.includes('category'))
 
     if (shouldChange) {
       entity.activeVideosCounter += counterChange
