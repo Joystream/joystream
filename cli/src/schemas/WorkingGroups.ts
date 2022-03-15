@@ -16,6 +16,9 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       type: 'integer',
       minimum: 1,
     },
+    title: {
+      type: 'string',
+    },
     shortDescription: {
       type: 'string',
     },
