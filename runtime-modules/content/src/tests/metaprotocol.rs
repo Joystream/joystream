@@ -415,6 +415,7 @@ fn issue_and_sell_nft() {
         Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
         video_id,
         SECOND_MEMBER_ID,
+        DEFAULT_NFT_PRICE,
     ));
 }
 

@@ -1588,19 +1588,17 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure nft in buy now state
-            nft.ensure_buy_now_state::<T>()?;
+            let _ = Self::ensure_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Cancel sell order
-            let video = video.set_nft_status(Nft::<T> {
+            // Cancel sell order & update nft
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::BuyNow(new_price),
                 ..nft
-            });
-
-            VideoById::<T>::insert(video_id, video);
+            }));
 
             // Trigger event
             Self::deposit_event(RawEvent::BuyNowPriceUpdated(video_id, owner_id, new_price));
