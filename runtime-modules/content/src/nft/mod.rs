@@ -322,30 +322,24 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn complete_auction(
-        video_id: T::VideoId,
+        nft: &Nft<T>,
+        in_channel: T::ChannelId,
+        src_account_id: T::AccountId,
         winner_id: T::MemberId,
         amount: CurrencyOf<T>,
-    ) -> Result<Nft<T>, DispatchError> {
-        let Video::<T> {
-            in_channel,
-            nft_status,
-            ..
-        } = Self::video_by_id(video_id);
-        let nft = nft_status.unwrap();
-
-        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft)?;
-        let src_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
+    ) -> Nft<T> {
+        let dest_account_id = Self::ensure_owner_account_id(in_channel, nft).ok();
 
         Self::complete_payment(
             in_channel,
             nft.creator_royalty,
             amount,
             src_account_id,
-            Some(dest_account_id),
+            dest_account_id,
             true,
         );
 
-        Ok(Self::cancel_transaction(&nft, Some(winner_id)))
+        Self::cancel_transaction(nft, Some(winner_id))
     }
 
     pub(crate) fn cancel_transaction(nft: &Nft<T>, winner: Option<T::MemberId>) -> Nft<T> {

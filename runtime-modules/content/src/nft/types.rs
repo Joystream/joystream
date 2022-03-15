@@ -182,11 +182,6 @@ impl<
             .ok_or_else(|| Error::<T>::BidDoesNotExist.into())
     }
 
-    pub(crate) fn ensure_auction_has_valid_bids<T: Trait>(&self) -> DispatchResult {
-        self.ensure_auction_has_no_bids::<T>()
-            .map_or_else(|_| Ok(()), |_| Err(Error::<T>::BidDoesNotExist.into()))
-    }
-
     pub(crate) fn ensure_bid_can_be_made<T: Trait>(&self, amount: Balance) -> DispatchResult {
         if let Some(buy_now) = &self.buy_now_price {
             if amount > *buy_now {
