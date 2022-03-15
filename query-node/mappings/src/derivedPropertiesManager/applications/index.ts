@@ -3,6 +3,7 @@ import {
   createStorageDataObjectManager,
   createVideoManager,
   IAvcChange,
+  IAvcChannelChange,
 } from './activeVideoCounters'
 import { DatabaseManager } from '@joystream/hydra-common'
 import { Channel, Video, StorageDataObject } from 'query-node/dist/model'
@@ -13,7 +14,7 @@ let lastStore: DatabaseManager
 
 export interface IAllManagers {
   videos: DerivedPropertiesManager<Video, IAvcChange>
-  channels: DerivedPropertiesManager<Channel, IAvcChange>
+  channels: DerivedPropertiesManager<Channel, IAvcChannelChange>
   storageDataObjects: DerivedPropertiesManager<StorageDataObject, IAvcChange>
 }
 
