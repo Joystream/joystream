@@ -1672,6 +1672,9 @@ decl_module! {
             // Validate parameters & return english auction
             let eng_auction =  Self::ensure_english_auction_state(&nft)?;
 
+            // Ensure auction is not expired
+            eng_auction.ensure_auction_is_not_expired::<T>(now)?;
+
             // Ensure top bid is present
             let top_bid = eng_auction.ensure_top_bid_exists::<T>().ok();
 
@@ -1747,25 +1750,23 @@ decl_module! {
             // ensure nft exists
             let nft = Self::ensure_nft_exists(video_id)?;
 
-            // ensure open auction state
-            let open_auction = Self::ensure_open_auction_state(&nft)?;
-
             // ensure bid exists
             let old_bid = Self::ensure_open_bid_exists(video_id, participant_id)?;
 
-            // ensure conditions for canceling a bid are met
-            let now = <frame_system::Module<T>>::block_number();
-            open_auction.ensure_bid_can_be_canceled::<T>(now, &old_bid)?;
+            // if open auction is ongoing
+            if let Ok(open_auction) = Self::ensure_open_auction_state(&nft) {
+
+                // ensure conditions for canceling a bid are met
+                let now = <frame_system::Module<T>>::block_number();
+                open_auction.ensure_bid_can_be_canceled::<T>(now, &old_bid)?;
+            } // else old bid
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Cancel last auction bid & update auction data
-            let bid = Self::open_auction_bid_by_video_and_member(&video_id, &participant_id);
-
             // unreserve amount
-            T::Currency::unreserve(&participant_account_id, bid.amount);
+            T::Currency::unreserve(&participant_account_id, old_bid.amount);
 
             // remove
             OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
@@ -1831,8 +1832,7 @@ decl_module! {
             winner_id: T::MemberId,
             commit: CurrencyOf<T>, // amount the auctioner is committed to
         ) {
-            let winner_account_id = ensure_signed(origin.clone())?;
-            ensure_member_auth_success::<T>(&winner_account_id, &winner_id)?;
+            let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
 
             // Ensure nft is already issued
             let nft = Self::ensure_nft_exists(video_id)?;

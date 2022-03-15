@@ -84,7 +84,7 @@ fn cancel_open_auction_bid() {
         // Runtime tested state after call
 
         // Ensure bid on specific auction successfully canceled
-        assert!(!BidByVideoAndMember::<Test>::contains_key(
+        assert!(!OpenAuctionBidByVideoAndMember::<Test>::contains_key(
             video_id,
             SECOND_MEMBER_ID
         ));
@@ -256,7 +256,7 @@ fn cancel_open_auction_fails_for_with_non_bidder() {
 }
 
 #[test]
-fn cancel_open_auction_ok_for_expired_auction() {
+fn cancel_open_auction_bid_ok_for_expired_auction() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);

@@ -418,88 +418,87 @@ fn issue_and_sell_nft() {
     ));
 }
 
-// TODO RHODES: enable after open auction fix
-// #[test]
-// fn successful_nft_owner_remark() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn successful_nft_owner_remark() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         let video_id = Content::next_video_id();
-//         let msg = b"test".to_vec();
+        let video_id = Content::next_video_id();
+        let msg = b"test".to_vec();
 
-//         issue_and_sell_nft();
+        issue_and_sell_nft();
 
-//         assert_ok!(Content::nft_owner_remark(
-//             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-//             ContentActor::Member(SECOND_MEMBER_ID),
-//             video_id,
-//             msg
-//         ));
-//     })
-// }
+        assert_ok!(Content::nft_owner_remark(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            video_id,
+            msg
+        ));
+    })
+}
 
-// #[test]
-// fn unsuccessful_nft_owner_with_invalid_video_id() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn unsuccessful_nft_owner_with_invalid_video_id() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         let invalid_video_id = Content::next_video_id() + 1;
-//         let msg = b"test".to_vec();
+        let invalid_video_id = Content::next_video_id() + 1;
+        let msg = b"test".to_vec();
 
-//         issue_and_sell_nft();
+        issue_and_sell_nft();
 
-//         assert_err!(
-//             Content::nft_owner_remark(
-//                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-//                 ContentActor::Member(SECOND_MEMBER_ID),
-//                 invalid_video_id,
-//                 msg
-//             ),
-//             Error::<Test>::VideoDoesNotExist
-//         );
-//     })
-// }
+        assert_err!(
+            Content::nft_owner_remark(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(SECOND_MEMBER_ID),
+                invalid_video_id,
+                msg
+            ),
+            Error::<Test>::VideoDoesNotExist
+        );
+    })
+}
 
-// #[test]
-// fn unsuccessful_nft_owner_by_non_authorized_actor() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn unsuccessful_nft_owner_by_non_authorized_actor() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         let video_id = Content::next_video_id();
-//         let msg = b"test".to_vec();
+        let video_id = Content::next_video_id();
+        let msg = b"test".to_vec();
 
-//         issue_and_sell_nft();
+        issue_and_sell_nft();
 
-//         assert_err!(
-//             Content::nft_owner_remark(
-//                 Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-//                 ContentActor::Member(DEFAULT_MODERATOR_ID),
-//                 video_id,
-//                 msg
-//             ),
-//             Error::<Test>::ActorNotAuthorized
-//         );
-//     })
-// }
+        assert_err!(
+            Content::nft_owner_remark(
+                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MODERATOR_ID),
+                video_id,
+                msg
+            ),
+            Error::<Test>::ActorNotAuthorized
+        );
+    })
+}
 
-// #[test]
-// fn unsuccessful_nft_owner_with_invalid_acount() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn unsuccessful_nft_owner_with_invalid_acount() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
 
-//         let video_id = Content::next_video_id();
-//         let msg = b"test".to_vec();
+        let video_id = Content::next_video_id();
+        let msg = b"test".to_vec();
 
-//         issue_and_sell_nft();
+        issue_and_sell_nft();
 
-//         assert_err!(
-//             Content::nft_owner_remark(
-//                 Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-//                 ContentActor::Member(SECOND_MEMBER_ID),
-//                 video_id,
-//                 msg
-//             ),
-//             Error::<Test>::MemberAuthFailed
-//         );
-//     })
-// }
+        assert_err!(
+            Content::nft_owner_remark(
+                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
+                ContentActor::Member(SECOND_MEMBER_ID),
+                video_id,
+                msg
+            ),
+            Error::<Test>::MemberAuthFailed
+        );
+    })
+}
