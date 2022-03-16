@@ -349,9 +349,6 @@ export async function createNft(
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
 
-  // load creator channel
-  const creatorChannel = (await getById(store, Video, video.getId(), ['channel'])).channel
-
   // prepare nft record
   const nft = new OwnedNft({
     id: video.id.toString(),
@@ -359,7 +356,7 @@ export async function createNft(
     ownerMember,
     creatorRoyalty,
     metadata: decodedMetadata,
-    creatorChannel: creatorChannel,
+    creatorChannel: video.channel,
     // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
     transactionalStatus: new TransactionalStatusIdle(),
   })
