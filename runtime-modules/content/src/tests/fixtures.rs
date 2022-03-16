@@ -769,6 +769,118 @@ impl UpdateVideoFixture {
     }
 }
 
+pub struct DeleteChannelAssetsAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    rationale: Vec<u8>,
+}
+
+impl DeleteChannelAssetsAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let channel_pre = Content::channel_by_id(&self.channel_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
+
+        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        let actual_result = Content::delete_channel_assets_as_moderator(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.assets_to_remove.clone(),
+            self.rationale.clone(),
+        );
+
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let channel_post = Content::channel_by_id(&self.channel_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelAssetsDeletedByModerator(
+                        self.actor.clone(),
+                        self.channel_id,
+                        self.assets_to_remove.clone(),
+                        self.rationale.clone(),
+                    ))
+                );
+
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn,
+                );
+
+                assert_eq!(
+                    channel_post.data_objects,
+                    BTreeSet::from_iter(
+                        channel_pre
+                            .data_objects
+                            .difference(&self.assets_to_remove)
+                            .cloned(),
+                    ),
+                );
+
+                assert!(!self.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(err) => {
+                assert_eq!(channel_pre, channel_post);
+                assert_eq!(balance_pre, balance_post);
+
+                if err != Error::<Test>::ChannelDoesNotExist.into() {
+                    assert!(channel_pre.data_objects.iter().all(|obj_id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                    }));
+                }
+            }
+        }
+    }
+}
+
 pub trait ChannelDeletion {
     fn get_sender(&self) -> &AccountId;
     fn get_channel_id(&self) -> &ChannelId;
@@ -1453,6 +1565,119 @@ impl DeletePostFixture {
                             thread_size,
                         ),
                     }
+                }
+            }
+        }
+    }
+}
+
+pub struct DeleteVideoAssetsAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    rationale: Vec<u8>,
+}
+
+impl DeleteVideoAssetsAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            video_id: VideoId::one(),
+            assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let video_pre = Content::video_by_id(&self.video_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+
+        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        let actual_result = Content::delete_video_assets_as_moderator(
+            origin,
+            self.actor.clone(),
+            self.video_id,
+            self.assets_to_remove.clone(),
+            self.rationale.clone(),
+        );
+
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let video_post = Content::video_by_id(&self.video_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::VideoAssetsDeletedByModerator(
+                        self.actor.clone(),
+                        self.video_id,
+                        self.assets_to_remove.clone(),
+                        video_pre.nft_status.is_some(),
+                        self.rationale.clone(),
+                    ))
+                );
+
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn,
+                );
+
+                assert_eq!(
+                    video_post.data_objects,
+                    BTreeSet::from_iter(
+                        video_pre
+                            .data_objects
+                            .difference(&self.assets_to_remove)
+                            .cloned(),
+                    ),
+                );
+
+                assert!(!self.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(err) => {
+                assert_eq!(video_pre, video_post);
+                assert_eq!(balance_pre, balance_post);
+
+                if err != Error::<Test>::VideoDoesNotExist.into() {
+                    assert!(video_pre.data_objects.iter().all(|obj_id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                    }));
                 }
             }
         }

@@ -11,6 +11,7 @@ mod permissions;
 mod types;
 
 use sp_std::cmp::max;
+use sp_std::iter::FromIterator;
 use sp_std::mem::size_of;
 use sp_std::vec;
 
@@ -495,12 +496,12 @@ decl_module! {
             let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
 
             if !new_data_object_ids.is_empty() {
-                Self::insert_new_data_objects_to_set(&mut channel.data_objects, &new_data_object_ids);
+                channel.data_objects = BTreeSet::from_iter(channel.data_objects.union(&new_data_object_ids).cloned());
             }
 
             if !params.assets_to_remove.is_empty() {
                 Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
-                Self::remove_data_objects_from_set(&mut channel.data_objects, &params.assets_to_remove);
+                channel.data_objects = BTreeSet::from_iter(channel.data_objects.difference(&params.assets_to_remove).cloned());
             }
 
             //
@@ -625,6 +626,50 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
 
             Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel_assets_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            rationale: Vec<u8>,
+        ) {
+            let sender = ensure_signed(origin.clone())?;
+
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let mut updated_data_objects_set = channel.data_objects.clone();
+
+            // permissions check
+            let actions_to_perform = vec![ContentModerationAction::DeleteChannelAssets];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            // ensure provided assets belong to the channel
+            Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &channel.data_objects)?;
+
+            // remove provided assets from channel's updated_data_objects_set
+            updated_data_objects_set = BTreeSet::from_iter(updated_data_objects_set.difference(&assets_to_remove).cloned());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // remove the assets
+            if !assets_to_remove.is_empty() {
+                Storage::<T>::delete_data_objects(
+                    sender.clone(),
+                    Self::bag_id_for_channel(&channel_id),
+                    assets_to_remove.clone(),
+                )?;
+            }
+
+            // update channel's data_objects set
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.data_objects = updated_data_objects_set });
+
+            // emit the event
+            Self::deposit_event(RawEvent::ChannelAssetsDeletedByModerator(actor, channel_id, assets_to_remove, rationale));
         }
 
         // extrinsics for channel deletion as moderator
@@ -865,12 +910,12 @@ decl_module! {
             let mut updated_video_data_objects = video.data_objects.clone();
 
             if !new_data_object_ids.is_empty() {
-                Self::insert_new_data_objects_to_set(&mut updated_video_data_objects, &new_data_object_ids);
+                updated_video_data_objects = BTreeSet::from_iter(updated_video_data_objects.union(&new_data_object_ids).cloned());
             }
 
             if !params.assets_to_remove.is_empty() {
                 Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
-                Self::remove_data_objects_from_set(&mut updated_video_data_objects, &params.assets_to_remove);
+                updated_video_data_objects = BTreeSet::from_iter(updated_video_data_objects.difference(&params.assets_to_remove).cloned());
             }
 
             let nft_status = params.auto_issue_nft
@@ -881,7 +926,6 @@ decl_module! {
                         Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
                     }
                 )?;
-
 
             //
             // == MUTATION SAFE ==
@@ -947,6 +991,59 @@ decl_module! {
             Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video)?;
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video_assets_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            rationale: Vec<u8>,
+        ) {
+            let sender = ensure_signed(origin.clone())?;
+
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+            let mut updated_data_objects_set = video.data_objects.clone();
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
+            // permissions check
+            let is_nft = video.nft_status.is_some();
+            let actions_to_perform = if is_nft {
+                vec![ContentModerationAction::DeleteNftVideoAssets]
+            } else {
+                vec![ContentModerationAction::DeleteVideoAssets]
+            };
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            // ensure provided assets belong to the video
+            Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &video.data_objects)?;
+
+            // remove provided assets from video's updated_data_objects_set
+            updated_data_objects_set = BTreeSet::from_iter(updated_data_objects_set.difference(&assets_to_remove).cloned());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // remove the assets
+            if !assets_to_remove.is_empty() {
+                Storage::<T>::delete_data_objects(
+                    sender.clone(),
+                    Self::bag_id_for_channel(&channel_id),
+                    assets_to_remove.clone(),
+                )?;
+            }
+
+            // update video's data_objects set
+            VideoById::<T>::mutate(video_id, |video| { video.data_objects = updated_data_objects_set });
+
+            // emit the event
+            Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2602,33 +2699,14 @@ impl<T: Trait> Module<T> {
         ))
     }
 
-    fn insert_new_data_objects_to_set(
-        set: &mut BTreeSet<DataObjectId<T>>,
-        objects: &BTreeSet<DataObjectId<T>>,
-    ) {
-        for id in objects {
-            set.insert(id.clone());
-        }
-    }
-
-    fn remove_data_objects_from_set(
-        set: &mut BTreeSet<DataObjectId<T>>,
-        objects: &BTreeSet<DataObjectId<T>>,
-    ) {
-        for id in objects {
-            set.remove(id);
-        }
-    }
-
     fn ensure_assets_to_remove_are_part_of_assets_set(
         assets_to_remove: &BTreeSet<DataObjectId<T>>,
         assets_set: &BTreeSet<DataObjectId<T>>,
     ) -> DispatchResult {
-        for id in assets_to_remove {
-            if !assets_set.contains(id) {
-                return Err(Error::<T>::AssetsToRemoveBeyondEntityAssetsSet.into());
-            }
-        }
+        ensure!(
+            assets_to_remove.iter().all(|id| assets_set.contains(id)),
+            Error::<T>::AssetsToRemoveBeyondEntityAssetsSet,
+        );
         Ok(())
     }
 
@@ -2705,6 +2783,12 @@ decl_event!(
             ChannelFeatureStatusChanges,
             Vec<u8>, /* rationale */
         ),
+        ChannelAssetsDeletedByModerator(
+            ContentActor,
+            ChannelId,
+            BTreeSet<DataObjectId>,
+            Vec<u8>, /* rationale */
+        ),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -2744,6 +2828,13 @@ decl_event!(
         VideoDeleted(ContentActor, VideoId),
         VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
         VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
+        VideoAssetsDeletedByModerator(
+            ContentActor,
+            VideoId,
+            BTreeSet<DataObjectId>,
+            bool,
+            Vec<u8>, /* rationale */
+        ),
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),

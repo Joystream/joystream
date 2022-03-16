@@ -38,6 +38,9 @@ pub enum ContentModerationAction {
     ChangeChannelFeatureStatus(ChannelFeature),
     DeleteVideo,
     DeleteChannel,
+    DeleteVideoAssets,
+    DeleteNftVideoAssets,
+    DeleteChannelAssets,
 }
 
 pub type ModerationPermissionsByLevel<T> =
