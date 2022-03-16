@@ -120,7 +120,7 @@ impl CreateChannelFixture {
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
-                        cumulative_payout_earned: Zero::zero(),
+                        cumulative_reward_claimed: Zero::zero(),
                     },
                     self.params.clone(),
                 ))
@@ -422,7 +422,7 @@ impl UpdateChannelFixture {
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
-                            cumulative_payout_earned: BalanceOf::<Test>::zero(),
+                            cumulative_reward_claimed: BalanceOf::<Test>::zero(),
                         },
                         self.params.clone(),
                     ))
@@ -1285,7 +1285,7 @@ impl ClaimChannelRewardFixture {
             payments: create_some_pull_payments_helper(),
             item: PullPayment::<Test> {
                 channel_id: ChannelId::one(),
-                cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+                cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
         }
@@ -1310,8 +1310,8 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let payout_earned_pre =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let reward_claimed_pre =
+            Content::channel_by_id(self.item.channel_id).cumulative_reward_claimed;
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1323,25 +1323,25 @@ impl ClaimChannelRewardFixture {
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
         let balance_post = Balances::<Test>::usable_balance(self.sender);
-        let payout_earned_post =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let reward_claimed_post =
+            Content::channel_by_id(self.item.channel_id).cumulative_reward_claimed;
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let cashout = payout_earned_post.saturating_sub(payout_earned_pre);
+            let cashout = reward_claimed_post.saturating_sub(reward_claimed_pre);
             assert_eq!(balance_post.saturating_sub(balance_pre), cashout);
-            assert_eq!(payout_earned_post, self.item.cumulative_payout_claimed);
+            assert_eq!(reward_claimed_post, self.item.cumulative_reward_earned);
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
-                    self.item.cumulative_payout_claimed,
+                    self.item.cumulative_reward_earned,
                     self.item.channel_id
                 ))
             );
         } else {
             assert_eq!(balance_post, balance_pre);
-            assert_eq!(payout_earned_post, payout_earned_pre);
+            assert_eq!(reward_claimed_pre, reward_claimed_post);
         }
     }
 }
@@ -1631,16 +1631,22 @@ fn build_merkle_path_helper<E: Encode + Clone>(
 }
 
 // generate some payments claims
-pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+pub fn create_some_pull_payments_helper_with_rewards(
+    cumulative_reward_earned: u64,
+) -> Vec<PullPayment<Test>> {
     let mut payments = Vec::new();
     for i in 0..PAYMENTS_NUMBER {
         payments.push(PullPayment::<Test> {
             channel_id: ChannelId::from(i % 2),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_EARNED),
+            cumulative_reward_earned: BalanceOf::<Test>::from(cumulative_reward_earned),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }
     payments
+}
+
+pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+    create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED)
 }
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
