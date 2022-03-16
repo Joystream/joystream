@@ -11,7 +11,7 @@ impl<T: Trait> Module<T> {
         bid: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::total_balance(participant) >= bid,
+            T::Currency::can_reserve(participant, bid),
             Error::<T>::InsufficientBalance
         );
         Ok(())
