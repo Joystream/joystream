@@ -215,7 +215,6 @@ pub fn successful_comment_creation_by_member() {
     })
 }
 
-
 #[test]
 pub fn successful_comment_creation_by_curator() {
     with_default_mock_builder(|| {
@@ -1162,7 +1161,8 @@ pub fn successful_moderators_update_by_member_owner() {
 
         UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
 
-        UpdateModeratorSetFixture::default().call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+        UpdateModeratorSetFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 

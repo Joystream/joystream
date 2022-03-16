@@ -1976,7 +1976,7 @@ decl_module! {
 
             channel.ensure_has_no_active_transfer::<T>()?;
 
-            Self::validate_member_set(&new_status_params.transfer_params.new_collaborators)?;
+            Self::validate_transfer_channel_params(&new_status_params)?;
 
             //
             // == MUTATION SAFE ==
@@ -2261,6 +2261,13 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Validate parameters of the channel transfer.
+    fn validate_transfer_channel_params(
+        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+    ) -> DispatchResult {
+        Self::validate_member_set(&params.transfer_params.new_collaborators)
     }
 }
 
