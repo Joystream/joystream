@@ -52,7 +52,6 @@
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
     COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
     DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
-    COLOSSUS_1_TRANSACTOR_URI: '//Colossus1'
     SKIP_NODE: 'true'
     SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
     TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
