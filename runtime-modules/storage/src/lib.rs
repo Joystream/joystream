@@ -152,10 +152,36 @@ use random_buckets::StorageBucketPicker;
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Upload new data objects.
+    ///
+    /// PRECONDITIONS:
+    /// - params.object_creation_list is not empty or NoObjectsOnUpload error returned
+    /// - params.expected_data_size_fee reflect the DataObjectPerMegabyteFee in storage or DataSizeFeeChanged error is returned
+    /// - params.bag_id must exists or BagDoesntExist error returned
+    /// - global uploading block not enabled or UploadingBlocked error returned
+    /// - size of each objects less than MaxDataObjectSize or MaxDataObjectSizeExceeded error returned
+    /// - size of each objects greater than 0 or ZeroObjectSize error returned
+    /// - ipfs content id of each object not empty or EmptyContentId error returned
+    /// - ipfs id of each object not black listed or DataObjectBlacklisted error returned
+    /// - ALL storage bucket in the bag have enough size capacity for the new total objects size or StorageBucketObjectSizeLimitReached error  returned
+    /// - ALL storage bucket in the bag have number capacity for the new total objects number or StorageBucketObjectNumberLimitReached error returned
+    /// - caller must have enough balance to cover data size fee + deletion prize for each object otherwise InsufficientBalance error returned
+    ///
+    /// POSTCONDITIONS:
+    /// - each storage bucket for the bag is updated
+    /// - bag state is updated
+    /// - balance of data size fee + total deletion prize is transferred from caller to treasury account
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult;
 
     /// Validates moving objects parameters.
     /// Validates voucher usage for affected buckets.
+    ///
+    /// PRECONDITIONS
+    /// - source bag id != destination bag id or SourceAndDestinationBagsAreEqual error returned
+    /// - objects is not empty or DataObjectIdCollectionIsEmpty error returned
+    /// - both specified source and destination bags must exists or BagDoesNotExist error returned in both cases
+    /// - ALL objects ids specified must be valid or DataObjectDoesNotExist error returned
+    /// - ALL storage bucket in the dest bag have enough size capacity for the new total objects size or StorageBucketObjectSizeLimitReached error  returned
+    /// - ALL storage bucket in the dest bag have number capacity for the new total objects number or StorageBucketObjectNumberLimitReached error returned
     fn can_move_data_objects(
         src_bag_id: &BagId<T>,
         dest_bag_id: &BagId<T>,
@@ -163,6 +189,11 @@ pub trait DataObjectStorage<T: Trait> {
     ) -> DispatchResult;
 
     /// Move data objects to a new bag.
+    /// PRECONDITIONS
+    /// - can_move_data_objects::PRECONDITIONS
+    ///
+    /// POSTCONDITIONS:
+    /// - specified objects are moved from source bag to destination bag
     fn move_data_objects(
         src_bag_id: BagId<T>,
         dest_bag_id: BagId<T>,
@@ -170,6 +201,18 @@ pub trait DataObjectStorage<T: Trait> {
     ) -> DispatchResult;
 
     /// Delete storage objects. Transfer deletion prize to the provided account.
+    ///
+    /// PRECONDITIONS:
+    /// - objects is not empty or DataObjectIdCollectionIsEmpty error returned
+    /// - bag_id must exists or BagDoesntExist error returned
+    /// - ALL specified data objects ids must be valid or DataObjectDoesntExist error returned
+    /// - Storage Treasury must have sufficient balance for the cumulative deletion prize for all the object deleted or InsufficientTreasuryBalance error returned
+    ///
+    /// POSTCONDITIONS:
+    /// - Data Objects are removed from storage
+    /// - Bag state is updated as a result
+    /// - Bag storage buckets are updated as a result
+    /// - relevant balance is deposited from storage treasury to caller account
     fn delete_data_objects(
         deletion_prize_account_id: T::AccountId,
         bag_id: BagId<T>,
@@ -177,12 +220,39 @@ pub trait DataObjectStorage<T: Trait> {
     ) -> DispatchResult;
 
     /// Delete dynamic bag. Updates related storage bucket vouchers.
+    /// PRECONDITIONS:
+    /// - bag_id must exists or BagDoesntExist error returned
+    /// - Storage Treasury must have sufficient balance for the cumulative deletion prize for all the object deleted + bag deletion prize or InsufficientTreasuryBalance error returned
+    ///
+    /// POSTCONDITIONS:
+    /// - All Data Objects stored by the bag are removed from storage
+    /// - Bag is removed from storage
+    /// - bag assignment is unregistered from storage buckets
+    /// - bag assignment is unregistered from distribution buckets
+    /// - relevant balance is deposited from storage treasury to caller account
     fn delete_dynamic_bag(
         deletion_prize_account_id: T::AccountId,
         bag_id: DynamicBagId<T>,
     ) -> DispatchResult;
 
-    /// Creates dynamic bag. BagId should provide the caller.
+    /// Creates dynamic bag. BagId should provide the caller
+    /// PRECONDITIONS:
+    /// - params.bag_id must not exist yet or DynamicBagExists error returned
+    /// - if objects to upload are specified:
+    ///   - global uploading block not enabled or UploadingBlocked error returned
+    ///   - size of each objects less than MaxDataObjectSize or MaxDataObjectSizeExceeded error returned
+    ///   - size of each objects greater than 0 or ZeroObjectSize error returned
+    ///   - ipfs content id of each object not empty or EmptyContentId error returned
+    ///   - ipfs id of each object not black listed or DataObjectBlacklisted error returned
+    ///   - ALL storage bucket in the bag have enough size capacity for the new total objects size or StorageBucketObjectSizeLimitReached error  returned
+    ///   - ALL storage bucket in the bag have number capacity for the new total objects size or StorageBucketObjectNumberLimitReached error returned
+    /// - caller must have enough balance to cover dynamic bag deletion prize + eventual data size fee + deletion prize for each object otherwise InsufficientBalance error returned
+    ///
+    /// POSTCONDITIONS
+    /// - bag added to storage with correct object size/num if objects specified
+    /// - bag registered for storage buckets with enough resource to hold bag size/num
+    /// - bag registered for distribution buckets
+    /// - relevant amount transferred from caller account to treasury account
     fn create_dynamic_bag(
         params: DynBagCreationParameters<T>,
         deletion_prize: BalanceOf<T>,
@@ -195,6 +265,23 @@ pub trait DataObjectStorage<T: Trait> {
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 
     /// Upload and delete objects at the same time
+    /// - params.object_creation_list is not empty or NoObjectsOnUpload error returned
+    /// - params.expected_data_size_fee reflect the DataObjectPerMegabyteFee in storage or DataSizeFeeChanged error is returned
+    /// - params.bag_id must exists or BagDoesntExist error returned
+    /// - global uploading block not enabled or UploadingBlocked error returned
+    /// - size of each objects less than MaxDataObjectSize or MaxDataObjectSizeExceeded error returned
+    /// - size of each objects greater than 0 or ZeroObjectSize error returned
+    /// - ipfs content id of each object not empty or EmptyContentId error returned
+    /// - ipfs id of each object not black listed or DataObjectBlacklisted error returned
+    /// - ALL specified data objects ids must be valid or DataObjectDoesntExist error returned
+    /// - ALL storage bucket in the bag have enough size capacity for the new total NET objects size or StorageBucketObjectSizeLimitReached error  returned
+    /// - ALL storage bucket in the bag have number capacity for the new total NET objects number or StorageBucketObjectNumberLimitReached error returned
+    /// - caller or treasury account must have enough balance to cover the net expense
+    ///
+    /// POSTCONDITIONS:
+    /// - each storage bucket for the bag is updated
+    /// - bag state is updated
+    /// - relevant net balance is transferred
     fn upload_and_delete_data_objects(
         upload_parameters: UploadParameters<T>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
