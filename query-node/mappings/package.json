@@ -18,11 +18,11 @@
   },
   "dependencies": {
     "@polkadot/types": "5.9.1",
-    "@joystream/hydra-common": "3.1.0-alpha.16",
-    "@joystream/hydra-db-utils": "3.1.0-alpha.16",
+    "@joystream/hydra-common": "^3.1.0-alpha.20",
+    "@joystream/hydra-db-utils": "^3.1.0-alpha.20",
     "@joystream/metadata-protobuf": "^2.0.0",
     "@joystream/types": "^0.18.2",
-    "@joystream/warthog": "2.41.2",
+    "@joystream/warthog": "^2.41.4",
     "@apollo/client": "^3.2.5"
   },
   "devDependencies": {

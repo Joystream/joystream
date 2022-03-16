@@ -198,7 +198,13 @@ export function deserializeMetadata<T>(
   metadataBytes: Bytes
 ): DecodedMetadataObject<T> | null {
   try {
-    return metaToObject(metadataType, metadataType.decode(metadataBytes.toU8a(true)))
+    const message = metadataType.decode(metadataBytes.toU8a(true))
+    Object.keys(message).forEach((key) => {
+      if (key in message && typeof message[key] === 'string') {
+        message[key] = perpareString(message[key])
+      }
+    })
+    return metaToObject(metadataType, message)
   } catch (e) {
     invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
