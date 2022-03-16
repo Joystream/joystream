@@ -488,7 +488,7 @@ decl_module! {
             };
 
             Storage::<T>::upload_and_delete_data_objects(
-                upload_parmaters,
+                upload_parameters,
                 params.assets_to_remove.clone(),
             )?;
 
