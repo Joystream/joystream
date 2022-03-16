@@ -1088,29 +1088,26 @@ decl_storage! {
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
         /// DynamicBagCreationPolicy by bag type storage map.
-        pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy):
-        map hasher(blake2_128_concat) DynamicBagType =>
+        pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy): map
+            hasher(blake2_128_concat) DynamicBagType =>
             DynamicBagCreationPolicy<T::DistributionBucketFamilyId>;
 
         /// 'Data objects for bags' storage double map.
         pub DataObjectsById get (fn data_object_by_id): double_map
             hasher(blake2_128_concat) BagId<T>,
-        hasher(blake2_128_concat) T::DataObjectId => DataObject<BalanceOf<T>>;
+            hasher(blake2_128_concat) T::DataObjectId => DataObject<BalanceOf<T>>;
 
         /// Distribution bucket family id counter. Starts at zero.
-        pub NextDistributionBucketFamilyId get(fn next_distribution_bucket_family_id):
-        T::DistributionBucketFamilyId;
+        pub NextDistributionBucketFamilyId get(fn next_distribution_bucket_family_id): T::DistributionBucketFamilyId;
 
         /// Distribution bucket families.
-        pub DistributionBucketFamilyById get (fn distribution_bucket_family_by_id):
-        map hasher(blake2_128_concat) T::DistributionBucketFamilyId =>
-            DistributionBucketFamily<T>;
+        pub DistributionBucketFamilyById get (fn distribution_bucket_family_by_id): map
+            hasher(blake2_128_concat) T::DistributionBucketFamilyId => DistributionBucketFamily<T>;
 
         /// 'Distribution bucket' storage double map.
-        pub DistributionBucketByFamilyIdById get (fn distribution_bucket_by_family_id_by_index):
-        double_map
+        pub DistributionBucketByFamilyIdById get (fn distribution_bucket_by_family_id_by_index): double_map
             hasher(blake2_128_concat) T::DistributionBucketFamilyId,
-        hasher(blake2_128_concat) T::DistributionBucketIndex => DistributionBucket<T>;
+            hasher(blake2_128_concat) T::DistributionBucketIndex => DistributionBucket<T>;
 
         /// Total number of distribution bucket families in the system.
         pub DistributionBucketFamilyNumber get(fn distribution_bucket_family_number): u64;
