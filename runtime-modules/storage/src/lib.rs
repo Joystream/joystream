@@ -799,11 +799,11 @@ impl Voucher {
     fn try_update<T: Trait>(self, new_voucher: VoucherUpdate) -> Result<Self, Error<T>> {
         ensure!(
             new_voucher.objects_number <= self.objects_limit,
-            Error::<T>::StorageBucketObjectSizeLimitReached,
+            Error::<T>::StorageBucketObjectNumberLimitReached,
         );
         ensure!(
             new_voucher.objects_total_size <= self.size_limit,
-            Error::<T>::StorageBucketObjectNumberLimitReached,
+            Error::<T>::StorageBucketObjectSizeLimitReached,
         );
         Ok(Self {
             objects_used: new_voucher.objects_number,
