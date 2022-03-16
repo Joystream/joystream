@@ -560,8 +560,8 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
       'Non-existing auction got new bid'
     )
 
-    const englishAuctionExtensionPeriod = (auction.auctionType as AuctionTypeEnglish).extensionPeriod!
-    auction.plannedEndAtBlock = auction.plannedEndAtBlock! + englishAuctionExtensionPeriod
+    const englishAuctionExtensionPeriod = (auction.auctionType as AuctionTypeEnglish).extensionPeriod
+    auction.plannedEndAtBlock = (auction.plannedEndAtBlock || 0) + (englishAuctionExtensionPeriod || 0)
     store.save<Auction>(auction)
   }
 
