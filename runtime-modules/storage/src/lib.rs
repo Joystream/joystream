@@ -553,10 +553,20 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
 }
 
 // Helper enum for performing bag operation: no default since it is non trivial
+type ObjectsToUpload<DataObjectCreationParameters> = Vec<DataObjectCreationParameters>;
+type ObjectsToRemove<ObjectId> = BTreeSet<ObjectId>;
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum BagOperationParamsTypes<Balance: Unsigned, ObjectId: Clone> {
-    Update(Vec<DataObjectCreationParameters>, BTreeSet<ObjectId>),
-    Create(Balance, Vec<DataObjectCreationParameters>),
+enum BagOperationParamsTypes<DeletionPrize: Unsigned, ObjectId: Clone> {
+    /// Update operation: both upload and removal allowed
+    Update(
+        ObjectsToUpload<DataObjectCreationParameters>,
+        ObjectsToRemove<ObjectId>,
+    ),
+
+    /// Create operation: Create bag with deletion prize & Upload Objects
+    Create(DeletionPrize, ObjectsToUpload<DataObjectCreationParameters>),
+
+    /// Delete Bag & its content
     Delete,
 }
 
