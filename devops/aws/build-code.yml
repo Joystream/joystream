@@ -1,6 +1,6 @@
 ---
 
-- name: Get latest Joystream code, build it and copy binary to local
+- name: Get latest Joystream code and run setup on all hosts
   hosts: build,rpc
   gather_facts: no
   tasks:
@@ -14,7 +14,7 @@
         name: common
         tasks_from: run-setup
 
-- name: Build code and copy binary to local
+- name: Build joystream-node on build host and copy binary to local
   hosts: build
   gather_facts: no
   tasks:
@@ -29,7 +29,7 @@
         dest: "{{ data_path }}/joystream-node"
         flat: yes
 
-- name: Copy binary to remote servers
+- name: Copy joystream-node binary to all hosts
   hosts: all
   gather_facts: no
   tasks:

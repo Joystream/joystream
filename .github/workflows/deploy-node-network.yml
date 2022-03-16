@@ -126,7 +126,7 @@ jobs:
           echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
           cat inventory
 
-      - name: Run playbook to compile joystream-node on build server
+      - name: Run playbook to setup all hosts and compile joystream-node
         uses: dawidd6/action-ansible-playbook@v2
         # Build binaries if AMI not specified or a custom proposals parameter is passed
         if: steps.myoutputs.outputs.ec2AMI == '' || steps.myoutputs.outputs.proposalParameters != ''
