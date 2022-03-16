@@ -157,6 +157,9 @@ type WorkingGroupOpeningMetadata @entity {
   "Whether the originally provided metadata was valid"
   originallyValid: Boolean!
 
+  "Opening title"
+  title: String
+
   "Opening short description"
   shortDescription: String
 

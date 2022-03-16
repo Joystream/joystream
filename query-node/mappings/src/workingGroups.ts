@@ -24,6 +24,7 @@ import {
   WorkingGroupModuleName,
   toNumber,
   INT32MAX,
+  getWorkingGroupByName,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -92,12 +93,8 @@ async function getWorkingGroup(
   relations: string[] = []
 ): Promise<WorkingGroup> {
   const [groupName] = event.name.split('.')
-  const group = await store.get(WorkingGroup, { where: { name: groupName }, relations })
-  if (!group) {
-    throw new Error(`Working group ${groupName} not found!`)
-  }
 
-  return group
+  return getWorkingGroupByName(store, groupName as WorkingGroupModuleName, relations)
 }
 
 async function getOpening(
@@ -175,6 +172,7 @@ export async function createWorkingGroupOpeningMetadata(
     expectedEndingTimestamp,
     hiringLimit,
     shortDescription,
+    title,
   } = metadata
 
   const openingMetadata = new WorkingGroupOpeningMetadata({
@@ -182,6 +180,7 @@ export async function createWorkingGroupOpeningMetadata(
     updatedAt: eventTime,
     originallyValid,
     applicationDetails: applicationDetails || undefined,
+    title: title || undefined,
     description: description || undefined,
     shortDescription: shortDescription || undefined,
     hiringLimit: hiringLimit || undefined,

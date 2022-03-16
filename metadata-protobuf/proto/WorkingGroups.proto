@@ -15,6 +15,7 @@ message OpeningMetadata {
     optional InputType type = 2; // Suggested type of the UI answer input
   }
   repeated ApplicationFormQuestion application_form_questions = 6; // List of questions that should be answered during application
+  optional string title = 7;
 }
 
 message UpcomingOpeningMetadata {
