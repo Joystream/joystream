@@ -19,7 +19,7 @@ export class CurrencyAmount extends CurrencyOf {}
 
 // NFT types
 
-export class Royalty extends UInt {}
+export class Royalty extends UInt.with(32, 'Perbill') {}
 export class IsExtended extends bool {}
 
 export class EnglishAuctionDetails extends JoyStructDecorated({
@@ -194,6 +194,7 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   enable_comments: Option.with(bool),
+  auto_issue_nft: Option.with(NftIssuanceParameters),
 }) {}
 
 export class VideoPostType extends JoyEnum({

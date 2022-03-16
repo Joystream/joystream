@@ -728,7 +728,8 @@
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
-        "enable_comments": "Option<bool>"
+        "enable_comments": "Option<bool>",
+        "auto_issue_nft": "Option<NftIssuanceParameters>"
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
@@ -771,7 +772,7 @@
         "reason": "Hash"
     },
     "ModeratorSet": "BTreeSet<MemberId>",
-    "Royalty": "u64",
+    "Royalty": "Perbill",
     "IsExtended": "bool",
     "EnglishAuctionDetails": {
         "extension_period": "u32",

@@ -3,7 +3,7 @@
 
 import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
-import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
+import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AccountInfo */
@@ -964,7 +964,7 @@ export interface RewardPaymentType extends Enum {
 }
 
 /** @name Royalty */
-export interface Royalty extends u64 {}
+export interface Royalty extends Perbill {}
 
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
@@ -1184,6 +1184,7 @@ export interface VideoUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly enable_comments: Option<bool>;
+  readonly auto_issue_nft: Option<NftIssuanceParameters>;
 }
 
 /** @name VoteKind */
