@@ -211,14 +211,12 @@ export class UploadParameters
   })
   implements IUploadParameters {}
 
-export class DynBagCreationParameters
-  extends JoyStructDecorated({
-    bagId: DynamicBagId,
-    objectCreationList: Vec.with(DataObjectCreationParameters),
-    deletionPrizeSourceAccountId: AccountId,
-    expectedDataSizeFee: BalanceOf,
-  })
-  implements IUploadParameters {}
+export class DynBagCreationParameters extends JoyStructDecorated({
+  bagId: DynamicBagId,
+  objectCreationList: Vec.with(DataObjectCreationParameters),
+  deletionPrizeSourceAccountId: AccountId,
+  expectedDataSizeFee: BalanceOf,
+}) {}
 
 export class Cid extends Bytes {}
 export class ContentIdSet extends BTreeSet.with(Cid) {}
