@@ -845,6 +845,7 @@ decl_module! {
             // get information regarding channel
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -1091,6 +1092,7 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             match post.post_type {
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
@@ -1121,6 +1123,7 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             let cleanup_actor = match post.post_type {
                 VideoPostType::<T>::Description => {
@@ -1230,7 +1233,10 @@ decl_module! {
         ) {
             // ensure (origin, actor) is channel owner
             let sender = ensure_signed(origin)?;
-            let owner = Self::ensure_channel_exists(&channel_id)?.owner;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            let owner = channel.owner;
 
             ensure_actor_can_manage_moderators::<T>(
                 &sender,
@@ -1273,6 +1279,7 @@ decl_module! {
             item: PullPayment<T>,
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&item.channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure!(channel.reward_account.is_some(), Error::<T>::RewardAccountIsNotSet);
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
@@ -1324,6 +1331,7 @@ decl_module! {
             video_id: T::VideoId,
             params: NftIssuanceParameters<T>
         ) -> DispatchResult {
+            // TODO: add `channel.ensure_has_no_active_transfer::<T>()?;` on restoring the method
             // TODO RHODES: remove after open auction fix
             Err(DispatchError::Other("nft issuance disabled"))
 

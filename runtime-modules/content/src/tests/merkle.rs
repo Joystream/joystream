@@ -267,6 +267,25 @@ fn successful_reward_claim_by_member() {
 }
 
 #[test]
+fn unsuccessful_reward_claim_with_pending_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn successful_reward_claim_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);

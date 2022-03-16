@@ -215,6 +215,7 @@ pub fn successful_comment_creation_by_member() {
     })
 }
 
+
 #[test]
 pub fn successful_comment_creation_by_curator() {
     with_default_mock_builder(|| {
@@ -465,6 +466,23 @@ pub fn successful_comment_update_by_member() {
         EditPostTextFixture::default()
             .with_post_id(VideoPostId::from(2u64))
             .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+pub fn unsuccessful_comment_update_with_pending_active_transfers() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        EditPostTextFixture::default()
+            .with_post_id(VideoPostId::from(2u64))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
@@ -826,6 +844,28 @@ pub fn successful_post_deletion_by_member() {
 }
 
 #[test]
+pub fn unsuccessful_post_deletion_with_active_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_and_comment();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        DeletePostFixture::default()
+            .with_params(VideoPostDeletionParameters::<Test> {
+                witness: Some(<Test as frame_system::Trait>::Hashing::hash_of(
+                    &VideoPostId::one(),
+                )),
+                rationale: None,
+            })
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 pub fn successful_post_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1113,6 +1153,21 @@ pub fn unsuccessful_moderators_update_with_invalid_members_id() {
 
 #[test]
 pub fn successful_moderators_update_by_member_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        UpdateModeratorSetFixture::default().call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+pub fn unsuccessful_moderators_update_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
