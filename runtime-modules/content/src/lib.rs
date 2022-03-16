@@ -1657,13 +1657,15 @@ decl_module! {
                     )
                 },
                 _ =>  {
-                    Self::ensure_open_bid_exists(video_id, participant_id)
-                        .map_or((), |bid| {
+                    old_bid.map_or((), |bid| {
                             T::Currency::unreserve(
                                 &participant_account_id,
                                 bid.amount
                             );
                         });
+
+                    // unfallible: total_balance >= bid_amount guranteed
+                    T::Currency::reserve(&participant_account_id, bid_amount)?;
 
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
