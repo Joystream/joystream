@@ -427,7 +427,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
-                cumulative_payout_earned: BalanceOf::<T>::zero(),
+                cumulative_reward_claimed: BalanceOf::<T>::zero(),
             };
 
             // add channel to onchain state
@@ -1277,14 +1277,15 @@ decl_module! {
 
             let reward_account = Self::ensure_reward_account(&channel)?;
 
+            let reward_account = channel.reward_account.clone().ok_or(Error::<T>::RewardAccountIsNotSet)?;
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
             let cashout = item
-                .cumulative_payout_claimed
-                .saturating_sub(channel.cumulative_payout_earned);
+                .cumulative_reward_earned
+                .saturating_sub(channel.cumulative_reward_claimed);
 
             ensure!(
-                <MaxRewardAllowed<T>>::get() > item.cumulative_payout_claimed,
+                <MaxRewardAllowed<T>>::get() > item.cumulative_reward_earned,
                 Error::<T>::TotalRewardLimitExceeded
             );
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
@@ -1293,11 +1294,10 @@ decl_module! {
             ContentTreasury::<T>::transfer_reward(&reward_account, cashout);
             ChannelById::<T>::mutate(
                 &item.channel_id,
-                |channel| channel.cumulative_payout_earned =
-                    channel.cumulative_payout_earned.saturating_add(item.cumulative_payout_claimed)
+                |channel| channel.cumulative_reward_claimed = item.cumulative_reward_earned
             );
 
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.cumulative_payout_claimed, item.channel_id));
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, item.channel_id));
 
             Ok(())
         }

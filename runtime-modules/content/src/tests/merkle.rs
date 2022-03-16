@@ -156,7 +156,7 @@ fn unsuccessful_reward_claim_with_unsufficient_cashout() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_payout_claimed: Content::min_cashout_allowed() - 1,
+            cumulative_reward_earned: Content::min_cashout_allowed() - 1,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -177,7 +177,7 @@ fn unsuccessful_reward_claim_with_reward_limit_exceeded() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_payout_claimed: Content::max_reward_allowed() + 1,
+            cumulative_reward_earned: Content::max_reward_allowed() + 1,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -198,7 +198,7 @@ fn unsuccessful_reward_claim_with_invalid_channel_id() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::zero(),
-            cumulative_payout_claimed: BalanceOf::<Test>::one(),
+            cumulative_reward_earned: BalanceOf::<Test>::one(),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -219,7 +219,7 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -239,7 +239,7 @@ fn unsuccessful_reward_claim_with_empty_proof() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -374,5 +374,31 @@ fn unsuccessful_reward_claim_with_successive_request() {
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
             .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()))
+    })
+}
+
+#[test]
+fn successful_reward_claim_with_successive_request_when_reward_increased() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Ok(()));
+
+        // update commit (double channel's reward)
+        let payments2 = create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED * 2);
+        update_commit_value_with_payments_helper(&payments2);
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments2.clone())
+            .with_item(payments2[DEFAULT_PROOF_INDEX])
+            .call_and_assert(Ok(()))
     })
 }

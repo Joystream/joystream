@@ -86,7 +86,7 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
-    pub cumulative_payout_earned: Balance,
+    pub cumulative_reward_claimed: Balance,
 }
 
 impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
@@ -399,7 +399,7 @@ pub type VideoPostDeletionParameters<T> =
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     pub channel_id: ChannelId,
-    pub cumulative_payout_claimed: Balance,
+    pub cumulative_reward_earned: Balance,
     pub reason: Hash,
 }
 
