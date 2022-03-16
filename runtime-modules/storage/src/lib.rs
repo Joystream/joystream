@@ -3875,6 +3875,7 @@ impl<T: Trait> Module<T> {
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
         let bag_id_variant = bag_op.ensure_bag_id_valid_for_op::<T>()?;
+        let dyn_bag_id = bag_id_variant.ensure_is_dynamic_bag::<T>().ok();
 
         // check and generate any objects to add/remove from storage
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
@@ -3951,11 +3952,11 @@ impl<T: Trait> Module<T> {
 
         // mutate bags set
         if bag_op.params.is_delete() {
-            // remove bag for deletion
-            Bags::<T>::remove(&bag_op.bag_id);
-            // unfallible: bag id / operation constraints already checked
-            let dyn_bag_id = bag_id_variant.ensure_is_dynamic_bag::<T>()?;
-            Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_bag_id));
+            // remove bag for deletion: guaranteed to be Some(..)
+            if let Some(dyn_id) = dyn_bag_id {
+                Bags::<T>::remove(&bag_op.bag_id);
+                Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_id));
+            }
         } else {
             // else insert candidate bag
             Bags::<T>::insert(
