@@ -114,10 +114,17 @@ async function getNftFromVideo(
   store: DatabaseManager,
   videoId: string,
   errorMessageForVideo: string,
-  errorMessageForNft: string
+  errorMessageForNft: string,
+  relations?: string[]
 ): Promise<{ video: Video; nft: OwnedNft }> {
   // load video
-  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), errorMessageForVideo, ['nft'])
+  const video = await getRequiredExistingEntity(
+    store,
+    Video,
+    videoId.toString(),
+    errorMessageForVideo,
+    relations ? relations.concat(['nft']) : ['nft']
+  )
 
   // get auction
   const nft = video.nft
@@ -343,7 +350,7 @@ export async function createNft(
   // load owner
   const ownerMember = nftIssuanceParameters.non_channel_owner.isSome
     ? await getExistingEntity(store, Membership, nftIssuanceParameters.non_channel_owner.unwrap().toString())
-    : undefined
+    : video.channel.ownerMember
 
   // calculate some values
   const creatorRoyalty = nftIssuanceParameters.royalty.isSome
@@ -354,13 +361,8 @@ export async function createNft(
   // Is NFT owned by channel or some member
   const isOwnedByChannel = !ownerMember
 
-  // load channel
-  const channel = (await getById(store, Video, video.getId(), ['channel'])).channel
-
-  // load channel ownerCuratorGroup (if any)
-  const ownerCuratorGroup = isOwnedByChannel
-    ? (await getById(store, Channel, channel.getId(), ['ownerCuratorGroup'])).ownerCuratorGroup
-    : undefined
+  // channel ownerCuratorGroup (if any)
+  const ownerCuratorGroup = isOwnedByChannel ? video.channel.ownerCuratorGroup : undefined
 
   // prepare nft record
   const nft = new OwnedNft({
@@ -535,7 +537,11 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
   // specific event processing
 
   // load video
-  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed')
+  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed', [
+    'channel',
+    'channel.ownerCuratorGroup',
+    'channel.ownerMember',
+  ])
 
   // prepare and save nft record
   const nft = await createNft(store, video, nftIssuanceParameters, event.blockNumber)
@@ -952,24 +958,19 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, ownerId] = new Content.NftBoughtEvent(event).params
+  const [videoId, ownerId] = new Content.NftSlingedBackToTheOriginalArtistEvent(event).params
 
   // load NFT
   const { video, nft } = await getNftFromVideo(
     store,
     videoId.toString(),
     'Non-existing video was slinged',
-    'Non-existing nft was slinged'
+    'Non-existing nft was slinged',
+    ['channel', 'channel.ownerCuratorGroup', 'channel.ownerMember']
   )
 
-  // load channel
-  const channel = (await getById(store, Video, video.getId(), ['channel'])).channel
-
-  // load channel ownerCuratorGroup (if any)
-  const ownerCuratorGroup = (await getById(store, Channel, channel.getId(), ['ownerCuratorGroup'])).ownerCuratorGroup
-
-  nft.ownerMember = undefined
-  nft.ownerCuratorGroup = ownerCuratorGroup
+  nft.ownerMember = video.channel?.ownerMember
+  nft.ownerCuratorGroup = video.channel?.ownerCuratorGroup
   nft.isOwnedByChannel = true
   nft.updatedAt = new Date(event.blockTimestamp)
 
