@@ -50,9 +50,9 @@ function writeOutput(api: Api, miniSecret: string) {
 
 export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables - test framework specific
-  console.log(config({ path: path.join(__dirname, '../.env') }))
+  config({ path: path.join(__dirname, '../.env') })
   // root workspace .env used by docker-compose services
-  console.log(config({ path: path.join(__dirname, '../../../.env') }))
+  config({ path: path.join(__dirname, '../../../.env') })
 
   const env = process.env
 
