@@ -768,9 +768,15 @@ pub struct Voucher {
 }
 
 impl Voucher {
-    fn update(self, new_voucher: VoucherUpdate) -> Result<Self, &'static str> {
-        ensure!(new_voucher.objects_number <= self.objects_limit, "number");
-        ensure!(new_voucher.objects_total_size <= self.size_limit, "size");
+    fn try_update<T: Trait>(self, new_voucher: VoucherUpdate) -> Result<Self, Error<T>> {
+        ensure!(
+            new_voucher.objects_number <= self.objects_limit,
+            Error::<T>::StorageBucketObjectSizeLimitReached,
+        );
+        ensure!(
+            new_voucher.objects_total_size <= self.size_limit,
+            Error::<T>::StorageBucketObjectNumberLimitReached,
+        );
         Ok(Self {
             objects_used: new_voucher.objects_number,
             size_used: new_voucher.objects_total_size,
@@ -3636,15 +3642,8 @@ impl<T: Trait> Module<T> {
             .map(|(id, bk)| {
                 bk.voucher
                     .clone()
-                    .update(new_voucher_update)
-                    .map_or_else(
-                        |e| match e {
-                            "size" => Err(Error::<T>::StorageBucketObjectSizeLimitReached),
-                            _ => Err(Error::<T>::StorageBucketObjectNumberLimitReached),
-                        },
-                        |voucher| Ok((id, voucher)),
-                    )
-                    .map(|(id, voucher)| (id, StorageBucket::<T> { voucher, ..bk }))
+                    .try_update(new_voucher_update)
+                    .map(|voucher| (id, StorageBucket::<T> { voucher, ..bk }))
             });
 
         match op {
