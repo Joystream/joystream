@@ -577,13 +577,41 @@ impl<Balance: Unsigned, ObjectId: Clone> BagOperationParamsTypes<Balance, Object
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-struct BagOperationRecord<BagId: Clone, OpParams> {
-    bag_id: BagId,
-    params: OpParams,
+struct BagOperationRecord<
+    MemberId: Clone,
+    ChannelId: Clone,
+    DeletionPrize: Unsigned,
+    ObjectId: Clone,
+> {
+    bag_id: BagIdType<MemberId, ChannelId>,
+    params: BagOperationParamsTypes<DeletionPrize, ObjectId>,
+}
+
+impl<MemberId: Clone, ChannelId: Clone, DeletionPrize: Unsigned, ObjectId: Clone>
+    BagOperationRecord<MemberId, ChannelId, DeletionPrize, ObjectId>
+{
+    fn ensure_bag_id_valid_for_op<T: Trait>(
+        &self,
+    ) -> Result<BagIdType<MemberId, ChannelId>, DispatchError> {
+        match self.params {
+            BagOperationParamsTypes::<DeletionPrize, ObjectId>::Update(..) => {
+                Ok(self.bag_id.clone())
+            }
+            _ => {
+                let dyn_bag_id = self.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
+                Ok(BagIdType::<MemberId, ChannelId>::Dynamic(dyn_bag_id))
+            }
+        }
+    }
 }
 
 type BagOperationParams<T> = BagOperationParamsTypes<BalanceOf<T>, <T as Trait>::DataObjectId>;
-type BagOperation<T> = BagOperationRecord<BagId<T>, BagOperationParams<T>>;
+type BagOperation<T> = BagOperationRecord<
+    MemberId<T>,
+    <T as Trait>::ChannelId,
+    BalanceOf<T>,
+    <T as Trait>::DataObjectId,
+>;
 
 /// Parameters for the data object creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -3759,7 +3787,7 @@ impl<T: Trait> Module<T> {
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
-        let dyn_bag_id = bag_op.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
+        let bag_id_variant = bag_op.ensure_bag_id_valid_for_op::<T>()?;
 
         // check and generate any objects to add/remove from storage
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
@@ -3838,6 +3866,8 @@ impl<T: Trait> Module<T> {
         if bag_op.params.is_delete() {
             // remove bag for deletion
             Bags::<T>::remove(&bag_op.bag_id);
+            // unfallible: bag id / operation constraints already checked
+            let dyn_bag_id = bag_id_variant.ensure_is_dynamic_bag::<T>()?;
             Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_bag_id));
         } else {
             // else insert candidate bag
