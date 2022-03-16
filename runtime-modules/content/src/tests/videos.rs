@@ -166,6 +166,28 @@ fn successful_video_creation_by_member() {
 }
 
 #[test]
+fn unuccessful_video_creation_with_pending_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn successful_video_creation_by_collaborator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -614,6 +636,25 @@ fn successful_video_update_by_member_with_assets_removal() {
         create_default_member_owned_channel_with_video();
         let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
             .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_pending_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
 
         UpdateVideoFixture::default()
             .with_assets_to_remove(video_assets)

@@ -1472,17 +1472,15 @@ impl AcceptChannelTransferFixture {
                 new_channel.transfer_status,
                 ChannelTransferStatus::NoActiveTransfer
             );
-            let channel_owner =
-                if let ChannelTransferStatus::PendingTransfer(ref params) = old_channel.transfer_status {
-                    params.new_owner.clone()
-                } else {
-                    panic!("Invalid transfer status")
-                };
+            let channel_owner = if let ChannelTransferStatus::PendingTransfer(ref params) =
+                old_channel.transfer_status
+            {
+                params.new_owner.clone()
+            } else {
+                panic!("Invalid transfer status")
+            };
 
-            assert_eq!(
-                new_channel.owner,
-                channel_owner
-            );
+            assert_eq!(new_channel.owner, channel_owner);
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelTransferAccepted(

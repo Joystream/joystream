@@ -72,7 +72,12 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    AccountId,
+    Balance: PartialEq,
+> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -93,8 +98,12 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-/// Defines whether a channel is being transfered. No transfer by the default.
-pub enum ChannelTransferStatus<MemberId: Ord, CuratorGroupId, Balance> {
+/// Defines whether a channel is being transferred. No transfer by the default.
+pub enum ChannelTransferStatus<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    Balance: PartialEq,
+> {
     /// Default transfer status: no pending tranfers.
     NoActiveTransfer,
 
@@ -102,7 +111,7 @@ pub enum ChannelTransferStatus<MemberId: Ord, CuratorGroupId, Balance> {
     PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
 }
 
-impl<MemberId: Ord, CuratorGroupId, Balance> Default
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> Default
     for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
 {
     fn default() -> Self {
@@ -130,7 +139,7 @@ pub struct TransferParameters<MemberId: Ord, Balance> {
     pub price: Balance,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, AccountId, Balance: PartialEq>
     ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
 {
     /// Ensure censorship status have been changed
@@ -140,6 +149,21 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
             Error::<T>::ChannelCensorshipStatusDidNotChange
         );
         Ok(())
+    }
+
+    /// Ensures that the channel has no active transfers.
+    pub fn ensure_has_no_active_transfer<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            !self.has_active_transfer(),
+            Error::<T>::InvalidChannelTransferStatus
+        );
+
+        Ok(())
+    }
+
+    // Defines whether the channel has ongoing transfer.
+    fn has_active_transfer(&self) -> bool {
+        self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 }
 

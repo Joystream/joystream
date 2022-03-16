@@ -442,6 +442,8 @@ decl_module! {
             // check that channel exists
             let mut channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
                 &actor,
@@ -600,6 +602,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_censor::<T>(
                 origin,
                 &actor,
@@ -690,6 +694,7 @@ decl_module! {
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -762,7 +767,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(&channel_id);
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Check for permission to update channel assets
             ensure_actor_authorized_to_update_channel_assets::<T>(
@@ -1960,10 +1966,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
 
-            ensure!(
-                channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
-                Error::<T>::InvalidChannelTransferStatus
-            );
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             Self::validate_member_set(&new_status_params.transfer_params.new_collaborators)?;
 

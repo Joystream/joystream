@@ -192,10 +192,12 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
         create_default_member_owned_channel();
         let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
-        UpdateChannelTransferStatusFixture::default().with_transfer_params(PendingTransfer{
-            new_owner: ChannelOwner::Member(DEFAULT_MEMBER_ID),
-            ..Default::default()
-        }).call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_params(PendingTransfer {
+                new_owner: ChannelOwner::Member(DEFAULT_MEMBER_ID),
+                ..Default::default()
+            })
+            .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))

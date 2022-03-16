@@ -5,6 +5,7 @@ use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+use frame_system::RawOrigin;
 
 #[test]
 fn channel_censoring() {
@@ -123,6 +124,24 @@ fn channel_censoring() {
             is_censored,
             vec![]
         ));
+
+        // Invalid transfer status
+        UpdateChannelTransferStatusFixture::default()
+            .with_channel_id(curator_channel_id)
+            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Content::update_channel_censorship_status(
+                Origin::signed(LEAD_ACCOUNT_ID),
+                ContentActor::Lead,
+                curator_channel_id,
+                is_censored,
+                vec![]
+            ),
+            Error::<Test>::InvalidChannelTransferStatus
+        );
     })
 }
 
@@ -520,6 +539,28 @@ fn successful_channel_update_with_assets_uploaded_by_member() {
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_pending_status_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
