@@ -685,6 +685,18 @@ impl<MemberId, ChannelId> From<DynamicBagIdType<MemberId, ChannelId>>
     }
 }
 
+impl<MemberId, ChannelId> BagIdType<MemberId, ChannelId> {
+    fn ensure_is_dynamic_bag<T: Trait>(
+        self,
+    ) -> Result<DynamicBagIdType<MemberId, ChannelId>, DispatchError> {
+        if let Self::Dynamic(dyn_bag_id) = self {
+            Ok(dyn_bag_id)
+        } else {
+            Err(Error::<T>::DynamicBagDoesntExist.into())
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)] // Cannot implement From using these types.
 impl<MemberId: Default, ChannelId> Into<DynamicBagType> for DynamicBagIdType<MemberId, ChannelId> {
     fn into(self) -> DynamicBagType {
@@ -1588,10 +1600,6 @@ decl_error! {
 
         /// Invalid transactor account ID for this bucket.
         InvalidTransactorAccount,
-
-        /// Cannot create static bag
-        CannotCreateStaticBag,
-
     }
 }
 
@@ -3716,12 +3724,7 @@ impl<T: Trait> Module<T> {
     /// returning a new one
     fn retrieve_dynamic_bag(bag_op: &BagOperation<T>) -> Result<Bag<T>, DispatchError> {
         if let BagOperationParams::<T>::Create(deletion_prize, _) = bag_op.params {
-            // map non existing dynamic bag to a new bag and existing bag into error
-            let dyn_bag_id = if let BagId::<T>::Dynamic(id) = &bag_op.bag_id {
-                Ok(id.clone())
-            } else {
-                Err(Error::<T>::CannotCreateStaticBag)
-            }?;
+            let dyn_bag_id = bag_op.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
 
             Self::ensure_bag_exists(&bag_op.bag_id).map_or_else(
                 |_| {
@@ -3756,6 +3759,8 @@ impl<T: Trait> Module<T> {
             objects_total_size,
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
+
+        let dyn_bag_id = bag_op.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
 
         // check and generate any objects to add/remove from storage
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
@@ -3833,7 +3838,8 @@ impl<T: Trait> Module<T> {
         // mutate bags set
         if bag_op.params.is_delete() {
             // remove bag for deletion
-            Bags::<T>::remove(&bag_op.bag_id)
+            Bags::<T>::remove(&bag_op.bag_id);
+            Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_bag_id));
         } else {
             // else insert candidate bag
             Bags::<T>::insert(
