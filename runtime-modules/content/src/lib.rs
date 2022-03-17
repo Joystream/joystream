@@ -1563,7 +1563,7 @@ decl_module! {
             //
 
             // Cancel sell order
-            let updated_nft = nft.with_transactional_status(TransactionalStatus::<T>::Idle);
+            let updated_nft = nft.with_transactional_status(TransactionalStatuso::<T>::Idle);
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
@@ -1613,8 +1613,6 @@ decl_module! {
             video_id: T::VideoId,
             bid_amount: CurrencyOf<T>,
         ) {
-            let now = <frame_system::Module<T>>::block_number();
-
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
@@ -1633,8 +1631,9 @@ decl_module! {
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // ensure bid can be made
+            let current_block = <frame_system::Module<T>>::block_number();
             let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
-            open_auction.ensure_can_make_bid::<T>(now, bid_amount, &maybe_old_bid)?;
+            open_auction.ensure_can_make_bid::<T>(current_block, bid_amount, &maybe_old_bid)?;
 
             //
             // == MUTATION_SAFE ==
