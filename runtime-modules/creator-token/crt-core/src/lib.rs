@@ -66,6 +66,9 @@ decl_error! {
 
         /// Attempt to exceed maximum issuance value
         CannotExceedMaxIssuanceValue,
+
+        /// Current total issuance cannot be decrease by specified amount
+        InsufficientIssuanceToDecreaseByAmount,
     }
 }
 

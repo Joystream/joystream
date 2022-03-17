@@ -54,7 +54,7 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         self.frozen_balance
     }
 
-    /// check wheather free balance has enough amount to freeze
+    /// checks whether free balance has enough amount to freeze
     pub(crate) fn can_freeze<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
@@ -69,7 +69,7 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         self.frozen_balance = self.frozen_balance.saturating_add(amount);
     }
 
-    /// check wheather account has enough frozen balance to unfreeze
+    /// checks whether account has enough frozen balance to unfreeze
     pub(crate) fn can_unfreeze<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.frozen_balance >= amount,
@@ -89,7 +89,7 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         self.free_balance = self.free_balance.saturating_add(amount);
     }
 
-    /// check wheather account has enough free balance to slash
+    /// checks whether account has enough free balance to slash
     pub(crate) fn can_slash<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
@@ -110,7 +110,7 @@ impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Has
         self.current_total_issuance
     }
 
-    /// check wheather token issuance can be increased by amount
+    /// checks whether token issuance can be increased by amount
     pub(crate) fn can_increase_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         match self.max_total_issuance {
             MaxTotalIssuance::<Balance>::Unlimited => (),
@@ -128,6 +128,20 @@ impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Has
     /// Incrase current token issuance: infallible
     pub(crate) fn increase_issuance(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
+    }
+
+    /// checks whether token issuance can be decreased by amount
+    pub(crate) fn can_decrease_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
+        ensure!(
+            self.current_total_issuance >= amount,
+            crate::Error::<T>::InsufficientIssuanceToDecreaseByAmount
+        );
+        Ok(())
+    }
+
+    /// decrease total issuance: infallible
+    pub(crate) fn decrease_issuance(&mut self, amount: Balance) {
+        self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
     }
 }
 
