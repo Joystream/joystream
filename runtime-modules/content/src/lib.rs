@@ -2464,8 +2464,8 @@ impl<T: Trait> Module<T> {
         origin: &T::Origin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         item: &PullPayment<T>,
-        proof: &Vec<ProofElement<T>>,
-    ) -> Result<(Channel<T>, T::AccountId, BalanceOf<T>), DispatchError> {
+        proof: &[ProofElement<T>],
+    ) -> Result<ChannelRewardClaimInfo<T>, DispatchError> {
         let channel = Self::ensure_channel_exists(&item.channel_id)?;
 
         ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel.owner)?;

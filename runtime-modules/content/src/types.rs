@@ -503,6 +503,11 @@ pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
 pub type Storage<T> = storage::Module<T>;
+pub type ChannelRewardClaimInfo<T> = (
+    Channel<T>,
+    <T as frame_system::Trait>::AccountId,
+    BalanceOf<T>,
+);
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
