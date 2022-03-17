@@ -3820,17 +3820,11 @@ impl<T: Trait> Module<T> {
         num_obj_to_delete: usize,
     ) -> NetDeletionPrize<T> {
         let amnt = T::DataObjectDeletionPrize::get();
+        let num_obj_to_create_bal: BalanceOf<T> = num_object_to_create.saturated_into();
+        let num_obj_to_delete_bal: BalanceOf<T> = num_object_to_delete.saturated_into();
         init_value
-            .add_balance(
-                iter::repeat(amnt)
-                    .take(num_obj_to_create)
-                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
-            )
-            .sub_balance(
-                iter::repeat(amnt)
-                    .take(num_obj_to_delete)
-                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
-            )
+            .add_balance(amnt * num_obj_to_create_bal)
+            .sub_balance(amnt * num_obj_to_delete_bal)
     }
 
     /// Utility function that checks existence for bag deletion / update &
