@@ -324,13 +324,13 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn complete_auction(
-        nft: &Nft<T>,
+        nft: Nft<T>,
         in_channel: T::ChannelId,
         src_account_id: T::AccountId,
         winner_id: T::MemberId,
         amount: CurrencyOf<T>,
     ) -> Nft<T> {
-        let dest_account_id = Self::ensure_owner_account_id(in_channel, nft).ok();
+        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
 
         Self::complete_payment(
             in_channel,
@@ -341,18 +341,8 @@ impl<T: Trait> Module<T> {
             true,
         );
 
-        Self::cancel_transaction(nft, Some(winner_id))
-    }
-
-    pub(crate) fn cancel_transaction(nft: &Nft<T>, winner: Option<T::MemberId>) -> Nft<T> {
-        // set owner & idle transactional status
-        Nft::<T> {
-            owner: winner.map_or(nft.owner.to_owned(), |winner_id| {
-                NftOwner::Member(winner_id)
-            }),
-            transactional_status: TransactionalStatus::<T>::Idle,
-            ..nft.clone()
-        }
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(winner_id)
     }
 
     // fetches the desginated nft owner account, preconditions:
@@ -374,6 +364,7 @@ impl<T: Trait> Module<T> {
     }
 
     // NFT
+
     /// Get nft english auction record
     pub(crate) fn ensure_in_english_auction_state(
         nft: &Nft<T>,

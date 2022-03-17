@@ -52,6 +52,13 @@ impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
         }
     }
 
+    pub(crate) fn with_member_owner(self, member_id: MemberId) -> Self {
+        Self {
+            owner: NftOwner::<MemberId>::Member(member_id),
+            ..self
+        }
+    }
+
     pub(crate) fn with_transactional_status(
         self,
         transactional_status: TransactionalStatus,

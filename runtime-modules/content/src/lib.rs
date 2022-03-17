@@ -1468,9 +1468,9 @@ decl_module! {
             //
 
             // Cancel auction
-            let nft = Self::cancel_transaction(&nft, None);
+            let updated_nft = nft.with_transactional_status(TransactionalStatus::<T>::Idle);
 
-            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
@@ -1500,9 +1500,9 @@ decl_module! {
             //
 
             // Cancel auction
-            let nft = Self::cancel_transaction(&nft, None);
+            let updated_nft = nft.with_transactional_status(TransactionalStatus::<T>::Idle);
 
-            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
@@ -1532,8 +1532,8 @@ decl_module! {
             //
 
             // Cancel pending offer
-            let nft = Self::cancel_transaction(&nft, None);
-            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
+            let updated_nft = nft.with_transactional_status(TransactionalStatus::<T>::Idle);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferCanceled(video_id, owner_id));
@@ -1563,8 +1563,8 @@ decl_module! {
             //
 
             // Cancel sell order
-            let nft = Self::cancel_transaction(&nft, None);
-            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
+            let updated_nft = nft.with_transactional_status(TransactionalStatus::<T>::Idle);
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
             Self::deposit_event(RawEvent::BuyNowCanceled(video_id, owner_id));
@@ -1644,7 +1644,7 @@ decl_module! {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
-                        &nft,
+                        nft,
                         video.in_channel,
                         participant_account_id,
                         participant_id,
@@ -1730,11 +1730,11 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            let (nft, event) = match eng_auction.buy_now_price {
+            let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
-                    Self::complete_auction(
-                        &nft,
+                    let updated_nft = Self::complete_auction(
+                        nft,
                         video.in_channel,
                         participant_account_id,
                         participant_id,
@@ -1742,7 +1742,7 @@ decl_module! {
                     );
 
                     (
-                        nft,
+                        updated_nft,
                         RawEvent::BidMadeCompletingAuction(participant_id, video_id),
                     )
                 },
@@ -1772,7 +1772,7 @@ decl_module! {
             };
 
             // update video
-            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
+            VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
             Self::deposit_event(event);
@@ -1852,7 +1852,7 @@ decl_module! {
 
             // Complete auction
             let post_auction_nft = Self::complete_auction(
-                &nft,
+                nft,
                 video.in_channel,
                 member_account_id,
                 member_id,
@@ -1878,9 +1878,11 @@ decl_module! {
         ) {
             let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
 
-            // Ensure nft is already issued
-            let nft = Self::ensure_nft_exists(video_id)?;
+            // Ensure video exists
             let video = Self::video_by_id(video_id);
+
+            // Ensure nft is issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure auction for given video id exists, retrieve corresponding one
             let auction = Self::ensure_in_open_auction_state(&nft)?;
@@ -1902,7 +1904,7 @@ decl_module! {
             //
 
             let post_auction_nft = Self::complete_auction(
-                &nft,
+                nft,
                 video.in_channel,
                 winner_account_id,
                 winner_id,
