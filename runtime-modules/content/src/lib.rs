@@ -1,7 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
-// Internal Substrate warning (decl_event).
+// Internal Substrate warning (decl_event)
 #![allow(clippy::unused_unit, clippy::all)]
 
 #[cfg(test)]
