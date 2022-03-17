@@ -674,24 +674,6 @@ struct BagOperationRecord<
     params: BagOperationParamsTypes<DeletionPrize, ObjectId>,
 }
 
-impl<MemberId: Clone, ChannelId: Clone, DeletionPrize: Unsigned, ObjectId: Clone>
-    BagOperationRecord<MemberId, ChannelId, DeletionPrize, ObjectId>
-{
-    fn ensure_bag_id_valid_for_op<T: Trait>(
-        &self,
-    ) -> Result<BagIdType<MemberId, ChannelId>, DispatchError> {
-        match self.params {
-            BagOperationParamsTypes::<DeletionPrize, ObjectId>::Update(..) => {
-                Ok(self.bag_id.clone())
-            }
-            _ => {
-                let dyn_bag_id = self.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
-                Ok(BagIdType::<MemberId, ChannelId>::Dynamic(dyn_bag_id))
-            }
-        }
-    }
-}
-
 type BagOperationParams<T> = BagOperationParamsTypes<BalanceOf<T>, <T as Trait>::DataObjectId>;
 type BagOperation<T> = BagOperationRecord<
     MemberId<T>,
@@ -3868,11 +3850,6 @@ impl<T: Trait> Module<T> {
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
-        let dyn_bag_id = bag_op
-            .ensure_bag_id_valid_for_op::<T>()?
-            .ensure_is_dynamic_bag::<T>()
-            .unwrap_or_default();
-
         // check and generate any objects to add/remove from storage
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
         let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
@@ -3900,15 +3877,15 @@ impl<T: Trait> Module<T> {
             &account_id,
         )?;
 
+        //
+        // == MUTATION SAFE ==
+        //
+
         // refund or request deletion prize first: no-op if amnt = 0
         match net_prize {
             NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
             NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
         }
-
-        //
-        // == MUTATION SAFE ==
-        //
 
         //  slash: no-op if storage_fee = 0
         let _ = Balances::<T>::slash(&account_id, storage_fee);
@@ -3950,7 +3927,6 @@ impl<T: Trait> Module<T> {
         if bag_op.params.is_delete() {
             // remove bag for deletion
             Bags::<T>::remove(&bag_op.bag_id);
-            Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_bag_id));
         } else {
             // else insert candidate bag
             Bags::<T>::insert(
