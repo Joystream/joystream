@@ -278,6 +278,7 @@ impl<T: Trait> Module<T> {
         Ok(Self::token_info_by_id(token_id))
     }
 
+    #[inline]
     fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
@@ -287,6 +288,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
+    #[inline]
     fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
