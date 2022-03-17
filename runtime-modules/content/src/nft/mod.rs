@@ -375,7 +375,7 @@ impl<T: Trait> Module<T> {
 
     // NFT
     /// Get nft english auction record
-    pub(crate) fn ensure_english_auction_state(
+    pub(crate) fn ensure_in_english_auction_state(
         nft: &Nft<T>,
     ) -> Result<EnglishAuction<T>, DispatchError> {
         if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
@@ -386,7 +386,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Get nft open auction record
-    pub(crate) fn ensure_open_auction_state(nft: &Nft<T>) -> Result<OpenAuction<T>, DispatchError> {
+    pub(crate) fn ensure_in_open_auction_state(
+        nft: &Nft<T>,
+    ) -> Result<OpenAuction<T>, DispatchError> {
         if let TransactionalStatus::<T>::OpenAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
         } else {
@@ -416,7 +418,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure Nft is in BuyNow state
-    pub(crate) fn ensure_buy_now_state(nft: &Nft<T>) -> DispatchResult {
+    pub(crate) fn ensure_in_buy_now_state(nft: &Nft<T>) -> DispatchResult {
         ensure!(
             matches!(
                 nft.transactional_status,

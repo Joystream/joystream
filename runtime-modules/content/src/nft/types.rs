@@ -182,29 +182,29 @@ impl<
             .ok_or_else(|| Error::<T>::BidDoesNotExist.into())
     }
 
-    pub(crate) fn ensure_bid_can_be_made<T: Trait>(&self, amount: Balance) -> DispatchResult {
+    pub(crate) fn ensure_constraints_on_bid_amount<T: Trait>(
+        &self,
+        amount: Balance,
+    ) -> DispatchResult {
         if let Some(buy_now) = &self.buy_now_price {
             if amount > *buy_now {
                 return Ok(());
             }
         }
 
-        self.top_bid.as_ref().map_or_else(
-            || {
-                ensure!(
-                    self.starting_price <= amount,
-                    Error::<T>::StartingPriceConstraintViolated,
-                );
-                Ok(())
-            },
-            |top_bid| {
-                ensure!(
-                    top_bid.amount.saturating_add(self.min_bid_step) <= amount,
-                    Error::<T>::BidStepConstraintViolated
-                );
-                Ok(())
-            },
-        )
+        if let Some(ref top_bid) = self.top_bid {
+            ensure!(
+                top_bid.amount.saturating_add(self.min_bid_step) <= amount,
+                Error::<T>::BidStepConstraintViolated
+            );
+            Ok(())
+        } else {
+            ensure!(
+                self.starting_price <= amount,
+                Error::<T>::StartingPriceConstraintViolated,
+            );
+            Ok(())
+        }
     }
 
     pub(crate) fn ensure_auction_is_not_expired<T: Trait>(
