@@ -1,7 +1,7 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { genericEventFields, getById, inconsistentState, logger } from '../common'
+import { genericEventFields, inconsistentState, logger } from '../common'
 import {
   // entities
   Auction,
@@ -23,7 +23,6 @@ import {
   ContentActorCurator,
   ContentActorLead,
   Curator,
-  Channel,
 
   // events
   AuctionStartedEvent,
@@ -958,7 +957,7 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, ownerId] = new Content.NftSlingedBackToTheOriginalArtistEvent(event).params
+  const [videoId, contentActor] = new Content.NftSlingedBackToTheOriginalArtistEvent(event).params
 
   // load NFT
   const { video, nft } = await getNftFromVideo(
@@ -980,9 +979,8 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
 
   const nftSlingedBackToTheOriginalArtistEvent = new NftSlingedBackToTheOriginalArtistEvent({
     ...genericEventFields(event),
-
     video,
-    owner: new Membership({ id: ownerId.toString() }),
+    contentActor: await convertContentActor(store, contentActor),
   })
 
   await store.save<NftSlingedBackToTheOriginalArtistEvent>(nftSlingedBackToTheOriginalArtistEvent)

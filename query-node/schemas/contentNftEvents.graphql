@@ -424,6 +424,6 @@ type NftSlingedBackToTheOriginalArtistEvent implements Event @entity {
   "NFT's video."
   video: Video!
 
-  "Previous owner who slinged back the NFT."
-  owner: Membership!
+  "Content actor who slinged back the NFT."
+  contentActor: ContentActor!
 }
