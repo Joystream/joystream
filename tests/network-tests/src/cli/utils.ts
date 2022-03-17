@@ -6,6 +6,7 @@ import { Utils } from '../utils'
 import _ from 'lodash'
 import bmp from 'bmp-js'
 import nodeCleanup from 'node-cleanup'
+import { debuggingCli } from '../consts'
 
 export class TmpFileManager {
   tmpDataDir: string
@@ -17,9 +18,11 @@ export class TmpFileManager {
       uuid()
     )
     mkdirSync(this.tmpDataDir, { recursive: true })
-    nodeCleanup(() => {
-      rmSync(this.tmpDataDir, { recursive: true, force: true })
-    })
+    if (!debuggingCli) {
+      nodeCleanup(() => {
+        rmSync(this.tmpDataDir, { recursive: true, force: true })
+      })
+    }
   }
 
   public jsonFile(value: unknown): string {

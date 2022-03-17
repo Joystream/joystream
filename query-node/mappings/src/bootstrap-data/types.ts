@@ -1,12 +1,10 @@
 export type MemberJson = {
-  memberId: string
-  rootAccount: string
-  controllerAccount: string
+  member_id: number
+  root_account: string
+  controller_account: string
   handle: string
-  about?: string
-  avatarUri?: string
-  registeredAtTime: number
-  registeredAtBlock: number
+  about: string
+  avatar_uri: string
 }
 
 export type StorageSystemJson = {

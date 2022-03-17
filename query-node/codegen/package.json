@@ -4,10 +4,9 @@
   "description": "Hydra codegen tools for Joystream Query Node",
   "author": "",
   "license": "ISC",
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
-    "@joystream/hydra-cli": "3.1.0-alpha.16",
-    "@joystream/hydra-typegen": "3.1.0-alpha.16"
+    "@joystream/hydra-cli": "^3.1.0-alpha.20",
+    "@joystream/hydra-typegen": "^3.1.0-alpha.20"
   }
 }

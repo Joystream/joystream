@@ -5,6 +5,9 @@ type ChannelCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
 
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
+
   channels: [Channel!]! @derivedFrom(field: "category")
 
   createdInBlock: Int!
@@ -41,6 +44,9 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
+
   "Channel's cover (background) photo asset. Recommended ratio: 16:9."
   coverPhoto: StorageDataObject
 
@@ -68,25 +74,15 @@ type Channel @entity {
   collaborators: [Membership!]
 }
 
-type CuratorGroup @entity {
-  "Runtime identifier"
-  id: ID!
-
-  "Curators belonging to this group"
-  curatorIds: [Int!]!
-
-  "Is group active or not"
-  isActive: Boolean!
-
-  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
-}
-
 type VideoCategory @entity {
   "Runtime identifier"
   id: ID!
 
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
+
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
 
   videos: [Video!]! @derivedFrom(field: "category")
 
@@ -131,6 +127,9 @@ type Video @entity {
 
   "Flag signaling whether a video is censored."
   isCensored: Boolean!
+
+  "Video NFT details"
+  nft: OwnedNft
 
   "Whether the Video contains explicit material."
   isExplicit: Boolean

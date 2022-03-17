@@ -28,6 +28,11 @@
     reverse_proxy localhost:8081
 }
 
+wss://{{ nip_domain }}/query-node/server* {
+    uri strip_prefix /query-node/server
+    reverse_proxy localhost:8081
+}
+
 {{ nip_domain }}/query-node/indexer* {
     uri strip_prefix /query-node/indexer
     reverse_proxy localhost:4000
@@ -43,7 +48,12 @@
     reverse_proxy localhost:3002
 }
 
-# Pioneer
-{{ nip_domain }}/* {
-    reverse_proxy localhost:3000
+{{ nip_domain }}/network/config.json {
+    header /* {
+      Access-Control-Allow-Origin *
+      Cache-Control: no-cache
+    }
+    root * /home/ubuntu
+    rewrite * /config.json
+    file_server
 }

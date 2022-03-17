@@ -82,10 +82,6 @@ pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
-
-        // initialize content module
-        content::Module::<Runtime>::on_runtime_upgrade();
-
         10_000_000 // TODO: adjust weight
     }
 }
@@ -297,7 +293,6 @@ impl_runtime_apis! {
             use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
-//            use crate::StorageV2;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -391,7 +386,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
-//            add_benchmark!(params, batches, storage_v2, StorageV2);
+            // add_benchmark!(params, batches, storage, Storage);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
