@@ -90,6 +90,7 @@ fn pick_open_auction_winner() {
             MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
+                bid,
             )),
             number_of_events_before_call + 1,
         );

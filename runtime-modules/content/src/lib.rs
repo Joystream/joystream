@@ -1914,7 +1914,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id));
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, bid.amount));
         }
 
         /// Offer Nft
@@ -2529,7 +2529,7 @@ decl_event!(
         AuctionCanceled(ContentActor, VideoId),
         EnglishAuctionCompleted(MemberId, VideoId),
         BidMadeCompletingAuction(MemberId, VideoId),
-        OpenAuctionBidAccepted(ContentActor, VideoId),
+        OpenAuctionBidAccepted(ContentActor, VideoId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
