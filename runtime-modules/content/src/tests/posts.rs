@@ -1140,21 +1140,6 @@ pub fn unsuccessful_moderators_update_with_curator_auth_failed() {
 }
 
 #[test]
-pub fn unsuccessful_moderators_update_with_invalid_members_id() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateModeratorSetFixture::default()
-            .with_moderators(vec![DEFAULT_MODERATOR_ID + 1].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
-    })
-}
-
-#[test]
 pub fn successful_moderators_update_by_member_owner() {
     with_default_mock_builder(|| {
         run_to_block(1);

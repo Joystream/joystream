@@ -351,10 +351,6 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // ensure collaborator & moderator member ids are valid
-            Self::validate_member_set(&params.moderators)?;
-            Self::validate_member_set(&params.collaborators)?;
-
             let upload_params = params.assets.as_ref().map(|assets| {
                 Self::construct_upload_parameters(
                     assets,
@@ -459,8 +455,6 @@ decl_module! {
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
-                // ensure collaborator member ids are valid
-                Self::validate_member_set(new_collabs)?;
 
                 channel.collaborators = new_collabs.clone();
             }
@@ -1243,8 +1237,6 @@ decl_module! {
                 &owner,
                 &actor,
             )?;
-
-            Self::validate_member_set(&new_moderators)?;
 
             //
             // == MUTATION_SAFE ==
@@ -2231,15 +2223,6 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
         }
-    }
-
-    fn validate_member_set(members: &BTreeSet<T::MemberId>) -> DispatchResult {
-        // check if all members are valid
-        let res = members
-            .iter()
-            .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
-        ensure!(res, Error::<T>::InvalidMemberProvided);
-        Ok(())
     }
 
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
