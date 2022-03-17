@@ -277,7 +277,9 @@ fn unsuccessful_reward_claim_with_pending_channel_transfer() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)

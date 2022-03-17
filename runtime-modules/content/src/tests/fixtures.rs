@@ -1354,7 +1354,7 @@ pub struct UpdateChannelTransferStatusFixture {
     origin: RawOrigin<u64>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>>,
+    transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
 }
 
 impl UpdateChannelTransferStatusFixture {
@@ -1363,7 +1363,7 @@ impl UpdateChannelTransferStatusFixture {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             channel_id: ChannelId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            params: PendingTransfer::default(),
+            transfer_status: Default::default(),
         }
     }
 
@@ -1379,11 +1379,28 @@ impl UpdateChannelTransferStatusFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_transfer_params(
+    pub fn with_transfer_status(
         self,
-        params: PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>>,
+        transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
     ) -> Self {
-        Self { params, ..self }
+        Self {
+            transfer_status,
+            ..self
+        }
+    }
+
+    pub fn with_transfer_status_by_member_id(self, member_id: MemberId) -> Self {
+        Self {
+            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+                MemberId,
+                CuratorGroupId,
+                BalanceOf<Test>,
+            > {
+                new_owner: ChannelOwner::Member(member_id),
+                ..Default::default()
+            }),
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1393,23 +1410,20 @@ impl UpdateChannelTransferStatusFixture {
             self.origin.clone().into(),
             self.channel_id,
             self.actor.clone(),
-            self.params.clone(),
+            self.transfer_status.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
 
         let new_channel = Content::channel_by_id(self.channel_id);
         if actual_result.is_ok() {
-            assert_eq!(
-                new_channel.transfer_status,
-                ChannelTransferStatus::PendingTransfer(self.params.clone())
-            );
+            assert_eq!(new_channel.transfer_status, self.transfer_status.clone());
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
                     self.channel_id,
                     self.actor.clone(),
-                    self.params.clone()
+                    self.transfer_status.clone()
                 ))
             );
         } else {

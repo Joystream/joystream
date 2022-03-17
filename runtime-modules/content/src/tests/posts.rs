@@ -477,7 +477,9 @@ pub fn unsuccessful_comment_update_with_pending_active_transfers() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         EditPostTextFixture::default()
             .with_post_id(VideoPostId::from(2u64))
@@ -851,7 +853,9 @@ pub fn unsuccessful_post_deletion_with_active_channel_transfer() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video_and_comment();
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         DeletePostFixture::default()
             .with_params(VideoPostDeletionParameters::<Test> {
@@ -1159,7 +1163,9 @@ pub fn successful_moderators_update_by_member_owner() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         UpdateModeratorSetFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
