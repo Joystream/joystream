@@ -1651,6 +1651,14 @@ decl_module! {
                         buy_now_price,
                     );
 
+                    // remove eventual superseeded bid
+                    if maybe_old_bid.is_some() {
+                        OpenAuctionBidByVideoAndMember::<T>::remove(
+                            video_id,
+                            participant_id,
+                        )
+                    }
+
                     (
                         updated_nft,
                         RawEvent::BidMadeCompletingAuction(participant_id, video_id),
@@ -1664,7 +1672,7 @@ decl_module! {
                             );
                         });
 
-                    // unfallible: total_balance >= bid_amount guranteed
+                    // unfallible: can_reserve already called
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
                     OpenAuctionBidByVideoAndMember::<T>::insert(
