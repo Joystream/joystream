@@ -1525,7 +1525,7 @@ decl_module! {
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure nft in pending offer state
-            Self::ensure_pending_offer_state(&nft)?;
+            Self::ensure_in_pending_offer_state(&nft)?;
 
             //
             // == MUTATION SAFE ==

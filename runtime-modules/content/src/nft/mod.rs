@@ -397,7 +397,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure Nft has pending offer
-    pub(crate) fn ensure_pending_offer_state(nft: &Nft<T>) -> DispatchResult {
+    pub(crate) fn ensure_in_pending_offer_state(nft: &Nft<T>) -> DispatchResult {
         ensure!(
             matches!(
                 nft.transactional_status,
