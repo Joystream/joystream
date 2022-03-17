@@ -87,6 +87,7 @@ pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
+pub const BAG_DELETION_PRIZE: u64 = 0;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -401,6 +402,7 @@ parameter_types! {
     pub const BloatBondCap: u32 = 1000;
     pub const VideosMigrationsEachBlock: u64 = VIDEO_MIGRATIONS_PER_BLOCK;
     pub const ChannelsMigrationsEachBlock: u64 = CHANNEL_MIGRATIONS_PER_BLOCK;
+    pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
 }
 
 impl Trait for Test {
@@ -464,6 +466,8 @@ impl Trait for Test {
     type VideosMigrationsEachBlock = VideosMigrationsEachBlock;
 
     type ChannelsMigrationsEachBlock = ChannelsMigrationsEachBlock;
+
+    type BagDeletionPrize = BagDeletionPrize;
 }
 
 // #[derive (Default)]

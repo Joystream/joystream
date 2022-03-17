@@ -207,7 +207,7 @@ pub struct VideoCategoryUpdateParameters {
 
 /// Information regarding the content being uploaded
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
 pub struct StorageAssetsRecord<Balance> {
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
@@ -635,6 +635,8 @@ pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
 
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type DynBagId<T> =
+    DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Trait>::ChannelId>;
 pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
 pub type Storage<T> = storage::Module<T>;
 

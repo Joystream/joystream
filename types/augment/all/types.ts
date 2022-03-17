@@ -460,6 +460,14 @@ export interface DynamicBagType extends Enum {
   readonly isChannel: boolean;
 }
 
+/** @name DynBagCreationParameters */
+export interface DynBagCreationParameters extends Struct {
+  readonly bagId: DynamicBagId;
+  readonly objectCreationList: Vec<DataObjectCreationParameters>;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
+}
+
 /** @name EnglishAuctionDetails */
 export interface EnglishAuctionDetails extends Struct {
   readonly extension_period: u32;
