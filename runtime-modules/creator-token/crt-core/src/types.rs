@@ -1,9 +1,9 @@
 use codec::{Decode, Encode};
 use frame_support::{dispatch::DispatchResult, ensure};
-use sp_arithmetic::traits::Saturating;
+use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::Hash;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct AccountData<Balance> {
     /// Non-reserved part of the balance. There may still be restrictions
     /// on this, but it is the total pool what may in principle be
@@ -37,9 +37,16 @@ pub struct TokenData<Balance, Hash> {
 
     /// Hash of a human-readable description
     description: Hash,
+}
 
-    /// Hash of a human-readable Ticker
-    ticker: Hash,
+/// Default trait for AccountData
+impl<Balance: Zero> Default for AccountData<Balance> {
+    fn default() -> Self {
+        Self {
+            free_balance: Balance::zero(),
+            frozen_balance: Balance::zero(),
+        }
+    }
 }
 
 /// Interface for interacting with AccountData
@@ -106,6 +113,12 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
 
 /// Interface for interacting with TokenData
 impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Hash> {
+    /// Get the treasury account for the token
+    pub(crate) fn treasury_account(&self) -> Balance {
+        self.current_total_issuance
+    }
+
+    /// Get current total issuance for the token
     pub(crate) fn current_issuance(&self) -> Balance {
         self.current_total_issuance
     }
