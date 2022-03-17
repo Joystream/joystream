@@ -29,13 +29,6 @@ fi
 
 # Execute tests
 
-# We can load env config used to start docker services and pass them on to the
-# tests. This could be useful to capture keys used or URLs.
-# We just have to watchout for clashing env var names.
-set -a
-. ../../.env
-set +a
-
 if [ "${NO_STORAGE}" != true ]
 then
   ./start-storage.sh
