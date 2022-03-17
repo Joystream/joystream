@@ -3925,10 +3925,10 @@ impl<T: Trait> Module<T> {
 
         // mutate bags set
         if bag_op.params.is_delete() {
-            // remove bag for deletion
+            // remove bag for deletion: delegate event to caller
             Bags::<T>::remove(&bag_op.bag_id);
         } else {
-            // else insert candidate bag
+            // else insert updated bag: signalling the change
             Bags::<T>::insert(
                 &bag_op.bag_id,
                 Bag::<T> {
