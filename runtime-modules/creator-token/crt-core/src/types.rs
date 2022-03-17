@@ -15,6 +15,17 @@ pub struct AccountData<Balance> {
     /// account holder, but which are not usable in any case.
     frozen_balance: Balance,
 }
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum MaxTotalIssuance<Balance> {
+    Unlimited,
+    Limited(Balance),
+}
+
+impl<Balance> Default for MaxTotalIssuance<Balance> {
+    fn default() -> Self {
+        MaxTotalIssuance::<Balance>::Unlimited
+    }
+}
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
 pub struct TokenData<Balance, Hash> {
@@ -22,7 +33,7 @@ pub struct TokenData<Balance, Hash> {
     current_total_issuance: Balance,
 
     /// Max total issuance allowed for the token
-    max_total_issuance: Balance,
+    max_total_issuance: MaxTotalIssuance<Balance>,
 
     /// Hash of a human-readable description
     description: Hash,
@@ -43,8 +54,8 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         self.frozen_balance
     }
 
-    /// check wheather `self.freeze(amount)` is possible to execute
-    pub(crate) fn can_freeze<T: crate::Trait>(&mut self, amount: Balance) -> DispatchResult {
+    /// check wheather free balance has enough amount to freeze
+    pub(crate) fn can_freeze<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
             crate::Error::<T>::InsufficientFreeBalanceForFreezing,
@@ -52,14 +63,14 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         Ok(())
     }
 
-    /// freeze specified amount: unfallible
+    /// freeze specified amount: infallible
     pub(crate) fn freeze(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_sub(amount);
         self.frozen_balance = self.frozen_balance.saturating_add(amount);
     }
 
-    /// check wheather `self.unfreeze(amount)` is possible to execute
-    pub(crate) fn can_unfreeze<T: crate::Trait>(&mut self, amount: Balance) -> DispatchResult {
+    /// check wheather account has enough frozen balance to unfreeze
+    pub(crate) fn can_unfreeze<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.frozen_balance >= amount,
             crate::Error::<T>::InsufficientFrozenBalance
@@ -67,19 +78,19 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         Ok(())
     }
 
-    /// freeze specified amount: unfallible
+    /// freeze specified amount: infallible
     pub(crate) fn unfreeze(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_add(amount);
         self.frozen_balance = self.frozen_balance.saturating_sub(amount);
     }
 
-    /// Add amount to free balance : unfallible
+    /// Add amount to free balance : infallible
     pub(crate) fn deposit(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_add(amount);
     }
 
-    /// check wheather `self.slash(amount)` is possible to execute    
-    pub(crate) fn can_slash<T: crate::Trait>(&mut self, amount: Balance) -> DispatchResult {
+    /// check wheather account has enough free balance to slash
+    pub(crate) fn can_slash<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
             crate::Error::<T>::InsufficientFreeBalanceForSlashing
@@ -87,9 +98,36 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
         Ok(())
     }
 
-    /// Slash amount from free balance : unfallible
+    /// Slash amount from free balance : infallible
     pub(crate) fn slash(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_sub(amount);
+    }
+}
+
+/// Interface for interacting with TokenData
+impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Hash> {
+    pub(crate) fn current_issuance(&self) -> Balance {
+        self.current_total_issuance
+    }
+
+    /// check wheather token issuance can be increased by amount
+    pub(crate) fn can_increase_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
+        match self.max_total_issuance {
+            MaxTotalIssuance::<Balance>::Unlimited => (),
+            MaxTotalIssuance::<Balance>::Limited(max_issuance) => {
+                let attempted_issuance_value = self.current_total_issuance.saturating_add(amount);
+                ensure!(
+                    attempted_issuance_value <= max_issuance,
+                    crate::Error::<T>::CannotExceedMaxIssuanceValue
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Incrase current token issuance: infallible
+    pub(crate) fn increase_issuance(&mut self, amount: Balance) {
+        self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
     }
 }
 

@@ -26,8 +26,8 @@ decl_storage! {
     trait Store for Module<T: Trait> as CrtCore {
         /// Double map TokenId x AccountId => AccountData for managing account data
         pub AccountInfoByAccountAndToken get(fn account_info_by_account_and_token): double_map
-            hasher(blake2_128_concat) T::AccountId,
-        hasher(blake2_128_concat) T::TokenId => AccountDataOf<T>;
+            hasher(blake2_128_concat) T::TokenId,
+            hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
 
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id): map
@@ -39,6 +39,7 @@ decl_storage! {
 // PRIMITIVES:
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        // issue token
 
         // transfer amount from source account id to destination account id
 
@@ -62,6 +63,9 @@ decl_error! {
 
         /// Free balance is insufficient for slashing specified amount
         InsufficientFreeBalanceForSlashing,
+
+        /// Attempt to exceed maximum issuance value
+        CannotExceedMaxIssuanceValue,
     }
 }
 
