@@ -807,7 +807,7 @@
     "OpenAuctionBid": {
         "amount": "u128",
         "made_at_block": "u32",
-        "auction_id": "AuctionId"
+        "auction_id": "OpenAuctionId"
     },
     "EnglishAuctionBid": {
         "amount": "u128",
@@ -832,7 +832,7 @@
         "owner": "NftOwner",
         "transactional_status": "TransactionalStatus",
         "creator_royalty": "Option<Royalty>",
-        "open_auctions_nonce": "AuctionId"
+        "open_auctions_nonce": "OpenAuctionId"
     },
     "CurrencyOf": "u128",
     "CurrencyAmount": "u128",
@@ -852,6 +852,6 @@
         "init_transactional_status": "InitTransactionalStatus"
     },
     "NftMetadata": "Vec<u8>",
-    "AuctionId": "u64",
+    "OpenAuctionId": "u64",
     "AccountInfo": "AccountInfoWithRefCount"
 }

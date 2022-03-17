@@ -5,7 +5,7 @@ import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockN
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
-export class AuctionId extends u64 {}
+export class OpenAuctionId extends u64 {}
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
 export class ChannelCategoryId extends u64 {}
@@ -25,7 +25,7 @@ export class Royalty extends UInt.with(32, 'Perbill') {}
 export class OpenAuctionBid extends JoyStructDecorated({
   amount: Balance,
   made_at_block: BlockNumber,
-  auction_id: AuctionId,
+  auction_id: OpenAuctionId,
 }) {}
 
 export class EnglishAuctionBid extends JoyStructDecorated({
@@ -68,7 +68,7 @@ export class OwnedNft extends JoyStructDecorated({
   owner: NftOwner,
   transactional_status: TransactionalStatus,
   creator_royalty: Option.with(Royalty),
-  open_auctions_nonce: AuctionId,
+  open_auctions_nonce: OpenAuctionId,
 }) {}
 
 export class EnglishAuctionParams extends JoyStructDecorated({
@@ -311,7 +311,7 @@ export const contentTypes = {
   InitTransactionalStatus,
   NftIssuanceParameters,
   NftMetadata,
-  AuctionId,
+  OpenAuctionId,
 }
 
 export default contentTypes

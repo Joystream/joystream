@@ -66,9 +66,6 @@ export interface AssuranceContractType extends Enum {
 /** @name AssuranceContractType_Closed */
 export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 
-/** @name AuctionId */
-export interface AuctionId extends u64 {}
-
 /** @name Bag */
 export interface Bag extends Struct {
   readonly stored_by: BTreeSet<StorageBucketId>;
@@ -643,8 +640,11 @@ export interface OpenAuction extends Struct {
 export interface OpenAuctionBid extends Struct {
   readonly amount: u128;
   readonly made_at_block: u32;
-  readonly auction_id: AuctionId;
+  readonly auction_id: OpenAuctionId;
 }
+
+/** @name OpenAuctionId */
+export interface OpenAuctionId extends u64 {}
 
 /** @name OpenAuctionParams */
 export interface OpenAuctionParams extends Struct {
@@ -699,7 +699,7 @@ export interface OwnedNft extends Struct {
   readonly owner: NftOwner;
   readonly transactional_status: TransactionalStatus;
   readonly creator_royalty: Option<Royalty>;
-  readonly open_auctions_nonce: AuctionId;
+  readonly open_auctions_nonce: OpenAuctionId;
 }
 
 /** @name ParticipantId */
