@@ -28,11 +28,11 @@ pub trait MultiCurrency<T: Trait> {
     /// Mint `amount` into account `who` (possibly creating it)
     /// for specified token `token_id`
     ///
-    /// PRECONDITIONS:
+    /// Preconditions:
     /// - `token_id` must exists
     /// - it is possible to increase `token_id` issuance by `amount`
     ///
-    /// POSTCONDITIONS:
+    /// Postconditions:
     /// - free balance of `who` is increased by `amount`
     /// - issuance of `token_id` is increased by `amount`
     fn deposit_creating(
@@ -44,12 +44,12 @@ pub trait MultiCurrency<T: Trait> {
     /// Mint `amount` into valid account `who`
     /// for specified token `token_id`
     ///
-    /// PRECONDITIONS:
+    /// Preconditions:
     /// - `token_id` must exists
     /// - `who` must exists
     /// - it is possible to increase `token_id` issuance by `amount`
     ///
-    /// POSTCONDITIONS:
+    /// Postconditions:
     /// - free balance of `who` is increased by `amount`
     /// - issuance of `token_id` is increased by `amount`
     fn deposit_into_existing(
@@ -60,24 +60,24 @@ pub trait MultiCurrency<T: Trait> {
 
     /// Burn `amount` of token `token_id` by slashing it from `who`
     ///
-    /// PRECONDITIONS:
+    /// Preconditions:
     /// - `token_id` must exists
     /// - `who` must exists
     /// - it is possible to decrease `token_id` issuance by `amount`
     ///
-    /// POSTCONDITIONS:
+    /// Postconditions:
     /// - free balance of `who` is decreased by `amount`
     /// - issuance of `token_id` is decreased by `amount`
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst`
-    /// PRECONDITIONS:
+    /// Preconditions:
     /// - `token_id` must exists
     /// - `src` must exists
     /// - `src` free balance must be greater than or equal to `amount`
     /// - `dst` must exists
     ///
-    /// POSTCONDITIONS:
+    /// Postconditions:
     /// - free balance of `src` is decreased by `amount`
     /// - free balance of `dst` is increased by `amount`
     fn transfer(
@@ -170,11 +170,8 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_increase_issuance::<T>(amount)?;
+        // Verify preconditions
+        Self::ensure_can_deposit_creating(token_id, amount)?;
 
         // == MUTATION SAFE ==
 
@@ -189,14 +186,8 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_increase_issuance::<T>(amount)?;
-
-        // ensure account id validity
-        Self::ensure_account_data_exists(token_id, &who).map(|_| ())?;
+        // Verify preconditions
+        Self::ensure_can_deposit_into_existing(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
 
@@ -208,17 +199,8 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
     /// Burn amount of token token_id by slashing it from who
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_decrease_issuance::<T>(amount)?;
-
-        // ensure account id validity
-        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-
-        // ensure can slash amount from who
-        account_info.can_slash::<T>(amount)?;
+        // Verify preconditions
+        Self::ensure_can_slash(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
 
@@ -234,17 +216,8 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         dst: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // ensure src account id validity
-        let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
-
-        // ensure dst account id validity
-        let dst_account_info = Self::ensure_account_data_exists(token_id, &dst)?;
-
-        // ensure can slash amount from who
-        src_account_info.can_slash::<T>(amount)?;
+        // Verify preconditions
+        Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
 
         // == MUTATION SAFE ==
 
@@ -257,6 +230,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
 /// Module implementation
 impl<T: Trait> Module<T> {
+    // Utility ensure checks
     fn ensure_account_data_exists(
         token_id: T::TokenId,
         account_id: &T::AccountId,
@@ -277,6 +251,82 @@ impl<T: Trait> Module<T> {
         );
         Ok(Self::token_info_by_id(token_id))
     }
+
+    // Extrinsics ensure checks
+
+    #[inline]
+    fn ensure_can_deposit_creating(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // can increase issuance
+        token_info.can_increase_issuance::<T>(amount)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn ensure_can_deposit_into_existing(
+        token_id: T::TokenId,
+        who: &T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // can increase issuance
+        token_info.can_increase_issuance::<T>(amount)?;
+
+        // ensure account id validity
+        Self::ensure_account_data_exists(token_id, who).map(|_| ())?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn ensure_can_slash(
+        token_id: T::TokenId,
+        who: &T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // can increase issuance
+        token_info.can_decrease_issuance::<T>(amount)?;
+
+        // ensure account id validity
+        let account_info = Self::ensure_account_data_exists(token_id, who)?;
+
+        // ensure can slash amount from who
+        account_info.can_slash::<T>(amount)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn ensure_can_transfer(
+        token_id: T::TokenId,
+        src: &T::AccountId,
+        dst: &T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // ensure src account id validity
+        let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
+
+        // ensure dst account id validity
+        let dst_account_info = Self::ensure_account_data_exists(token_id, dst)?;
+
+        // ensure can slash amount from who
+        src_account_info.can_slash::<T>(amount)?;
+
+        Ok(())
+    }
+
+    // Infallible operations
 
     #[inline]
     fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
