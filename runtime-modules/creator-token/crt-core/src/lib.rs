@@ -231,7 +231,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 /// Module implementation
 impl<T: Trait> Module<T> {
     // Utility ensure checks
-    fn ensure_account_data_exists(
+    pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
         account_id: &T::AccountId,
     ) -> Result<AccountDataOf<T>, DispatchError> {
@@ -244,7 +244,9 @@ impl<T: Trait> Module<T> {
         ))
     }
 
-    fn ensure_token_exists(token_id: T::TokenId) -> Result<TokenDataOf<T>, DispatchError> {
+    pub(crate) fn ensure_token_exists(
+        token_id: T::TokenId,
+    ) -> Result<TokenDataOf<T>, DispatchError> {
         ensure!(
             TokenInfoById::<T>::contains_key(token_id),
             Error::<T>::TokenDoesNotExist,
@@ -255,7 +257,10 @@ impl<T: Trait> Module<T> {
     // Extrinsics ensure checks
 
     #[inline]
-    fn ensure_can_deposit_creating(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+    pub(crate) fn ensure_can_deposit_creating(
+        token_id: T::TokenId,
+        amount: T::Balance,
+    ) -> DispatchResult {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -266,7 +271,7 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    fn ensure_can_deposit_into_existing(
+    pub(crate) fn ensure_can_deposit_into_existing(
         token_id: T::TokenId,
         who: &T::AccountId,
         amount: T::Balance,
@@ -284,7 +289,7 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    fn ensure_can_slash(
+    pub(crate) fn ensure_can_slash(
         token_id: T::TokenId,
         who: &T::AccountId,
         amount: T::Balance,
@@ -305,7 +310,7 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    fn ensure_can_transfer(
+    pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
         dst: &T::AccountId,
@@ -329,7 +334,7 @@ impl<T: Trait> Module<T> {
     // Infallible operations
 
     #[inline]
-    fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
+    pub(crate) fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
         // deposit into account data
@@ -339,7 +344,7 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
+    pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
         // deposit into account data
