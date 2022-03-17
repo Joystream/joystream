@@ -496,7 +496,7 @@ fn make_bid_fails_with_lower_offer_and_locking_period_not_expired() {
         let low_bid = Content::min_starting_price();
         let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
 
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, high_bid);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, high_bid + low_bid);
         setup_open_auction_scenario_with_bid(high_bid);
 
         // attemp to lower the offer while bid still locked -> error
@@ -522,7 +522,7 @@ fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
         let video_id = Content::next_video_id();
         let first_bid = Content::min_starting_price();
         let second_bid = first_bid.saturating_add(NEXT_BID_OFFSET);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, second_bid);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, second_bid + first_bid);
         setup_open_auction_scenario_with_bid(first_bid);
 
         // attemp to lower the offer on the same block -> error
@@ -536,7 +536,7 @@ fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
 }
 
 #[test]
-fn make_bid_succeeds_by_unreserving_prevous_funds() {
+fn make_bid_fails_by_unreserving_prevous_funds() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -554,20 +554,14 @@ fn make_bid_succeeds_by_unreserving_prevous_funds() {
             new_bid
         );
 
-        assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            new_bid,
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+        assert_err!(
+            Content::make_open_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
                 new_bid,
-            ))
+            ),
+            Error::<Test>::InsufficientBalance
         );
     })
 }

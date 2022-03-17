@@ -494,7 +494,10 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         let low_bid = Content::min_starting_price();
         let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, high_bid);
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ACCOUNT_ID,
+            high_bid + low_bid,
+        );
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(

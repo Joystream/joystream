@@ -1874,9 +1874,8 @@ decl_module! {
             commit: CurrencyOf<T>, // amount the auctioner is committed to
         ) {
             let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
-
             // Ensure video exists
-            let video = Self::video_by_id(video_id);
+            let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure nft is issued
             let nft = video.ensure_nft_is_issued::<T>()?;
