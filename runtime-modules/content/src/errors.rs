@@ -268,8 +268,7 @@ decl_error! {
         /// Cashout amount too small
         UnsufficientCashoutAmount,
 
-        /// Reward account is none
-        RewardAccountNotFoundInChannel,
-
+        /// An attempt to withdraw funds from channel account failed, because the specified amount exceeds the account's balance
+        WithdrawFromChannelAmountExceedsBalance,
     }
 }

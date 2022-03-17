@@ -1,6 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 #[cfg(test)]
 mod tests;
@@ -1273,31 +1273,74 @@ decl_module! {
             proof: Vec<ProofElement<T>>,
             item: PullPayment<T>,
         ) -> DispatchResult {
-            let channel = Self::ensure_channel_exists(&item.channel_id)?;
+            let (.., reward_account, amount) = Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
-            let reward_account = Self::ensure_reward_account(&channel)?;
+            // == MUTATION_SAFE ==
+            //
 
-            let reward_account = channel.reward_account.clone().ok_or(Error::<T>::RewardAccountIsNotSet)?;
-            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
-
-            let cashout = item
-                .cumulative_reward_earned
-                .saturating_sub(channel.cumulative_reward_claimed);
-
-            ensure!(
-                <MaxRewardAllowed<T>>::get() > item.cumulative_reward_earned,
-                Error::<T>::TotalRewardLimitExceeded
-            );
-            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
-            Self::verify_proof(&proof, &item)?;
-
-            ContentTreasury::<T>::transfer_reward(&reward_account, cashout);
-            ChannelById::<T>::mutate(
-                &item.channel_id,
-                |channel| channel.cumulative_reward_claimed = item.cumulative_reward_earned
-            );
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
 
             Self::deposit_event(RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, item.channel_id));
+
+            Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn withdraw_from_channel_balance(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            amount: BalanceOf<T>,
+            destination: T::AccountId,
+        ) -> DispatchResult {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            let reward_account = Self::ensure_reward_account(&channel)?;
+            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
+
+            ensure!(
+                <Balances<T>>::usable_balance(&reward_account) >= amount,
+                Error::<T>::WithdrawFromChannelAmountExceedsBalance
+            );
+
+            //
+            // == MUTATION_SAFE ==
+            //
+            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
+
+            Self::deposit_event(RawEvent::ChannelFundsWithdrawn(
+                actor,
+                channel_id,
+                amount,
+                destination,
+            ));
+
+            Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn claim_and_withdraw_channel_reward(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            proof: Vec<ProofElement<T>>,
+            item: PullPayment<T>,
+            destination: T::AccountId,
+        ) -> DispatchResult {
+            let (channel, reward_account, amount) = Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
+            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
+            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?; // Should never fail
+
+            Self::deposit_event(RawEvent::ChannelRewardClaimedAndWithdrawn(
+                actor,
+                item.channel_id,
+                amount,
+                destination,
+            ));
 
             Ok(())
         }
@@ -2416,6 +2459,60 @@ impl<T: Trait> Module<T> {
             video_id, member_id,
         ))
     }
+
+    fn ensure_can_claim_channel_reward(
+        origin: &T::Origin,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        item: &PullPayment<T>,
+        proof: &Vec<ProofElement<T>>,
+    ) -> Result<(Channel<T>, T::AccountId, BalanceOf<T>), DispatchError> {
+        let channel = Self::ensure_channel_exists(&item.channel_id)?;
+
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel.owner)?;
+
+        let reward_account = Self::ensure_reward_account(&channel)?;
+
+        let cashout = item
+            .cumulative_reward_earned
+            .saturating_sub(channel.cumulative_reward_claimed);
+
+        ensure!(
+            <MaxRewardAllowed<T>>::get() > item.cumulative_reward_earned,
+            Error::<T>::TotalRewardLimitExceeded
+        );
+        ensure!(
+            <MinCashoutAllowed<T>>::get() < cashout,
+            Error::<T>::UnsufficientCashoutAmount
+        );
+        Self::verify_proof(proof, item)?;
+        Ok((channel, reward_account, cashout))
+    }
+
+    fn execute_channel_reward_claim(
+        channel_id: T::ChannelId,
+        reward_account: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) {
+        ContentTreasury::<T>::transfer_reward(reward_account, amount);
+        ChannelById::<T>::mutate(&channel_id, |channel| {
+            channel.cumulative_reward_claimed =
+                channel.cumulative_reward_claimed.saturating_add(amount)
+        });
+    }
+
+    fn execute_channel_balance_withdrawal(
+        reward_account: &T::AccountId,
+        destination: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            reward_account,
+            destination,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )?;
+        Ok(())
+    }
 }
 
 decl_event!(
@@ -2451,6 +2548,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        AccountId = <T as frame_system::Trait>::AccountId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2470,6 +2568,9 @@ decl_event!(
             IsCensored,
             Vec<u8>, /* rationale */
         ),
+
+        ChannelFundsWithdrawn(ContentActor, ChannelId, Balance, AccountId),
+        ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
 
         // Channel Categories
         ChannelCategoryCreated(

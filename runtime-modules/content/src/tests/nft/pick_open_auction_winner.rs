@@ -92,7 +92,8 @@ fn pick_open_auction_winner() {
                 video_id,
                 bid,
             )),
-            number_of_events_before_call + 1,
+            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), OpenAuctionBidAccepted
+            number_of_events_before_call + 3,
         );
     })
 }
