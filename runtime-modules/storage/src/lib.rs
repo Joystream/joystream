@@ -3898,9 +3898,18 @@ impl<T: Trait> Module<T> {
             &account_id,
         )?;
 
+        // refund or request deletion prize first: no-op if amnt = 0
+        match net_prize {
+            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
+            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
+        }
+
         //
         // == MUTATION SAFE ==
         //
+
+        //  slash: no-op if storage_fee = 0
+        let _ = Balances::<T>::slash(&account_id, storage_fee);
 
         // insert candidate storage buckets: no op if new_storage_buckets is empty
         new_storage_buckets.iter().for_each(|(id, bucket)| {
@@ -3916,15 +3925,6 @@ impl<T: Trait> Module<T> {
                 bucket,
             )
         });
-
-        // FIRST refund or request deletion prize first: no-op if amnt = 0
-        match net_prize {
-            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
-            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
-        }
-
-        // THEN slash: no-op if storage_fee = 0
-        let _ = Balances::<T>::slash(&account_id, storage_fee);
 
         // remove objects: no-op if list.is_empty() or during bag creation
         match &bag_op.params {
