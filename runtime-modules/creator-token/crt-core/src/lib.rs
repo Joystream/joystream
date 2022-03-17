@@ -7,6 +7,9 @@ use frame_support::{
 };
 use sp_arithmetic::traits::AtLeast32BitUnsigned;
 
+mod types;
+use types::AccountData;
+
 pub trait Trait: frame_system::Trait {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -21,13 +24,29 @@ decl_storage! {
         }
 }
 
+// PRIMITIVES:
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+        // transfer amount from source account id to destination account id
+
+        // mint amount to specific account id
+
+        // burn amount from specific account id
+
+        // freeze amount for specific account id
+
+        // unfreeze amount for specific account id
     }
 }
 
 decl_error! {
     pub enum Error for Module<T: Trait> {
+        /// Free balance is insufficient for freezing specified amount
+        InsufficientFreeBalanceForFreezing,
+
+        /// Frozen balance is insufficient for unfreezing the specified amount
+        InsufficientFrozenBalance,
     }
 }
 
