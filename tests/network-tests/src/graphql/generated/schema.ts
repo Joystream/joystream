@@ -4115,6 +4115,141 @@ export type BudgetSpendingEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type BudgetUpdatedEvent = Event &
+  BaseGraphQlObject & {
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['String']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['String']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['String']>
+    version: Scalars['Int']
+    group: WorkingGroup
+    groupId: Scalars['String']
+    /** Amount substracted from / added to the current budget */
+    budgetChangeAmount: Scalars['BigInt']
+  }
+
+export type BudgetUpdatedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<BudgetUpdatedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type BudgetUpdatedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  group: Scalars['ID']
+  budgetChangeAmount: Scalars['String']
+}
+
+export type BudgetUpdatedEventEdge = {
+  node: BudgetUpdatedEvent
+  cursor: Scalars['String']
+}
+
+export enum BudgetUpdatedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  GroupAsc = 'group_ASC',
+  GroupDesc = 'group_DESC',
+  BudgetChangeAmountAsc = 'budgetChangeAmount_ASC',
+  BudgetChangeAmountDesc = 'budgetChangeAmount_DESC',
+}
+
+export type BudgetUpdatedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  group?: Maybe<Scalars['ID']>
+  budgetChangeAmount?: Maybe<Scalars['String']>
+}
+
+export type BudgetUpdatedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  budgetChangeAmount_eq?: Maybe<Scalars['BigInt']>
+  budgetChangeAmount_gt?: Maybe<Scalars['BigInt']>
+  budgetChangeAmount_gte?: Maybe<Scalars['BigInt']>
+  budgetChangeAmount_lt?: Maybe<Scalars['BigInt']>
+  budgetChangeAmount_lte?: Maybe<Scalars['BigInt']>
+  budgetChangeAmount_in?: Maybe<Array<Scalars['BigInt']>>
+  group?: Maybe<WorkingGroupWhereInput>
+  AND?: Maybe<Array<BudgetUpdatedEventWhereInput>>
+  OR?: Maybe<Array<BudgetUpdatedEventWhereInput>>
+}
+
+export type BudgetUpdatedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type BuyNowCanceledEvent = Event &
   BaseGraphQlObject & {
     /** Hash of the extrinsic which caused the event to be emitted. */
@@ -7864,6 +7999,7 @@ export enum EventTypeOptions {
   BudgetRefillPlannedEvent = 'BudgetRefillPlannedEvent',
   BudgetSetEvent = 'BudgetSetEvent',
   BudgetSpendingEvent = 'BudgetSpendingEvent',
+  BudgetUpdatedEvent = 'BudgetUpdatedEvent',
   BuyNowCanceledEvent = 'BuyNowCanceledEvent',
   CandidacyNoteSetEvent = 'CandidacyNoteSetEvent',
   CandidacyStakeReleaseEvent = 'CandidacyStakeReleaseEvent',
@@ -17025,6 +17161,9 @@ export type Query = {
   budgetSpendingEvents: Array<BudgetSpendingEvent>
   budgetSpendingEventByUniqueInput?: Maybe<BudgetSpendingEvent>
   budgetSpendingEventsConnection: BudgetSpendingEventConnection
+  budgetUpdatedEvents: Array<BudgetUpdatedEvent>
+  budgetUpdatedEventByUniqueInput?: Maybe<BudgetUpdatedEvent>
+  budgetUpdatedEventsConnection: BudgetUpdatedEventConnection
   buyNowCanceledEvents: Array<BuyNowCanceledEvent>
   buyNowCanceledEventByUniqueInput?: Maybe<BuyNowCanceledEvent>
   buyNowCanceledEventsConnection: BuyNowCanceledEventConnection
@@ -18080,6 +18219,26 @@ export type QueryBudgetSpendingEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetSpendingEventWhereInput>
   orderBy?: Maybe<Array<BudgetSpendingEventOrderByInput>>
+}
+
+export type QueryBudgetUpdatedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<BudgetUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<BudgetUpdatedEventOrderByInput>>
+}
+
+export type QueryBudgetUpdatedEventByUniqueInputArgs = {
+  where: BudgetUpdatedEventWhereUniqueInput
+}
+
+export type QueryBudgetUpdatedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<BudgetUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<BudgetUpdatedEventOrderByInput>>
 }
 
 export type QueryBuyNowCanceledEventsArgs = {
@@ -28357,6 +28516,7 @@ export type WorkingGroup = BaseGraphQlObject & {
   appliedonopeningeventgroup?: Maybe<Array<AppliedOnOpeningEvent>>
   budgetseteventgroup?: Maybe<Array<BudgetSetEvent>>
   budgetspendingeventgroup?: Maybe<Array<BudgetSpendingEvent>>
+  budgetupdatedeventgroup?: Maybe<Array<BudgetUpdatedEvent>>
   leaderseteventgroup?: Maybe<Array<LeaderSetEvent>>
   leaderunseteventgroup?: Maybe<Array<LeaderUnsetEvent>>
   newmissedrewardlevelreachedeventgroup?: Maybe<Array<NewMissedRewardLevelReachedEvent>>
@@ -28774,6 +28934,8 @@ export type WorkingGroupOpeningMetadata = BaseGraphQlObject & {
   version: Scalars['Int']
   /** Whether the originally provided metadata was valid */
   originallyValid: Scalars['Boolean']
+  /** Opening title */
+  title?: Maybe<Scalars['String']>
   /** Opening short description */
   shortDescription?: Maybe<Scalars['String']>
   /** Opening description (md-formatted) */
@@ -28797,6 +28959,7 @@ export type WorkingGroupOpeningMetadataConnection = {
 
 export type WorkingGroupOpeningMetadataCreateInput = {
   originallyValid: Scalars['Boolean']
+  title?: Maybe<Scalars['String']>
   shortDescription?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   hiringLimit?: Maybe<Scalars['Float']>
@@ -28818,6 +28981,8 @@ export enum WorkingGroupOpeningMetadataOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   OriginallyValidAsc = 'originallyValid_ASC',
   OriginallyValidDesc = 'originallyValid_DESC',
+  TitleAsc = 'title_ASC',
+  TitleDesc = 'title_DESC',
   ShortDescriptionAsc = 'shortDescription_ASC',
   ShortDescriptionDesc = 'shortDescription_DESC',
   DescriptionAsc = 'description_ASC',
@@ -28832,6 +28997,7 @@ export enum WorkingGroupOpeningMetadataOrderByInput {
 
 export type WorkingGroupOpeningMetadataUpdateInput = {
   originallyValid?: Maybe<Scalars['Boolean']>
+  title?: Maybe<Scalars['String']>
   shortDescription?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   hiringLimit?: Maybe<Scalars['Float']>
@@ -28866,6 +29032,11 @@ export type WorkingGroupOpeningMetadataWhereInput = {
   deletedById_in?: Maybe<Array<Scalars['ID']>>
   originallyValid_eq?: Maybe<Scalars['Boolean']>
   originallyValid_in?: Maybe<Array<Scalars['Boolean']>>
+  title_eq?: Maybe<Scalars['String']>
+  title_contains?: Maybe<Scalars['String']>
+  title_startsWith?: Maybe<Scalars['String']>
+  title_endsWith?: Maybe<Scalars['String']>
+  title_in?: Maybe<Array<Scalars['String']>>
   shortDescription_eq?: Maybe<Scalars['String']>
   shortDescription_contains?: Maybe<Scalars['String']>
   shortDescription_startsWith?: Maybe<Scalars['String']>
@@ -29106,6 +29277,9 @@ export type WorkingGroupWhereInput = {
   budgetspendingeventgroup_none?: Maybe<BudgetSpendingEventWhereInput>
   budgetspendingeventgroup_some?: Maybe<BudgetSpendingEventWhereInput>
   budgetspendingeventgroup_every?: Maybe<BudgetSpendingEventWhereInput>
+  budgetupdatedeventgroup_none?: Maybe<BudgetUpdatedEventWhereInput>
+  budgetupdatedeventgroup_some?: Maybe<BudgetUpdatedEventWhereInput>
+  budgetupdatedeventgroup_every?: Maybe<BudgetUpdatedEventWhereInput>
   leaderseteventgroup_none?: Maybe<LeaderSetEventWhereInput>
   leaderseteventgroup_some?: Maybe<LeaderSetEventWhereInput>
   leaderseteventgroup_every?: Maybe<LeaderSetEventWhereInput>
