@@ -706,15 +706,6 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            if let Some(upload_assets) = params.assets.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender
-                );
-                Storage::<T>::upload_data_objects(params)?;
-            }
-
             let nft_status = params.auto_issue_nft
                 .as_ref()
                 .map_or(
@@ -732,6 +723,15 @@ decl_module! {
                 video_post_id:  None,
                 nft_status,
             };
+
+            if let Some(upload_assets) = params.assets.as_ref() {
+                let params = Self::construct_upload_parameters(
+                    upload_assets,
+                    &channel_id,
+                    &sender
+                );
+                Storage::<T>::upload_data_objects(params)?;
+            }
 
             //
             // == MUTATION SAFE ==
