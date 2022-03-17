@@ -337,6 +337,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
+
         // deposit into account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.deposit(amount)
@@ -345,9 +346,10 @@ impl<T: Trait> Module<T> {
 
     #[inline]
     pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        // mint amount
+        // burn amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
-        // deposit into account data
+
+        // slash amount from account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.slash(amount)
         });
