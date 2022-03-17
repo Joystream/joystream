@@ -10,4 +10,4 @@ echo 'running clippy (rust linter)'
 BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2021-02-20 clippy --release --all -- -D warnings
 
 echo 'running cargo unit tests'
-cargo +nightly-2021-02-20 test --release --all
+cargo +nightly-2021-02-20 test --release --all --features ""
