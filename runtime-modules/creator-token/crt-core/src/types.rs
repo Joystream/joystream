@@ -15,31 +15,50 @@ pub(crate) struct AccountData<T: crate::Trait> {
 
 /// Interface for interacting with AccountData
 impl<T: crate::Trait> AccountData<T> {
-    pub fn freeze(&mut self, amount: T::Balance) -> DispatchResult {
+    /// Try to freeze specified amount
+    pub(crate) fn try_freeze(&mut self, amount: T::Balance) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
-            crate::Error::<T>::InsufficientFreeBalanceForFreezing
+            crate::Error::<T>::InsufficientFreeBalanceForFreezing,
         );
-        self.free_balance = self.free_balance.saturating_sub(amount);
-        self.frozen_balance = self.frozen_balance.saturating_add(amount);
+        self.freeze(amount);
         Ok(())
     }
 
-    pub fn unfreeze(&mut self, amount: T::Balance) -> DispatchResult {
+    /// Try to freeze specified amount
+    pub(crate) fn try_unfreeze(&mut self, amount: T::Balance) -> DispatchResult {
         ensure!(
             self.frozen_balance >= amount,
             crate::Error::<T>::InsufficientFrozenBalance
         );
-        self.free_balance = self.free_balance.saturating_add(amount);
-        self.frozen_balance = self.frozen_balance.saturating_sub(amount);
+        self.unfreeze(amount);
         Ok(())
     }
 
+    /// freeze specified amount: unfallible
+    pub(crate) fn freeze(&mut self, amount: T::Balance) {
+        self.free_balance = self.free_balance.saturating_sub(amount);
+        self.frozen_balance = self.frozen_balance.saturating_add(amount);
+    }
+
+    /// freeze specified amount: unfallible
+    pub(crate) fn unfreeze(&mut self, amount: T::Balance) {
+        self.free_balance = self.free_balance.saturating_add(amount);
+        self.frozen_balance = self.frozen_balance.saturating_sub(amount);
+    }
+
+    /// Retrieve free balance amount
     pub fn free_balance(&self) -> T::Balance {
         self.free_balance
     }
 
+    /// Retrieve frozen balance amount    
     pub fn frozen_balance(&self) -> T::Balance {
         self.frozen_balance
+    }
+
+    /// Add amount to free balance : unfallible
+    pub fn add_to_free_balance(&mut self, amount: T::Balance) {
+        self.free_balance = self.free_balance.saturating_add(amount);
     }
 }
