@@ -356,6 +356,12 @@
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
+    "DynBagCreationParameters": {
+        "bagId": "DynamicBagId",
+        "objectCreationList": "Vec<DataObjectCreationParameters>",
+        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "expectedDataSizeFee": "u128"
+    },
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ParticipantId": "u64",
     "Title": "Text",

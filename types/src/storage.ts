@@ -284,6 +284,7 @@ export const storageTypes: RegistryTypes = {
   // Utility types:
   DataObjectIdMap,
   DistributionBucketIndexSet,
+  DynBagCreationParameters,
   DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes
