@@ -8,7 +8,7 @@ use frame_support::{
 use sp_arithmetic::traits::AtLeast32BitUnsigned;
 
 mod types;
-use types::AccountData;
+use types::{AccountDataOf, TokenDataOf};
 
 pub trait Trait: frame_system::Trait {
     /// Events
@@ -17,11 +17,23 @@ pub trait Trait: frame_system::Trait {
     // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
+
+    /// The token identifier used
+    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
 }
 
 decl_storage! {
-        trait Store for Module<T: Trait> as CrtCore {
-        }
+    trait Store for Module<T: Trait> as CrtCore {
+        /// Double map TokenId x AccountId => AccountData for managing account data
+        pub AccountInfoByAccountAndToken get(fn account_info_by_account_and_token): double_map
+            hasher(blake2_128_concat) T::AccountId,
+        hasher(blake2_128_concat) T::TokenId => AccountDataOf<T>;
+
+        /// map TokenId => TokenData to retrieve token information
+        pub TokenInfoById get(fn token_info_by_id): map
+            hasher(blake2_128_concat) T::TokenId => TokenDataOf<T>;
+
+    }
 }
 
 // PRIMITIVES:
@@ -45,8 +57,11 @@ decl_error! {
         /// Free balance is insufficient for freezing specified amount
         InsufficientFreeBalanceForFreezing,
 
-        /// Frozen balance is insufficient for unfreezing the specified amount
+        /// Frozen balance is insufficient for unfreezing specified amount
         InsufficientFrozenBalance,
+
+        /// Free balance is insufficient for slashing specified amount
+        InsufficientFreeBalanceForSlashing,
     }
 }
 
