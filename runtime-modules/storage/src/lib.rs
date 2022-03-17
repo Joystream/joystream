@@ -652,24 +652,6 @@ struct BagOperationRecord<
     params: BagOperationParamsTypes<DeletionPrize, ObjectId>,
 }
 
-impl<MemberId: Clone, ChannelId: Clone, DeletionPrize: Unsigned, ObjectId: Clone>
-    BagOperationRecord<MemberId, ChannelId, DeletionPrize, ObjectId>
-{
-    fn ensure_bag_id_valid_for_op<T: Trait>(
-        &self,
-    ) -> Result<BagIdType<MemberId, ChannelId>, DispatchError> {
-        match self.params {
-            BagOperationParamsTypes::<DeletionPrize, ObjectId>::Update(..) => {
-                Ok(self.bag_id.clone())
-            }
-            _ => {
-                let dyn_bag_id = self.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
-                Ok(BagIdType::<MemberId, ChannelId>::Dynamic(dyn_bag_id))
-            }
-        }
-    }
-}
-
 type BagOperationParams<T> = BagOperationParamsTypes<BalanceOf<T>, <T as Trait>::DataObjectId>;
 type BagOperation<T> = BagOperationRecord<
     MemberId<T>,
@@ -3864,17 +3846,11 @@ impl<T: Trait> Module<T> {
         num_obj_to_delete: usize,
     ) -> NetDeletionPrize<T> {
         let amnt = T::DataObjectDeletionPrize::get();
+        let num_obj_to_create_bal: BalanceOf<T> = num_obj_to_create.saturated_into();
+        let num_obj_to_delete_bal: BalanceOf<T> = num_obj_to_delete.saturated_into();
         init_value
-            .add_balance(
-                iter::repeat(amnt)
-                    .take(num_obj_to_create)
-                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
-            )
-            .sub_balance(
-                iter::repeat(amnt)
-                    .take(num_obj_to_delete)
-                    .fold(BalanceOf::<T>::zero(), |acc, x| acc.saturating_add(x)),
-            )
+            .add_balance(amnt * num_obj_to_create_bal)
+            .sub_balance(amnt * num_obj_to_delete_bal)
     }
 
     /// Utility function that checks existence for bag deletion / update &
@@ -3918,9 +3894,6 @@ impl<T: Trait> Module<T> {
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
-        let bag_id_variant = bag_op.ensure_bag_id_valid_for_op::<T>()?;
-        let dyn_bag_id = bag_id_variant.ensure_is_dynamic_bag::<T>().ok();
-
         // check and generate any objects to add/remove from storage
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
         let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
@@ -3952,6 +3925,15 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
+        // refund or request deletion prize first: no-op if amnt = 0
+        match net_prize {
+            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
+            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
+        }
+
+        //  slash: no-op if storage_fee = 0
+        let _ = Balances::<T>::slash(&account_id, storage_fee);
+
         // insert candidate storage buckets: no op if new_storage_buckets is empty
         new_storage_buckets.iter().for_each(|(id, bucket)| {
             StorageBucketById::<T>::insert(&id, bucket.clone());
@@ -3966,15 +3948,6 @@ impl<T: Trait> Module<T> {
                 bucket,
             )
         });
-
-        // FIRST refund or request deletion prize first: no-op if amnt = 0
-        match net_prize {
-            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
-            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
-        }
-
-        // THEN slash: no-op if storage_fee = 0
-        let _ = Balances::<T>::slash(&account_id, storage_fee);
 
         // remove objects: no-op if list.is_empty() or during bag creation
         match &bag_op.params {
@@ -3996,13 +3969,10 @@ impl<T: Trait> Module<T> {
 
         // mutate bags set
         if bag_op.params.is_delete() {
-            // remove bag for deletion: guaranteed to be Some(..)
-            if let Some(dyn_id) = dyn_bag_id {
-                Bags::<T>::remove(&bag_op.bag_id);
-                Self::deposit_event(RawEvent::DynamicBagDeleted(account_id, dyn_id));
-            }
+            // remove bag for deletion: delegate event to caller
+            Bags::<T>::remove(&bag_op.bag_id);
         } else {
-            // else insert candidate bag
+            // else insert updated bag: signalling the change
             Bags::<T>::insert(
                 &bag_op.bag_id,
                 Bag::<T> {
