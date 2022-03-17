@@ -69,6 +69,23 @@ pub trait MultiCurrency<T: Trait> {
     /// - free balance of `who` is decreased by `amount`
     /// - issuance of `token_id` is decreased by `amount`
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
+
+    /// Transfer `amount` from `src` account to `dst`
+    /// PRECONDITIONS:
+    /// - `token_id` must exists
+    /// - `src` must exists
+    /// - `src` free balance must be greater than or equal to `amount`
+    /// - `dst` must exists
+    ///
+    /// POSTCONDITIONS:
+    /// - free balance of `src` is decreased by `amount`
+    /// - free balance of `dst` is increased by `amount`
+    fn transfer(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        dst: T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult;
 }
 
 decl_storage! {
@@ -162,7 +179,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         // == MUTATION SAFE ==
 
         // perform deposit
-        Self::do_deposit(token_id, who, amount);
+        Self::do_deposit(token_id, &who, amount);
 
         Ok(())
     }
@@ -184,7 +201,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         // == MUTATION SAFE ==
 
         // perform deposit
-        Self::do_deposit(token_id, who.clone(), amount);
+        Self::do_deposit(token_id, &who, amount);
 
         Ok(())
     }
@@ -206,7 +223,33 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         // == MUTATION SAFE ==
 
         // perform deposit
-        Self::do_slash(token_id, who, amount);
+        Self::do_slash(token_id, &who, amount);
+
+        Ok(())
+    }
+
+    fn transfer(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        dst: T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // ensure src account id validity
+        let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
+
+        // ensure dst account id validity
+        let dst_account_info = Self::ensure_account_data_exists(token_id, &dst)?;
+
+        // ensure can slash amount from who
+        src_account_info.can_slash::<T>(amount)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_slash(token_id, &src, amount);
+        Self::do_deposit(token_id, &dst, amount);
 
         Ok(())
     }
@@ -235,7 +278,7 @@ impl<T: Trait> Module<T> {
         Ok(Self::token_info_by_id(token_id))
     }
 
-    fn do_deposit(token_id: T::TokenId, account_id: T::AccountId, amount: T::Balance) {
+    fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
         // deposit into account data
@@ -244,7 +287,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
-    fn do_slash(token_id: T::TokenId, account_id: T::AccountId, amount: T::Balance) {
+    fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
         // deposit into account data
