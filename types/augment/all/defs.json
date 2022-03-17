@@ -773,6 +773,21 @@
     },
     "ModeratorSet": "BTreeSet<MemberId>",
     "Royalty": "Perbill",
+    "EnglishAuctionParams": {
+        "starting_price": "u128",
+        "buy_now_price": "Option<u128>",
+        "whitelist": "BTreeSet<MemberId>",
+        "end": "u32",
+        "auction_duration": "u32",
+        "extension_period": "u32",
+        "min_bid_step": "u128"
+    },
+    "OpenAuctionParams": {
+        "starting_price": "u128",
+        "buy_now_price": "Option<u128>",
+        "whitelist": "BTreeSet<MemberId>",
+        "bid_lock_duration": "u32"
+    },
     "EnglishAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
@@ -826,8 +841,8 @@
             "Idle": "Null",
             "BuyNow": "u128",
             "InitiatedOfferToMember": "(MemberId,Option<u128>)",
-            "EnglishAuction": "{\"starting_price\":\"u128\",\"buy_now_price\":\"Option<u128>\",\"whitelist\":\"BTreeSet<MemberId>\",\"end\":\"u32\",\"auction_duration\":\"u32\",\"extension_period\":\"u32\",\"min_bid_step\":\"u128\"}",
-            "OpenAuction": "{\"starting_price\":\"u128\",\"buy_now_price\":\"Option<u128>\",\"whitelist\":\"BTreeSet<MemberId>\",\"bid_lock_duration\":\"u32\"}"
+            "EnglishAuction": "EnglishAuctionParams",
+            "OpenAuction": "OpenAuctionParams"
         }
     },
     "NftIssuanceParameters": {

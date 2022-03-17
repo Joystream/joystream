@@ -297,6 +297,8 @@ export const contentTypes = {
   ModeratorSet,
   // Nft
   Royalty,
+  EnglishAuctionParams,
+  OpenAuctionParams,
   EnglishAuction,
   OpenAuction,
   OpenAuctionBid,
