@@ -158,11 +158,6 @@ decl_storage! {
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id): map
             hasher(blake2_128_concat) T::TokenId => TokenDataOf<T>;
-
-        /// The existential deposit amount for each token
-        pub ExistentialDepositForToken get(fn existential_deposit_for_token): map
-            hasher(blake2_128_concat) T::TokenId => T::Balance;
-
     }
 }
 
@@ -234,7 +229,8 @@ decl_event! {
         /// - token identifier
         /// - slashed account
         /// - amount slashed
-        TokenAmountSlashedFrom(TokenId, AccountId, Balance),
+        /// - existential deposit for the token
+        TokenAmountSlashedFrom(TokenId, AccountId, Balance, Balance),
 
         /// Token amount is transferred from src to dst
         /// Params:
@@ -307,13 +303,18 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_slash(token_id, &who, amount)?;
+        let existential_deposit = Self::ensure_can_slash(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &who, amount);
+        Self::do_slash(token_id, &who, amount, existential_deposit);
 
-        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
+        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(
+            token_id,
+            who,
+            amount,
+            existential_deposit,
+        ));
         Ok(())
     }
 
@@ -357,11 +358,11 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
+        let existential_deposit = Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &src, amount);
+        Self::do_slash(token_id, &src, amount, existential_deposit);
         Self::do_deposit(token_id, &dst, amount);
 
         Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
@@ -494,9 +495,9 @@ impl<T: Trait> Module<T> {
         token_id: T::TokenId,
         who: &T::AccountId,
         amount: T::Balance,
-    ) -> DispatchResult {
+    ) -> Result<T::Balance, DispatchError> {
         // ensure token validity
-        Self::ensure_token_exists(token_id).map(|_| ())?;
+        let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure account id validity
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
@@ -504,7 +505,7 @@ impl<T: Trait> Module<T> {
         // ensure can slash amount from who
         account_info.can_slash::<T>(amount)?;
 
-        Ok(())
+        Ok(token_info.existential_deposit())
     }
 
     #[inline]
@@ -513,9 +514,9 @@ impl<T: Trait> Module<T> {
         src: &T::AccountId,
         dst: &T::AccountId,
         amount: T::Balance,
-    ) -> DispatchResult {
+    ) -> Result<T::Balance, DispatchError> {
         // ensure token validity
-        Self::ensure_token_exists(token_id).map(|_| ())?;
+        let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
@@ -526,7 +527,7 @@ impl<T: Trait> Module<T> {
         // ensure can slash amount from who
         src_account_info.can_slash::<T>(amount)?;
 
-        Ok(())
+        Ok(token_info.existential_deposit())
     }
 
     #[inline]
@@ -580,9 +581,14 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
+    pub(crate) fn do_slash(
+        token_id: T::TokenId,
+        account_id: &T::AccountId,
+        amount: T::Balance,
+        existential_deposit: T::Balance,
+    ) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.slash(amount)
+            account_data.slash(amount, existential_deposit)
         });
     }
 
