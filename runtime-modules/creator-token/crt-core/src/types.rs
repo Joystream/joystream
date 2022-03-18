@@ -36,6 +36,9 @@ pub struct TokenData<Balance, Hash> {
 
     /// Hash of a human-readable description
     description: Hash,
+
+    /// Existential deposit allowed for the token
+    existential_deposit: Balance,
 }
 
 /// Default trait for AccountData
@@ -49,7 +52,7 @@ impl<Balance: Zero> Default for AccountData<Balance> {
 }
 
 /// Interface for interacting with AccountData
-impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
+impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
     /// Retrieve free balance amount
     pub(crate) fn free_balance(&self) -> Balance {
         self.free_balance
@@ -105,8 +108,13 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 
     /// Slash amount from free balance : infallible
-    pub(crate) fn slash(&mut self, amount: Balance) {
-        self.free_balance = self.free_balance.saturating_sub(amount);
+    pub(crate) fn slash(&mut self, amount: Balance, existential_deposit: Balance) {
+        let new_amount = self.free_balance.saturating_sub(amount);
+        self.free_balance = if new_amount > existential_deposit {
+            new_amount
+        } else {
+            Balance::zero()
+        };
     }
 }
 
@@ -144,6 +152,10 @@ impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Has
     /// decrease total issuance: infallible
     pub(crate) fn decrease_issuance(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
+    }
+    /// Retrieve free balance amount
+    pub fn existential_deposit(&self) -> Balance {
+        self.existential_deposit
     }
 }
 
