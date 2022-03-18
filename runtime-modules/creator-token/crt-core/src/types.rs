@@ -112,16 +112,6 @@ impl<Balance: Copy + PartialOrd + Saturating> AccountData<Balance> {
 
 /// Interface for interacting with TokenData
 impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Hash> {
-    /// Get the treasury account for the token
-    pub(crate) fn treasury_account(&self) -> Balance {
-        self.current_total_issuance
-    }
-
-    /// Get current total issuance for the token
-    pub(crate) fn current_issuance(&self) -> Balance {
-        self.current_total_issuance
-    }
-
     /// checks whether token issuance can be increased by amount
     pub(crate) fn can_increase_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         match self.max_total_issuance {

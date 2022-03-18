@@ -180,6 +180,7 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
+
     }
 }
 decl_event! {
@@ -187,7 +188,7 @@ decl_event! {
     where
         Balance = <T as Trait>::Balance,
         TokenId = <T as Trait>::TokenId,
-        AccountId = <T as Trait>::AccountId,
+        AccountId = <T as frame_system::Trait>::AccountId,
     {
         /// Amount is minted
         /// Params:
@@ -235,7 +236,7 @@ decl_event! {
         /// - token identifier
         /// - account tokens are unfrozen from
         /// - amount frozen
-        TokenAmountUnFrozenFrom(TokenId, AccountId, Balance),
+        TokenAmountUnfrozenFrom(TokenId, AccountId, Balance),
 
     }
 }
@@ -247,13 +248,13 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
-        // Verify preconditions
         Self::ensure_can_deposit_creating(token_id, amount)?;
 
         // == MUTATION SAFE ==
 
-        // perform deposit
         Self::do_deposit(token_id, &who, amount);
+
+        Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
 
         Ok(())
     }
@@ -263,14 +264,13 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
-        // Verify preconditions
         Self::ensure_can_deposit_into_existing(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
 
-        // perform deposit
         Self::do_deposit(token_id, &who, amount);
 
+        Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
         Ok(())
     }
 
@@ -281,9 +281,9 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        // perform deposit
         Self::do_slash(token_id, &who, amount);
 
+        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -301,6 +301,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Self::do_slash(token_id, &src, amount);
         Self::do_deposit(token_id, &dst, amount);
 
+        Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
         Ok(())
     }
 
@@ -312,6 +313,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Self::do_freeze(token_id, &who, amount);
 
+        Self::deposit_event(RawEvent::TokenAmountFrozenFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -323,6 +325,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Self::do_unfreeze(token_id, &who, amount);
 
+        Self::deposit_event(RawEvent::TokenAmountUnfrozenFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -497,6 +500,8 @@ impl<T: Trait> Module<T> {
         // mint amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
 
+        Self::deposit_event(RawEvent::TokenAmountMinted(token_id, amount));
+
         // deposit into account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.deposit(amount)
@@ -507,6 +512,8 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         // burn amount
         TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
+
+        Self::deposit_event(RawEvent::TokenAmountBurned(token_id, amount));
 
         // slash amount from account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
