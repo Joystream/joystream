@@ -403,13 +403,13 @@ impl<T: Trait> Module<T> {
         amount: T::Balance,
     ) -> DispatchResult {
         // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        let dst_account_info = Self::ensure_account_data_exists(token_id, dst)?;
+        Self::ensure_account_data_exists(token_id, dst).map(|_| ())?;
 
         // ensure can slash amount from who
         src_account_info.can_slash::<T>(amount)?;
