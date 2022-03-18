@@ -5,27 +5,6 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Ensure nft auction can be completed
-    pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        let can_be_completed = if let AuctionType::English(EnglishAuctionDetails {
-            auction_duration,
-            ..
-        }) = auction.auction_type
-        {
-            let now = <frame_system::Module<T>>::block_number();
-
-            // Check whether auction time expired.
-            (now - auction.starts_at) >= auction_duration
-        } else {
-            // Open auction can be completed at any time
-            true
-        };
-
-        ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
-
-        Ok(())
-    }
-
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
@@ -38,36 +17,24 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Safety/bound checks for auction parameters
-    pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::BlockNumber, CurrencyOf<T>, T::MemberId>,
+    /// Safety/bound checks for english auction parameters
+    pub(crate) fn validate_english_auction_params(
+        auction_params: &EnglishAuctionParams<T>,
     ) -> DispatchResult {
-        match auction_params.auction_type {
-            AuctionType::English(EnglishAuctionDetails {
-                extension_period,
-                auction_duration,
-            }) => {
-                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
-                Self::ensure_extension_period_bounds_satisfied(extension_period)?;
+        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        Self::ensure_extension_period_bounds_satisfied(auction_params.extension_period)?;
 
-                // Ensure auction_duration of English auction is >= extension_period
-                ensure!(
-                    auction_duration >= extension_period,
-                    Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
-                );
-            }
-            AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
-                Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
-            }
-        }
+        Self::ensure_bid_step_bounds_satisfied(auction_params.min_bid_step)?;
+
+        // Ensure auction_duration of English auction is >= extension_period
+        ensure!(
+            auction_params.auction_duration >= auction_params.extension_period,
+            Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
+        );
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
-        Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
-        Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
-        if let Some(starts_at) = auction_params.starts_at {
-            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
-        }
+        Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
@@ -79,20 +46,22 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure starts at bounds satisfied
-    pub(crate) fn ensure_starts_at_delta_bounds_satisfied(
-        starts_at: T::BlockNumber,
+    /// Safety/bound checks for english auction parameters
+    pub(crate) fn validate_open_auction_params(
+        auction_params: &OpenAuctionParams<T>,
     ) -> DispatchResult {
-        ensure!(
-            starts_at >= <frame_system::Module<T>>::block_number(),
-            Error::<T>::StartsAtLowerBoundExceeded
-        );
+        Self::ensure_bid_lock_duration_bounds_satisfied(auction_params.bid_lock_duration)?;
 
-        ensure!(
-            starts_at
-                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
-            Error::<T>::StartsAtUpperBoundExceeded
-        );
+        Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
+
+        Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
+
+        if let Some(buy_now_price) = auction_params.buy_now_price {
+            ensure!(
+                buy_now_price > auction_params.starting_price,
+                Error::<T>::BuyNowIsLessThenStartingPrice
+            );
+        }
 
         Ok(())
     }
@@ -220,11 +189,13 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
+        offering: CurrencyOf<T>,
     ) -> DispatchResult {
-        if let TransactionalStatus::BuyNow(price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
+            ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
             Self::ensure_sufficient_free_balance(participant_account_id, *price)
         } else {
-            Err(Error::<T>::NFTNotInBuyNowState.into())
+            Err(Error::<T>::NftNotInBuyNowState.into())
         }
     }
 
@@ -233,11 +204,11 @@ impl<T: Trait> Module<T> {
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
-        if let TransactionalStatus::InitiatedOfferToMember(member_id, price) =
+        if let TransactionalStatus::<T>::InitiatedOfferToMember(member_id, price) =
             &nft.transactional_status
         {
             // Authorize participant under given member id
-            ensure_member_auth_success::<T>(&participant_account_id, &member_id)?;
+            ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
 
             if let Some(price) = price {
                 Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
@@ -248,18 +219,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Cancel NFT transaction
-    pub fn cancel_transaction(nft: Nft<T>) -> Nft<T> {
-        if let TransactionalStatus::Auction(ref auction) = nft.transactional_status {
-            if let Some(ref last_bid) = auction.last_bid {
-                // Unreserve previous bidder balance
-                T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
-            }
-        }
-
-        nft.set_idle_transactional_status()
-    }
-
     /// Buy nft
     pub(crate) fn buy_now(
         in_channel: T::ChannelId,
@@ -268,7 +227,7 @@ impl<T: Trait> Module<T> {
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
-        if let TransactionalStatus::BuyNow(price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::complete_payment(
                 in_channel,
                 nft.creator_royalty,
@@ -278,10 +237,13 @@ impl<T: Trait> Module<T> {
                 false,
             );
 
-            nft.owner = NFTOwner::Member(new_owner);
+            nft.owner = NftOwner::Member(new_owner);
         }
 
-        nft.set_idle_transactional_status()
+        Nft::<T> {
+            transactional_status: TransactionalStatus::<T>::Idle,
+            ..nft
+        }
     }
 
     /// Completes nft offer
@@ -291,7 +253,9 @@ impl<T: Trait> Module<T> {
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
-        if let TransactionalStatus::InitiatedOfferToMember(to, price) = &nft.transactional_status {
+        if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
+            &nft.transactional_status
+        {
             if let Some(price) = price {
                 Self::complete_payment(
                     in_channel,
@@ -303,10 +267,13 @@ impl<T: Trait> Module<T> {
                 );
             }
 
-            nft.owner = NFTOwner::Member(*to);
+            nft.owner = NftOwner::Member(*to);
         }
 
-        nft.set_idle_transactional_status()
+        Nft::<T> {
+            transactional_status: TransactionalStatus::<T>::Idle,
+            ..nft
+        }
     }
 
     /// Complete payment, either auction related or buy now/offer
@@ -350,36 +317,106 @@ impl<T: Trait> Module<T> {
                 // Deposit royalty into creator account
                 T::Currency::deposit_creating(&creator_account_id, royalty);
             }
-        } else {
-            if let Some(receiver_account_id) = receiver_account_id {
-                // Deposit amount, exluding auction fee into receiver account
-                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
-            }
+        } else if let Some(receiver_account_id) = receiver_account_id {
+            // Deposit amount, exluding auction fee into receiver account
+            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
-    /// Complete auction
     pub(crate) fn complete_auction(
+        nft: Nft<T>,
         in_channel: T::ChannelId,
-        mut nft: Nft<T>,
-        last_bid: Bid<T::MemberId, T::AccountId, T::BlockNumber, CurrencyOf<T>>,
-        owner_account_id: Option<T::AccountId>,
+        src_account_id: T::AccountId,
+        winner_id: T::MemberId,
+        amount: CurrencyOf<T>,
     ) -> Nft<T> {
-        let last_bid_amount = last_bid.amount;
-        let last_bidder = last_bid.bidder;
-        let bidder_account_id = last_bid.bidder_account_id;
+        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
 
         Self::complete_payment(
             in_channel,
             nft.creator_royalty,
-            last_bid_amount,
-            bidder_account_id,
-            owner_account_id,
+            amount,
+            src_account_id,
+            dest_account_id,
             true,
         );
 
-        nft.owner = NFTOwner::Member(last_bidder);
-        nft.transactional_status = TransactionalStatus::Idle;
-        nft
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(winner_id)
+    }
+
+    // fetches the desginated nft owner account, preconditions:
+    // 1. Self::ensure_channel_exist(channel_id).is_ok()
+    pub(crate) fn ensure_owner_account_id(
+        channel_id: T::ChannelId,
+        nft: &Nft<T>,
+    ) -> Result<T::AccountId, DispatchError> {
+        match nft.owner {
+            NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
+            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
+                .reward_account
+                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+        }
+    }
+
+    pub(crate) fn ensure_nft_exists(video_id: T::VideoId) -> Result<Nft<T>, Error<T>> {
+        Self::ensure_video_exists(&video_id).and_then(|video| video.ensure_nft_is_issued::<T>())
+    }
+
+    // NFT
+
+    /// Get nft english auction record
+    pub(crate) fn ensure_in_english_auction_state(
+        nft: &Nft<T>,
+    ) -> Result<EnglishAuction<T>, DispatchError> {
+        if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
+            Ok(auction.to_owned())
+        } else {
+            Err(Error::<T>::IsNotEnglishAuctionType.into())
+        }
+    }
+
+    /// Get nft open auction record
+    pub(crate) fn ensure_in_open_auction_state(
+        nft: &Nft<T>,
+    ) -> Result<OpenAuction<T>, DispatchError> {
+        if let TransactionalStatus::<T>::OpenAuction(auction) = &nft.transactional_status {
+            Ok(auction.to_owned())
+        } else {
+            Err(Error::<T>::IsNotOpenAuctionType.into())
+        }
+    }
+
+    ///  Ensure nft transactional status is set to `Idle`
+    pub(crate) fn ensure_nft_transactional_status_is_idle(nft: &Nft<T>) -> DispatchResult {
+        if let TransactionalStatus::<T>::Idle = nft.transactional_status {
+            Ok(())
+        } else {
+            Err(Error::<T>::NftIsNotIdle.into())
+        }
+    }
+
+    /// Ensure Nft has pending offer
+    pub(crate) fn ensure_in_pending_offer_state(nft: &Nft<T>) -> DispatchResult {
+        ensure!(
+            matches!(
+                nft.transactional_status,
+                TransactionalStatus::<T>::InitiatedOfferToMember(..),
+            ),
+            Error::<T>::PendingOfferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure Nft is in BuyNow state
+    pub(crate) fn ensure_in_buy_now_state(nft: &Nft<T>) -> DispatchResult {
+        ensure!(
+            matches!(
+                nft.transactional_status,
+                TransactionalStatus::<T>::BuyNow(..),
+            ),
+            Error::<T>::NftNotInBuyNowState
+        );
+        Ok(())
     }
 }

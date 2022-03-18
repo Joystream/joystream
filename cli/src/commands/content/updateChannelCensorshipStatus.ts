@@ -11,6 +11,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
       required: false,
       description: 'rationale',
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [

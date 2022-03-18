@@ -2,7 +2,7 @@
 # This is comprised of:
 #   - N validators
 #   - One RPC node
-#   - s3 bucket with a build of Pionner
+#   - One Build instance
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -34,16 +34,23 @@ Parameters:
     Description: Number of validator instances to launch
     Type: Number
     Default: 2
+  VolumeSize:
+    Description: Validator and Build instance volume size in GB
+    Type: Number
+    Default: 120
+  RPCVolumeSize:
+    Description: RPC Instance volume size in GB
+    Type: Number
+    Default: 120
 
 Conditions:
-  HasAMIId: !Not [!Equals [!Ref EC2AMI, ""]]
+  HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
 
 Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
+      GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 30333
@@ -60,8 +67,7 @@ Resources:
   RPCSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
+      GroupDescription: !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9933
@@ -111,7 +117,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: '40'
+              VolumeSize: !Ref VolumeSize
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
@@ -127,6 +133,23 @@ Resources:
 
             # Install the updates
             apt-get upgrade -y
+
+            apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+            apt-get update -y
+
+            apt-get install -y docker-ce docker-ce-cli containerd.io
+
+            usermod -aG docker ubuntu
+
+            # Update docker-compose to 1.28+
+            curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 
             # Get latest cfn scripts and install them;
             apt-get install -y python3-setuptools
@@ -144,7 +167,7 @@ Resources:
       DesiredCapacity: !Ref NumberOfValidators
       AvailabilityZones:
         Fn::GetAZs:
-          Ref: "AWS::Region"
+          Ref: 'AWS::Region'
       MixedInstancesPolicy:
         LaunchTemplate:
           LaunchTemplateSpecification:
@@ -155,7 +178,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
-          PropagateAtLaunch: "true"
+          PropagateAtLaunch: 'true'
 
   RPCInstance:
     Type: AWS::EC2::Instance
@@ -166,6 +189,10 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_rpc'
@@ -191,71 +218,27 @@ Resources:
       Timeout: '600'
       Count: !Ref NumberOfValidators
 
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: PublicRead
-      WebsiteConfiguration:
-        IndexDocument: index.html
-
-  BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      PolicyDocument:
-        Id: PublicPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-      Bucket: !Ref S3Bucket
-
-  CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Origins:
-        - DomainName: !Select [1, !Split ["//", !GetAtt S3Bucket.WebsiteURL]]
-          Id: pioneer-origin-s3
-          CustomOriginConfig:
-            OriginProtocolPolicy: http-only
-        DefaultCacheBehavior:
-          TargetOriginId: pioneer-origin-s3
-          ViewerProtocolPolicy: redirect-to-https
-          ForwardedValues:
-            QueryString: true
-        Enabled: true
-        HttpVersion: http2
-
 Outputs:
   AutoScalingId:
     Description: The Auto Scaling ID
-    Value:  !Ref AutoScalingGroup
+    Value: !Ref AutoScalingGroup
     Export:
-      Name: !Sub "${AWS::StackName}AutoScalingGroup"
+      Name: !Sub '${AWS::StackName}AutoScalingGroup'
 
   RPCPublicIp:
     Description: The DNS name for the created instance
-    Value:  !Sub "${RPCInstance.PublicIp}"
+    Value: !Sub '${RPCInstance.PublicIp}'
     Export:
-      Name: !Sub "${AWS::StackName}RPCPublicIp"
+      Name: !Sub '${AWS::StackName}RPCPublicIp'
 
   BuildPublicIp:
     Description: The DNS name for the created instance
-    Value:  !Sub "${BuildInstance.PublicIp}"
+    Value: !Sub '${BuildInstance.PublicIp}'
     Export:
-      Name: !Sub "${AWS::StackName}BuildPublicIp"
+      Name: !Sub '${AWS::StackName}BuildPublicIp'
 
-  S3BucketName:
-    Value: !Ref S3Bucket
-    Description: Name of S3 bucket to hold website content
+  BuildInstanceId:
+    Description: Build instance ID
+    Value: !Ref BuildInstance
     Export:
-      Name: !Sub "${AWS::StackName}S3BucketName"
-
-  DomainName:
-    Description: CloudFront Domain Name
-    Value:  !Sub "${CloudFrontDistribution.DomainName}"
-    Export:
-      Name: !Sub "${AWS::StackName}DomainName"
+      Name: !Sub '${AWS::StackName}BuildInstanceId'

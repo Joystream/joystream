@@ -1,4 +1,4 @@
-import { StorageNodeInfo } from './Types'
+import { StorageNodeInfo, WorkingGroups } from './Types'
 import {
   ApolloClient,
   InMemoryCache,
@@ -28,10 +28,30 @@ import {
   GetMembersByIdsQuery,
   GetMembersByIdsQueryVariables,
   MembershipFieldsFragment,
+  WorkingGroupOpeningDetailsFragment,
+  OpeningDetailsByIdQuery,
+  OpeningDetailsByIdQueryVariables,
+  OpeningDetailsById,
+  WorkingGroupApplicationDetailsFragment,
+  ApplicationDetailsByIdQuery,
+  ApplicationDetailsByIdQueryVariables,
+  ApplicationDetailsById,
+  UpcomingWorkingGroupOpeningByEventQuery,
+  UpcomingWorkingGroupOpeningByEventQueryVariables,
+  UpcomingWorkingGroupOpeningByEvent,
+  UpcomingWorkingGroupOpeningDetailsFragment,
+  UpcomingWorkingGroupOpeningByIdQuery,
+  UpcomingWorkingGroupOpeningByIdQueryVariables,
+  UpcomingWorkingGroupOpeningById,
+  UpcomingWorkingGroupOpeningsByGroupQuery,
+  UpcomingWorkingGroupOpeningsByGroupQueryVariables,
+  UpcomingWorkingGroupOpeningsByGroup,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
 import { MemberId } from '@joystream/types/common'
+import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { apiModuleByGroup } from './Api'
 
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
@@ -44,7 +64,7 @@ export default class QueryNodeApi {
     links.push(new HttpLink({ uri, fetch }))
     this._qnClient = new ApolloClient({
       link: from(links),
-      cache: new InMemoryCache(),
+      cache: new InMemoryCache({ addTypename: false }),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }
@@ -136,5 +156,54 @@ export default class QueryNodeApi {
       },
       'memberships'
     )
+  }
+
+  async openingDetailsById(
+    group: WorkingGroups,
+    id: OpeningId | number
+  ): Promise<WorkingGroupOpeningDetailsFragment | null> {
+    return this.uniqueEntityQuery<OpeningDetailsByIdQuery, OpeningDetailsByIdQueryVariables>(
+      OpeningDetailsById,
+      { id: `${apiModuleByGroup[group]}-${id.toString()}` },
+      'workingGroupOpeningByUniqueInput'
+    )
+  }
+
+  async applicationDetailsById(
+    group: WorkingGroups,
+    id: ApplicationId | number
+  ): Promise<WorkingGroupApplicationDetailsFragment | null> {
+    return this.uniqueEntityQuery<ApplicationDetailsByIdQuery, ApplicationDetailsByIdQueryVariables>(
+      ApplicationDetailsById,
+      { id: `${apiModuleByGroup[group]}-${id.toString()}` },
+      'workingGroupApplicationByUniqueInput'
+    )
+  }
+
+  async upcomingWorkingGroupOpeningByEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment | null> {
+    return this.firstEntityQuery<
+      UpcomingWorkingGroupOpeningByEventQuery,
+      UpcomingWorkingGroupOpeningByEventQueryVariables
+    >(UpcomingWorkingGroupOpeningByEvent, { blockNumber, indexInBlock }, 'upcomingWorkingGroupOpenings')
+  }
+
+  async upcomingWorkingGroupOpeningById(id: string): Promise<UpcomingWorkingGroupOpeningDetailsFragment | null> {
+    return this.uniqueEntityQuery<UpcomingWorkingGroupOpeningByIdQuery, UpcomingWorkingGroupOpeningByIdQueryVariables>(
+      UpcomingWorkingGroupOpeningById,
+      { id },
+      'upcomingWorkingGroupOpeningByUniqueInput'
+    )
+  }
+
+  async upcomingWorkingGroupOpeningsByGroup(
+    group: WorkingGroups
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment[]> {
+    return this.multipleEntitiesQuery<
+      UpcomingWorkingGroupOpeningsByGroupQuery,
+      UpcomingWorkingGroupOpeningsByGroupQueryVariables
+    >(UpcomingWorkingGroupOpeningsByGroup, { workingGroupId: apiModuleByGroup[group] }, 'upcomingWorkingGroupOpenings')
   }
 }

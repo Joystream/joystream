@@ -21,6 +21,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       default: false,
       description: 'Force-remove all associated channel data objects',
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {

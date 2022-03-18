@@ -1,4 +1,4 @@
-//mod accept_incoming_offer;
+mod accept_incoming_offer;
 mod buy_nft;
 mod cancel_buy_now;
 mod cancel_nft_auction;
@@ -12,3 +12,4 @@ mod pick_open_auction_winner;
 mod sell_nft;
 mod sling_nft_back;
 mod start_nft_auction;
+mod update_buy_now;

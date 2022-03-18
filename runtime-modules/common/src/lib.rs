@@ -12,10 +12,12 @@ use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
+use frame_support::traits::LockIdentifier;
 use frame_support::Parameter;
 pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 /// HTTP Url string
@@ -91,4 +93,10 @@ pub fn current_block_time<T: frame_system::Trait + pallet_timestamp::Trait>(
         block: <frame_system::Module<T>>::block_number(),
         time: <pallet_timestamp::Module<T>>::now(),
     }
+}
+
+/// Provides allowed locks combination for the accounts.
+pub trait AllowedLockCombinationProvider {
+    /// Return allowed locks combination set.
+    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)>;
 }

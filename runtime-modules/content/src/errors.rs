@@ -67,20 +67,17 @@ decl_error! {
         // Auction Errors
         // ---------------------
 
-        /// Auction for given video did not start
-        AuctionDidNotStart,
+        /// Nft for given video id already exists
+        NftAlreadyExists,
 
-        /// NFT for given video id already exists
-        NFTAlreadyExists,
-
-        /// NFT for given video id does not exist
-        NFTDoesNotExist,
+        /// Nft for given video id does not exist
+        NftDoesNotExist,
 
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
 
         /// Given origin does not own nft
-        DoesNotOwnNFT,
+        DoesNotOwnNft,
 
         /// Royalty Upper Bound Exceeded
         RoyaltyUpperBoundExceeded,
@@ -124,29 +121,35 @@ decl_error! {
         /// Minimal auction bid step constraint violated.
         BidStepConstraintViolated,
 
+        /// Commit verification for bid amount
+        InvalidBidAmountSpecified,
+
         /// Auction starting price constraint violated.
         StartingPriceConstraintViolated,
 
         /// Already active auction cannot be cancelled
         ActionHasBidsAlready,
 
-        /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
+        /// Can not create auction for Nft, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// No pending offers for given NFT
+        /// No pending offers for given Nft
         PendingOfferDoesNotExist,
 
         /// Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
         /// Actor is not a last bidder
-        ActorIsNotALastBidder,
+        ActorIsNotBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
         /// Auction does not have bids
-        LastBidDoesNotExist,
+        BidDoesNotExist,
+
+        /// Selected Bid is for past open auction
+        BidIsForPastAuction,
 
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
@@ -164,7 +167,10 @@ decl_error! {
         MemberProfileNotFound,
 
         /// Given video nft is not in buy now state
-        NFTNotInBuyNowState,
+        NftNotInBuyNowState,
+
+        /// Invalid Buy Now price commit provided
+        InvalidBuyNowPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -175,8 +181,8 @@ decl_error! {
         /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,
 
-        /// NFT auction is already expired
-        NFTAuctionIsAlreadyExpired,
+        /// Nft auction is already expired
+        NftAuctionIsAlreadyExpired,
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,

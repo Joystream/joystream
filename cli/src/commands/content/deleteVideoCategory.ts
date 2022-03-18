@@ -4,6 +4,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
   static description = 'Delete video category.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [
