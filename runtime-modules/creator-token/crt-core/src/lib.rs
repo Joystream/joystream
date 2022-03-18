@@ -187,18 +187,55 @@ decl_event! {
     where
         Balance = <T as Trait>::Balance,
         TokenId = <T as Trait>::TokenId,
+        AccountId = <T as Trait>::AccountId,
     {
         /// Amount is minted
         /// Params:
         /// - token identifier
         /// - amount of tokens minted
-        TokenMinted(TokenId, Balance),
+        TokenAmountMinted(TokenId, Balance),
 
         /// Amount is burned
         /// Params:
         /// - token identifier
         /// - amount of tokens burned
-        TokenBurned(TokenId, Balance),
+        TokenAmountBurned(TokenId, Balance),
+
+        /// Token amount is deposited
+        /// Params:
+        /// - token identifier
+        /// - recipient account
+        /// - amount deposited
+        TokenAmountDepositedInto(TokenId, AccountId, Balance),
+
+        /// Token amount is slashed
+        /// Params:
+        /// - token identifier
+        /// - slashed account
+        /// - amount slashed
+        TokenAmountSlashedFrom(TokenId, AccountId, Balance),
+
+        /// Token amount is transferred from src to dst
+        /// Params:
+        /// - token identifier
+        /// - source account
+        /// - destination account
+        /// - amount transferred
+        TokenAmountTransferred(TokenId, AccountId, AccountId, Balance),
+
+        /// Token amount is frozen
+        /// Params:
+        /// - token identifier
+        /// - account tokens are frozen from
+        /// - amount frozen
+        TokenAmountFrozenFrom(TokenId, AccountId, Balance),
+
+        /// Token amount is unfrozen
+        /// Params:
+        /// - token identifier
+        /// - account tokens are unfrozen from
+        /// - amount frozen
+        TokenAmountUnFrozenFrom(TokenId, AccountId, Balance),
 
     }
 }
