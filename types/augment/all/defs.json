@@ -859,5 +859,35 @@
     },
     "NftMetadata": "Vec<u8>",
     "OpenAuctionId": "u64",
+    "ChannelPrivilegeLevel": "u8",
+    "ChannelFeature": {
+        "_enum": [
+            "ChannelFundsTransfer",
+            "CreatorCashout",
+            "VideoNftIssuance",
+            "VideoCreation",
+            "VideoUpdate",
+            "ChannelUpdate",
+            "CreatorTokenIssuance"
+        ]
+    },
+    "ChannelFeatureStatus": {
+        "_enum": [
+            "Paused",
+            "Active"
+        ]
+    },
+    "ChannelFeatureStatusChanges": "BTreeMap<ChannelFeature,ChannelFeatureStatus>",
+    "ContentModerationAction": {
+        "_enum": {
+            "HideVideo": "Null",
+            "HideChannel": "Null",
+            "ChangeChannelFeatureStatus": "ChannelFeature",
+            "DeleteVideo": "Null",
+            "DeleteChannel": "Null"
+        }
+    },
+    "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
+    "ModerationPermissionsByLevel": "BTreeMap<ChannelPrivilegeLevel,ContentModerationActionsSet>",
     "AccountInfo": "AccountInfoWithRefCount"
 }

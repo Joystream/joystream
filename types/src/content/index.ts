@@ -1,4 +1,4 @@
-import { Vec, Option, Tuple, BTreeSet, UInt } from '@polkadot/types'
+import { Vec, Option, Tuple, BTreeSet, UInt, BTreeMap } from '@polkadot/types'
 import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
 import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, BalanceOf } from '../common'
 
@@ -17,6 +17,7 @@ export class VideoPostId extends u64 {}
 export class ReactionId extends u64 {}
 export class CurrencyOf extends BalanceOf {}
 export class CurrencyAmount extends CurrencyOf {}
+export class ChannelPrivilegeLevel extends u8 {}
 
 // NFT types
 
@@ -249,16 +250,34 @@ export class ModeratorSet extends BTreeSet.with(MemberId) {}
 
 export class NftMetadata extends Vec.with(u8) {}
 
-export class NFTOwner extends JoyEnum({
-  ChannelOwner: Null,
-  Member: MemberId,
+export class ChannelFeature extends JoyEnum({
+  ChannelFundsTransfer: Null,
+  CreatorCashout: Null,
+  VideoNftIssuance: Null,
+  VideoCreation: Null,
+  VideoUpdate: Null,
+  ChannelUpdate: Null,
+  CreatorTokenIssuance: Null,
 }) {}
 
-export class OwnedNFT extends JoyStructDecorated({
-  owner: NFTOwner,
-  transactional_status: TransactionalStatus,
-  creator_royalty: Option.with(Royalty),
+export class ChannelFeatureStatus extends JoyEnum({
+  Paused: Null,
+  Active: Null,
 }) {}
+
+export class ChannelFeatureStatusChanges extends BTreeMap.with(ChannelFeature, ChannelFeatureStatus) {}
+
+export class ContentModerationAction extends JoyEnum({
+  HideVideo: Null,
+  HideChannel: Null,
+  ChangeChannelFeatureStatus: ChannelFeature,
+  DeleteVideo: Null,
+  DeleteChannel: Null,
+}) {}
+
+export class ContentModerationActionsSet extends BTreeSet.with(ContentModerationAction) {}
+
+export class ModerationPermissionsByLevel extends BTreeMap.with(ChannelPrivilegeLevel, ContentModerationActionsSet) {}
 
 export const contentTypes = {
   CuratorId,
@@ -312,6 +331,14 @@ export const contentTypes = {
   NftIssuanceParameters,
   NftMetadata,
   OpenAuctionId,
+  // Moderation
+  ChannelPrivilegeLevel,
+  ChannelFeature,
+  ChannelFeatureStatus,
+  ChannelFeatureStatusChanges,
+  ContentModerationAction,
+  ContentModerationActionsSet,
+  ModerationPermissionsByLevel,
 }
 
 export default contentTypes
