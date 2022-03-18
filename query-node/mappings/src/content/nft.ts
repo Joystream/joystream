@@ -345,7 +345,7 @@ export async function createNft(
 
   // calculate some values
   const creatorRoyalty = nftIssuanceParameters.royalty.isSome
-    ? nftIssuanceParameters.royalty.unwrap().toNumber()
+    ? nftIssuanceParameters.royalty.unwrap().div(new BN(10000000)).toNumber()
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
 
