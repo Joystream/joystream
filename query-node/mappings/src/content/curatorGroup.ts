@@ -1,11 +1,35 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { FindConditions } from 'typeorm'
-import { CuratorGroup } from 'query-node/dist/model'
+import { Curator, CuratorGroup } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { inconsistentState, logger } from '../common'
+
+async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
+  const existingCurator = await store.get(Curator, {
+    where: { id: curatorId.toString() } as FindConditions<Curator>,
+  })
+
+  return existingCurator
+}
+
+async function createCurator(store: DatabaseManager, curatorId: string): Promise<Curator> {
+  const curator = new Curator({
+    id: curatorId,
+
+    curatorGroups: [],
+  })
+
+  await store.save<Curator>(curator)
+
+  return curator
+}
+
+async function ensureCurator(store: DatabaseManager, curatorId: string): Promise<Curator> {
+  return (await getCurator(store, curatorId)) || (await createCurator(store, curatorId))
+}
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -15,7 +39,7 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
   const curatorGroup = new CuratorGroup({
     // main data
     id: curatorGroupId.toString(),
-    curatorIds: [],
+    curators: [],
     isActive: false, // runtime creates inactive curator groups by default
 
     // fill in auto-generated fields
@@ -71,8 +95,11 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
     return inconsistentState('Curator add to non-existing curator group requested', curatorGroupId)
   }
 
+  // load curator
+  const curator = await ensureCurator(store, curatorId.toString())
+
   // update curator group
-  curatorGroup.curatorIds.push(curatorId.toNumber())
+  curatorGroup.curators.push(curator)
 
   // set last update time
   curatorGroup.updatedAt = new Date(event.blockTimestamp)
@@ -98,7 +125,14 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId.toNumber())
+  // load curator
+  const curator = await getCurator(store, curatorId.toString())
+
+  if (!curator) {
+    return inconsistentState('Non-existing curator removal from curator group requested', curatorGroupId)
+  }
+
+  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curator.toString())
 
   // ensure curator group exists
   if (curatorIndex < 0) {
@@ -106,7 +140,7 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
   }
 
   // update curator group
-  curatorGroup.curatorIds.splice(curatorIndex, 1)
+  curatorGroup.curators.splice(curatorIndex, 1)
 
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)

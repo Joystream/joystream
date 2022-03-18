@@ -12,7 +12,11 @@ export default class WorkingGroupsCancelOpening extends WorkingGroupsCommandBase
     },
   ]
 
-  async run() {
+  static flags = {
+    ...WorkingGroupsCommandBase.flags,
+  }
+
+  async run(): Promise<void> {
     const { args } = this.parse(WorkingGroupsCancelOpening)
 
     // Lead-only gate

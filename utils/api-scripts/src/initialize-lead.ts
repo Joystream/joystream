@@ -22,7 +22,6 @@ const workingGroupModules = [
 type WorkingGroupModuleName = typeof workingGroupModules[number]
 
 const MIN_APPLICATION_STAKE = new BN(2000)
-const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
 async function main() {
   // Init api
@@ -102,7 +101,7 @@ async function main() {
     // Set up stake account
     const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
     const addCandidateFee = (await addCandidateTx.paymentInfo(StakeKeyPair.address)).partialFee
-    const stakingAccountBalance = MIN_APPLICATION_STAKE.add(STAKING_ACCOUNT_CANDIDATE_STAKE).add(addCandidateFee)
+    const stakingAccountBalance = MIN_APPLICATION_STAKE.add(addCandidateFee)
     console.log('Setting up staking account...')
     await txHelper.sendAndCheck(
       LeadKeyPair,

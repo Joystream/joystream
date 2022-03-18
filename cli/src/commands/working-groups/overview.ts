@@ -10,7 +10,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const lead = await this.getApi().groupLead(this.group)
     const members = await this.getApi().groupMembers(this.group)
 

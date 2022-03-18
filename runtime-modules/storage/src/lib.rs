@@ -145,6 +145,7 @@ use sp_std::vec::Vec;
 
 use common::constraints::BoundedValueConstraint;
 use common::working_group::WorkingGroup;
+use common::working_group::WorkingGroupAuthenticator;
 
 use random_buckets::DistributionBucketPicker;
 use random_buckets::StorageBucketPicker;
@@ -400,35 +401,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
     /// Max data object size in bytes.
     type MaxDataObjectSize: Get<u64>;
 
-    /// Demand the storage working group leader authorization.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
+    /// Storage working group pallet integration.
+    type StorageWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 
-    /// Validate origin for the storage worker.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_worker_origin(
-        origin: Self::Origin,
-        worker_id: WorkerId<Self>,
-    ) -> DispatchResult;
-
-    /// Validate storage worker existence.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_storage_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
-
-    /// Demand the distribution group leader authorization.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
-
-    /// Validate origin for the distribution worker.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: WorkerId<Self>,
-    ) -> DispatchResult;
-
-    /// Validate distribution worker existence.
-    /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_distribution_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
+    type DistributionWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 }
 
 /// Operations with local pallet account.
@@ -1530,6 +1508,30 @@ decl_event! {
             UploadParameters,
             BTreeSet<DataObjectId>,
         ),
+
+        /// Emits on Storage Operator making a remark
+        /// Params
+        /// - operator's worker id
+        /// - storage bucket id
+        /// - remark message
+        StorageOperatorRemarked(
+            WorkerId,
+            StorageBucketId,
+            Vec<u8>,
+        ),
+
+        /// Emits on Distribution Operator making a remark
+        /// Params
+        /// - operator's worker id
+        /// - distribution bucket id
+        /// - remark message
+        DistributionOperatorRemarked(
+            WorkerId,
+            DistributionBucketId,
+            Vec<u8>,
+        ),
+
+
     }
 }
 
@@ -1757,7 +1759,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1783,7 +1785,7 @@ decl_module! {
         /// Updates global uploading flag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_uploading_blocked_status(origin, new_status: bool) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1797,7 +1799,7 @@ decl_module! {
         /// Updates size-based pricing of new objects uploaded.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_data_size_fee(origin, new_data_size_fee: BalanceOf<T>) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1811,7 +1813,7 @@ decl_module! {
         /// Updates "Storage buckets per bag" number limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
                 new_limit,
@@ -1835,7 +1837,7 @@ decl_module! {
             new_objects_size: u64,
             new_objects_number: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1856,7 +1858,7 @@ decl_module! {
             dynamic_bag_type: DynamicBagType,
             number_of_storage_buckets: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1883,7 +1885,7 @@ decl_module! {
             remove_hashes: BTreeSet<Cid>,
             add_hashes: BTreeSet<Cid>
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             // Get only hashes that exist in the blacklist.
             let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes);
@@ -1926,7 +1928,7 @@ decl_module! {
             size_limit: u64,
             objects_limit: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let voucher = Voucher {
                 size_limit,
@@ -1976,7 +1978,7 @@ decl_module! {
             add_buckets: BTreeSet<T::StorageBucketId>,
             remove_buckets: BTreeSet<T::StorageBucketId>,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_bag_exists(&bag_id)?;
 
@@ -2021,7 +2023,7 @@ decl_module! {
         /// Cancel pending storage bucket invite. An invitation must be pending.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2047,7 +2049,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             operator_id: WorkerId<T>,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2075,7 +2077,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2102,7 +2104,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             accepting_new_bags: bool
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2127,7 +2129,7 @@ decl_module! {
             new_objects_size_limit: u64,
             new_objects_number_limit: u64,
         ) {
-            T::ensure_storage_working_group_leader_origin(origin)?;
+            <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2174,7 +2176,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             transactor_account_id: T::AccountId,
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            <T as Trait>::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2209,7 +2211,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             metadata: Vec<u8>
         ) {
-            T::ensure_storage_worker_origin(origin, worker_id)?;
+            <T as Trait>::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -2273,7 +2275,7 @@ decl_module! {
         /// Create a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_distribution_bucket_family(origin) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             ensure!(
                 Self::distribution_bucket_family_number() <
@@ -2301,7 +2303,7 @@ decl_module! {
         /// Deletes a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
@@ -2335,7 +2337,7 @@ decl_module! {
             family_id: T::DistributionBucketFamilyId,
             accepting_new_bags: bool,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
@@ -2372,7 +2374,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             accepting_new_bags: bool
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2399,7 +2401,7 @@ decl_module! {
             origin,
             bucket_id: DistributionBucketId<T>,
         ){
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2432,7 +2434,7 @@ decl_module! {
             add_buckets_indices: BTreeSet<T::DistributionBucketIndex>,
             remove_buckets_indices: BTreeSet<T::DistributionBucketIndex>,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::validate_update_distribution_buckets_for_bag_params(
                 &bag_id,
@@ -2477,7 +2479,7 @@ decl_module! {
         /// Updates "Distribution buckets per bag" number limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u64) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
                 new_limit,
@@ -2501,7 +2503,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             distributing: bool
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2529,7 +2531,7 @@ decl_module! {
             dynamic_bag_type: DynamicBagType,
             families: BTreeMap<T::DistributionBucketFamilyId, u32>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::validate_update_families_in_dynamic_bag_creation_policy_params(&families)?;
 
@@ -2558,7 +2560,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2588,7 +2590,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2624,7 +2626,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             operator_worker_id: WorkerId<T>,
         ){
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2658,7 +2660,7 @@ decl_module! {
             family_id: T::DistributionBucketFamilyId,
             metadata: Vec<u8>,
         ) {
-            T::ensure_distribution_working_group_leader_origin(origin)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
             Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
@@ -2684,7 +2686,7 @@ decl_module! {
             worker_id: WorkerId<T>,
             bucket_id: DistributionBucketId<T>,
         ) {
-            T::ensure_distribution_worker_origin(origin, worker_id)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2719,7 +2721,7 @@ decl_module! {
             bucket_id: DistributionBucketId<T>,
             metadata: Vec<u8>,
         ) {
-            T::ensure_distribution_worker_origin(origin, worker_id)?;
+            <T as Trait>::DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             let bucket = Self::ensure_distribution_bucket_exists(&bucket_id)?;
 
@@ -2758,6 +2760,48 @@ decl_module! {
 
             Self::create_dynamic_bag(params, deletion_prize)?;
         }
+
+        /// Create a dynamic bag. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn storage_operator_remark(
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
+            msg: Vec<u8>,
+        ) {
+            <T as Trait>::StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::StorageOperatorRemarked(worker_id, storage_bucket_id, msg));
+        }
+
+        /// Create a dynamic bag. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn distribution_operator_remark(
+            origin,
+            worker_id: WorkerId<T>,
+            distribution_bucket_id: DistributionBucketId<T>,
+            msg: Vec<u8>,
+        ) {
+            <T as Trait>::DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)?;
+            let bucket = Self::ensure_distribution_bucket_exists(&distribution_bucket_id)?;
+            ensure!(
+                bucket.operators.contains(&worker_id),
+                Error::<T>::MustBeDistributionProviderOperatorForBucket
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::DistributionOperatorRemarked(worker_id, distribution_bucket_id, msg));
+        }
+
     }
 }
 
@@ -3425,7 +3469,7 @@ impl<T: Trait> Module<T> {
     // Verifies storage operator existence.
     fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
         ensure!(
-            T::ensure_storage_worker_exists(operator_id).is_ok(),
+            <T as Trait>::StorageWorkingGroup::worker_exists(&operator_id),
             Error::<T>::StorageProviderOperatorDoesntExist
         );
 
@@ -3606,7 +3650,7 @@ impl<T: Trait> Module<T> {
         worker_id: &WorkerId<T>,
     ) -> DispatchResult {
         ensure!(
-            T::ensure_distribution_worker_exists(worker_id).is_ok(),
+            <T as Trait>::DistributionWorkingGroup::worker_exists(worker_id),
             Error::<T>::DistributionProviderOperatorDoesntExist
         );
 
