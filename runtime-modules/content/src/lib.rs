@@ -2494,6 +2494,7 @@ impl<T: Trait> Module<T> {
 
             Ok(())
         } else {
+            debug_assert!(false, "Channel bag missing for channel {:?}", channel_id);
             Err(Error::<T>::ChannelBagMissing.into())
         }
     }
