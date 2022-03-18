@@ -1,7 +1,6 @@
 use codec::{Decode, Encode};
 use frame_support::{dispatch::DispatchResult, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
-use sp_runtime::traits::Hash;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct AccountData<Balance> {
