@@ -5,7 +5,7 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
 };
-use sp_arithmetic::traits::AtLeast32BitUnsigned;
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating};
 
 mod types;
 use types::{AccountDataOf, TokenDataOf};
@@ -17,7 +17,7 @@ pub trait Trait: frame_system::Trait {
 
     // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
+    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Saturating;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -108,6 +108,24 @@ pub trait MultiCurrency<T: Trait> {
     /// - `who` free balance increased by `amount`
     /// - `who` frozen balance decreased by `amount`
     fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
+    /// Retrieve free balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token
+    fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
+
+    /// Retrieve frozen balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token
+    fn frozen_balance(token_id: T::TokenId, who: T::AccountId)
+        -> Result<T::Balance, DispatchError>;
+
+    /// Retrieve total balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token
+    fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
 }
 
 decl_storage! {
@@ -270,11 +288,35 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Ok(())
     }
+
+    fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
+        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+
+        Ok(account_info.free_balance())
+    }
+
+    fn frozen_balance(
+        token_id: T::TokenId,
+        who: T::AccountId,
+    ) -> Result<T::Balance, DispatchError> {
+        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+
+        Ok(account_info.frozen_balance())
+    }
+
+    fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
+        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+
+        Ok(account_info
+            .frozen_balance()
+            .saturating_add(account_info.free_balance()))
+    }
 }
 
 /// Module implementation
 impl<T: Trait> Module<T> {
     // Utility ensure checks
+
     pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
         account_id: &T::AccountId,
