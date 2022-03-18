@@ -24,7 +24,6 @@ impl CreateChannelFixture {
             params: ChannelCreationParameters::<Test> {
                 assets: None,
                 meta: None,
-                reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
             },
@@ -69,16 +68,6 @@ impl CreateChannelFixture {
         }
     }
 
-    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-        Self {
-            params: ChannelCreationParameters::<Test> {
-                reward_account: Some(reward_account),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -116,7 +105,6 @@ impl CreateChannelFixture {
                     Channel::<Test> {
                         owner: owner,
                         is_censored: false,
-                        reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
@@ -303,7 +291,6 @@ impl UpdateChannelFixture {
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: None,
                 new_meta: None,
-                reward_account: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
             },
@@ -346,16 +333,6 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 collaborators: Some(collaborators),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_reward_account(self, reward_account: Option<Option<AccountId>>) -> Self {
-        Self {
-            params: ChannelUpdateParameters::<Test> {
-                reward_account,
                 ..self.params
             },
             ..self
@@ -421,11 +398,6 @@ impl UpdateChannelFixture {
                         ChannelRecord {
                             owner: owner,
                             is_censored: channel_pre.is_censored,
-                            reward_account: self
-                                .params
-                                .reward_account
-                                .clone()
-                                .unwrap_or(channel_pre.reward_account),
                             collaborators: self
                                 .params
                                 .collaborators
@@ -1331,8 +1303,7 @@ impl ClaimChannelRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let channel = Content::channel_by_id(self.item.channel_id);
-        let reward_account = Content::ensure_reward_account(&channel).unwrap_or_default();
+        let reward_account = ContentTreasury::<Test>::account_for_channel(self.item.channel_id);
         let balance_pre = Balances::<Test>::usable_balance(&reward_account);
         let payout_earned_pre =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
@@ -1430,7 +1401,6 @@ pub fn create_default_member_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
@@ -1445,7 +1415,6 @@ pub fn create_default_curator_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
