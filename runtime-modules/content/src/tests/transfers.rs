@@ -115,6 +115,30 @@ fn accept_transfer_status_succeeds() {
 }
 
 #[test]
+fn accept_transfer_status_fails_with_invalid_commitment_params() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptChannelTransferFixture::default()
+            .with_transfer_params(TransferParameters {
+                price: 100,
+                ..Default::default()
+            })
+            .call_and_assert(Err(
+                Error::<Test>::InvalidChannelTransferCommitmentParams.into()
+            ))
+    })
+}
+
+#[test]
 fn accept_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
