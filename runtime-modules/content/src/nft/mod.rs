@@ -11,7 +11,7 @@ impl<T: Trait> Module<T> {
         bid: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_reserve(participant, bid),
+            Balances::<T>::can_reserve(participant, bid),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -179,7 +179,7 @@ impl<T: Trait> Module<T> {
         balance: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_slash(participant_account_id, balance),
+            Balances::<T>::can_slash(participant_account_id, balance),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -290,9 +290,9 @@ impl<T: Trait> Module<T> {
 
         // Slash amount from sender
         if is_auction {
-            T::Currency::slash_reserved(&sender_account_id, amount);
+            let _ = Balances::<T>::slash_reserved(&sender_account_id, amount);
         } else {
-            T::Currency::slash(&sender_account_id, amount);
+            let _ = Balances::<T>::slash(&sender_account_id, amount);
         }
 
         if let Some(creator_royalty) = creator_royalty {
@@ -301,25 +301,23 @@ impl<T: Trait> Module<T> {
             // Deposit amount, exluding royalty and platform fee into receiver account
             match receiver_account_id {
                 Some(receiver_account_id) if amount > royalty + auction_fee => {
-                    T::Currency::deposit_creating(
+                    let _ = Balances::<T>::deposit_creating(
                         &receiver_account_id,
                         amount - royalty - auction_fee,
                     );
                 }
                 Some(receiver_account_id) => {
-                    T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+                    let _ =
+                        Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
                 }
                 _ => (),
             };
 
-            // Should always be Some(_) at this stage, because of previously made check.
-            if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
-                // Deposit royalty into creator account
-                T::Currency::deposit_creating(&creator_account_id, royalty);
-            }
+            // deposit to creator account
+            ContentTreasury::<T>::deposit_to_creator(in_channel, royalty);
         } else if let Some(receiver_account_id) = receiver_account_id {
             // Deposit amount, exluding auction fee into receiver account
-            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
@@ -353,9 +351,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
-                .reward_account
-                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+            NftOwner::ChannelOwner => Ok(ContentTreasury::<T>::account_for_channel(channel_id)),
         }
     }
 
