@@ -1,6 +1,6 @@
 import { Vec, Option, Tuple, BTreeSet, UInt } from '@polkadot/types'
 import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
-import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, BalanceOf } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber } from '../common'
 
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
@@ -15,8 +15,6 @@ export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 export class VideoPostId extends u64 {}
 export class ReactionId extends u64 {}
-export class CurrencyOf extends BalanceOf {}
-export class CurrencyAmount extends CurrencyOf {}
 
 // NFT types
 
@@ -306,8 +304,6 @@ export const contentTypes = {
   TransactionalStatus,
   NftOwner,
   OwnedNft,
-  CurrencyOf,
-  CurrencyAmount,
   InitTransactionalStatus,
   NftIssuanceParameters,
   NftMetadata,
