@@ -11,7 +11,6 @@ mod permissions;
 mod types;
 
 use sp_std::cmp::max;
-use sp_std::iter::FromIterator;
 use sp_std::mem::size_of;
 use sp_std::vec;
 
@@ -448,7 +447,7 @@ decl_module! {
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 privilege_level: Zero::zero(),
                 paused_features: BTreeSet::new(),
-                data_objects: data_objects_ids.clone(),
+                data_objects: data_objects_ids,
             };
 
             // add channel to onchain state
@@ -496,12 +495,12 @@ decl_module! {
             let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
 
             if !new_data_object_ids.is_empty() {
-                channel.data_objects = BTreeSet::from_iter(channel.data_objects.union(&new_data_object_ids).cloned());
+                channel.data_objects = channel.data_objects.union(&new_data_object_ids).cloned().collect::<BTreeSet<_>>();
             }
 
             if !params.assets_to_remove.is_empty() {
                 Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
-                channel.data_objects = BTreeSet::from_iter(channel.data_objects.difference(&params.assets_to_remove).cloned());
+                channel.data_objects = channel.data_objects.difference(&params.assets_to_remove).cloned().collect::<BTreeSet<_>>();
             }
 
             //
@@ -636,7 +635,7 @@ decl_module! {
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -650,7 +649,7 @@ decl_module! {
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &channel.data_objects)?;
 
             // remove provided assets from channel's updated_data_objects_set
-            updated_data_objects_set = BTreeSet::from_iter(updated_data_objects_set.difference(&assets_to_remove).cloned());
+            updated_data_objects_set = updated_data_objects_set.difference(&assets_to_remove).cloned().collect::<BTreeSet<_>>();
 
             //
             // == MUTATION SAFE ==
@@ -659,7 +658,7 @@ decl_module! {
             // remove the assets
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-                    sender.clone(),
+                    sender,
                     Self::bag_id_for_channel(&channel_id),
                     assets_to_remove.clone(),
                 )?;
@@ -910,12 +909,12 @@ decl_module! {
             let mut updated_video_data_objects = video.data_objects.clone();
 
             if !new_data_object_ids.is_empty() {
-                updated_video_data_objects = BTreeSet::from_iter(updated_video_data_objects.union(&new_data_object_ids).cloned());
+                updated_video_data_objects = updated_video_data_objects.union(&new_data_object_ids).cloned().collect::<BTreeSet<_>>();
             }
 
             if !params.assets_to_remove.is_empty() {
                 Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
-                updated_video_data_objects = BTreeSet::from_iter(updated_video_data_objects.difference(&params.assets_to_remove).cloned());
+                updated_video_data_objects = updated_video_data_objects.difference(&params.assets_to_remove).cloned().collect::<BTreeSet<_>>();
             }
 
             let nft_status = params.auto_issue_nft
@@ -1001,7 +1000,7 @@ decl_module! {
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1024,7 +1023,7 @@ decl_module! {
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &video.data_objects)?;
 
             // remove provided assets from video's updated_data_objects_set
-            updated_data_objects_set = BTreeSet::from_iter(updated_data_objects_set.difference(&assets_to_remove).cloned());
+            updated_data_objects_set = updated_data_objects_set.difference(&assets_to_remove).cloned().collect::<BTreeSet<_>>();
 
             //
             // == MUTATION SAFE ==
@@ -1033,7 +1032,7 @@ decl_module! {
             // remove the assets
             if !assets_to_remove.is_empty() {
                 Storage::<T>::delete_data_objects(
-                    sender.clone(),
+                    sender,
                     Self::bag_id_for_channel(&channel_id),
                     assets_to_remove.clone(),
                 )?;
