@@ -463,7 +463,7 @@ pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) 
 pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    actions: &Vec<ContentModerationAction>,
+    actions: &[ContentModerationAction],
     channel_privilege_level: T::ChannelPrivilegeLevel,
 ) -> DispatchResult {
     ensure_actor_auth_success::<T>(&sender, &actor)?;

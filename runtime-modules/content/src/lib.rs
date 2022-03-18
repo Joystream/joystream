@@ -920,7 +920,7 @@ decl_module! {
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -959,7 +959,7 @@ decl_module! {
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
-            let sender = ensure_signed(origin.clone())?;
+            let sender = ensure_signed(origin)?;
 
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -2482,7 +2482,7 @@ impl<T: Trait> Module<T> {
         num_objects_to_delete: u64,
     ) -> DispatchResult {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
-        let bag_id = storage::BagIdType::from(dynamic_bag_id.clone());
+        let bag_id = storage::BagIdType::from(dynamic_bag_id);
 
         if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
             // channel has a dynamic bag associated
@@ -2505,7 +2505,7 @@ impl<T: Trait> Module<T> {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
 
         // try to delete channel dynamic bag with objects
-        Storage::<T>::delete_dynamic_bag(sender, dynamic_bag_id.clone())?;
+        Storage::<T>::delete_dynamic_bag(sender, dynamic_bag_id)?;
 
         //
         // == MUTATION SAFE ==

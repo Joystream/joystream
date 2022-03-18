@@ -76,7 +76,7 @@ impl<T: Trait> CuratorGroup<T> {
     pub fn create(active: bool, permissions_by_level: &ModerationPermissionsByLevel<T>) -> Self {
         Self {
             curators: BTreeSet::new(),
-            active: active,
+            active,
             permissions_by_level: permissions_by_level.clone(),
         }
     }
@@ -174,7 +174,7 @@ impl<T: Trait> CuratorGroup<T> {
 
     pub fn can_perform_actions(
         &self,
-        actions: &Vec<ContentModerationAction>,
+        actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> bool {
         let permissions_for_level = self.permissions_by_level.get(&privilege_level);
@@ -195,7 +195,7 @@ impl<T: Trait> CuratorGroup<T> {
         action: ContentModerationAction,
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> bool {
-        self.can_perform_actions(&vec![action], privilege_level)
+        self.can_perform_actions(&[action], privilege_level)
     }
 
     pub fn ensure_can_perform_action(
@@ -212,7 +212,7 @@ impl<T: Trait> CuratorGroup<T> {
 
     pub fn ensure_can_perform_actions(
         &self,
-        actions: &Vec<ContentModerationAction>,
+        actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> DispatchResult {
         ensure!(
