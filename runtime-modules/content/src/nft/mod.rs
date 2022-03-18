@@ -314,7 +314,7 @@ impl<T: Trait> Module<T> {
             };
 
             // deposit to creator account
-            ContentTreasury::<T>::deposit_to_creator(in_channel, royalty);
+            ContentTreasury::<T>::deposit_to_channel_account(in_channel, royalty);
         } else if let Some(receiver_account_id) = receiver_account_id {
             // Deposit amount, exluding auction fee into receiver account
             let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);

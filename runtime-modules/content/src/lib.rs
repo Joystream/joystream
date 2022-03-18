@@ -1177,7 +1177,7 @@ decl_module! {
             Self::verify_proof(&proof, &item)?;
 
             // Deposit to creator
-            ContentTreasury::<T>::deposit_to_creator(item.channel_id, cashout);
+            ContentTreasury::<T>::deposit_to_channel_account(item.channel_id, cashout);
 
             ChannelById::<T>::mutate(
                 &item.channel_id,
