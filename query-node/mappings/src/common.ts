@@ -1,7 +1,8 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
-import { Worker, Event, Network } from 'query-node/dist/model'
+import { Codec } from '@polkadot/types/types'
+import { WorkingGroup as WGType, WorkerId, ThreadId } from '@joystream/types/augment/all'
+import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -197,7 +198,13 @@ export function deserializeMetadata<T>(
   metadataBytes: Bytes
 ): DecodedMetadataObject<T> | null {
   try {
-    return metaToObject(metadataType, metadataType.decode(metadataBytes.toU8a(true)))
+    const message = metadataType.decode(metadataBytes.toU8a(true))
+    Object.keys(message).forEach((key) => {
+      if (key in message && typeof message[key] === 'string') {
+        message[key] = perpareString(message[key])
+      }
+    })
+    return metaToObject(metadataType, message)
   } catch (e) {
     invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
@@ -216,6 +223,14 @@ export function bytesToString(b: Bytes): string {
 export function perpareString(s: string): string {
   // eslint-disable-next-line no-control-regex
   return s.replace(/\u0000/g, '')
+}
+
+export function asInt32(value: Codec): number {
+  return Math.min(Math.max(Math.trunc(Number(value)), -2147483647), 2147483647)
+}
+
+export function asBN(value: Codec): BN {
+  return new BN(value.toString())
 }
 
 export function hasValuesForProperties<
@@ -242,7 +257,7 @@ export type WorkingGroupModuleName =
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'
 
-export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName {
   if (group.isContent) {
     return 'contentWorkingGroup'
   } else if (group.isMembership) {
@@ -264,6 +279,18 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
   }
 
   unexpectedData('Unsupported working group encountered:', group.type)
+}
+
+export async function getWorkingGroupByName(
+  store: DatabaseManager,
+  name: WorkingGroupModuleName,
+  relations: string[] = []
+): Promise<WGEntity> {
+  const group = await store.get(WGEntity, { where: { name }, relations })
+  if (!group) {
+    throw new Error(`Working group ${name} not found!`)
+  }
+  return group
 }
 
 export async function getWorker(

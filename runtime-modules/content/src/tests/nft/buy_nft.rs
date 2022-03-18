@@ -52,6 +52,7 @@ fn buy_nft() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         ));
 
         // Runtime tested state after call
@@ -103,6 +104,7 @@ fn buy_nft_video_does_not_exist() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
@@ -131,6 +133,7 @@ fn buy_nft_not_issued() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
@@ -172,6 +175,7 @@ fn buy_nft_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
@@ -204,6 +208,7 @@ fn buy_nft_not_in_buy_now_state() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
@@ -243,6 +248,7 @@ fn buy_nft_insufficient_balance() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
@@ -292,9 +298,69 @@ fn buy_nft_reward_account_is_not_set() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::RewardAccountIsNotSet);
+        assert_ok!(buy_nft_result);
+    })
+}
+
+#[test]
+fn buy_nft_fails_with_invalid_price_commit() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_reward_account(Some(None))
+            .call_and_assert(Ok(()));
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test> {
+                init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(
+                    DEFAULT_NFT_PRICE
+                ),
+                ..Default::default()
+            }
+        ));
+
+        // deposit balance to second member
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        // Go to next block
+        run_to_block(starting_block + 1);
+
+        // Seller races to set the price to 0
+        assert_ok!(Content::update_buy_now_price(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            0,
+        ));
+
+        // Attempt to buy NFT with price_commit protection
+        let buy_nft_result = Content::buy_nft(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
+        );
+
+        // Failure checked
+        assert_err!(buy_nft_result, Error::<Test>::InvalidBuyNowPriceProvided);
     })
 }

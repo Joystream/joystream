@@ -1172,3 +1172,35 @@ fn unsuccessful_video_deletion_with_invalid_object_ids() {
             .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
     })
 }
+
+#[test]
+fn unsuccessful_video_deletion_with_nft_already_issued() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+
+        // create video with nft issued
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_nft_issuance(NftIssuanceParameters::<Test> {
+                royalty: None,
+                nft_metadata: b"test_nft_metadata".to_vec(),
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                init_transactional_status: Default::default(),
+            })
+            .call_and_assert(Ok(()));
+
+        UpdateVideoFixture::default()
+            .with_nft_issuance(NftIssuanceParameters::<Test> {
+                royalty: None,
+                nft_metadata: b"test_nft_metadata".to_vec(),
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                init_transactional_status: Default::default(),
+            })
+            .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()))
+    })
+}

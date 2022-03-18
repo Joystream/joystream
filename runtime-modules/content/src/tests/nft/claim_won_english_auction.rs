@@ -7,11 +7,13 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+const AUCTION_END_BLOCK: u64 = 10;
+const AUCTION_START_BLOCK: u64 = 1;
 #[test]
 fn claim_won_english_auction() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -27,20 +29,18 @@ fn claim_won_english_auction() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::max_auction_duration(),
-            }),
-            minimal_bid_step: Content::max_bid_step(),
-            starts_at: None,
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::min_bid_step(),
+            end: AUCTION_END_BLOCK,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -53,7 +53,7 @@ fn claim_won_english_auction() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -101,7 +101,7 @@ fn claim_won_english_auction() {
 fn claim_won_english_auction_cannot_be_completed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -117,20 +117,18 @@ fn claim_won_english_auction_cannot_be_completed() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::max_auction_duration(),
-            }),
-            minimal_bid_step: Content::max_bid_step(),
-            starts_at: None,
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::min_bid_step(),
+            end: AUCTION_END_BLOCK,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -143,7 +141,7 @@ fn claim_won_english_auction_cannot_be_completed() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -169,7 +167,7 @@ fn claim_won_english_auction_cannot_be_completed() {
 fn claim_won_english_auction_auth_failed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -185,20 +183,18 @@ fn claim_won_english_auction_auth_failed() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::max_auction_duration(),
-            }),
-            minimal_bid_step: Content::max_bid_step(),
-            starts_at: None,
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::min_bid_step(),
+            end: AUCTION_END_BLOCK,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -211,7 +207,7 @@ fn claim_won_english_auction_auth_failed() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -240,7 +236,7 @@ fn claim_won_english_auction_auth_failed() {
 fn claim_won_english_auction_video_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -263,7 +259,7 @@ fn claim_won_english_auction_video_does_not_exist() {
 fn claim_won_english_auction_nft_is_not_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -290,7 +286,7 @@ fn claim_won_english_auction_nft_is_not_issued() {
 fn claim_won_english_auction_not_in_auction_state() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -316,7 +312,7 @@ fn claim_won_english_auction_not_in_auction_state() {
         // Failure checked
         assert_err!(
             claim_won_english_auction_result,
-            Error::<Test>::NotInAuctionState
+            Error::<Test>::IsNotEnglishAuctionType,
         );
     })
 }
@@ -325,7 +321,7 @@ fn claim_won_english_auction_not_in_auction_state() {
 fn claim_won_english_auction_is_not_english_auction_type() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -343,17 +339,15 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
-        let auction_params = AuctionParams {
+        let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::Open(OpenAuctionDetails { bid_lock_duration }),
-            minimal_bid_step: Content::min_bid_step(),
-            starts_at: None,
+            bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -366,7 +360,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
-        assert_ok!(Content::make_bid(
+        assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
@@ -392,7 +386,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 fn claim_won_english_auction_last_bid_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        run_to_block(1);
+        run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
 
@@ -408,20 +402,18 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        let auction_params = AuctionParams {
+        let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
-            auction_type: AuctionType::English(EnglishAuctionDetails {
-                extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::max_auction_duration(),
-            }),
-            minimal_bid_step: Content::max_bid_step(),
-            starts_at: None,
+            extension_period: Content::min_auction_extension_period(),
+            auction_duration: Content::max_auction_duration(),
+            min_bid_step: Content::min_bid_step(),
+            end: AUCTION_END_BLOCK,
             whitelist: BTreeSet::new(),
         };
 
         // Start nft auction
-        assert_ok!(Content::start_nft_auction(
+        assert_ok!(Content::start_english_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
@@ -441,7 +433,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
         // Failure checked
         assert_err!(
             claim_won_english_auction_result,
-            Error::<Test>::LastBidDoesNotExist
+            Error::<Test>::BidDoesNotExist
         );
     })
 }

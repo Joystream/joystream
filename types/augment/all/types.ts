@@ -60,11 +60,8 @@ export interface Approved extends Enum {
 export interface AssuranceContractType extends Enum {
   readonly isOpen: boolean;
   readonly isClosed: boolean;
-  readonly asClosed: AssuranceContractType_Closed;
+  readonly asClosed: Vec<MemberId>;
 }
-
-/** @name AssuranceContractType_Closed */
-export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 
 /** @name Auction */
 export interface Auction extends Struct {
@@ -83,17 +80,6 @@ export interface AuctionParams extends Struct {
   readonly starting_price: u128;
   readonly minimal_bid_step: u128;
   readonly buy_now_price: Option<u128>;
-  readonly starts_at: Option<u32>;
-  readonly whitelist: BTreeSet<MemberId>;
-}
-
-/** @name AuctionRecord */
-export interface AuctionRecord extends Struct {
-  readonly starting_price: u128;
-  readonly buy_now_price: u128;
-  readonly auction_type: AuctionType;
-  readonly minimal_bid_step: u128;
-  readonly last_bid: Option<Bid>;
   readonly starts_at: Option<u32>;
   readonly whitelist: BTreeSet<MemberId>;
 }
@@ -171,7 +157,7 @@ export interface BountyCreationParameters extends Struct {
 }
 
 /** @name BountyId */
-export interface BountyId extends u64 {}
+export interface BountyId extends u32 {}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
@@ -254,6 +240,12 @@ export interface ChannelCreationParameters extends Struct {
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
 
+/** @name ChannelMigrationConfig */
+export interface ChannelMigrationConfig extends Struct {
+  readonly current_id: ChannelId;
+  readonly final_id: ChannelId;
+}
+
 /** @name ChannelOwner */
 export interface ChannelOwner extends Enum {
   readonly isMember: boolean;
@@ -261,6 +253,17 @@ export interface ChannelOwner extends Enum {
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
 }
+
+/** @name ChannelOwnershipTransferRequest */
+export interface ChannelOwnershipTransferRequest extends Struct {
+  readonly channel_id: ChannelId;
+  readonly new_owner: ChannelOwner;
+  readonly payment: u128;
+  readonly new_reward_account: Option<GenericAccountId>;
+}
+
+/** @name ChannelOwnershipTransferRequestId */
+export interface ChannelOwnershipTransferRequestId extends u64 {}
 
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
@@ -457,6 +460,14 @@ export interface DynamicBagType extends Enum {
   readonly isChannel: boolean;
 }
 
+/** @name DynBagCreationParameters */
+export interface DynBagCreationParameters extends Struct {
+  readonly bagId: DynamicBagId;
+  readonly objectCreationList: Vec<DataObjectCreationParameters>;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
+}
+
 /** @name EnglishAuctionDetails */
 export interface EnglishAuctionDetails extends Struct {
   readonly extension_period: u32;
@@ -473,7 +484,15 @@ export interface Entry extends Struct {
 }
 
 /** @name EntryId */
-export interface EntryId extends u64 {}
+export interface EntryId extends u32 {}
+
+/** @name EpisodeParemters */
+export interface EpisodeParemters extends Enum {
+  readonly isNewVideo: boolean;
+  readonly asNewVideo: VideoCreationParameters;
+  readonly isExistingVideo: boolean;
+  readonly asExistingVideo: VideoId;
+}
 
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
@@ -539,15 +558,6 @@ export interface GeneralProposalParameters extends Struct {
   readonly exact_execution_block: Option<u32>;
 }
 
-/** @name InitTransactionalStatus */
-export interface InitTransactionalStatus extends Enum {
-  readonly isIdle: boolean;
-  readonly isInitiatedOfferToMember: boolean;
-  readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
-  readonly isAuction: boolean;
-  readonly asAuction: AuctionParams;
-}
-
 /** @name InputValidationLengthConstraint */
 export interface InputValidationLengthConstraint extends Struct {
   readonly min: u16;
@@ -587,29 +597,14 @@ export interface Membership extends Struct {
   readonly invites: u32;
 }
 
+/** @name MemoText */
+export interface MemoText extends Text {}
+
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 
 /** @name ModeratorSet */
 export interface ModeratorSet extends BTreeSet<MemberId> {}
-
-/** @name NftIssuanceParameters */
-export interface NftIssuanceParameters extends Struct {
-  readonly royalty: Option<Royalty>;
-  readonly nft_metadata: Bytes;
-  readonly non_channel_owner: Option<MemberId>;
-  readonly init_transactional_status: InitTransactionalStatus;
-}
-
-/** @name NftMetadata */
-export interface NftMetadata extends Bytes {}
-
-/** @name NftOwner */
-export interface NftOwner extends Enum {
-  readonly isChannelOwner: boolean;
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-}
 
 /** @name NFTOwner */
 export interface NFTOwner extends Enum {
@@ -663,13 +658,6 @@ export interface OracleWorkEntryJudgment_Winner extends Struct {
   readonly reward: u128;
 }
 
-/** @name OwnedNft */
-export interface OwnedNft extends Struct {
-  readonly owner: NftOwner;
-  readonly transactional_status: TransactionalStatus;
-  readonly creator_royalty: Option<Royalty>;
-}
-
 /** @name OwnedNFT */
 export interface OwnedNFT extends Struct {
   readonly owner: NFTOwner;
@@ -684,6 +672,59 @@ export interface ParticipantId extends u64 {}
 export interface Penalty extends Struct {
   readonly slashing_text: Text;
   readonly slashing_amount: u128;
+}
+
+/** @name Person */
+export interface Person extends Struct {
+  readonly controlled_by: PersonController;
+}
+
+/** @name PersonActor */
+export interface PersonActor extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurator: boolean;
+  readonly asCurator: CuratorId;
+}
+
+/** @name PersonController */
+export interface PersonController extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+}
+
+/** @name PersonCreationParameters */
+export interface PersonCreationParameters extends Struct {
+  readonly assets: StorageAssets;
+  readonly meta: Bytes;
+}
+
+/** @name PersonId */
+export interface PersonId extends u64 {}
+
+/** @name PersonUpdateParameters */
+export interface PersonUpdateParameters extends Struct {
+  readonly assets: Option<StorageAssets>;
+  readonly meta: Option<Bytes>;
+}
+
+/** @name Playlist */
+export interface Playlist extends Struct {
+  readonly in_channel: ChannelId;
+}
+
+/** @name PlaylistCreationParameters */
+export interface PlaylistCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
+/** @name PlaylistId */
+export interface PlaylistId extends u64 {}
+
+/** @name PlaylistUpdateParameters */
+export interface PlaylistUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
 }
 
 /** @name Poll */
@@ -948,6 +989,34 @@ export interface RewardPaymentType extends Enum {
 /** @name Royalty */
 export interface Royalty extends u64 {}
 
+/** @name Season */
+export interface Season extends Struct {
+  readonly episodes: Vec<VideoId>;
+}
+
+/** @name SeasonParameters */
+export interface SeasonParameters extends Struct {
+  readonly assets: Option<StorageAssets>;
+  readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
+  readonly meta: Option<Bytes>;
+}
+
+/** @name Series */
+export interface Series extends Struct {
+  readonly in_channel: ChannelId;
+  readonly seasons: Vec<Season>;
+}
+
+/** @name SeriesId */
+export interface SeriesId extends u64 {}
+
+/** @name SeriesParameters */
+export interface SeriesParameters extends Struct {
+  readonly assets: Option<StorageAssets>;
+  readonly seasons: Option<Vec<Option<SeasonParameters>>>;
+  readonly meta: Option<Bytes>;
+}
+
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
 
@@ -1096,10 +1165,11 @@ export interface Url extends Text {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
+  readonly in_series: Option<SeriesId>;
   readonly is_censored: bool;
   readonly enable_comments: bool;
   readonly video_post_id: Option<VideoPostId>;
-  readonly nft_status: Option<OwnedNft>;
+  readonly nft_status: Option<OwnedNFT>;
 }
 
 /** @name VideoCategory */
@@ -1123,11 +1193,16 @@ export interface VideoCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly enable_comments: bool;
-  readonly auto_issue_nft: Option<NftIssuanceParameters>;
 }
 
 /** @name VideoId */
 export interface VideoId extends u64 {}
+
+/** @name VideoMigrationConfig */
+export interface VideoMigrationConfig extends Struct {
+  readonly current_id: VideoId;
+  readonly final_id: VideoId;
+}
 
 /** @name VideoPost */
 export interface VideoPost extends Struct {

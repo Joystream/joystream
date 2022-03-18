@@ -13,6 +13,7 @@ fn channel_censoring() {
         run_to_block(1);
 
         let channel_id = Content::next_channel_id();
+        create_initial_storage_buckets_helper();
         assert_ok!(Content::create_channel(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
@@ -131,6 +132,8 @@ fn channel_censoring() {
 fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        create_initial_storage_buckets_helper();
+
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -142,6 +145,7 @@ fn successful_channel_creation_with_member_context() {
 fn successful_channel_creation_with_curator_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        create_initial_storage_buckets_helper();
         let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -349,6 +353,8 @@ fn successful_channel_creation_with_collaborators_set() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets_helper();
+
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -384,6 +390,7 @@ fn successful_channel_creation_with_reward_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        create_initial_storage_buckets_helper();
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
