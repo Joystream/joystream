@@ -2024,9 +2024,12 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        None,
-        b"metablob".to_vec(),
-        None
+        NftIssuanceParameters::<Test> {
+            royalty: None,
+            nft_metadata: b"metablob".to_vec(),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<Test>::Idle,
+        }
     ));
     (channel_id, video_id)
 }

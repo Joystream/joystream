@@ -1221,7 +1221,7 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_curator() {
         DeleteVideoAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::NFTAlreadyExists.into()));
+            .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
     })
 }
 
@@ -1238,7 +1238,7 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
         DeleteVideoAsModeratorFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::NFTAlreadyExists.into()));
+            .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
     })
 }
 

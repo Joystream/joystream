@@ -2052,32 +2052,62 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel();
         pause_channel_feature(ChannelId::one(), ChannelFeature::VideoNftIssuance);
 
-        // Try to issue video nft as owner
+        let nft_params = NftIssuanceParameters::<Test> {
+            royalty: None,
+            nft_metadata: b"metablob".to_vec(),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<Test>::Idle,
+        };
+
+        // Try to issue nft during new video creation as owner
+        CreateVideoFixture::default()
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Try to issue nft during new video creation as collaborator
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Create default video
+        CreateVideoFixture::default().call_and_assert(Ok(()));
+
+        // Try to issue nft for existing video as owner
         assert_eq!(
             Content::issue_nft(
                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 VideoId::one(),
-                None,
-                b"metablob".to_vec(),
-                None
+                nft_params.clone()
             ),
             Err(Error::<Test>::ChannelFeaturePaused.into())
         );
-        // Try to issue video nft as collaborator
+        // Try to issue nft for existing video as collaborator
         assert_eq!(
             Content::issue_nft(
                 Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 VideoId::one(),
-                None,
-                b"metablob".to_vec(),
-                None
+                nft_params.clone()
             ),
             Err(Error::<Test>::ChannelFeaturePaused.into())
         );
+
+        // Try to issue video nft through an update as owner
+        UpdateVideoFixture::default()
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Try to issue video nft through an update as collaborator
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }

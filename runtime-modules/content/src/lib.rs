@@ -756,6 +756,9 @@ decl_module! {
             )?;
 
             channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoCreation)?;
+            if params.auto_issue_nft.is_some() {
+                channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+            }
 
             // next video id
             let video_id = NextVideoId::<T>::get();
@@ -829,6 +832,9 @@ decl_module! {
             )?;
 
             channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoUpdate)?;
+            if params.auto_issue_nft.is_some() {
+                channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+            }
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
