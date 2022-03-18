@@ -30,7 +30,6 @@ pub trait MultiCurrency<T: Trait> {
     ///
     /// Preconditions:
     /// - `token_id` must exists
-    /// - it is possible to increase `token_id` issuance by `amount`
     ///
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
@@ -258,7 +257,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_deposit_creating(token_id, amount)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // == MUTATION SAFE ==
 
@@ -288,9 +287,11 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
-    /// Burn amount of token token_id by slashing it from who
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
-        // Verify preconditions
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         Self::ensure_can_slash(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
@@ -311,7 +312,6 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        // Verify preconditions
         Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
 
         // == MUTATION SAFE ==
@@ -409,30 +409,13 @@ impl<T: Trait> Module<T> {
     // Extrinsics ensure checks
 
     #[inline]
-    pub(crate) fn ensure_can_deposit_creating(
-        token_id: T::TokenId,
-        amount: T::Balance,
-    ) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_increase_issuance::<T>(amount)?;
-
-        Ok(())
-    }
-
-    #[inline]
     pub(crate) fn ensure_can_deposit_into_existing(
         token_id: T::TokenId,
         who: &T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
         // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_increase_issuance::<T>(amount)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // ensure account id validity
         Self::ensure_account_data_exists(token_id, who).map(|_| ())?;
@@ -447,10 +430,7 @@ impl<T: Trait> Module<T> {
         amount: T::Balance,
     ) -> DispatchResult {
         // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // can increase issuance
-        token_info.can_decrease_issuance::<T>(amount)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // ensure account id validity
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
@@ -508,7 +488,7 @@ impl<T: Trait> Module<T> {
         amount: T::Balance,
     ) -> DispatchResult {
         // ensure token validity
-        let _ = Self::ensure_token_exists(token_id)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // ensure src account id validity
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
@@ -523,33 +503,30 @@ impl<T: Trait> Module<T> {
 
     #[inline]
     pub(crate) fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        // mint amount
-        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
-
-        Self::deposit_event(RawEvent::TokenAmountMinted(token_id, amount));
-
-        // deposit into account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.deposit(amount)
         });
     }
 
     #[inline]
+    pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
+        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
+    }
+
+    #[inline]
     pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        // burn amount
-        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
-
-        Self::deposit_event(RawEvent::TokenAmountBurned(token_id, amount));
-
-        // slash amount from account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.slash(amount)
         });
     }
 
     #[inline]
+    pub(crate) fn do_burn(token_id: T::TokenId, amount: T::Balance) {
+        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
+    }
+
+    #[inline]
     pub(crate) fn do_freeze(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        // freeze free balance of account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.freeze(amount)
         });
@@ -557,7 +534,6 @@ impl<T: Trait> Module<T> {
 
     #[inline]
     pub(crate) fn do_unfreeze(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        // unfreeze frozen balance of account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.unfreeze(amount)
         });
