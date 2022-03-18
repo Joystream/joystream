@@ -97,6 +97,17 @@ pub trait MultiCurrency<T: Trait> {
     /// - `who` free balance decreased by `amount`
     /// - `who` frozen balance increased by `amount`
     fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
+
+    /// Unfreeze `amount` of token for `who`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// - `who` must identify valid account for `token_id`
+    /// - `who` frozen balance must be greater than `amount`
+    ///
+    /// Postconditions:
+    /// - `who` free balance increased by `amount`
+    /// - `who` frozen balance decreased by `amount`
+    fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 }
 
 decl_storage! {
@@ -248,6 +259,17 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Ok(())
     }
+
+    fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+        // Verify preconditions
+        Self::ensure_can_unfreeze(token_id, &who, amount)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_unfreeze(token_id, &who, amount);
+
+        Ok(())
+    }
 }
 
 /// Module implementation
@@ -370,6 +392,23 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    pub(crate) fn ensure_can_unfreeze(
+        token_id: T::TokenId,
+        who: &T::AccountId,
+        amount: T::Balance,
+    ) -> DispatchResult {
+        // ensure token validity
+        let _ = Self::ensure_token_exists(token_id)?;
+
+        // ensure src account id validity
+        let account_info = Self::ensure_account_data_exists(token_id, who)?;
+
+        // ensure can freeze amount
+        account_info.can_unfreeze::<T>(amount)?;
+
+        Ok(())
+    }
+
     // Infallible operations
 
     #[inline]
@@ -399,6 +438,14 @@ impl<T: Trait> Module<T> {
         // freeze free balance of account data
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.freeze(amount)
+        });
+    }
+
+    #[inline]
+    pub(crate) fn do_unfreeze(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
+        // unfreeze frozen balance of account data
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
+            account_data.unfreeze(amount)
         });
     }
 }
