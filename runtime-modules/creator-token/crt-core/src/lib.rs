@@ -33,7 +33,6 @@ pub trait MultiCurrency<T: Trait> {
     ///
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
-    /// - issuance of `token_id` is increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
     fn deposit_creating(
         token_id: T::TokenId,
@@ -47,12 +46,10 @@ pub trait MultiCurrency<T: Trait> {
     /// Preconditions:
     /// - `token_id` must exists
     /// - `who` must exists
-    /// - it is possible to increase `token_id` issuance by `amount`
     ///
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
-    /// - issuance of `token_id` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn deposit_into_existing(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -64,12 +61,10 @@ pub trait MultiCurrency<T: Trait> {
     /// Preconditions:
     /// - `token_id` must exists
     /// - `who` must exists
-    /// - it is possible to decrease `token_id` issuance by `amount`
     ///
     /// Postconditions:
     /// - free balance of `who` is decreased by `amount`
-    /// - issuance of `token_id` is decreased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst`
@@ -82,7 +77,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - free balance of `src` is decreased by `amount`
     /// - free balance of `dst` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn transfer(
         token_id: T::TokenId,
         src: T::AccountId,
@@ -99,7 +94,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - `who` free balance decreased by `amount`
     /// - `who` frozen balance increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
     /// Unfreeze `amount` of token for `who`
@@ -132,8 +127,24 @@ pub trait MultiCurrency<T: Trait> {
     /// - `who` account id must exist for token
     fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
 
+    /// Mint `amount` for token `token_id`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// -  it is possible to increase `token_id` issuance
+    ///
+    /// Postconditions:
+    /// - `token_id` issuance increased by amount
+    /// if `amount` is zero it is equivalent to a no-op
     fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
 
+    /// Burn `amount` for token `token_id`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// -  it is possible to decrease `token_id` issuance
+    ///
+    /// Postconditions:
+    /// - `token_id` issuance decreased by amount
+    /// if `amount` is zero it is equivalent to a no-op
     fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
 }
 
