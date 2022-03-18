@@ -127,9 +127,10 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
             .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
+        let invalid_price = 100;
         AcceptChannelTransferFixture::default()
             .with_transfer_params(TransferParameters {
-                price: 100,
+                price: invalid_price,
                 ..Default::default()
             })
             .call_and_assert(Err(
