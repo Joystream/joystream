@@ -1,6 +1,6 @@
 type AvatarObject @variant {
   "The avatar data object"
-  avatarObject: DataObject!
+  avatarObject: StorageDataObject!
 }
 
 type AvatarUri @variant {
@@ -93,8 +93,15 @@ type Membership @entity {
   "List of proposal thread whitelists the member is part of"
   whitelistedIn: [ProposalDiscussionWhitelist!] @derivedFrom(field: "members")
 
+  # Required for BountyEntrantWhitelist->members Many-to-Many relationship
+  "List of bounty entrant whitelists the member is part of"
+  whitelistedInBounties: [BountyEntrantWhitelist!] @derivedFrom(field: "members")
+
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  "List of channels the member has collaborator access to"
+  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
 
   # Council & Referendum relations
 
@@ -106,6 +113,12 @@ type Membership @entity {
 
   "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+
+  "Auctions in which is this user whitelisted to participate"
+  whitelistedInAuctions: [Auction!]! @derivedFrom(field: "whitelistedMembers")
+
+  "NFTs owned by this member"
+  ownedNfts: [OwnedNft!]! @derivedFrom(field: "ownerMember")
 }
 
 type MembershipSystemSnapshot @entity {

@@ -224,6 +224,12 @@ impl working_group::WeightInfo for Weights {
     fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
+    fn lead_remark() -> u64 {
+        unimplemented!()
+    }
+    fn worker_remark() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl membership::WeightInfo for Weights {
@@ -279,6 +285,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }
@@ -422,6 +431,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn worker_exists(
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
         unimplemented!();
     }
 }

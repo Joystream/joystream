@@ -6,4 +6,5 @@ query-node/**/dist
 query-node/lib
 cli/
 tests/
-!tests/integration-tests/proposal-parameters.json
+!tests/network-tests/proposal-parameters.json
+devops/

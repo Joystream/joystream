@@ -1,0 +1,108 @@
+---
+# Create chain spec files and keys and copy to all the servers
+
+- name: Debug to test variable
+  debug:
+    msg: 'Remote Data path: {{ remote_data_path }}, Local Data path: {{ data_path }}, Chain Spec path: {{ chain_spec_path }}'
+  run_once: true
+
+- name: Copying initial members file to the server
+  copy:
+    src: '{{ initial_members_file }}'
+    dest: '{{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json'
+  when: initial_members_file is defined and initial_members_file|length > 0
+  run_once: true
+
+- name: Copying initial balances file to the server
+  copy:
+    src: '{{ initial_balances_file }}'
+    dest: '{{ remote_code_path }}/initial-balances.json'
+  when: initial_balances_file is defined and initial_balances_file|length > 0
+  run_once: true
+
+- name: Run chain-spec-builder to generate chainspec.json file (with initial data)
+  shell: >
+    {{ remote_code_path }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
+    --chain-spec-path {{ chain_spec_path }}
+    --endowed 1 --keystore-path {{ remote_data_path }}
+    {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
+    {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}
+    --initial-members-path {{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json
+    {% endif %}
+  register: chain_spec_output
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Run subkey to generate node keys
+  shell: subkey generate-node-key
+  delegate_to: '{{ build_instance }}'
+  register: subkey_output
+
+- name: Print to stdout
+  debug:
+    msg:
+      - 'Public Key: {{ subkey_output.stderr }}'
+      - 'Private Key: {{ subkey_output.stdout }}'
+
+- name: Print to stdout chain spec
+  debug: var=chain_spec_output.stdout
+  run_once: true
+
+- name: Save output of chain spec to local file
+  copy:
+    content: '{{ chain_spec_output.stdout }}'
+    dest: '{{ remote_data_path }}/chain_spec_output.txt'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Format chain spec output
+  set_fact:
+    chain_spec_output_formatted: '{{ chain_spec_output.stdout | regex_replace("=", ": ") | from_yaml }}'
+  run_once: true
+
+- name: Extract keys from chain spec output
+  set_fact:
+    sudo_key: '{{ chain_spec_output_formatted.sudo }}'
+    endowed_key: '{{ chain_spec_output_formatted.endowed_0 }}'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Change chain spec name, id, protocolId
+  json_modify:
+    chain_spec_path: '{{ chain_spec_path }}'
+    prefix: '{{ network_suffix }}'
+    all_nodes: '{{ hostvars }}'
+  delegate_to: '{{ build_instance }}'
+  register: result
+  run_once: true
+
+- name: Print output of modified chainspec
+  debug:
+    var: result.result
+  run_once: true
+
+- name: Run build-spec to generate raw chainspec file
+  shell: '{{ remote_code_path }}/target/release/joystream-node build-spec --chain {{ chain_spec_path }} --raw > {{ raw_chain_spec_path }}'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Copying chain spec files to localhost
+  synchronize:
+    src: '/home/ubuntu/{{ remote_data_path }}/'
+    dest: '{{ data_path }}'
+    mode: pull
+  run_once: true
+
+- name: Copy joystream-node binary to localhost
+  fetch:
+    src: '{{ remote_code_path }}/target/release/joystream-node'
+    dest: '{{ data_path }}/joystream-node'
+    flat: yes
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Copying raw chain spec file to all servers
+  copy:
+    src: '{{ local_raw_chain_spec_path }}'
+    dest: '{{ remote_chain_spec_path }}'

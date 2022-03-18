@@ -199,6 +199,18 @@ impl crate::WeightInfo for () {
     fn withdraw_work_entrant_funds() -> u64 {
         0
     }
+    fn contributor_remark() -> u64 {
+        0
+    }
+    fn oracle_remark() -> u64 {
+        0
+    }
+    fn entrant_remark() -> u64 {
+        0
+    }
+    fn creator_remark() -> u64 {
+        0
+    }
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -290,6 +302,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -360,6 +375,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
         unimplemented!();
     }
 }
@@ -453,6 +474,12 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }

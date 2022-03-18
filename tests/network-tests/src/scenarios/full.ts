@@ -1,48 +1,106 @@
+import categories from '../flows/forum/categories'
+import polls from '../flows/forum/polls'
+import threads from '../flows/forum/threads'
+import posts from '../flows/forum/posts'
+import moderation from '../flows/forum/moderation'
+import threadTags from '../flows/forum/threadTags'
+import leadOpening from '../flows/working-groups/leadOpening'
 import creatingMemberships from '../flows/membership/creatingMemberships'
-import councilSetup from '../flows/council/setup'
-import leaderSetup from '../flows/workingGroup/leaderSetup'
-import electionParametersProposal from '../flows/proposals/electionParametersProposal'
-import manageLeaderRole from '../flows/proposals/manageLeaderRole'
-import spendingProposal from '../flows/proposals/spendingProposal'
-import textProposal from '../flows/proposals/textProposal'
-import validatorCountProposal from '../flows/proposals/validatorCountProposal'
-import wgMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
-import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
-import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
-import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
-import workerPayout from '../flows/workingGroup/workerPayout'
+import updatingMemberProfile from '../flows/membership/updatingProfile'
+import updatingMemberAccounts from '../flows/membership/updatingAccounts'
+import invitingMebers from '../flows/membership/invitingMembers'
+import transferringInvites from '../flows/membership/transferringInvites'
+import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
+import membershipSystem from '../flows/membership/membershipSystem'
+import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
+import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
+import groupStatus from '../flows/working-groups/groupStatus'
+import workerActions from '../flows/working-groups/workerActions'
+import groupBudget from '../flows/working-groups/groupBudget'
+import proposals from '../flows/proposals'
+import cancellingProposals from '../flows/proposals/cancellingProposal'
+import vetoProposal from '../flows/proposals/vetoProposal'
+import electCouncil from '../flows/council/elect'
+import failToElect from '../flows/council/failToElect'
+import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
+import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
+import expireProposal from '../flows/proposals/expireProposal'
+import proposalsDiscussion from '../flows/proposalsDiscussion'
+import initDistributionBucket from '../flows/clis/initDistributionBucket'
+import initStorageBucket from '../flows/clis/initStorageBucket'
+import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
+// Disable nft tests until functionality re-activated in rhodes release
+// import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
+import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 
-scenario(async ({ job }) => {
-  job('creating members', creatingMemberships)
+scenario('Full', async ({ job, env }) => {
+  // Runtime upgrade should always be first job
+  // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
+  const councilJob = job('electing council', electCouncil)
+  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
+    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+    : undefined
 
-  const councilJob = job('council setup', councilSetup)
+  const membershipSystemJob = job('membership system', membershipSystem).requires(
+    runtimeUpgradeProposalJob || councilJob
+  )
 
-  job('proposals', [
-    electionParametersProposal,
-    spendingProposal,
-    textProposal,
-    validatorCountProposal,
-    wgMintCapacityProposal.storage,
-    wgMintCapacityProposal.content,
-    manageLeaderRole.storage,
-    manageLeaderRole.content,
-  ]).requires(councilJob)
+  // All other jobs should be executed after membershipSystemJob,
+  // otherwise changing membershipPrice etc. may break them
 
-  const manageLeadsJob = job('lead-roles', [manageLeaderRole.storage, manageLeaderRole.content]).requires(councilJob)
+  // Membership:
+  job('creating members', creatingMemberships).after(membershipSystemJob)
+  job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
+  job('updating member accounts', updatingMemberAccounts).after(membershipSystemJob)
+  job('inviting members', invitingMebers).after(membershipSystemJob)
+  job('transferring invites', transferringInvites).after(membershipSystemJob)
+  job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
-  const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(manageLeadsJob)
+  // Council (should not interrupt proposalsJob!)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
-  // Test bug only on one instance of working group is sufficient
-  job('at least value bug', atLeastValueBug).requires(leadSetupJob)
+  // Proposals:
+  const proposalsJob = job('proposals & proposal discussion', [
+    proposals,
+    cancellingProposals,
+    vetoProposal,
+    exactExecutionBlock,
+    expireProposal,
+    proposalsDiscussion,
+  ]).requires(councilFailuresJob)
 
-  // tests minting payouts (requires council to set mint capacity)
-  job('worker payouts', [workerPayout.storage, workerPayout.content]).requires(leadSetupJob).requires(councilJob)
+  // Working groups
+  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+    proposalsJob
+  )
+  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
+  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
+  job('group status', groupStatus).requires(sudoHireLead)
+  job('worker actions', workerActions).requires(sudoHireLead)
+  job('group budget', groupBudget).requires(sudoHireLead)
 
-  job('working group tests', [
-    manageWorkerAsLead.storage,
-    manageWorkerAsWorker.storage,
-    manageWorkerAsLead.content,
-    manageWorkerAsWorker.content,
-  ]).requires(leadSetupJob)
+  // Memberships (depending on hired lead)
+  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
+
+  // Forum:
+  job('forum categories', categories).requires(sudoHireLead)
+  job('forum threads', threads).requires(sudoHireLead)
+  job('forum thread tags', threadTags).requires(sudoHireLead)
+  job('forum polls', polls).requires(sudoHireLead)
+  job('forum posts', posts).requires(sudoHireLead)
+  job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Content directory
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
+  // Disable nft tests until functionality re-activated in rhodes release
+  // job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+
+  // CLIs:
+  const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)
+  job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
+    createChannelJob
+  )
 })

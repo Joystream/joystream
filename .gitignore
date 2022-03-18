@@ -39,3 +39,10 @@ yarn*
 # test data for local node tests
 test-data/
 tmp.*
+
+# env variables saved as artifacts for builds
+runtime-inputs/
+
+.my_setup
+
+devops/infrastructure

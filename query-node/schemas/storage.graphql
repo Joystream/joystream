@@ -1,78 +1,327 @@
-"The decision of the storage provider when it acts as liaison"
-enum LiaisonJudgement {
-  "Content awaits for a judgment"
-  PENDING
+"Global storage system parameters"
+type StorageSystemParameters @entity {
+  "Blacklisted content hashes"
+  blacklist: [String!]
 
-  "Content accepted"
-  ACCEPTED
+  "How many buckets can be assigned to store a bag"
+  storageBucketsPerBagLimit: Int!
+
+  "How many buckets can be assigned to distribute a bag"
+  distributionBucketsPerBagLimit: Int!
+
+  "Whether the uploading is globally blocked"
+  uploadingBlocked: Boolean!
+
+  "Additional fee for storing 1 MB of data"
+  dataObjectFeePerMB: BigInt!
+
+  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsCountLimit: BigInt!
+
+  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsSizeLimit: BigInt!
+
+  "ID of the next data object when created"
+  nextDataObjectId: BigInt!
 }
 
-"Manages content ids, type and storage provider decision about it"
-type DataObject @entity {
-  "Content owner"
-  owner: DataObjectOwner!
+type StorageBucketOperatorStatusMissing @variant {
+  _phantom: Int
+}
 
-  "Content added at"
-  createdInBlock: Int!
+type StorageBucketOperatorStatusInvited @variant {
+  workerId: Int!
+}
 
-  "Content type id"
-  typeId: Int!
+type StorageBucketOperatorStatusActive @variant {
+  workerId: Int!
+  transactorAccountId: String!
+}
 
-  "Content size in bytes"
+union StorageBucketOperatorStatus =
+    StorageBucketOperatorStatusMissing
+  | StorageBucketOperatorStatusInvited
+  | StorageBucketOperatorStatusActive
+
+type GeoCoordinates @entity {
+  latitude: Float!
+  longitude: Float!
+}
+
+enum Continent {
+  AF
+  NA
+  OC
+  AN
+  AS
+  EU
+  SA
+}
+
+type GeographicalAreaContinent @variant {
+  code: Continent
+}
+
+type GeographicalAreaCountry @variant {
+  "ISO 3166-1 alpha-2 country code"
+  code: String
+}
+
+type GeographicalAreaSubdivistion @variant {
+  "ISO 3166-2 subdivision code"
+  code: String
+}
+
+union GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion
+
+type NodeLocationMetadata @entity {
+  "ISO 3166-1 alpha-2 country code (2 letters)"
+  countryCode: String
+
+  "City name"
+  city: String
+
+  "Geographic coordinates"
+  coordinates: GeoCoordinates
+}
+
+type StorageBucketOperatorMetadata @entity {
+  "Root node endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+type StorageBucket @entity {
+  "Runtime bucket id"
+  id: ID!
+
+  "Current bucket operator status"
+  operatorStatus: StorageBucketOperatorStatus!
+
+  "Storage bucket operator metadata"
+  operatorMetadata: StorageBucketOperatorMetadata
+
+  "Whether the bucket is accepting any new storage bags"
+  acceptingNewBags: Boolean!
+
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "storageBuckets")
+
+  "Bucket's data object size limit in bytes"
+  dataObjectsSizeLimit: BigInt!
+
+  "Bucket's data object count limit"
+  dataObjectCountLimit: BigInt!
+
+  "Number of assigned data objects"
+  dataObjectsCount: BigInt!
+
+  "Total size of assigned data objects"
+  dataObjectsSize: BigInt!
+}
+
+type StorageBagOwnerCouncil @variant {
+  _phantom: Int
+}
+
+type StorageBagOwnerWorkingGroup @variant {
+  workingGroupId: String
+}
+
+type StorageBagOwnerMember @variant {
+  memberId: Int
+}
+
+type StorageBagOwnerChannel @variant {
+  channelId: Int
+}
+
+# Note: Not supported by runtime yet
+type StorageBagOwnerDAO @variant {
+  daoId: Int
+}
+
+union StorageBagOwner =
+    StorageBagOwnerCouncil
+  | StorageBagOwnerWorkingGroup
+  | StorageBagOwnerMember
+  | StorageBagOwnerChannel
+  | StorageBagOwnerDAO
+
+type StorageBag @entity {
+  "Storage bag id"
+  id: ID!
+
+  "Data objects in the bag"
+  objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
+
+  "Storage buckets assigned to the bag"
+  storageBuckets: [StorageBucket!]
+
+  "Distribution buckets assigned to the bag"
+  distributionBuckets: [DistributionBucket!]
+
+  "Owner of the storage bag"
+  owner: StorageBagOwner!
+}
+
+type DataObjectTypeChannelAvatar @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeChannelCoverPhoto @variant {
+  "Related channel entity"
+  channel: Channel!
+}
+
+type DataObjectTypeVideoMedia @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeVideoThumbnail @variant {
+  "Related video entity"
+  video: Video!
+}
+
+type DataObjectTypeUnknown @variant {
+  _phantom: Int
+}
+
+union DataObjectType =
+    DataObjectTypeChannelAvatar
+  | DataObjectTypeChannelCoverPhoto
+  | DataObjectTypeVideoMedia
+  | DataObjectTypeVideoThumbnail
+  | DataObjectTypeUnknown
+
+type StorageDataObject @entity {
+  "Data object runtime id"
+  id: ID!
+
+  "Whether the data object was uploaded and accepted by the storage provider"
+  isAccepted: Boolean!
+
+  "Data object size in bytes"
   size: BigInt!
 
-  "Storage provider id of the liaison"
-  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
-  "Storage provider as liaison judgment"
-  liaisonJudgement: LiaisonJudgement!
+  "Storage bag the data object is part of"
+  storageBag: StorageBag!
 
-  "IPFS content id"
-  ipfsContentId: String!
+  "IPFS content hash"
+  ipfsHash: String!
 
-  "Joystream runtime content"
-  joystreamContentId: String!
+  # FIXME: Cannot be optional because: https://github.com/Joystream/hydra/issues/434
+  "The type of the asset that the data object represents (if known)"
+  type: DataObjectType!
+
+  "Prize for removing the data object"
+  deletionPrize: BigInt!
+
+  "If the object is no longer used as an asset - the time at which it was unset (if known)"
+  unsetAt: DateTime
+
+  "Video that has this data object associated as thumbnail photo."
+  videoThumbnail: Video @derivedFrom(field: "thumbnailPhoto")
+
+  "Video that has this data object associated as media."
+  videoMedia: Video @derivedFrom(field: "media")
 }
 
-"Owner type for storage object"
-union DataObjectOwner =
-    DataObjectOwnerMember
-  | DataObjectOwnerChannel
-  | DataObjectOwnerDao
-  | DataObjectOwnerCouncil
-  | DataObjectOwnerWorkingGroup
+type DistributionBucketFamilyGeographicArea @entity {
+  "{metadataId}-{(C|c|s)}-{code}"
+  id: ID!
 
-"Asset owned by a member"
-type DataObjectOwnerMember @variant {
-  "Related member"
-  member: Membership!
+  "Geographical area (continent / country / subdivision)"
+  area: GeographicalArea!
 
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
+  "Related distribution bucket family metadata"
+  distributionBucketFamilyMetadata: DistributionBucketFamilyMetadata!
 }
 
-"Asset owned by a channel"
-type DataObjectOwnerChannel @variant {
-  "Related channel"
-  channel: Channel!
+type DistributionBucketFamilyMetadata @entity {
+  "Name of the geographical region covered by the family (ie.: us-east-1)"
+  region: String
 
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
+  "Optional, more specific description of the region covered by the family"
+  description: String
+
+  "Geographical areas covered by the family"
+  areas: [DistributionBucketFamilyGeographicArea!] @derivedFrom(field: "distributionBucketFamilyMetadata")
+
+  "List of targets (hosts/ips) best suited latency measurements for the family"
+  latencyTestTargets: [String]
 }
 
-"Asset owned by a DAO"
-type DataObjectOwnerDao @variant {
-  "DAO identifier"
-  dao: Int!
+type DistributionBucketOperatorMetadata @entity {
+  "Root distributor node api endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
 }
 
-"Asset owned by the Council"
-type DataObjectOwnerCouncil @variant {
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
+enum DistributionBucketOperatorStatus {
+  INVITED
+  ACTIVE
 }
 
-"Asset owned by a WorkingGroup"
-type DataObjectOwnerWorkingGroup @variant {
-  "Working group"
-  workingGroup: WorkingGroup!
+type DistributionBucketOperator @entity {
+  "{bucketId}-{workerId}"
+  id: ID!
+
+  "Related distirbution bucket"
+  distributionBucket: DistributionBucket!
+
+  "ID of the distribution group worker"
+  workerId: Int!
+
+  "Current operator status"
+  status: DistributionBucketOperatorStatus!
+
+  "Operator metadata"
+  metadata: DistributionBucketOperatorMetadata
+}
+
+type DistributionBucket @entity {
+  "Runtime bucket id in {familyId}:{bucketIndex} format"
+  id: ID!
+
+  "Distribution family the bucket is part of"
+  family: DistributionBucketFamily!
+
+  "Bucket index within the family"
+  bucketIndex: Int!
+
+  "Distribution bucket operators (either active or invited)"
+  operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
+
+  "Whether the bucket is accepting any new bags"
+  acceptingNewBags: Boolean!
+
+  "Whether the bucket is currently distributing content"
+  distributing: Boolean!
+
+  "Storage bags assigned to the bucket"
+  bags: [StorageBag!] @derivedFrom(field: "distributionBuckets")
+}
+
+type DistributionBucketFamily @entity {
+  "Runtime bucket family id"
+  id: ID!
+
+  "Current bucket family metadata"
+  metadata: DistributionBucketFamilyMetadata
+
+  "Distribution buckets belonging to the family"
+  buckets: [DistributionBucket!] @derivedFrom(field: "family")
 }

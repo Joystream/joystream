@@ -1152,7 +1152,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(
@@ -1226,7 +1229,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(

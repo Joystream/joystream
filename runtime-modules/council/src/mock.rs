@@ -173,6 +173,12 @@ impl WeightInfo for () {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -427,6 +433,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl balances::Trait for Runtime {
@@ -493,6 +502,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn worker_exists(
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
         unimplemented!();
     }
 }
@@ -660,6 +675,23 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
+        announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
+    }
+}
+
+pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
+    GenesisConfig::<Runtime> {
+        stage: CouncilStageUpdate::default(),
+        council_members: vec![CouncilMemberOf::<Runtime> {
+            membership_id: 1,
+            ..Default::default()
+        }],
+        candidates: vec![(2, Default::default())],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,

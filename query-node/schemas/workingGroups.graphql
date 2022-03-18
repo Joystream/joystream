@@ -34,6 +34,11 @@ type Worker @entity {
   "The group that the worker belongs to"
   group: WorkingGroup!
 
+  # This exposes internal Hydra value related to `group`. It will be internally set and updated by Hydra.
+  # See https://github.com/Joystream/joystream/pull/3043 for more info.
+  "The id the group that the worker belongs to"
+  groupId: ID!
+
   "Worker membership"
   membership: Membership!
 
@@ -51,6 +56,9 @@ type Worker @entity {
 
   "Whether the worker is also the working group lead"
   isLead: Boolean!
+
+  "Whether the worker is currently active"
+  isActive: Boolean!
 
   "Current role stake (in JOY)"
   stake: BigInt!
@@ -78,9 +86,6 @@ type Worker @entity {
 
   "Forum categories managed by the worker (required for many-to-many relationship with ForumCategory)"
   managedForumCategories: [ForumCategory!] @derivedFrom(field: "moderators")
-
-  "Stored data objects (in case of storage worker)"
-  dataObjects: [DataObject!] @derivedFrom(field: "liaison")
 }
 
 type WorkingGroupMetadata @entity {
@@ -151,6 +156,9 @@ enum WorkingGroupOpeningType {
 type WorkingGroupOpeningMetadata @entity {
   "Whether the originally provided metadata was valid"
   originallyValid: Boolean!
+
+  "Opening title"
+  title: String
 
   "Opening short description"
   shortDescription: String

@@ -1,0 +1,15 @@
+{
+  "region": "eu-west",
+  "description": "Western Europe",
+  "areas": [
+    { "countryCode": "AT" },
+    { "countryCode": "BE" },
+    { "countryCode": "FR" },
+    { "countryCode": "DE" },
+    { "countryCode": "LI" },
+    { "countryCode": "LU" },
+    { "countryCode": "MC" },
+    { "countryCode": "NL" },
+    { "countryCode": "CH" }
+  ]
+}

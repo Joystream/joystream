@@ -1,0 +1,18 @@
+# deploy this ingress with kubectl:
+# kubectl apply -f ingress.yaml --namespace NAMESPACE_NAME
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ws-rpc-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      # rpc node websocket endpoint
+      - pathType: Prefix
+        path: /ws-rpc
+        backend:
+          service:
+            name: node-network
+            port:
+              name: port-1

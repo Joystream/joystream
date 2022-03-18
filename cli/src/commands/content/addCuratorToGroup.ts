@@ -16,7 +16,11 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
     },
   ]
 
-  async run() {
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
+  async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()
 
     let { groupId, curatorId } = this.parse(AddCuratorToGroupCommand).args
@@ -33,12 +37,10 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
       await this.getCurator(curatorId)
     }
 
-    await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(lead.roleAccount.toString()),
-      'content',
-      'addCuratorToGroup',
-      [groupId, curatorId]
-    )
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'addCuratorToGroup', [
+      groupId,
+      curatorId,
+    ])
 
     console.log(
       chalk.green(

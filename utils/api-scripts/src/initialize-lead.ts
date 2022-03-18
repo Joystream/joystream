@@ -9,17 +9,19 @@ import { BTreeSet } from '@polkadot/types'
 
 const workingGroupModules = [
   'storageWorkingGroup',
-  'contentDirectoryWorkingGroup',
+  'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
-  'operationsWorkingGroup',
   'gatewayWorkingGroup',
+  'operationsWorkingGroupAlpha',
+  'operationsWorkingGroupBeta',
+  'operationsWorkingGroupGamma',
+  'distributionWorkingGroup',
 ] as const
 
 type WorkingGroupModuleName = typeof workingGroupModules[number]
 
 const MIN_APPLICATION_STAKE = new BN(2000)
-const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
 async function main() {
   // Init api
@@ -28,7 +30,7 @@ async function main() {
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider, types })
 
-  const Group = process.env.GROUP || 'contentDirectoryWorkingGroup'
+  const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
   const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
   const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)
@@ -99,7 +101,7 @@ async function main() {
     // Set up stake account
     const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
     const addCandidateFee = (await addCandidateTx.paymentInfo(StakeKeyPair.address)).partialFee
-    const stakingAccountBalance = MIN_APPLICATION_STAKE.add(STAKING_ACCOUNT_CANDIDATE_STAKE).add(addCandidateFee)
+    const stakingAccountBalance = MIN_APPLICATION_STAKE.add(addCandidateFee)
     console.log('Setting up staking account...')
     await txHelper.sendAndCheck(
       LeadKeyPair,

@@ -1,27 +1,12 @@
-type AssetExternal @variant {
-  # FIXME: [String!] currnetly not supported in variants
-  "JSON array of the urls"
-  urls: String!
-}
-
-type AssetJoystreamStorage @variant {
-  "Related DataObject entity"
-  dataObject: DataObject!
-}
-
-# FIXME: https://github.com/Joystream/hydra/issues/434
-type AssetNone @variant {
-  _phantom: Int
-}
-
-union Asset = AssetExternal | AssetJoystreamStorage | AssetNone
-
 "Category of media channel"
 type ChannelCategory @entity {
   id: ID!
 
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
+
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
 
   channels: [Channel!]! @derivedFrom(field: "category")
 
@@ -59,11 +44,14 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
+
   "Channel's cover (background) photo asset. Recommended ratio: 16:9."
-  coverPhoto: Asset
+  coverPhoto: StorageDataObject
 
   "Channel's avatar photo asset."
-  avatarPhoto: Asset
+  avatarPhoto: StorageDataObject
 
   ##########################
 
@@ -76,22 +64,14 @@ type Channel @entity {
   "The primary langauge of the channel's content"
   language: Language
 
+  "List of videos that belong to the channel"
   videos: [Video!]! @derivedFrom(field: "channel")
 
+  "Number of the block the channel was created in"
   createdInBlock: Int!
-}
 
-type CuratorGroup @entity {
-  "Runtime identifier"
-  id: ID!
-
-  "Curators belonging to this group"
-  curatorIds: [Int!]!
-
-  "Is group active or not"
-  isActive: Boolean!
-
-  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+  "List of channel collaborators (members)"
+  collaborators: [Membership!]
 }
 
 type VideoCategory @entity {
@@ -100,6 +80,9 @@ type VideoCategory @entity {
 
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
+
+  "Count of channel's videos with an uploaded asset that are public and not censored."
+  activeVideosCounter: Int!
 
   videos: [Video!]! @derivedFrom(field: "category")
 
@@ -126,7 +109,7 @@ type Video @entity {
   duration: Int
 
   "Video thumbnail asset (recommended ratio: 16:9)"
-  thumbnailPhoto: Asset
+  thumbnailPhoto: StorageDataObject
 
   ##########################
 
@@ -145,6 +128,9 @@ type Video @entity {
   "Flag signaling whether a video is censored."
   isCensored: Boolean!
 
+  "Video NFT details"
+  nft: OwnedNft
+
   "Whether the Video contains explicit material."
   isExplicit: Boolean
 
@@ -152,7 +138,7 @@ type Video @entity {
   license: License
 
   "Video media asset"
-  media: Asset
+  media: StorageDataObject
 
   ##########################
 

@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build:packages": "./build-npm-packages.sh",
-    "build:docker": "./build-docker-images.sh",
+    "build:node:docker": "./build-node-docker.sh",
+    "build:packages": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
     "cargo-checks": "./devops/git-hooks/pre-commit && ./devops/git-hooks/pre-push",
@@ -14,33 +14,37 @@
     "verify-chain-metadata": "./scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
-    "tests/integration-tests",
+    "tests/network-tests",
     "cli",
     "types",
     "storage-node",
-    "storage-node/packages/*",
+    "distributor-node",
     "devops/eslint-config",
     "devops/prettier-config",
     "utils/api-scripts",
+    "utils/migration-scripts",
     "query-node",
     "query-node/mappings",
-    "query-node/generated/*",
+    "query-node/generated/graphql-server",
     "metadata-protobuf"
   ],
   "resolutions": {
-    "@polkadot/api": "5.3.2",
-    "@polkadot/api-contract": "5.3.2",
-    "@polkadot/types": "5.3.2",
-    "@polkadot/keyring": "^7.1.1",
-    "@polkadot/util": "^7.1.1",
-    "@polkadot/util-crypto": "^7.1.1",
-    "@polkadot/wasm-crypto": "^4.1.2",
-    "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^4.3.5",
-    "bn.js": "^5.1.2",
-    "rxjs": "^7.2.0",
+    "@polkadot/api": "5.9.1",
+    "@polkadot/api-contract": "5.9.1",
+    "@polkadot/keyring": "7.3.1",
+    "@polkadot/types": "5.9.1",
+    "@polkadot/types-known": "5.9.1",
+    "@polkadot/util": "7.3.1",
+    "@polkadot/util-crypto": "7.3.1",
+    "@polkadot/api-derive": "5.9.1",
+    "@polkadot/rpc-core": "5.9.1",
+    "@polkadot/rpc-provider": "5.9.1",
+    "@polkadot/x-global": "7.3.1",
+    "@polkadot/networks": "7.3.1",
+    "typescript": "^4.4.3",
+    "bn.js": "4.12.0",
+    "rxjs": "^7.4.0",
     "typeorm": "0.2.34",
-    "@joystream/warthog": "2.39.0",
     "pg": "^8.4.0",
     "chalk": "^4.0.0"
   },
@@ -57,10 +61,10 @@
   },
   "engines": {
     "node": ">=14.0.0",
-    "yarn": "^1.22.0"
+    "yarn": "^1.22.15"
   },
   "volta": {
-    "node": "14.16.1",
-    "yarn": "1.22.4"
+    "node": "14.18.0",
+    "yarn": "1.22.15"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@joystream/metadata-protobuf",
-  "version": "1.0.0",
-  "description": "Joystream Metadata Protobuf Library ",
+  "version": "2.0.0",
+  "description": "Joystream Metadata Protobuf Library (Olympia Release)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -20,14 +20,19 @@
   "author": "Joystream Contributors",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
-    "build": "yarn compile && tsc",
+    "build": "yarn compile && rm -rf lib && tsc",
     "compile": "yarn ts-node ./scripts/compile.ts",
     "generate-doc": "./generate-md-doc.sh",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
-    "format": "prettier ./ --write"
+    "format": "prettier ./ --write",
+    "prepack": "npm run build && npm run checks"
   },
   "files": [
     "lib/**/*",
@@ -39,7 +44,12 @@
   "dependencies": {
     "google-protobuf": "^3.14.0",
     "long": "^4.0.0",
-    "@types/long": "^4.0.1"
+    "@types/long": "^4.0.1",
+    "i18n-iso-countries": "^6.8.0",
+    "iso-639-1": "^2.1.9",
+    "protobufjs": "^6.11.2",
+    "iso-3166-2": "^1.0.0",
+    "@types/iso-3166-2": "^1.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
@@ -48,8 +58,7 @@
     "eslint": "^7.6.0",
     "mocha": "^8.2.1",
     "prettier": "2.0.2",
-    "ts-node": "^8.8.1",
-    "typescript": "^4.3.5",
-    "protobufjs": "^6.11.2"
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
   }
 }

@@ -2,15 +2,18 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { In } from 'typeorm'
-import { AccountId } from '@polkadot/types/interfaces'
-import { Option } from '@polkadot/types/codec'
 import { Content } from '../../generated/types'
-import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
-import { AssetNone, Channel, ChannelCategory, DataObject } from 'query-node/dist/model'
+import {
+  convertContentActorToChannelOwner,
+  processChannelMetadata,
+  updateChannelCategoryVideoActiveCounter,
+  unsetAssetRelations,
+} from './utils'
+import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { In } from 'typeorm'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -24,19 +27,26 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
-    // assets
-    coverPhoto: new AssetNone(),
-    avatarPhoto: new AssetNone(),
+    rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
+    activeVideosCounter: 0,
+
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOwner(store, contentActor)),
+
+    collaborators: Array.from(channelCreationParameters.collaborators).map(
+      (id) => new Membership({ id: id.toString() })
+    ),
   })
 
   // deserialize & process metadata
-  const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta) || {}
-  await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets)
+  if (channelCreationParameters.meta.isSome) {
+    const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
+    await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets.unwrapOr(undefined))
+  }
 
   // save entity
   await store.save<Channel>(channel)
@@ -51,12 +61,17 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
     return inconsistentState('Non-existing channel update requested', channelId)
   }
+
+  const originalCategory = channel.category
 
   // prepare changed metadata
   const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
@@ -64,16 +79,25 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   //  update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr([]))
+    await processChannelMetadata(
+      ctx,
+      channel,
+      newMetadata,
+      channelUpdateParameters.assets_to_upload.unwrapOr(undefined)
+    )
   }
 
   // prepare changed reward account
   const newRewardAccount = channelUpdateParameters.reward_account.unwrapOr(null)
-
   // reward account change happened?
   if (newRewardAccount) {
     // this will change the `channel`!
-    handleChannelRewardAccountChange(channel, newRewardAccount)
+    channel.rewardAccount = newRewardAccount.unwrapOr(undefined)?.toString()
+  }
+
+  const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
+  if (newCollaborators) {
+    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id.toString() }))
   }
 
   // set last update time
@@ -82,26 +106,22 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   // save channel
   await store.save<Channel>(channel)
 
+  // transfer video active counter value to new category
+  await updateChannelCategoryVideoActiveCounter(store, originalCategory, channel.category, channel.activeVideosCounter)
+
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
 }
 
 export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, , contentIds] = new Content.ChannelAssetsRemovedEvent(event).params
-
-  // load channel
-  const assets = await store.getMany(DataObject, {
+  const [, , dataObjectIds] = new Content.ChannelAssetsRemovedEvent(event).params
+  const assets = await store.getMany(StorageDataObject, {
     where: {
-      id: In(contentIds.toArray().map((item) => item.toString())),
+      id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
-
-  // delete assets
-  await Promise.all(assets.map((a) => store.remove<DataObject>(a)))
-
-  // emit log event
-  logger.info('Channel assets have been removed', { ids: contentIds })
+  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
+  logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
 export async function content_ChannelCensorshipStatusUpdated({
@@ -128,6 +148,14 @@ export async function content_ChannelCensorshipStatusUpdated({
   // save channel
   await store.save<Channel>(channel)
 
+  // update active video counter for category (if any)
+  await updateChannelCategoryVideoActiveCounter(
+    store,
+    isCensored.isTrue ? channel.category : undefined,
+    isCensored.isTrue ? undefined : channel.category,
+    channel.activeVideosCounter
+  )
+
   // emit log event
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
 }
@@ -147,6 +175,7 @@ export async function content_ChannelCategoryCreated({ store, event }: EventCont
     id: channelCategoryId.toString(),
     channels: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
@@ -214,21 +243,8 @@ export async function content_ChannelCategoryDeleted({ store, event }: EventCont
   logger.info('Channel category has been deleted', { id: channelCategory.id })
 }
 
-/// //////////////// Helpers ////////////////////////////////////////////////////
+export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [, channelId] = new Content.ChannelDeletedEvent(event).params
 
-function handleChannelRewardAccountChange(
-  channel: Channel, // will be modified inside of the function!
-  reward_account: Option<AccountId>
-) {
-  const rewardAccount = reward_account.unwrapOr(null)
-
-  // new different reward account set?
-  if (rewardAccount) {
-    channel.rewardAccount = rewardAccount.toString()
-    return
-  }
-
-  // reward account removed
-
-  channel.rewardAccount = undefined // plan deletion (will have effect when saved to db)
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }

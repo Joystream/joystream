@@ -1,0 +1,3 @@
+## endpoint Type
+
+`string`

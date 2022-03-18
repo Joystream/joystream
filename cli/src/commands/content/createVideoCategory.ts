@@ -4,8 +4,8 @@ import { VideoCategoryInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
-import { VideoCategoryCreationParameters } from '@joystream/types/content'
-import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoCategoryCreationParameters, VideoCategoryId } from '@joystream/types/content'
+import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
@@ -18,9 +18,10 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { context, input } = this.parse(CreateVideoCategoryCommand).flags
 
     const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
@@ -44,10 +45,8 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
     )
 
     if (result) {
-      const event = this.findEvent(result, 'content', 'VideoCategoryCreated')
-      this.log(
-        chalk.green(`VideoCategory with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`)
-      )
+      const categoryId: VideoCategoryId = this.getEvent(result, 'content', 'VideoCategoryCreated').data[1]
+      this.log(chalk.green(`VideoCategory with id ${chalk.cyanBright(categoryId.toString())} successfully created!`))
     }
   }
 }

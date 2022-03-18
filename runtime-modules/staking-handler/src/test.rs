@@ -200,3 +200,37 @@ fn set_stake_succeeds() {
         assert_eq!(TestStakingManager::current_stake(&account_id), stake);
     });
 }
+
+#[test]
+fn is_enough_balance_for_stake_succeeds_with_two_stakes() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_amount = 200;
+        let stake1 = 100;
+        let stake2 = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_amount);
+
+        assert!(TestStakingManager::set_stake(&account_id, stake1).is_ok());
+
+        assert!(TestStakingManager2::is_enough_balance_for_stake(
+            &account_id,
+            stake2
+        ));
+    });
+}
+
+#[test]
+fn set_stake_succeeds_with_two_stakes() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_amount = 200;
+        let stake1 = 100;
+        let stake2 = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_amount);
+
+        assert!(TestStakingManager::set_stake(&account_id, stake1).is_ok());
+        assert!(TestStakingManager2::set_stake(&account_id, stake2).is_ok());
+    });
+}

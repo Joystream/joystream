@@ -14,7 +14,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) v14.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) and docker-compose - _optional_
+- [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -25,8 +25,11 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm package dependencies, build npm packages
+# build local npm packages
 yarn build:packages
+
+# Build joystream/node docker image
+yarn build:node:docker
 
 # start a local development network
 yarn start
@@ -43,13 +46,13 @@ yarn start
 **Server Applications - infrastructure**
 
 - [Storage Node](./storage-node) - Media Storage Infrastructure
-- [Query Node](https://github.com/Joystream/joystream/tree/query_node/query-node) - _under development_
-- [Discovery Node](https://github.com/Joystream/joystream/tree/init_discovery_node/discovery_node) - _under development_
+- [Query Node](./query-node)
+- [Distributor Node](./distributor-node)
 
 **Front-end Applications**
 
-- [Pioneer](./pioneer) - Main UI for accessing all Joystream features
-- [Atlas](https://github.com/Joystream/joystream/tree/init_atlas/atlas) - Media Player- _under development_
+- [Pioneer v2](https://github.com/Joystream/pioneer) - Main UI for accessing Joystream community and governance features
+- [Atlas](https://github.com/Joystream/atlas) - Media Player
 
 **Tools and CLI**
 
@@ -59,43 +62,13 @@ yarn start
 
 - [Network integration](./tests/network-tests) - Joystream network integration testing framework
 
-## Exploring the network with Pioneer
-
-Pioneer is currently the main web interface to interact with the network:
-
-Currently hosted on: https://testnet.joystream.org
-
-You may have to disable some privacy/ad-blocker extensions in your browser for proper functionality, especially when browsing media.
-
-You can also run a local development instance:
-
-The HEAD of the master branch should always be used for the correct version of the applications to connect to the current testnet:
-
-```sh
-git checkout master
-yarn install
-yarn build:packages
-yarn workspace pioneer start
-```
-
-This runs a local development web server on port 3000.
-
-Use the link below to browse the network using the publicly hosted endpoint:
-http://localhost:3000/?rpc=wss://rome-rpc-endpoint.joystream.org:9944/
-
 ## Running a local full node
-
-You can also run your our own joystream-node:
 
 ```sh
 git checkout master
 WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-5.json
 ```
-
-Wait for the node to sync to the latest block, then change pioneer settings "remote node" option to "Local Node", or follow the link below:
-
-http://localhost:3000/?rpc=ws://localhost:9944/
 
 Learn more about [joystream-node](node/README.md).
 
@@ -104,7 +77,14 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 ### Integration tests
 
 ```bash
-tests/network-tests/run-tests.sh
+# Make sure yarn packages are built
+yarn build:packages
+
+# Build the test joystream-node
+TEST_NODE=true yarn build:node:docker
+
+# Run tests
+./query-node/run-tests.sh
 ```
 
 ### Contributing

@@ -3,8 +3,9 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::Currency;
+use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 use sp_std::collections::btree_map::BTreeMap;
@@ -26,6 +27,20 @@ use mocks::{
 };
 
 const DEFAULT_WINNER_REWARD: u64 = 10;
+
+#[macro_export]
+macro_rules! to_origin {
+    ($x: tt) => {
+        RawOrigin::Signed($x as u128 + 100).into()
+    };
+}
+
+#[macro_export]
+macro_rules! to_account {
+    ($x: tt) => {
+        $x as u128 + 100
+    };
+}
 
 #[test]
 fn validate_funding_bounty_stage() {
@@ -1897,6 +1912,56 @@ fn withdraw_work_entry_succeeded() {
 }
 
 #[test]
+fn withdraw_work_entry_fails_with_invalid_owner() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id = 1;
+        let invalid_member_id = 10;
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id)
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
+    });
+}
+
+#[test]
 fn withdraw_work_slashes_successfully1() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -2294,6 +2359,53 @@ fn submit_work_succeeded() {
 }
 
 #[test]
+fn submit_work_failed_with_invalid_ownership() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        let invalid_member_id = 11;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
+    });
+}
+
+#[test]
 fn submit_work_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let invalid_bounty_id = 11u64;
@@ -2453,6 +2565,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         let entrant_stake = 37;
         let working_period = 10;
         let judging_period = 10;
+        let rationale = b"text".to_vec();
 
         set_council_budget(initial_balance);
 
@@ -2517,7 +2630,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
-        // Third work entry
+        // Third work entry (no works submitted)
         let member_id = 3;
         let account_id = 3;
 
@@ -2531,14 +2644,6 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .call_and_assert(Ok(()));
 
         let entry_id3 = 3u64;
-
-        let work_data = b"Work submitted".to_vec();
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id3)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
 
         run_to_block(starting_block + working_period + 1);
 
@@ -2554,20 +2659,24 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         .cloned()
         .collect::<BTreeMap<_, _>>();
 
-        assert!(<Entries<Test>>::contains_key(entry_id3));
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment.clone())
+            .with_rationale(rationale.clone())
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::entries(entry_id1).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id1).oracle_judgment_result,
             Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
-        assert_eq!(Bounty::entries(entry_id2).oracle_judgment_result, None);
-        assert!(!<Entries<Test>>::contains_key(entry_id3));
+        assert_eq!(
+            Bounty::entries(bounty_id, entry_id2).oracle_judgment_result,
+            None
+        );
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(
             Balances::total_balance(&account_id),
             initial_balance - entrant_stake
@@ -2578,6 +2687,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             bounty_id,
             BountyActor::Council,
             judgment,
+            rationale,
         ));
     });
 }
@@ -2652,7 +2762,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::entries(entry_id).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id).oracle_judgment_result,
             Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
 
@@ -2730,14 +2840,14 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             .cloned()
             .collect::<BTreeMap<_, _>>();
 
-        assert!(<Entries<Test>>::contains_key(entry_id));
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id));
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!<Entries<Test>>::contains_key(entry_id));
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id));
 
         // Cherry not returned.
         assert_eq!(
@@ -2760,6 +2870,7 @@ fn submit_judgment_by_member_succeeded() {
         let judging_period = 10;
         let oracle_member_id = 1;
         let oracle_account_id = 1;
+        let rationale = b"text".to_vec();
 
         set_council_budget(initial_balance);
 
@@ -2818,12 +2929,14 @@ fn submit_judgment_by_member_succeeded() {
             .with_origin(RawOrigin::Signed(oracle_account_id))
             .with_oracle_member_id(oracle_member_id)
             .with_judgment(judgment.clone())
+            .with_rationale(rationale.clone())
             .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Member(oracle_member_id),
             judgment,
+            rationale,
         ));
     });
 }
@@ -3273,6 +3386,84 @@ fn withdraw_work_entrant_funds_succeeded() {
 }
 
 #[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_entry_ownership() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let winner_reward = max_amount;
+        let entrant_stake = 37;
+        let work_period = 1;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_work_period(work_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let member_id1 = 1;
+        let account_id1 = 1;
+        increase_account_balance(&account_id1, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_staking_account_id(account_id1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id1 = 1;
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id1,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward,
+            },
+        );
+
+        run_to_block(starting_block + work_period + 1);
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
+
+        // Withdraw work entrant.
+        let invalid_member_id = 111;
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
+    });
+}
+
+#[test]
 fn withdraw_work_entrant_funds_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let invalid_bounty_id = 11u64;
@@ -3416,4 +3607,348 @@ fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
                 Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
             ));
     });
+}
+
+fn setup_bounty_environment(oracle_id: u64, creator_id: u64, contributor_id: u64, entrant_id: u64) {
+    let initial_balance = 500;
+    let max_amount = 100;
+    let entrant_stake = 37;
+    let work_period = 10;
+
+    increase_account_balance(&to_account!(creator_id), initial_balance);
+    CreateBountyFixture::default()
+        .with_origin(to_origin!(creator_id))
+        .with_max_funding_amount(max_amount)
+        .with_creator_member_id(creator_id)
+        .with_entrant_stake(entrant_stake)
+        .with_oracle_member_id(oracle_id)
+        .with_work_period(work_period)
+        .call_and_assert(Ok(()));
+
+    let bounty_id = 1;
+
+    increase_account_balance(&to_account!(contributor_id), initial_balance);
+    FundBountyFixture::default()
+        .with_origin(to_origin!(contributor_id))
+        .with_bounty_id(bounty_id)
+        .with_amount(max_amount)
+        .with_member_id(contributor_id)
+        .call_and_assert(Ok(()));
+
+    increase_account_balance(&to_account!(entrant_id), initial_balance);
+
+    AnnounceWorkEntryFixture::default()
+        .with_origin(to_origin!(entrant_id))
+        .with_member_id(entrant_id)
+        .with_staking_account_id(to_account!(entrant_id))
+        .with_bounty_id(bounty_id)
+        .call_and_assert(Ok(()));
+}
+
+#[test]
+fn invalid_bounty_creator_cannot_remark() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_creator_id = creator_id + 1;
+        assert_err!(
+            Bounty::creator_remark(
+                to_origin!(invalid_creator_id),
+                BountyActor::Member(invalid_creator_id),
+                1,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidCreatorActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn creator_cannot_remark_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::creator_remark(
+                to_origin!(creator_id),
+                BountyActor::Member(creator_id),
+                invalid_bounty_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::BountyDoesntExist,
+        );
+    })
+}
+
+#[test]
+fn creator_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_ok!(Bounty::creator_remark(
+            to_origin!(creator_id),
+            BountyActor::Member(creator_id),
+            bounty_id,
+            b"test".to_vec(),
+        ));
+    })
+}
+
+#[test]
+fn invalid_bounty_oracle_cannot_remark() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_oracle_id = oracle_id + 1;
+        assert_err!(
+            Bounty::oracle_remark(
+                to_origin!(invalid_oracle_id),
+                BountyActor::Member(invalid_oracle_id),
+                1,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidOracleActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn oracle_cannot_remark_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::oracle_remark(
+                to_origin!(oracle_id),
+                BountyActor::Member(oracle_id),
+                invalid_bounty_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::BountyDoesntExist,
+        );
+    })
+}
+
+#[test]
+fn oracle_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_ok!(Bounty::oracle_remark(
+            to_origin!(oracle_id),
+            BountyActor::Member(oracle_id),
+            bounty_id,
+            b"test".to_vec(),
+        ));
+    })
+}
+
+#[test]
+fn invalid_bounty_contributor_cannot_remark() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_contributor_id = contributor_id + 1;
+        assert_err!(
+            Bounty::contributor_remark(
+                to_origin!(invalid_contributor_id),
+                BountyActor::Member(invalid_contributor_id),
+                1,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidContributorActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn contributor_cannot_remark_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::contributor_remark(
+                to_origin!(contributor_id),
+                BountyActor::Member(contributor_id),
+                invalid_bounty_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidContributorActorSpecified,
+        );
+    })
+}
+
+#[test]
+fn contributor_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_ok!(Bounty::contributor_remark(
+            to_origin!(contributor_id),
+            BountyActor::Member(contributor_id),
+            bounty_id,
+            b"test".to_vec(),
+        ));
+    })
+}
+
+#[test]
+fn entrant_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_ok!(Bounty::entrant_remark(
+            to_origin!(entrant_id),
+            entrant_id,
+            bounty_id,
+            entry_id,
+            b"test".to_vec(),
+        ));
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_entrant_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let invalid_entrant_id = entrant_id + 1;
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(invalid_entrant_id),
+                invalid_entrant_id,
+                bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::InvalidEntrantWorkerSpecified
+        );
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let entrant_id = entrant_id;
+        let invalid_bounty_id = Bounty::bounty_count() as u64 + 1;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(entrant_id),
+                entrant_id,
+                invalid_bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::WorkEntryDoesntExist,
+        );
+    })
+}
+
+#[test]
+fn entrant_remark_fails_with_invalid_entry_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let entrant_id = entrant_id;
+        let bounty_id = Bounty::bounty_count() as u64;
+        let invalid_entry_id = Bounty::entry_count() as u64 + 1;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(entrant_id),
+                entrant_id,
+                bounty_id,
+                invalid_entry_id,
+                b"test".to_vec(),
+            ),
+            crate::Error::<Test>::WorkEntryDoesntExist,
+        );
+    })
 }

@@ -38,7 +38,7 @@ benchmark() {
 # Substrate. This problem has been fixed in this PR: https://github.com/paritytech/substrate/pull/7233
 # So uncomment this when we move to a version that contains that PR.
 # See issue: #1979
-# benchmark frame_system
+benchmark frame_system
 benchmark substrate_utility
 benchmark pallet_session
 benchmark pallet_timestamp
@@ -68,3 +68,4 @@ benchmark membership
 benchmark bounty
 benchmark blog
 benchmark joystream_utility
+#benchmark storage

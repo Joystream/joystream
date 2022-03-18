@@ -1,0 +1,12 @@
+{
+  "endpoint": "http://localhost:3333",
+  "location": {
+    "countryCode": "US",
+    "city": "Chicago",
+    "coordinates": {
+      "latitude": 50,
+      "longitude": 50
+    }
+  },
+  "extra": "Extra"
+}

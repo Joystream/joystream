@@ -248,6 +248,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl membership::Trait for Test {
@@ -301,6 +304,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
         unimplemented!();
     }
 }
@@ -365,6 +374,10 @@ impl crate::WeightInfo for () {
     }
 
     fn cancel_active_and_pending_proposals(_: u32) -> u64 {
+        0
+    }
+
+    fn proposer_remark() -> Weight {
         0
     }
 }
@@ -533,6 +546,14 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+
+    fn councilor_remark() -> Weight {
+        0
+    }
+
+    fn candidate_remark() -> Weight {
         0
     }
 }
