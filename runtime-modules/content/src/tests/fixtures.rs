@@ -194,6 +194,16 @@ impl CreateVideoFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_nft_issuance(self, params: NftIssuanceParameters<Test>) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(params),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
@@ -480,7 +490,18 @@ impl UpdateVideoFixture {
                 assets_to_remove: BTreeSet::new(),
                 enable_comments: None,
                 new_meta: None,
+                auto_issue_nft: Default::default(),
             },
+        }
+    }
+
+    pub fn with_nft_issuance(self, params: NftIssuanceParameters<Test>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                auto_issue_nft: Some(params),
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -1112,13 +1133,6 @@ impl UpdateModeratorSetFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            new_moderators,
-            ..self
-        }
-    }
-
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
@@ -1313,7 +1327,9 @@ impl ClaimChannelRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let channel = Content::channel_by_id(self.item.channel_id);
+        let reward_account = Content::ensure_reward_account(&channel).unwrap_or_default();
+        let balance_pre = Balances::<Test>::usable_balance(&reward_account);
         let payout_earned_pre =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 
@@ -1326,7 +1342,7 @@ impl ClaimChannelRewardFixture {
         let actual_result =
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::usable_balance(&reward_account);
         let payout_earned_post =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
 

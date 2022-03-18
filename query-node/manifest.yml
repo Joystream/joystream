@@ -196,6 +196,8 @@ typegen:
     - content.NftSellOrderMade
     - content.NftBought
     - content.BuyNowCanceled
+    # Utility
+    - joystreamUtility.UpdatedWorkingGroupBudget
 
   calls:
     # Proposals discussion
@@ -931,6 +933,9 @@ mappings:
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
     - event: system.ExtrinsicSuccess
       handler: system_ExtrinsicSuccess
+    # Utility
+    - event: joystreamUtility.UpdatedWorkingGroupBudget
+      handler: joystreamUtility_UpdatedWorkingGroupBudget
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

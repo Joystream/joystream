@@ -479,12 +479,14 @@ parameter_types! {
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
+    pub const BagDeletionPrize: Balance = 0; // TODO: update
 }
 
 impl content::Trait for Runtime {
     type Event = Event;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
+    type OpenAuctionId = OpenAuctionId;
     type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
@@ -496,6 +498,8 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
+    type BagDeletionPrize = BagDeletionPrize;
+    type MemberAuthenticator = Members;
 }
 
 // The referendum instance alias.
