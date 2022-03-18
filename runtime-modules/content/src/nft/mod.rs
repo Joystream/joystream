@@ -8,10 +8,10 @@ impl<T: Trait> Module<T> {
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
-        bid: CurrencyOf<T>,
+        bid: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_reserve(participant, bid),
+            Balances::<T>::can_reserve(participant, bid),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -80,7 +80,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure bid step bounds satisfied
-    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: CurrencyOf<T>) -> DispatchResult {
+    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: BalanceOf<T>) -> DispatchResult {
         ensure!(
             bid_step <= Self::max_bid_step(),
             Error::<T>::AuctionBidStepUpperBoundExceeded
@@ -160,7 +160,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure royalty bounds satisfied
     pub(crate) fn ensure_starting_price_bounds_satisfied(
-        starting_price: CurrencyOf<T>,
+        starting_price: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
             starting_price >= Self::min_starting_price(),
@@ -176,10 +176,10 @@ impl<T: Trait> Module<T> {
     /// Ensure given participant have sufficient free balance
     pub(crate) fn ensure_sufficient_free_balance(
         participant_account_id: &T::AccountId,
-        balance: CurrencyOf<T>,
+        balance: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_slash(participant_account_id, balance),
+            Balances::<T>::can_slash(participant_account_id, balance),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -189,7 +189,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
-        offering: CurrencyOf<T>,
+        offering: BalanceOf<T>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
@@ -280,7 +280,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_payment(
         in_channel: T::ChannelId,
         creator_royalty: Option<Royalty>,
-        amount: CurrencyOf<T>,
+        amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
         // for auction related payments
@@ -290,9 +290,9 @@ impl<T: Trait> Module<T> {
 
         // Slash amount from sender
         if is_auction {
-            T::Currency::slash_reserved(&sender_account_id, amount);
+            let _ = Balances::<T>::slash_reserved(&sender_account_id, amount);
         } else {
-            T::Currency::slash(&sender_account_id, amount);
+            let _ = Balances::<T>::slash(&sender_account_id, amount);
         }
 
         if let Some(creator_royalty) = creator_royalty {
@@ -301,25 +301,23 @@ impl<T: Trait> Module<T> {
             // Deposit amount, exluding royalty and platform fee into receiver account
             match receiver_account_id {
                 Some(receiver_account_id) if amount > royalty + auction_fee => {
-                    T::Currency::deposit_creating(
+                    let _ = Balances::<T>::deposit_creating(
                         &receiver_account_id,
                         amount - royalty - auction_fee,
                     );
                 }
                 Some(receiver_account_id) => {
-                    T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+                    let _ =
+                        Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
                 }
                 _ => (),
             };
 
-            // Should always be Some(_) at this stage, because of previously made check.
-            if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
-                // Deposit royalty into creator account
-                T::Currency::deposit_creating(&creator_account_id, royalty);
-            }
+            // deposit to creator account
+            ContentTreasury::<T>::deposit_to_channel_account(in_channel, royalty);
         } else if let Some(receiver_account_id) = receiver_account_id {
             // Deposit amount, exluding auction fee into receiver account
-            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
@@ -328,7 +326,7 @@ impl<T: Trait> Module<T> {
         in_channel: T::ChannelId,
         src_account_id: T::AccountId,
         winner_id: T::MemberId,
-        amount: CurrencyOf<T>,
+        amount: BalanceOf<T>,
     ) -> Nft<T> {
         let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
 
@@ -353,9 +351,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
-                .reward_account
-                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+            NftOwner::ChannelOwner => Ok(ContentTreasury::<T>::account_for_channel(channel_id)),
         }
     }
 

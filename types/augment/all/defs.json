@@ -840,8 +840,6 @@
         "creator_royalty": "Option<Royalty>",
         "open_auctions_nonce": "OpenAuctionId"
     },
-    "CurrencyOf": "u128",
-    "CurrencyAmount": "u128",
     "InitTransactionalStatus": {
         "_enum": {
             "Idle": "Null",
