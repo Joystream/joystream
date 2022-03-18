@@ -63,7 +63,8 @@ pub trait MultiCurrency<T: Trait> {
     /// - `who` must exists
     ///
     /// Postconditions:
-    /// - free balance of `who` is decreased by `amount`
+    /// - free balance of `who` is decreased by `amount` or set to zero if below existential
+    ///   deposit
     /// if `amount` is zero it is equivalent to a no-op
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
@@ -75,7 +76,8 @@ pub trait MultiCurrency<T: Trait> {
     /// - `dst` must exists
     ///
     /// Postconditions:
-    /// - free balance of `src` is decreased by `amount`
+    /// - free balance of `src` is decreased by `amount or set to zero if below existential
+    ///   deposit`
     /// - free balance of `dst` is increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
     fn transfer(
@@ -229,8 +231,7 @@ decl_event! {
         /// - token identifier
         /// - slashed account
         /// - amount slashed
-        /// - existential deposit for the token
-        TokenAmountSlashedFrom(TokenId, AccountId, Balance, Balance),
+        TokenAmountSlashedFrom(TokenId, AccountId, Balance),
 
         /// Token amount is transferred from src to dst
         /// Params:
@@ -309,12 +310,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Self::do_slash(token_id, &who, amount, existential_deposit);
 
-        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(
-            token_id,
-            who,
-            amount,
-            existential_deposit,
-        ));
+        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
         Ok(())
     }
 

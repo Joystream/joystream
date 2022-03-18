@@ -110,7 +110,8 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
     /// Slash amount from free balance : infallible
     pub(crate) fn slash(&mut self, amount: Balance, existential_deposit: Balance) {
         let new_amount = self.free_balance.saturating_sub(amount);
-        self.free_balance = if new_amount > existential_deposit {
+        let new_total = self.frozen_balance.saturating_add(new_amount);
+        self.free_balance = if new_total > existential_deposit {
             new_amount
         } else {
             Balance::zero()
