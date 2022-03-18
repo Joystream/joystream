@@ -473,6 +473,14 @@ pub trait ModuleAccount<T: balances::Trait> {
         )
     }
 
+    /// Deposit amount to internal creator account: infallible
+    fn deposit_to_creator(channel_id: T::ChannelId, amount: BalanceOf<T>) {
+        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(
+            &Self::account_for_channel_id(channel_id),
+            amount,
+        );
+    }
+
     /// Displays usable balance for the module account.
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
@@ -503,7 +511,6 @@ pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type DynBagId<T> =
     DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Trait>::ChannelId>;
-pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
 pub type Storage<T> = storage::Module<T>;
 
 /// Type, used in diffrent numeric constraints representations

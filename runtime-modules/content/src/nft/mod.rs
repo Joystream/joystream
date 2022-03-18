@@ -8,7 +8,7 @@ impl<T: Trait> Module<T> {
     /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
-        bid: CurrencyOf<T>,
+        bid: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
             T::Currency::can_reserve(participant, bid),
@@ -80,7 +80,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure bid step bounds satisfied
-    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: CurrencyOf<T>) -> DispatchResult {
+    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: BalanceOf<T>) -> DispatchResult {
         ensure!(
             bid_step <= Self::max_bid_step(),
             Error::<T>::AuctionBidStepUpperBoundExceeded
@@ -160,7 +160,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure royalty bounds satisfied
     pub(crate) fn ensure_starting_price_bounds_satisfied(
-        starting_price: CurrencyOf<T>,
+        starting_price: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
             starting_price >= Self::min_starting_price(),
@@ -176,7 +176,7 @@ impl<T: Trait> Module<T> {
     /// Ensure given participant have sufficient free balance
     pub(crate) fn ensure_sufficient_free_balance(
         participant_account_id: &T::AccountId,
-        balance: CurrencyOf<T>,
+        balance: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
             T::Currency::can_slash(participant_account_id, balance),
@@ -189,7 +189,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
-        offering: CurrencyOf<T>,
+        offering: BalanceOf<T>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
@@ -280,7 +280,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_payment(
         in_channel: T::ChannelId,
         creator_royalty: Option<Royalty>,
-        amount: CurrencyOf<T>,
+        amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
         // for auction related payments
@@ -328,7 +328,7 @@ impl<T: Trait> Module<T> {
         in_channel: T::ChannelId,
         src_account_id: T::AccountId,
         winner_id: T::MemberId,
-        amount: CurrencyOf<T>,
+        amount: BalanceOf<T>,
     ) -> Nft<T> {
         let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
 

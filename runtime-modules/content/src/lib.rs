@@ -168,10 +168,10 @@ decl_storage! {
         pub MaxBidLockDuration get(fn max_bid_lock_duration) config(): T::BlockNumber;
 
         /// Min auction staring price
-        pub MinStartingPrice get(fn min_starting_price) config(): CurrencyOf<T>;
+        pub MinStartingPrice get(fn min_starting_price) config(): BalanceOf<T>;
 
         /// Max auction staring price
-        pub MaxStartingPrice get(fn max_starting_price) config(): CurrencyOf<T>;
+        pub MaxStartingPrice get(fn max_starting_price) config(): BalanceOf<T>;
 
         /// Min creator royalty percentage
         pub MinCreatorRoyalty get(fn min_creator_royalty) config(): Perbill;
@@ -180,10 +180,10 @@ decl_storage! {
         pub MaxCreatorRoyalty get(fn max_creator_royalty) config(): Perbill;
 
         /// Min auction bid step
-        pub MinBidStep get(fn min_bid_step) config(): CurrencyOf<T>;
+        pub MinBidStep get(fn min_bid_step) config(): BalanceOf<T>;
 
         /// Max auction bid step
-        pub MaxBidStep get(fn max_bid_step) config(): CurrencyOf<T>;
+        pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
         /// Platform fee percentage
         pub PlatfromFeePercentage get(fn platform_fee_percentage) config(): Perbill;
@@ -1470,7 +1470,7 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            new_price: CurrencyOf<T>,
+            new_price: BalanceOf<T>,
         ) {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1505,7 +1505,7 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
@@ -1592,7 +1592,7 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
@@ -1765,7 +1765,7 @@ decl_module! {
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             winner_id: T::MemberId,
-            commit: CurrencyOf<T>, // amount the auctioner is committed to
+            commit: BalanceOf<T>, // amount the auctioner is committed to
         ) {
             let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
             // Ensure video exists
@@ -1818,7 +1818,7 @@ decl_module! {
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             to: T::MemberId,
-            price: Option<CurrencyOf<T>>,
+            price: Option<BalanceOf<T>>,
         ) {
 
             // Ensure given video exists
@@ -1926,7 +1926,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            price: CurrencyOf<T>,
+            price: BalanceOf<T>,
         ) {
 
             // Ensure given video exists
@@ -1964,7 +1964,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
-            price_commit: CurrencyOf<T>, // in order to avoid front running
+            price_commit: BalanceOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -2335,7 +2335,6 @@ decl_event!(
         OpenAuctionId = <T as Trait>::OpenAuctionId,
         NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
-        CurrencyAmount = CurrencyOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
@@ -2418,19 +2417,19 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
-        AuctionBidMade(MemberId, VideoId, CurrencyAmount),
+        AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
         EnglishAuctionCompleted(MemberId, VideoId),
         BidMadeCompletingAuction(MemberId, VideoId),
-        OpenAuctionBidAccepted(ContentActor, VideoId, CurrencyAmount),
-        OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
+        OpenAuctionBidAccepted(ContentActor, VideoId, Balance),
+        OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
-        NftSellOrderMade(VideoId, ContentActor, CurrencyAmount),
+        NftSellOrderMade(VideoId, ContentActor, Balance),
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
-        BuyNowPriceUpdated(VideoId, ContentActor, CurrencyAmount),
+        BuyNowPriceUpdated(VideoId, ContentActor, Balance),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
         /// Metaprotocols related event
