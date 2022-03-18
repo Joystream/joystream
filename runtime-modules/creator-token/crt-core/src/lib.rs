@@ -131,6 +131,10 @@ pub trait MultiCurrency<T: Trait> {
     /// - `token_id` must be a valid token identifier
     /// - `who` account id must exist for token
     fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
+
+    fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
+
+    fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
 }
 
 decl_storage! {
@@ -277,7 +281,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_deposit_into_existing(token_id, &who, amount)?;
+        Self::ensure_can_deposit_into_existing(token_id, &who)?;
 
         // == MUTATION SAFE ==
 
@@ -299,6 +303,36 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Self::do_slash(token_id, &who, amount);
 
         Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
+        Ok(())
+    }
+
+    fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
+        Self::ensure_can_mint(token_id, amount)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_mint(token_id, amount);
+
+        Self::deposit_event(RawEvent::TokenAmountMinted(token_id, amount));
+        Ok(())
+    }
+
+    fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
+        Self::ensure_can_burn(token_id, amount)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_burn(token_id, amount);
+
+        Self::deposit_event(RawEvent::TokenAmountBurned(token_id, amount));
         Ok(())
     }
 
@@ -409,10 +443,31 @@ impl<T: Trait> Module<T> {
     // Extrinsics ensure checks
 
     #[inline]
+    pub(crate) fn ensure_can_burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // ensure issuance can be decreased
+        token_info.can_decrease_issuance::<T>(amount)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    pub(crate) fn ensure_can_mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+        // ensure token validity
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // ensure issuance can be encreased
+        token_info.can_increase_issuance::<T>(amount)?;
+
+        Ok(())
+    }
+
+    #[inline]
     pub(crate) fn ensure_can_deposit_into_existing(
         token_id: T::TokenId,
         who: &T::AccountId,
-        amount: T::Balance,
     ) -> DispatchResult {
         // ensure token validity
         Self::ensure_token_exists(token_id).map(|_| ())?;
