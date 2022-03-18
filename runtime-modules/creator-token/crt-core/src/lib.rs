@@ -5,7 +5,7 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
 };
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 
 mod types;
 use types::{AccountDataOf, TokenDataOf};
@@ -35,6 +35,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
     /// - issuance of `token_id` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op
     fn deposit_creating(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -52,6 +53,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
     /// - issuance of `token_id` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn deposit_into_existing(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -68,6 +70,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - free balance of `who` is decreased by `amount`
     /// - issuance of `token_id` is decreased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst`
@@ -80,6 +83,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - free balance of `src` is decreased by `amount`
     /// - free balance of `dst` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn transfer(
         token_id: T::TokenId,
         src: T::AccountId,
@@ -96,6 +100,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - `who` free balance decreased by `amount`
     /// - `who` frozen balance increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
     /// Unfreeze `amount` of token for `who`
@@ -107,6 +112,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Postconditions:
     /// - `who` free balance increased by `amount`
     /// - `who` frozen balance decreased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op
     fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
     /// Retrieve free balance for token and account
     /// Preconditions:
@@ -248,6 +254,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         Self::ensure_can_deposit_creating(token_id, amount)?;
 
         // == MUTATION SAFE ==
@@ -264,6 +274,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         who: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         Self::ensure_can_deposit_into_existing(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
@@ -293,6 +307,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         dst: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         // Verify preconditions
         Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
 
@@ -306,6 +324,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
     }
 
     fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         // Verify preconditions
         Self::ensure_can_freeze(token_id, &who, amount)?;
 
@@ -318,6 +340,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
     }
 
     fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
         // Verify preconditions
         Self::ensure_can_unfreeze(token_id, &who, amount)?;
 
