@@ -375,6 +375,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    #[inline]
     pub(crate) fn ensure_can_freeze(
         token_id: T::TokenId,
         who: &T::AccountId,
@@ -392,6 +393,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    #[inline]
     pub(crate) fn ensure_can_unfreeze(
         token_id: T::TokenId,
         who: &T::AccountId,
