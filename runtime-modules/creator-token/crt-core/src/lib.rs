@@ -5,10 +5,10 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
 };
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 
 mod types;
-use types::{AccountDataOf, TokenDataOf};
+use types::{AccountDataOf, MaxTotalIssuance, TokenDataOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -148,6 +148,16 @@ pub trait MultiCurrency<T: Trait> {
     /// - `token_id` issuance decreased by amount
     /// if `amount` is zero it is equivalent to a no-op
     fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
+
+    /// Create token
+    /// Preconditions:
+    /// Postconditions:
+    fn issue_token(
+        initial_issuance: T::Balance,
+        max_issuance: MaxTotalIssuance<T::Balance>,
+        description: <T as frame_system::Trait>::Hash,
+        existential_deposit: T::Balance,
+    ) -> DispatchResult;
 }
 
 decl_storage! {
@@ -160,6 +170,9 @@ decl_storage! {
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id): map
             hasher(blake2_128_concat) T::TokenId => TokenDataOf<T>;
+
+        /// Token Id nonce
+        pub NextTokenId get(fn next_token_id) config(): T::TokenId;
     }
 }
 
@@ -186,6 +199,12 @@ decl_error! {
         /// Requested account data does not exist
         AccountInformationDoesNotExist,
 
+        /// Initual issuance >= max issuance
+        InitialIssuanceExceedsMaxIssuance,
+
+        /// Existential deposit >= initial issuance
+        ExistentialDepositExceedsInitialIssuance,
+
     }
 }
 
@@ -200,6 +219,7 @@ decl_module! {
 
     }
 }
+
 decl_event! {
     pub enum Event<T>
     where
@@ -419,6 +439,29 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             .frozen_balance()
             .saturating_add(account_info.free_balance()))
     }
+
+    fn issue_token(
+        initial_issuance: T::Balance,
+        max_issuance: MaxTotalIssuance<T::Balance>,
+        description: <T as frame_system::Trait>::Hash,
+        existential_deposit: T::Balance,
+    ) -> DispatchResult {
+        Self::ensure_can_issue_token(initial_issuance, max_issuance, existential_deposit)?;
+
+        // == MUTATION SAFE ==
+
+        let token_id = Self::next_token_id();
+
+        Self::do_issue_token(
+            token_id,
+            initial_issuance,
+            max_issuance,
+            description,
+            existential_deposit,
+        );
+
+        Ok(())
+    }
 }
 
 /// Module implementation
@@ -562,6 +605,29 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    #[inline]
+    fn ensure_can_issue_token(
+        initial_issuance: T::Balance,
+        max_issuance: MaxTotalIssuance<T::Balance>,
+        existential_deposit: T::Balance,
+    ) -> DispatchResult {
+        // ensure initial issuance <= max issuance
+        if let MaxTotalIssuance::<T::Balance>::Limited(cap) = max_issuance {
+            ensure!(
+                cap >= initial_issuance,
+                Error::<T>::InitialIssuanceExceedsMaxIssuance,
+            );
+        }
+
+        // ensure existential deposit <= initial issuance
+        ensure!(
+            initial_issuance >= existential_deposit,
+            Error::<T>::ExistentialDepositExceedsInitialIssuance,
+        );
+
+        Ok(())
+    }
+
     // Infallible operations
 
     #[inline]
@@ -605,5 +671,24 @@ impl<T: Trait> Module<T> {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.unfreeze(amount)
         });
+    }
+
+    #[inline]
+    pub(crate) fn do_issue_token(
+        token_id: T::TokenId,
+        initial_issuance: T::Balance,
+        max_issuance: MaxTotalIssuance<T::Balance>,
+        description: <T as frame_system::Trait>::Hash,
+        existential_deposit: T::Balance,
+    ) {
+        let new_token = TokenDataOf::<T>::new(
+            initial_issuance,
+            max_issuance,
+            description,
+            existential_deposit,
+        );
+
+        TokenInfoById::<T>::insert(token_id, new_token);
+        NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
     }
 }

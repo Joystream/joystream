@@ -14,7 +14,7 @@ pub struct AccountData<Balance> {
     /// account holder, but which are not usable in any case.
     frozen_balance: Balance,
 }
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum MaxTotalIssuance<Balance> {
     Unlimited,
     Limited(Balance),
@@ -121,6 +121,21 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
 
 /// Interface for interacting with TokenData
 impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Hash> {
+    /// Construct new Token data
+    pub(crate) fn new(
+        initial_issuance: Balance,
+        max_total_issuance: MaxTotalIssuance<Balance>,
+        description: Hash,
+        existential_deposit: Balance,
+    ) -> Self {
+        Self {
+            current_total_issuance: initial_issuance,
+            max_total_issuance,
+            description,
+            existential_deposit,
+        }
+    }
+
     /// checks whether token issuance can be increased by amount
     pub(crate) fn can_increase_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         match self.max_total_issuance {
