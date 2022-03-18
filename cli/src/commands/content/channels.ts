@@ -5,6 +5,10 @@ import { displayTable, shortAddress } from '../../helpers/display'
 export default class ChannelsCommand extends ContentDirectoryCommandBase {
   static description = 'List existing content directory channels.'
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const channels = await this.getApi().availableChannels()
 
@@ -16,6 +20,7 @@ export default class ChannelsCommand extends ContentDirectoryCommandBase {
           'IsCensored': c.is_censored.toString(),
           'RewardAccount': c.reward_account ? shortAddress(c.reward_account.toString()) : 'NONE',
           'Collaborators': c.collaborators.size,
+          'Moderators': c.moderators.size,
         })),
         3
       )

@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiFactory, Api, KeyGenInfo } from './Api'
+import { ApiFactory, Api } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
@@ -9,7 +9,8 @@ import { Job } from './Job'
 import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
-import fs, { readFileSync } from 'fs'
+import fs, { existsSync, readFileSync } from 'fs'
+import { KeyGenInfo, FaucetInfo } from './types'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -23,6 +24,7 @@ type TestsOutput = {
   accounts: { [k: string]: number }
   keyIds: KeyGenInfo
   miniSecret: string
+  faucet: FaucetInfo
 }
 
 function writeOutput(api: Api, miniSecret: string) {
@@ -33,16 +35,19 @@ function writeOutput(api: Api, miniSecret: string) {
   // first and last key id used to generate keys in this scenario
   const keyIds = api.keyGenInfo()
 
+  const faucet = api.getFaucetInfo()
+
   const output: TestsOutput = {
     accounts,
     keyIds,
     miniSecret,
+    faucet,
   }
 
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
 
-export async function scenario(scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
+export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables
   config()
   const env = process.env
@@ -64,7 +69,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   const reuseKeys = Boolean(env.REUSE_KEYS)
   let startKeyId: number
   let customKeys: string[] = []
-  if (reuseKeys) {
+  if (reuseKeys && existsSync(OUTPUT_FILE_PATH)) {
     const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom
@@ -72,7 +77,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
     startKeyId = parseInt(env.START_KEY_ID || '0')
   }
 
-  api.createKeyPairs(startKeyId)
+  await api.createKeyPairs(startKeyId, false)
   customKeys.forEach((k) => api.createCustomKeyPair(k))
 
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
@@ -86,6 +91,8 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
   const query = new QueryNodeApi(queryNodeProvider)
 
   const debug = extendDebug('scenario')
+
+  debug(label)
 
   const jobs = new JobManager({ apiFactory, query, env })
 

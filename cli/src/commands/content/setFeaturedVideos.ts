@@ -11,6 +11,10 @@ export default class SetFeaturedVideosCommand extends ContentDirectoryCommandBas
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { featuredVideoIds } = this.parse(SetFeaturedVideosCommand).args
 

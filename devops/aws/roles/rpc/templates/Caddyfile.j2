@@ -1,7 +1,59 @@
-{{ ws_rpc }} {
+{{ nip_domain }}/ws-rpc* {
+    uri strip_prefix /ws-rpc
     reverse_proxy localhost:9944
 }
 
-{{ http_rpc }} {
+{{ nip_domain }}/http-rpc* {
+    uri strip_prefix /http-rpc
     reverse_proxy localhost:9933
+}
+
+{{ nip_domain }}/colossus-1* {
+    uri strip_prefix /colossus-1
+    reverse_proxy localhost:3333
+}
+
+{{ nip_domain }}/distributor-1* {
+    uri strip_prefix /distributor-1
+    reverse_proxy localhost:3334
+}
+
+# newer versions of graphql-server seems to expect this url also
+{{ nip_domain }}/@apollographql/* {
+    reverse_proxy localhost:8081
+}
+
+{{ nip_domain }}/query-node/server* {
+    uri strip_prefix /query-node/server
+    reverse_proxy localhost:8081
+}
+
+wss://{{ nip_domain }}/query-node/server* {
+    uri strip_prefix /query-node/server
+    reverse_proxy localhost:8081
+}
+
+{{ nip_domain }}/query-node/indexer* {
+    uri strip_prefix /query-node/indexer
+    reverse_proxy localhost:4000
+}
+
+{{ nip_domain }}/orion* {
+    uri strip_prefix /orion
+    reverse_proxy localhost:6116
+}
+
+{{ nip_domain }}/member-faucet* {
+    uri strip_prefix /member-faucet
+    reverse_proxy localhost:3002
+}
+
+{{ nip_domain }}/network/config.json {
+    header /* {
+      Access-Control-Allow-Origin *
+      Cache-Control: no-cache
+    }
+    root * /home/ubuntu
+    rewrite * /config.json
+    file_server
 }

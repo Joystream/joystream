@@ -1,5 +1,6 @@
 import {
-  ChannelInputParameters,
+  ChannelCreationInputParameters,
+  ChannelUpdateInputParameters,
   VideoInputParameters,
   VideoCategoryInputParameters,
   ChannelCategoryInputParameters,
@@ -18,7 +19,7 @@ export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> 
 
 export const ChannelCategoryInputSchema: JsonSchema<ChannelCategoryInputParameters> = VideoCategoryInputSchema
 
-export const ChannelInputSchema: JsonSchema<ChannelInputParameters> = {
+export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParameters> = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -31,7 +32,14 @@ export const ChannelInputSchema: JsonSchema<ChannelInputParameters> = {
     avatarPhotoPath: { type: 'string' },
     rewardAccount: { type: ['string', 'null'] },
     collaborators: {
-      type: ['array', 'null'],
+      type: 'array',
+      items: {
+        type: 'integer',
+        min: 0,
+      },
+    },
+    moderators: {
+      type: 'array',
       items: {
         type: 'integer',
         min: 0,
@@ -39,6 +47,11 @@ export const ChannelInputSchema: JsonSchema<ChannelInputParameters> = {
     },
   },
 }
+
+export const ChannelUpdateInputSchema: JsonSchema<ChannelUpdateInputParameters> = {
+  ...ChannelCreationInputSchema,
+}
+delete (ChannelUpdateInputSchema as Record<string, unknown>).moderators
 
 export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
   type: 'object',
@@ -81,7 +94,12 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
         },
       },
     },
-    persons: { type: 'array' },
+    persons: {
+      type: 'array',
+      items: {
+        type: 'integer',
+      },
+    },
     publishedBeforeJoystream: {
       type: 'object',
       properties: {
@@ -96,5 +114,6 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
     thumbnailPhotoPath: { type: 'string' },
     title: { type: 'string' },
     videoPath: { type: 'string' },
+    enableComments: { type: 'boolean' },
   },
 }

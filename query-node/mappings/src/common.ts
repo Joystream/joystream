@@ -1,12 +1,22 @@
 import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup, WorkerId, ThreadId } from '@joystream/types/augment/all'
-import { Worker, Event, Network } from 'query-node/dist/model'
+import { Codec } from '@polkadot/types/types'
+import { WorkingGroup as WGType, WorkerId, ThreadId } from '@joystream/types/augment/all'
+import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+// Max value the database can store in Int column field
+export const INT32MAX = 2147483647
+
+// Max value we can use as argument for JavaScript `Date` constructor to create a valid Date object
+// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+export const TIMESTAMPMAX = 8640000000000000
+
 /*
   Simple logger enabling error and informational reporting.
 
@@ -30,6 +40,20 @@ class Logger {
 }
 
 export const logger = new Logger()
+
+export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
+  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
+  const eventTime = new Date(blockTimestamp)
+  return {
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
+    inBlock: blockNumber,
+    network: CURRENT_NETWORK,
+    inExtrinsic: extrinsic?.hash,
+    indexInBlock,
+  }
+}
 
 /*
   Reports that insurmountable inconsistent state has been encountered and throws an exception.
@@ -169,25 +193,18 @@ type MappingsMemoryCache = {
 
 export const MemoryCache: MappingsMemoryCache = {}
 
-export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
-  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
-  const eventTime = new Date(blockTimestamp)
-  return {
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
-    inBlock: blockNumber,
-    network: CURRENT_NETWORK,
-    inExtrinsic: extrinsic?.hash,
-    indexInBlock,
-  }
-}
 export function deserializeMetadata<T>(
   metadataType: AnyMetadataClass<T>,
   metadataBytes: Bytes
 ): DecodedMetadataObject<T> | null {
   try {
-    return metaToObject(metadataType, metadataType.decode(metadataBytes.toU8a(true)))
+    const message = metadataType.decode(metadataBytes.toU8a(true))
+    Object.keys(message).forEach((key) => {
+      if (key in message && typeof message[key] === 'string') {
+        message[key] = perpareString(message[key])
+      }
+    })
+    return metaToObject(metadataType, message)
   } catch (e) {
     invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
@@ -206,6 +223,14 @@ export function bytesToString(b: Bytes): string {
 export function perpareString(s: string): string {
   // eslint-disable-next-line no-control-regex
   return s.replace(/\u0000/g, '')
+}
+
+export function asInt32(value: Codec): number {
+  return Math.min(Math.max(Math.trunc(Number(value)), -2147483647), 2147483647)
+}
+
+export function asBN(value: Codec): BN {
+  return new BN(value.toString())
 }
 
 export function hasValuesForProperties<
@@ -232,7 +257,7 @@ export type WorkingGroupModuleName =
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'
 
-export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName {
   if (group.isContent) {
     return 'contentWorkingGroup'
   } else if (group.isMembership) {
@@ -256,13 +281,26 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
   unexpectedData('Unsupported working group encountered:', group.type)
 }
 
+export async function getWorkingGroupByName(
+  store: DatabaseManager,
+  name: WorkingGroupModuleName,
+  relations: string[] = []
+): Promise<WGEntity> {
+  const group = await store.get(WGEntity, { where: { name }, relations })
+  if (!group) {
+    throw new Error(`Working group ${name} not found!`)
+  }
+  return group
+}
+
 export async function getWorker(
   store: DatabaseManager,
   groupName: WorkingGroupModuleName,
-  runtimeId: WorkerId | number
+  runtimeId: WorkerId | number,
+  relations: string[] = []
 ): Promise<Worker> {
   const workerDbId = `${groupName}-${runtimeId}`
-  const worker = await store.get(Worker, { where: { id: workerDbId } })
+  const worker = await store.get(Worker, { where: { id: workerDbId }, relations })
   if (!worker) {
     inconsistentState(`Expected worker not found by id ${workerDbId}`)
   }
@@ -299,4 +337,24 @@ export function deterministicEntityId(createdInEvent: SubstrateEvent, additional
     `${createdInEvent.blockNumber}-${createdInEvent.indexInBlock}` +
     (additionalIdentifier ? `-${additionalIdentifier}` : '')
   )
+}
+
+// Convert a BN to number without throwing an error if > Number.MAX_SAFE_INTEGER
+// add with a custom limit to maxValue if needed
+export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number {
+  try {
+    if (value.toNumber() > maxValue) {
+      logger.info(`toNumber() Warning: Input value ${value.toNumber()} exceeds maxValue: ${maxValue}.`)
+      return maxValue
+    }
+
+    return value.toNumber()
+  } catch (e) {
+    logger.info(
+      `toNumber() Warning: BN.toNumber() conversion error: ${
+        e instanceof Error ? e.message : e
+      }. Returning maxValue: ${maxValue}`
+    )
+    return maxValue
+  }
 }

@@ -36,7 +36,6 @@ export class RuntimeApi {
     const wsProvider: WsProvider = new WsProvider(apiUri)
     const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
 
-    // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
     const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
@@ -119,7 +118,6 @@ export class RuntimeApi {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(keyPair, {}, (result) => {
-        // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
         if (!result || !result.status) {
           return
         }

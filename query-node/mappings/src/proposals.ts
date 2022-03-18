@@ -59,8 +59,17 @@ import {
   RuntimeWasmBytecode,
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
+  ProposalStatus,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
+import {
+  bytesToString,
+  genericEventFields,
+  getWorkingGroupModuleName,
+  INT32MAX,
+  MemoryCache,
+  perpareString,
+  toNumber,
+} from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -135,7 +144,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isSetMaxValidatorCount) {
     const details = new SetMaxValidatorCountProposalDetails()
     const specificDetails = proposalDetails.asSetMaxValidatorCount
-    details.newMaxValidatorCount = specificDetails.toNumber()
+    details.newMaxValidatorCount = toNumber(specificDetails, INT32MAX)
     return details
   }
   // CreateWorkingGroupLeadOpeningProposalDetails:
@@ -147,7 +156,7 @@ async function parseProposalDetails(
     details.metadataId = metadata.id
     details.rewardPerBlock = new BN(specificDetails.reward_per_block.unwrapOr(0).toString())
     details.stakeAmount = new BN(specificDetails.stake_policy.stake_amount.toString())
-    details.unstakingPeriod = specificDetails.stake_policy.leaving_unstaking_period.toNumber()
+    details.unstakingPeriod = toNumber(specificDetails.stake_policy.leaving_unstaking_period, INT32MAX)
     return details
   }
   // FillWorkingGroupLeadOpeningProposalDetails:
@@ -165,7 +174,7 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asUpdateWorkingGroupBudget
     const [amount, workingGroup, balanceKind] = specificDetails
     details.groupId = getWorkingGroupModuleName(workingGroup)
-    details.amount = amount.muln(balanceKind.isNegative ? -1 : 1)
+    details.amount = new BN(`${balanceKind.isNegative ? '-' : ''}${amount.toString()}`)
     return details
   }
   // DecreaseWorkingGroupLeadStakeProposalDetails:
@@ -254,14 +263,14 @@ async function parseProposalDetails(
   else if (proposalDetails.isSetInitialInvitationCount) {
     const details = new SetInitialInvitationCountProposalDetails()
     const specificDetails = proposalDetails.asSetInitialInvitationCount
-    details.newInitialInvitationsCount = specificDetails.toNumber()
+    details.newInitialInvitationsCount = toNumber(specificDetails, INT32MAX)
     return details
   }
   // SetMembershipLeadInvitationQuotaProposalDetails:
   else if (proposalDetails.isSetMembershipLeadInvitationQuota) {
     const details = new SetMembershipLeadInvitationQuotaProposalDetails()
     const specificDetails = proposalDetails.asSetMembershipLeadInvitationQuota
-    details.newLeadInvitationQuota = specificDetails.toNumber()
+    details.newLeadInvitationQuota = toNumber(specificDetails, INT32MAX)
     return details
   }
   // SetReferralCutProposalDetails:
@@ -315,6 +324,33 @@ async function parseProposalDetails(
   }
 }
 
+async function setProposalStatus(
+  event: SubstrateEvent,
+  store: DatabaseManager,
+  proposal: Proposal,
+  status: typeof ProposalStatus
+): Promise<void> {
+  proposal.status = status
+  proposal.updatedAt = new Date(event.blockTimestamp)
+  proposal.statusSetAtBlock = event.blockNumber
+  proposal.statusSetAtTime = new Date(event.blockTimestamp)
+  if (
+    ![ProposalStatusDeciding.name, ProposalStatusDormant.name, ProposalStatusGracing.name].includes(status.isTypeOf)
+  ) {
+    proposal.isFinalized = true
+  }
+  return store.save<Proposal>(proposal)
+}
+
+async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, store: DatabaseManager): Promise<void> {
+  const unfinalizedProposals = await store.getMany(Proposal, { where: { isFinalized: false } })
+  await Promise.all(
+    unfinalizedProposals.map((proposal) =>
+      setProposalStatus(event, store, proposal, new ProposalStatusCanceledByRuntime())
+    )
+  )
+}
+
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [proposalId, generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(
     event
@@ -335,7 +371,9 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     creator: new Membership({ id: generalProposalParameters.member_id.toString() }),
     title: perpareString(generalProposalParameters.title.toString()),
     description: perpareString(generalProposalParameters.description.toString()),
-    exactExecutionBlock: generalProposalParameters.exact_execution_block.unwrapOr(undefined)?.toNumber(),
+    exactExecutionBlock: generalProposalParameters.exact_execution_block.isSome
+      ? toNumber(generalProposalParameters.exact_execution_block.unwrap(), INT32MAX)
+      : undefined,
     stakingAccount: generalProposalParameters.staking_account_id.toString(),
     status: new ProposalStatusDeciding(),
     isFinalized: false,
@@ -367,7 +405,6 @@ export async function proposalsEngine_ProposalStatusUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event).params
   const proposal = await getProposal(store, proposalId.toString())
-  const eventTime = new Date(event.blockTimestamp)
 
   let newStatus: typeof ProposalIntermediateStatus
   if (status.isActive) {
@@ -390,12 +427,8 @@ export async function proposalsEngine_ProposalStatusUpdated({
   await store.save<ProposalStatusUpdatedEvent>(proposalStatusUpdatedEvent)
 
   newStatus.proposalStatusUpdatedEventId = proposalStatusUpdatedEvent.id
-  proposal.updatedAt = eventTime
-  proposal.status = newStatus
-  proposal.statusSetAtBlock = event.blockNumber
-  proposal.statusSetAtTime = eventTime
 
-  await store.save<Proposal>(proposal)
+  await setProposalStatus(event, store, proposal, newStatus)
 }
 
 export async function proposalsEngine_ProposalDecisionMade({
@@ -404,7 +437,6 @@ export async function proposalsEngine_ProposalDecisionMade({
 }: EventContext & StoreContext): Promise<void> {
   const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event).params
   const proposal = await getProposal(store, proposalId.toString())
-  const eventTime = new Date(event.blockTimestamp)
 
   let decisionStatus: typeof ProposalDecisionStatus
   if (decision.isApproved) {
@@ -452,19 +484,13 @@ export async function proposalsEngine_ProposalDecisionMade({
       | ProposalStatusRejected
       | ProposalStatusSlashed
       | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
-    proposal.status = decisionStatus
-    proposal.isFinalized = true
-    proposal.statusSetAtBlock = event.blockNumber
-    proposal.statusSetAtTime = eventTime
-    proposal.updatedAt = eventTime
-    await store.save<Proposal>(proposal)
+    await setProposalStatus(event, store, proposal, decisionStatus)
   }
 }
 
 export async function proposalsEngine_ProposalExecuted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [proposalId, executionStatus] = new ProposalsEngine.ProposalExecutedEvent(event).params
   const proposal = await getProposal(store, proposalId.toString())
-  const eventTime = new Date(event.blockTimestamp)
 
   let newStatus: typeof ProposalExecutionStatus
   if (executionStatus.isExecuted) {
@@ -485,12 +511,14 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
   await store.save<ProposalExecutedEvent>(proposalExecutedEvent)
 
   newStatus.proposalExecutedEventId = proposalExecutedEvent.id
-  proposal.status = newStatus
-  proposal.isFinalized = true
-  proposal.statusSetAtBlock = event.blockNumber
-  proposal.statusSetAtTime = eventTime
-  proposal.updatedAt = eventTime
-  await store.save<Proposal>(proposal)
+  await setProposalStatus(event, store, proposal, newStatus)
+
+  if (
+    newStatus.isTypeOf === ProposalStatusExecuted.name &&
+    proposal.details.isTypeOf === RuntimeUpgradeProposalDetails.name
+  ) {
+    await handleRuntimeUpgradeProposalExecution(event, store)
+  }
 }
 
 export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -525,7 +553,6 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
 export async function proposalsEngine_ProposalCancelled({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, proposalId] = new ProposalsEngine.ProposalCancelledEvent(event).params
   const proposal = await getProposal(store, proposalId.toString())
-  const eventTime = new Date(event.blockTimestamp)
 
   const proposalCancelledEvent = new ProposalCancelledEvent({
     ...genericEventFields(event),
@@ -534,11 +561,7 @@ export async function proposalsEngine_ProposalCancelled({ store, event }: EventC
 
   await store.save<ProposalCancelledEvent>(proposalCancelledEvent)
 
-  proposal.status = new ProposalStatusCancelled()
-  proposal.isFinalized = true
-  proposal.status.cancelledInEventId = proposalCancelledEvent.id
-  proposal.statusSetAtBlock = event.blockNumber
-  proposal.statusSetAtTime = eventTime
-  proposal.updatedAt = eventTime
-  await store.save<Proposal>(proposal)
+  const newStatus = new ProposalStatusCancelled()
+  newStatus.cancelledInEventId = proposalCancelledEvent.id
+  await setProposalStatus(event, store, proposal, newStatus)
 }

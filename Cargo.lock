@@ -424,9 +424,9 @@ checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "bindgen"
-version = "0.57.0"
+version = "0.59.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd4865004a46a0aafb2a0a5eb19d3c9fc46ee5f063a6cfc605c69ac9ecf5263d"
+checksum = "2bd2a9a458e8f4304c52c43ebb0cfbd520289f8379a52e329a38afda99bf8eb8"
 dependencies = [
  "bitflags",
  "cexpr",
@@ -678,9 +678,9 @@ dependencies = [
 
 [[package]]
 name = "cexpr"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4aedb84272dbe89af497cf81375129abda4fc0a9e7c5d317498c15cc30c0d27"
+checksum = "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766"
 dependencies = [
  "nom",
 ]
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "5.1.0"
+version = "5.2.0"
 dependencies = [
  "ansi_term 0.12.1",
  "enum-utils",
@@ -2298,7 +2298,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "6.1.0"
+version = "6.3.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2359,7 +2359,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "10.1.0"
+version = "10.3.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2385,7 +2385,6 @@ dependencies = [
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
- "pallet-memo",
  "pallet-offences",
  "pallet-offences-benchmarking",
  "pallet-proposals-codex",
@@ -2403,7 +2402,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility 1.0.0",
+ "pallet-utility 1.1.0",
  "pallet-utility 2.0.1",
  "pallet-vesting",
  "pallet-working-group",
@@ -3099,9 +3098,9 @@ dependencies = [
 
 [[package]]
 name = "librocksdb-sys"
-version = "6.17.3"
+version = "6.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5da125e1c0f22c7cae785982115523a0738728498547f415c9054cb17c7e89f9"
+checksum = "c309a9d2470844aceb9a4a098cf5286154d20596868b75a6b36357d2bb9ca25d"
 dependencies = [
  "bindgen",
  "cc",
@@ -3355,6 +3354,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
 name = "miniz_oxide"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3555,11 +3560,12 @@ checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "nom"
-version = "5.1.2"
+version = "7.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
+checksum = "1b1d11e1ef389c76fe5b81bcaf2ea32cf88b62bc494e19f493d0b30e7a930109"
 dependencies = [
  "memchr",
+ "minimal-lexical",
  "version_check",
 ]
 
@@ -3973,18 +3979,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-memo"
-version = "5.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-offences"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate.git?rev=2cd20966cc09b059817c3ebe12fc130cdd850d62#2cd20966cc09b059817c3ebe12fc130cdd850d62"
@@ -4323,7 +4317,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-utility"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6583,9 +6577,9 @@ dependencies = [
 
 [[package]]
 name = "shlex"
-version = "0.1.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
+checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
 name = "signal-hook"

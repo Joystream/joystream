@@ -257,20 +257,20 @@ pub fn ensure_actor_is_channel_owner<T: Trait>(
 pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    nft_owner: &NFTOwner<T::MemberId>,
+    nft_owner: &NftOwner<T::MemberId>,
     in_channel: T::ChannelId,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
     ensure_actor_auth_success::<T>(&sender, actor)?;
 
-    if let NFTOwner::Member(member_id) = nft_owner {
+    if let NftOwner::Member(member_id) = nft_owner {
         ensure!(
             *actor == ContentActor::Member(*member_id),
             Error::<T>::ActorNotAuthorized
         );
     } else {
         // Ensure curator group is the channel owner.
-        let channel_owner = Module::<T>::ensure_channel_validity(&in_channel)?.owner;
+        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
 
         match actor {
             ContentActor::Lead => {

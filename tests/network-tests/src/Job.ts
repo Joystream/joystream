@@ -6,7 +6,11 @@ import { Flow } from './Flow'
 import { InvertedPromise } from './InvertedPromise'
 import { ResourceManager } from './Resources'
 
-export type JobProps = { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }
+export type JobProps = {
+  apiFactory: ApiFactory
+  env: NodeJS.ProcessEnv
+  query: QueryNodeApi
+}
 
 export enum JobOutcome {
   Succeeded = 'Succeeded',

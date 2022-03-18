@@ -4,7 +4,7 @@ mod channels;
 mod curators;
 mod fixtures;
 mod merkle;
-mod migration;
+mod metaprotocol;
 mod mock;
 mod nft;
 mod posts;
