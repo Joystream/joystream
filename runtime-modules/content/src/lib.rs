@@ -898,16 +898,11 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
-            // bloat bond logic: channel owner is refunded
-            video.video_post_id.as_ref().map(
-                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
-            ).transpose()?;
-
             //
             // == MUTATION SAFE ==
             //
 
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &assets_to_remove)?;
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
@@ -936,15 +931,10 @@ decl_module! {
             // ensure video can be removed
             Self::ensure_video_can_be_removed(&video)?;
 
-            // bloat bond logic: channel owner is refunded
-            video.video_post_id.as_ref().map(
-                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
-            ).transpose()?;
-
             //
             // == MUTATION SAFE ==
             //
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &assets_to_remove)?;
+            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video, &assets_to_remove)?;
 
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
@@ -2451,6 +2441,7 @@ impl<T: Trait> Module<T> {
         sender: &T::AccountId,
         channel_id: T::ChannelId,
         video_id: T::VideoId,
+        video: &Video<T>,
         assets_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> DispatchResult {
         // delete assets from storage with upload and rollback semantics
@@ -2461,6 +2452,16 @@ impl<T: Trait> Module<T> {
                 assets_to_remove.clone(),
             )?;
         }
+
+        // bloat bond logic: channel owner is refunded
+        // (this should never fail!)
+        video
+            .video_post_id
+            .as_ref()
+            .map(|video_post_id| {
+                Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
+            })
+            .transpose()?;
 
         // Remove video
         VideoById::<T>::remove(video_id);
