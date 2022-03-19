@@ -1,5 +1,5 @@
 [package]
-name = "pallet-creator-token-core"
+name = "pallet-project-token-multicurrency"
 version = '0.1.0'
 authors = ['Joystream contributors']
 edition = '2018'

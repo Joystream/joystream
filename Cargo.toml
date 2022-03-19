@@ -17,7 +17,7 @@ members = [
 	"runtime-modules/bounty",
 	"runtime-modules/blog",
 	"runtime-modules/utility",
-	"runtime-modules/creator-token/crt-core",    
+	"runtime-modules/project-token/multicurrency",    
 	"node",
 	"utils/chain-spec-builder/",
 ]
