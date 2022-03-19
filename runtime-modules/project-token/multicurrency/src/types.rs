@@ -14,28 +14,11 @@ pub struct AccountData<Balance> {
     /// account holder, but which are not usable in any case.
     reserved_balance: Balance,
 }
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum MaxTotalIssuance<Balance> {
-    Unlimited,
-    Limited(Balance),
-}
-
-impl<Balance> Default for MaxTotalIssuance<Balance> {
-    fn default() -> Self {
-        MaxTotalIssuance::<Balance>::Unlimited
-    }
-}
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenData<Balance, Hash> {
+pub struct TokenData<Balance> {
     /// Current token issuanc
     current_total_issuance: Balance,
-
-    /// Max total issuance allowed for the token
-    max_total_issuance: MaxTotalIssuance<Balance>,
-
-    /// Hash of a human-readable description
-    description: Hash,
 
     /// Existential deposit allowed for the token
     existential_deposit: Balance,
@@ -120,35 +103,13 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
 }
 
 /// Interface for interacting with TokenData
-impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Hash> {
+impl<Balance: Copy + PartialOrd + Saturating> TokenData<Balance> {
     /// Construct new Token data
-    pub(crate) fn new(
-        initial_issuance: Balance,
-        max_total_issuance: MaxTotalIssuance<Balance>,
-        description: Hash,
-        existential_deposit: Balance,
-    ) -> Self {
+    pub(crate) fn new(initial_issuance: Balance, existential_deposit: Balance) -> Self {
         Self {
             current_total_issuance: initial_issuance,
-            max_total_issuance,
-            description,
             existential_deposit,
         }
-    }
-
-    /// checks whether token issuance can be increased by amount
-    pub(crate) fn can_increase_issuance<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
-        match self.max_total_issuance {
-            MaxTotalIssuance::<Balance>::Unlimited => (),
-            MaxTotalIssuance::<Balance>::Limited(max_issuance) => {
-                let attempted_issuance_value = self.current_total_issuance.saturating_add(amount);
-                ensure!(
-                    attempted_issuance_value <= max_issuance,
-                    crate::Error::<T>::CannotExceedMaxIssuanceValue
-                );
-            }
-        }
-        Ok(())
     }
 
     /// Incrase current token issuance: infallible
@@ -180,5 +141,4 @@ impl<Balance: Copy + PartialOrd + Saturating, Hash: Copy> TokenData<Balance, Has
 pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
 
 /// Alias for Token Data
-pub(crate) type TokenDataOf<T> =
-    TokenData<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;
+pub(crate) type TokenDataOf<T> = TokenData<<T as crate::Trait>::Balance>;

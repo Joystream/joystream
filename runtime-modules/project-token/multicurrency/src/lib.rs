@@ -8,7 +8,7 @@ use frame_support::{
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 
 mod types;
-use types::{AccountDataOf, MaxTotalIssuance, TokenDataOf};
+use types::{AccountDataOf, TokenDataOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -154,12 +154,8 @@ pub trait MultiCurrency<T: Trait> {
     /// Create token
     /// Preconditions:
     /// Postconditions:
-    fn issue_token(
-        initial_issuance: T::Balance,
-        max_issuance: MaxTotalIssuance<T::Balance>,
-        description: <T as frame_system::Trait>::Hash,
-        existential_deposit: T::Balance,
-    ) -> DispatchResult;
+    fn issue_token(initial_issuance: T::Balance, existential_deposit: T::Balance)
+        -> DispatchResult;
 }
 
 decl_storage! {
@@ -189,9 +185,6 @@ decl_error! {
         /// Free balance is insufficient for slashing specified amount
         InsufficientFreeBalanceForSlashing,
 
-        /// Attempt to exceed maximum issuance value
-        CannotExceedMaxIssuanceValue,
-
         /// Current total issuance cannot be decrease by specified amount
         InsufficientIssuanceToDecreaseByAmount,
 
@@ -200,9 +193,6 @@ decl_error! {
 
         /// Requested account data does not exist
         AccountInformationDoesNotExist,
-
-        /// Initual issuance >= max issuance
-        InitialIssuanceExceedsMaxIssuance,
 
         /// Existential deposit >= initial issuance
         ExistentialDepositExceedsInitialIssuance,
@@ -341,7 +331,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_mint(token_id, amount)?;
+        Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // == MUTATION SAFE ==
 
@@ -444,23 +434,15 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
     fn issue_token(
         initial_issuance: T::Balance,
-        max_issuance: MaxTotalIssuance<T::Balance>,
-        description: <T as frame_system::Trait>::Hash,
         existential_deposit: T::Balance,
     ) -> DispatchResult {
-        Self::ensure_can_issue_token(initial_issuance, max_issuance, existential_deposit)?;
+        Self::ensure_can_issue_token(initial_issuance, existential_deposit)?;
 
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
 
-        Self::do_issue_token(
-            token_id,
-            initial_issuance,
-            max_issuance,
-            description,
-            existential_deposit,
-        );
+        Self::do_issue_token(token_id, initial_issuance, existential_deposit);
 
         Ok(())
     }
@@ -502,17 +484,6 @@ impl<T: Trait> Module<T> {
 
         // ensure issuance can be decreased
         token_info.can_decrease_issuance::<T>(amount)?;
-
-        Ok(())
-    }
-
-    #[inline]
-    pub(crate) fn ensure_can_mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // ensure issuance can be encreased
-        token_info.can_increase_issuance::<T>(amount)?;
 
         Ok(())
     }
@@ -610,17 +581,8 @@ impl<T: Trait> Module<T> {
     #[inline]
     fn ensure_can_issue_token(
         initial_issuance: T::Balance,
-        max_issuance: MaxTotalIssuance<T::Balance>,
         existential_deposit: T::Balance,
     ) -> DispatchResult {
-        // ensure initial issuance <= max issuance
-        if let MaxTotalIssuance::<T::Balance>::Limited(cap) = max_issuance {
-            ensure!(
-                cap >= initial_issuance,
-                Error::<T>::InitialIssuanceExceedsMaxIssuance,
-            );
-        }
-
         // ensure existential deposit <= initial issuance
         ensure!(
             initial_issuance >= existential_deposit,
@@ -679,16 +641,9 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_issue_token(
         token_id: T::TokenId,
         initial_issuance: T::Balance,
-        max_issuance: MaxTotalIssuance<T::Balance>,
-        description: <T as frame_system::Trait>::Hash,
         existential_deposit: T::Balance,
     ) {
-        let new_token = TokenDataOf::<T>::new(
-            initial_issuance,
-            max_issuance,
-            description,
-            existential_deposit,
-        );
+        let new_token = TokenDataOf::<T>::new(initial_issuance, existential_deposit);
 
         TokenInfoById::<T>::insert(token_id, new_token);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
