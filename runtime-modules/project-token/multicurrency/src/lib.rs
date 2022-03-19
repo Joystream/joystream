@@ -95,7 +95,7 @@ pub trait MultiCurrency<T: Trait> {
     ///
     /// Postconditions:
     /// - `who` free balance decreased by `amount`
-    /// - `who` frozen balance increased by `amount`
+    /// - `who` reserved balance increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
     fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
 
@@ -103,11 +103,11 @@ pub trait MultiCurrency<T: Trait> {
     /// Preconditions:
     /// - `token_id` must id
     /// - `who` must identify valid account for `token_id`
-    /// - `who` frozen balance must be greater than `amount`
+    /// - `who` reserved balance must be greater than `amount`
     ///
     /// Postconditions:
     /// - `who` free balance increased by `amount`
-    /// - `who` frozen balance decreased by `amount`
+    /// - `who` reserved balance decreased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
     fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
     /// Retrieve free balance for token and account
@@ -116,12 +116,14 @@ pub trait MultiCurrency<T: Trait> {
     /// - `who` account id must exist for token
     fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
 
-    /// Retrieve frozen balance for token and account
+    /// Retrieve reserved balance for token and account
     /// Preconditions:
     /// - `token_id` must be a valid token identifier
     /// - `who` account id must exist for token
-    fn frozen_balance(token_id: T::TokenId, who: T::AccountId)
-        -> Result<T::Balance, DispatchError>;
+    fn reserved_balance(
+        token_id: T::TokenId,
+        who: T::AccountId,
+    ) -> Result<T::Balance, DispatchError>;
 
     /// Retrieve total balance for token and account
     /// Preconditions:
@@ -181,8 +183,8 @@ decl_error! {
         /// Free balance is insufficient for freezing specified amount
         InsufficientFreeBalanceForFreezing,
 
-        /// Frozen balance is insufficient for unfreezing specified amount
-        InsufficientFrozenBalance,
+        /// Reserved balance is insufficient for unfreezing specified amount
+        InsufficientReservedBalance,
 
         /// Free balance is insufficient for slashing specified amount
         InsufficientFreeBalanceForSlashing,
@@ -261,19 +263,19 @@ decl_event! {
         /// - amount transferred
         TokenAmountTransferred(TokenId, AccountId, AccountId, Balance),
 
-        /// Token amount is frozen
+        /// Token amount is reserved
         /// Params:
         /// - token identifier
-        /// - account tokens are frozen from
-        /// - amount frozen
-        TokenAmountFrozenFrom(TokenId, AccountId, Balance),
+        /// - account tokens are reserved from
+        /// - amount reserved
+        TokenAmountReservedFrom(TokenId, AccountId, Balance),
 
-        /// Token amount is unfrozen
+        /// Token amount is unreserved
         /// Params:
         /// - token identifier
-        /// - account tokens are unfrozen from
-        /// - amount frozen
-        TokenAmountUnfrozenFrom(TokenId, AccountId, Balance),
+        /// - account tokens are unreserved from
+        /// - amount reserved
+        TokenAmountUnreservedFrom(TokenId, AccountId, Balance),
 
     }
 }
@@ -397,7 +399,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Self::do_freeze(token_id, &who, amount);
 
-        Self::deposit_event(RawEvent::TokenAmountFrozenFrom(token_id, who, amount));
+        Self::deposit_event(RawEvent::TokenAmountReservedFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -413,7 +415,7 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Self::do_unfreeze(token_id, &who, amount);
 
-        Self::deposit_event(RawEvent::TokenAmountUnfrozenFrom(token_id, who, amount));
+        Self::deposit_event(RawEvent::TokenAmountUnreservedFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -423,20 +425,20 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(account_info.free_balance())
     }
 
-    fn frozen_balance(
+    fn reserved_balance(
         token_id: T::TokenId,
         who: T::AccountId,
     ) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
-        Ok(account_info.frozen_balance())
+        Ok(account_info.reserved_balance())
     }
 
     fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         Ok(account_info
-            .frozen_balance()
+            .reserved_balance()
             .saturating_add(account_info.free_balance()))
     }
 

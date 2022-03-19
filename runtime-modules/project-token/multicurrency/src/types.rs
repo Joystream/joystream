@@ -12,7 +12,7 @@ pub struct AccountData<Balance> {
     /// This balance is a 'reserve' balance that other subsystems use
     /// in order to set aside tokens that are still 'owned' by the
     /// account holder, but which are not usable in any case.
-    frozen_balance: Balance,
+    reserved_balance: Balance,
 }
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum MaxTotalIssuance<Balance> {
@@ -46,7 +46,7 @@ impl<Balance: Zero> Default for AccountData<Balance> {
     fn default() -> Self {
         Self {
             free_balance: Balance::zero(),
-            frozen_balance: Balance::zero(),
+            reserved_balance: Balance::zero(),
         }
     }
 }
@@ -58,9 +58,9 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
         self.free_balance
     }
 
-    /// Retrieve frozen balance amount
-    pub(crate) fn frozen_balance(&self) -> Balance {
-        self.frozen_balance
+    /// Retrieve reserved balance amount
+    pub(crate) fn reserved_balance(&self) -> Balance {
+        self.reserved_balance
     }
 
     /// checks whether free balance has enough amount to freeze
@@ -75,14 +75,14 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
     /// freeze specified amount: infallible
     pub(crate) fn freeze(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_sub(amount);
-        self.frozen_balance = self.frozen_balance.saturating_add(amount);
+        self.reserved_balance = self.reserved_balance.saturating_add(amount);
     }
 
-    /// checks whether account has enough frozen balance to unfreeze
+    /// checks whether account has enough reserved balance to unfreeze
     pub(crate) fn can_unfreeze<T: crate::Trait>(&self, amount: Balance) -> DispatchResult {
         ensure!(
-            self.frozen_balance >= amount,
-            crate::Error::<T>::InsufficientFrozenBalance
+            self.reserved_balance >= amount,
+            crate::Error::<T>::InsufficientReservedBalance
         );
         Ok(())
     }
@@ -90,7 +90,7 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
     /// freeze specified amount: infallible
     pub(crate) fn unfreeze(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_add(amount);
-        self.frozen_balance = self.frozen_balance.saturating_sub(amount);
+        self.reserved_balance = self.reserved_balance.saturating_sub(amount);
     }
 
     /// Add amount to free balance : infallible
@@ -110,7 +110,7 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
     /// Slash amount from free balance : infallible
     pub(crate) fn slash(&mut self, amount: Balance, existential_deposit: Balance) {
         let new_amount = self.free_balance.saturating_sub(amount);
-        let new_total = self.frozen_balance.saturating_add(new_amount);
+        let new_total = self.reserved_balance.saturating_add(new_amount);
         self.free_balance = if new_total > existential_deposit {
             new_amount
         } else {
