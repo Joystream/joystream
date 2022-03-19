@@ -3857,20 +3857,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-creator-token-core"
-version = "0.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-content",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-finality-tracker"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate.git?rev=2cd20966cc09b059817c3ebe12fc130cdd850d62#2cd20966cc09b059817c3ebe12fc130cdd850d62"
@@ -4004,6 +3990,20 @@ dependencies = [
  "parity-scale-codec",
  "sp-runtime",
  "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-project-token-multicurrency"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-content",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-runtime",
  "sp-std",
 ]
 
