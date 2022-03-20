@@ -13,7 +13,7 @@
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
     "@joystream/metadata-protobuf": "^2.0.0",
-    "@joystream/types": "^0.18.2",
+    "@joystream/types": "^0.19.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",

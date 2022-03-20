@@ -485,6 +485,7 @@ impl content::Trait for Runtime {
     type Event = Event;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
+    type OpenAuctionId = OpenAuctionId;
     type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
@@ -496,6 +497,7 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
+    type MemberAuthenticator = Members;
 }
 
 // The referendum instance alias.

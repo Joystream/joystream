@@ -340,6 +340,9 @@ impl Trait for Test {
     /// Type of identifier for Videos
     type VideoId = u64;
 
+    /// Type of identifier for open auctions
+    type OpenAuctionId = u64;
+
     /// Type of identifier for Video Categories
     type VideoCategoryId = u64;
 
@@ -375,6 +378,9 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
+
+    /// membership info provider
+    type MemberAuthenticator = MemberInfoProvider;
 }
 
 // #[derive (Default)]
@@ -498,17 +504,12 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 }
 
 /// Get good params for open auction
-pub fn get_open_auction_params(
-) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
-    AuctionParams {
+pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
+    OpenAuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::Open(OpenAuctionDetails {
-            bid_lock_duration: Content::min_bid_lock_duration(),
-        }),
-        minimal_bid_step: Content::min_bid_step(),
-        starts_at: None,
         whitelist: BTreeSet::new(),
+        bid_lock_duration: Content::min_bid_lock_duration(),
     }
 }
 
@@ -608,6 +609,24 @@ impl LockComparator<u64> for Test {
             existing_locks.contains(new_lock)
         } else {
             false
+        }
+    }
+}
+
+pub struct MemberInfoProvider {}
+impl MembershipInfoProvider<Test> for MemberInfoProvider {
+    fn controller_account_id(
+        member_id: common::MemberId<Test>,
+    ) -> Result<AccountId, DispatchError> {
+        match member_id {
+            DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
+            DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
+            _ => Err(DispatchError::Other("no account found")),
         }
     }
 }

@@ -76,9 +76,6 @@ decl_error! {
         // Auction Errors
         // ---------------------
 
-        /// Auction for given video did not start
-        AuctionDidNotStart,
-
         /// Nft for given video id already exists
         NftAlreadyExists,
 
@@ -133,6 +130,9 @@ decl_error! {
         /// Minimal auction bid step constraint violated.
         BidStepConstraintViolated,
 
+        /// Commit verification for bid amount
+        InvalidBidAmountSpecified,
+
         /// Auction starting price constraint violated.
         StartingPriceConstraintViolated,
 
@@ -149,13 +149,16 @@ decl_error! {
         RewardAccountIsNotSet,
 
         /// Actor is not a last bidder
-        ActorIsNotALastBidder,
+        ActorIsNotBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
         /// Auction does not have bids
-        LastBidDoesNotExist,
+        BidDoesNotExist,
+
+        /// Selected Bid is for past open auction
+        BidIsForPastAuction,
 
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
@@ -174,6 +177,9 @@ decl_error! {
 
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
+
+        /// Invalid Buy Now price commit provided
+        InvalidBuyNowPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,

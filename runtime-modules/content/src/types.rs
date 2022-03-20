@@ -238,7 +238,7 @@ pub type VideoCreationParameters<T> =
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
+pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord, NftIssuanceParameters> {
     /// Assets referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the video.
@@ -247,9 +247,12 @@ pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// If set enable/disable comments to video
     pub enable_comments: Option<bool>,
+    /// Parameters for updating Nft along with video
+    pub auto_issue_nft: Option<NftIssuanceParameters>,
 }
 
-pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>>;
+pub type VideoUpdateParameters<T> =
+    VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>, NftIssuanceParameters<T>>;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -425,9 +428,8 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     }
 
     /// Set video nft status
-    pub fn set_nft_status(mut self, nft: OwnedNft) -> Self {
+    pub fn set_nft_status(&mut self, nft: OwnedNft) {
         self.nft_status = Some(nft);
-        self
     }
 
     /// Ensure censorship status have been changed

@@ -29,8 +29,8 @@ export class NftBuyNowFixture extends BaseQueryNodeFixture {
   }
 
   /*
-    Execute this Fixture.
-  */
+      Execute this Fixture.
+    */
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
@@ -40,7 +40,7 @@ export class NftBuyNowFixture extends BaseQueryNodeFixture {
     await this.api.sellNft(this.author.keyringPair.address, this.videoId, this.author.memberId.toNumber(), buyNowPrice)
 
     this.debug('Buy now')
-    await this.api.buyNft(this.participant.account, this.videoId, this.participant.memberId.toNumber())
+    await this.api.buyNft(this.participant.account, this.videoId, this.participant.memberId.toNumber(), buyNowPrice)
 
     this.debug('Check NFT ownership change')
     await assertNftOwner(this.query, this.videoId, this.participant)

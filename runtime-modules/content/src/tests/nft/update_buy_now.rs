@@ -6,10 +6,10 @@ use crate::tests::fixtures::{
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+const NEW_NFT_PRICE: u64 = DEFAULT_NFT_PRICE + 10;
 
-const AUCTION_ENDING_BLOCK: u64 = 10;
 #[test]
-fn cancel_nft_auction() {
+fn update_buy_now_price() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -28,12 +28,14 @@ fn cancel_nft_auction() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Start nft auction
-        assert_ok!(Content::start_open_auction(
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            get_open_auction_params()
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
         // Runtime tested state before call
@@ -41,29 +43,29 @@ fn cancel_nft_auction() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        // Cancel nft auction
-        assert_ok!(Content::cancel_open_auction(
+        // update buy now price
+        assert_ok!(Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         ));
-
-        // Runtime tested state after call
 
         // Ensure nft status changed to given Auction
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNft {
-                transactional_status: TransactionalStatus::<Test>::Idle,
+                transactional_status: TransactionalStatus::<Test>::BuyNow(NEW_NFT_PRICE),
                 ..
             })
         ));
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::AuctionCanceled(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
+            MetaEvent::content(RawEvent::BuyNowPriceUpdated(
                 video_id,
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                NEW_NFT_PRICE,
             )),
             number_of_events_before_call + 1,
         );
@@ -71,27 +73,31 @@ fn cancel_nft_auction() {
 }
 
 #[test]
-fn cancel_nft_auction_video_does_not_exist() {
+fn update_buy_now_price_video_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
 
-        // Make an attempt to cancel nft auction which corresponding video does not exist yet
-        let cancel_nft_auction_result = Content::cancel_open_auction(
+        // Make an attempt to update buy now price which corresponding video does not exist yet
+        let update_buy_now_price_result = Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         );
 
         // Failure checked
-        assert_err!(cancel_nft_auction_result, Error::<Test>::VideoDoesNotExist);
+        assert_err!(
+            update_buy_now_price_result,
+            Error::<Test>::VideoDoesNotExist
+        );
     })
 }
 
 #[test]
-fn cancel_nft_auction_not_issued() {
+fn update_buy_now_price_not_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -102,20 +108,21 @@ fn cancel_nft_auction_not_issued() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
-        // Make an attempt to cancel nft auction for nft which is not issued yet
-        let cancel_nft_auction_result = Content::cancel_open_auction(
+        // Make an attempt to update buy now price for nft which is not issued yet
+        let update_buy_now_price_result = Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         );
 
         // Failure checked
-        assert_err!(cancel_nft_auction_result, Error::<Test>::NftDoesNotExist);
+        assert_err!(update_buy_now_price_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
 #[test]
-fn cancel_nft_auction_auth_failed() {
+fn update_buy_now_price_auth_failed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -134,28 +141,29 @@ fn cancel_nft_auction_auth_failed() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Start nft auction
-        assert_ok!(Content::start_open_auction(
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            get_open_auction_params()
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
-        // Make an attempt to cancel nft auction with wrong credentials
-        let cancel_nft_auction_result = Content::cancel_open_auction(
+        // Make an attempt to update buy now price with wrong credentials
+        let update_buy_now_price_result = Content::update_buy_now_price(
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         );
 
         // Failure checked
-        assert_err!(cancel_nft_auction_result, Error::<Test>::MemberAuthFailed);
+        assert_err!(update_buy_now_price_result, Error::<Test>::MemberAuthFailed);
     })
 }
 
 #[test]
-fn cancel_nft_auction_not_authorized() {
+fn update_buy_now_price_not_authorized() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -174,28 +182,32 @@ fn cancel_nft_auction_not_authorized() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Start nft auction
-        assert_ok!(Content::start_open_auction(
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            get_open_auction_params()
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
         ));
 
-        // Make an attempt to cancel nft auction if actor is not authorized
-        let cancel_nft_auction_result = Content::cancel_open_auction(
+        // Make an attempt to update buy now price if actor is not authorized
+        let update_buy_now_price_result = Content::update_buy_now_price(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         );
 
         // Failure checked
-        assert_err!(cancel_nft_auction_result, Error::<Test>::ActorNotAuthorized);
+        assert_err!(
+            update_buy_now_price_result,
+            Error::<Test>::ActorNotAuthorized
+        );
     })
 }
 
 #[test]
-fn cancel_nft_auction_not_in_auction_state() {
+fn update_buy_now_price_not_in_auction_state() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -214,83 +226,18 @@ fn cancel_nft_auction_not_in_auction_state() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Make an attempt to cancel nft auction if there is no pending one
-        let cancel_nft_auction_result = Content::cancel_open_auction(
+        // Make an attempt to update buy now price if there is no pending one
+        let update_buy_now_price_result = Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
+            NEW_NFT_PRICE,
         );
 
         // Failure checked
         assert_err!(
-            cancel_nft_auction_result,
-            Error::<Test>::IsNotOpenAuctionType
-        );
-    })
-}
-
-#[test]
-fn cancel_nft_auction_english_auction_with_bids() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = NextVideoId::<Test>::get();
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
-
-        let auction_params = EnglishAuctionParams::<Test> {
-            starting_price: Content::min_starting_price(),
-            buy_now_price: None,
-            extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
-            min_bid_step: Content::max_bid_step(),
-            end: AUCTION_ENDING_BLOCK,
-            whitelist: BTreeSet::new(),
-        };
-
-        // Start nft auction
-        assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params
-        ));
-
-        // deposit initial balance
-        let bid = Content::min_starting_price();
-
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
-
-        // Make an english auction bid
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            bid,
-        ));
-
-        // Make an attempt to cancel an english auction which already contains a bid
-        let cancel_nft_auction_result = Content::cancel_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-        );
-
-        // Failure checked
-        assert_err!(
-            cancel_nft_auction_result,
-            Error::<Test>::ActionHasBidsAlready
+            update_buy_now_price_result,
+            Error::<Test>::NftNotInBuyNowState
         );
     })
 }
