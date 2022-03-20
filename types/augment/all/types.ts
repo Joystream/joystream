@@ -304,9 +304,6 @@ export interface ChannelUpdateParameters extends Struct {
 /** @name Cid */
 export interface Cid extends Bytes {}
 
-/** @name CommentId */
-export interface CommentId extends u64 {}
-
 /** @name ConstitutionInfo */
 export interface ConstitutionInfo extends Struct {
   readonly text_hash: Hash;

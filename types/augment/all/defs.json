@@ -734,7 +734,6 @@
     "IsCensored": "bool",
     "VideoPostId": "u64",
     "ReactionId": "u64",
-    "CommentId": "u64",
     "VideoPostType": {
         "_enum": {
             "Description": "Null",
