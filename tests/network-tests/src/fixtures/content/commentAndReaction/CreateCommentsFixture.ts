@@ -1,14 +1,12 @@
 import { ICreateComment, IMemberRemarked, MemberRemarked } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
-import { CommentId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
-import { CommentStatus } from '../../../graphql/generated/schema'
 import { Api } from '../../../Api'
-import { POST_DEPOSIT } from '../../../consts'
 import { StandardizedFixture } from '../../../Fixture'
 import { CommentCreatedEventFieldsFragment, VideoCommentFieldsFragment } from '../../../graphql/generated/queries'
+import { CommentStatus } from '../../../graphql/generated/schema'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { Utils } from '../../../utils'
@@ -46,13 +44,6 @@ export class CreateCommentsFixture extends StandardizedFixture {
         (await this.api.query.members.membershipById(asMember)).controller_account.toString()
       )
     )
-  }
-
-  public async execute(): Promise<void> {
-    const accounts = await this.getSignerAccountOrAccounts()
-    // Send required funds to accounts (PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, POST_DEPOSIT)))
-    await super.execute()
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -97,7 +88,7 @@ export class CreateCommentsFixture extends StandardizedFixture {
     )
 
     // Query the comments
-    const qComments = await this.query.getCommentsByIds(qEvents.map((e) => (e.comment.id as unknown) as CommentId))
+    const qComments = await this.query.getCommentsByIds(qEvents.map((e) => e.comment.id))
     this.assertQueriedCommentsAreValid(qComments, qEvents)
   }
 }
