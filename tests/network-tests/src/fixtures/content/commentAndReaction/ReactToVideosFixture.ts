@@ -1,12 +1,13 @@
 import { IMemberRemarked, IReactVideo, MemberRemarked, ReactVideo } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
+import { VideoId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
 import _ from 'lodash'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { VideoReactedEventFieldsFragment, VideoReactionFieldsFragment } from '../../../graphql/generated/queries'
+import { VideoFieldsFragment, VideoReactedEventFieldsFragment } from '../../../graphql/generated/queries'
 import { VideoReactionOptions } from '../../../graphql/generated/schema'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
@@ -27,14 +28,6 @@ export class ReactToVideosFixture extends StandardizedFixture {
     this.reactVideoParams = reactVideoParams
   }
 
-  public async getAddedVideoReactionsIds(): Promise<VideoReactionOptions[]> {
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getVideoReactedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    )
-    return qEvents.map((e) => e.reactionResult)
-  }
-
   protected async getEventFromResult(result: ISubmittableResult): Promise<MemberRemarkedEventDetails> {
     return this.api.getEventDetails(result, 'members', 'MemberRemarked')
   }
@@ -45,11 +38,6 @@ export class ReactToVideosFixture extends StandardizedFixture {
         (await this.api.query.members.membershipById(asMember)).controller_account.toString()
       )
     )
-  }
-
-  public async execute(): Promise<void> {
-    const accounts = await this.getSignerAccountOrAccounts()
-    await super.execute()
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -75,18 +63,18 @@ export class ReactToVideosFixture extends StandardizedFixture {
     return VideoReactionOptions.Like
   }
 
-  protected assertQueriedVideoReactionsAreValid(
-    qVideoReactions: VideoReactionFieldsFragment[],
-    qEvents: VideoReactedEventFieldsFragment[]
-  ): void {
-    qEvents.map((qEvent, i) => {
-      const qVideoReaction = qVideoReactions.find((videoReaction) => videoReaction.id === qEvent.video.id.toString())
-      const reactVideoParams = this.reactVideoParams[i]
-      Utils.assert(qVideoReaction, 'Query node: Video reaction not found')
-      assert.equal(qVideoReaction.video.id, reactVideoParams.msg.videoId.toString())
-      assert.equal(qVideoReaction.member.id, reactVideoParams.asMember.toString())
-      assert.equal(qVideoReaction.reaction, this.getExpectedReaction(reactVideoParams.msg.reaction))
-    })
+  protected assertQueriedVideoReactionsAreValid(qVideos: VideoFieldsFragment[]): void {
+    // Check against latest reaction per user per video
+    _.uniqBy([...this.reactVideoParams].reverse(), (p) => `${p.msg.videoId.toString()}:${p.asMember.toString()}`).map(
+      (param) => {
+        const qVideo = qVideos.find((v) => v.id === param.msg.videoId.toString())
+        Utils.assert(qVideo, 'Query node: Video not found')
+
+        const qReaction = qVideo.reactions.find((r) => r.member.id === param.asMember.toString())
+        Utils.assert(qReaction, `Query node: Expected video reaction by member ${param.asMember.toString()} not found!`)
+        assert.equal(qReaction.reaction, this.getExpectedReaction(param.msg.reaction))
+      }
+    )
   }
 
   protected assertQueryNodeEventIsValid(qEvent: VideoReactedEventFieldsFragment, i: number): void {
@@ -104,8 +92,8 @@ export class ReactToVideosFixture extends StandardizedFixture {
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
 
-    // Query the video reactions
-    const qVideoReactions = await this.query.getVideoReactionsByIds(qEvents.map((e) => e.id))
-    this.assertQueriedVideoReactionsAreValid(qVideoReactions, qEvents)
+    // Query the videos that have been reacted
+    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => (e.video.id as unknown) as VideoId))
+    this.assertQueriedVideoReactionsAreValid(qVideos)
   }
 }
