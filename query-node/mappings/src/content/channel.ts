@@ -23,8 +23,8 @@ import {
   processDeleteCommentModeratorMessage,
   processPinOrUnpinCommentMessage,
   processBanOrUnbanMemberFromChannelMessage,
-  processEnableOrDisableCommentSectionOfVideoMessage,
-  processEnableOrDisableReactionsOnVideoMessage,
+  processCommentSectionPreferenceMessage,
+  processVideoReactionsPreferenceMessage,
 } from './commentAndReaction'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
@@ -286,22 +286,22 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     return
   }
 
-  if (messageType === 'enableOrDisableCommentSectionOfVideo') {
-    await processEnableOrDisableCommentSectionOfVideoMessage(
+  if (messageType === 'commentSectionPreference') {
+    await processCommentSectionPreferenceMessage(
       ctx,
       owner.asMember,
       channelId,
-      decodedMessage.enableOrDisableCommentSectionOfVideo!
+      decodedMessage.commentSectionPreference!
     )
     return
   }
 
-  if (messageType === 'enableOrDisableReactionsOnVideo') {
-    await processEnableOrDisableReactionsOnVideoMessage(
+  if (messageType === 'videoReactionsPreference') {
+    await processVideoReactionsPreferenceMessage(
       ctx,
       owner.asMember,
       channelId,
-      decodedMessage.enableOrDisableCommentSectionOfVideo!
+      decodedMessage.videoReactionsPreference!
     )
   }
 }

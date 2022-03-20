@@ -170,6 +170,7 @@ type CommentDeletedByModeratorEvent implements Event @entity {
   rationale: String!
 }
 
+# This event entity is both pinning and unpinning the comment
 type CommentPinnedEvent implements Event @entity {
   ### GENERIC DATA ###
 
@@ -193,9 +194,13 @@ type CommentPinnedEvent implements Event @entity {
   "The comment being pinned"
   comment: Comment!
 
+  "The action performed. true if comment is pinned, otherwise false."
+  action: Boolean!
+
   # Only channel owner can pin the comment, so no actor context required
 }
 
+# This event is used for both banning & unbanning the member
 type MemberBannedFromChannelEvent implements Event @entity {
   ### GENERIC DATA ###
 
@@ -220,12 +225,15 @@ type MemberBannedFromChannelEvent implements Event @entity {
   channel: Channel!
 
   "The member being banned from channel"
-  bannedMember: Membership!
+  member: Membership!
+
+  "The action performed. true if member is banned, false if member is unbanned"
+  action: Boolean!
 
   # Only channel owner can pin the comment, so no actor context required
 }
 
-type EnabledOrDisabledCommentSectionEvent implements Event @entity {
+type CommentSectionPreferenceEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -254,7 +262,7 @@ type EnabledOrDisabledCommentSectionEvent implements Event @entity {
   # Only channel owner can enable/disable the comment section, so no actor context required
 }
 
-type EnabledOrDisabledVideoReactionsEvent implements Event @entity {
+type VideoReactionsPreferenceEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"

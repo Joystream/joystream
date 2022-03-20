@@ -1,15 +1,15 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import {
   BanOrUnbanMemberFromChannel,
-  EnableOrDisableCommentSectionOfVideo,
-  EnableOrDisableReactionsOnVideo,
+  CommentSectionPreference,
+  VideoReactionsPreference,
   IBanOrUnbanMemberFromChannel,
   ICreateComment,
   IDeleteComment,
   IDeleteCommentModerator,
   IEditComment,
-  IEnableOrDisableCommentSectionOfVideo,
-  IEnableOrDisableReactionsOnVideo,
+  ICommentSectionPreference,
+  IVideoReactionsPreference,
   IPinOrUnpinComment,
   IReactComment,
   IReactVideo,
@@ -27,13 +27,16 @@ import {
   CommentReactedEvent,
   CommentReaction,
   CommentReactionsCountByReactionId,
+  CommentSectionPreferenceEvent,
   CommentStatus,
   CommentTextUpdatedEvent,
+  MemberBannedFromChannelEvent,
   Membership,
   Video,
   VideoReactedEvent,
   VideoReaction,
   VideoReactionOptions,
+  VideoReactionsPreferenceEvent,
 } from 'query-node/dist/model'
 import { genericEventFields, inconsistentState, logger, newMetaprotocolEntityId } from '../common'
 
@@ -494,12 +497,10 @@ export async function processPinOrUnpinCommentMessage(
     return inconsistentState('Comment has been deleted', commentId)
   }
 
-  // skipping channel owner validation needed to pin the comment, since that is
-  // being performed by joystream runtime in `channel_owner_remarked` extrinsic
-
   const commentPinnedEvent = new CommentPinnedEvent({
     ...genericEventFields(event),
     comment,
+    action: option === PinOrUnpinComment.Option.PIN,
   })
   await store.save<CommentPinnedEvent>(commentPinnedEvent)
 
@@ -529,7 +530,13 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   // load channel
   const channel = await getChannel(store, channelId.toString(), ['bannedMembers'])
 
-  // no events here?
+  const memberBannedFromChannelEvent = new MemberBannedFromChannelEvent({
+    ...genericEventFields(event),
+    channel,
+    member: new Membership({ id: memberId.toString() }),
+    action: option === BanOrUnbanMemberFromChannel.Option.BAN,
+  })
+  await store.save<MemberBannedFromChannelEvent>(memberBannedFromChannelEvent)
 
   // ban member from channel; if member is already banned it remains banned
   if (option === BanOrUnbanMemberFromChannel.Option.BAN) {
@@ -548,11 +555,11 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   await store.save<Channel>(channel)
 }
 
-export async function processEnableOrDisableCommentSectionOfVideoMessage(
+export async function processCommentSectionPreferenceMessage(
   { store, event }: EventContext & StoreContext,
   channelOwnerId: MemberId,
   channelId: ChannelId,
-  message: IEnableOrDisableCommentSectionOfVideo
+  message: ICommentSectionPreference
 ): Promise<void> {
   const { videoId, option } = message
   const eventTime = new Date(event.blockTimestamp)
@@ -567,13 +574,20 @@ export async function processEnableOrDisableCommentSectionOfVideoMessage(
     )
   }
 
+  const commentSectionPreferenceEvent = new CommentSectionPreferenceEvent({
+    ...genericEventFields(event),
+    video,
+    commentSectionStatus: option === CommentSectionPreference.Option.ENABLE,
+  })
+  await store.save<CommentSectionPreferenceEvent>(commentSectionPreferenceEvent)
+
   // enable comments on video; if comments are already enabled it remains as it is.
-  if (option === EnableOrDisableCommentSectionOfVideo.Option.ENABLE) {
+  if (option === CommentSectionPreference.Option.ENABLE) {
     video.isCommentSectionEnabled = true
   }
 
   // disable comments on video; if comments are already disabled it remains as it is.
-  if (option === EnableOrDisableCommentSectionOfVideo.Option.DISABLE) {
+  if (option === CommentSectionPreference.Option.DISABLE) {
     video.isCommentSectionEnabled = false
   }
 
@@ -581,11 +595,11 @@ export async function processEnableOrDisableCommentSectionOfVideoMessage(
   await store.save<Video>(video)
 }
 
-export async function processEnableOrDisableReactionsOnVideoMessage(
+export async function processVideoReactionsPreferenceMessage(
   { store, event }: EventContext & StoreContext,
   channelOwnerId: MemberId,
   channelId: ChannelId,
-  message: IEnableOrDisableReactionsOnVideo
+  message: IVideoReactionsPreference
 ): Promise<void> {
   const { videoId, option } = message
   const eventTime = new Date(event.blockTimestamp)
@@ -600,13 +614,20 @@ export async function processEnableOrDisableReactionsOnVideoMessage(
     )
   }
 
+  const videoReactionsPreferenceEvent = new VideoReactionsPreferenceEvent({
+    ...genericEventFields(event),
+    video,
+    reactionsStatus: option === VideoReactionsPreference.Option.ENABLE,
+  })
+  await store.save<VideoReactionsPreferenceEvent>(videoReactionsPreferenceEvent)
+
   // enable reactions on video; if reactions are already enabled it remains as it is.
-  if (option === EnableOrDisableReactionsOnVideo.Option.ENABLE) {
+  if (option === VideoReactionsPreference.Option.ENABLE) {
     video.isCommentSectionEnabled = true
   }
 
   // disable reactions on video; if reactions are already disabled it remains as it is.
-  if (option === EnableOrDisableReactionsOnVideo.Option.DISABLE) {
+  if (option === VideoReactionsPreference.Option.DISABLE) {
     video.isCommentSectionEnabled = false
   }
 
