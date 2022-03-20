@@ -344,11 +344,18 @@ export async function processDeleteCommentMessage(
   memberId: MemberId,
   message: IDeleteComment
 ): Promise<void> {
-  const { videoId, commentId } = message
+  const { commentId } = message
   const eventTime = new Date(event.blockTimestamp)
 
-  // load video
-  const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
+  // load comment
+  const comment = await getComment(store, commentId, [
+    'author',
+    'parentComment',
+    'video',
+    'video.channel',
+    'video.channel.bannedMembers',
+  ])
+  const { video, author, parentComment } = comment
 
   // ensure member is not banned from channel
   if (video.channel.bannedMembers.includes(new Membership({ id: memberId.toString() }))) {
@@ -363,19 +370,13 @@ export async function processDeleteCommentMessage(
     return inconsistentState('Cannot delete comment; comment section of this video is disabled, videoId: ', video.id)
   }
 
-  // load comment
-  const comment = await getComment(store, commentId, ['author', 'comment'])
-  if (!comment) {
-    return inconsistentState(`comment not found by id: ${commentId}`)
-  }
-
   // ensure comment is not already deleted or moderated (deleted by moderator)
   if (comment.status !== CommentStatus.VISIBLE) {
-    return inconsistentState('Comment has been deleted', commentId)
+    return inconsistentState('Comment has already been deleted', commentId)
   }
 
   // ensure comment is being deleted by author
-  if (comment.author.getId() !== memberId.toString()) {
+  if (author.getId() !== memberId.toString()) {
     return inconsistentState('Only comment author can delete the comment', commentId)
   }
 
@@ -385,7 +386,6 @@ export async function processDeleteCommentMessage(
   await store.save<Video>(video)
 
   // decrement parent comment's replies count
-  const { parentComment } = comment
   if (parentComment) {
     --parentComment.repliesCount
     parentComment.updatedAt = eventTime
@@ -416,16 +416,14 @@ export async function processDeleteCommentModeratorMessage(
   const { videoId, commentId, rationale } = message
   const eventTime = new Date(event.blockTimestamp)
 
-  // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
+  // load comment
+  const comment = await getComment(store, commentId, ['parentComment', 'video', 'video.channel'])
+  const { video, parentComment } = comment
 
   // ensure channel owns the video
   if (video.channel.getId() !== channelId.toString()) {
     return inconsistentState('Given video does not belong to the channelId: ', channelId)
   }
-
-  // load comment
-  const comment = await getComment(store, commentId, ['video'])
 
   // ensure comment belongs to the video
   if (comment.video.id !== videoId.toString()) {
@@ -443,7 +441,6 @@ export async function processDeleteCommentModeratorMessage(
   await store.save<Video>(video)
 
   // decrement parent comment's replies count
-  const { parentComment } = comment
   if (parentComment) {
     --parentComment.repliesCount
     parentComment.updatedAt = eventTime
