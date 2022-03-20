@@ -1,21 +1,23 @@
+import { ReactVideo } from '@joystream/metadata-protobuf'
 import BN from 'bn.js'
+import Long from 'long'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
-  CreateCommentParams,
   CreateChannelsAndVideosFixture,
+  CreateCommentParams,
   CreateCommentsFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
-  ReactToVideosFixture,
-  ReactVideoParams,
+  DeleteCommentParams,
+  DeleteCommentsFixture,
   ReactCommentParams,
   ReactToCommentsFixture,
+  ReactToVideosFixture,
+  ReactVideoParams,
 } from '../../fixtures/content'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
-import Long from 'long'
-import { ReactVideo } from '@joystream/metadata-protobuf'
 
 export default async function comments({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:comments and reactions')
@@ -175,6 +177,21 @@ export default async function comments({ api, query, env }: FlowProps): Promise<
   // check that reactions on videos are working
   const reactToVideosFixture = new ReactToVideosFixture(api, query, videoReactions)
   await new FixtureRunner(reactToVideosFixture).run()
+
+  // Delete comment
+  const deleteComments: DeleteCommentParams[] = [
+    {
+      asMember: participants[0].memberId,
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        commentId: createdCommentsIds[0], // first comment was created by participant[0]
+      },
+    },
+  ]
+
+  // check that delete comment feature is working
+  const deleteCommentsFixture = new DeleteCommentsFixture(api, query, deleteComments)
+  await new FixtureRunner(deleteCommentsFixture).run()
 
   debug('Done')
 }
