@@ -1,4 +1,4 @@
-import { IMemberRemarked, IReactComment, MemberRemarked, ReactVideo } from '@joystream/metadata-protobuf'
+import { IMemberRemarked, IReactComment, MemberRemarked } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -6,7 +6,6 @@ import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
 import { CommentReactedEventFieldsFragment, CommentReactionFieldsFragment } from '../../../graphql/generated/queries'
-import { VideoReactionOptions } from '../../../graphql/generated/schema'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { Utils } from '../../../utils'
@@ -26,14 +25,6 @@ export class ReactToCommentsFixture extends StandardizedFixture {
     this.reactCommentParams = reactVideoParams
   }
 
-  public async getAddedVideoReactionsIds(): Promise<VideoReactionOptions[]> {
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getVideoReactedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    )
-    return qEvents.map((e) => e.reactionResult)
-  }
-
   protected async getEventFromResult(result: ISubmittableResult): Promise<MemberRemarkedEventDetails> {
     return this.api.getEventDetails(result, 'members', 'MemberRemarked')
   }
@@ -44,11 +35,6 @@ export class ReactToCommentsFixture extends StandardizedFixture {
         (await this.api.query.members.membershipById(asMember)).controller_account.toString()
       )
     )
-  }
-
-  public async execute(): Promise<void> {
-    const accounts = await this.getSignerAccountOrAccounts()
-    await super.execute()
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
