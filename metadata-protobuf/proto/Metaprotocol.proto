@@ -102,7 +102,7 @@ message BanOrUnbanMemberFromChannel {
 }
 
 // Enable or disable comment section for a single video
-message EnableOrDisableCommentSectionOfVideo {
+message CommentSectionPreference {
     // ID of the video
     required uint64 video_id = 1;
 
@@ -117,7 +117,7 @@ message EnableOrDisableCommentSectionOfVideo {
 }
 
 // Enable or disable reactions on a single video
-message EnableOrDisableReactionsOnVideo {
+message VideoReactionsPreference {
     // ID of the video
     required uint64 video_id = 1;
 
@@ -136,10 +136,10 @@ message MemberRemarked {
     // any one of the following serialized messages
     oneof member_remarked {
      ReactVideo react_video = 1;
-     ReactComment react_comment = 3;
-     CreateComment create_comment = 5;
-     EditComment edit_comment = 6;
-     DeleteComment delete_comment = 7;
+     ReactComment react_comment = 2;
+     CreateComment create_comment = 3;
+     EditComment edit_comment = 4;
+     DeleteComment delete_comment = 5;
     }
 }
 
@@ -157,7 +157,7 @@ message ChannelOwnerRemarked {
     oneof channel_owner_remarked {
         PinOrUnpinComment pin_or_unpin_comment = 1;
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
-        EnableOrDisableReactionsOnVideo enable_or_disable_reactions_on_video = 3;
-        EnableOrDisableCommentSectionOfVideo enable_or_disable_comment_section_of_video = 5;
+        VideoReactionsPreference video_reactions_preference = 3;
+        CommentSectionPreference comment_section_preference = 4;
     }
 }

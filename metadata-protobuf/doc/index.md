@@ -28,22 +28,22 @@
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CommentSectionPreference](#.CommentSectionPreference)
     - [CreateComment](#.CreateComment)
     - [DeleteComment](#.DeleteComment)
     - [DeleteCommentModerator](#.DeleteCommentModerator)
     - [EditComment](#.EditComment)
-    - [EnableOrDisableCommentSectionOfVideo](#.EnableOrDisableCommentSectionOfVideo)
-    - [EnableOrDisableReactionsOnVideo](#.EnableOrDisableReactionsOnVideo)
     - [MemberRemarked](#.MemberRemarked)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
+    - [VideoReactionsPreference](#.VideoReactionsPreference)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
-    - [EnableOrDisableCommentSectionOfVideo.Option](#.EnableOrDisableCommentSectionOfVideo.Option)
-    - [EnableOrDisableReactionsOnVideo.Option](#.EnableOrDisableReactionsOnVideo.Option)
+    - [CommentSectionPreference.Option](#.CommentSectionPreference.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
     - [ReactVideo.Reaction](#.ReactVideo.Reaction)
+    - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
   
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
@@ -380,8 +380,24 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | ----- | ---- | ----- | ----------- |
 | pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
-| enable_or_disable_reactions_on_video | [EnableOrDisableReactionsOnVideo](#EnableOrDisableReactionsOnVideo) | optional |  |
-| enable_or_disable_comment_section_of_video | [EnableOrDisableCommentSectionOfVideo](#EnableOrDisableCommentSectionOfVideo) | optional |  |
+| video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
+| comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
+
+
+
+
+
+
+<a name=".CommentSectionPreference"></a>
+
+### CommentSectionPreference
+Enable or disable comment section for a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [CommentSectionPreference.Option](#CommentSectionPreference.Option) | required | Selected option to enable or disable comment section |
 
 
 
@@ -455,38 +471,6 @@ edit comment by author
 
 
 
-<a name=".EnableOrDisableCommentSectionOfVideo"></a>
-
-### EnableOrDisableCommentSectionOfVideo
-Enable or disable comment section for a single video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| option | [EnableOrDisableCommentSectionOfVideo.Option](#EnableOrDisableCommentSectionOfVideo.Option) | required | Selected option to enable or disable comment section |
-
-
-
-
-
-
-<a name=".EnableOrDisableReactionsOnVideo"></a>
-
-### EnableOrDisableReactionsOnVideo
-Enable or disable reactions on a single video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| option | [EnableOrDisableReactionsOnVideo.Option](#EnableOrDisableReactionsOnVideo.Option) | required | Selected option to enable or disable comment section |
-
-
-
-
-
-
 <a name=".MemberRemarked"></a>
 
 ### MemberRemarked
@@ -554,6 +538,22 @@ reacting, unreacting, and changing reaction to video
 
 
 
+
+<a name=".VideoReactionsPreference"></a>
+
+### VideoReactionsPreference
+Enable or disable reactions on a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
  
 
 
@@ -569,27 +569,15 @@ reacting, unreacting, and changing reaction to video
 
 
 
-<a name=".EnableOrDisableCommentSectionOfVideo.Option"></a>
+<a name=".CommentSectionPreference.Option"></a>
 
-### EnableOrDisableCommentSectionOfVideo.Option
+### CommentSectionPreference.Option
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
 | DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
-
-
-
-<a name=".EnableOrDisableReactionsOnVideo.Option"></a>
-
-### EnableOrDisableReactionsOnVideo.Option
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
-| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
 
 
 
@@ -615,6 +603,18 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | CANCEL | 0 | This means cancelling any previous reaction |
 | LIKE | 1 |  |
 | UNLIKE | 2 |  |
+
+
+
+<a name=".VideoReactionsPreference.Option"></a>
+
+### VideoReactionsPreference.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
+| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
 
 
  
