@@ -299,6 +299,9 @@ import {
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
   ChannelFieldsFragment,
+  GetChannelsByIds,
+  GetChannelsByIdsQuery,
+  GetChannelsByIdsQueryVariables,
   ChannelCategoryFieldsFragment,
   GetChannelCategoryByIdQuery,
   GetChannelCategoryByIdQueryVariables,
@@ -352,6 +355,22 @@ import {
   GetCommentReactionsByIds,
   GetCommentReactionsByIdsQuery,
   GetCommentReactionsByIdsQueryVariables,
+  MemberBannedFromChannelEventFieldsFragment,
+  GetMemberBannedFromChannelEventsByEventIdsQuery,
+  GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
+  GetMemberBannedFromChannelEventsByEventIds,
+  CommentSectionPreferenceEventFieldsFragment,
+  GetCommentSectionPreferenceEventsByEventIdsQuery,
+  GetCommentSectionPreferenceEventsByEventIdsQueryVariables,
+  GetCommentSectionPreferenceEventsByEventIds,
+  VideoFieldsFragment,
+  GetVideosByIdsQuery,
+  GetVideosByIdsQueryVariables,
+  GetVideosByIds,
+  CommentPinnedEventFieldsFragment,
+  GetCommentPinnedEventsByEventIdsQuery,
+  GetCommentPinnedEventsByEventIdsQueryVariables,
+  GetCommentPinnedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -359,7 +378,8 @@ import { ProposalId } from '@joystream/types/proposals'
 import { BLOCKTIME } from './consts'
 import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
-import { CommentId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/content'
+
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -1138,6 +1158,14 @@ export class QueryNodeApi {
     )
   }
 
+  public async channelsByIds(ids: string[]): Promise<ChannelFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelsByIdsQuery, GetChannelsByIdsQueryVariables>(
+      GetChannelsByIds,
+      { ids },
+      'channels'
+    )
+  }
+
   public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
     return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
       GetChannelCategoryById,
@@ -1188,7 +1216,15 @@ export class QueryNodeApi {
     )
   }
 
-  public async getCommentsByIds(ids: CommentId[]): Promise<VideoCommentFieldsFragment[]> {
+  public async getVideosByIds(ids: VideoId[]): Promise<VideoFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
+      GetVideosByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'videos'
+    )
+  }
+
+  public async getCommentsByIds(ids: string[]): Promise<VideoCommentFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetCommentsByIdsQuery, GetCommentsByIdsQueryVariables>(
       GetCommentsByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -1250,5 +1286,33 @@ export class QueryNodeApi {
       { ids: ids.map((id) => id.toString()) },
       'commentReactions'
     )
+  }
+
+  public async getCommentPinnedEvents(events: EventDetails[]): Promise<CommentPinnedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentPinnedEventsByEventIdsQuery,
+      GetCommentPinnedEventsByEventIdsQueryVariables
+    >(GetCommentPinnedEventsByEventIds, { eventIds }, 'commentPinnedEvents')
+  }
+
+  public async getMemberBannedFromChannelEvents(
+    events: EventDetails[]
+  ): Promise<MemberBannedFromChannelEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMemberBannedFromChannelEventsByEventIdsQuery,
+      GetMemberBannedFromChannelEventsByEventIdsQueryVariables
+    >(GetMemberBannedFromChannelEventsByEventIds, { eventIds }, 'memberBannedFromChannelEvents')
+  }
+
+  public async getCommentSectionPreferenceEvents(
+    events: EventDetails[]
+  ): Promise<CommentSectionPreferenceEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentSectionPreferenceEventsByEventIdsQuery,
+      GetCommentSectionPreferenceEventsByEventIdsQueryVariables
+    >(GetCommentSectionPreferenceEventsByEventIds, { eventIds }, 'commentSectionPreferenceEvents')
   }
 }
