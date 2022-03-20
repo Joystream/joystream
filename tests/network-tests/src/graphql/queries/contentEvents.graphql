@@ -33,8 +33,11 @@ fragment CommentPinnedEventFields on CommentPinnedEvent {
   indexInBlock
   comment {
     id
-    status
+    video {
+      id
+    }
   }
+  action
 }
 
 fragment VideoReactedEventFields on VideoReactedEvent {
@@ -68,6 +71,65 @@ fragment CommentReactedEventFields on CommentReactedEvent {
     id
   }
 }
+
+fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  action
+}
+
+fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  action
+}
+
+fragment CommentSectionPreferenceEventFields on CommentSectionPreferenceEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  commentSectionStatus
+}
+
+fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  reactionsStatus
+}
+
 query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
   commentCreatedEvents(where: { id_in: $eventIds }) {
     ...CommentCreatedEventFields
@@ -95,5 +157,23 @@ query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
 query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
   commentReactedEvents(where: { id_in: $eventIds }) {
     ...CommentReactedEventFields
+  }
+}
+
+query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
+  memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
+    ...MemberBannedFromChannelEventFields
+  }
+}
+
+query getCommentSectionPreferenceEventsByEventIds($eventIds: [ID!]) {
+  commentSectionPreferenceEvents(where: { id_in: $eventIds }) {
+    ...CommentSectionPreferenceEventFields
+  }
+}
+
+query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
+  videoReactionsPreferenceEvents(where: { id_in: $eventIds }) {
+    ...VideoReactionsPreferenceEventFields
   }
 }

@@ -61,6 +61,10 @@ fragment ChannelFields on Channel {
   coverPhoto {
     ...StorageDataObjectFields
   }
+
+  bannedMembers {
+    id
+  }
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
@@ -72,7 +76,6 @@ fragment VideoFields on Video {
   id
   commentsCount
   reactionsCount
-
   comments {
     id
     author {
@@ -83,10 +86,16 @@ fragment VideoFields on Video {
     }
     text
   }
-
   reactions {
     id
+    member {
+      id
+    }
     reaction
+  }
+  isCommentSectionEnabled
+  pinnedComment {
+    id
   }
 }
 
@@ -168,6 +177,12 @@ fragment OwnedNftFields on OwnedNft {
 
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
+    ...ChannelFields
+  }
+}
+
+query getChannelsByIds($ids: [ID!]) {
+  channels(where: { id_in: $ids }) {
     ...ChannelFields
   }
 }
