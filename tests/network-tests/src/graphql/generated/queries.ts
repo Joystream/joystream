@@ -60,6 +60,7 @@ export type ChannelFieldsFragment = {
   category?: Types.Maybe<{ name?: Types.Maybe<string> }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
+  bannedMembers: Array<{ id: string }>
 }
 
 export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
@@ -68,8 +69,10 @@ export type VideoFieldsFragment = {
   id: string
   commentsCount: number
   reactionsCount: number
+  isCommentSectionEnabled: boolean
   comments: Array<{ id: string; text: string; author: { id: string }; video: { id: string } }>
-  reactions: Array<{ id: string; reaction: Types.VideoReactionOptions }>
+  reactions: Array<{ id: string; reaction: Types.VideoReactionOptions; member: { id: string } }>
+  pinnedComment?: Types.Maybe<{ id: string }>
 }
 
 export type VideoCommentFieldsFragment = {
@@ -120,6 +123,12 @@ export type GetChannelByIdQueryVariables = Types.Exact<{
 }>
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+
+export type GetChannelsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
 
 export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
@@ -222,7 +231,8 @@ export type CommentPinnedEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  comment: { id: string; status: Types.CommentStatus }
+  action: boolean
+  comment: { id: string; video: { id: string } }
 }
 
 export type VideoReactedEventFieldsFragment = {
@@ -247,6 +257,40 @@ export type CommentReactedEventFieldsFragment = {
   reactionResult: number
   comment: { id: string }
   reactingMember: { id: string }
+}
+
+export type MemberBannedFromChannelEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  action: boolean
+  channel: { id: string }
+  member: { id: string }
+}
+
+export type CommentSectionPreferenceEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  commentSectionStatus: boolean
+  video: { id: string }
+}
+
+export type VideoReactionsPreferenceEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  reactionsStatus: boolean
+  video: { id: string }
 }
 
 export type GetCommentCreatedEventsByEventIdsQueryVariables = Types.Exact<{
@@ -278,6 +322,30 @@ export type GetCommentReactedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetCommentReactedEventsByEventIdsQuery = { commentReactedEvents: Array<CommentReactedEventFieldsFragment> }
+
+export type GetMemberBannedFromChannelEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMemberBannedFromChannelEventsByEventIdsQuery = {
+  memberBannedFromChannelEvents: Array<MemberBannedFromChannelEventFieldsFragment>
+}
+
+export type GetCommentSectionPreferenceEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentSectionPreferenceEventsByEventIdsQuery = {
+  commentSectionPreferenceEvents: Array<CommentSectionPreferenceEventFieldsFragment>
+}
+
+export type GetVideoReactionsPreferenceEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoReactionsPreferenceEventsByEventIdsQuery = {
+  videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEventFieldsFragment>
+}
 
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
@@ -2264,6 +2332,9 @@ export const ChannelFields = gql`
     coverPhoto {
       ...StorageDataObjectFields
     }
+    bannedMembers {
+      id
+    }
   }
   ${StorageDataObjectFields}
 `
@@ -2290,7 +2361,14 @@ export const VideoFields = gql`
     }
     reactions {
       id
+      member {
+        id
+      }
       reaction
+    }
+    isCommentSectionEnabled
+    pinnedComment {
+      id
     }
   }
 `
@@ -2411,8 +2489,11 @@ export const CommentPinnedEventFields = gql`
     indexInBlock
     comment {
       id
-      status
+      video {
+        id
+      }
     }
+    action
   }
 `
 export const VideoReactedEventFields = gql`
@@ -2447,6 +2528,51 @@ export const CommentReactedEventFields = gql`
     reactingMember {
       id
     }
+  }
+`
+export const MemberBannedFromChannelEventFields = gql`
+  fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    member {
+      id
+    }
+    action
+  }
+`
+export const CommentSectionPreferenceEventFields = gql`
+  fragment CommentSectionPreferenceEventFields on CommentSectionPreferenceEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    commentSectionStatus
+  }
+`
+export const VideoReactionsPreferenceEventFields = gql`
+  fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    reactionsStatus
   }
 `
 export const CouncilMemberFields = gql`
@@ -4228,6 +4354,14 @@ export const GetChannelById = gql`
   }
   ${ChannelFields}
 `
+export const GetChannelsByIds = gql`
+  query getChannelsByIds($ids: [ID!]) {
+    channels(where: { id_in: $ids }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
 export const GetChannelCategoryById = gql`
   query getChannelCategoryById($id: ID!) {
     channelCategoryByUniqueInput(where: { id: $id }) {
@@ -4363,6 +4497,30 @@ export const GetCommentReactedEventsByEventIds = gql`
     }
   }
   ${CommentReactedEventFields}
+`
+export const GetMemberBannedFromChannelEventsByEventIds = gql`
+  query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
+    memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
+      ...MemberBannedFromChannelEventFields
+    }
+  }
+  ${MemberBannedFromChannelEventFields}
+`
+export const GetCommentSectionPreferenceEventsByEventIds = gql`
+  query getCommentSectionPreferenceEventsByEventIds($eventIds: [ID!]) {
+    commentSectionPreferenceEvents(where: { id_in: $eventIds }) {
+      ...CommentSectionPreferenceEventFields
+    }
+  }
+  ${CommentSectionPreferenceEventFields}
+`
+export const GetVideoReactionsPreferenceEventsByEventIds = gql`
+  query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
+    videoReactionsPreferenceEvents(where: { id_in: $eventIds }) {
+      ...VideoReactionsPreferenceEventFields
+    }
+  }
+  ${VideoReactionsPreferenceEventFields}
 `
 export const GetCurrentCouncilMembers = gql`
   query getCurrentCouncilMembers {
