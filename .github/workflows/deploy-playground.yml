@@ -27,8 +27,8 @@ on:
         description: 'Optionally skip running newChainSetup script (true or false)'
         required: true
         default: 'false'
-      proposalParameters:
-        description: 'Proposal Parameters (refer to runtime/src/proposals_configuration/sample_proposal_parameters.json for sample)'
+      runtimeProfile:
+        description: 'STAGING | TESTING - leave balnk for production'
         required: false
       # TODO: customDomain instead of ip_address.nip.io
       # customDomain:
@@ -93,7 +93,7 @@ jobs:
                           branch_name=${{ github.event.inputs.branchName }} \
                           skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
                           stack_name=${{ env.STACK_NAME }} \
-                          proposal_parameters=${{ github.event.inputs.proposalParameters }}"
+                          runtime_profile=${{ github.event.inputs.runtimeProfile }}"
 
       - name: Save the endpoints file as an artifact
         uses: actions/upload-artifact@v2

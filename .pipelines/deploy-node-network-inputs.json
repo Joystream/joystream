@@ -59,9 +59,9 @@
     "description": "Password to encrypt the artifacts",
     "value": "password"
   },
-  "proposalParameters": {
-    "description": "Proposal Parameters",
-    "value": {}
+  "runtimeProfile": {
+    "description": "STAGING | TESTING - leave empty for production",
+    "value": ""
   },
   "skipChainSetup": {
     "description": "Set to true to skip running setup new chain scenario",
