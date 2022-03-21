@@ -16,6 +16,11 @@ HOST_IP=$(tests/network-tests/get-host-ip.sh)
 ## Colossus 1
 CLI=storage-node/bin/run
 TRANSACTOR_KEY=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${COLOSSUS_1_TRANSACTOR_URI} --output-type json | jq .ss58Address -r)
+# Send some funds to TRANSACTOR to cover the acceptPendingDataObjects fees
+export AUTO_CONFIRM=true
+FUNDS_SOURCE_KEY=5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+TRANSACTOR_INITIAL_BALANCE=100000
+yarn joystream-cli account:transferTokens --amount ${TRANSACTOR_INITIAL_BALANCE} --from ${FUNDS_SOURCE_KEY}  --to ${TRANSACTOR_KEY}
 
 ${CLI} leader:update-bag-limit -l 10 --accountUri ${COLOSSUS_1_WORKER_URI}
 ${CLI} leader:update-voucher-limits -o 10000 -s 1000000000000 --accountUri ${COLOSSUS_1_WORKER_URI}

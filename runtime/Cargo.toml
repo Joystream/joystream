@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '10.0.0'
+version = '10.3.0'
 
 [dependencies]
 # Third-party dependencies
@@ -54,6 +54,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', default-features = false, optional = true }
@@ -64,7 +65,6 @@ hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
@@ -135,11 +135,11 @@ std = [
     'pallet-sudo/std',
     'pallet-im-online/std',
     'pallet-offences/std',
+    'pallet-vesting/std',
     'substrate-utility/std',
 
     # Joystream
     'common/std',
-    'memo/std',
     'forum/std',
     'membership/std',
     'council/std',

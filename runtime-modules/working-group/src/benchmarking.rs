@@ -935,6 +935,31 @@ benchmarks_instance! {
             "Worker hasn't started leaving"
         );
     }
+
+    lead_remark {
+        let (caller_id, _) = insert_a_worker::<T, I>(
+            OpeningType::Leader,
+            0,
+            None
+        );
+        let msg = b"test".to_vec();
+    }: _ (RawOrigin::Signed(caller_id), msg.clone())
+        verify {
+            assert_last_event::<T, I>(RawEvent::LeadRemarked(msg).into());
+        }
+
+    worker_remark {
+        let (lead_id, _) =
+            insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
+        let (caller_id, worker_id) = insert_a_worker::<T, I>(
+            OpeningType::Regular,
+            1,
+            Some(lead_id.clone()));
+        let msg = b"test".to_vec();
+    }: _ (RawOrigin::Signed(caller_id), worker_id, msg.clone())
+        verify {
+            assert_last_event::<T, I>(RawEvent::WorkerRemarked(worker_id, msg).into());
+    }
 }
 
 #[cfg(test)]
@@ -1103,6 +1128,20 @@ mod tests {
     fn test_fund_working_group_budget() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_fund_working_group_budget::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_lead_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_lead_remark::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_worker_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_worker_remark::<Test>());
         });
     }
 }

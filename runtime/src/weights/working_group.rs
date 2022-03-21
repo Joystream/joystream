@@ -140,4 +140,10 @@ impl working_group::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
+    fn lead_remark() -> Weight {
+        (279_387_000 as Weight).saturating_add(DbWeight::get().reads(2 as Weight))
+    }
+    fn worker_remark() -> Weight {
+        (302_419_000 as Weight).saturating_add(DbWeight::get().reads(1 as Weight))
+    }
 }

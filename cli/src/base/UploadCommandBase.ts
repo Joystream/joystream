@@ -26,7 +26,7 @@ import { u8aToHex, formatBalance } from '@polkadot/util'
 import { KeyringPair } from '@polkadot/keyring/types'
 import FormData from 'form-data'
 import BN from 'bn.js'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { StorageAssets } from '@joystream/types/content'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
@@ -35,6 +35,10 @@ ffmpeg.setFfprobePath(ffprobeInstaller.path)
  * Abstract base class for commands that require uploading functionality
  */
 export default abstract class UploadCommandBase extends ContentDirectoryCommandBase {
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   private fileSizeCache: Map<string, number> = new Map<string, number>()
   private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
@@ -187,7 +191,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async generateDataObjectParameters(filePath: string): Promise<DataObjectCreationParameters> {
-    return createTypeFromConstructor(DataObjectCreationParameters, {
+    return createType<DataObjectCreationParameters, 'DataObjectCreationParameters'>('DataObjectCreationParameters', {
       size: this.getFileSize(filePath),
       ipfsContentId: await this.calculateFileHash(filePath),
     })
@@ -359,7 +363,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           )} (recoverable on data object(s) removal)\n` +
           `Are you sure you want to continue?`
       )
-      return createTypeFromConstructor(StorageAssets, {
+      return createType<StorageAssets, 'StorageAssets'>('StorageAssets', {
         expected_data_size_fee: feePerMB,
         object_creation_list: resolvedAssets.map((a) => a.parameters),
       })

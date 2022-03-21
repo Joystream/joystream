@@ -94,6 +94,8 @@ pub trait WeightInfo {
     fn add_opening(i: u32) -> Weight;
     fn leave_role(i: u32) -> Weight;
     fn fund_working_group_budget() -> Weight;
+    fn lead_remark() -> Weight;
+    fn worker_remark() -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -299,6 +301,17 @@ decl_event!(
         /// - Amount of balance
         /// - Rationale
         WorkingGroupBudgetFunded(MemberId, Balance, Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - message
+        LeadRemarked(Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - worker
+        /// - message
+        WorkerRemarked(WorkerId, Vec<u8>),
     }
 );
 
@@ -1221,6 +1234,47 @@ decl_module! {
                 )
             );
         }
+
+        /// Lead remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
+        pub fn lead_remark(origin, msg: Vec<u8>) {
+            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::LeadRemarked(msg));
+        }
+
+        /// Worker remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
+        pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
+            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
+        }
+
     }
 }
 

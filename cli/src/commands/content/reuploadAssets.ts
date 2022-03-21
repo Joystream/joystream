@@ -14,13 +14,14 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
       required: true,
       description: 'Path to JSON file containing array of assets to reupload (contentIds and paths)',
     }),
+    ...UploadCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { input } = this.parse(ReuploadVideoAssetsCommand).flags
 
     // Get context
-    const [memberId, membership] = await this.getRequiredMemberContext()
+    const { id: memberId, membership } = await this.getRequiredMemberContext()
 
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)

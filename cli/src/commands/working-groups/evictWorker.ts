@@ -18,7 +18,6 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
   ]
 
   static flags = {
-    ...WorkingGroupsCommandBase.flags,
     penalty: flags.string({
       description: 'Optional penalty in JOY',
       required: false,
@@ -27,11 +26,12 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       description: 'Optional rationale',
       required: false,
     }),
+    ...WorkingGroupsCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const {
-       args,
+      args,
       flags: { penalty, rationale },
     } = this.parse(WorkingGroupsEvictWorker)
 

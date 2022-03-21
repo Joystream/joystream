@@ -1,14 +1,15 @@
 import { getInputJson } from '../../helpers/InputOutput'
-import { ChannelInputParameters } from '../../Types'
+import { ChannelCreationInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { createType } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
-import { ChannelInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelCreationInputSchema } from '../../schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import chalk from 'chalk'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId } from '@joystream/types/common'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -19,6 +20,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...UploadCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -29,14 +31,19 @@ export default class CreateChannelCommand extends UploadCommandBase {
       context = await this.promptForChannelCreationContext()
     }
     const [actor, address] = await this.getContentActor(context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
-    const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
+    const channelInput = await getInputJson<ChannelCreationInputParameters>(input, ChannelCreationInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
+    const { collaborators, moderators, rewardAccount } = channelInput
 
-    if (channelInput.collaborators) {
-      await this.validateCollaborators(channelInput.collaborators)
+    if (collaborators) {
+      await this.validateMemberIdsSet(collaborators, 'collaborator')
+    }
+
+    if (moderators) {
+      await this.validateMemberIdsSet(moderators, 'moderator')
     }
 
     const { coverPhotoPath, avatarPhotoPath } = channelInput
@@ -54,12 +61,15 @@ export default class CreateChannelCommand extends UploadCommandBase {
       {
         assets,
         meta: metadataToBytes(ChannelMetadata, meta),
-        collaborators: channelInput.collaborators,
-        reward_account: channelInput.rewardAccount,
+        collaborators,
+        moderators,
+        reward_account: rewardAccount,
       }
     )
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
+    this.jsonPrettyPrint(
+      JSON.stringify({ assets: assets?.toJSON(), metadata: meta, collaborators, moderators, rewardAccount })
+    )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
@@ -68,9 +78,10 @@ export default class CreateChannelCommand extends UploadCommandBase {
       channelCreationParameters,
     ])
 
-    const channelCreatedEvent = this.findEvent(result, 'content', 'ChannelCreated')
-    const channelId = channelCreatedEvent!.data[1]
+    const channelCreatedEvent = this.getEvent(result, 'content', 'ChannelCreated')
+    const channelId: ChannelId = channelCreatedEvent.data[1]
     this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
+    this.output(channelId.toString())
 
     const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
     if (dataObjectsUploadedEvent) {

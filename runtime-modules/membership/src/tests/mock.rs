@@ -232,6 +232,13 @@ impl working_group::WeightInfo for Weights {
     fn fund_working_group_budget() -> Weight {
         0
     }
+    fn lead_remark() -> Weight {
+        unimplemented!()
+    }
+
+    fn worker_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 // impl WeightInfo for () {

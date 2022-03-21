@@ -11,6 +11,7 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
       required: false,
       description: 'rationale',
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [

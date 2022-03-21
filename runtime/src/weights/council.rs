@@ -74,4 +74,10 @@ impl council::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
+    fn councilor_remark() -> Weight {
+        (406_707_000 as Weight).saturating_add(DbWeight::get().reads(2 as Weight))
+    }
+    fn candidate_remark() -> Weight {
+        (406_707_000 as Weight).saturating_add(DbWeight::get().reads(2 as Weight))
+    }
 }

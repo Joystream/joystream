@@ -220,6 +220,8 @@ pub trait WeightInfo {
     fn set_budget() -> Weight;
     fn plan_budget_refill() -> Weight;
     fn fund_council_budget() -> Weight;
+    fn councilor_remark() -> Weight;
+    fn candidate_remark() -> Weight;
 }
 
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
@@ -372,7 +374,7 @@ decl_event! {
         /// New council was elected and appointed
         NewCouncilElected(Vec<MemberId>),
 
-        /// New council was elected and appointed
+        /// New council was not elected
         NewCouncilNotElected(),
 
         /// Candidacy stake that was no longer needed was released
@@ -411,6 +413,12 @@ decl_event! {
         /// - Amount of balance
         /// - Rationale
         CouncilBudgetFunded(MemberId, Balance, Vec<u8>),
+
+        /// Councilor remark message
+        CouncilorRemarked(MemberId, Vec<u8>),
+
+        /// Candidate remark message
+        CandidateRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -481,6 +489,9 @@ decl_error! {
 
         /// Trying to fund with zero tokens
         ZeroTokensFunding,
+
+        /// Candidate id not found
+        CandidateDoesNotExist,
     }
 }
 
@@ -915,6 +926,57 @@ decl_module! {
             );
         }
 
+        /// Councilor makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::councilor_remark()]
+        pub fn councilor_remark(
+            origin,
+            councilor_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            Self::ensure_member_consulate(origin, councilor_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CouncilorRemarked(councilor_id, msg));
+        }
+
+        /// Candidate makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::candidate_remark()]
+        pub fn candidate_remark(
+            origin,
+            candidate_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            EnsureChecks::<T>::ensure_user_membership(origin, &candidate_id)?;
+            ensure!(
+                Self::is_valid_candidate_id(&candidate_id),
+                Error::<T>::CandidateDoesNotExist,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
+        }
     }
 }
 

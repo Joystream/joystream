@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+# THIS IS JUST A REFERENCE SCRIPT, NOT USED FOR ACTUAL GIZA->OLYMPIA TESTING
+
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
-TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=latest}
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
 # The joystream/node docker image tag to start the chain with
 RUNTIME_TAG=${RUNTIME_TAG:=sumer}
 # Post migration assertions by means of typescript scenarios required
@@ -37,14 +39,14 @@ function fork_off_init() {
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
     docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
 
-    # RPC endpoint for live RUNTIME testnet 
+    # RPC endpoint for live RUNTIME testnet
     WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" \
         yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
 function export_chainspec_file_to_disk() {
     echo "**** Initializing node database by exporting state ****"
-    # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time 
+    # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
     docker-compose -f ../../docker-compose.yml run \
 		   -v ${DATA_PATH}:/spec joystream-node export-state \
 		   --chain /spec/chain-spec-raw.json \
@@ -68,7 +70,7 @@ function main {
 
     # export chain-spec BEFORE starting the node
     export_chainspec_file_to_disk
-    
+
     echo "***** STARTING NODE WITH FORKED STATE *****"
     CONTAINER_ID=$(start_node)
 

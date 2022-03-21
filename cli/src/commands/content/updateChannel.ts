@@ -1,11 +1,11 @@
 import { getInputJson } from '../../helpers/InputOutput'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
-import { ChannelInputParameters } from '../../Types'
+import { ChannelUpdateInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { CreateInterface, createType } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
-import { ChannelInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelUpdateInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
@@ -23,6 +23,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...UploadCommandBase.flags,
   }
 
   static args = [
@@ -82,25 +83,25 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     // Context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const [memberId] = await this.getRequiredMemberContext(true)
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
-    const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
+    const channelInput = await getInputJson<ChannelUpdateInputParameters>(input, ChannelUpdateInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
+    const { collaborators, rewardAccount, coverPhotoPath, avatarPhotoPath } = channelInput
 
-    if (channelInput.rewardAccount !== undefined && actor.type === 'Collaborator') {
-      this.error("Collaborators are not allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
+    if (rewardAccount !== undefined && !this.isChannelOwner(channel, actor)) {
+      this.error("Only channel owner is allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
     }
 
-    if (channelInput.collaborators !== undefined && actor.type === 'Collaborator') {
-      this.error("Collaborators are not allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
+    if (collaborators !== undefined && !this.isChannelOwner(channel, actor)) {
+      this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
     }
 
-    if (channelInput.collaborators) {
-      await this.validateCollaborators(channelInput.collaborators)
+    if (collaborators) {
+      await this.validateMemberIdsSet(collaborators, 'collaborator')
     }
 
-    const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
     const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
       { coverPhotoPath, avatarPhotoPath },
       input
@@ -118,17 +119,22 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
-    const collaborators = createType('Option<BTreeSet<MemberId>>', channelInput.collaborators)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets_to_upload: assetsToUpload,
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
-      collaborators,
+      collaborators: createType('Option<BTreeSet<MemberId>>', collaborators),
     }
 
     this.jsonPrettyPrint(
-      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), assetsToRemove, metadata: meta, rewardAccount })
+      JSON.stringify({
+        assetsToUpload: assetsToUpload?.toJSON(),
+        assetsToRemove,
+        metadata: meta,
+        rewardAccount,
+        collaborators,
+      })
     )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
