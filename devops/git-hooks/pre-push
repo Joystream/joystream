@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e
 
+FEATURES=
+if [[ "$RUNTIME_PROFILE" == "TESTING" ]]; then
+  FEATURES="testing_runtime"
+fi
+
+if [[ "$RUNTIME_PROFILE" == "STAGING" ]]; then
+  FEATURES="staging_runtime"
+fi
+
 export WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
 
 echo 'running clippy (rust linter)'
@@ -10,4 +19,4 @@ echo 'running clippy (rust linter)'
 BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2021-02-20 clippy --release --all -- -D warnings
 
 echo 'running cargo unit tests'
-cargo +nightly-2021-02-20 test --release --all --features ""
+cargo +nightly-2021-02-20 test --release --all --features ${FEATURES}
