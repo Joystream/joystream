@@ -14,7 +14,6 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ARG ALL_PROPOSALS_PARAMETERS_JSON
 ARG CARGO_FEATURES
 RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
 RUN export WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 && \

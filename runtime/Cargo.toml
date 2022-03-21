@@ -184,8 +184,9 @@ runtime-benchmarks = [
     'storage/runtime-benchmarks',       
     "blog/runtime-benchmarks",
 ]
-# Features to configure different runtime configurations
+
+# Staging and testing configurations
 # configuration suitable for staging networks and playground
-staging_env = []
+staging_runtime = []
 # configuration suitable for integration testing
-testing_env = []
+testing_runtime = []

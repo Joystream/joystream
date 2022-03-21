@@ -9,6 +9,10 @@
 #![allow(non_fmt_panic)]
 #![allow(clippy::from_over_into)]
 
+// Mutually exclusive feature check
+#[cfg(all(feature = "staging_runtime", feature = "testing_runtime"))]
+compile_error!("feature \"staging_runtime\" and feature \"testing_runtime\" cannot be enabled at the same time");
+
 // Make the WASM binary available.
 // This is required only by the node build.
 // A dummy wasm_binary.rs will be built for the IDE.
@@ -91,7 +95,12 @@ pub use content::MaxNumber;
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
+    #[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
     spec_name: create_runtime_str!("joystream-node"),
+    #[cfg(feature = "staging_runtime")]
+    spec_name: create_runtime_str!("joystream-node-staging"),
+    #[cfg(feature = "testing_runtime")]
+    spec_name: create_runtime_str!("joystream-node-testing"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
     spec_version: 3,

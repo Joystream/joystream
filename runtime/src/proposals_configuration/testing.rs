@@ -1,4 +1,5 @@
-//! This module contains default "production" parameters configuration for the runtime codex proposals.
+//! This module contains testing parameters for the runtime codex proposals,
+//! suitable for automated integration testing.
 
 use crate::{Balance, BlockNumber, ProposalParameters};
 
