@@ -212,11 +212,12 @@ export interface CategoryId extends u64 {}
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
-  readonly is_censored: bool;
-  readonly reward_account: Option<GenericAccountId>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
+  readonly privilege_level: ChannelPrivilegeLevel;
+  readonly paused_features: BTreeSet<PausableChannelFeature>;
+  readonly transfer_status: ChannelTransferStatus;
 }
 
 /** @name ChannelCategory */
@@ -239,7 +240,6 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly reward_account: Option<GenericAccountId>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
 }
@@ -255,11 +255,26 @@ export interface ChannelOwner extends Enum {
   readonly asCurators: CuratorGroupId;
 }
 
+/** @name ChannelPrivilegeLevel */
+export interface ChannelPrivilegeLevel extends u8 {}
+
+/** @name ChannelTransferStatus */
+export interface ChannelTransferStatus extends Enum {
+  readonly isNoActiveTransfer: boolean;
+  readonly isPendingTransfer: boolean;
+  readonly asPendingTransfer: ChannelTransferStatus_PendingTransfer;
+}
+
+/** @name ChannelTransferStatus_PendingTransfer */
+export interface ChannelTransferStatus_PendingTransfer extends Struct {
+  readonly new_owner: ChannelOwner;
+  readonly transfer_params: TransferParameters;
+}
+
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<GenericAccountId>>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly collaborators: Option<BTreeSet<MemberId>>;
 }
@@ -283,6 +298,19 @@ export interface ContentActor extends Enum {
 
 /** @name ContentIdSet */
 export interface ContentIdSet extends BTreeSet<Cid> {}
+
+/** @name ContentModerationAction */
+export interface ContentModerationAction extends Enum {
+  readonly isHideVideo: boolean;
+  readonly isHideChannel: boolean;
+  readonly isChangeChannelFeatureStatus: boolean;
+  readonly asChangeChannelFeatureStatus: PausableChannelFeature;
+  readonly isDeleteVideo: boolean;
+  readonly isDeleteChannel: boolean;
+}
+
+/** @name ContentModerationActionsSet */
+export interface ContentModerationActionsSet extends BTreeSet<ContentModerationAction> {}
 
 /** @name CouncilMemberOf */
 export interface CouncilMemberOf extends Struct {
@@ -331,6 +359,7 @@ export interface CreateOpeningParameters extends Struct {
 export interface CuratorGroup extends Struct {
   readonly curators: BTreeSet<CuratorId>;
   readonly active: bool;
+  readonly permissions_by_level: ModerationPermissionsByLevel;
 }
 
 /** @name CuratorGroupId */
@@ -606,6 +635,9 @@ export interface Membership extends Struct {
   readonly invites: u32;
 }
 
+/** @name ModerationPermissionsByLevel */
+export interface ModerationPermissionsByLevel extends BTreeMap<ChannelPrivilegeLevel, ContentModerationActionsSet> {}
+
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 
@@ -706,6 +738,17 @@ export interface OwnedNft extends Struct {
 
 /** @name ParticipantId */
 export interface ParticipantId extends u64 {}
+
+/** @name PausableChannelFeature */
+export interface PausableChannelFeature extends Enum {
+  readonly isChannelFundsTransfer: boolean;
+  readonly isCreatorCashout: boolean;
+  readonly isVideoNftIssuance: boolean;
+  readonly isVideoCreation: boolean;
+  readonly isVideoUpdate: boolean;
+  readonly isChannelUpdate: boolean;
+  readonly isCreatorTokenIssuance: boolean;
+}
 
 /** @name Penalty */
 export interface Penalty extends Struct {
@@ -1105,6 +1148,12 @@ export interface TransactionalStatus extends Enum {
   readonly asBuyNow: u128;
 }
 
+/** @name TransferParameters */
+export interface TransferParameters extends Struct {
+  readonly new_collaborators: BTreeSet<MemberId>;
+  readonly price: u128;
+}
+
 /** @name UpdatedBody */
 export interface UpdatedBody extends Option<Text> {}
 
@@ -1125,7 +1174,6 @@ export interface Url extends Text {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
-  readonly is_censored: bool;
   readonly enable_comments: bool;
   readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;

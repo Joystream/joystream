@@ -313,29 +313,6 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     }
 }
 
-// Ensure actor can censor
-pub fn ensure_actor_authorized_to_censor<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    // Only lead and curators can censor channels and videos
-    // Only lead can censor curator group owned channels and videos
-    let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    match actor {
-        ContentActor::Lead => Ok(()),
-        ContentActor::Curator(..) => {
-            ensure!(
-                !ensure_channel_is_owned_by_curators::<T>(owner).is_ok(),
-                Error::<T>::CannotCensoreCuratorGroupOwnedChannels,
-            );
-            Ok(())
-        }
-        ContentActor::Member(_) => Err(Error::<T>::ActorNotAuthorized.into()),
-    }
-}
-
 // Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,
@@ -479,6 +456,27 @@ pub fn ensure_authorized_to_update_max_reward<T: Trait>(sender: &T::AccountId) -
 
 pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
+}
+
+/// Moderation actions (curator/lead)
+
+pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actions: &[ContentModerationAction],
+    channel_privilege_level: T::ChannelPrivilegeLevel,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(&sender, &actor)?;
+    // Ensure actor is either lead of part of curators group with sufficient permissions
+    match actor {
+        ContentActor::Lead => Ok(()),
+        ContentActor::Curator(curator_group_id, ..) => {
+            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            group.ensure_can_perform_actions(actions, channel_privilege_level)?;
+            Ok(())
+        }
+        _ => Err(Error::<T>::ActorNotAuthorized.into()),
+    }
 }
 
 /// Transfer channels permissions

@@ -5,12 +5,84 @@ use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_std::cmp::min;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::{IntoIterator, Iterator};
+use std::iter::FromIterator;
+use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
 // fixtures
+
+pub struct CreateCuratorGroupFixture {
+    sender: AccountId,
+    is_active: bool,
+    permissions: ModerationPermissionsByLevel<Test>,
+}
+
+impl CreateCuratorGroupFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            is_active: false,
+            permissions: BTreeMap::new(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_is_active(self, is_active: bool) -> Self {
+        Self { is_active, ..self }
+    }
+
+    pub fn with_permissions(self, permissions: &ModerationPermissionsByLevel<Test>) -> Self {
+        Self {
+            permissions: permissions.clone(),
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<CuratorGroupId> {
+        let new_group_id = Content::next_curator_group_id();
+        let actual_result = Content::create_curator_group(
+            Origin::signed(self.sender),
+            self.is_active,
+            self.permissions.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CuratorGroupCreated(new_group_id))
+            );
+
+            assert!(CuratorGroupById::<Test>::contains_key(new_group_id));
+            let group = Content::curator_group_by_id(new_group_id);
+
+            assert_eq!(group.is_active(), self.is_active);
+            assert_eq!(group.get_curators().len(), 0);
+            assert_eq!(
+                group.get_permissions_by_level().len(),
+                self.permissions.len()
+            );
+            for i in 0..self.permissions.len() {
+                let index = i as u8;
+                assert_eq!(
+                    group.get_permissions_by_level().get(&index),
+                    self.permissions.get(&index)
+                );
+            }
+
+            Some(new_group_id)
+        } else {
+            None
+        }
+    }
+}
+
 pub struct CreateChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -105,11 +177,12 @@ impl CreateChannelFixture {
                     channel_id,
                     Channel::<Test> {
                         owner: owner,
-                        is_censored: false,
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
+                        privilege_level: Zero::zero(),
+                        paused_features: BTreeSet::new(),
                         transfer_status: Default::default(),
                     },
                     self.params.clone(),
@@ -159,7 +232,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
@@ -288,7 +361,7 @@ impl UpdateChannelFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(), // channel index starts at 1
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: None,
@@ -399,7 +472,6 @@ impl UpdateChannelFixture {
                         self.channel_id,
                         ChannelRecord {
                             owner,
-                            is_censored: channel_pre.is_censored,
                             collaborators: self
                                 .params
                                 .collaborators
@@ -408,6 +480,8 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
+                            privilege_level: Zero::zero(),
+                            paused_features: BTreeSet::new(),
                             transfer_status: Default::default(),
                         },
                         self.params.clone(),
@@ -439,6 +513,67 @@ impl UpdateChannelFixture {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                     }))
                 }
+            }
+        }
+    }
+}
+
+pub struct UpdateChannelPrivilegeLevelFixture {
+    sender: AccountId,
+    channel_id: ChannelId,
+    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+}
+
+impl UpdateChannelPrivilegeLevelFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            channel_id: ChannelId::one(), // channel index starts at 1
+            privilege_level: <Test as Trait>::ChannelPrivilegeLevel::one(), // default privilege level is 0
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_privilege_level(
+        self,
+        privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    ) -> Self {
+        Self {
+            privilege_level,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let channel_pre = Content::channel_by_id(&self.channel_id);
+        let actual_result =
+            Content::update_channel_privilege_level(origin, self.channel_id, self.privilege_level);
+        let channel_post = Content::channel_by_id(&self.channel_id);
+        assert_eq!(actual_result, expected_result);
+        match actual_result {
+            Ok(()) => {
+                // Event emitted
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelPrivilegeLevelUpdated(
+                        self.channel_id,
+                        self.privilege_level,
+                    ))
+                );
+                // Privilege level updated
+                assert_eq!(channel_post.privilege_level, self.privilege_level);
+            }
+            Err(_err) => {
+                // Channel not changed
+                assert_eq!(channel_pre, channel_post);
             }
         }
     }
@@ -596,6 +731,67 @@ impl UpdateVideoFixture {
     }
 }
 
+pub trait ChannelDeletion {
+    fn get_sender(&self) -> &AccountId;
+    fn get_channel_id(&self) -> &ChannelId;
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId>;
+    fn get_num_objects_to_delete(&self) -> u64;
+    fn execute_call(&self) -> DispatchResult;
+    fn expected_event_on_success(&self) -> MetaEvent;
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
+        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
+            .deletion_prize
+            .unwrap_or(BalanceOf::<Test>::zero());
+        let objects_deletion_prize =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
+                    acc + obj.deletion_prize
+                });
+
+        let channel_objects_ids =
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
+                .map(|(id, _)| id)
+                .collect::<BTreeSet<_>>();
+
+        let actual_result = self.execute_call();
+
+        let balance_post = Balances::<Test>::usable_balance(self.get_sender());
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    self.expected_event_on_success()
+                );
+
+                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
+
+                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+                assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
+                assert!(!channel_objects_ids.iter().any(|id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                }));
+                assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+            }
+
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+                if err != Error::<Test>::ChannelDoesNotExist.into() {
+                    assert!(ChannelById::<Test>::contains_key(&self.get_channel_id()));
+                    assert!(channel_objects_ids.iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
+                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+                }
+            }
+        }
+    }
+}
+
 pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -631,65 +827,304 @@ impl DeleteChannelFixture {
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
+}
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
-        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
-            .deletion_prize
-            .unwrap_or(BalanceOf::<Test>::zero());
-        let objects_deletion_prize =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-                    acc + obj.deletion_prize
-                });
+impl ChannelDeletion for DeleteChannelFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_num_objects_to_delete(&self) -> u64 {
+        self.num_objects_to_delete
+    }
 
-        let channel_objects_ids =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-                .map(|(id, _)| id)
-                .collect::<BTreeSet<_>>();
-
-        let actual_result = Content::delete_channel(
-            origin,
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_channel(
+            Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.channel_id,
             self.num_objects_to_delete,
+        )
+    }
+
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::ChannelDeleted(
+            self.actor.clone(),
+            self.channel_id,
+        ))
+    }
+}
+
+pub struct DeleteChannelAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    num_objects_to_delete: u64,
+    rationale: Vec<u8>,
+}
+
+impl DeleteChannelAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
+        Self {
+            num_objects_to_delete,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+}
+
+impl ChannelDeletion for DeleteChannelAsModeratorFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_num_objects_to_delete(&self) -> u64 {
+        self.num_objects_to_delete
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_channel_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.num_objects_to_delete,
+            self.rationale.clone(),
+        )
+    }
+
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::ChannelDeletedByModerator(
+            self.actor.clone(),
+            self.channel_id,
+            self.rationale.clone(),
+        ))
+    }
+}
+
+pub struct SetChannelPausedFeaturesAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    new_paused_features: BTreeSet<PausableChannelFeature>,
+    rationale: Vec<u8>,
+}
+
+impl SetChannelPausedFeaturesAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            new_paused_features: BTreeSet::from_iter(vec![PausableChannelFeature::default()]),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_new_paused_features(
+        self,
+        new_paused_features: BTreeSet<PausableChannelFeature>,
+    ) -> Self {
+        Self {
+            new_paused_features,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+
+        let actual_result = Content::set_channel_paused_features_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.new_paused_features.clone(),
+            self.rationale.clone(),
         );
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
         assert_eq!(actual_result, expected_result);
 
-        match actual_result {
-            Ok(()) => {
-                assert_eq!(
-                    System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::ChannelDeleted(
-                        self.actor.clone(),
-                        self.channel_id,
-                    ))
-                );
+        let channel_post = ChannelById::<Test>::get(&self.channel_id);
 
-                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
+        if actual_result.is_ok() {
+            assert_eq!(channel_post.paused_features, self.new_paused_features);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.new_paused_features.clone(),
+                    self.rationale.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
 
-                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
-                assert!(!<ChannelById<Test>>::contains_key(&self.channel_id));
-                assert!(!channel_objects_ids.iter().any(|id| {
-                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                }));
-                assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-            }
+pub struct SetChannelVisibilityAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    is_hidden: bool,
+    rationale: Vec<u8>,
+}
 
-            Err(err) => {
-                assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::ChannelDoesNotExist.into() {
-                    assert!(ChannelById::<Test>::contains_key(&self.channel_id));
-                    assert!(channel_objects_ids.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                    }));
-                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-                }
-            }
+impl SetChannelVisibilityAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            is_hidden: true,
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_is_hidden(self, is_hidden: bool) -> Self {
+        Self { is_hidden, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Content::set_channel_visibility_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.is_hidden,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelVisibilitySetByModerator(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.is_hidden,
+                    self.rationale.clone(),
+                ))
+            );
+        }
+    }
+}
+
+pub struct SetVideoVisibilityAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    is_hidden: bool,
+    rationale: Vec<u8>,
+}
+
+impl SetVideoVisibilityAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            video_id: VideoId::one(),
+            is_hidden: true,
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_is_hidden(self, is_hidden: bool) -> Self {
+        Self { is_hidden, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: ChannelId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Content::set_video_visibility_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.is_hidden,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::VideoVisibilitySetByModerator(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.is_hidden,
+                    self.rationale.clone(),
+                ))
+            );
         }
     }
 }
@@ -981,6 +1416,71 @@ impl DeletePostFixture {
     }
 }
 
+pub trait VideoDeletion {
+    fn get_sender(&self) -> &AccountId;
+    fn get_video_id(&self) -> &VideoId;
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId>;
+    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>>;
+    fn execute_call(&self) -> DispatchResult;
+    fn expected_event_on_success(&self) -> MetaEvent;
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
+        let video_pre = <VideoById<Test>>::get(&self.get_video_id());
+        let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
+        let deletion_prize =
+            self.get_assets_to_remove()
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
+                        .deletion_prize
+                });
+
+        let actual_result = self.execute_call();
+
+        let balance_post = Balances::<Test>::usable_balance(self.get_sender());
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    self.expected_event_on_success()
+                );
+
+                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+                assert!(!self.get_assets_to_remove().iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
+                }));
+
+                assert!(!<VideoById<Test>>::contains_key(self.get_video_id()));
+            }
+            Err(err) => {
+                assert_eq!(balance_pre, balance_post);
+
+                if err == storage::Error::<Test>::DataObjectDoesntExist.into() {
+                    let video_post = <VideoById<Test>>::get(self.get_video_id());
+                    assert_eq!(video_pre, video_post);
+                    assert!(VideoById::<Test>::contains_key(&self.get_video_id()));
+                } else if err == Error::<Test>::VideoDoesNotExist.into() {
+                    assert!(self.get_assets_to_remove().iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                    }));
+                } else {
+                    let video_post = <VideoById<Test>>::get(self.get_video_id());
+                    assert_eq!(video_pre, video_post);
+                    assert!(VideoById::<Test>::contains_key(self.get_video_id()));
+                    assert!(self.get_assets_to_remove().iter().all(|id| {
+                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
+                    }));
+                }
+            }
+        }
+    }
+}
+
 pub struct DeleteVideoFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -1016,67 +1516,109 @@ impl DeleteVideoFixture {
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }
     }
+}
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
-        let video_pre = <VideoById<Test>>::get(&self.video_id);
-        let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
-        let deletion_prize =
-            self.assets_to_remove
-                .iter()
-                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                    acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
-                        .deletion_prize
-                });
+impl VideoDeletion for DeleteVideoFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_video_id(&self) -> &VideoId {
+        &self.video_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>> {
+        &self.assets_to_remove
+    }
 
-        let actual_result = Content::delete_video(
-            origin,
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_video(
+            Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.video_id,
             self.assets_to_remove.clone(),
-        );
+        )
+    }
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id))
+    }
+}
 
-        assert_eq!(actual_result, expected_result);
+pub struct DeleteVideoAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    rationale: Vec<u8>,
+}
 
-        match actual_result {
-            Ok(()) => {
-                assert_eq!(
-                    System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id,))
-                );
-
-                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
-
-                assert!(!self.assets_to_remove.iter().any(|obj_id| {
-                    storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
-                }));
-
-                assert!(!<VideoById<Test>>::contains_key(&self.video_id));
-            }
-            Err(err) => {
-                assert_eq!(balance_pre, balance_post);
-
-                if err == storage::Error::<Test>::DataObjectDoesntExist.into() {
-                    let video_post = <VideoById<Test>>::get(&self.video_id);
-                    assert_eq!(video_pre, video_post);
-                    assert!(VideoById::<Test>::contains_key(&self.video_id));
-                } else if err == Error::<Test>::VideoDoesNotExist.into() {
-                    assert!(self.assets_to_remove.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                } else {
-                    let video_post = <VideoById<Test>>::get(&self.video_id);
-                    assert_eq!(video_pre, video_post);
-                    assert!(VideoById::<Test>::contains_key(&self.video_id));
-                    assert!(self.assets_to_remove.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                }
-            }
+impl DeleteVideoAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            video_id: VideoId::one(),
+            assets_to_remove: BTreeSet::new(),
+            rationale: b"rationale".to_vec(),
         }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+}
+
+impl VideoDeletion for DeleteVideoAsModeratorFixture {
+    fn get_sender(&self) -> &AccountId {
+        &self.sender
+    }
+    fn get_video_id(&self) -> &VideoId {
+        &self.video_id
+    }
+    fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
+        &self.actor
+    }
+    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>> {
+        &self.assets_to_remove
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Content::delete_video_as_moderator(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.assets_to_remove.clone(),
+            self.rationale.clone(),
+        )
+    }
+
+    fn expected_event_on_success(&self) -> MetaEvent {
+        MetaEvent::content(RawEvent::VideoDeletedByModerator(
+            self.actor.clone(),
+            self.video_id,
+            self.rationale.clone(),
+        ))
     }
 }
 
@@ -1497,6 +2039,52 @@ impl AcceptChannelTransferFixture {
 }
 
 // helper functions
+pub fn assert_group_has_permissions_for_actions(
+    group: &CuratorGroup<Test>,
+    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    allowed_actions: &Vec<ContentModerationAction>,
+) {
+    if !allowed_actions.is_empty() {
+        assert_eq!(
+            group.ensure_can_perform_actions(allowed_actions, privilege_level),
+            Ok(()),
+            "Expected curator group to have {:?} action permissions for privilege_level {}",
+            allowed_actions,
+            privilege_level
+        );
+    }
+    for action in ContentModerationAction::iter() {
+        match action {
+            ContentModerationAction::ChangeChannelFeatureStatus(..) => {
+                for feature in PausableChannelFeature::iter() {
+                    if !allowed_actions.contains(
+                        &ContentModerationAction::ChangeChannelFeatureStatus(feature),
+                    ) {
+                        assert_eq!(
+                                group.ensure_can_perform_action(ContentModerationAction::ChangeChannelFeatureStatus(feature), privilege_level),
+                                Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+                                "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
+                                action.clone(),
+                                privilege_level
+                            );
+                    }
+                }
+            }
+            _ => {
+                if !allowed_actions.contains(&action) {
+                    assert_eq!(
+                            group.ensure_can_perform_action(action.clone(), privilege_level),
+                            Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+                            "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
+                            action.clone(),
+                            privilege_level
+                        );
+                }
+            }
+        }
+    }
+}
+
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }
@@ -1546,6 +2134,25 @@ pub fn create_initial_storage_buckets_helper() {
         ),
         Ok(())
     );
+}
+
+pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, VideoId) {
+    let channel_id = Content::next_channel_id();
+    let video_id = Content::next_video_id();
+    create_default_member_owned_channel_with_video();
+    // Issue nft
+    assert_ok!(Content::issue_nft(
+        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        ContentActor::Member(DEFAULT_MEMBER_ID),
+        video_id,
+        NftIssuanceParameters::<Test> {
+            royalty: None,
+            nft_metadata: b"metablob".to_vec(),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<Test>::Idle,
+        }
+    ));
+    (channel_id, video_id)
 }
 
 pub fn create_default_member_owned_channel() {
@@ -1644,6 +2251,13 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
             post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
             video_reference: VideoId::one(),
         })
+        .call_and_assert(Ok(()));
+}
+
+pub fn pause_channel_feature(channel_id: ChannelId, feature: PausableChannelFeature) {
+    SetChannelPausedFeaturesAsModeratorFixture::default()
+        .with_channel_id(channel_id)
+        .with_new_paused_features(BTreeSet::from_iter(vec![feature]))
         .call_and_assert(Ok(()));
 }
 

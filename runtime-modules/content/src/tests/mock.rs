@@ -332,6 +332,7 @@ parameter_types! {
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
+    pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
 }
 
@@ -385,6 +386,12 @@ impl Trait for Test {
 
     /// membership info provider
     type MemberAuthenticator = MemberInfoProvider;
+
+    /// max number of keys per curator_group.permissions_by_level map instance
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+
+    /// channel privilege level
+    type ChannelPrivilegeLevel = u8;
 }
 
 // #[derive (Default)]

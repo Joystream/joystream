@@ -1,6 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 #[cfg(test)]
 mod tests;
@@ -12,6 +12,7 @@ mod types;
 
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
+use sp_std::vec;
 
 pub use errors::*;
 pub use nft::*;
@@ -111,6 +112,19 @@ pub trait Trait:
 
     /// Type in order to retrieve controller account from channel member owner
     type MemberAuthenticator: MembershipInfoProvider<Self>;
+
+    /// Max number of keys per curator_group.permissions_by_level map instance
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<u8>;
+
+    // Channel's privilege level
+    type ChannelPrivilegeLevel: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDeserialize
+        + PartialEq;
 }
 
 decl_storage! {
@@ -212,6 +226,9 @@ decl_module! {
         /// Exports const -  max number of curators per group
         const MaxNumberOfCuratorsPerGroup: MaxNumber = T::MaxNumberOfCuratorsPerGroup::get();
 
+        /// Exports const -  max number of keys per curator_group.permissions_by_level map instance
+        const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
+
         // ======
         // Next set of extrinsics can only be invoked by lead.
         // ======
@@ -220,11 +237,15 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_curator_group(
             origin,
+            is_active: bool,
+            permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
 
             let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
+            // Ensure permissions_by_level map max. allowed size is not exceeded
+            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
             //
             // == MUTATION SAFE ==
@@ -232,14 +253,42 @@ decl_module! {
 
             let curator_group_id = Self::next_curator_group_id();
 
-            // Insert empty curator group with `active` parameter set to false
-            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<T>::default());
+            // Insert curator group with provided permissions
+            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::create(is_active, &permissions_by_level));
 
             // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
+        }
+
+        /// Update existing curator group's permissions
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_curator_group_permissions(
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            permissions_by_level: ModerationPermissionsByLevel<T>
+        ) {
+            let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
+            // Ensure curator group under provided curator_group_id already exist
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+            // Ensure permissions_by_level map max. allowed size is not exceeded
+            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Set `permissions` for curator group under given `curator_group_id`
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.set_permissions_by_level(&permissions_by_level)
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -385,11 +434,12 @@ decl_module! {
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 num_videos: 0u64,
-                is_censored: false,
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
+                privilege_level: Zero::zero(),
+                paused_features: BTreeSet::new(),
             };
 
             // add channel to onchain state
@@ -417,6 +467,8 @@ decl_module! {
                 &actor,
                 &channel,
             )?;
+
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelUpdate)?;
 
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
@@ -449,6 +501,63 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
+        // Extrinsic for updating channel privilege level (requires lead access)
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_privilege_level(
+            origin,
+            channel_id: T::ChannelId,
+            new_privilege_level: T::ChannelPrivilegeLevel,
+        ) {
+            let sender = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&sender)?;
+
+            // check that channel exists
+            Self::ensure_channel_exists(&channel_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the channel
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
+
+            Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
+        }
+
+        // extrinsics for pausing/re-enabling channel features
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_channel_paused_features_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            new_paused_features: BTreeSet<PausableChannelFeature>,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Check permissions for moderation actions
+            let required_permissions = channel.paused_features
+                .symmetric_difference(&new_paused_features)
+                .map(|f| { ContentModerationAction::ChangeChannelFeatureStatus(*f) })
+                .collect::<Vec<_>>();
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &required_permissions, channel.privilege_level)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
+
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelPausedFeaturesUpdatedByModerator(actor, channel_id, new_paused_features, rationale));
+
+            Ok(())
+        }
+
         // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
@@ -471,31 +580,16 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-            // get bag id for the channel
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
-            let bag_id = storage::BagIdType::from(dyn_bag.clone());
+            // ensure channel bag exists and num_objects_to_delete is valid
+            Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
-            // channel has a dynamic bag associated to it -> remove assets from storage
-            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
-                // ensure that bag size provided is valid
-                ensure!(
-                    bag.objects_number == num_objects_to_delete,
-                    Error::<T>::InvalidBagSizeSpecified
-                );
+            // try to remove the channel
+            Self::try_to_perform_channel_deletion(sender, channel_id)?;
 
-                //
-                // == MUTATION SAFE ==
-                //
+            //
+            // == MUTATION SAFE ==
+            //
 
-                // delete channel dynamic bag or fail
-                Storage::<T>::delete_dynamic_bag(
-                    sender,
-                    dyn_bag,
-                )?;
-            }
-
-            // remove channel from on chain state
-            ChannelById::<T>::remove(channel_id);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
@@ -503,37 +597,69 @@ decl_module! {
             Ok(())
         }
 
+        // extrinsics for channel deletion as moderator
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_censorship_status(
+        pub fn delete_channel_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            is_censored: bool,
+            num_objects_to_delete: u64,
             rationale: Vec<u8>,
-        ) {
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            channel.ensure_has_no_active_transfer::<T>()?;
+            // Permissions check
+            let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                &channel.owner,
-            )?;
+            // check that channel videos are 0
+            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
-            // Ensure censorship status have been changed
-            channel.ensure_censorship_status_changed::<T>(is_censored)?;
+            // ensure channel bag exists and num_objects_to_delete is valid
+            Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
+
+            // try to remove the channel
+            Self::try_to_perform_channel_deletion(sender, channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.is_censored = is_censored
-            });
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
 
-            Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
+            Ok(())
+        }
+
+        // extrinsics for channel visibility status (hidden/visible) setting by moderator
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_channel_visibility_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            is_hidden: bool,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            let actions_to_perform = vec![ContentModerationAction::HideChannel];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelVisibilitySetByModerator(actor, channel_id, is_hidden, rationale));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -614,6 +740,11 @@ decl_module! {
                 &channel,
             )?;
 
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoCreation)?;
+            if params.auto_issue_nft.is_some() {
+                channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
+            }
+
             // next video id
             let video_id = NextVideoId::<T>::get();
 
@@ -629,7 +760,6 @@ decl_module! {
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
                 nft_status,
@@ -687,6 +817,10 @@ decl_module! {
                 &channel,
             )?;
 
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoUpdate)?;
+            if params.auto_issue_nft.is_some() {
+                channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
+            }
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -748,40 +882,84 @@ decl_module! {
                 &channel,
             )?;
 
-            // Ensure nft for this video have not been issued
-            video.ensure_nft_is_not_issued::<T>()?;
+            // ensure video can be removed
+            Self::ensure_video_can_be_removed(&video)?;
 
-            // bloat bond logic: channel owner is refunded
-            video.video_post_id.as_ref().map(
-                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
-            ).transpose()?;
+            // Try removing the video
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, &assets_to_remove)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // delete assets from storage with upload and rollback semantics
-            if !assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove,
-                )?;
-            }
-
-            // Remove video
-            VideoById::<T>::remove(video_id);
-
-            // Remove all comments related
-            <VideoPostById<T>>::remove_prefix(video_id);
-
-            // Update corresponding channel
-            // Remove recently deleted video from the channel
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_videos = channel.num_videos.saturating_sub(1)
-            });
-
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            assets_to_remove: BTreeSet<DataObjectId<T>>,
+            rationale: Vec<u8>,
+        ) {
+            let sender = ensure_signed(origin)?;
+
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
+            // Permissions check
+            let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            // ensure video can be removed
+            Self::ensure_video_can_be_removed(&video)?;
+
+            // Try removing the video
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, &assets_to_remove)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
+        }
+
+        // extrinsics for video visibility status (hidden/visible) setting by moderator
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_video_visibility_as_moderator(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            is_hidden: bool,
+            rationale: Vec<u8>,
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin)?;
+
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // get information regarding channel
+            let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
+            // Permissions check
+            let actions_to_perform = vec![ContentModerationAction::HideVideo];
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // deposit event
+            Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -860,46 +1038,6 @@ decl_module! {
             VideoCategoryById::<T>::remove(&category_id);
 
             Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
-        }
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video_censorship_status(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            is_censored: bool,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-            // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                // The channel owner will be..
-                &Self::channel_by_id(video.in_channel).owner,
-            )?;
-
-            // Ensure censorship status have been changed
-            video.ensure_censorship_status_changed::<T>(is_censored)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update
-            VideoById::<T>::mutate(video_id, |video| {
-                video.is_censored = is_censored;
-            });
-
-            Self::deposit_event(
-                RawEvent::VideoCensorshipStatusUpdated(
-                    actor,
-                    video_id,
-                    is_censored,
-                    rationale
-                ));
-
-            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1171,6 +1309,8 @@ decl_module! {
 
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
+
             let cashout = item
                 .cumulative_payout_claimed
                 .saturating_sub(channel.cumulative_payout_earned);
@@ -1234,6 +1374,8 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
 
             // The content owner will be..
             let nft_status = Self::construct_owned_nft(&params, video_id)?;
@@ -2135,6 +2277,13 @@ impl<T: Trait> Module<T> {
         Ok(Self::curator_group_by_id(curator_group_id))
     }
 
+    // Ensure given video has no associated nft
+    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
+        // Ensure nft for this video have not been issued
+        video.ensure_nft_is_not_issued::<T>()?;
+        Ok(())
+    }
+
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -2333,6 +2482,99 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn try_to_perform_video_deletion(
+        sender: &T::AccountId,
+        channel_id: T::ChannelId,
+        video_id: T::VideoId,
+        video: &Video<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        // delete assets from storage with upload and rollback semantics
+        if !assets_to_remove.is_empty() {
+            Storage::<T>::delete_data_objects(
+                sender.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
+        }
+
+        // bloat bond logic: channel owner is refunded
+        // (this should never fail!)
+        video
+            .video_post_id
+            .as_ref()
+            .map(|video_post_id| {
+                Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
+            })
+            .transpose()?;
+
+        // Remove video
+        VideoById::<T>::remove(video_id);
+
+        // Remove all comments related
+        <VideoPostById<T>>::remove_prefix(video_id);
+
+        // Update corresponding channel
+        // Remove recently deleted video from the channel
+        ChannelById::<T>::mutate(channel_id, |channel| {
+            channel.num_videos = channel.num_videos.saturating_sub(1)
+        });
+
+        Ok(())
+    }
+
+    fn ensure_channel_bag_can_be_dropped(
+        channel_id: T::ChannelId,
+        num_objects_to_delete: u64,
+    ) -> DispatchResult {
+        let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
+        let bag_id = storage::BagIdType::from(dynamic_bag_id);
+
+        if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
+            // channel has a dynamic bag associated
+            // ensure that bag size provided is valid
+            ensure!(
+                bag.objects_number == num_objects_to_delete,
+                Error::<T>::InvalidBagSizeSpecified
+            );
+
+            Ok(())
+        } else {
+            debug_assert!(false, "Channel bag missing for channel {:?}", channel_id);
+            Err(Error::<T>::ChannelBagMissing.into())
+        }
+    }
+
+    fn try_to_perform_channel_deletion(
+        sender: T::AccountId,
+        channel_id: T::ChannelId,
+    ) -> DispatchResult {
+        let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
+
+        // try to delete channel dynamic bag with objects
+        Storage::<T>::delete_dynamic_bag(sender, dynamic_bag_id)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // remove channel from on chain state
+        ChannelById::<T>::remove(channel_id);
+
+        Ok(())
+    }
+
+    fn ensure_permissions_by_level_map_size_not_exceeded(
+        permissions_by_level: &ModerationPermissionsByLevel<T>,
+    ) -> DispatchResult {
+        ensure!(
+            permissions_by_level.len()
+                <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
+            Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
+        );
+        Ok(())
+    }
+
     pub(crate) fn ensure_open_bid_exists(
         video_id: T::VideoId,
         member_id: T::MemberId,
@@ -2364,7 +2606,6 @@ decl_event!(
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
-        IsCensored = bool,
         EnglishAuctionParams = EnglishAuctionParams<T>,
         OpenAuctionParams = OpenAuctionParams<T>,
         OpenAuctionId = <T as Trait>::OpenAuctionId,
@@ -2379,6 +2620,8 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
+        ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
         ChannelTransferStatus = ChannelTransferStatus<
             <T as common::MembershipTypes>::MemberId,
             <T as ContentActorAuthenticator>::CuratorGroupId,
@@ -2389,6 +2632,7 @@ decl_event!(
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
+        CuratorGroupPermissionsUpdated(CuratorGroupId, ModerationPermissionsByLevel),
         CuratorGroupStatusSet(CuratorGroupId, bool /* active status */),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
@@ -2396,13 +2640,20 @@ decl_event!(
         // Channels
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
+        ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
-
-        ChannelCensorshipStatusUpdated(
+        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
+        ChannelVisibilitySetByModerator(
             ContentActor,
             ChannelId,
-            IsCensored,
+            bool,
+            Vec<u8>, /* rationale */
+        ),
+        ChannelPausedFeaturesUpdatedByModerator(
+            ContentActor,
+            ChannelId,
+            BTreeSet<PausableChannelFeature>,
             Vec<u8>, /* rationale */
         ),
 
@@ -2431,13 +2682,8 @@ decl_event!(
         VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
         VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
-
-        VideoCensorshipStatusUpdated(
-            ContentActor,
-            VideoId,
-            IsCensored,
-            Vec<u8>, /* rationale */
-        ),
+        VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
+        VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),

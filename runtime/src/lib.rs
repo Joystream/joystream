@@ -482,6 +482,7 @@ parameter_types! {
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
     pub const BagDeletionPrize: Balance = 0; // TODO: update
+    pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
 }
 
 impl content::Trait for Runtime {
@@ -502,6 +503,8 @@ impl content::Trait for Runtime {
     type ModuleId = ContentModuleId;
     type BagDeletionPrize = BagDeletionPrize;
     type MemberAuthenticator = Members;
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+    type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
 }
 
 // The referendum instance alias.

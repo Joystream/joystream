@@ -72,19 +72,26 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> {
+pub struct ChannelRecord<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    Balance: PartialEq,
+    ChannelPrivilegeLevel,
+> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
-    /// If curators have censored this channel or not
-    pub is_censored: bool,
     /// collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+    // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
+    pub privilege_level: ChannelPrivilegeLevel,
+    // List of channel features that have been paused by a curator
+    pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
     pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
 }
@@ -132,14 +139,20 @@ pub struct TransferParameters<MemberId: Ord, Balance> {
     pub price: Balance,
 }
 
-impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq>
-    ChannelRecord<MemberId, CuratorGroupId, Balance>
+impl<
+        MemberId: Ord + PartialEq,
+        CuratorGroupId: PartialEq,
+        Balance: PartialEq,
+        ChannelPrivilegeLevel,
+    > ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel>
 {
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
+    pub fn ensure_feature_not_paused<T: Trait>(
+        &self,
+        channel_feautre: PausableChannelFeature,
+    ) -> DispatchResult {
         ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::ChannelCensorshipStatusDidNotChange
+            !self.paused_features.contains(&channel_feautre),
+            Error::<T>::ChannelFeaturePaused
         );
         Ok(())
     }
@@ -165,6 +178,7 @@ pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
+    <T as Trait>::ChannelPrivilegeLevel,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -300,8 +314,6 @@ pub type VideoUpdateParameters<T> =
 pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
     /// channel the video is in
     pub in_channel: ChannelId,
-    /// Whether the curators have censored the video or not.
-    pub is_censored: bool,
     /// enable or not comments
     pub enable_comments: bool,
     /// First post to a video works as a description
@@ -470,15 +482,6 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     /// Set video nft status
     pub fn set_nft_status(&mut self, nft: OwnedNft) {
         self.nft_status = Some(nft);
-    }
-
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::VideoCensorshipStatusDidNotChange
-        );
-        Ok(())
     }
 }
 
