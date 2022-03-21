@@ -212,11 +212,12 @@ export interface CategoryId extends u64 {}
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
-  readonly is_censored: bool;
-  readonly reward_account: Option<GenericAccountId>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
+  readonly privilege_level: ChannelPrivilegeLevel;
+  readonly paused_features: BTreeSet<ChannelFeature>;
+  readonly transfer_status: ChannelTransferStatus;
 }
 
 /** @name ChannelCategory */
@@ -239,7 +240,6 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly reward_account: Option<GenericAccountId>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
 }
@@ -295,7 +295,6 @@ export interface ChannelTransferStatus_PendingTransfer extends Struct {
 export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<GenericAccountId>>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly collaborators: Option<BTreeSet<MemberId>>;
 }
@@ -380,6 +379,7 @@ export interface CreateOpeningParameters extends Struct {
 export interface CuratorGroup extends Struct {
   readonly curators: BTreeSet<CuratorId>;
   readonly active: bool;
+  readonly permissions_by_level: ModerationPermissionsByLevel;
 }
 
 /** @name CuratorGroupId */
@@ -1183,7 +1183,6 @@ export interface Url extends Text {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
-  readonly is_censored: bool;
   readonly enable_comments: bool;
   readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;

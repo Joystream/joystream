@@ -658,7 +658,8 @@
     "CuratorGroupId": "u64",
     "CuratorGroup": {
         "curators": "BTreeSet<CuratorId>",
-        "active": "bool"
+        "active": "bool",
+        "permissions_by_level": "ModerationPermissionsByLevel"
     },
     "ContentActor": {
         "_enum": {
@@ -674,11 +675,12 @@
     "Channel": {
         "owner": "ChannelOwner",
         "num_videos": "u64",
-        "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>",
         "collaborators": "BTreeSet<MemberId>",
         "moderators": "BTreeSet<MemberId>",
-        "cumulative_payout_earned": "u128"
+        "cumulative_payout_earned": "u128",
+        "privilege_level": "ChannelPrivilegeLevel",
+        "paused_features": "BTreeSet<ChannelFeature>",
+        "transfer_status": "ChannelTransferStatus"
     },
     "ChannelOwner": {
         "_enum": {
@@ -697,20 +699,17 @@
     "ChannelCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "reward_account": "Option<GenericAccountId>",
         "collaborators": "BTreeSet<MemberId>",
         "moderators": "BTreeSet<MemberId>"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
         "collaborators": "Option<BTreeSet<MemberId>>"
     },
     "Video": {
         "in_channel": "ChannelId",
-        "is_censored": "bool",
         "enable_comments": "bool",
         "video_post_id": "Option<VideoPostId>",
         "nft_status": "Option<OwnedNft>"
