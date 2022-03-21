@@ -30,10 +30,6 @@ impl CreateCuratorGroupFixture {
         }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
     pub fn with_is_active(self, is_active: bool) -> Self {
         Self { is_active, ..self }
     }
@@ -566,16 +562,6 @@ impl UpdateChannelPrivilegeLevelFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_privilege_level(
-        self,
-        privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
-    ) -> Self {
-        Self {
-            privilege_level,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(&self.channel_id);
@@ -929,14 +915,6 @@ impl DeleteChannelAsModeratorFixture {
             ..self
         }
     }
-
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
-    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
-        Self { rationale, ..self }
-    }
 }
 
 impl ChannelDeletion for DeleteChannelAsModeratorFixture {
@@ -1076,10 +1054,6 @@ impl SetChannelVisibilityAsModeratorFixture {
         Self { is_hidden, ..self }
     }
 
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::set_channel_visibility_as_moderator(
             Origin::signed(self.sender.clone()),
@@ -1134,10 +1108,6 @@ impl SetVideoVisibilityAsModeratorFixture {
 
     pub fn with_is_hidden(self, is_hidden: bool) -> Self {
         Self { is_hidden, ..self }
-    }
-
-    pub fn with_video_id(self, video_id: ChannelId) -> Self {
-        Self { video_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1614,14 +1584,6 @@ impl DeleteVideoAsModeratorFixture {
             assets_to_remove,
             ..self
         }
-    }
-
-    pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
-    }
-
-    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
-        Self { rationale, ..self }
     }
 }
 
