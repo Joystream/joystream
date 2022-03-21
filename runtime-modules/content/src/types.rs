@@ -91,7 +91,7 @@ pub struct ChannelRecord<
     // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
     // List of channel features that have been paused by a curator
-    pub paused_features: BTreeSet<ChannelFeature>,
+    pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
     pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
 }
@@ -148,7 +148,7 @@ impl<
 {
     pub fn ensure_feature_not_paused<T: Trait>(
         &self,
-        channel_feautre: ChannelFeature,
+        channel_feautre: PausableChannelFeature,
     ) -> DispatchResult {
         ensure!(
             !self.paused_features.contains(&channel_feautre),

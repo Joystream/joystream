@@ -80,13 +80,13 @@ fn curator_group_management() {
                 BTreeSet::from_iter(vec![
                     ContentModerationAction::HideChannel,
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::VideoCreation,
+                        PausableChannelFeature::VideoCreation,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::VideoUpdate,
+                        PausableChannelFeature::VideoUpdate,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::ChannelUpdate,
+                        PausableChannelFeature::ChannelUpdate,
                     ),
                 ]),
             ),
@@ -98,25 +98,25 @@ fn curator_group_management() {
                     ContentModerationAction::HideChannel,
                     ContentModerationAction::HideVideo,
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::ChannelFundsTransfer,
+                        PausableChannelFeature::ChannelFundsTransfer,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::CreatorCashout,
+                        PausableChannelFeature::CreatorCashout,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::CreatorTokenIssuance,
+                        PausableChannelFeature::CreatorTokenIssuance,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::ChannelUpdate,
+                        PausableChannelFeature::ChannelUpdate,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::VideoCreation,
+                        PausableChannelFeature::VideoCreation,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::VideoNftIssuance,
+                        PausableChannelFeature::VideoNftIssuance,
                     ),
                     ContentModerationAction::ChangeChannelFeatureStatus(
-                        ChannelFeature::VideoUpdate,
+                        PausableChannelFeature::VideoUpdate,
                     ),
                 ]),
             ),

@@ -5,37 +5,43 @@ use strum_macros::EnumIter;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum ChannelFeature {
+pub enum PausableChannelFeature {
+    // TODO: Will affect `withdraw_from_channel_balance` and `claim_and_withdraw_channel_reward` after https://github.com/Joystream/joystream/pull/3444
     ChannelFundsTransfer,
+    // Affects:
+    // - `claim_channel_reward`
+    // TODO: Will affect `claim_and_withdraw_channel_reward`
     CreatorCashout,
+    // Affects:
+    // - `issue_nft`
+    // - `create_video` (if `auto_issue_nft` provided)
+    // - `update_video` (if `auto_issue_nft` provided)
     VideoNftIssuance,
+    // Affects:
+    // - `create_video`
     VideoCreation,
+    // Affects:
+    // - `update_video`
     VideoUpdate,
+    // Affects:
+    // - `update_channel`
     ChannelUpdate,
+    // TODO: Will affect extrinsics depending on creator tokens implementation (https://github.com/Joystream/joystream/issues/2362)
     CreatorTokenIssuance,
 }
 
-impl Default for ChannelFeature {
+impl Default for PausableChannelFeature {
     fn default() -> Self {
         Self::ChannelFundsTransfer
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum ChannelFeatureStatus {
-    Paused,
-    Active,
-}
-
-pub type ChannelFeatureStatusChanges = BTreeMap<ChannelFeature, ChannelFeatureStatus>;
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum ContentModerationAction {
     HideVideo,
     HideChannel,
-    ChangeChannelFeatureStatus(ChannelFeature),
+    ChangeChannelFeatureStatus(PausableChannelFeature),
     DeleteVideo,
     DeleteChannel,
 }
