@@ -244,9 +244,6 @@ decl_error! {
         /// Insufficient treasury balance
         InsufficientTreasuryBalance,
 
-        /// Invalid member id  specified
-        InvalidMemberProvided,
-
         /// Actor is not A Member
         ActorNotAMember,
 
@@ -279,5 +276,15 @@ decl_error! {
 
         /// Invalid number of objects to delete provided for delete_video
         InvalidVideoDataObjectsCountProvided,
+
+        /// Invalid channel transfer status for operations.
+        InvalidChannelTransferStatus,
+
+        /// Incorrect actor tries to accept the channel transfer.
+        InvalidChannelTransferAcceptor,
+
+        /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
+        /// channel pending transfer parameters.
+        InvalidChannelTransferCommitmentParams,
     }
 }

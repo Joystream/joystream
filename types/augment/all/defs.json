@@ -840,8 +840,6 @@
         "creator_royalty": "Option<Royalty>",
         "open_auctions_nonce": "OpenAuctionId"
     },
-    "CurrencyOf": "u128",
-    "CurrencyAmount": "u128",
     "InitTransactionalStatus": {
         "_enum": {
             "Idle": "Null",
@@ -889,5 +887,19 @@
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
     "ModerationPermissionsByLevel": "BTreeMap<ChannelPrivilegeLevel,ContentModerationActionsSet>",
+    "TransferParameters": {
+        "new_collaborators": "BTreeSet<MemberId>",
+        "price": "u128"
+    },
+    "ChannelTransferStatus_PendingTransfer": {
+        "new_owner": "ChannelOwner",
+        "transfer_params": "TransferParameters"
+    },
+    "ChannelTransferStatus": {
+        "_enum": {
+            "NoActiveTransfer": "Null",
+            "PendingTransfer": "ChannelTransferStatus_PendingTransfer"
+        }
+    },
     "AccountInfo": "AccountInfoWithRefCount"
 }

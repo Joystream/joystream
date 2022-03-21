@@ -445,31 +445,31 @@ pub struct OpenAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
 // Aliases
 pub type EnglishAuction<T> = EnglishAuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
-    CurrencyOf<T>,
+    BalanceOf<T>,
     <T as common::MembershipTypes>::MemberId,
 >;
 
 pub type OpenAuction<T> = OpenAuctionRecord<
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::OpenAuctionId,
-    CurrencyOf<T>,
+    BalanceOf<T>,
     <T as common::MembershipTypes>::MemberId,
 >;
 
 pub type EnglishAuctionParams<T> = EnglishAuctionParamsRecord<
     <T as frame_system::Trait>::BlockNumber,
-    CurrencyOf<T>,
+    BalanceOf<T>,
     <T as common::MembershipTypes>::MemberId,
 >;
 
 pub type OpenAuctionParams<T> = OpenAuctionParamsRecord<
     <T as frame_system::Trait>::BlockNumber,
-    CurrencyOf<T>,
+    BalanceOf<T>,
     <T as common::MembershipTypes>::MemberId,
 >;
 
 pub type OpenAuctionBid<T> = OpenAuctionBidRecord<
-    CurrencyOf<T>,
+    BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::OpenAuctionId,
 >;
@@ -482,7 +482,7 @@ pub type Nft<T> = OwnedNft<
 
 pub type TransactionalStatus<T> = TransactionalStatusRecord<
     <T as common::MembershipTypes>::MemberId,
-    CurrencyOf<T>,
+    BalanceOf<T>,
     EnglishAuction<T>,
     OpenAuction<T>,
 >;
@@ -491,5 +491,5 @@ pub type InitTransactionalStatus<T> = InitTransactionalStatusRecord<
     EnglishAuctionParams<T>,
     OpenAuctionParams<T>,
     <T as common::MembershipTypes>::MemberId,
-    CurrencyOf<T>,
+    BalanceOf<T>,
 >;

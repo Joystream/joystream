@@ -1,6 +1,6 @@
 import { Vec, Option, Tuple, BTreeSet, UInt, BTreeMap } from '@polkadot/types'
 import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
-import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, BalanceOf } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber } from '../common'
 
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
@@ -15,8 +15,6 @@ export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 export class VideoPostId extends u64 {}
 export class ReactionId extends u64 {}
-export class CurrencyOf extends BalanceOf {}
-export class CurrencyAmount extends CurrencyOf {}
 export class ChannelPrivilegeLevel extends u8 {}
 
 // NFT types
@@ -279,6 +277,23 @@ export class ContentModerationActionsSet extends BTreeSet.with(ContentModeration
 
 export class ModerationPermissionsByLevel extends BTreeMap.with(ChannelPrivilegeLevel, ContentModerationActionsSet) {}
 
+// Channel transfers
+
+export class TransferParameters extends JoyStructDecorated({
+  new_collaborators: BTreeSet.with(MemberId),
+  price: Balance,
+}) {}
+
+export class ChannelTransferStatus_PendingTransfer extends JoyStructDecorated({
+  new_owner: ChannelOwner,
+  transfer_params: TransferParameters,
+}) {}
+
+export class ChannelTransferStatus extends JoyEnum({
+  NoActiveTransfer: Null,
+  PendingTransfer: ChannelTransferStatus_PendingTransfer,
+}) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -325,8 +340,6 @@ export const contentTypes = {
   TransactionalStatus,
   NftOwner,
   OwnedNft,
-  CurrencyOf,
-  CurrencyAmount,
   InitTransactionalStatus,
   NftIssuanceParameters,
   NftMetadata,
@@ -339,6 +352,10 @@ export const contentTypes = {
   ContentModerationAction,
   ContentModerationActionsSet,
   ModerationPermissionsByLevel,
+  // Transfers
+  TransferParameters,
+  ChannelTransferStatus_PendingTransfer,
+  ChannelTransferStatus,
 }
 
 export default contentTypes
