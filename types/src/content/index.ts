@@ -277,6 +277,23 @@ export class ContentModerationActionsSet extends BTreeSet.with(ContentModeration
 
 export class ModerationPermissionsByLevel extends BTreeMap.with(ChannelPrivilegeLevel, ContentModerationActionsSet) {}
 
+// Channel transfers
+
+export class TransferParameters extends JoyStructDecorated({
+  new_collaborators: BTreeSet.with(MemberId),
+  price: Balance,
+}) {}
+
+export class ChannelTransferStatus_PendingTransfer extends JoyStructDecorated({
+  new_owner: ChannelOwner,
+  transfer_params: TransferParameters,
+}) {}
+
+export class ChannelTransferStatus extends JoyEnum({
+  NoActiveTransfer: Null,
+  PendingTransfer: ChannelTransferStatus_PendingTransfer,
+}) {}
+
 export const contentTypes = {
   CuratorId,
   CuratorGroupId,
@@ -335,6 +352,10 @@ export const contentTypes = {
   ContentModerationAction,
   ContentModerationActionsSet,
   ModerationPermissionsByLevel,
+  // Transfers
+  TransferParameters,
+  ChannelTransferStatus_PendingTransfer,
+  ChannelTransferStatus,
 }
 
 export default contentTypes

@@ -887,5 +887,19 @@
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
     "ModerationPermissionsByLevel": "BTreeMap<ChannelPrivilegeLevel,ContentModerationActionsSet>",
+    "TransferParameters": {
+        "new_collaborators": "BTreeSet<MemberId>",
+        "price": "u128"
+    },
+    "ChannelTransferStatus_PendingTransfer": {
+        "new_owner": "ChannelOwner",
+        "transfer_params": "TransferParameters"
+    },
+    "ChannelTransferStatus": {
+        "_enum": {
+            "NoActiveTransfer": "Null",
+            "PendingTransfer": "ChannelTransferStatus_PendingTransfer"
+        }
+    },
     "AccountInfo": "AccountInfoWithRefCount"
 }

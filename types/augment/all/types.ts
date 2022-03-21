@@ -278,6 +278,19 @@ export interface ChannelOwner extends Enum {
 /** @name ChannelPrivilegeLevel */
 export interface ChannelPrivilegeLevel extends u8 {}
 
+/** @name ChannelTransferStatus */
+export interface ChannelTransferStatus extends Enum {
+  readonly isNoActiveTransfer: boolean;
+  readonly isPendingTransfer: boolean;
+  readonly asPendingTransfer: ChannelTransferStatus_PendingTransfer;
+}
+
+/** @name ChannelTransferStatus_PendingTransfer */
+export interface ChannelTransferStatus_PendingTransfer extends Struct {
+  readonly new_owner: ChannelOwner;
+  readonly transfer_params: TransferParameters;
+}
+
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
@@ -1142,6 +1155,12 @@ export interface TransactionalStatus extends Enum {
   readonly asOpenAuction: OpenAuction;
   readonly isBuyNow: boolean;
   readonly asBuyNow: u128;
+}
+
+/** @name TransferParameters */
+export interface TransferParameters extends Struct {
+  readonly new_collaborators: BTreeSet<MemberId>;
+  readonly price: u128;
 }
 
 /** @name UpdatedBody */
