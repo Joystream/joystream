@@ -54,6 +54,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', default-features = false, optional = true }
@@ -134,6 +135,7 @@ std = [
     'pallet-sudo/std',
     'pallet-im-online/std',
     'pallet-offences/std',
+    'pallet-vesting/std',
     'substrate-utility/std',
 
     # Joystream
