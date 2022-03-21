@@ -1,4 +1,7 @@
 #![cfg(test)]
+use std::collections::BTreeMap;
+use std::iter::FromIterator;
+
 use super::curators;
 use super::fixtures::*;
 use super::mock::*;
@@ -33,81 +36,6 @@ fn delete_video_nft_is_issued() {
                 BTreeSet::new(),
             ),
             Error::<Test>::NftAlreadyExists
-        );
-    })
-}
-
-#[test]
-fn curators_can_censor_videos() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-        let video_id = Content::next_video_id();
-        let channel_id = Content::next_channel_id();
-
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_initial_storage_buckets_helper();
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        // Curator can censor videos
-        let is_censored = true;
-        assert_ok!(Content::update_video_censorship_status(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-            video_id,
-            is_censored,
-            vec![]
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoCensorshipStatusUpdated(
-                ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-                video_id,
-                is_censored,
-                vec![]
-            ))
-        );
-
-        let video = Content::video_by_id(video_id);
-
-        assert!(video.is_censored);
-
-        // Curator can un-censor videos
-        let is_censored = false;
-        assert_ok!(Content::update_video_censorship_status(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-            video_id,
-            is_censored,
-            vec![]
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoCensorshipStatusUpdated(
-                ContentActor::Curator(group_id, DEFAULT_CURATOR_ID),
-                video_id,
-                is_censored,
-                vec![]
-            ))
-        );
-
-        let video = Content::video_by_id(video_id);
-
-        assert!(!video.is_censored);
-
-        // Members cannot censor videos
-        assert_err!(
-            Content::update_video_censorship_status(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                channel_id,
-                true,
-                vec![]
-            ),
-            Error::<Test>::ActorNotAuthorized
         );
     })
 }
@@ -1242,7 +1170,7 @@ fn unsuccessful_video_deletion_with_invalid_object_ids() {
 }
 
 #[test]
-fn unsuccessful_video_deletion_with_nft_already_issued() {
+fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1270,5 +1198,352 @@ fn unsuccessful_video_deletion_with_nft_already_issued() {
                 init_transactional_status: Default::default(),
             })
             .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()))
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - invalid group
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_no_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_deletion_with_assets_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        let assets_to_remove = BTreeSet::from_iter(vec![0]);
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_assets_to_remove(assets_to_remove)
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_deletion_with_assets_by_lead() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let assets_to_remove = BTreeSet::from_iter(vec![0]);
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_assets_to_remove(assets_to_remove)
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_visibility_change_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - not in group
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_visibility_change_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        // Member - invalid sender
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_video_visibility_change() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::HideVideo]),
+            )]),
+        );
+        // As curator
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+        // As lead
+        SetVideoVisibilityAsModeratorFixture::default()
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_visibility_change_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        // As curator
+        SetChannelVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_visibility_change_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::HideVideo]),
+            )]),
+        );
+        // Set to hidden
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+        // Set to visible
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_is_hidden(false)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_visibility_change_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        // Set to hidden
+        SetVideoVisibilityAsModeratorFixture::default().call_and_assert(Ok(()));
+        // Set to visible
+        SetVideoVisibilityAsModeratorFixture::default()
+            .with_is_hidden(false)
+            .call_and_assert(Ok(()));
     })
 }
