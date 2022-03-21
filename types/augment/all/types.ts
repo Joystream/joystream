@@ -216,7 +216,7 @@ export interface Channel extends Struct {
   readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
-  readonly paused_features: BTreeSet<ChannelFeature>;
+  readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
   readonly data_objects: BTreeSet<DataObjectId>;
 }
@@ -244,26 +244,6 @@ export interface ChannelCreationParameters extends Struct {
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
 }
-
-/** @name ChannelFeature */
-export interface ChannelFeature extends Enum {
-  readonly isChannelFundsTransfer: boolean;
-  readonly isCreatorCashout: boolean;
-  readonly isVideoNftIssuance: boolean;
-  readonly isVideoCreation: boolean;
-  readonly isVideoUpdate: boolean;
-  readonly isChannelUpdate: boolean;
-  readonly isCreatorTokenIssuance: boolean;
-}
-
-/** @name ChannelFeatureStatus */
-export interface ChannelFeatureStatus extends Enum {
-  readonly isPaused: boolean;
-  readonly isActive: boolean;
-}
-
-/** @name ChannelFeatureStatusChanges */
-export interface ChannelFeatureStatusChanges extends BTreeMap<ChannelFeature, ChannelFeatureStatus> {}
 
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
@@ -325,7 +305,7 @@ export interface ContentModerationAction extends Enum {
   readonly isHideVideo: boolean;
   readonly isHideChannel: boolean;
   readonly isChangeChannelFeatureStatus: boolean;
-  readonly asChangeChannelFeatureStatus: ChannelFeature;
+  readonly asChangeChannelFeatureStatus: PausableChannelFeature;
   readonly isDeleteVideo: boolean;
   readonly isDeleteChannel: boolean;
   readonly isDeleteVideoAssets: boolean;
@@ -762,6 +742,17 @@ export interface OwnedNft extends Struct {
 
 /** @name ParticipantId */
 export interface ParticipantId extends u64 {}
+
+/** @name PausableChannelFeature */
+export interface PausableChannelFeature extends Enum {
+  readonly isChannelFundsTransfer: boolean;
+  readonly isCreatorCashout: boolean;
+  readonly isVideoNftIssuance: boolean;
+  readonly isVideoCreation: boolean;
+  readonly isVideoUpdate: boolean;
+  readonly isChannelUpdate: boolean;
+  readonly isCreatorTokenIssuance: boolean;
+}
 
 /** @name Penalty */
 export interface Penalty extends Struct {

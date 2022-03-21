@@ -493,7 +493,7 @@ impl UpdateChannelFixture {
                                 )
                                 .difference(&self.params.assets_to_remove)
                                 .cloned()
-                            )
+                            ),
                             transfer_status: Default::default(),
                         },
                         self.params.clone(),
@@ -1061,24 +1061,21 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
     }
 }
 
-pub struct ChangeChannelFeaturesStatusAsModeratorFixture {
+pub struct SetChannelPausedFeaturesAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    changes: ChannelFeatureStatusChanges,
+    new_paused_features: BTreeSet<PausableChannelFeature>,
     rationale: Vec<u8>,
 }
 
-impl ChangeChannelFeaturesStatusAsModeratorFixture {
+impl SetChannelPausedFeaturesAsModeratorFixture {
     pub fn default() -> Self {
         Self {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
-            changes: BTreeMap::from_iter(vec![(
-                ChannelFeature::default(),
-                ChannelFeatureStatus::Paused,
-            )]),
+            new_paused_features: BTreeSet::from_iter(vec![PausableChannelFeature::default()]),
             rationale: b"rationale".to_vec(),
         }
     }
@@ -1091,8 +1088,14 @@ impl ChangeChannelFeaturesStatusAsModeratorFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_changes(self, changes: ChannelFeatureStatusChanges) -> Self {
-        Self { changes, ..self }
+    pub fn with_new_paused_features(
+        self,
+        new_paused_features: BTreeSet<PausableChannelFeature>,
+    ) -> Self {
+        Self {
+            new_paused_features,
+            ..self
+        }
     }
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
@@ -1102,11 +1105,11 @@ impl ChangeChannelFeaturesStatusAsModeratorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let channel_pre = ChannelById::<Test>::get(&self.channel_id);
 
-        let actual_result = Content::change_channel_features_status_as_moderator(
+        let actual_result = Content::set_channel_paused_features_as_moderator(
             Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.channel_id,
-            self.changes.clone(),
+            self.new_paused_features.clone(),
             self.rationale.clone(),
         );
 
@@ -1115,21 +1118,13 @@ impl ChangeChannelFeaturesStatusAsModeratorFixture {
         let channel_post = ChannelById::<Test>::get(&self.channel_id);
 
         if actual_result.is_ok() {
-            let mut expected_paused_features = channel_pre.paused_features;
-            for (feature, status) in self.changes.iter() {
-                if *status == ChannelFeatureStatus::Paused {
-                    expected_paused_features.insert(*feature);
-                } else {
-                    expected_paused_features.remove(feature);
-                }
-            }
-            assert_eq!(channel_post.paused_features, expected_paused_features);
+            assert_eq!(channel_post.paused_features, self.new_paused_features);
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelFeaturesStatusChangedByModerator(
+                MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
                     self.actor.clone(),
                     self.channel_id,
-                    self.changes.clone(),
+                    self.new_paused_features.clone(),
                     self.rationale.clone(),
                 ))
             );
@@ -2293,7 +2288,7 @@ pub fn assert_group_has_permissions_for_actions(
     for action in ContentModerationAction::iter() {
         match action {
             ContentModerationAction::ChangeChannelFeatureStatus(..) => {
-                for feature in ChannelFeature::iter() {
+                for feature in PausableChannelFeature::iter() {
                     if !allowed_actions.contains(
                         &ContentModerationAction::ChangeChannelFeatureStatus(feature),
                     ) {
@@ -2497,13 +2492,10 @@ pub fn create_default_curator_owned_channel_with_video_and_comment() {
         .call_and_assert(Ok(()));
 }
 
-pub fn pause_channel_feature(channel_id: ChannelId, feature: ChannelFeature) {
-    ChangeChannelFeaturesStatusAsModeratorFixture::default()
+pub fn pause_channel_feature(channel_id: ChannelId, feature: PausableChannelFeature) {
+    SetChannelPausedFeaturesAsModeratorFixture::default()
         .with_channel_id(channel_id)
-        .with_changes(BTreeMap::from_iter(vec![(
-            feature,
-            ChannelFeatureStatus::Paused,
-        )]))
+        .with_new_paused_features(BTreeSet::from_iter(vec![feature]))
         .call_and_assert(Ok(()));
 }
 

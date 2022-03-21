@@ -679,7 +679,7 @@
         "moderators": "BTreeSet<MemberId>",
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
-        "paused_features": "BTreeSet<ChannelFeature>",
+        "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
         "data_objects": "BTreeSet<DataObjectId>"
     },
@@ -859,7 +859,7 @@
     "NftMetadata": "Vec<u8>",
     "OpenAuctionId": "u64",
     "ChannelPrivilegeLevel": "u8",
-    "ChannelFeature": {
+    "PausableChannelFeature": {
         "_enum": [
             "ChannelFundsTransfer",
             "CreatorCashout",
@@ -870,18 +870,11 @@
             "CreatorTokenIssuance"
         ]
     },
-    "ChannelFeatureStatus": {
-        "_enum": [
-            "Paused",
-            "Active"
-        ]
-    },
-    "ChannelFeatureStatusChanges": "BTreeMap<ChannelFeature,ChannelFeatureStatus>",
     "ContentModerationAction": {
         "_enum": {
             "HideVideo": "Null",
             "HideChannel": "Null",
-            "ChangeChannelFeatureStatus": "ChannelFeature",
+            "ChangeChannelFeatureStatus": "PausableChannelFeature",
             "DeleteVideo": "Null",
             "DeleteChannel": "Null",
             "DeleteVideoAssets": "Null",

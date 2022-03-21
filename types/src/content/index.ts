@@ -124,7 +124,7 @@ export class ChannelOwner extends JoyEnum({
 
 // Moderation
 
-export class ChannelFeature extends JoyEnum({
+export class PausableChannelFeature extends JoyEnum({
   ChannelFundsTransfer: Null,
   CreatorCashout: Null,
   VideoNftIssuance: Null,
@@ -134,17 +134,10 @@ export class ChannelFeature extends JoyEnum({
   CreatorTokenIssuance: Null,
 }) {}
 
-export class ChannelFeatureStatus extends JoyEnum({
-  Paused: Null,
-  Active: Null,
-}) {}
-
-export class ChannelFeatureStatusChanges extends BTreeMap.with(ChannelFeature, ChannelFeatureStatus) {}
-
 export class ContentModerationAction extends JoyEnum({
   HideVideo: Null,
   HideChannel: Null,
-  ChangeChannelFeatureStatus: ChannelFeature,
+  ChangeChannelFeatureStatus: PausableChannelFeature,
   DeleteVideo: Null,
   DeleteChannel: Null,
   DeleteVideoAssets: Null,
@@ -194,7 +187,7 @@ export class Channel extends JoyStructDecorated({
   moderators: BTreeSet.with(MemberId),
   cumulative_payout_earned: Balance,
   privilege_level: ChannelPrivilegeLevel,
-  paused_features: BTreeSet.with(ChannelFeature),
+  paused_features: BTreeSet.with(PausableChannelFeature),
   transfer_status: ChannelTransferStatus,
   data_objects: BTreeSet.with(DataObjectId),
 }) {}
@@ -363,9 +356,7 @@ export const contentTypes = {
   OpenAuctionId,
   // Moderation
   ChannelPrivilegeLevel,
-  ChannelFeature,
-  ChannelFeatureStatus,
-  ChannelFeatureStatusChanges,
+  PausableChannelFeature,
   ContentModerationAction,
   ContentModerationActionsSet,
   ModerationPermissionsByLevel,

@@ -472,7 +472,7 @@ decl_module! {
                 &channel,
             )?;
 
-            channel.ensure_feature_not_paused::<T>(ChannelFeature::ChannelUpdate)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelUpdate)?;
 
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
@@ -539,41 +539,35 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
-        // extrinsics for pausing/re-enabling specified channel features
+        // extrinsics for pausing/re-enabling channel features
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn change_channel_features_status_as_moderator(
+        pub fn set_channel_paused_features_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            channel_feature_status_changes: ChannelFeatureStatusChanges,
+            new_paused_features: BTreeSet<PausableChannelFeature>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
             let sender = ensure_signed(origin)?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            let mut new_paused_features = channel.paused_features.clone();
 
             // Check permissions for moderation actions
-            let mut actions = Vec::<ContentModerationAction>::new();
-            for (feature, status) in channel_feature_status_changes.iter() {
-                actions.push(ContentModerationAction::ChangeChannelFeatureStatus(*feature));
-                if *status == ChannelFeatureStatus::Paused {
-                    new_paused_features.insert(*feature);
-                } else {
-                    new_paused_features.remove(feature);
-                }
-            }
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions, channel.privilege_level)?;
+            let required_permissions = channel.paused_features
+                .symmetric_difference(&new_paused_features)
+                .map(|f| { ContentModerationAction::ChangeChannelFeatureStatus(*f) })
+                .collect::<Vec<_>>();
+            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &required_permissions, channel.privilege_level)?;
 
             //
             // == MUTATION SAFE ==
             //
-            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features });
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
 
 
             // deposit event
-            Self::deposit_event(RawEvent::ChannelFeaturesStatusChangedByModerator(actor, channel_id, channel_feature_status_changes, rationale));
+            Self::deposit_event(RawEvent::ChannelPausedFeaturesUpdatedByModerator(actor, channel_id, new_paused_features, rationale));
 
             Ok(())
         }
@@ -804,9 +798,9 @@ decl_module! {
                 &channel,
             )?;
 
-            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoCreation)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoCreation)?;
             if params.auto_issue_nft.is_some() {
-                channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+                channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
             // next video id
@@ -890,9 +884,9 @@ decl_module! {
                 &channel,
             )?;
 
-            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoUpdate)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoUpdate)?;
             if params.auto_issue_nft.is_some() {
-                channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+                channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
             let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
@@ -976,11 +970,12 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
+            // Try removing the video
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+
             //
             // == MUTATION SAFE ==
             //
-
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video)?;
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
@@ -1065,10 +1060,12 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
+            // Try removing the video
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+
             //
             // == MUTATION SAFE ==
             //
-            Self::execute_delete_video_mutation(&sender, channel_id, video_id, &video)?;
 
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
@@ -1453,7 +1450,7 @@ decl_module! {
 
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
-            channel.ensure_feature_not_paused::<T>(ChannelFeature::CreatorCashout)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
             let cashout = item
                 .cumulative_payout_claimed
@@ -1519,7 +1516,7 @@ decl_module! {
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
-            channel.ensure_feature_not_paused::<T>(ChannelFeature::VideoNftIssuance)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
 
             // The content owner will be..
             let nft_status = Self::construct_owned_nft(&params, video_id)?;
@@ -2626,7 +2623,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn execute_delete_video_mutation(
+    fn try_to_perform_video_deletion(
         sender: &T::AccountId,
         channel_id: T::ChannelId,
         video_id: T::VideoId,
@@ -2815,10 +2812,10 @@ decl_event!(
             bool,
             Vec<u8>, /* rationale */
         ),
-        ChannelFeaturesStatusChangedByModerator(
+        ChannelPausedFeaturesUpdatedByModerator(
             ContentActor,
             ChannelId,
-            ChannelFeatureStatusChanges,
+            BTreeSet<PausableChannelFeature>,
             Vec<u8>, /* rationale */
         ),
         ChannelAssetsDeletedByModerator(
