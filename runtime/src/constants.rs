@@ -139,7 +139,7 @@ lazy_static! {
 
 // Change it when changing the currency constants!
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 10;
+    pub const ExistentialDeposit: u128 = 1;
 }
 
 pub mod currency {

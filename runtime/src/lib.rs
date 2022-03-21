@@ -512,6 +512,29 @@ pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
 pub type CouncilModule = council::Module<Runtime>;
 
+// Production coucil and elections configuration
+#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+parameter_types! {
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = 14400;
+    pub const RevealStageDuration: BlockNumber = 14400;
+    pub const MinimumVotingStake: u64 = 10000;
+
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u64 = 1; // revise ?
+    pub const AnnouncingPeriodDuration: BlockNumber = 14400;
+    pub const IdlePeriodDuration: BlockNumber = 57600;
+    pub const CouncilSize: u64 = 5; // revise
+    pub const MinCandidateStake: u64 = 11000; // revise
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 5000000;
+    pub const BudgetRefillPeriod: BlockNumber = 14400;
+    pub const MaxWinnerTargetCount: u64 = 10; // revise ?
+}
+
+// Staging and testing coucil and elections configuration
+#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -527,7 +550,7 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 10000000;
-    pub const BudgetRefillPeriod: BlockNumber = 14400;
+    pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -1057,9 +1080,9 @@ impl pallet_constitution::Trait for Runtime {
 parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const ClosedContractSizeLimit: u32 = 50;
-    pub const MinCherryLimit: Balance = 10;
-    pub const MinFundingLimit: Balance = 10;
-    pub const MinWorkEntrantStake: Balance = 100;
+    pub const MinCherryLimit: Balance = 1000;
+    pub const MinFundingLimit: Balance = 1000;
+    pub const MinWorkEntrantStake: Balance = 1000;
 }
 
 impl bounty::Trait for Runtime {
