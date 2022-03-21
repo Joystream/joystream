@@ -19,8 +19,17 @@ use sp_std::vec::Vec;
 /// minimum period).
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 
+// Normal 6s block interval
+#[cfg(not(feature = "testing_runtime"))]
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
+#[cfg(not(feature = "testing_runtime"))]
 pub const SLOT_DURATION: Moment = 6000;
+
+// 1s block interval for integration testing
+#[cfg(feature = "testing_runtime")]
+pub const MILLISECS_PER_BLOCK: Moment = 1000;
+#[cfg(feature = "testing_runtime")]
+pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 pub const BONDING_DURATION: u32 = 24 * 7;
