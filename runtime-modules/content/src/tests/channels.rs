@@ -21,7 +21,6 @@ fn channel_censoring() {
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
-                reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
             }
@@ -99,7 +98,6 @@ fn channel_censoring() {
             ChannelCreationParametersRecord {
                 assets: None,
                 meta: None,
-                reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
             }
@@ -386,29 +384,6 @@ fn successful_channel_creation_with_collaborators_set() {
 }
 
 #[test]
-fn successful_channel_creation_with_reward_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
-
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
-    })
-}
-
 // channel update tests
 #[test]
 fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
@@ -1014,151 +989,6 @@ fn unsuccessful_curator_channel_update_with_collaborators_set_updated_by_invalid
             .with_sender(LEAD_ACCOUNT_ID + 100)
             .with_actor(ContentActor::Lead)
             .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_reward_account_updated_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_reward_account_updated_by_unauthorized_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_reward_account_updated_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_reward_account_updated_by_unauthorized_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
-
-        let unauthorized_curator_group_id =
-            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            .with_reward_account(Some(None))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_reward_account_updated_by_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_member_channel_update_with_reward_account_updated_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_reward_account(Some(None))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_curator_channel_update_with_reward_account_updated_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_curator_channel_update_with_reward_account_updated_by_invalid_lead_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Lead)
-            .with_reward_account(Some(None))
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
     })
 }
