@@ -37,8 +37,19 @@ impl SubstrateCli for Cli {
         2019
     }
 
+    #[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
     fn executable_name() -> String {
         "joystream-node".into()
+    }
+
+    #[cfg(feature = "staging_runtime")]
+    fn executable_name() -> String {
+        "joystream-node (staging runtime)".into()
+    }
+
+    #[cfg(feature = "testing_runtime")]
+    fn executable_name() -> String {
+        "joystream-node (testing runtime)".into()
     }
 
     fn impl_version() -> String {
