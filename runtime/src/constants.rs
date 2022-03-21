@@ -121,7 +121,7 @@ parameter_types! {
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
-// This is a copye because the current Substrate staking lock ID is not exported.
+// This is a copy because the current Substrate staking lock ID is not exported.
 pub const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
 
 pub const VESTING_LOCK_ID: LockIdentifier = *b"vesting ";

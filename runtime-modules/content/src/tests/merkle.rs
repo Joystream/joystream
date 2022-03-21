@@ -267,7 +267,7 @@ fn successful_reward_claim_by_member() {
 }
 
 #[test]
-fn successful_reward_claim_by_curator() {
+fn unsuccessful_reward_claim_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -300,20 +300,18 @@ fn successful_reward_claim_with_member_owned_channel_no_reward_account_found() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
-            .call_and_assert(Ok(()))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
 #[test]
-fn unsuccessful_reward_claim_with_curator_owned_channel_no_reward_account_found() {
+fn successful_reward_claim_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -324,18 +322,14 @@ fn unsuccessful_reward_claim_with_curator_owned_channel_no_reward_account_found(
         update_commit_value_with_payments_helper(&payments);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
-        UpdateChannelFixture::default()
+        ClaimChannelRewardFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_payments(payments)
             .with_actor(ContentActor::Curator(
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
+            .call_and_assert(Ok(()))
     })
 }
 

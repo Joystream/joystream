@@ -92,7 +92,7 @@ fn pick_open_auction_winner() {
                 video_id,
                 bid,
             )),
-            number_of_events_before_call + 1,
+            number_of_events_before_call + 3,
         );
     })
 }

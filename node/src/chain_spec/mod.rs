@@ -248,6 +248,7 @@ pub fn testnet_genesis(
             history_depth: 336,
             ..Default::default()
         }),
+        pallet_vesting: Some(Default::default()),
         pallet_sudo: Some(SudoConfig { key: root_key }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
