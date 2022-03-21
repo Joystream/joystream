@@ -147,6 +147,9 @@ export class ContentModerationAction extends JoyEnum({
   ChangeChannelFeatureStatus: ChannelFeature,
   DeleteVideo: Null,
   DeleteChannel: Null,
+  DeleteVideoAssets: Null,
+  DeleteNftVideoAssets: Null,
+  DeleteChannelAssets: Null,
 }) {}
 
 export class ContentModerationActionsSet extends BTreeSet.with(ContentModerationAction) {}
@@ -193,6 +196,7 @@ export class Channel extends JoyStructDecorated({
   privilege_level: ChannelPrivilegeLevel,
   paused_features: BTreeSet.with(ChannelFeature),
   transfer_status: ChannelTransferStatus,
+  data_objects: BTreeSet.with(DataObjectId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
@@ -244,6 +248,7 @@ export class Video extends JoyStructDecorated({
   enable_comments: bool,
   video_post_id: Option.with(VideoPostId),
   nft_status: Option.with(OwnedNft),
+  data_objects: BTreeSet.with(DataObjectId),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({

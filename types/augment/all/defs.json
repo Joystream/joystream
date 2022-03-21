@@ -680,7 +680,8 @@
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<ChannelFeature>",
-        "transfer_status": "ChannelTransferStatus"
+        "transfer_status": "ChannelTransferStatus",
+        "data_objects": "BTreeSet<DataObjectId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -712,7 +713,8 @@
         "in_channel": "ChannelId",
         "enable_comments": "bool",
         "video_post_id": "Option<VideoPostId>",
-        "nft_status": "Option<OwnedNft>"
+        "nft_status": "Option<OwnedNft>",
+        "data_objects": "BTreeSet<DataObjectId>"
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
@@ -881,7 +883,10 @@
             "HideChannel": "Null",
             "ChangeChannelFeatureStatus": "ChannelFeature",
             "DeleteVideo": "Null",
-            "DeleteChannel": "Null"
+            "DeleteChannel": "Null",
+            "DeleteVideoAssets": "Null",
+            "DeleteNftVideoAssets": "Null",
+            "DeleteChannelAssets": "Null"
         }
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",

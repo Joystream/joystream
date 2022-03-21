@@ -218,6 +218,7 @@ export interface Channel extends Struct {
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<ChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
+  readonly data_objects: BTreeSet<DataObjectId>;
 }
 
 /** @name ChannelCategory */
@@ -327,6 +328,9 @@ export interface ContentModerationAction extends Enum {
   readonly asChangeChannelFeatureStatus: ChannelFeature;
   readonly isDeleteVideo: boolean;
   readonly isDeleteChannel: boolean;
+  readonly isDeleteVideoAssets: boolean;
+  readonly isDeleteNftVideoAssets: boolean;
+  readonly isDeleteChannelAssets: boolean;
 }
 
 /** @name ContentModerationActionsSet */
@@ -1186,6 +1190,7 @@ export interface Video extends Struct {
   readonly enable_comments: bool;
   readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;
+  readonly data_objects: BTreeSet<DataObjectId>;
 }
 
 /** @name VideoCategory */
