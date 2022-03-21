@@ -10,6 +10,10 @@ if [[ "$RUNTIME_PROFILE" == "STAGING" ]]; then
   FEATURES="staging_runtime"
 fi
 
+if [[ "$RUNTIME_PROFILE" == "PLAYGROUND" ]]; then
+  FEATURES="playground_runtime"
+fi
+
 export WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
 
 echo 'running clippy (rust linter)'

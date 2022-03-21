@@ -188,5 +188,6 @@ runtime-benchmarks = [
 # Staging and testing configurations
 # configuration suitable for staging networks and playground
 staging_runtime = []
+playground_runtime = ['staging_runtime']
 # configuration suitable for integration testing
 testing_runtime = []

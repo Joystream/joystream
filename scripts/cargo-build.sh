@@ -11,4 +11,8 @@ if [[ "$RUNTIME_PROFILE" == "STAGING" ]]; then
   FEATURES="staging_runtime"
 fi
 
+if [[ "$RUNTIME_PROFILE" == "PLAYGROUND" ]]; then
+  FEATURES="playground_runtime"
+fi
+
 cargo +nightly-2021-02-20 build --release --features "${FEATURES}"

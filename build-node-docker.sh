@@ -17,6 +17,10 @@ if [[ "$RUNTIME_PROFILE" == "STAGING" ]]; then
   FEATURES="staging_runtime"
 fi
 
+if [[ "$RUNTIME_PROFILE" == "PLAYGROUND" ]]; then
+  FEATURES="playground_runtime"
+fi
+
 # Look for image locally
 if ! docker inspect ${IMAGE} > /dev/null;
 then

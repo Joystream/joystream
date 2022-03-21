@@ -525,15 +525,15 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1; // revise ?
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
-    pub const CouncilSize: u64 = 5; // revise
-    pub const MinCandidateStake: u64 = 11000; // revise
+    pub const CouncilSize: u64 = 12;
+    pub const MinCandidateStake: u64 = 1000; // revise
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 5000000;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // revise ?
 }
 
-// Staging and testing coucil and elections configuration
+// Common staging and testing coucil and elections configuration
 #[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 parameter_types! {
     // referendum parameters
@@ -546,12 +546,31 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
-    pub const CouncilSize: u64 = 5;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: u64 = 1000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 10000000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
+}
+
+// Staging network council size
+#[cfg(feature = "staging_runtime")]
+#[cfg(not(feature = "playground_runtime"))]
+parameter_types! {
+    pub const CouncilSize: u64 = 5;
+}
+
+// Staging but customized for playground council size
+#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "playground_runtime")]
+parameter_types! {
+    pub const CouncilSize: u64 = 1;
+}
+
+// Testing council size
+#[cfg(feature = "testing_runtime")]
+parameter_types! {
+    pub const CouncilSize: u64 = 5;
 }
 
 impl referendum::Trait<ReferendumInstance> for Runtime {

@@ -84,7 +84,7 @@ yarn build:packages
 RUNTIME_PROFILE=TESTING yarn build:node:docker
 
 # Run tests
-./query-node/run-tests.sh
+./tests/network-tests/run-full-tests.sh
 ```
 
 ### Contributing
