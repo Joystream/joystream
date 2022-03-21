@@ -72,7 +72,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, Balance> {
+pub struct ChannelRecord<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -85,9 +85,56 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+    /// Transfer status of the channel. Requires to be explicitly accepted.
+    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, Balance> ChannelRecord<MemberId, CuratorGroupId, Balance> {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+/// Defines whether a channel is being transferred. No transfer by the default.
+pub enum ChannelTransferStatus<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    Balance: PartialEq,
+> {
+    /// Default transfer status: no pending tranfers.
+    NoActiveTransfer,
+
+    /// There is ongoing transfer with parameters.
+    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
+}
+
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> Default
+    for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
+{
+    fn default() -> Self {
+        ChannelTransferStatus::NoActiveTransfer
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
+    /// New channel owner.
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    /// Transfer parameters.
+    pub transfer_params: TransferParameters<MemberId, Balance>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct TransferParameters<MemberId: Ord, Balance> {
+    /// New set of the channel's collaborators.
+    pub new_collaborators: BTreeSet<MemberId>,
+    /// Transfer price: can be 0, which means free.
+    pub price: Balance,
+}
+
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq>
+    ChannelRecord<MemberId, CuratorGroupId, Balance>
+{
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
         ensure!(
@@ -95,6 +142,21 @@ impl<MemberId: Ord, CuratorGroupId, Balance> ChannelRecord<MemberId, CuratorGrou
             Error::<T>::ChannelCensorshipStatusDidNotChange
         );
         Ok(())
+    }
+
+    /// Ensures that the channel has no active transfers.
+    pub fn ensure_has_no_active_transfer<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            !self.has_active_transfer(),
+            Error::<T>::InvalidChannelTransferStatus
+        );
+
+        Ok(())
+    }
+
+    // Defines whether the channel has ongoing transfer.
+    fn has_active_transfer(&self) -> bool {
+        self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 }
 

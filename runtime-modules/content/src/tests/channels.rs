@@ -5,6 +5,7 @@ use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+use frame_system::RawOrigin;
 
 #[test]
 fn channel_censoring() {
@@ -122,6 +123,25 @@ fn channel_censoring() {
             is_censored,
             vec![]
         ));
+
+        // Invalid transfer status
+        UpdateChannelTransferStatusFixture::default()
+            .with_channel_id(curator_channel_id)
+            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Content::update_channel_censorship_status(
+                Origin::signed(LEAD_ACCOUNT_ID),
+                ContentActor::Lead,
+                curator_channel_id,
+                is_censored,
+                vec![]
+            ),
+            Error::<Test>::InvalidChannelTransferStatus
+        );
     })
 }
 
@@ -364,17 +384,6 @@ fn successful_channel_creation_with_collaborators_set() {
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
-    })
-}
-
 // channel update tests
 #[test]
 fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
@@ -501,6 +510,30 @@ fn successful_channel_update_with_assets_uploaded_by_member() {
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_pending_status_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
@@ -1003,23 +1036,6 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
 }
 
 #[test]
-fn unsuccessful_channel_update_with_invalid_collaborators_set() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
-    })
-}
-
-#[test]
 fn unsuccessful_channel_update_with_invalid_expected_data_size_fee() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1327,17 +1343,5 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
             // default member owned channel has DATA_OBJECTS_NUMBER > 0 assets
             .with_num_objects_to_delete(0u64)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_creation_with_invalid_moderator_set() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }

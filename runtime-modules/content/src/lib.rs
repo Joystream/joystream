@@ -361,10 +361,6 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // ensure collaborator & moderator member ids are valid
-            Self::validate_member_set(&params.moderators)?;
-            Self::validate_member_set(&params.collaborators)?;
-
             let storage_assets = params.assets.clone().unwrap_or_default();
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
@@ -393,6 +389,7 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
+                transfer_status: ChannelTransferStatus::NoActiveTransfer,
             };
 
             // add channel to onchain state
@@ -413,6 +410,8 @@ decl_module! {
             // check that channel exists
             let mut channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
                 &actor,
@@ -422,8 +421,6 @@ decl_module! {
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
-                // ensure collaborator member ids are valid
-                Self::validate_member_set(new_collabs)?;
 
                 channel.collaborators = new_collabs.clone();
             }
@@ -517,6 +514,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_censor::<T>(
                 origin,
                 &actor,
@@ -607,6 +606,7 @@ decl_module! {
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -677,7 +677,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(&channel_id);
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Check for permission to update channel assets
             ensure_actor_authorized_to_update_channel_assets::<T>(
@@ -739,6 +740,7 @@ decl_module! {
             // get information regarding channel
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
                 &sender,
@@ -979,6 +981,7 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             match post.post_type {
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
@@ -1009,6 +1012,7 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
             let video = VideoById::<T>::get(video_id);
             let channel = ChannelById::<T>::get(video.in_channel);
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             let cleanup_actor = match post.post_type {
                 VideoPostType::<T>::Description => {
@@ -1118,15 +1122,16 @@ decl_module! {
         ) {
             // ensure (origin, actor) is channel owner
             let sender = ensure_signed(origin)?;
-            let owner = Self::ensure_channel_exists(&channel_id)?.owner;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            let owner = channel.owner;
 
             ensure_actor_can_manage_moderators::<T>(
                 &sender,
                 &owner,
                 &actor,
             )?;
-
-            Self::validate_member_set(&new_moderators)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1161,6 +1166,7 @@ decl_module! {
             item: PullPayment<T>,
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&item.channel_id)?;
+            channel.ensure_has_no_active_transfer::<T>()?;
 
 
             ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
@@ -2045,6 +2051,67 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
+        /// Updates channel transfer status to whatever the current owner wants.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_transfer_status(
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            ChannelById::<T>::mutate(&channel_id,
+                |channel| channel.transfer_status = new_transfer_status.clone()
+            );
+
+            Self::deposit_event(
+                RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
+            );
+        }
+
+        /// Accepts channel transfer.
+        /// `commitment_params` is required to prevent changing the transfer conditions.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_channel_transfer(
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &channel.owner)?;
+
+            if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
+                ensure!(
+                    params.transfer_params == commitment_params,
+                    Error::<T>::InvalidChannelTransferCommitmentParams
+                );
+            } else {
+                return Err(Error::<T>::InvalidChannelTransferStatus.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let ChannelTransferStatus::PendingTransfer(params) = channel.transfer_status {
+                ChannelById::<T>::mutate(&channel_id, |channel| {
+                    channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                    channel.owner = params.new_owner.clone();
+                });
+
+                Self::deposit_event(
+                    RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+                );
+            }
+        }
+
     }
 }
 
@@ -2250,15 +2317,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn validate_member_set(members: &BTreeSet<T::MemberId>) -> DispatchResult {
-        // check if all members are valid
-        let res = members
-            .iter()
-            .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
-        ensure!(res, Error::<T>::InvalidMemberProvided);
-        Ok(())
-    }
-
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
         let candidate_root = proof.iter().fold(
             <T as frame_system::Trait>::Hashing::hash_of(item),
@@ -2321,6 +2379,13 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        ChannelTransferStatus = ChannelTransferStatus<
+            <T as common::MembershipTypes>::MemberId,
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            BalanceOf<T>,
+        >,
+        TransferParameters =
+            TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2414,5 +2479,9 @@ decl_event!(
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
+
+        /// Channel transfer
+        UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
+        ChannelTransferAccepted(ChannelId, ContentActor, TransferParameters),
     }
 );

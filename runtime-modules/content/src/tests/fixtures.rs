@@ -3,6 +3,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use frame_system::RawOrigin;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -109,6 +110,7 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
+                        transfer_status: Default::default(),
                     },
                     self.params.clone(),
                 ))
@@ -396,7 +398,7 @@ impl UpdateChannelFixture {
                         self.actor.clone(),
                         self.channel_id,
                         ChannelRecord {
-                            owner: owner,
+                            owner,
                             is_censored: channel_pre.is_censored,
                             collaborators: self
                                 .params
@@ -406,6 +408,7 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_payout_earned: BalanceOf::<Test>::zero(),
+                            transfer_status: Default::default(),
                         },
                         self.params.clone(),
                     ))
@@ -1102,13 +1105,6 @@ impl UpdateModeratorSetFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            new_moderators,
-            ..self
-        }
-    }
-
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
@@ -1337,6 +1333,165 @@ impl ClaimChannelRewardFixture {
         } else {
             assert_eq!(balance_post, balance_pre);
             assert_eq!(payout_earned_post, payout_earned_pre);
+        }
+    }
+}
+
+pub struct UpdateChannelTransferStatusFixture {
+    origin: RawOrigin<u64>,
+    channel_id: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
+}
+
+impl UpdateChannelTransferStatusFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            transfer_status: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_transfer_status(
+        self,
+        transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
+    ) -> Self {
+        Self {
+            transfer_status,
+            ..self
+        }
+    }
+
+    pub fn with_transfer_status_by_member_id(self, member_id: MemberId) -> Self {
+        Self {
+            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+                MemberId,
+                CuratorGroupId,
+                BalanceOf<Test>,
+            > {
+                new_owner: ChannelOwner::Member(member_id),
+                ..Default::default()
+            }),
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_channel = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::update_channel_transfer_status(
+            self.origin.clone().into(),
+            self.channel_id,
+            self.actor.clone(),
+            self.transfer_status.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_channel = Content::channel_by_id(self.channel_id);
+        if actual_result.is_ok() {
+            assert_eq!(new_channel.transfer_status, self.transfer_status.clone());
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
+                    self.channel_id,
+                    self.actor.clone(),
+                    self.transfer_status.clone()
+                ))
+            );
+        } else {
+            assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
+        }
+    }
+}
+
+pub struct AcceptChannelTransferFixture {
+    origin: RawOrigin<u64>,
+    channel_id: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    params: TransferParameters<MemberId, BalanceOf<Test>>,
+}
+
+impl AcceptChannelTransferFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            params: TransferParameters::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_transfer_params(
+        self,
+        params: TransferParameters<MemberId, BalanceOf<Test>>,
+    ) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_channel = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::accept_channel_transfer(
+            self.origin.clone().into(),
+            self.channel_id,
+            self.actor.clone(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_channel = Content::channel_by_id(self.channel_id);
+        if actual_result.is_ok() {
+            assert_eq!(
+                new_channel.transfer_status,
+                ChannelTransferStatus::NoActiveTransfer
+            );
+            let channel_owner = if let ChannelTransferStatus::PendingTransfer(ref params) =
+                old_channel.transfer_status
+            {
+                params.new_owner.clone()
+            } else {
+                panic!("Invalid transfer status")
+            };
+
+            assert_eq!(new_channel.owner, channel_owner);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelTransferAccepted(
+                    self.channel_id,
+                    self.actor.clone(),
+                    self.params.clone()
+                ))
+            );
+        } else {
+            assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
         }
     }
 }
