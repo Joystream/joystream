@@ -324,6 +324,19 @@ impl UploadFixture {
         Self { params, ..self }
     }
 
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: UploadParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
         let bag_pre = <crate::Bags<Test>>::get(&self.params.bag_id);
@@ -1401,6 +1414,30 @@ impl CreateDynamicBagFixture {
         Self {
             params: DynBagCreationParameters::<Test> {
                 expected_data_size_fee,
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_expected_dynamic_bag_deletion_prize(
+        self,
+        expected_dynamic_bag_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                expected_dynamic_bag_deletion_prize,
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
                 ..self.params
             },
             ..self

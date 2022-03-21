@@ -15,7 +15,6 @@ pub struct CreateChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: ChannelCreationParameters<Test>,
-    data_object_deletion_prize: u64,
 }
 
 impl CreateChannelFixture {
@@ -28,14 +27,18 @@ impl CreateChannelFixture {
                 meta: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                expected_dynamic_bag_deletion_prize: Default::default(),
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
-            data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
-            data_object_deletion_prize,
+            params: ChannelCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
             ..self
         }
     }
@@ -131,7 +134,7 @@ impl CreateChannelFixture {
                     .object_creation_list
                     .iter()
                     .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                        acc.saturating_add(self.data_object_deletion_prize)
+                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
                     });
 
                 assert_eq!(
@@ -158,7 +161,6 @@ pub struct CreateVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: VideoCreationParameters<Test>,
     channel_id: ChannelId,
-    data_object_deletion_prize: u64,
 }
 
 impl CreateVideoFixture {
@@ -171,15 +173,18 @@ impl CreateVideoFixture {
                 meta: None,
                 enable_comments: true,
                 auto_issue_nft: None,
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
-            data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
-            data_object_deletion_prize,
+            params: VideoCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
             ..self
         }
     }
@@ -260,7 +265,7 @@ impl CreateVideoFixture {
                     .object_creation_list
                     .iter()
                     .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                        acc.saturating_add(self.data_object_deletion_prize)
+                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
                     });
 
                 assert_eq!(
@@ -293,7 +298,6 @@ pub struct UpdateChannelFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     params: ChannelUpdateParameters<Test>,
-    data_object_deletion_prize: u64,
 }
 
 impl UpdateChannelFixture {
@@ -307,14 +311,17 @@ impl UpdateChannelFixture {
                 new_meta: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
-            data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
-            data_object_deletion_prize,
+            params: ChannelUpdateParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
             ..self
         }
     }
@@ -376,7 +383,7 @@ impl UpdateChannelFixture {
                         .object_creation_list
                         .iter()
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(self.data_object_deletion_prize)
+                            acc.saturating_add(self.params.expected_data_object_deletion_prize)
                         })
                 });
 
@@ -481,7 +488,18 @@ impl UpdateVideoFixture {
                 enable_comments: None,
                 new_meta: None,
                 auto_issue_nft: Default::default(),
+                expected_data_object_deletion_prize: Default::default(),
             },
+        }
+    }
+
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
         }
     }
 

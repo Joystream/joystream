@@ -187,7 +187,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord> {
+pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord, Balance> {
     /// Assets referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
@@ -196,15 +196,22 @@ pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord> {
     pub collaborators: BTreeSet<MemberId>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
+    /// Commitment for the dynamic bag deletion prize for the storage pallet.
+    pub expected_dynamic_bag_deletion_prize: Balance,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
-pub type ChannelCreationParameters<T> =
-    ChannelCreationParametersRecord<StorageAssets<T>, <T as common::MembershipTypes>::MemberId>;
+pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
+    StorageAssets<T>,
+    <T as common::MembershipTypes>::MemberId,
+    BalanceOf<T>,
+>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord> {
+pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord, Balance> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
@@ -213,12 +220,15 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
     pub collaborators: Option<BTreeSet<MemberId>>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     StorageAssets<T>,
     DataObjectId<T>,
     <T as common::MembershipTypes>::MemberId,
+    BalanceOf<T>,
 >;
 
 /// A category that videos can belong to.
@@ -261,7 +271,7 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters> {
+pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, Balance> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
@@ -270,15 +280,22 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters> {
     pub enable_comments: bool,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 pub type VideoCreationParameters<T> =
-    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>>;
+    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>, BalanceOf<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord, NftIssuanceParameters> {
+pub struct VideoUpdateParametersRecord<
+    StorageAssets,
+    DataObjectId: Ord,
+    NftIssuanceParameters,
+    Balance,
+> {
     /// Assets referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the video.
@@ -289,10 +306,16 @@ pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord, NftIssu
     pub enable_comments: Option<bool>,
     /// Parameters for updating Nft along with video
     pub auto_issue_nft: Option<NftIssuanceParameters>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
-pub type VideoUpdateParameters<T> =
-    VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>, NftIssuanceParameters<T>>;
+pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
+    StorageAssets<T>,
+    DataObjectId<T>,
+    NftIssuanceParameters<T>,
+    BalanceOf<T>,
+>;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

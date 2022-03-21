@@ -23,6 +23,8 @@ fn channel_censoring() {
                 meta: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                expected_dynamic_bag_deletion_prize: Default::default(),
+                expected_data_object_deletion_prize: Default::default(),
             }
         ));
 
@@ -100,6 +102,8 @@ fn channel_censoring() {
                 meta: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                expected_dynamic_bag_deletion_prize: Default::default(),
+                expected_data_object_deletion_prize: Default::default(),
             }
         ));
 
@@ -300,12 +304,9 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let data_object_deletion_prize = 10;
-
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {

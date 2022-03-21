@@ -457,6 +457,7 @@ fn unsuccessful_video_creation_with_insufficient_balance() {
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -889,6 +890,7 @@ fn unsuccessful_video_update_with_insufficient_balance() {
         slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
 
         UpdateVideoFixture::default()
+            .with_data_object_deletion_prize(data_object_deletion_prize)
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),

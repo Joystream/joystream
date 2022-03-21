@@ -804,6 +804,12 @@ pub struct UploadParametersRecord<BagId, AccountId, Balance> {
 
     /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
+
+    /// Commitment for the dynamic bag deletion prize for the storage pallet.
+    pub expected_dynamic_bag_deletion_prize: Balance,
+
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 /// Alias for the DynamicBagDeletionPrizeRecord
@@ -1657,6 +1663,12 @@ decl_error! {
 
         /// Invalid extrinsic call: data size fee changed.
         DataSizeFeeChanged,
+
+        /// Invalid extrinsic call: data object deletion prize changed.
+        DataObjectDeletionPrizeChanged,
+
+        /// Invalid extrinsic call: dynamic bag deletion prize changed.
+        DynamicBagDeletionPrizeChanged,
 
         /// Cannot delete non empty dynamic bag.
         CannotDeleteNonEmptyDynamicBag,
@@ -2870,6 +2882,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
+        // ensure data object deletion prize
+        ensure!(
+            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
+            Error::<T>::DataObjectDeletionPrizeChanged,
+        );
+
         let start = NextDataObjectId::<T>::get();
         Self::try_mutating_storage_state(
             params.deletion_prize_source_account_id.clone(),
@@ -2977,6 +2995,13 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
                 upload_parameters.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
                 Error::<T>::DataSizeFeeChanged,
             );
+
+            // ensure data object deletion prize
+            ensure!(
+                upload_parameters.expected_data_object_deletion_prize
+                    == Self::data_object_deletion_prize_value(),
+                Error::<T>::DataObjectDeletionPrizeChanged,
+            );
         }
         Self::try_mutating_storage_state(
             upload_parameters.deletion_prize_source_account_id.clone(),
@@ -3020,6 +3045,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn create_dynamic_bag(params: DynBagCreationParameters<T>) -> DispatchResult {
         let deletion_prize = Self::dynamic_bag_deletion_prize_value();
         let bag_id: BagId<T> = params.bag_id.clone().into();
+
+        // ensure dynamic bag deletion prize
+        ensure!(
+            params.expected_dynamic_bag_deletion_prize == Self::dynamic_bag_deletion_prize_value(),
+            Error::<T>::DynamicBagDeletionPrizeChanged,
+        );
+
+        // ensure data object deletion prize
+        ensure!(
+            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
+            Error::<T>::DataObjectDeletionPrizeChanged,
+        );
 
         // ensure specified data fee == storage data fee
         ensure!(
