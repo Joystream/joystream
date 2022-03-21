@@ -375,12 +375,6 @@ export interface CuratorGroupId extends u64 {}
 /** @name CuratorId */
 export interface CuratorId extends u64 {}
 
-/** @name CurrencyAmount */
-export interface CurrencyAmount extends u128 {}
-
-/** @name CurrencyOf */
-export interface CurrencyOf extends u128 {}
-
 /** @name DataObject */
 export interface DataObject extends Struct {
   readonly accepted: bool;

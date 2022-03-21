@@ -267,6 +267,27 @@ fn successful_reward_claim_by_member() {
 }
 
 #[test]
+fn unsuccessful_reward_claim_with_pending_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn successful_reward_claim_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -286,56 +307,6 @@ fn successful_reward_claim_by_curator() {
                 DEFAULT_CURATOR_ID,
             ))
             .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn successful_reward_claim_with_member_owned_channel_no_reward_account_found() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_with_curator_owned_channel_no_reward_account_found() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
     })
 }
 
