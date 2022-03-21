@@ -39,7 +39,9 @@ aws cloudformation deploy \
     BuildEC2InstanceType=$BUILD_EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
     EC2AMI=$EC2_AMI_ID \
-    NumberOfValidators=$NUMBER_OF_VALIDATORS
+    NumberOfValidators=$NUMBER_OF_VALIDATORS \
+    VolumeSize=$VOLUME_SIZE \
+    RPCVolumeSize=$RPC_VOLUME_SIZE
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then

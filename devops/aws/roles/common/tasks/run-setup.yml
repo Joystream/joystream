@@ -1,0 +1,20 @@
+---
+# Run setup
+
+- name: Create bash profile file
+  command: 'touch /home/ubuntu/.bash_profile'
+
+- name: Run setup script
+  command: ./setup.sh
+  args:
+    chdir: '{{ remote_code_path }}'
+
+- name: Copy bash_profile content
+  shell: cat ~/.bash_profile
+  register: bash_data
+
+- name: Copy bash_profile content to bashrc for non-interactive sessions
+  blockinfile:
+    block: '{{ bash_data.stdout }}'
+    path: ~/.bashrc
+    insertbefore: BOF

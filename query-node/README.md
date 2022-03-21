@@ -46,3 +46,19 @@ You can stop the query-node and remove all associated docker containers without 
 ```bash
 yarn workspace query-node-root kill
 ```
+
+- Database connection settings: DB_NAME, DB_HOST, DB_PORT, DB_USER, DB_PASS
+- Chain RPC endpoint: WS_PROVIDER_ENDPOINT_URI
+- If non-standard types are being used by the Substrate runtime, map type definitions in the json format as an external volume
+
+Follow the links for more information about the [indexer](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer) service and [indexer-api-gateway](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer-gateway).
+
+## GraphQL Playground assets url
+Query node's user interface, GraphQL Playground, is expecting to be served at `/graphql`. 
+If you are serving the files on path like `/query/server/graphql` via some nginx proxy, aliasing, etc. you will need to provide
+the base url to query node server via `GRAPHQL_PLAYGROUND_CDN` environment variable.
+
+```
+# use the following when serving playground at `/query/server/graphql`
+GRAPHQL_PLAYGROUND_CDN="query/server" yarn workspace query-node-root query-node:start:dev 
+```
