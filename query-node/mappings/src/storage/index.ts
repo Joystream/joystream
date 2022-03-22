@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { Storage } from '../generated/types/storage'
+import { Storage } from '../../generated/types/storage'
 import {
   DistributionBucket,
   DistributionBucketFamily,
