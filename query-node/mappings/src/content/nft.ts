@@ -44,7 +44,7 @@ import {
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
-import { FindConditions } from 'typeorm'
+import { FindConditions, In } from 'typeorm'
 import BN from 'bn.js'
 
 // definition of generic type for Hydra DatabaseManager's methods
@@ -166,7 +166,7 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   errorMessage: string
 ): Promise<Type[]> {
   // load entities
-  const entities = await store.getMany(entityType, { where: { id: ids } })
+  const entities = await store.getMany(entityType, { where: { id: In(ids) } })
 
   // assess loaded entity ids
   const loadedEntityIds = entities.map((item) => item.id.toString())
