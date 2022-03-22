@@ -309,8 +309,8 @@ export interface ContentModerationAction extends Enum {
   readonly isDeleteVideo: boolean;
   readonly isDeleteChannel: boolean;
   readonly isDeleteVideoAssets: boolean;
-  readonly isDeleteNftVideoAssets: boolean;
-  readonly isDeleteChannelAssets: boolean;
+  readonly asDeleteVideoAssets: bool;
+  readonly isDeleteNonVideoChannelAssets: boolean;
 }
 
 /** @name ContentModerationActionsSet */

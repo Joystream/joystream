@@ -2006,7 +2006,7 @@ fn unsuccessful_moderation_action_invalid_channel_assets_deletion() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannelAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
             )]),
         );
 
@@ -2036,7 +2036,7 @@ fn unsuccessful_moderation_action_non_existing_channel_assets_deletion() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannelAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
             )]),
         );
 
@@ -2061,7 +2061,7 @@ fn successful_moderation_action_channel_assets_deletion_by_curator() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannelAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
             )]),
         );
 

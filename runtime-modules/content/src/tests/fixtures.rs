@@ -466,38 +466,34 @@ impl UpdateChannelFixture {
 
         match actual_result {
             Ok(()) => {
-                let owner = channel_post.owner.clone();
                 assert_eq!(
                     System::events().last().unwrap().event,
                     MetaEvent::content(RawEvent::ChannelUpdated(
                         self.actor.clone(),
                         self.channel_id,
-                        ChannelRecord {
-                            owner,
-                            collaborators: self
-                                .params
-                                .collaborators
-                                .clone()
-                                .unwrap_or(channel_pre.collaborators),
-                            num_videos: channel_pre.num_videos,
-                            moderators: channel_pre.moderators,
-                            cumulative_payout_earned: BalanceOf::<Test>::zero(),
-                            privilege_level: Zero::zero(),
-                            paused_features: BTreeSet::new(),
-                            data_objects: BTreeSet::from_iter(
-                                BTreeSet::from_iter(
-                                    channel_pre
-                                        .data_objects
-                                        .union(&BTreeSet::from_iter(beg_obj_id..end_obj_id))
-                                        .cloned()
-                                )
-                                .difference(&self.params.assets_to_remove)
-                                .cloned()
-                            ),
-                            transfer_status: Default::default(),
-                        },
                         self.params.clone(),
+                        BTreeSet::from_iter(beg_obj_id..end_obj_id)
                     ))
+                );
+
+                assert_eq!(
+                    channel_post.collaborators,
+                    self.params
+                        .collaborators
+                        .clone()
+                        .unwrap_or(channel_pre.collaborators)
+                );
+
+                assert_eq!(
+                    channel_post.data_objects,
+                    channel_pre
+                        .data_objects
+                        .union(&BTreeSet::from_iter(beg_obj_id..end_obj_id))
+                        .cloned()
+                        .collect::<BTreeSet<_>>()
+                        .difference(&self.params.assets_to_remove)
+                        .cloned()
+                        .collect::<BTreeSet<_>>()
                 );
 
                 assert_eq!(

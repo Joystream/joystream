@@ -140,9 +140,8 @@ export class ContentModerationAction extends JoyEnum({
   ChangeChannelFeatureStatus: PausableChannelFeature,
   DeleteVideo: Null,
   DeleteChannel: Null,
-  DeleteVideoAssets: Null,
-  DeleteNftVideoAssets: Null,
-  DeleteChannelAssets: Null,
+  DeleteVideoAssets: bool,
+  DeleteNonVideoChannelAssets: Null,
 }) {}
 
 export class ContentModerationActionsSet extends BTreeSet.with(ContentModerationAction) {}

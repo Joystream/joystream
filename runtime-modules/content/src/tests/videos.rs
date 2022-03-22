@@ -1573,7 +1573,7 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_no_p
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
             )]),
         );
 
@@ -1598,7 +1598,7 @@ fn unsuccessful_moderation_action_invalid_video_assets_deletion() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
             )]),
         );
 
@@ -1629,7 +1629,7 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
             )]),
         );
 
@@ -1654,7 +1654,7 @@ fn successful_moderation_action_video_assets_deletion_by_curator() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
             )]),
         );
 
@@ -1691,7 +1691,7 @@ fn successful_moderation_action_nft_video_assets_deletion_by_curator() {
             DEFAULT_CURATOR_ID,
             BTreeMap::from_iter(vec![(
                 0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNftVideoAssets]),
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
             )]),
         );
 
