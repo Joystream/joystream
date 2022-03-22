@@ -522,15 +522,15 @@ parameter_types! {
     pub const MinimumVotingStake: u64 = 10000;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1; // revise ?
+    pub const MinNumberOfExtraCandidates: u64 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
     pub const CouncilSize: u64 = 12;
-    pub const MinCandidateStake: u64 = 1000; // revise
+    pub const MinCandidateStake: u64 = 1000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 5000000;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
-    pub const MaxWinnerTargetCount: u64 = 10; // revise ?
+    pub const MaxWinnerTargetCount: u64 = 15; // should be greater than council size
 }
 
 // Common staging and testing coucil and elections configuration
