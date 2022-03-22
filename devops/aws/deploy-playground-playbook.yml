@@ -56,7 +56,7 @@
       args:
         chdir: '{{ remote_code_path }}'
       environment:
-        ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters }}'
+        RUNTIME_PROFILE: '{{ runtime_profile }}'
       async: 3600
       poll: 0
       register: node_build_result
