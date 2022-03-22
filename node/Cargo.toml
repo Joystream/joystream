@@ -111,5 +111,3 @@ runtime-benchmarks = [
 	"node-runtime/runtime-benchmarks",
 	"frame-benchmarking-cli",
 ]
-staging_runtime = []
-testing_runtime = []
