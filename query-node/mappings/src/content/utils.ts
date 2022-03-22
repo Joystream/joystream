@@ -66,8 +66,6 @@ const ASSET_TYPES = {
 export const videoRelationsForCountersBare = ['channel', 'channel.category', 'category']
 // all relations that need to be loaded for full evalution of video active status to work
 export const videoRelationsForCounters = [...videoRelationsForCountersBare, 'thumbnailPhoto', 'media']
-// magic constant used to convert Nft royalty to correct value
-export const PERBILL_ONE_PERCENT = 10_000_000
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
