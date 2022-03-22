@@ -1,25 +1,16 @@
 #!/usr/bin/env bash
-
 set -e
 
 # Looks for a cached joystream/node image matching code shasum.
 # Search order: local repo then dockerhub. If no cached image is found we build it.
 
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+source scripts/features.sh
+
 CODE_HASH=`scripts/runtime-code-shasum.sh`
 IMAGE=joystream/node:${CODE_HASH}
-
-FEATURES=
-if [[ "$RUNTIME_PROFILE" == "TESTING" ]]; then
-  FEATURES="testing_runtime"
-fi
-
-if [[ "$RUNTIME_PROFILE" == "STAGING" ]]; then
-  FEATURES="staging_runtime"
-fi
-
-if [[ "$RUNTIME_PROFILE" == "PLAYGROUND" ]]; then
-  FEATURES="playground_runtime"
-fi
 
 # Look for image locally
 if ! docker inspect ${IMAGE} > /dev/null;
