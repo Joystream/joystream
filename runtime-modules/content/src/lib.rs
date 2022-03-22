@@ -2070,6 +2070,10 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
 
+            if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
+                Self::validate_member_set(&params.transfer_params.new_collaborators)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //

@@ -4,6 +4,7 @@ use super::mock::*;
 use crate::tests::curators::add_curator_to_new_group;
 use crate::*;
 use frame_system::RawOrigin;
+use sp_core::sp_std::iter::FromIterator;
 
 #[test]
 fn update_channel_transfer_status_succeeds() {
@@ -63,6 +64,22 @@ fn update_channel_transfer_status_fails_with_member_actor() {
         UpdateChannelTransferStatusFixture::default()
             .with_actor(ContentActor::Member(invalid_member_id))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
+    })
+}
+
+#[test]
+fn update_channel_transfer_status_fails_with_invalid_collaborators() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let invalid_member_id = 111;
+        UpdateChannelTransferStatusFixture::default()
+            .with_collaborators(BTreeSet::from_iter(vec![invalid_member_id]))
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
     })
 }
 

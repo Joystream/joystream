@@ -1373,6 +1373,19 @@ impl UpdateChannelTransferStatusFixture {
         Self { channel_id, ..self }
     }
 
+    pub fn with_collaborators(self, new_collaborators: BTreeSet<MemberId>) -> Self {
+        Self {
+            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer {
+                transfer_params: TransferParameters {
+                    new_collaborators,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..self
+        }
+    }
+
     pub fn with_transfer_status(
         self,
         transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
