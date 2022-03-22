@@ -17,7 +17,7 @@ fn sell_nft() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -96,7 +96,7 @@ fn sell_nft_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to sell nft which is not issued yet
         let sell_nft_result = Content::sell_nft(
@@ -121,7 +121,7 @@ fn sell_nft_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -154,7 +154,7 @@ fn sell_nft_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -187,7 +187,7 @@ fn sell_nft_transactional_status_is_not_idle() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(

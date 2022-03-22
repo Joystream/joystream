@@ -416,16 +416,16 @@ decl_module! {
                 object_creation_list: storage_assets.object_creation_list,
                 deletion_prize_source_account_id: sender,
                 expected_data_size_fee: storage_assets.expected_data_size_fee,
+                expected_dynamic_bag_deletion_prize: params.expected_dynamic_bag_deletion_prize,
+                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
             };
+
             //
             // == MUTATION SAFE ==
             //
 
             // create channel bag
-            Storage::<T>::create_dynamic_bag(
-                bag_creation_params,
-                T::BagDeletionPrize::get(),
-            )?;
+            Storage::<T>::create_dynamic_bag(bag_creation_params)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -487,7 +487,9 @@ decl_module! {
                     .map_or(Default::default(), |assets| assets.object_creation_list),
                 deletion_prize_source_account_id: sender,
                 expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+                    .map_or(Default::default(), |assets| assets.expected_data_size_fee),
+                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
+                expected_dynamic_bag_deletion_prize: Default::default(),
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -769,7 +771,8 @@ decl_module! {
                 let params = Self::construct_upload_parameters(
                     upload_assets,
                     &channel_id,
-                    &sender
+                    &sender,
+                    params.expected_data_object_deletion_prize,
                 );
                 Storage::<T>::upload_data_objects(params)?;
             }
@@ -844,7 +847,9 @@ decl_module! {
                     .map_or(Default::default(), |assets| assets.object_creation_list),
                 deletion_prize_source_account_id: sender,
                 expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee)
+                    .map_or(Default::default(), |assets| assets.expected_data_size_fee),
+                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
+                expected_dynamic_bag_deletion_prize: Default::default(),
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -2457,12 +2462,15 @@ impl<T: Trait> Module<T> {
         assets: &StorageAssets<T>,
         channel_id: &T::ChannelId,
         prize_source_account: &T::AccountId,
+        expected_data_object_deletion_prize: BalanceOf<T>,
     ) -> UploadParameters<T> {
         UploadParameters::<T> {
             bag_id: Self::bag_id_for_channel(channel_id),
             object_creation_list: assets.object_creation_list.clone(),
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
+            expected_data_object_deletion_prize,
+            expected_dynamic_bag_deletion_prize: Default::default(),
         }
     }
 

@@ -22,7 +22,7 @@ use crate::{
 };
 
 use mocks::{
-    build_test_externalities, Balances, BlacklistSizeLimit, DataObjectDeletionPrize,
+    build_test_externalities, Balances, BlacklistSizeLimit,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
     MaxRandomIterationNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
@@ -423,6 +423,8 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -486,6 +488,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -531,6 +535,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -727,11 +733,16 @@ fn upload_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -755,7 +766,7 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                deletion_prize: DataObjectDeletionPrize::get(),
+                deletion_prize: data_object_deletion_prize,
                 accepted: false,
             }
         );
@@ -763,17 +774,17 @@ fn upload_succeeded() {
         // check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - DataObjectDeletionPrize::get()
+            initial_balance - data_object_deletion_prize
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            DataObjectDeletionPrize::get()
+            data_object_deletion_prize
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
             vec![data_object_id],
             upload_params,
-            DataObjectDeletionPrize::get(),
+            data_object_deletion_prize,
         ));
     });
 }
@@ -792,6 +803,8 @@ fn upload_failed_with_exceeding_the_data_object_max_size() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: data_object_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -808,6 +821,9 @@ fn upload_succeeded_with_data_size_fee() {
 
         let data_size_fee = 100;
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         UpdateDataObjectPerMegabyteFeeFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
             .with_new_fee(data_size_fee)
@@ -818,6 +834,8 @@ fn upload_succeeded_with_data_size_fee() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -827,11 +845,11 @@ fn upload_succeeded_with_data_size_fee() {
         // check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - DataObjectDeletionPrize::get() - data_size_fee
+            initial_balance - data_object_deletion_prize - data_size_fee
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            DataObjectDeletionPrize::get()
+            data_object_deletion_prize
         );
     });
 }
@@ -853,6 +871,8 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -887,6 +907,8 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -921,6 +943,8 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         // Check storage bucket voucher: object size limit.
@@ -942,11 +966,16 @@ fn upload_succeeded_with_dynamic_bag() {
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         create_dynamic_bag(&dynamic_bag_id);
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -970,7 +999,7 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                deletion_prize: DataObjectDeletionPrize::get(),
+                deletion_prize: data_object_deletion_prize,
                 accepted: false,
             }
         );
@@ -987,6 +1016,8 @@ fn upload_fails_with_non_existent_dynamic_bag() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1005,6 +1036,8 @@ fn upload_succeeded_with_non_empty_bag() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 2),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1016,6 +1049,8 @@ fn upload_succeeded_with_non_empty_bag() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(3, 2),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1049,6 +1084,8 @@ fn upload_fails_with_zero_object_size() {
                 size: 0,
             }],
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1068,6 +1105,8 @@ fn upload_fails_with_empty_object_cid() {
                 size: 220,
             }],
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1084,24 +1123,57 @@ fn upload_fails_with_insufficient_balance_for_deletion_prize() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
 
         UploadFixture::default()
             .with_params(upload_params)
+            .with_expected_data_object_deletion_prize(data_object_deletion_prize)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_invalid_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
+        };
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
+        let invalid_data_object_deletion_prize = 110;
+        UploadFixture::default()
+            .with_params(upload_params)
+            .with_expected_data_object_deletion_prize(invalid_data_object_deletion_prize)
+            .call_and_assert(Err(Error::<Test>::DataObjectDeletionPrizeChanged.into()));
     });
 }
 
 #[test]
 fn upload_fails_with_insufficient_balance_for_data_size_fee() {
     build_test_externalities().execute_with(|| {
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, DataObjectDeletionPrize::get());
+        let data_object_deletion_prize = 10;
+
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_deletion_prize);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         // Check that balance is sufficient for the deletion prize.
@@ -1117,6 +1189,8 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
         // Update fee parameter after the change.
         let upload_params = UploadParameters::<Test> {
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
             ..upload_params
         };
 
@@ -1129,13 +1203,16 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
 #[test]
 fn upload_fails_with_data_size_fee_changed() {
     build_test_externalities().execute_with(|| {
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, DataObjectDeletionPrize::get());
+        let data_object_deletion_prize = 10;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_deletion_prize);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         let data_size_fee = 1000;
@@ -1162,6 +1239,8 @@ fn upload_failed_with_blocked_uploading() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         let new_blocking_status = true;
@@ -1196,6 +1275,8 @@ fn upload_failed_with_blacklisted_data_object() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1338,6 +1419,8 @@ fn accept_pending_data_objects_succeeded() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1403,6 +1486,8 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1539,6 +1624,8 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1871,6 +1958,8 @@ fn move_data_objects_succeeded() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -1971,6 +2060,8 @@ fn move_data_objects_succeeded_having_voucher() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2045,6 +2136,8 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2103,6 +2196,8 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2171,6 +2266,9 @@ fn delete_data_objects_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
@@ -2182,6 +2280,8 @@ fn delete_data_objects_succeeded() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2200,11 +2300,11 @@ fn delete_data_objects_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - DataObjectDeletionPrize::get()
+            initial_balance - data_object_deletion_prize
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            DataObjectDeletionPrize::get()
+            data_object_deletion_prize
         );
 
         DeleteDataObjectsFixture::default()
@@ -2266,6 +2366,9 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
             .with_invite_worker(invite_worker)
@@ -2281,6 +2384,8 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2325,6 +2430,8 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -2608,25 +2715,27 @@ fn delete_dynamic_bags_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let bag_deletion_prize_value = 77;
+        set_bag_deletion_prize_value(bag_deletion_prize_value);
+
         let initial_balance = 1000;
-        let deletion_prize_value = 77;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         CreateDynamicBagFixture::default()
-            .with_deletion_prize(deletion_prize_value)
+            .with_expected_dynamic_bag_deletion_prize(bag_deletion_prize_value)
             .call_and_assert(Ok(()));
 
         // pre-check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - deletion_prize_value
+            initial_balance - bag_deletion_prize_value
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            deletion_prize_value
+            bag_deletion_prize_value
         );
 
         DeleteDynamicBagFixture::default()
@@ -2655,7 +2764,6 @@ fn delete_dynamic_bags_succeeded() {
 fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;
-        let deletion_prize_value = 77;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let distribution_buckets_number = 10;
@@ -2681,7 +2789,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
@@ -2723,7 +2831,6 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
 fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;
-        let deletion_prize_value = 77;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let storage_buckets_number = DefaultMemberDynamicBagNumberOfStorageBuckets::get();
@@ -2732,7 +2839,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
@@ -2776,15 +2883,17 @@ fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
 fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;
-        let deletion_prize_value = 77;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        set_bag_deletion_prize_value(BAG_DELETION_PRIZE_VALUE);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_expected_dynamic_bag_deletion_prize(BAG_DELETION_PRIZE_VALUE)
             .call_and_assert(Ok(()));
 
         // Corrupt module balance.
@@ -2857,6 +2966,8 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -3059,6 +3170,8 @@ fn storage_bucket_voucher_changed_event_fired() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
         };
 
         UploadFixture::default()
@@ -3306,7 +3419,9 @@ fn create_dynamic_bag_succeeded() {
             .with_families(family_policy)
             .call_and_assert(Ok(()));
 
-        let deletion_prize_value = 100;
+        let bag_deletion_prize_value = 100;
+        set_bag_deletion_prize_value(bag_deletion_prize_value);
+
         let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
         let initial_balance = 10000;
         increase_account_balance(&deletion_prize_account_id, initial_balance);
@@ -3323,11 +3438,12 @@ fn create_dynamic_bag_succeeded() {
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_expected_dynamic_bag_deletion_prize(bag_deletion_prize_value)
             .call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
-        let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id);
+        let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id.clone());
 
         // Check that IDs are within possible range.
         assert!(bag
@@ -3357,21 +3473,21 @@ fn create_dynamic_bag_succeeded() {
             assert_eq!(bucket.assigned_bags, 1);
         }
 
-        assert_eq!(bag.deletion_prize.unwrap(), deletion_prize_value);
+        assert_eq!(bag.deletion_prize.unwrap(), bag_deletion_prize_value);
 
         // post-check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - deletion_prize_value
+            initial_balance - bag_deletion_prize_value
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            deletion_prize_value
+            bag_deletion_prize_value
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
             dynamic_bag_id,
-            deletion_prize_value,
+            bag_deletion_prize_value,
             BTreeSet::from_iter(bag.stored_by),
             BTreeSet::from_iter(bag.distributed_by),
         ));
@@ -3382,14 +3498,52 @@ fn create_dynamic_bag_succeeded() {
 fn create_dynamic_bag_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let deletion_prize_value = 100;
 
+        let bag_deletion_prize_value = 100;
+        set_bag_deletion_prize_value(bag_deletion_prize_value);
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize_value)
+            .with_expected_dynamic_bag_deletion_prize(bag_deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
+    });
+}
+
+#[test]
+fn create_dynamic_bag_fails_with_invalid_dynamic_bag_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let bag_deletion_prize_value = 100;
+        set_bag_deletion_prize_value(bag_deletion_prize_value);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
+        let invalid_dynamic_bag_deletion_prize = 55;
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_expected_dynamic_bag_deletion_prize(invalid_dynamic_bag_deletion_prize)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::DynamicBagDeletionPrizeChanged.into()));
+    });
+}
+
+#[test]
+fn create_dynamic_bag_fails_with_invalid_data_object_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let data_object_deletion_prize_value = 100;
+        set_data_object_deletion_prize_value(data_object_deletion_prize_value);
+        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
+        let invalid_data_object_deletion_prize_value = 55;
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_expected_data_object_deletion_prize(invalid_data_object_deletion_prize_value)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::DataObjectDeletionPrizeChanged.into()));
     });
 }
 
@@ -3413,6 +3567,8 @@ fn create_dynamic_bag_failed_with_existing_bag() {
 fn create_dynamic_bag(dynamic_bag_id: &DynamicBagId<Test>) {
     CreateDynamicBagFixture::default()
         .with_bag_id(dynamic_bag_id.clone())
+        .with_expected_dynamic_bag_deletion_prize(Storage::dynamic_bag_deletion_prize_value())
+        .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
         .call_and_assert(Ok(()));
 }
 
@@ -5290,8 +5446,11 @@ fn unsuccessful_dyn_bag_creation_with_insufficient_balance_for_bag_prize_and_upl
 
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
+        let bag_deletion_prize = 100;
+        set_bag_deletion_prize_value(bag_deletion_prize);
+
         CreateDynamicBagFixture::default()
-            .with_deletion_prize(BAG_DELETION_PRIZE_VALUE)
+            .with_expected_dynamic_bag_deletion_prize(bag_deletion_prize)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     })
 }
@@ -5512,9 +5671,7 @@ fn successful_dyn_bag_creation_with_all_parameters_specified() {
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        CreateDynamicBagFixture::default()
-            .with_deletion_prize(BAG_DELETION_PRIZE_VALUE)
-            .call_and_assert(Ok(()));
+        CreateDynamicBagFixture::default().call_and_assert(Ok(()));
     })
 }
 
@@ -5536,6 +5693,73 @@ fn unsuccessful_dyn_bag_creation_with_no_bucket_accepting() {
     })
 }
 
+fn set_bag_deletion_prize_value(deletion_prize: u64) {
+    crate::DynamicBagDeletionPrizeValue::<Test>::put(deletion_prize);
+}
+
+#[test]
+fn update_dynamic_bag_deletion_prize_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let deletion_prize = 40;
+
+        UpdateDynamicBagDeletionPrizeValueFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_deletion_prize(deletion_prize)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeletionPrizeValueUpdated(
+            deletion_prize,
+        ));
+    });
+}
+
+#[test]
+fn update_dynamic_bag_deletion_prize_failed_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateDynamicBagDeletionPrizeValueFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_data_object_deletion_prize_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let deletion_prize = 40;
+
+        UpdateDataObjectDeletionPrizeValueFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_deletion_prize(deletion_prize)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectDeletionPrizeValueUpdated(
+            deletion_prize,
+        ));
+    });
+}
+
+#[test]
+fn update_data_object_deletion_prize_failed_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateDataObjectDeletionPrizeValueFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+fn set_data_object_deletion_prize_value(deletion_prize: u64) {
+    crate::DataObjectDeletionPrizeValue::<Test>::put(deletion_prize);
+}
 #[test]
 fn storage_operator_remark_successful() {
     build_test_externalities().execute_with(|| {
