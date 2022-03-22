@@ -404,6 +404,10 @@ decl_module! {
                 &actor,
             )?;
 
+            // ensure collaborator & moderator member ids are valid
+            Self::validate_member_set(&params.moderators)?;
+            Self::validate_member_set(&params.collaborators)?;
+
             // The channel owner will be..
             let channel_owner = actor_to_channel_owner::<T>(&actor)?;
 
@@ -475,8 +479,10 @@ decl_module! {
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelUpdate)?;
 
             // ensure actor is not a collaborator if collaborators set is to be updated
-            if params.collaborators.is_some() {
+            if let Some(new_collabs) = params.collaborators.as_ref() {
                 ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
+                // ensure collaborator member ids are valid
+                Self::validate_member_set(new_collabs)?;
             }
 
             Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
@@ -1397,6 +1403,8 @@ decl_module! {
                 &owner,
                 &actor,
             )?;
+
+            Self::validate_member_set(&new_moderators)?;
 
             //
             // == MUTATION_SAFE ==
@@ -2331,6 +2339,10 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
 
+            if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
+                Self::validate_member_set(&params.transfer_params.new_collaborators)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
@@ -2594,6 +2606,15 @@ impl<T: Trait> Module<T> {
             expected_data_object_deletion_prize,
             expected_dynamic_bag_deletion_prize: Default::default(),
         }
+    }
+
+    fn validate_member_set(members: &BTreeSet<T::MemberId>) -> DispatchResult {
+        // check if all members are valid
+        let res = members
+            .iter()
+            .all(|member_id| <T as ContentActorAuthenticator>::validate_member_id(member_id));
+        ensure!(res, Error::<T>::InvalidMemberProvided);
+        Ok(())
     }
 
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {

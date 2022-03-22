@@ -244,6 +244,9 @@ decl_error! {
         /// Insufficient treasury balance
         InsufficientTreasuryBalance,
 
+        /// Invalid member id  specified
+        InvalidMemberProvided,
+
         /// Actor is not A Member
         ActorNotAMember,
 

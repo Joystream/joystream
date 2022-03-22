@@ -253,6 +253,18 @@ fn successful_channel_creation_with_collaborators_set() {
 }
 
 #[test]
+fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
+    })
+}
+
+#[test]
 // channel update tests
 #[test]
 fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
@@ -907,6 +919,23 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
 }
 
 #[test]
+fn unsuccessful_channel_update_with_invalid_collaborators_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_channel_update_with_invalid_expected_data_size_fee() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1265,6 +1294,17 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_creation_with_invalid_moderator_set() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
+    })
+}
 /// MODERATION ACTIONS
 
 #[test]

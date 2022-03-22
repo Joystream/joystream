@@ -1865,6 +1865,13 @@ impl UpdateModeratorSetFixture {
         }
     }
 
+    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
+        Self {
+            new_moderators,
+            ..self
+        }
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -2132,6 +2139,19 @@ impl UpdateChannelTransferStatusFixture {
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
+    }
+
+    pub fn with_collaborators(self, new_collaborators: BTreeSet<MemberId>) -> Self {
+        Self {
+            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer {
+                transfer_params: TransferParameters {
+                    new_collaborators,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..self
+        }
     }
 
     pub fn with_transfer_status(
