@@ -103,7 +103,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node-testing"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 4,
+    spec_version: 5,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
