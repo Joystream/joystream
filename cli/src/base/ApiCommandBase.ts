@@ -140,8 +140,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
           value: 'ws://localhost:9944',
         },
         {
-          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
-          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+          name: 'Current Testnet official Joystream node (wss://rpc.joystream.org:9944/)',
+          value: 'wss://rpc.joystream.org:9944/',
         },
         {
           name: 'Custom endpoint',
