@@ -39,7 +39,7 @@ import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/conten
 
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
-import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/content/utils'
+import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 
 export class ApiFactory {
   private readonly api: ApiPromise

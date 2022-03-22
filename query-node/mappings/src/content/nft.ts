@@ -44,7 +44,7 @@ import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
 import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
-import { PERBILL_ONE_PERCENT } from './utils'
+import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 
 // definition of generic type for Hydra DatabaseManager's methods
 type EntityType<T> = {
