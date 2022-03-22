@@ -1097,6 +1097,13 @@ impl UpdateModeratorSetFixture {
         }
     }
 
+    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
+        Self {
+            new_moderators,
+            ..self
+        }
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
